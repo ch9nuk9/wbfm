@@ -104,10 +104,18 @@ def extract_volumes_from_MATLAB_output(path_config_file, which_vol=None):
         print('Saved volume to {}\\{}'.format(output_path, output_name))
 
 
-def extract_volumes_from_charlie_output(path_config_file, nz, which_vol=None):
+def extract_volumes_from_charlie_output(path_config_file, nz, which_vol=None, which_slice=None):
     """
     Takes a video filename, which is a large ome-tiff file, and saves a volume in the folder given by 'out_folder'
+
+    if which_slice is not None:
+        saves single slices (instead of full volumes)
     """
+
+    if which_slice is None:
+        saving_str = "volume"
+    else:
+        saving_str = "slice"
 
     config_file = Path(path_config_file).resolve()
     cfg = auxiliaryfunctions.read_config(config_file)
@@ -121,12 +129,15 @@ def extract_volumes_from_charlie_output(path_config_file, nz, which_vol=None):
         which_vol = [0]
 
     for i_vol in which_vol:
-        print("Reading volume {}/{}".format(i_vol, len(which_vol)-1))
+        print("Reading {} {}/{}".format(saving_str, i_vol, len(which_vol)-1))
 
         # Convert scalar volume label to the sequential frames
         # Note: this may change for future input videos!
-        vol_indices = list(range(i_vol*nz, i_vol*nz + nz))
-        print("Converted volume indices: {} to {} (not including last frame)".format(i_vol*nz, i_vol*nz + nz))
+        if which_slice is None:
+            vol_indices = list(range(i_vol*nz, i_vol*nz + nz))
+        else:
+            vol_indices = list(range(i_vol*nz + which_slice, i_vol*nz + 1 + which_slice))
+        print("Converted {} indices: {} to {} (not including last frame)".format(saving_str, vol_indices[0], vol_indices[-1]))
 
         # Read and make output name
         this_volume = tifffile.imread(video_fname, key=vol_indices)
@@ -138,4 +149,4 @@ def extract_volumes_from_charlie_output(path_config_file, nz, which_vol=None):
 
         tifffile.imsave(os.path.join(str(output_path),output_name), this_volume)
 
-        print('Saved volume to {}'.format(os.path.join(output_path, output_name)))
+        print('Saved {} to {}'.format(saving_str, os.path.join(output_path, output_name)))
