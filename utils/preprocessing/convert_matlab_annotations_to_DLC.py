@@ -4,6 +4,7 @@ import pandas as pd
 import glob
 import numpy as np
 from pathlib import Path
+import csv
 from deeplabcut.utils import auxiliaryfunctions
 
 def wb_tracker2dlc_format(path_config_file):
@@ -65,3 +66,52 @@ def wb_tracker2dlc_format(path_config_file):
     dataFrame.to_hdf(os.path.join(output_path,"CollectedData_" + scorer + '.h5'),'df_with_missing',format='table', mode='w')
 
     print('Finished')
+
+
+def wb_tracker2config_names(path_config_file):
+    """
+    Automatically updates the config file with the proper number of neurons, and deletes any other default bodyparts.
+    Only affects the "bodyparts" field
+    """
+
+    # Get number of neurons from wbstruct
+    home = os.path.dirname(path_config_file)
+    wb_fname = os.path.join(home,'wbstruct.mat')
+    with h5py.File(wb_fname, 'r') as mat:
+        num_neurons = int(mat['simple']['nn'][0][0])
+
+    # Read in entire config file into a list
+    config_rows = []
+    with open(path_config_file) as config:
+        c_reader = csv.reader(config)#, delimiter=' ')
+        for row in c_reader:
+            config_rows.append(row)
+
+    ## Delete the current bodypart lines
+    delete_these_rows = False
+    config_rows_edit = config_rows.copy()
+    for row in config_rows:
+        if row == ['bodyparts:']:
+            delete_these_rows = True # Start deleting next row
+        elif row == ['start: 0']:
+            delete_these_rows = False # Do not delete this row, or others
+            break
+        elif delete_these_rows == True:
+            # Don't delete either of the two above, but only in between those rows
+            config_rows_edit.remove(row)
+
+    ## Add in the named neuron lines
+    # Using "list slicing" https://www.geeksforgeeks.org/python-insert-list-in-another-list/
+    new_names = [['- neuron{}'.format(i)] for i in range(num_neurons)]
+    insert_index = config_rows_edit.index(['start: 0'])
+    config_rows_edit[insert_index:insert_index] = new_names
+
+    ## Write the file again
+    if True:
+        with open(path_config_file, 'w', newline='') as config:
+            c_writer = csv.writer(config)
+            for row in config_rows_edit:
+                c_writer.writerow(row)
+    #for row in config_rows_edit:
+        #c_writer.writerow(row)
+     #   print(row[:])
