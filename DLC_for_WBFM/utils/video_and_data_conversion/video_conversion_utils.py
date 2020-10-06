@@ -53,13 +53,19 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
     
     # Read basic metadata
     with tifffile.TiffFile(video_fname) as vid:
+        
+        # Get size either using metadata or not
         ome_metadata = vid.ome_metadata
-        if isinstance(ome_metadata, str):
-            # Appears to be a bug that just returns a string... can fix manually though
-            ome_metadata = tifffile.xml2dict(ome_metadata)['OME']
-        print(ome_metadata.keys())
-        mdat = ome_metadata['Image']['Pixels']
-        nz, nt = mdat['SizeZ'], mdat['SizeT']
+        if ome_metadata is not None:
+            if isinstance(ome_metadata, str):
+                # Appears to be a bug that just returns a string... can fix manually though
+                ome_metadata = tifffile.xml2dict(ome_metadata)['OME']
+#             print(ome_metadata.keys())
+            mdat = ome_metadata['Image']['Pixels']
+            nz, nt = mdat['SizeZ'], mdat['SizeT']
+        else:
+            # Just read it from the shape
+            nt, nz, nx, ny = vid.series[0].shape
     
     for i_vol in range(num_frames):
         print("Read volume {}/{}".format(i_vol, num_frames))
