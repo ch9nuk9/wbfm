@@ -68,7 +68,7 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
             nt, nz, nx, ny = vid.series[0].shape
     
     for i_vol in range(num_frames):
-        if i%10 == 0:
+        if i_vol%10 == 0:
             print("Read volume {}/{}".format(i_vol, num_frames))
         
         # Convert scalar volume label to the sequential frames
