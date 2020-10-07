@@ -1,3 +1,6 @@
 # ipython things
 */__pycache__
 */.ipynb_checkpoints
+
+# Full DLC folders
+DLC_Projects/
