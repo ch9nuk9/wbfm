@@ -31,13 +31,12 @@ def ome_metadata_from_array_and_stk(stk_full_fname, dat_sz):
     ##
 
     # Dictionary to translate field names
-    stk_to_ome_strings =
-                 {'SizeZ': 'NumberPlanes',
-                  'PhysicalSizeX' : 'XCalibration',
-                  'PhysicalSizeY' : 'YCalibration',
-                  'PhysicalSizeXUnit' : 'CalibrationUnits',
-                  'PhysicalSizeYUnit' : 'CalibrationUnits',
-                  'PhysicalSizeZUnit' : 'CalibrationUnits'}
+    stk_to_ome_strings = {'SizeZ': 'NumberPlanes',
+                          'PhysicalSizeX' : 'XCalibration',
+                          'PhysicalSizeY' : 'YCalibration',
+                          'PhysicalSizeXUnit' : 'CalibrationUnits',
+                          'PhysicalSizeYUnit' : 'CalibrationUnits',
+                          'PhysicalSizeZUnit' : 'CalibrationUnits'}
 
     # Get the actual stk metadata xml
     stk_meta = tifffile.TiffFile(data_file, multifile=False).stk_metadata
