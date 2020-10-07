@@ -20,27 +20,44 @@ def ome_metadata_from_array_and_stk(stk_full_fname, dat_sz):
     ##
     ## First, set up the ome-tiff template
     ##
-    ome_pixels_dict = {}
-
     def get_full_ome_dict(ome_pixels_dict):
         return {'Instrument':'',
                 'Image': {'Pixels':ome_pixels_dict},
                 'Creator':'',
                 'UUID':''}
 
-
     ##
     ## Second, deal with fields from the stk file
     ##
 
     # Dictionary to translate field names
-    stk_to_ome = {'NumberPlanes' : 'SizeZ',
-                  'XCalibration' : 'PhysicalSizeX',
-                  'YCalibration' : 'PhysicalSizeY',
-                  'CalibrationUnits' : 'PhysicalSizeXUnit',
-                  '' : ''}
-    # Some fields are doubled
-    stk_to_ome2 = {'CalibrationUnits' : 'PhysicalSizeYUnit'}
+    stk_to_ome_strings =
+                 {'SizeZ': 'NumberPlanes',
+                  'PhysicalSizeX' : 'XCalibration',
+                  'PhysicalSizeY' : 'YCalibration',
+                  'PhysicalSizeXUnit' : 'CalibrationUnits',
+                  'PhysicalSizeYUnit' : 'CalibrationUnits',
+                  'PhysicalSizeZUnit' : 'CalibrationUnits'}
 
     # Get the actual stk metadata xml
     stk_meta = tifffile.TiffFile(data_file, multifile=False).stk_metadata
+
+    # Convert above strings to value using the stk_meta
+    stk_to_ome = {}
+    for key, value in stk_to_ome_strings.items():
+        stk_to_ome[key] = stk_meta[value]
+
+    ##
+    ## Third, deal with fields from the final array size
+    ##
+    array_to_ome = {'SizeX' : dat_sz[0],
+                    'SizeY' : dat_sz[1],
+                    'SizeC' : dat_sz[2],
+                    'SizeT' : dat_sz[4],
+                    'Type' : 'uint16'}
+
+    ##
+    ## Finally, put together the inner dict and return
+    ##
+    merged_tmp = {**stk_to_ome, **array_to_ome}
+    return get_full_ome_dict(merged_tmp)
