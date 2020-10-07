@@ -39,7 +39,7 @@ def ome_metadata_from_array_and_stk(stk_full_fname, dat_sz):
                           'PhysicalSizeZUnit' : 'CalibrationUnits'}
 
     # Get the actual stk metadata xml
-    stk_meta = tifffile.TiffFile(data_file, multifile=False).stk_metadata
+    stk_meta = tifffile.TiffFile(stk_full_fname, multifile=False).stk_metadata
 
     # Convert above strings to value using the stk_meta
     stk_to_ome = {}
