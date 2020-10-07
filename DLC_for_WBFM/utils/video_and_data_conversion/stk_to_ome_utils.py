@@ -49,10 +49,9 @@ def ome_metadata_from_array_and_stk(stk_full_fname, dat_sz):
     ##
     ## Third, deal with fields from the final array size
     ##
-    array_to_ome = {'SizeX' : dat_sz[0],
-                    'SizeY' : dat_sz[1],
-                    'SizeC' : dat_sz[2],
-                    'SizeT' : dat_sz[4],
+    array_to_ome = {'SizeX' : dat_sz[2],
+                    'SizeY' : dat_sz[3],
+                    'SizeT' : dat_sz[0],
                     'Type' : 'uint16'}
 
     ##
