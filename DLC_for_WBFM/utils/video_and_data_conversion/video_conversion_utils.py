@@ -1,4 +1,3 @@
-import h5py
 import numpy as np
 import tifffile
 import os
@@ -16,7 +15,7 @@ def write_video_from_ome_folder(num_frames, folder_name, out_fname,
 
     all_fnames = os.listdir(folder_name)
     all_fnames = sorted(all_fnames)[1:]
-    
+
     # Load all into memory via appending, writing at the end
     for i, this_fname in enumerate(all_fnames):
         if i > num_frames-1:
@@ -41,7 +40,7 @@ def write_video_from_ome_folder(num_frames, folder_name, out_fname,
         print("Reading frame {}/{}: ".format(i+1,num_frames))
 
     tifffile.imsave(out_fname, dat, dtype=out_dtype)
-    
+
     return dat
 
 
@@ -50,10 +49,10 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
     """
     Takes a video filename, which is a large ome-tiff file, and saves a smaller file in the folder given by 'out_folder'
     """
-    
+
     # Read basic metadata
     with tifffile.TiffFile(video_fname) as vid:
-        
+
         # Get size either using metadata or not
         ome_metadata = vid.ome_metadata
         if ome_metadata is not None:
@@ -66,18 +65,18 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
         else:
             # Just read it from the shape
             nt, nz, nx, ny = vid.series[0].shape
-    
+
     for i_vol in range(num_frames):
         if i_vol%10 == 0:
             print("Read volume {}/{}".format(i_vol, num_frames))
-        
+
         # Convert scalar volume label to the sequential frames
         # Note: this may change for future input videos!
         if which_slice is None:
             vol_indices = list(range(i_vol*nz, i_vol*nz + nz))
         else:
             vol_indices = i_vol*nz + which_slice
-        
+
         # Actually read
         if i_vol == 0:
             if which_slice is None:
@@ -103,7 +102,7 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
     tifffile.imsave(output_name, dat, dtype=out_dtype)
 
     return dat
-    
+
 
 
 ##
@@ -118,11 +117,11 @@ def write_numpy_as_avi(data, fname="output.avi", fps=10, dtype='uint16'):
     #  Frames should be stored in the first axis of 'data'
     if ".avi" not in fname:
         fname = fname + ".avi"
-        
+
     # Make sure the whole range is used
     factor = np.max(data)/255.0 # Conversion from uint16 to uint8
     data = data / factor
-    
+
     print("Writing to {}".format(fname))
     sz = data.shape
     writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=False)
