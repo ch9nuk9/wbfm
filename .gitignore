@@ -3,6 +3,7 @@
 __pycache__
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+*.egg-info
 
 # Full DLC folders
 DLC_Projects/
