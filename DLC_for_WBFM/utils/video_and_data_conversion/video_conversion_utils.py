@@ -12,6 +12,11 @@ import cv2
 def write_video_from_ome_folder(num_frames, folder_name, out_fname,
                                out_dtype='uint8',
                                which_slice=None):
+    """
+    Write a video from a folder of ome-tiff files, where each one is a single volume
+    
+    'out_fname' should have te file extension included. Recommended: .avi
+    """
 
     all_fnames = os.listdir(folder_name)
     all_fnames = sorted(all_fnames)[1:]
@@ -47,7 +52,7 @@ def write_video_from_ome_folder(num_frames, folder_name, out_fname,
 
 def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uint16', which_slice=None):
     """
-    Takes a video filename, which is a large ome-tiff file, and saves a smaller file in the folder given by 'out_folder'
+    Takes a video filename, which is a single large ome-tiff file, and saves a smaller file in the folder given by 'out_fname'
     """
 
     # Read basic metadata
