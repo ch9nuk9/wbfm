@@ -67,6 +67,9 @@ def get_crop_coords(center, sz=(28,28)):
 
 def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
 
+    if not os.path.isfile(fname):
+        raise FileException
+    
     cap = cv2.VideoCapture(fname)
 
     # Pre-allocate in proper size for future
@@ -174,6 +177,41 @@ def local_maxima_3D(data, order=1):
 
     return coords, values
 
+
+def local_maxima_2D(data):
+    """
+    Data should be 3d, XYT
+    """
+    t = np.shape(data)[2]
+    coords = np.zeros((t,1))
+    values = np.zeros((t,1))
+    
+    for i in range(t):
+        coords[i] = np.argmax(data[...,i])
+        values[i] = np.amax(data[...,i])
+    
+    return coords, values
+
+
+##
+## Finding maxima via heuristics
+##
+
+def mean_of_top_percentile(data, percentile=10):
+    """
+    Data should be 3d, XYT
+    """
+    t = np.shape(data)[2]
+    values = np.zeros((t,1))
+    
+    for i in range(t):
+        tmp = data[...,i]
+        thresh = np.percentile(tmp, percentile)
+        values[i] = np.mean(tmp[np.where(tmp>thresh)])
+        
+    return values
+
+
 ##
 ## Save a matplotlib animation
 ##
@@ -218,6 +256,15 @@ def save_video4d(file, video4d, fontsize=20):
 ##
 ## Generally plotting
 ##
+
+
+def plot2d_with_max(dat, t, max_ind, max_vals, vmin=100, vmax=400): 
+    plt.imshow(dat[:,:,0,t], vmin=vmin, vmax=vmax)
+    plt.colorbar()
+    x, y = max_ind[t,1], max_ind[t,0]
+    if z == max_ind[t,2]:
+        plt.scatter(x, y, marker='x', c='r')
+    plt.title(f"Max for t={t} is {max_vals[t]} xy={x},{y}")
 
 def plot3d_with_max(dat, z, t, max_ind, vmin=100, vmax=400): 
     plt.imshow(dat[:,:,z,t], vmin=vmin, vmax=vmax)
