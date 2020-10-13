@@ -110,6 +110,36 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
 
 
 
+def write_video_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16', which_slice=None,
+                                     num_frames = None, fps=10, frame_width = 608, frame_height = 610, num_slices=33,
+                                     alpha=1.0):
+    """
+    Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
+    
+    Uses cv2 for video writing, which requires exact frame size information. This can be found by reading a single page of a TiffFile
+    
+    To get good output videos if the data is not uint8, 'alpha' will probably have to be set as max(data)/255.0
+    
+    """
+    #ALSO NOT WORKKING: , FRWA, FRWD, IRAW, LAGS, LCW2, PIMJ, ASLC "-1",
+    fourcc=0
+    video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
+#     with cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False) as video_out:
+    with tifffile.TiffFile(video_fname, multifile=False) as tif:
+        for i, page in enumerate(tif.pages):
+            if i % num_slices != which_slice:
+                continue
+            print(f'Page {i}/{len(tif.pages)}')
+            img=page.asarray()
+            #img=cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
+#             img_uint8 = cv2.convertScaleAbs(img, alpha=alpha)#(255.0/65535.0))
+#             video_out.write(img)
+            img = (alpha*img).astype('uint8')
+            video_out.write(img)
+            if num_frames is not None and i > num_frames: break
+    video_out.release()
+
+
 ##
 ## .avi
 ##
@@ -118,8 +148,13 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
 #  https://stackoverflow.com/questions/29317262/opencv-video-saving-in-python/45868817
 # Note: I'm not using the main answer, as that's for a captured video stream, not just an array
 def write_numpy_as_avi(data, fname="output.avi", fps=10, dtype='uint16'):
-    # Must have a numpy array (or hdf5 file?) named 'data'
-    #  Frames should be stored in the first axis of 'data'
+    """
+    Must have a numpy array (or hdf5 file?) named 'data'
+    Frames should be stored in the first axis of 'data'
+    
+    Note: converts from uint16 by dividing by:
+        np.max(data)/255.0
+    """
     if ".avi" not in fname:
         fname = fname + ".avi"
 
