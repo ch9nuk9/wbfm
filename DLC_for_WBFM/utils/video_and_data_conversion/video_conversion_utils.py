@@ -14,7 +14,7 @@ def write_video_from_ome_folder(num_frames, folder_name, out_fname,
                                which_slice=None):
     """
     Write a video from a folder of ome-tiff files, where each one is a single volume
-    
+
     'out_fname' should have te file extension included. Recommended: .avi
     """
 
@@ -119,11 +119,11 @@ def write_video_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16',
                                      alpha=1.0):
     """
     Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
-    
+
     Uses cv2 for video writing, which requires exact frame size information. This can be found by reading a single page of a TiffFile
-    
+
     To get good output videos if the data is not uint8, 'alpha' will probably have to be set as max(data)/255.0
-    
+
     """
     #ALSO NOT WORKKING: , FRWA, FRWD, IRAW, LAGS, LCW2, PIMJ, ASLC "-1",
     fourcc=0
@@ -143,51 +143,53 @@ def write_video_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16',
             if num_frames is not None and i > num_frames: break
     video_out.release()
 
-    
-    
+
+
 def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16', which_slices=None,
                                                 num_frames = None, fps=10, frame_width = 608, frame_height = 610, num_slices=33,
                                                 alpha=1.0):
     """
     Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
         This takes a max projection of the slices in 'which_slices', which is a FULL LIST of the desired frames
-    
+
     Uses cv2 for video writing, which requires exact frame size information. This can be found by reading a single page of a TiffFile
-    
+
     To get good output videos if the data is not uint8, 'alpha' will probably have to be set as max(data)/255.0
-    
+
     """
     # Set up the video writer
     fourcc=0
     video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
-    
+
     # Set up the counting indices
     start_of_each_frame = which_slices[0]
     end_of_each_frame = which_slices[-1]
-    alpha *= 1.0 / len(which_slices) # Also takes a mean
-    
+    # alpha *= 1.0 / len(which_slices) # Also takes a mean
+
     i_frame_count = 0
-    
-    print(f'Taking a mean of {len(which_slices)}, starting at {start_of_each_frame}' )
-    
+    img = np.zeros((len(which_slices), frame_height, frame_width))
+
+    print(f'Taking a max of {len(which_slices)}, starting at {start_of_each_frame}' )
+
     with tifffile.TiffFile(video_fname, multifile=False) as tif:
         for i, page in enumerate(tif.pages):
             this_slice = i % num_slices
             if this_slice not in which_slices:
                 continue
-            print(f'Page {i}/{len(num_frames*num_slices)}; a portion of slice {i_frame_count}')
-            
-            if this_slice == start_of_each_frame:
-                # Overwrite on the first read
-                img = page.asarray()
-            else:
-                img += page.asarray()
-            
+            print(f'Page {i}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames}')
+
+            img[this_slice - start_of_each_frame,...] = page.asarray()
+            # if this_slice == start_of_each_frame:
+            #     # Overwrite on the first read
+            #     img = page.asarray()
+            # else:
+            #     img += page.asarray()
+
             if this_slice == end_of_each_frame:
-                img = (alpha*img).astype('uint8')
-                video_out.write(img)
+                final_img = np.max((alpha*img), axis=0).astype('uint8')
+                video_out.write(final_img)
                 i_frame_count += 1
-                
+
             if num_frames is not None and i_frame_count > num_frames: break
     video_out.release()
 
@@ -203,11 +205,11 @@ def write_numpy_as_avi(data, fname="output.avi", fps=10, dtype='uint16', alpha=N
     """
     Must have a numpy array (or hdf5 file?) named 'data'
     Frames should be stored in the first axis of 'data'
-    
+
     Note: converts from uint16, if needed, by dividing by:
         alpha = np.max(data) / 255
         unless alpha is passed
-    
+
     Assumes color is the last dimension; checks for this
     """
     if ".avi" not in fname:
