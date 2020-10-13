@@ -50,7 +50,8 @@ def write_video_from_ome_folder(num_frames, folder_name, out_fname,
 
 
 
-def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uint16', which_slice=None):
+def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uint16', which_slice=None,
+                             img_format="TZXY"):
     """
     Takes a video filename, which is a single large ome-tiff file, and saves a smaller file in the folder given by 'out_fname'
     """
@@ -69,7 +70,10 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
             nz, nt = mdat['SizeZ'], mdat['SizeT']
         else:
             # Just read it from the shape
-            nt, nz, nx, ny = vid.series[0].shape
+            if img_format is "TZXY":
+                nt, nz, nx, ny = vid.series[0].shape
+            else:
+                raise Exception
 
     for i_vol in range(num_frames):
         if i_vol%10 == 0:
@@ -130,13 +134,61 @@ def write_video_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16',
             if i % num_slices != which_slice:
                 continue
             print(f'Page {i}/{len(tif.pages)}')
-            img=page.asarray()
+            img = page.asarray()
             #img=cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
 #             img_uint8 = cv2.convertScaleAbs(img, alpha=alpha)#(255.0/65535.0))
 #             video_out.write(img)
             img = (alpha*img).astype('uint8')
             video_out.write(img)
             if num_frames is not None and i > num_frames: break
+    video_out.release()
+
+    
+    
+def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16', which_slices=None,
+                                                num_frames = None, fps=10, frame_width = 608, frame_height = 610, num_slices=33,
+                                                alpha=1.0):
+    """
+    Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
+        This takes a max projection of the slices in 'which_slices', which is a FULL LIST of the desired frames
+    
+    Uses cv2 for video writing, which requires exact frame size information. This can be found by reading a single page of a TiffFile
+    
+    To get good output videos if the data is not uint8, 'alpha' will probably have to be set as max(data)/255.0
+    
+    """
+    # Set up the video writer
+    fourcc=0
+    video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
+    
+    # Set up the counting indices
+    start_of_each_frame = which_slices[0]
+    end_of_each_frame = which_slices[-1]
+    alpha *= 1.0 / len(which_slices) # Also takes a mean
+    
+    i_frame_count = 0
+    
+    print(f'Taking a mean of {len(which_slices)}, starting at {start_of_each_frame}' )
+    
+    with tifffile.TiffFile(video_fname, multifile=False) as tif:
+        for i, page in enumerate(tif.pages):
+            this_slice = i % num_slices
+            if this_slice not in which_slices:
+                continue
+            print(f'Page {i}/{len(num_frames*num_slices)}; a portion of slice {i_frame_count}')
+            
+            if this_slice == start_of_each_frame:
+                # Overwrite on the first read
+                img = page.asarray()
+            else:
+                img += page.asarray()
+            
+            if this_slice == end_of_each_frame:
+                img = (alpha*img).astype('uint8')
+                video_out.write(img)
+                i_frame_count += 1
+                
+            if num_frames is not None and i_frame_count > num_frames: break
     video_out.release()
 
 
