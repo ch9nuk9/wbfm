@@ -106,11 +106,11 @@ def colorize_3planes_keeping_intensity(stack, planes, alpha=1.0):
 #     if threshold_val is None:
 #         threshold_val = np.max(stack[0,...])/1.1
 
-    sz = stack.shape
+#     sz = stack.shape
 #     new_frame = np.ones((sz[0],) + (4,) + sz[1:-1], dtype='uint8')
     
     # Get the three planes
-    all_slices = stack[:,planes[0]:planes[-1]+1,...] * alpha
+    all_slices = stack[:,planes[0]:(planes[-1]+1),...] * alpha
 #     slice0 = stack[:,planes[0],...] * alpha
 #     slice1 = stack[:,planes[1],...] * alpha
 #     slice2 = stack[:,planes[2],...] * alpha

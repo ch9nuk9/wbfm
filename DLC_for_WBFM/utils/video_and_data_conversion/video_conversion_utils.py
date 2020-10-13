@@ -147,24 +147,28 @@ def write_video_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16',
 # Following:
 #  https://stackoverflow.com/questions/29317262/opencv-video-saving-in-python/45868817
 # Note: I'm not using the main answer, as that's for a captured video stream, not just an array
-def write_numpy_as_avi(data, fname="output.avi", fps=10, dtype='uint16'):
+def write_numpy_as_avi(data, fname="output.avi", fps=10, dtype='uint16', alpha=None, isColor=False):
     """
     Must have a numpy array (or hdf5 file?) named 'data'
     Frames should be stored in the first axis of 'data'
     
-    Note: converts from uint16 by dividing by:
-        np.max(data)/255.0
+    Note: converts from uint16, if needed, by dividing by:
+        alpha = np.max(data) / 255
+        unless alpha is passed
+    
+    Assumes color is the last dimension; checks for this
     """
     if ".avi" not in fname:
         fname = fname + ".avi"
 
     # Make sure the whole range is used
-    factor = np.max(data)/255.0 # Conversion from uint16 to uint8
-    data = data / factor
+    if alpha is None:
+        alpha = np.max(data)/255.0 # Conversion from uint16 to uint8
+    data = data*alpha
 
     print("Writing to {}".format(fname))
     sz = data.shape
-    writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=False)
+    writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=isColor)
 
     for i_frame in range(sz[0]):
         f = data[i_frame,...].astype('uint8')
