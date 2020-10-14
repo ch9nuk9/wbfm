@@ -5,6 +5,8 @@ from pathlib import Path
 import platform
 import cv2
 
+import warnings
+
 ##
 ## OME-TIFF
 ##
@@ -156,6 +158,8 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
 
     To get good output videos if the data is not uint8, 'alpha' will probably have to be set as max(data)/255.0
 
+    Note that I skip the first frame, because it is significantly different
+
     """
     # Set up the video writer
     fourcc=0
@@ -163,27 +167,28 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
 
     # Set up the counting indices
     start_of_each_frame = which_slices[0]
+    if start_of_each_frame < 12:
+        warnings.warn("As of 14.10.2020, the first several frames are very bad! Do you really mean to use these?")
     end_of_each_frame = which_slices[-1]
     # alpha *= 1.0 / len(which_slices) # Also takes a mean
 
     i_frame_count = 0
     img = np.zeros((len(which_slices), frame_height, frame_width))
 
-    print(f'Taking a max of {len(which_slices)}, starting at {start_of_each_frame}' )
+    print(f'Taking a max of {len(which_slices)} slices, starting at {start_of_each_frame}' )
 
     with tifffile.TiffFile(video_fname, multifile=False) as tif:
         for i, page in enumerate(tif.pages):
             this_slice = i % num_slices
-            if this_slice not in which_slices:
+            # Skip 0th frame
+            if this_slice not in which_slices or i < num_slices:
                 continue
-            print(f'Page {i}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames}')
+            print(f'Page {i}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {this_slice - start_of_each_frame}')
 
             img[this_slice - start_of_each_frame,...] = page.asarray()
-            # if this_slice == start_of_each_frame:
-            #     # Overwrite on the first read
-            #     img = page.asarray()
-            # else:
-            #     img += page.asarray()
+
+            # plt.imshow(page.asarray())
+            # plt.show()
 
             if this_slice == end_of_each_frame:
                 final_img = np.max((alpha*img), axis=0).astype('uint8')
