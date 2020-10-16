@@ -372,7 +372,7 @@ def extract_all_traces(annotation_fname,
             # Each table entry has: x, y, probability
             num_neurons = len(dlc_table[0][1])//3
         which_neurons = range(num_neurons)
-        print(f'Found annotations for {len(num_neurons)} neurons')
+        print(f'Found annotations for {num_neurons} neurons')
 
     # Output object
     all_traces = []
