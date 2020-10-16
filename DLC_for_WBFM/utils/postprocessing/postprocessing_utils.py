@@ -329,7 +329,7 @@ def visualize_all_traces(all_traces, all_names=None):
         plt.subplot(122)
         plt.plot(t_dict['gcamp'])
         plt.title(f'gcamp for neuron {all_names[i]}')
-        
+
 
 
 ##
@@ -340,7 +340,7 @@ def extract_all_traces(annotation_fname,
                        video_fname_mcherry,
                        video_fname_gcamp,
                        which_neurons=None,
-                       num_frames=500,
+                       num_frames=None,
                        crop_sz=(19,19),
                        params=None):
     """
@@ -382,13 +382,16 @@ def extract_all_traces(annotation_fname,
     """
 
     # Get the number of neurons
-    if which_neurons is None:
+    if which_neurons is None or num_frames is None:
         with h5py.File(annotation_fname, 'r') as dlc_dat:
             dlc_table = dlc_dat['df_with_missing']['table']
             # Each table entry has: x, y, probability
-            num_neurons = len(dlc_table[0][1])//3
-        which_neurons = range(num_neurons)
-        print(f'Found annotations for {num_neurons} neurons')
+            if which_neurons is None:
+                num_neurons = len(dlc_table[0][1])//3
+                which_neurons = range(num_neurons)
+            if num_frames is None:
+                num_frames = len(dlc_table)
+        print(f'Found annotations for {num_neurons} neurons and {num_frames} frames')
 
     # Initialize
     all_traces = []
