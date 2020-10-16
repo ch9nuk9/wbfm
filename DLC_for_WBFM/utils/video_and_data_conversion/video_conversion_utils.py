@@ -124,8 +124,9 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
 
 
 
-def write_video_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16', which_slice=None,
-                                     num_frames = None, fps=10, frame_width = 608, frame_height = 610, num_slices=33,
+def write_video_from_ome_file_subset(video_fname, out_fname, which_slice=None,
+                                     num_frames = None, fps=10, frame_width = None, frame_height = None,
+                                     num_slices=33,
                                      alpha=1.0):
     """
     Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
@@ -139,19 +140,27 @@ def write_video_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16',
     Input-Output:
         ome.tiff -> .avi
     """
+
+    if frame_width is None:
+        # Get the exact frame size
+        tif = tifffile.TiffFile(input_fname)
+        with tifffile.TiffFile(input_fname) as tif:
+            frame_height, frame_width = tif.pages[0].shape
+            alpha =  0.9 * 255.0 / np.max(tif.pages[0].asarray())
+        # TODO: also get the number of z-slices
+
+    # Set up the video writer
     #ALSO NOT WORKKING: , FRWA, FRWD, IRAW, LAGS, LCW2, PIMJ, ASLC "-1",
     fourcc=0
     video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
-#     with cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False) as video_out:
+
     with tifffile.TiffFile(video_fname, multifile=False) as tif:
         for i, page in enumerate(tif.pages):
             if i % num_slices != which_slice:
                 continue
             print(f'Page {i}/{len(tif.pages)}')
             img = page.asarray()
-            #img=cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
-#             img_uint8 = cv2.convertScaleAbs(img, alpha=alpha)#(255.0/65535.0))
-#             video_out.write(img)
+            # Convert to proper format, and write single frame
             img = (alpha*img).astype('uint8')
             video_out.write(img)
             if num_frames is not None and i > num_frames: break
