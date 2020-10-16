@@ -372,26 +372,31 @@ def extract_all_traces(annotation_fname,
             # Each table entry has: x, y, probability
             num_neurons = len(dlc_table[0][1])//3
         which_neurons = range(num_neurons)
+        print(f'Found annotations for {len(num_neurons)} neurons')
 
     # Output object
     all_traces = []
 
     # Loop through and get traces of gcamp and mcherry
     for which_neuron in which_neurons:
+        print(f'Starting analysis of neuron {i}/{len(which_neurons)}...')
         mcherry_dat = extract_single_trace(annotation_fname,
                                  video_fname_mcherry,
                                  which_neuron=which_neuron,
                                  num_frames=num_frames,
                                  crop_sz=crop_sz,
                                  params=params)
+        print('Finished extracting mCherry')
         gcamp_dat = extract_single_trace(annotation_fname,
                                   video_fname_gcamp,
                                   which_neuron=which_neuron,
                                   num_frames=num_frames,
                                   crop_sz=crop_sz,
                                   params=params)
+        print('Finished extracting GCaMP')
         all_traces.append({'mcherry':mcherry_dat,
                            'gcamp':gcamp_dat})
+    print("Finished all neurons")
 
     return all_traces
 
