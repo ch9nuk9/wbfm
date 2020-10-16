@@ -12,6 +12,7 @@ from matplotlib.ticker import NullFormatter
 from matplotlib import transforms
 from dNMF.Demix.dNMF import dNMF
 import torch
+import time
 
 # from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.animation as animation
@@ -315,6 +316,21 @@ def plot3d_with_max_and_hist(dat, z, t, max_ind):
     axHisty.plot(np.flip(np.max(frame, axis=1)), range(frame.shape[0]))#, transform=base+rot)
 
 
+def visualize_all_traces(all_traces, all_names=None):
+    if all_names is None:
+        all_names = [str(i) for i in range(len(all_traces))]
+    for i, t_dict in enumerate(all_traces):
+        plt.figure(figsize=(35,5))
+
+        plt.subplot(121)
+        plt.plot(t_dict['mcherry'])
+        plt.title(f'mcherry for neuron {all_names[i]}')
+
+        plt.subplot(122)
+        plt.plot(t_dict['gcamp'])
+        plt.title(f'gcamp for neuron {all_names[i]}')
+        
+
 
 ##
 ## Full workflow
@@ -374,8 +390,9 @@ def extract_all_traces(annotation_fname,
         which_neurons = range(num_neurons)
         print(f'Found annotations for {num_neurons} neurons')
 
-    # Output object
+    # Initialize
     all_traces = []
+    start = time.time()
 
     # Loop through and get traces of gcamp and mcherry
     for which_neuron in which_neurons:
@@ -396,7 +413,8 @@ def extract_all_traces(annotation_fname,
         print('Finished extracting GCaMP')
         all_traces.append({'mcherry':mcherry_dat,
                            'gcamp':gcamp_dat})
-    print("Finished all neurons")
+    end = time.time()
+    print('Finished in ' + str(end-start) + ' seconds')
 
     return all_traces
 
