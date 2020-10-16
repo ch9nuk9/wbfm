@@ -124,10 +124,10 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
 
 
 
-def write_video_from_ome_file_subset(video_fname, out_fname, which_slice=None,
+def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None,
                                      num_frames = None, fps=10, frame_width = None, frame_height = None,
                                      num_slices=33,
-                                     alpha=1.0):
+                                     alpha=None):
     """
     Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
 
@@ -146,19 +146,23 @@ def write_video_from_ome_file_subset(video_fname, out_fname, which_slice=None,
         tif = tifffile.TiffFile(input_fname)
         with tifffile.TiffFile(input_fname) as tif:
             frame_height, frame_width = tif.pages[0].shape
-            alpha =  0.9 * 255.0 / np.max(tif.pages[0].asarray())
+            if alpha is None:
+                alpha =  0.9 * 255.0 / np.max(tif.pages[0].asarray())
         # TODO: also get the number of z-slices
 
+    if alpha is None:
+        alpha = 1.0
     # Set up the video writer
     #ALSO NOT WORKKING: , FRWA, FRWD, IRAW, LAGS, LCW2, PIMJ, ASLC "-1",
     fourcc=0
-    video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
+    video_out = cv2.VideoWriter(output_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
 
-    with tifffile.TiffFile(video_fname, multifile=False) as tif:
+    with tifffile.TiffFile(input_fname, multifile=False) as tif:
         for i, page in enumerate(tif.pages):
             if i % num_slices != which_slice:
                 continue
             print(f'Page {i}/{len(tif.pages)}')
+            # Bottleneck line
             img = page.asarray()
             # Convert to proper format, and write single frame
             img = (alpha*img).astype('uint8')
