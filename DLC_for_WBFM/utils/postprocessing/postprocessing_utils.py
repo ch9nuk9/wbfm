@@ -366,16 +366,18 @@ def extract_all_traces(annotation_fname,
     """
 
     # Get the number of neurons
-    with h5py.File(annotation_fname, 'r') as dlc_dat:
-        dlc_table = dlc_dat['df_with_missing']['table']
-        # Each table entry has: x, y, probability
-        num_neurons = dlc_table[0][1]//3
+    if which_neurons is None:
+        with h5py.File(annotation_fname, 'r') as dlc_dat:
+            dlc_table = dlc_dat['df_with_missing']['table']
+            # Each table entry has: x, y, probability
+            num_neurons = dlc_table[0][1]//3
+        which_neurons = range(num_neurons)
 
     # Output object
     all_traces = []
 
     # Loop through and get traces of gcamp and mcherry
-    for which_neuron in range(num_neurons):
+    for which_neuron in which_neurons:
         mcherry_dat = extract_single_trace(annotation_fname,
                                  video_fname_mcherry,
                                  which_neuron=which_neuron,
