@@ -127,13 +127,15 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
 def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None,
                                      num_frames = None, fps=10, frame_width = None, frame_height = None,
                                      num_slices=33,
-                                     alpha=None):
+                                     alpha=None,
+                                     actually_write=True):
     """
     Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
 
     Uses cv2 for video writing, which requires exact frame size information. This can be found by reading a single page of a TiffFile
 
     To get good output videos if the data is not uint8, 'alpha' will probably have to be set as max(data)/255.0
+        By default 'alpha' is calculated from the first frame, but the first several may be outliers
 
     Writes sequentially, and only reads one frame at a time
 
@@ -141,13 +143,17 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
         ome.tiff -> .avi
     """
 
+    if not actually_write:
+        print("NOT ACTUALLY WRITING A FILE")
+
     if frame_width is None:
         # Get the exact frame size
-        tif = tifffile.TiffFile(input_fname)
         with tifffile.TiffFile(input_fname) as tif:
             frame_height, frame_width = tif.pages[0].shape
+            print(f'Read shape of (H,W) = ({frame_height}, {frame_width})')
             if alpha is None:
                 alpha =  0.9 * 255.0 / np.max(tif.pages[0].asarray())
+                print(f'Calculated alpha as {alpha}')
         # TODO: also get the number of z-slices
 
     if alpha is None:
@@ -166,7 +172,8 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
             img = page.asarray()
             # Convert to proper format, and write single frame
             img = (alpha*img).astype('uint8')
-            video_out.write(img)
+            if actually_write:
+                video_out.write(img)
             if num_frames is not None and i > num_frames: break
     video_out.release()
 
