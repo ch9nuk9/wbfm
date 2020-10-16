@@ -370,7 +370,7 @@ def extract_all_traces(annotation_fname,
         with h5py.File(annotation_fname, 'r') as dlc_dat:
             dlc_table = dlc_dat['df_with_missing']['table']
             # Each table entry has: x, y, probability
-            num_neurons = dlc_table[0][1]//3
+            num_neurons = len(dlc_table[0][1])//3
         which_neurons = range(num_neurons)
 
     # Output object
