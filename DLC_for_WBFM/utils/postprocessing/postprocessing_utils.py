@@ -318,6 +318,80 @@ def plot3d_with_max_and_hist(dat, z, t, max_ind):
 ## Full workflow
 ##
 
+def extract_all_traces(annotation_fname,
+                       video_fname_mcherry,
+                       video_fname_gcamp,
+                       which_neurons=None,
+                       num_frames=500,
+                       crop_sz=(19,19),
+                       params=None):
+    """
+    Extracts a trace from a single neuron in 2d using dNMF from one movie
+
+    Input
+    ----------
+    annotation_fname : str
+        .h5 produced by DeepLabCut with annotations
+
+    video_fname_mcherry : str
+        .avi file with comparison channel.
+        As of 16.10.2020 this is 'mcherry'
+
+    video_fname_gcamp : str
+        .avi file with actual neuron activities
+        As of 16.10.2020 this is 'gcamp'
+
+    which_neuron : [int,..]
+        Indices of the neurons, as determined by the original annotation
+        By default, extracts all tracked neurons
+
+    num_frames : int
+        How many frames to extract
+
+    crop_sz : (int, int)
+        Number of pixels to use for traces determination.
+        A Gaussian is fit within this size, so it should contain the entire neuron
+
+    params : dict
+        Parameters for final trace extraction, using a Gaussian.
+        See 'dNMF' docs for explanation of parameters
+
+    Output
+    ----------
+    all_traces : [dict,...]
+        Array of dicts, where the keys are 'mcherry' and 'gcamp'
+        Each final element is a 1d array
+    """
+
+    # Get the number of neurons
+    with h5py.File(annotation_fname, 'r') as dlc_dat:
+        dlc_table = dlc_dat['df_with_missing']['table']
+        # Each table entry has: x, y, probability
+        num_neurons = dlc_table[0][1]//3
+
+    # Output object
+    all_traces = []
+
+    # Loop through and get traces of gcamp and mcherry
+    for which_neuron in range(num_neurons):
+        mcherry_dat = extract_single_trace(annotation_fname,
+                                 video_fname_mcherry,
+                                 which_neuron=which_neuron,
+                                 num_frames=num_frames,
+                                 crop_sz=crop_sz,
+                                 params=params)
+        gcamp_dat = extract_single_trace(annotation_fname,
+                                  video_fname_gcamp,
+                                  which_neuron=which_neuron,
+                                  num_frames=num_frames,
+                                  crop_sz=crop_sz,
+                                  params=params)
+        all_traces.append({'mcherry':mcherry_dat,
+                           'gcamp':gcamp_dat})
+
+    return all_traces
+
+
 def extract_single_trace(annotation_fname,
                          video_fname,
                          which_neuron=0,
@@ -370,6 +444,9 @@ def extract_single_trace(annotation_fname,
     dnmf_obj.optimize(lr=1e-4,n_iter=20,n_iter_c=2)
 
     return dnmf_obj.C[0,:]
+
+
+
 
 def dNMF_default_from_DLC(dat, crop_sz, params=None):
     """
