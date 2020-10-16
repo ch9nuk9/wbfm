@@ -379,7 +379,7 @@ def extract_all_traces(annotation_fname,
 
     # Loop through and get traces of gcamp and mcherry
     for which_neuron in which_neurons:
-        print(f'Starting analysis of neuron {i}/{len(which_neurons)}...')
+        print(f'Starting analysis of neuron {which_neuron}/{len(which_neurons)}...')
         mcherry_dat = extract_single_trace(annotation_fname,
                                  video_fname_mcherry,
                                  which_neuron=which_neuron,
