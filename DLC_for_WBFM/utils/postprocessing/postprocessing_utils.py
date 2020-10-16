@@ -10,6 +10,8 @@ from itertools import product
 from math import ceil
 from matplotlib.ticker import NullFormatter
 from matplotlib import transforms
+from dNMF.Demix.dNMF import dNMF
+import torch
 
 # from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.animation as animation
