@@ -18,6 +18,9 @@ def write_video_from_ome_folder(num_frames, folder_name, out_fname,
     Write a video from a folder of ome-tiff files, where each one is a single volume
 
     'out_fname' should have te file extension included. Recommended: .avi
+
+    Input-Output:
+        /*ome.tiff -> .avi
     """
 
     all_fnames = os.listdir(folder_name)
@@ -56,6 +59,11 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
                              img_format="TZXY"):
     """
     Takes a video filename, which is a single large ome-tiff file, and saves a smaller file in the folder given by 'out_fname'
+
+    Note: reads data into memory as np.array(), then saves at the end
+
+    Input-Output:
+        ome.tiff -> ome.tiff
     """
 
     # Read basic metadata
@@ -126,6 +134,10 @@ def write_video_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16',
 
     To get good output videos if the data is not uint8, 'alpha' will probably have to be set as max(data)/255.0
 
+    Writes sequentially, and only reads one frame at a time
+
+    Input-Output:
+        ome.tiff -> .avi
     """
     #ALSO NOT WORKKING: , FRWA, FRWD, IRAW, LAGS, LCW2, PIMJ, ASLC "-1",
     fourcc=0
@@ -160,6 +172,8 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
 
     Note that I skip the first frame, because it is significantly different
 
+    Input-Output:
+        ome.tiff -> .avi
     """
     # Set up the video writer
     fourcc=0
@@ -216,6 +230,9 @@ def write_numpy_as_avi(data, fname="output.avi", fps=10, dtype='uint16', alpha=N
         unless alpha is passed
 
     Assumes color is the last dimension; checks for this
+
+    Input-Output:
+        np.array() -> .avi
     """
     if ".avi" not in fname:
         fname = fname + ".avi"
