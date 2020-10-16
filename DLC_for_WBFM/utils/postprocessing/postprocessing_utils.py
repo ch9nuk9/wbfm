@@ -464,7 +464,7 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None):
                   'K':20, 'T':100, 'roi_window':[4,4,0]}
 
     # Build position and convert to pytorch
-    positions =[list(sz + (0,)),[0, 0, 0]] # Add a dummy position
+    positions =[list(crop_sz + (0,)),[0, 0, 0]] # Add a dummy position
     positions = np.expand_dims(positions,2)/2.0 # Return the center of the crop
     positions =  torch.tensor(positions).float()
 
