@@ -483,6 +483,6 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None):
               'method':'1->t', 'verbose':False}
 
     # Finally, create the analysis object
-    dnmf_obj = dNMF(dat, params=params)
+    dnmf_obj = dNMF(dat_torch, params=params)
 
     return dnmf_obj
