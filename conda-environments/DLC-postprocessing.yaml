@@ -28,8 +28,8 @@ dependencies:
   - nb_conda
   - opencv
   - scikit-learn
-  - scikit-image
   - scipy
+  - scikit-image
   - pytorch #=1.6.0=py3.8_cuda102_cudnn7_0
   - torchvision #=0.7.0=py38_cu102
   - cudatoolkit=10.2 #=10.2.89=h74a9793_1
