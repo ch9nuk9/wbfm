@@ -487,7 +487,7 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None):
         params = {'n_trials':5, 'noise_level':1e-2, 'sigma_inv':.2,
                   'radius':10, 'step_S':.1, 'gamma':0, 'stride_factor':2, 'density':.1, 'varfact':5,
                   'traj_means':[.0,.0,.0], 'traj_variances':[2e-4,2e-4,1e-5], 'sz':[20,20,1],
-                  'K':20, 'T':100, 'roi_window':[4,4,0]}
+                  'K':20, 'T':100, 'roi_window':[4,4,0], 'use_gpu':True}
 
     # Build position and convert to pytorch
     positions =[list(crop_sz + (0,)),[0, 0, 0]] # Add a dummy position
