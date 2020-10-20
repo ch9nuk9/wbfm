@@ -315,21 +315,86 @@ def plot3d_with_max_and_hist(dat, z, t, max_ind):
 #     base = plt.gca().transData
     axHisty.plot(np.flip(np.max(frame, axis=1)), range(frame.shape[0]))#, transform=base+rot)
 
+##
+## Functions for use with data from 'extract_all_traces'
+##
 
-def visualize_all_traces(all_traces, all_names=None):
-    if all_names is None:
-        all_names = [str(i) for i in range(len(all_traces))]
+def visualize_all_traces(all_traces, all_names=None,
+                         to_save=False):
+    all_names = check_default_names(all_names, len(all_traces))
+
     for i, t_dict in enumerate(all_traces):
-        plt.figure(figsize=(35,5))
+        visualize_mcherry_and_gcamp(t_dict, name=all_names[i])
+        if to_save:
+            plt.savefig(f'traces_{all_names[i]}')
 
-        plt.subplot(121)
-        plt.plot(t_dict['mcherry'])
-        plt.title(f'mcherry for neuron {all_names[i]}')
 
-        plt.subplot(122)
-        plt.plot(t_dict['gcamp'])
-        plt.title(f'gcamp for neuron {all_names[i]}')
+def visualize_traces_with_reference(all_traces,
+                                    reference_ind, reference_name,
+                                    all_names=None,
+                                    to_normalize=True,
+                                    to_save=False):
+    """
+    Plot all neurons on a reference, given by reference_ind
+    """
+    all_names = check_default_names(all_names, len(all_traces))
 
+    reference_trace = all_traces[reference_ind]
+
+    for i, t_dict in enumerate(all_traces):
+        if i == reference_ind:
+            continue
+        # Plot looped trace and reference
+        ax1, ax2 = visualize_mcherry_and_gcamp(reference_trace, reference_name,
+                                               make_new_title=False,
+                                               to_normalize=to_normalize)
+        visualize_mcherry_and_gcamp(t_dict, all_names[i],
+                                    make_new_fig=False,
+                                    make_new_title=False,
+                                    ax1=ax1, ax2=ax2,
+                                    to_normalize=to_normalize)
+        if to_save:
+            plt.savefig(f'traces_{all_names[i]}_ref_{reference_name}')
+
+
+def visualize_mcherry_and_gcamp(t_dict, name,
+                                make_new_fig=True,
+                                make_new_title=True,
+                                ax1 = None, ax2 = None,
+                                to_normalize=False):
+    if make_new_fig:
+        plt.figure(figsize=(35,5))#, fontsize=12)
+
+    if make_new_fig:
+        ax1 = plt.subplot(121)
+    dat = t_dict['mcherry']
+    if to_normalize:
+        dat = dat / np.max(np.array(dat))
+    if make_new_title:
+        ax1.plot(dat)
+        plt.title(f'mcherry for neuron {name}')
+    else:
+        ax1.plot(dat, label=f'mcherry for neuron {name}')
+        ax1.legend()
+
+    if make_new_fig:
+        ax2 = plt.subplot(122)
+    dat = t_dict['gcamp']
+    if to_normalize:
+        dat = dat / np.max(np.array(dat))
+    if make_new_title:
+        ax2.plot(dat)
+        plt.title(f'gcamp for neuron {name}')
+    else:
+        ax2.plot(dat, label=f'gcamp for neuron {name}')
+        ax2.legend()
+
+    return ax1, ax2
+
+def check_default_names(all_names, num_neurons):
+    if all_names is None:
+        all_names = [str(i) for i in range(num_neurons)]
+    return all_names
 
 
 ##
@@ -487,11 +552,10 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None):
         params = {'n_trials':5, 'noise_level':1e-2, 'sigma_inv':.2,
                   'radius':10, 'step_S':.1, 'gamma':0, 'stride_factor':2, 'density':.1, 'varfact':5,
                   'traj_means':[.0,.0,.0], 'traj_variances':[2e-4,2e-4,1e-5], 'sz':[20,20,1],
-                  'K':20, 'T':100, 'roi_window':[4,4,0], 'use_gpu':True,
-                  'verbose':True}
+                  'K':20, 'T':100, 'roi_window':[4,4,0]}
 
     # Build position and convert to pytorch
-    positions =[list(crop_sz + (0,)),[0, 0, 0]] # Add a dummy position
+    positions =[list(crop_sz + (0,)),[1, 1, 0]] # Add a dummy position
     positions = np.expand_dims(positions,2)/2.0 # Return the center of the crop
     positions =  torch.tensor(positions).float()
 
@@ -502,7 +566,7 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None):
     params = {'positions':positions[:,:,0][:,:,np.newaxis],\
               'radius':params['radius'],'step_S':params['step_S'],'gamma':params['gamma'],\
               'use_gpu':False,'initial_p':positions[:,:,0],'sigma_inv':params['sigma_inv'],\
-              'method':'1->t', 'verbose':False}
+              'method':'1->t', 'verbose':True, 'use_gpu':False}
 
     # Finally, create the analysis object
     dnmf_obj = dNMF(dat_torch, params=params)
