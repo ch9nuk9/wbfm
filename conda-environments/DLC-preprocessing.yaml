@@ -27,6 +27,7 @@ dependencies:
   - scikit-image
   - tensorflow==1.13.1
   - wxpython<4.1.0
+  - lxml
   - pip:
     - tifffile
     - deeplabcut
