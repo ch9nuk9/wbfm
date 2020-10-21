@@ -59,8 +59,8 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
                              img_format="TZXY"):
     """
     Takes a video filename, which is a single large ome-tiff file, and saves a smaller file in the folder given by 'out_fname'
-
-    Note: reads data into memory as np.array(), then saves at the end
+        Note: Reads the metadata first... which may take a long time
+        Note: reads data into memory as np.array(), then saves at the end
 
     Input-Output:
         ome.tiff -> ome.tiff
@@ -147,7 +147,7 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
         print("NOT ACTUALLY WRITING A FILE")
 
     if frame_width is None:
-        # Get the exact frame size
+        # Get the exact frame size from the first page=slice
         with tifffile.TiffFile(input_fname) as tif:
             frame_height, frame_width = tif.pages[0].shape
             print(f'Read shape of (H,W) = ({frame_height}, {frame_width})')
@@ -209,7 +209,7 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
 
     # Set up the counting indices
     start_of_each_frame = which_slices[0]
-    if start_of_each_frame < 12:
+    if start_of_each_frame < 5:
         warnings.warn("As of 14.10.2020, the first several frames are very bad! Do you really mean to use these?")
     end_of_each_frame = which_slices[-1]
     # alpha *= 1.0 / len(which_slices) # Also takes a mean
@@ -228,9 +228,6 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
             print(f'Page {i}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {this_slice - start_of_each_frame}')
 
             img[this_slice - start_of_each_frame,...] = page.asarray()
-
-            # plt.imshow(page.asarray())
-            # plt.show()
 
             if this_slice == end_of_each_frame:
                 final_img = np.max((alpha*img), axis=0).astype('uint8')
