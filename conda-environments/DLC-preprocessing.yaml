@@ -25,5 +25,7 @@ dependencies:
   - opencv
   - scikit-learn
   - scikit-image
+  - tensorflow
   - pip:
     - tifffile
+    - deeplabcut
