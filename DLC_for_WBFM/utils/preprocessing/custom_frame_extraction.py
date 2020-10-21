@@ -104,7 +104,11 @@ def extract_volumes_from_MATLAB_output(path_config_file, which_vol=None):
         print('Saved volume to {}\\{}'.format(output_path, output_name))
 
 
-def extract_volume_from_tiff_in_dlc_project(path_config_file, nz, which_vol=None, which_slice=None):
+def extract_volume_from_tiff_in_dlc_project(path_config_file, nz,
+                                            video_fname=None,
+                                            which_vol=None,
+                                            which_slice=None,
+                                            actually_write=True):
     """
     Takes a video filename, which is a large ome-tiff file, and saves a volume in the 'labeled-data' folder
         Can also save
@@ -114,6 +118,8 @@ def extract_volume_from_tiff_in_dlc_project(path_config_file, nz, which_vol=None
     if which_slice is not None:
         saves single slices (instead of full volumes)
     """
+    if not actually_write:
+        print("NOT ACTUALLY WRITING")
 
     if which_slice is None:
         saving_str = "volume"
@@ -124,8 +130,10 @@ def extract_volume_from_tiff_in_dlc_project(path_config_file, nz, which_vol=None
     cfg = auxiliaryfunctions.read_config(config_file)
     print("Config file read successfully.")
 
-    video_fname = [i for i in cfg['video_sets'].keys()][0] # Assume one video for now (will be giant, ~3GB)
-    print(video_fname)
+    dlc_video_fname = [i for i in cfg['video_sets'].keys()][0] # Assume one video for now (will be giant, ~3GB)
+    if video_fname is None:
+        video_fname = dlc_video_fname # Otherwise use custom video location
+    # print(video_fname)
 
     # Get volume indices to save
     if which_vol is None:
@@ -143,13 +151,15 @@ def extract_volume_from_tiff_in_dlc_project(path_config_file, nz, which_vol=None
         print("Converted {} indices: {} to {} (not including last frame)".format(saving_str, vol_indices[0], vol_indices[-1]))
 
         # Read and make output name
-        this_volume = tifffile.imread(video_fname, key=vol_indices)
+        if actually_write:
+            this_volume = tifffile.imread(video_fname, key=vol_indices)
         output_name = 'img{}.tif'.format(i_vol)
 
         # Save in output folder
-        fname = Path(video_fname)
+        fname = Path(dlc_video_fname)
         output_path = os.path.join(Path(path_config_file).parents[0],'labeled-data',fname.stem)
 
-        tifffile.imsave(os.path.join(str(output_path),output_name), this_volume)
+        if actually_write:
+            tifffile.imsave(os.path.join(str(output_path),output_name), this_volume)
 
         print('Saved {} to {}'.format(saving_str, os.path.join(output_path, output_name)))
