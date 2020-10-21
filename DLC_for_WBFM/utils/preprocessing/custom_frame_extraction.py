@@ -106,7 +106,9 @@ def extract_volumes_from_MATLAB_output(path_config_file, which_vol=None):
 
 def extract_volumes_from_charlie_output(path_config_file, nz, which_vol=None, which_slice=None):
     """
-    Takes a video filename, which is a large ome-tiff file, and saves a volume in the folder given by 'out_folder'
+    Takes a video filename, which is a large ome-tiff file, and saves a volume in the 'labeled-data' folder
+
+    Expects a DeepLabCut project directory, and the video to be present in the videos/ directory
 
     if which_slice is not None:
         saves single slices (instead of full volumes)
