@@ -180,7 +180,7 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
 
 
 def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16', which_slices=None,
-                                                start_frame=None, num_frames=None,
+                                                start_volume=None, num_frames=None,
                                                 fps=10, frame_width=608, frame_height=610, num_slices=33,
                                                 alpha=1.0):
     """
@@ -191,7 +191,7 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
 
     To get good output videos if the data is not uint8, 'alpha' will probably have to be set as max(data)/255.0
 
-    Note that I skip the first frame by default, because it is significantly different
+    Note that I skip the first volume by default, because it is significantly different
 
     Input-Output:
         ome.tiff -> .avi
@@ -200,9 +200,12 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
     fourcc=0
     video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
 
-    # By default skip the first frame
-    if start_frame is None:
-        start_frame = num_slices
+    # By default skip the first volume
+    if start_volume is None:
+        start_volume = num_slices
+    if start_volume % num_slices != 0:
+        print(f'Converting volume index {start_volume} to frame index {start_volume * num_slices}')
+        start_volume = start_volume * num_slices
 
     # Set up the counting indices
     start_of_each_frame = which_slices[0]
@@ -220,7 +223,7 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
         for i, page in enumerate(tif.pages):
             this_slice = i % num_slices
             # Skip some frames
-            if i < start_frame or this_slice not in which_slices:
+            if i < start_volume or this_slice not in which_slices:
                 continue
             print(f'Page {i}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {this_slice - start_of_each_frame}')
 
