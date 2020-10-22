@@ -86,7 +86,7 @@ def icy_xml_to_dlc(path_config_file,
 
     # Last: save
     # scorer = "Charlie"
-    scorer = "test"
+    # scorer = "test"
     output_path = os.path.join(project_folder, 'labeled-data', xml_folder)
     dataFrame.to_csv(os.path.join(output_path,"CollectedData_" + scorer + ".csv"))
     dataFrame.to_hdf(os.path.join(output_path,"CollectedData_" + scorer + '.h5'),'df_with_missing',format='table', mode='w')
