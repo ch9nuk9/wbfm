@@ -4,6 +4,7 @@ import os
 import pathlib
 import numpy as np
 import deeplabcut
+import csv
 
 ##
 ## Convert from Icy .xml files to DLC .h5 and .csv files
@@ -92,7 +93,10 @@ def icy_xml_to_dlc(path_config_file,
     deeplabcut.convertcsv2h5(path_config_file, userfeedback=False)
     # dataFrame.to_hdf(os.path.join(output_path,"CollectedData_" + scorer + '.h5'),'df_with_missing',format='table', mode='w')
 
-    print(f"Finished; wrote {i_neuron_name} neurons")
+    print(f"Finished writing .csv and .h5; wrote {i_neuron_name} neurons")
+
+    csv_annotations2config_names(path_config_file, len(coord_names))
+    print("Finished updating config file with")
 
     return dataFrame
 
@@ -162,7 +166,7 @@ def find_xml_in_project(path_config_file):
 ## Synchronizing the config file
 ##
 
-def csv_annotations2config_names(path_config_file, num_dims=2, actually_write=False):
+def csv_annotations2config_names(path_config_file, num_dims=2, actually_write=True):
     """
     Automatically updates the config file with the proper number of neurons, and deletes any other default bodyparts.
     Only affects the "bodyparts" field
@@ -216,7 +220,7 @@ def csv_annotations2config_names(path_config_file, num_dims=2, actually_write=Fa
 
 def get_annotations_converted_from_xml(path_config_file):
 
-    _, xml_folder, _, _ = find_xml_in_project(path_config_file)
+    project_folder, xml_folder, _, _ = find_xml_in_project(path_config_file)
     config_file = pathlib.Path(path_config_file).resolve()
     cfg = deeplabcut.auxiliaryfunctions.read_config(config_file)
     scorer = cfg['scorer']
