@@ -1,24 +1,29 @@
 from lxml import etree as ET
 import pandas as pd
-
-
+import os
+import pathlib
+import numpy as np
+import deeplabcut
 
 ##
 ## Convert from Icy .xml files to DLC .h5 and .csv files
 ##
 
 
-def icy_xml_to_dlc(dlc_template_fname,
-                   icy_annotation_fname,
+def icy_xml_to_dlc(path_config_file,
+                   include_which_z_slices=None,
+                   icy_annotation_fname=None,
                    using_original_fnames=False,
                    save_z_coordinate=False,
-                   output_path='.'):
+                   dlc_template_fname=None):
     """
     Converts 3d annotations done with the Icy GUI to DLC format
 
     Parameters
     ----------
-    dlc_template_fname : Template with the CORRECT FILE NAMES
+    path_config_file : Path to config file of the project
+
+    icy_annotation_fname : Icy annotations; by default, searches in the project
 
     Examples
     --------
@@ -30,12 +35,22 @@ def icy_xml_to_dlc(dlc_template_fname,
     else:
         coord_names = ['x', 'y']
 
-    # Read in the template DLC tracks
-    df_original = pd.read_hdf(dlc_fname)
-    df_original = df_original.sort_index()
+    config_file = pathlib.Path(path_config_file).resolve()
+    cfg = deeplabcut.auxiliaryfunctions.read_config(config_file)
+    scorer = cfg['scorer']
 
-    all_files = df_original.index
-    scorer = df_original.columns.levels[0][0]
+    # Read in the template DLC tracks
+    if dlc_template_fname is not None:
+        df_original = pd.read_hdf(dlc_template_fname)
+        df_original = df_original.sort_index()
+
+        scorer = df_original.columns.levels[0][0]
+
+        relativeimagenames=df_original.index
+
+    # Get folder with annotations
+    project_folder, xml_folder, xml_filename, png_fnames = find_xml_in_project(path_config_file)
+    icy_annotation_fname = os.path.join(xml_folder, xml_filename)
 
     # Import XML
     # TODO: detect from the config file?
@@ -45,16 +60,14 @@ def icy_xml_to_dlc(dlc_template_fname,
     print("Found {} group(s) of tracks".format(num_trackgroups))
 
     # Write dataframe in DLC format
-    if using_original_fnames:
-        relativeimagenames=df_original.index
-    else:
-        folder_1 = 'labeled-data'
-        folder_2 = 'test_1000frames_13slice'
-        fname_template = 'img{:2d}.png'
-        num_files = 25
-        relativeimagenames = ['/'.join((folder_1, folder_2, fname_template.format(i))).replace(' ', '0') for i in range(num_files)]
+    if not using_original_fnames:
+        relativeimagenames = []
+        xml_name = os.path.basename(xml_folder)
+        for f in png_fnames:
+            relativeimagenames.append(os.path.sep.join(['labeled-data',xml_name,f]))
+        # relativeimagenames = ['/'.join((folder_1, folder_2, fname_template.format(i))).replace(' ', '0') for i in range(num_files)]
+    print("Relative image names:")
     print(relativeimagenames)
-    print("Assumes filenames in the DLC annotation are same as the Icy tracker, after alphabetizing")
 
     dataFrame = None
     i_neuron_name = 0
@@ -72,6 +85,9 @@ def icy_xml_to_dlc(dlc_template_fname,
                 i_neuron_name = i_neuron_name + 1
 
     # Last: save
+    # scorer = "Charlie"
+    scorer = "test"
+    output_path = os.path.join(project_folder, 'labeled-data', xml_folder)
     dataFrame.to_csv(os.path.join(output_path,"CollectedData_" + scorer + ".csv"))
     dataFrame.to_hdf(os.path.join(output_path,"CollectedData_" + scorer + '.h5'),'df_with_missing',format='table', mode='w')
 
@@ -93,10 +109,14 @@ def add_detection_to_df(this_detections,
         except:
             print("Track not long enough; skipping: ", bodypart)
             return
+        # TODO: Check whether the annotation is too far off the tracking slice
+        # this_z = int(float(this_track.get('z')))
+        # if include_which_z_slices is not None and this_z not in include_which_z_slices:
+        #     continue
         if save_z_coordinate:
             coords[i2,:] = np.array([int(float(this_track.get('x'))),
                                      int(float(this_track.get('y'))),
-                                     int(float(this_track.get('z'))) ])
+                                     this_z ])
         else:
             coords[i2,:] = np.array([int(float(this_track.get('x'))),
                                      int(float(this_track.get('y')))])
@@ -109,3 +129,26 @@ def add_detection_to_df(this_detections,
     frame = pd.DataFrame(coords, columns = index, index = relativeimagenames)
 
     return frame
+
+
+def find_xml_in_project(path_config_file):
+    project_folder = pathlib.Path(path_config_file).parent
+    all_labeled_folders = os.listdir(os.path.join(project_folder, 'labeled-data'))
+
+    for folder in all_labeled_folders:
+        xml_folder = os.path.join(project_folder, 'labeled-data', folder)
+        all_files = os.listdir(xml_folder)
+
+        xml_fname = None
+        png_fnames = []
+        for f in all_files:
+            if '.xml' in f:
+                xml_fname = f # Assume only one
+            elif '.png' in f:
+                png_fnames.append(f)
+
+        if xml_fname is not None:
+            print(f"Found .xml annotations: {xml_fname}")
+            break
+
+    return project_folder, xml_folder, xml_fname, png_fnames
