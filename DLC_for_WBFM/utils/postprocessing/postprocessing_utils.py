@@ -108,6 +108,8 @@ def get_crop_coords3d(center, crop_sz=(28,28,10), clip_sz=None):
 def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28,28,10), sz_4d=(100,39)):
     """
     There is a lot of switching with 'xy' and the rows and columns of the video
+
+    Reads the entire file into memory...
     """
 
     # Pre-allocate in proper size for future
