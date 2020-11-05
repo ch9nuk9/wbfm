@@ -182,7 +182,8 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
 def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16', which_slices=None,
                                                 start_volume=None, num_frames=None,
                                                 fps=10, frame_width=608, frame_height=610, num_slices=33,
-                                                alpha=1.0):
+                                                alpha=1.0,
+                                                flip_x=False):
     """
     Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
         This takes a max projection of the slices in 'which_slices', which is a FULL LIST of the desired frames
@@ -231,6 +232,9 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
 
             if this_slice == end_of_each_frame:
                 final_img = np.max((alpha*img), axis=0).astype('uint8')
+                if flip_x:
+                    # gcamp and mcherry are mirrored in the WBFM setup
+                    final_img = np.flip(final_img, axis=1)
                 video_out.write(final_img)
                 i_frame_count += 1
 
