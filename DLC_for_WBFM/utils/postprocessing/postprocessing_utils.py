@@ -110,6 +110,26 @@ def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28,28,10
     There is a lot of switching with 'xy' and the rows and columns of the video
 
     Reads the entire file into memory...
+
+    Input
+    ----------
+    fname : str
+        File name of the input video (.ome.tiff)
+
+    this_xy : array
+        DLC output of the neuron positions
+
+    which_z : int
+        Which slice to center the crop around
+
+    num_frames : int
+        Total number of frames to read
+
+    crop_sz : tuple=(28,28,10)
+        XYZ size of cube to output
+
+    sz_4d : tuple=(100,39)
+        If the video doesn't retain z metadata, uses this to reshape
     """
 
     # Pre-allocate in proper size for future
@@ -147,6 +167,127 @@ def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28,28,10
             # keep as zeros
 
     return cropped_dat
+
+
+def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
+                                  crop_sz=(28,28,10), num_slices=None,
+                                  flip_x=False,
+                                  start_volume=0,
+                                  alpha=1.0,
+                                  actually_create=True):
+    """
+    Reads in a subset of a very large .btf file.
+
+    Equivalent to get_crop_from_ometiff() but refactored so that the entire file
+    is not read at once (which is usually ~180 GB)
+
+    Input
+    ----------
+    fname : str
+        File name of the input video (.ome.tiff)
+
+    this_xy : array
+        DLC output of the neuron positions
+
+    which_z : int
+        Which slice to center the crop around
+
+    num_frames : int
+        Total number of frames to read
+
+    crop_sz : tuple=(28,28,10)
+        XYZ size of cube to output
+
+    num_slices : int
+        If the video doesn't retain z metadata, uses this to reshape
+
+    flip_x : bool
+        Whether to flip the video in x; currently gcamp and mcherry are mirrored
+
+    start_volume : int
+        Number of volumes to skip at the beginning
+
+    alpha : float
+        Multiplicative factor; needed if the original .btf needs format conversion
+        e.g. uint16 -> uint8
+
+    actually_create : bool
+        Debug variable; if false, the file is not read
+
+
+    Input-Output:
+        ome.tiff -> np.array
+    """
+
+    # Convert crop_sz to list for format compatibility
+    start_of_each_frame = int(np.floor(which_z - crop_sz[2]/2))
+    end_of_each_frame = int(np.floor(which_z + crop_sz[2]/2))
+    which_slices = list(range(start_of_each_frame, end_of_each_frame))
+    end_of_each_frame = end_of_each_frame-1
+
+    frame_height, frame_width = crop_sz[0:2]
+
+    if start_of_each_frame < 5:
+        warnings.warn("As of 14.10.2020, the first several frames are very bad! Do you really mean to use these?")
+
+    # Initialize time index and tracking location
+    start_volume = start_volume * num_slices
+    i_rel_volume = 0
+    # Format: TZYX
+    final_cropped_video = np.zeros((num_frames, len(which_slices), frame_width, frame_height))
+
+    print(f'Cropping {len(which_slices)} slices, starting at {start_of_each_frame}' )
+
+    def update_ind(i):
+        center = this_xy[i]
+        # if flip_x:
+        #     center[0] = full_sz[0] - center[0]
+            # center[1] = full_sz[1] - center[1]
+
+        x_ind, y_ind = get_crop_coords(center, sz=crop_sz[0:2])
+        return x_ind, y_ind
+
+    with tifffile.TiffFile(fname, multifile=False) as tif:
+        for i, page in enumerate(tif.pages):
+            this_abs_slice = i % num_slices
+            this_rel_slice = this_abs_slice - start_of_each_frame
+            if i == 0:
+                full_sz = page.asarray().shape
+                print(full_sz)
+                x_ind, y_ind = update_ind(i_rel_volume)
+                # final_cropped_video =  np.zeros((num_frames, len(which_slices), full_sz[0], full_sz[1]))
+                # final_cropped_video =  np.zeros((num_frames, len(which_slices), full_sz[0], frame_height))
+
+            # Align start of annotations and .btf
+            if i < start_volume or this_abs_slice not in which_slices:
+                continue
+            print(f'Page {i}/{num_frames*num_slices}; volume {i_rel_volume}/{num_frames} to cropped array slice {this_rel_slice}')
+
+            tmp = (alpha*page.asarray()).astype('uint8')
+            if flip_x:
+                tmp = np.flip(tmp,axis=1)
+            final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind][y_ind]
+            # final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind]
+            # if not flip_x:
+            #     final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind][y_ind]
+            # else:
+                # full_height = tmp.shape[1]
+                # tmp_x_ind = [full_height - i for i in x_ind]
+                # final_cropped_video[i_rel_volume, this_rel_slice,...] = (
+                #         np.flip(tmp,axis=1))[:,tmp_x_ind][y_ind]
+                # full_height = tmp.shape[1]
+                # tmp_x_ind = [full_height - i for i in x_ind]
+                # final_cropped_video[i_rel_volume, this_rel_slice,...] = (
+                #         np.flip(tmp,axis=1))[:,tmp_x_ind][y_ind]
+
+            # Update time index and tracking location
+            if this_abs_slice == end_of_each_frame:
+                i_rel_volume += 1
+                x_ind, y_ind = update_ind(i_rel_volume)
+
+            if num_frames is not None and i_rel_volume >= num_frames: break
+
+    return final_cropped_video
 
 
 ##
