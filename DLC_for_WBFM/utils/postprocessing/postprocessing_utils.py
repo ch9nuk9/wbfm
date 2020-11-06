@@ -240,9 +240,6 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
 
     def update_ind(i):
         center = this_xy[i]
-        # if flip_x:
-        #     center[0] = full_sz[0] - center[0]
-            # center[1] = full_sz[1] - center[1]
 
         x_ind, y_ind = get_crop_coords(center, sz=crop_sz[0:2])
         return x_ind, y_ind
@@ -255,9 +252,6 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
                 full_sz = page.asarray().shape
                 print(full_sz)
                 x_ind, y_ind = update_ind(i_rel_volume)
-                # final_cropped_video =  np.zeros((num_frames, len(which_slices), full_sz[0], full_sz[1]))
-                # final_cropped_video =  np.zeros((num_frames, len(which_slices), full_sz[0], frame_height))
-
             # Align start of annotations and .btf
             if i < start_volume or this_abs_slice not in which_slices:
                 continue
@@ -267,18 +261,6 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
             if flip_x:
                 tmp = np.flip(tmp,axis=1)
             final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind][y_ind]
-            # final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind]
-            # if not flip_x:
-            #     final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind][y_ind]
-            # else:
-                # full_height = tmp.shape[1]
-                # tmp_x_ind = [full_height - i for i in x_ind]
-                # final_cropped_video[i_rel_volume, this_rel_slice,...] = (
-                #         np.flip(tmp,axis=1))[:,tmp_x_ind][y_ind]
-                # full_height = tmp.shape[1]
-                # tmp_x_ind = [full_height - i for i in x_ind]
-                # final_cropped_video[i_rel_volume, this_rel_slice,...] = (
-                #         np.flip(tmp,axis=1))[:,tmp_x_ind][y_ind]
 
             # Update time index and tracking location
             if this_abs_slice == end_of_each_frame:
