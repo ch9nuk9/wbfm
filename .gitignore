@@ -12,3 +12,6 @@ DLC_Projects/
 Presentations/
 
 Scratch/
+
+# Too large
+*.pickle
