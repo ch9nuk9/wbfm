@@ -701,7 +701,7 @@ def extract_single_trace(annotation_fname,
                                         num_frames,
                                         sz=crop_sz)
     else:
-        assert(len(crop_sz)==3, "Crop must be 3d")
+        assert len(crop_sz)==3, "Crop must be 3d"
         which_z, num_slices, alpha, start_volume = z_params
         cropped_dat = get_crop_from_ometiff_virtual(video_fname,
                                                     this_xy,
