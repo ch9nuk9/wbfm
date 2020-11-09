@@ -265,9 +265,9 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
             # Update time index and tracking location
             if this_abs_slice == end_of_each_frame:
                 i_rel_volume += 1
+                if num_frames is not None and i_rel_volume >= num_frames: break
                 x_ind, y_ind = update_ind(i_rel_volume)
 
-            if num_frames is not None and i_rel_volume >= num_frames: break
 
     return final_cropped_video
 
@@ -532,7 +532,9 @@ def extract_all_traces(annotation_fname,
                        which_neurons=None,
                        num_frames=None,
                        crop_sz=(19,19),
-                       params=None):
+                       params=None,
+                       is_3d=False,
+                       z_params=None):
     """
     Extracts a trace from a single neuron in 2d using dNMF from one movie
 
@@ -595,14 +597,18 @@ def extract_all_traces(annotation_fname,
                                  which_neuron=which_neuron,
                                  num_frames=num_frames,
                                  crop_sz=crop_sz,
-                                 params=params)
+                                 params=params,
+                                 is_3d=is_3d,
+                                 z_params=z_params)
         print('Finished extracting mCherry')
         gcamp_dat = extract_single_trace(annotation_fname,
                                   video_fname_gcamp,
                                   which_neuron=which_neuron,
                                   num_frames=num_frames,
                                   crop_sz=crop_sz,
-                                  params=params)
+                                  params=params,
+                                  is_3d=is_3d,
+                                  z_params=z_params)
         print('Finished extracting GCaMP')
         all_traces.append({'mcherry':mcherry_dat,
                            'gcamp':gcamp_dat})
@@ -617,7 +623,9 @@ def extract_single_trace(annotation_fname,
                          which_neuron=0,
                          num_frames=500,
                          crop_sz=(19,19),
-                         params=None):
+                         params=None,
+                         is_3d=False,
+                         z_params=None):
     """
     Extracts a trace from a single neuron in 2d using dNMF from one movie
 
@@ -644,6 +652,9 @@ def extract_single_trace(annotation_fname,
         Parameters for final trace extraction, using a Gaussian.
         See 'dNMF' docs for explanation of parameters
 
+    is_3d : bool
+        2d or 3d trace extraction
+
     Output
     ----------
     trace : np.array()
@@ -654,13 +665,27 @@ def extract_single_trace(annotation_fname,
     this_xy, this_prob = xy_from_dlc_dat(annotation_fname,
                                          which_neuron=which_neuron,
                                          num_frames=num_frames)
-    cropped_dat = get_crop_from_avi(video_fname,
-                                    this_xy,
-                                    num_frames,
-                                    sz=crop_sz)
+    if not is_3d:
+        cropped_dat = get_crop_from_avi(video_fname,
+                                        this_xy,
+                                        num_frames,
+                                        sz=crop_sz)
+    else:
+        assert(len(crop_sz)==3, "Crop must be 3d")
+        which_z, num_slices, alpha, start_volume = z_params
+        cropped_dat = get_crop_from_ometiff_virtual(video_fname,
+                                                    this_xy,
+                                                    which_z,
+                                                    num_frames,
+                                                    crop_sz=crop_sz,
+                                                    num_slices=num_slices,
+                                                    alpha=alpha,
+                                                    start_volume=start_volume)
+        cropped_dat = np.transpose(cropped_dat, axes=(2,3,1,0))
+
 
     # Get parameters and run dNMF
-    dnmf_obj = dNMF_default_from_DLC(cropped_dat, crop_sz, params)
+    dnmf_obj = dNMF_default_from_DLC(cropped_dat, crop_sz, params, is_3d)
     dnmf_obj.optimize(lr=1e-4,n_iter=20,n_iter_c=2)
 
     return dnmf_obj.C[0,:]
@@ -668,7 +693,7 @@ def extract_single_trace(annotation_fname,
 
 
 
-def dNMF_default_from_DLC(dat, crop_sz, params=None):
+def dNMF_default_from_DLC(dat, crop_sz, params=None, is_3d=False):
     """
     Prepares the parameters and data files for consumption by dNMF
     """
@@ -679,19 +704,28 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None):
                   'traj_means':[.0,.0,.0], 'traj_variances':[2e-4,2e-4,1e-5], 'sz':[20,20,1],
                   'K':20, 'T':100, 'roi_window':[4,4,0]}
 
-    # Build position and convert to pytorch
-    positions =[list(crop_sz + (0,)),[1, 1, 0]] # Add a dummy position
-    positions = np.expand_dims(positions,2)/2.0 # Return the center of the crop
-    positions =  torch.tensor(positions).float()
 
     # Convert the data
     dat_torch = torch.tensor(dat).float()
 
     # Finalize the parameters
-    params = {'positions':positions[:,:,0][:,:,np.newaxis],\
-              'radius':params['radius'],'step_S':params['step_S'],'gamma':params['gamma'],\
-              'use_gpu':False,'initial_p':positions[:,:,0],'sigma_inv':params['sigma_inv'],\
-              'method':'1->t', 'verbose':True, 'use_gpu':False}
+    if not is_3d:
+        # Build position and convert to pytorch
+        positions =[list(crop_sz + (0,)),[1, 1, 0]] # Add a dummy position
+        positions = np.expand_dims(positions,2)/2.0 # Return the center of the crop
+        positions =  torch.tensor(positions).float()
+        params = {'positions':positions[:,:,0][:,:,np.newaxis],\
+                  'radius':params['radius'],'step_S':params['step_S'],'gamma':params['gamma'],\
+                  'use_gpu':False,'initial_p':positions[:,:,0],'sigma_inv':params['sigma_inv'],\
+                  'method':'1->t', 'verbose':True}
+    else:
+        positions =[list(crop_sz),[1, 1, 0]] # Add a dummy position
+        positions = np.expand_dims(positions,2)/2.0 # Return the center of the crop
+        positions =  torch.tensor(positions).float()
+        params = {'positions':positions,\
+                  'radius':params['radius'],'step_S':params['step_S'],'gamma':params['gamma'],\
+                  'use_gpu':False,'initial_p':positions[:,:,0],'sigma_inv':params['sigma_inv'],\
+                  'method':'1->t', 'verbose':True}
 
     # Finally, create the analysis object
     dnmf_obj = dNMF(dat_torch, params=params)
