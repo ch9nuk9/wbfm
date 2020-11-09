@@ -13,6 +13,7 @@ from matplotlib import transforms
 from dNMF.Demix.dNMF import dNMF
 import torch
 import time
+import warnings
 
 # from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.animation as animation
@@ -174,7 +175,8 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
                                   flip_x=False,
                                   start_volume=0,
                                   alpha=1.0,
-                                  actually_create=True):
+                                  actually_create=True,
+                                  actually_crop=True):
     """
     Reads in a subset of a very large .btf file.
 
@@ -214,44 +216,63 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
     actually_create : bool
         Debug variable; if false, the file is not read
 
+    actually_crop : bool
+        Debug variable; if false, crop_sz is ignored
 
     Input-Output:
         ome.tiff -> np.array
     """
 
-    # Convert crop_sz to list for format compatibility
-    start_of_each_frame = int(np.floor(which_z - crop_sz[2]/2))
-    end_of_each_frame = int(np.floor(which_z + crop_sz[2]/2))
-    which_slices = list(range(start_of_each_frame, end_of_each_frame))
-    end_of_each_frame = end_of_each_frame-1
-
-    frame_height, frame_width = crop_sz[0:2]
-
-    if start_of_each_frame < 5:
-        warnings.warn("As of 14.10.2020, the first several frames are very bad! Do you really mean to use these?")
-
-    # Initialize time index and tracking location
-    start_volume = start_volume * num_slices
-    i_rel_volume = 0
-    # Format: TZYX
-    final_cropped_video = np.zeros((num_frames, len(which_slices), frame_width, frame_height))
-
-    print(f'Cropping {len(which_slices)} slices, starting at {start_of_each_frame}' )
-
-    def update_ind(i):
+    def update_ind(i, crop_sz):
+        """Translate DLC coordinates to cropp coordinates"""
         center = this_xy[i]
 
         x_ind, y_ind = get_crop_coords(center, sz=crop_sz[0:2])
         return x_ind, y_ind
 
+    def build_sz_vars(crop_sz):
+        """Translate crop coordinates to image variables"""
+        # Convert crop_sz to list for format compatibility
+        if actually_crop:
+            start_of_each_frame = int(np.floor(which_z - crop_sz[2]/2))
+            end_of_each_frame = int(np.floor(which_z + crop_sz[2]/2))
+        else:
+            start_of_each_frame = 0
+            end_of_each_frame = num_slices
+        which_slices = list(range(start_of_each_frame, end_of_each_frame))
+        end_of_each_frame = end_of_each_frame-1
+
+        frame_height, frame_width = crop_sz[0:2]
+        # Format: TZYX
+        full_sz = (num_frames, len(which_slices), frame_width, frame_height)
+        final_cropped_video = np.zeros(full_sz)
+
+        if start_of_each_frame < 5:
+            warnings.warn("As of 14.10.2020, the first several frames are very bad! Do you really mean to use these?")
+
+        print(f'Cropping {len(which_slices)} slices, starting at {start_of_each_frame}' )
+
+        return start_of_each_frame, end_of_each_frame, which_slices, \
+            final_cropped_video
+
+    start_of_each_frame, end_of_each_frame, which_slices, \
+        final_cropped_video = build_sz_vars(crop_sz)
+
+    # Initialize time index and tracking location
+    start_volume = start_volume * num_slices
+    i_rel_volume = 0
+
     with tifffile.TiffFile(fname, multifile=False) as tif:
         for i, page in enumerate(tif.pages):
-            this_abs_slice = i % num_slices
-            this_rel_slice = this_abs_slice - start_of_each_frame
             if i == 0:
                 full_sz = page.asarray().shape
-                print(full_sz)
-                x_ind, y_ind = update_ind(i_rel_volume)
+                if not actually_crop:
+                    full_sz = (num_frames, num_slices,) + full_sz
+                    final_cropped_video = np.zeros(full_sz)
+                print(f"Full size read as {full_sz}")
+                x_ind, y_ind = update_ind(i_rel_volume, crop_sz)
+            this_abs_slice = i % num_slices
+            this_rel_slice = this_abs_slice - start_of_each_frame
             # Align start of annotations and .btf
             if i < start_volume or this_abs_slice not in which_slices:
                 continue
@@ -260,13 +281,17 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
             tmp = (alpha*page.asarray()).astype('uint8')
             if flip_x:
                 tmp = np.flip(tmp,axis=1)
-            final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind][y_ind]
+
+            if actually_crop:
+                final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind][y_ind]
+            else:
+                final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp
 
             # Update time index and tracking location
             if this_abs_slice == end_of_each_frame:
                 i_rel_volume += 1
                 if num_frames is not None and i_rel_volume >= num_frames: break
-                x_ind, y_ind = update_ind(i_rel_volume)
+                x_ind, y_ind = update_ind(i_rel_volume, crop_sz)
 
 
     return final_cropped_video
@@ -608,6 +633,7 @@ def extract_all_traces(annotation_fname,
                                   crop_sz=crop_sz,
                                   params=params,
                                   is_3d=is_3d,
+                                  flip_x=True, # TODO: needed as of 09.11.2020
                                   z_params=z_params)
         print('Finished extracting GCaMP')
         all_traces.append({'mcherry':mcherry_dat,
@@ -625,6 +651,7 @@ def extract_single_trace(annotation_fname,
                          crop_sz=(19,19),
                          params=None,
                          is_3d=False,
+                         flip_x=False,
                          z_params=None):
     """
     Extracts a trace from a single neuron in 2d using dNMF from one movie
@@ -651,6 +678,9 @@ def extract_single_trace(annotation_fname,
     params : dict
         Parameters for final trace extraction, using a Gaussian.
         See 'dNMF' docs for explanation of parameters
+
+    flip_x : bool
+        To flip the video in x
 
     is_3d : bool
         2d or 3d trace extraction
@@ -680,6 +710,7 @@ def extract_single_trace(annotation_fname,
                                                     crop_sz=crop_sz,
                                                     num_slices=num_slices,
                                                     alpha=alpha,
+                                                    flip_x=flip_x,
                                                     start_volume=start_volume)
         cropped_dat = np.transpose(cropped_dat, axes=(2,3,1,0))
 
