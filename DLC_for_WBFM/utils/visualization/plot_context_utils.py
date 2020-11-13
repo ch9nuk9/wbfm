@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ipywidgets import interact, interactive, fixed, interact_manual
 import matplotlib.patches as patches
+import imageio
+import pickle
+
+from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import xy_from_dlc_dat, get_crop_from_ometiff_virtual
 
 
 ##
@@ -42,3 +46,116 @@ def interact_box_around_track(video_fname_mcherry,
         plt.imshow(cropped_dat_gcamp[:,:,0,i]);
         plt.title('gcamp')
         plt.colorbar()
+
+
+
+##
+## Function for syncing videos and traces
+##
+
+def plot_video_crop_trace(vid_fname,
+                          gcamp_fname,
+                          mcherry_fname,
+                          annotation_fname,
+                          trace_fname,
+                          which_neuron,
+                          num_frames,
+                          crop_sz,
+                          which_z,
+                          which_field='gcamp',
+                          num_slices=33,
+                          alpha=1.0,
+                          flip_x=False,
+                          start_volume=0):
+    """
+    Plots in 3 panels:
+        - Tracked video or behavior
+        - Cropped data
+        - Trace
+    """
+
+    # Read in video
+    video_reader = imageio.get_reader(vid_fname)
+    video_dat = []
+    for im in video_reader:
+        video_dat.append(im)
+
+    # Read in crop
+    cropped_dat = []
+    this_xy, this_prob = xy_from_dlc_dat(annotation_fname,
+                                         which_neuron=which_neuron,
+                                         num_frames=num_frames)
+    cropped_dat_mcherry = get_crop_from_ometiff_virtual(mcherry_fname,
+                                                this_xy,
+                                                which_z,
+                                                num_frames,
+                                                crop_sz=crop_sz,
+                                                num_slices=num_slices,
+                                                alpha=alpha,
+                                                flip_x= ~flip_x,
+                                                start_volume=start_volume,
+                                                verbose=False)
+    cropped_dat_gcamp = get_crop_from_ometiff_virtual(gcamp_fname,
+                                               this_xy,
+                                               which_z,
+                                               num_frames,
+                                               crop_sz=crop_sz,
+                                               num_slices=num_slices,
+                                               alpha=alpha,
+                                               flip_x=flip_x,
+                                               start_volume=start_volume,
+                                               verbose=False)
+
+    # Read traces
+    trace_dat = pickle.load(open(trace_fname, 'rb'))
+    trace_dat = np.array(trace_dat[which_neuron][which_field])
+
+
+    # Widget for interaction
+    f = lambda t,z : \
+        plot_video_crop_trace_frame(t, z, video_dat,
+                                    cropped_dat_mcherry,
+                                    cropped_dat_gcamp,
+                                    trace_dat)
+    args = {'t':(0,num_frames-1), 'z':(0,crop_sz[-1]-1)}
+
+    return interact(f, **args)
+
+
+def plot_video_crop_trace_frame(t, z, video_dat,
+                                cropped_dat_mcherry,
+                                cropped_dat_gcamp,
+                                trace_dat):
+    """
+    Plots a single frame of a video, cropped data, and the trace
+
+    See also: plot_video_crop_trace
+    """
+
+    # plt.figure()
+    plt.figure(figsize=(45,15))
+
+    # 2d video; no z component
+    plt.subplot(231)
+    plt.imshow(video_dat[t])
+    plt.title('Full video')
+
+    # 3d crop; t and z
+    plt.subplot(232)
+    plt.imshow(cropped_dat_mcherry[t,z,...])
+    plt.clim([0,0.5*np.max(cropped_dat_mcherry[t,...])])
+    plt.title('Cropped neuron (red)')
+    plt.colorbar()
+    plt.subplot(233)
+    plt.imshow(cropped_dat_gcamp[t,z,...])
+    plt.clim([0,0.5*np.max(cropped_dat_gcamp[t,...])])
+    plt.title('Cropped neuron (green)')
+    plt.colorbar()
+
+    # Trace: all with a line
+    plt.subplot(212)
+    plt.plot(trace_dat)
+    plt.vlines(t,0,np.max(trace_dat), colors='r')
+    plt.title('Trace')
+
+    # plt.show()

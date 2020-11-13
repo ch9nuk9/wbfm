@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import platform
 import cv2
+from DLC_for_WBFM.bin.configuration_definition import *
 
 import warnings
 
@@ -176,6 +177,44 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
                 video_out.write(img)
             if num_frames is not None and i > num_frames: break
     video_out.release()
+
+
+
+## For use with config files
+def write_all_video_projection_from_ome_file_subset_test(config_file):
+    """
+    Note: writes videos to the same folder as the bigtiff
+
+    See also: write_video_projection_from_ome_file_subset
+    """
+
+    c = load_config(config_file)
+    # Get preprocessing settings
+    frame_width, frame_height = c.datafiles.get_frame_size()
+
+    params = dict(which_slices=c.preprocessing.which_slices(),
+                start_volume=c.preprocessing.start_volume,
+                num_frames=c.preprocessing.num_frames,
+                frame_width=frame_width,
+                frame_height=frame_height,
+                num_slices=c.preprocessing.num_crop_slices,
+                alpha=c.preprocessing.alpha)
+
+    # Do red (tracking) channel
+    video_fname = c.datafiles.red_bigtiff_fname
+    out_fname = c.datafiles.red_avi_fname
+
+    write_video_projection_from_ome_file_subset(video_fname,
+                                                out_fname,
+                                                **params)
+
+    # Do green (measurement) channel
+    video_fname = c.datafiles.green_bigtiff_fname
+    out_fname = c.datafiles.green_avi_fname
+
+    write_video_projection_from_ome_file_subset(video_fname,
+                                                out_fname,
+                                                **params)
 
 
 

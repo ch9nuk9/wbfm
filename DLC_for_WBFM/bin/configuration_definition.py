@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+import tifffile
+from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_coords3d
 
 
 @dataclass
@@ -8,14 +10,22 @@ class DLC_for_WBFM_preprocessing:
     """
 
     # bigtiff processing
+    # In time
     start_volume: int
     num_frames: int
-    num_slices: int
-    start_slice: int
-    alpha: float
+    # In z
+    num_total_slices: int
+    num_crop_slices: int
+    center_slice: int
+    alpha: float # For conversion to uint8
 
     # As of Nov 2020
     red_and_green_mirrored: bool = True
+
+    def which_slices(self):
+        return list( get_crop_coords3d((0,0,self.center_slice),
+                                (1,1,self.num_crop_slices) )[-1] )
+
 
 
 @dataclass
@@ -31,6 +41,17 @@ class DLC_for_WBFM_datafiles:
     red_bigtiff_fname: str
     green_bigtiff_fname: str
 
+    # Place to initially write the videos
+    red_avi_fname: str
+    green_avi_fname: str
+
+    def get_frame_size(self):
+        # Assume red and green are same size
+        with tifffile.TiffFile(self.red_bigtiff_fname) as tif:
+            frame_height, frame_width = tif.pages[0].shape
+
+        return frame_height, frame_width
+
 
 @dataclass
 class DLC_for_WBFM_tracking:
@@ -39,12 +60,11 @@ class DLC_for_WBFM_tracking:
     """
 
     # One DLC run (input)
-    original_video_fname: str
     DLC_project_foldername: str
 
     # One DLC run (output)
-    labeled_video_fname: str
-    annotation_fname: str
+    labeled_video_fname: str = None
+    annotation_fname: str = None
 
 
 @dataclass
@@ -54,12 +74,14 @@ class DLC_for_WBFM_traces:
     """
 
     # Parameters to current algorithm
-    which_z: int # Center
+    is_3d: bool
     crop_sz: tuple
     # Note: also uses values from the preprocessing portion
 
     # TODO: which folder should these go in?
     traces_fname: str
+
+    which_neurons: str = None
 
 
 @dataclass
@@ -70,7 +92,20 @@ class DLC_for_WBFM_config:
     # Overall project settings
     experimenter: str
 
-    datafiles: DLC_for_WBFM_datafiles
-    preprocessing: DLC_for_WBFM_preprocessing
-    tracking: DLC_for_WBFM_tracking
-    traces: DLC_for_WBFM_traces
+    datafiles: DLC_for_WBFM_datafiles = None
+    preprocessing: DLC_for_WBFM_preprocessing = None
+    tracking: DLC_for_WBFM_tracking = None
+    traces: DLC_for_WBFM_traces = None
+
+
+
+def load_config(fname_or_config):
+    """
+    Helper to check if you passed the filename or the object itself
+    """
+
+    if isinstance(fname_or_config, str):
+        return pickle.load(open(fname_or_config, 'rb'))
+    else:
+        assert isinstance(fname_or_config, DLC_for_WBFM_config), "Must be file path or DLC_for_WBFM_config"
+        return fname_or_config
