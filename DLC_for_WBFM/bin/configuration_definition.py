@@ -40,7 +40,6 @@ class DLC_for_WBFM_tracking:
 
     # One DLC run (input)
     original_video_fname: str
-    DLC_config_fname: str
     DLC_project_foldername: str
 
     # One DLC run (output)
@@ -59,6 +58,7 @@ class DLC_for_WBFM_traces:
     crop_sz: tuple
     # Note: also uses values from the preprocessing portion
 
+    # TODO: which folder should these go in?
     traces_fname: str
 
 
@@ -72,5 +72,5 @@ class DLC_for_WBFM_config:
 
     datafiles: DLC_for_WBFM_datafiles
     preprocessing: DLC_for_WBFM_preprocessing
-    tracking: DLC_for_WBFM_single_slice
+    tracking: DLC_for_WBFM_tracking
     traces: DLC_for_WBFM_traces
