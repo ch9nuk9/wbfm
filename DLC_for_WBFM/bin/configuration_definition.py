@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import tifffile
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_coords3d
+from datetime import datetime as dt
+
 
 
 @dataclass
@@ -109,3 +111,48 @@ def load_config(fname_or_config):
     else:
         assert isinstance(fname_or_config, DLC_for_WBFM_config), "Must be file path or DLC_for_WBFM_config"
         return fname_or_config
+
+
+def create_project(
+    project_name,
+    experimenter,
+    config,
+    working_directory=None
+):
+    """
+    Initializes a project given a parent folder and the config object
+
+    Note: tries to make a short foldername (Windows might max out characters)
+    """
+
+    config = load_config(config)
+
+    project_name = build_project_name(project_name,experimenter)
+    if working_directory == None:
+        working_directory = "."
+    project_path = wd / project_name
+
+    # Create project and sub-directories
+    if project_path.exists():
+    # if not DEBUG and project_path.exists():
+        print('Project "{}" already exists!'.format(project_path))
+        return
+
+    project_path.mkdir()
+    print(f'Created "{project_path}"')
+
+
+def build_project_name():
+    """
+    Build project name using the project_name, experimenter, and date
+    """
+
+    date = dt.today()
+    month = date.strftime("%B")
+    day = date.day
+    d = str(month[0:3] + str(day))
+    date = dt.today().strftime("%Y-%m-%d")
+    wd = Path(working_directory).resolve()
+    project_name = f"wbfm--{project_name}-{experimenter}-{date}"
+
+    return project_name
