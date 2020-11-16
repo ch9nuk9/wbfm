@@ -88,8 +88,25 @@ class DLC_for_WBFM_traces:
 
 @dataclass
 class DLC_for_WBFM_config:
-    """
-    Variables used for entire project workflow
+    """Short summary.
+
+    Parameters
+    ----------
+    task_name : str
+        Descriptive string
+    experimenter : str
+        Experimenter name
+    datafiles : DLC_for_WBFM_datafiles
+        Pathnames for the raw data files (4d videos)
+    preprocessing: DLC_for_WBFM_preprocessing
+        Parameters for the preprocessing tasks, especially subslicing
+    tracking: DLC_for_WBFM_tracking
+        Actual DeepLabCut settings for tracking
+    traces: DLC_for_WBFM_traces
+        Parameters for extracting traces, currently using dNMF
+    config_filename: str
+        Full path for this file; used for saving itself
+
     """
     # Overall project settings
     task_name: str
@@ -139,8 +156,23 @@ def create_project(
 ):
     """
     Initializes a project given a parent folder and the config object
-
     Note: tries to make a short foldername (Windows might max out characters)
+
+    Parameters
+    ----------
+    project_name : str
+        Descriptive string
+    experimenter : str
+        Name of experimenter
+    config : DLC_for_WBFM_config
+        Configuration object
+    working_directory : str
+        Path to parent folder
+
+    Returns
+    -------
+    Nothing; creates folder and saves the config file there
+
     """
 
     config = load_config(config)
