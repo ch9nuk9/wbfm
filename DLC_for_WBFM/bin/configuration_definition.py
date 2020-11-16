@@ -92,6 +92,7 @@ class DLC_for_WBFM_config:
     Variables used for entire project workflow
     """
     # Overall project settings
+    task_name: str
     experimenter: str
 
     datafiles: DLC_for_WBFM_datafiles = None
@@ -127,9 +128,10 @@ def create_project(
 
     config = load_config(config)
 
-    project_name = build_project_name(project_name,experimenter)
+    project_name = build_project_name(config)
     if working_directory == None:
         working_directory = "."
+    wd = Path(working_directory).resolve()
     project_path = wd / project_name
 
     # Create project and sub-directories
@@ -142,17 +144,18 @@ def create_project(
     print(f'Created "{project_path}"')
 
 
-def build_project_name():
+def build_project_name(config):
     """
     Build project name using the project_name, experimenter, and date
     """
+
+    project_name, experimenter = config.project_name, config.experimenter
 
     date = dt.today()
     month = date.strftime("%B")
     day = date.day
     d = str(month[0:3] + str(day))
     date = dt.today().strftime("%Y-%m-%d")
-    wd = Path(working_directory).resolve()
     project_name = f"wbfm--{project_name}-{experimenter}-{date}"
 
     return project_name
