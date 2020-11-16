@@ -20,6 +20,28 @@ def _extract_all_traces(config_file,
     """
     Extracts all traces using a project-level config file
 
+    Parameters
+    ----------
+    config_file : str
+        Path to the config file
+    which_neurons : None or list
+        The indices for the used neurons; 'None' = all neurons
+    num_frames : int
+        Integer for the number of frames
+    crop_sz : tuple
+        3 or 2 length tuple to describe the final cropped frame or cube
+    is_3d : bool
+        Whether the input data is 3d or 2d
+    params : dict
+        Dictionary of parameters for dnmf function
+    trace_fname : str
+        Name to save the final traces as
+
+    Returns
+    -------
+    all_traces : list
+        List of neurons, with two arrays: 'gcamp' (signal) and 'mcherry' (tracking)
+
     See also: extract_all_traces
     """
 
@@ -58,6 +80,8 @@ def _extract_all_traces(config_file,
 
     # Save traces
     pickle.dump(all_traces, open(trace_fname, 'wb'))
+
+    return all_traces
 
 
 def extract_all_traces(annotation_fname,
