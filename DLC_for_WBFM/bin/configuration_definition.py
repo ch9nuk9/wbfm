@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import tifffile
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_coords3d
 from datetime import datetime as dt
-
+import pickle
 
 
 @dataclass
@@ -100,6 +100,8 @@ class DLC_for_WBFM_config:
     tracking: DLC_for_WBFM_tracking = None
     traces: DLC_for_WBFM_traces = None
 
+    config_filename: str = None
+
 
 
 def load_config(fname_or_config):
@@ -112,6 +114,21 @@ def load_config(fname_or_config):
     else:
         assert isinstance(fname_or_config, DLC_for_WBFM_config), "Must be file path or DLC_for_WBFM_config"
         return fname_or_config
+
+
+def save_config(config):
+    """
+    Saves config file in the location the object remembers
+    i.e. config.config_filename
+
+    # TODO: do basic checks
+    - Right operating system
+    - Not a different project
+    """
+
+    fname = 'config.config_filename'
+    print(f"Saving config to {fname}")
+    pickle.dump(config, open(fame, 'rb'))
 
 
 def create_project(
@@ -142,6 +159,12 @@ def create_project(
 
     project_path.mkdir()
     print(f'Created "{project_path}"')
+
+    # Finally, save the config file in this folder
+    config_filename = project_path / "config.pickle"
+    config.config_filename = config_filename
+
+    save_config(config)
 
 
 def build_project_name(config):
