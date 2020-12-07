@@ -44,8 +44,8 @@ class DLC_for_WBFM_datafiles:
     green_bigtiff_fname: str
 
     # Place to initially write the videos
-    red_avi_fname: str
-    green_avi_fname: str
+    red_avi_fname: str = None
+    green_avi_fname: str = None
 
     def get_frame_size(self):
         # Assume red and green are same size
@@ -119,6 +119,19 @@ class DLC_for_WBFM_config:
 
     config_filename: str = None
 
+    def __str__(self):
+        return f"=======================================\n\
+                Field values:\n\
+                task_name: {self.task_name} \n\
+                experimenter: {self.experimenter} \n\
+                config_filename: {self.config_filename}\n\
+                =======================================\n\
+                Which subclasses are initialized?\n\
+                datafiles: {self.datafiles is not None}\n\
+                preprocessing: {self.preprocessing is not None}\n\
+                tracking: {self.tracking is not None}\n\
+                traces: {self.traces is not None}\n"
+
 
 
 def load_config(fname_or_config):
@@ -143,9 +156,11 @@ def save_config(config):
     - Not a different project
     """
 
-    fname = 'config.config_filename'
-    print(f"Saving config to {fname}")
-    pickle.dump(config, open(fame, 'rb'))
+    fname = config.config_filename
+    if '.pickle' not in fname:
+        fname = fname + ".pickle"
+    print(f"Saving config to filename '{fname}''")
+    pickle.dump(config, open(fname, 'wb'))
 
 
 def create_project(
