@@ -6,6 +6,7 @@ from dNMF.Demix.dNMF import dNMF
 import torch
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
+from DLC_for_WBFM.bin.configuration_definition import *
 
 ##
 ## Full workflow
@@ -46,7 +47,7 @@ def _extract_all_traces(config_file,
     See also: extract_all_traces
     """
 
-    c = pickle.load(open(config_file, 'rb'))
+    c = load_config(config_file)
 
     # Get needed fields
     annotation_fname = c.tracking.annotation_fname
