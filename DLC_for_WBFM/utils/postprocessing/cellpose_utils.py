@@ -4,9 +4,77 @@
 # Use the project config file
 from DLC_for_WBFM.bin.configuration_definition import *
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import _get_crop_from_ometiff_virtual
+from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 from cellpose import models
 from cellpose import utils as cellutils
 from scipy.ndimage import center_of_mass
+
+
+##
+## Functions to extract traces
+##
+
+def extract_all_traces_cp(config_file,
+                          which_neurons=None,
+                          num_frames=None,
+                          crop_sz=None,
+                          is_3d=False,
+                          params=None,
+                          trace_fname='test_cellpose.pickle'):
+    """
+    Extracts all traces using cellpose
+
+    Parameters
+    ----------
+    config_file : str
+        Path to the config file
+    which_neurons : None or list
+        The indices for the used neurons; 'None' = all neurons
+    num_frames : int
+        Integer for the number of frames
+    crop_sz : tuple
+        3 or 2 length tuple to describe the final cropped frame or cube
+    is_3d : bool
+        Whether the input data is 3d or 2d
+    params : dict
+        Dictionary of parameters for cellpose function... TODO
+    trace_fname : str
+        Name to save the final traces as
+    """
+
+    c = load_config(config_file)
+
+    # Get needed fields
+    if num_frames is None:
+        num_frames = c.preprocessing.num_frames
+    if which_neurons is None:
+        num_neurons, which_neurons, tmp = get_number_of_annotations(c.tracking.annotation_fname)
+
+    # Save configuration
+    # TODO: overwrite old
+    traces_config = DLC_for_WBFM_traces(is_3d,
+                                        crop_sz,
+                                        trace_fname,
+                                        which_neurons)
+    c.traces = traces_config
+    save_config(c)
+
+    # Actually calculate
+    # TODO: Cellpose options
+    start = time.time()
+    all_traces = []
+    for neuron in which_neurons:
+        all_traces.append(extract_single_trace_cp(c,
+                                                  which_neuron=neuron,
+                                                  num_frames=num_frames))
+
+    end = time.time()
+    print('Finished in ' + str(end-start) + ' seconds')
+
+    # Save traces
+    pickle.dump(all_traces, open(trace_fname, 'wb'))
+
+    return all_traces
 
 
 def extract_single_trace_cp(config_filename,
@@ -23,13 +91,15 @@ def extract_single_trace_cp(config_filename,
         Each final element is a 1d array
     """
 
+    c = load_config(config_filename)
+
     # Two channels
-    cropped_dat_red = _get_crop_from_ometiff_virtual(fname,
+    cropped_dat_red = _get_crop_from_ometiff_virtual(c.datafiles.red_bigtiff_fname,
                                                      which_neuron=which_neuron,
                                                      num_frames=num_frames,
                                                      use_red_channel=True)
 
-    cropped_dat_green = _get_crop_from_ometiff_virtual(fname,
+    cropped_dat_green = _get_crop_from_ometiff_virtual(c.datafiles.green_bigtiff_fname,
                                                        which_neuron=which_neuron,
                                                        num_frames=num_frames,
                                                        use_red_channel=False)
@@ -50,8 +120,13 @@ def extract_single_trace_cp(config_filename,
         all_masks.append(m)
 
     # TODO: better saving
-    fname = f'test_masks_neuron_{which_neuron}'
-    pickle.dump(all_masks, open(fname, 'wb'))
+    # fname = f'test_masks_neuron_{which_neuron}'
+    # pickle.dump(all_masks, open(fname, 'wb'))
+
+    # Link segmentations in time
+    # For now, discard all but the center neuron
+    initial_neuron, _ = calc_center_neuron(all_masks[0])
+    all_neurons, all_overlaps, all_masks = calc_all_overlaps(initial_neuron,all_multi_masks)
 
     # Finally, get traces
     trace_red = np.zeros(num_frames)
