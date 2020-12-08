@@ -87,6 +87,17 @@ class DLC_for_WBFM_traces:
 
 
 @dataclass
+class DLC_for_WBFM_segmentation:
+    """
+    Segmentation related variables
+
+    See also: cellpose
+    """
+
+    diameter: int = 8
+
+
+@dataclass
 class DLC_for_WBFM_config:
     """Short summary.
 
