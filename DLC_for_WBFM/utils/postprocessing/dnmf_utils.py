@@ -67,7 +67,7 @@ def _extract_all_traces(config_file,
                                         trace_fname,
                                         which_neurons)
     c.traces = traces_config
-    pickle.dump(c, open(config_file, 'wb'))
+    save_config(config_file)
 
     # Actually get traces
     all_traces = extract_all_traces(annotation_fname,
