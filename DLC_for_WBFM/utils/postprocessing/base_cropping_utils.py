@@ -36,6 +36,7 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
 
     return cropped_dat
 
+
 def get_crop_coords3d(center, crop_sz=(28,28,10), clip_sz=None):
     x_ind = range(ceil(center[0] - crop_sz[0]/2), int(center[0] + crop_sz[0]/2)+1)
     y_ind = range(ceil(center[1] - crop_sz[1]/2), int(center[1] + crop_sz[1]/2)+1)

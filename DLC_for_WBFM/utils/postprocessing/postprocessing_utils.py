@@ -16,6 +16,7 @@ import warnings
 # from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.animation as animation
 from DLC_for_WBFM.bin.configuration_definition import load_config
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
 
 ##
 ## Background subtraction

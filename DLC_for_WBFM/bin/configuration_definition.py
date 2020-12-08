@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import tifffile
-from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_coords3d
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
 from datetime import datetime as dt
 import pickle
 

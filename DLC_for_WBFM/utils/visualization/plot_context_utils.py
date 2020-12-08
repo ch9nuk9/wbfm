@@ -7,6 +7,7 @@ import pickle
 
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import xy_from_dlc_dat, get_crop_from_ometiff_virtual, _get_crop_from_ometiff_virtual
 from DLC_for_WBFM.bin.configuration_definition import *
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
 
 ##
 ## Functions for visualizing how the tracking went
