@@ -15,6 +15,7 @@ import warnings
 
 # from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.animation as animation
+from DLC_for_WBFM.bin.configuration_definition import load_config
 
 ##
 ## Background subtraction
@@ -169,7 +170,8 @@ def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28,28,10
 
 
 def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
-                                  crop_sz=(28,28,10), num_slices=None,
+                                  crop_sz=(28,28,10),
+                                  num_slices=None,
                                   flip_x=False,
                                   start_volume=0,
                                   alpha=1.0,
@@ -298,6 +300,41 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
 
     return final_cropped_video
 
+
+def _get_crop_from_ometiff_virtual(config_file,
+                                   which_neuron,
+                                   num_frames,
+                                   use_red_channel=True):
+    """
+    See also: get_crop_from_ometiff_virtual
+
+    Automatically flips the green channel
+    """
+    c = load_config(config_file)
+
+    # Get track
+    this_xy, this_prob = xy_from_dlc_dat(c.tracking.annotation_fname,
+                                         which_neuron=which_neuron,
+                                         num_frames=num_frames)
+    # Get data
+    if use_red_channel:
+        fname = c.datafiles.red_bigtiff_fname
+        flip_x = False
+    else:
+        fname = c.datafiles.green_bigtiff_fname
+        flip_x = True
+    cropped_dat = get_crop_from_ometiff_virtual(fname,
+                                                this_xy,
+                                                which_z=c.preprocessing.center_slice,
+                                                num_frames=num_frames,
+                                                crop_sz=c.traces.crop_sz,
+                                                num_slices=c.preprocessing.num_total_slices,
+                                                actually_create=True,
+                                                alpha=c.preprocessing.alpha,
+                                                start_volume=c.preprocessing.start_volume,
+                                                actually_crop=True,
+                                                flip_x=flip_x)
+    return cropped_dat
 
 ##
 ## Finding local maxima
