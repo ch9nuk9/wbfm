@@ -6,7 +6,7 @@ import pickle
 
 
 @dataclass
-class DLC_for_WBFM_preprocessing:
+class DLCForWBFMPreprocessing:
     """
     Variables used for preprocessing
     """
@@ -31,7 +31,7 @@ class DLC_for_WBFM_preprocessing:
 
 
 @dataclass
-class DLC_for_WBFM_datafiles:
+class DLCForWBFMDatafiles:
     """
     This project uses several very large of z-stack datafiles (~200 GB)
 
@@ -56,7 +56,7 @@ class DLC_for_WBFM_datafiles:
 
 
 @dataclass
-class DLC_for_WBFM_tracking:
+class DLCForWBFMTracking:
     """
     Collects input and output for a DLC run on a single slice
     """
@@ -70,7 +70,7 @@ class DLC_for_WBFM_tracking:
 
 
 @dataclass
-class DLC_for_WBFM_traces:
+class DLCForWBFMTraces:
     """
     Collects files related to traces extracted AFTER tracking
     """
@@ -87,7 +87,7 @@ class DLC_for_WBFM_traces:
 
 
 @dataclass
-class DLC_for_WBFM_segmentation:
+class DLCForWBFMSegmentation:
     """
     Segmentation related variables
 
@@ -98,7 +98,7 @@ class DLC_for_WBFM_segmentation:
 
 
 @dataclass
-class DLC_for_WBFM_config:
+class DLCForWBFMConfig:
     """Short summary.
 
     Parameters
@@ -107,13 +107,13 @@ class DLC_for_WBFM_config:
         Descriptive string
     experimenter : str
         Experimenter name
-    datafiles : DLC_for_WBFM_datafiles
+    datafiles : DLCForWBFMDatafiles
         Pathnames for the raw data files (4d videos)
-    preprocessing: DLC_for_WBFM_preprocessing
+    preprocessing: DLCForWBFMPreprocessing
         Parameters for the preprocessing tasks, especially subslicing
-    tracking: DLC_for_WBFM_tracking
+    tracking: DLCForWBFMTracking
         Actual DeepLabCut settings for tracking
-    traces: DLC_for_WBFM_traces
+    traces: DLCForWBFMTraces
         Parameters for extracting traces, currently using dNMF
     config_filename: str
         Full path for this file; used for saving itself
@@ -123,10 +123,10 @@ class DLC_for_WBFM_config:
     task_name: str
     experimenter: str
 
-    datafiles: DLC_for_WBFM_datafiles = None
-    preprocessing: DLC_for_WBFM_preprocessing = None
-    tracking: DLC_for_WBFM_tracking = None
-    traces: DLC_for_WBFM_traces = None
+    datafiles: DLCForWBFMDatafiles = None
+    preprocessing: DLCForWBFMPreprocessing = None
+    tracking: DLCForWBFMTracking = None
+    traces: DLCForWBFMTraces = None
 
     config_filename: str = None
 
@@ -153,7 +153,7 @@ def load_config(fname_or_config):
     if isinstance(fname_or_config, str):
         return pickle.load(open(fname_or_config, 'rb'))
     else:
-        assert isinstance(fname_or_config, DLC_for_WBFM_config), "Must be file path or DLC_for_WBFM_config"
+        assert isinstance(fname_or_config, DLCForWBFMConfig), "Must be file path or DLCForWBFMConfig"
         return fname_or_config
 
 
@@ -190,7 +190,7 @@ def create_project(
         Descriptive string
     experimenter : str
         Name of experimenter
-    config : DLC_for_WBFM_config
+    config : DLCForWBFMConfig
         Configuration object
     working_directory : str
         Path to parent folder

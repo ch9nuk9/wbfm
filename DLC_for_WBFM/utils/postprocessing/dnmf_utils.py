@@ -62,7 +62,7 @@ def _extract_all_traces(config_file,
 
     # Save configuration
     # TODO: overwrite old
-    traces_config = DLC_for_WBFM_traces(is_3d,
+    traces_config = DLCForWBFMTraces(is_3d,
                                         crop_sz,
                                         trace_fname,
                                         which_neurons)
