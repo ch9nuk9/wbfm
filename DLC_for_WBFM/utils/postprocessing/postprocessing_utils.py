@@ -526,26 +526,32 @@ def visualize_mcherry_and_gcamp(t_dict, name,
 
     if make_new_fig:
         ax1 = plt.subplot(121)
-    dat = t_dict['mcherry']
+    try:
+        dat = t_dict['mcherry']
+    except:
+        dat = t_dict['red']
     if to_normalize:
         dat = dat / np.max(np.array(dat))
     if make_new_title:
         ax1.plot(dat)
-        plt.title(f'mcherry for neuron {name}')
+        plt.title(f'Red channel for neuron {name}')
     else:
-        ax1.plot(dat, label=f'mcherry for neuron {name}')
+        ax1.plot(dat, label=f'Red channel for neuron {name}')
         ax1.legend()
 
     if make_new_fig:
         ax2 = plt.subplot(122)
-    dat = t_dict['gcamp']
+    try:
+        dat = t_dict['gcamp']
+    except:
+        dat = t_dict['green']
     if to_normalize:
         dat = dat / np.max(np.array(dat))
     if make_new_title:
         ax2.plot(dat)
-        plt.title(f'gcamp for neuron {name}')
+        plt.title(f'Green channel for neuron {name}')
     else:
-        ax2.plot(dat, label=f'gcamp for neuron {name}')
+        ax2.plot(dat, label=f'Green channel for neuron {name}')
         ax2.legend()
 
     return ax1, ax2
