@@ -218,15 +218,20 @@ def calc_all_overlaps(start_neuron,
     all_masks.append(all_multi_masks[0] == start_neuron)
     all_neurons[0] = start_neuron
 
+    has_track = True
     for i, masks_v1 in enumerate(all_multi_masks):
         if i==0:
             continue
-        prev_mask = all_multi_masks[i-1] == all_neurons[i-1]
+        if has_track:
+            # Retain the last successful mask
+            prev_mask = all_multi_masks[i-1] == all_neurons[i-1]
 
         all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, masks_v1)
-        if all_neurons[i] is None:
+        if all_overlaps[i]==0:
             print("Lost neuron tracking, attempting to find...")
-            all_neurons[i], this_mask = attempt_to_refind_neuron(prev_mask, masks_v1)
+            all_neurons[i], this_mask, has_track = attempt_to_refind_neuron(prev_mask, masks_v1)
+        else:
+            has_track = True
         all_masks.append(this_mask)
 
     return all_neurons, all_overlaps, all_masks
@@ -266,7 +271,7 @@ def attempt_to_refind_neuron(prev_mask, masks_v1):
     closest_neuron, best_dist = calc_center_neuron(masks_v1)
     if closest_neuron==0:
         print("No neurons detected, hopefully the tracking will succeed later")
-        return 0, np.zeros_like(masks_v1)
+        return 0, np.zeros_like(masks_v1), False
     else:
         this_mask = masks_v1==closest_neuron
 
@@ -274,8 +279,9 @@ def attempt_to_refind_neuron(prev_mask, masks_v1):
     sz0 = np.count_nonzero(prev_mask)
     sz1 = np.count_nonzero(this_mask)
     if (sz0 < 2*sz1) and (sz0 > sz1/2):
-        return closest_neuron, this_mask
+        print("Re-found neuron!")
+        return closest_neuron, this_mask, True
     else:
-        print(f"New Object {sz1} was too different {sz0}; rejecting")
-        print("Hopefully the tracking will succeed later")
-        return 0, np.zeros_like(masks_v1)
+        print(f"New Object size ({sz1}) was too different ({sz0}); rejecting")
+        # print("Hopefully the tracking will succeed later")
+        return 0, np.zeros_like(masks_v1), False
