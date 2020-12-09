@@ -99,7 +99,7 @@ class DLCForWBFMSegmentation:
 
 @dataclass
 class DLCForWBFMConfig:
-    """Short summary.
+    """Master configuration data for a DLC_for_WBFM project
 
     Parameters
     ----------
