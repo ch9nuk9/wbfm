@@ -94,12 +94,12 @@ def extract_single_trace_cp(config_filename,
     c = load_config(config_filename)
 
     # Two channels
-    cropped_dat_red = _get_crop_from_ometiff_virtual(c.datafiles.red_bigtiff_fname,
+    cropped_dat_red = _get_crop_from_ometiff_virtual(c,
                                                      which_neuron=which_neuron,
                                                      num_frames=num_frames,
                                                      use_red_channel=True)
 
-    cropped_dat_green = _get_crop_from_ometiff_virtual(c.datafiles.green_bigtiff_fname,
+    cropped_dat_green = _get_crop_from_ometiff_virtual(c,
                                                        which_neuron=which_neuron,
                                                        num_frames=num_frames,
                                                        use_red_channel=False)
@@ -126,14 +126,14 @@ def extract_single_trace_cp(config_filename,
     # Link segmentations in time
     # For now, discard all but the center neuron
     initial_neuron, _ = calc_center_neuron(all_masks[0])
-    all_neurons, all_overlaps, all_masks = calc_all_overlaps(initial_neuron,all_multi_masks)
+    _, _, this_neuron_masks = calc_all_overlaps(initial_neuron,all_masks)
 
     # Finally, get traces
     trace_red = np.zeros(num_frames)
     trace_green = np.zeros(num_frames)
     num_pixels = np.zeros(num_frames)
 
-    for i, m in enumerate(all_masks):
+    for i, m in enumerate(this_neuron_masks):
         this_vol_red = np.squeeze(cropped_dat_red[i,...])
         this_vol_green = np.squeeze(cropped_dat_green[i,...])
         # TODO: Assume there is only one neuron detected
