@@ -21,6 +21,8 @@ class DLCForWBFMPreprocessing:
     center_slice: int
     alpha: float # For conversion to uint8
 
+    fps: float
+
     # As of Nov 2020
     red_and_green_mirrored: bool = True
 
