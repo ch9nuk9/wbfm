@@ -549,6 +549,7 @@ def visualize_mcherry_and_gcamp(t_dict,
 def visualize_ratio(t_dict,
                     name,
                     which_neuron,
+                    tspan=None,
                     background=[0,0],
                     preprocess_func=None):
     """
@@ -557,6 +558,7 @@ def visualize_ratio(t_dict,
     """
     plt.figure(figsize=(35,5))
 
+
     red = get_tracking_channel(t_dict)
     green = get_measurement_channel(t_dict)
 
@@ -564,7 +566,13 @@ def visualize_ratio(t_dict,
         red = preprocess_func(red, which_neuron)
         green = preprocess_func(green, which_neuron)
 
-    plt.plot((green-background[0]) / (red-background[1]))
+    dat = (green-background[0]) / (red-background[1])
+    if tspan is None:
+        plt.plot(dat)
+    else:
+        plt.plot(tspan, dat)
+    plt.xlabel('Seconds')
+    plt.ylim([0,2])
     plt.title(f"Ratiometric for neuron {name}")
 
 
