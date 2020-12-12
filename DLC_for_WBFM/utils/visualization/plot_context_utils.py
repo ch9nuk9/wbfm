@@ -5,7 +5,7 @@ import matplotlib.patches as patches
 import imageio
 import pickle
 
-from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import xy_from_dlc_dat, get_crop_from_ometiff_virtual, _get_crop_from_ometiff_virtual
+from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import xy_from_dlc_dat, get_crop_from_ometiff_virtual, _get_crop_from_ometiff_virtual, get_tracking_channel, get_measurement_channel, set_big_font
 from DLC_for_WBFM.bin.configuration_definition import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
 
@@ -61,7 +61,8 @@ def _plot_video_crop_trace(config_file,
                            video_data=None,
                            green_data=None,
                            red_data=None,
-                           trace_data=None):
+                           trace_data=None,
+                           which_field='ratio'):
     """
     Convenience function for plotting using a config file directly
 
@@ -73,13 +74,19 @@ def _plot_video_crop_trace(config_file,
     # Read traces
     if trace_data is None:
         trace_data = pickle.load(open(config.traces.traces_fname, 'rb'))
-        trace_data = np.array(trace_dat[which_neuron][which_field])
+        try:
+            trace_data = np.array(trace_data[which_neuron][which_field])
+        except:
+            if which_field=='ratio':
+                r = get_tracking_channel(trace_data[which_neuron])
+                g = get_measurement_channel(trace_data[which_neuron])
+                trace_data = g / r
 
     if video_data is None:
-        video_reader = imageio.get_reader(config.datafiles.red_avi_fname)
-        video_dat = []
+        video_reader = imageio.get_reader(config.tracking.labeled_video_fname)
+        video_data = []
         for im in video_reader:
-            video_dat.append(im)
+            video_data.append(im)
 
     if green_data is None:
         green_data = _get_crop_from_ometiff_virtual(config,
@@ -169,7 +176,7 @@ def plot_video_crop_trace(vid_fname,
         plot_video_crop_trace_frame(t, z, video_dat,
                                     cropped_dat_mcherry,
                                     cropped_dat_gcamp,
-                                    trace_dat)
+                                    trace_data)
     args = {'t':(0,num_frames-1), 'z':(0,crop_sz[-1]-1)}
 
     return interact(f, **args)
@@ -178,7 +185,7 @@ def plot_video_crop_trace(vid_fname,
 def plot_video_crop_trace_frame(t, z, video_dat,
                                 cropped_dat_mcherry,
                                 cropped_dat_gcamp,
-                                trace_dat):
+                                trace_data):
     """
     Plots a single frame of a video, cropped data, and the trace
         Made to be used as a subfunction of plot_video_crop_trace
@@ -187,29 +194,35 @@ def plot_video_crop_trace_frame(t, z, video_dat,
     """
 
     # plt.figure()
-    plt.figure(figsize=(45,15))
+    fig = plt.figure(figsize=(45,15))
+    # specs = fig.add_gridspec(ncols=1,nrows=3, height_ratios=[10,5,1])
 
     # 2d video; no z component
-    plt.subplot(231)
+    # ax = fig.add_subplot(specs[0])
+    # plt.subplot(311)
     plt.imshow(video_dat[t])
+    # ax.imshow(video_dat[t])
     plt.title('Full video')
 
+    fig = plt.figure(figsize=(45,15))
     # 3d crop; t and z
-    plt.subplot(232)
+    plt.subplot(323)
     plt.imshow(cropped_dat_mcherry[t,z,...])
     plt.clim([0,0.5*np.max(cropped_dat_mcherry[t,...])])
     plt.title('Cropped neuron (red)')
     plt.colorbar()
-    plt.subplot(233)
+    plt.subplot(324)
     plt.imshow(cropped_dat_gcamp[t,z,...])
     plt.clim([0,1.0*np.max(cropped_dat_gcamp[t,...])])
     plt.title('Cropped neuron (green)')
     plt.colorbar()
 
     # Trace: all with a line
-    plt.subplot(212)
-    plt.plot(trace_dat)
-    plt.vlines(t,0,np.max(trace_dat), colors='r')
+    plt.subplot(313)
+    plt.plot(trace_data)
+    plt.vlines(t,0,np.max(np.array(trace_data)), colors='r')
     plt.title('Trace')
+
+    set_big_font()
 
     # plt.show()
