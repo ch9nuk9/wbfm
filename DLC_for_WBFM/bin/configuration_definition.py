@@ -5,6 +5,32 @@ from datetime import datetime as dt
 import pickle
 
 
+
+@dataclass
+class DLCForWBFMDatafiles:
+    """
+    This project uses several very large of z-stack datafiles (~200 GB)
+
+    This class collects all the original data filenames
+        Also: created subfiles, e.g. 2d videos
+    """
+
+    # Original 3d files
+    red_bigtiff_fname: str
+    green_bigtiff_fname: str
+
+    # Place to initially write the videos
+    red_avi_fname: str = None
+    green_avi_fname: str = None
+
+    def get_frame_size(self):
+        # Assume red and green are same size
+        with tifffile.TiffFile(self.red_bigtiff_fname) as tif:
+            frame_height, frame_width = tif.pages[0].shape
+
+        return frame_height, frame_width
+        
+
 @dataclass
 class DLCForWBFMPreprocessing:
     """
@@ -30,31 +56,6 @@ class DLCForWBFMPreprocessing:
         return list( get_crop_coords3d((0,0,self.center_slice),
                                 (1,1,self.num_crop_slices) )[-1] )
 
-
-
-@dataclass
-class DLCForWBFMDatafiles:
-    """
-    This project uses several very large of z-stack datafiles (~200 GB)
-
-    This class collects all the original data filenames
-        Also: created subfiles, e.g. 2d videos
-    """
-
-    # Original 3d files
-    red_bigtiff_fname: str
-    green_bigtiff_fname: str
-
-    # Place to initially write the videos
-    red_avi_fname: str = None
-    green_avi_fname: str = None
-
-    def get_frame_size(self):
-        # Assume red and green are same size
-        with tifffile.TiffFile(self.red_bigtiff_fname) as tif:
-            frame_height, frame_width = tif.pages[0].shape
-
-        return frame_height, frame_width
 
 
 @dataclass
