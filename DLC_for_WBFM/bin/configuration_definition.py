@@ -3,7 +3,7 @@ import tifffile
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
 from datetime import datetime as dt
 import pickle
-
+import os
 
 
 @dataclass
@@ -29,7 +29,7 @@ class DLCForWBFMDatafiles:
             frame_height, frame_width = tif.pages[0].shape
 
         return frame_height, frame_width
-        
+
 
 @dataclass
 class DLCForWBFMPreprocessing:
@@ -227,6 +227,10 @@ def create_project(
     save_config(config)
 
 
+##
+## Filename builders
+##
+
 def build_project_name(config):
     """
     Build project name using the project_name, experimenter, and date
@@ -242,3 +246,29 @@ def build_project_name(config):
     project_name = f"wbfm--{project_name}-{experimenter}-{date}"
 
     return project_name
+
+
+def build_avi_fnames(config):
+    """
+    Builds avi fnames if they don't exist
+    Only replaces them if they are "None"
+
+    Locates them in the parent folder, i.e. where the config file itself is
+    """
+
+    c = load_config(config)
+    dir_name = os.path.dirname(c.config_filename)
+
+    frames = c.preprocessing.num_frames
+    which_slices = c.preprocessing.which_slices()
+    start, end = which_slices[0], which_slices[-1]
+
+    suffix = f'fr{frames}_sl{start}_{end}.avi'
+
+    if c.datafiles.green_avi_fname is None:
+        green_avi_fname = os.path.join(dir_name, 'green', suffix)
+        c.datafiles.green_avi_fname = green_avi_fname
+
+    if c.datafiles.red_avi_fname is None:
+        red_avi_fname = os.path.join(dir_name, 'red', suffix)
+        c.datafiles.green_avi_fname = red_avi_fname
