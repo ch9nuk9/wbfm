@@ -181,9 +181,9 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
 
 
 ## For use with config files
-def write_all_video_projection_from_ome_file_subset_test(config_file):
+def write_minimax_projection_from_btf(config_file):
     """
-    Note: writes videos to the same folder as the bigtiff
+    Note: writes videos to the same folder as the config file
 
     See also: write_video_projection_from_ome_file_subset
     """
