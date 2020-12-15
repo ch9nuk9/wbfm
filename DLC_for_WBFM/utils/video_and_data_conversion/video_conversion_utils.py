@@ -200,7 +200,7 @@ def write_minimax_projection_from_btf(config_file):
                 num_frames=c.preprocessing.num_frames,
                 frame_width=frame_width,
                 frame_height=frame_height,
-                num_slices=c.preprocessing.num_crop_slices,
+                num_slices=c.preprocessing.num_total_slices,
                 alpha=c.preprocessing.alpha)
 
     # Do red (tracking) channel
@@ -260,22 +260,24 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
     # alpha *= 1.0 / len(which_slices) # Also takes a mean
 
     i_frame_count = 0
-    img = np.zeros((len(which_slices), frame_height, frame_width))
+    img_tmp = np.zeros((len(which_slices), frame_height, frame_width))
 
     print(f'Taking a max of {len(which_slices)} slices, starting at {start_of_each_frame}' )
 
     with tifffile.TiffFile(video_fname, multifile=False) as tif:
-        for i, page in enumerate(tif.pages):
-            this_slice = i % num_slices
+        for i_page, page in enumerate(tif.pages):
+            i_slice_raw = i_page % num_slices
+            i_slice_tmp = i_slice_raw - start_of_each_frame
             # Skip some frames
-            if i < start_volume or this_slice not in which_slices:
+            if i_page < start_volume or i_slice_raw not in which_slices:
                 continue
-            print(f'Page {i}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {this_slice - start_of_each_frame}')
+            print(f'Page {i_page}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {i_slice_tmp}')
 
-            img[this_slice - start_of_each_frame,...] = page.asarray()
+            img_tmp[i_slice_tmp,...] = page.asarray()
 
-            if this_slice == end_of_each_frame:
-                final_img = np.max((alpha*img), axis=0).astype('uint8')
+            if i_slice_raw == end_of_each_frame:
+                # Take a mini-max projection
+                final_img = np.max((alpha*img_tmp), axis=0).astype('uint8')
                 if flip_x:
                     # gcamp and mcherry are mirrored in the WBFM setup
                     final_img = np.flip(final_img, axis=1)
