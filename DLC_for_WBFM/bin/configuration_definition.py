@@ -177,8 +177,6 @@ def save_config(config):
 
 
 def create_project(
-    project_name,
-    experimenter,
     config,
     working_directory=None
 ):
@@ -186,12 +184,13 @@ def create_project(
     Initializes a project given a parent folder and the config object
     Note: tries to make a short foldername (Windows might max out characters)
 
+    Recommended workflow:
+        Initialize a config object
+        Create the file structure using this function
+        Then, start preprocessing!
+
     Parameters
     ----------
-    project_name : str
-        Descriptive string
-    experimenter : str
-        Name of experimenter
     config : DLCForWBFMConfig
         Configuration object
     working_directory : str
