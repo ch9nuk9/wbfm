@@ -4,6 +4,7 @@ from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coord
 from datetime import datetime as dt
 import pickle
 import os
+import pathlib
 
 
 @dataclass
@@ -208,7 +209,7 @@ def create_project(
     project_name = build_project_name(config)
     if working_directory == None:
         working_directory = "."
-    wd = Path(working_directory).resolve()
+    wd = pathlib.Path(working_directory).resolve()
     project_path = wd / project_name
 
     # Create project and sub-directories
@@ -221,7 +222,7 @@ def create_project(
     print(f'Created "{project_path}"')
 
     # Finally, save the config file in this folder
-    config_filename = project_path / "config.pickle"
+    config_filename = os.path.join(project_path,"config.pickle")
     config.config_filename = config_filename
 
     save_config(config)
@@ -233,17 +234,17 @@ def create_project(
 
 def build_project_name(config):
     """
-    Build project name using the project_name, experimenter, and date
+    Build project name using the task_name, experimenter, and date
     """
 
-    project_name, experimenter = config.project_name, config.experimenter
+    task_name, experimenter = config.task_name, config.experimenter
 
     date = dt.today()
     month = date.strftime("%B")
     day = date.day
     d = str(month[0:3] + str(day))
     date = dt.today().strftime("%Y-%m-%d")
-    project_name = f"wbfm--{project_name}-{experimenter}-{date}"
+    project_name = f"wbfm--{task_name}-{experimenter}-{date}"
 
     return project_name
 
