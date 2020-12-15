@@ -189,6 +189,9 @@ def write_all_video_projection_from_ome_file_subset_test(config_file):
     """
 
     c = load_config(config_file)
+    # Make sure the target filenames exist
+    build_avi_fnames(c)
+
     # Get preprocessing settings
     frame_width, frame_height = c.datafiles.get_frame_size()
 
