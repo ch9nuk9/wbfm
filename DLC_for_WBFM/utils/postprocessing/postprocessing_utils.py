@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from ipywidgets import interact
 from scipy import ndimage as ndi
 from itertools import product
-from math import ceil
 from matplotlib.ticker import NullFormatter
 from matplotlib import transforms
 import time
