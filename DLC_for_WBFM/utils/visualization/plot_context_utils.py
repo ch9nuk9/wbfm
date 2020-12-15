@@ -208,7 +208,7 @@ def plot_video_crop_trace_frame(t, z, video_dat,
     # 3d crop; t and z
     plt.subplot(323)
     plt.imshow(cropped_dat_mcherry[t,z,...])
-    plt.clim([0,0.5*np.max(cropped_dat_mcherry[t,...])])
+    plt.clim([0,0.5*np.max(cropped_dat_mcherry)])
     plt.title('Cropped neuron (red)')
     plt.colorbar()
     plt.subplot(324)
@@ -222,6 +222,7 @@ def plot_video_crop_trace_frame(t, z, video_dat,
     plt.plot(trace_data)
     plt.vlines(t,0,np.max(np.array(trace_data)), colors='r')
     plt.title('Trace')
+    plt.ylim([0,2])
 
     set_big_font()
 
