@@ -216,16 +216,17 @@ def create_project(
     if project_path.exists():
     # if not DEBUG and project_path.exists():
         print('Project "{}" already exists!'.format(project_path))
-        return
-
-    project_path.mkdir()
-    print(f'Created "{project_path}"')
+    else:
+        project_path.mkdir()
+        print(f'Created Project folder "{project_path}"')
 
     # Finally, save the config file in this folder
     config_filename = os.path.join(project_path,"config.pickle")
     config.config_filename = config_filename
 
     save_config(config)
+
+    return config
 
 
 ##
@@ -244,7 +245,7 @@ def build_project_name(config):
     day = date.day
     d = str(month[0:3] + str(day))
     date = dt.today().strftime("%Y-%m-%d")
-    project_name = f"wbfm--{task_name}-{experimenter}-{date}"
+    project_name = f"wbfm_{task_name}-{experimenter}-{date}"
 
     return project_name
 
