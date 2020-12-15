@@ -193,7 +193,7 @@ def write_minimax_projection_from_btf(config_file):
     build_avi_fnames(c)
 
     # Get preprocessing settings
-    frame_width, frame_height = c.datafiles.get_frame_size()
+    frame_height, frame_width = c.datafiles.get_frame_size()
 
     params = dict(which_slices=c.preprocessing.which_slices(),
                 start_volume=c.preprocessing.start_volume,
@@ -242,6 +242,8 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
     # Set up the video writer
     fourcc=0
     video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
+
+    assert num_slices%2==1, f"num_slices must be odd; was {num_slices}"
 
     # By default skip the first volume
     if start_volume is None:
