@@ -134,6 +134,9 @@ class DLCForWBFMConfig:
 
     config_filename: str = None
 
+    def get_dirname(self):
+        return os.path.dirname(self.config_filename)
+
     def __str__(self):
         return f"=======================================\n\
                 Field values:\n\
@@ -146,7 +149,6 @@ class DLCForWBFMConfig:
                 preprocessing: {self.preprocessing is not None}\n\
                 tracking: {self.tracking is not None}\n\
                 traces: {self.traces is not None}\n"
-
 
 
 def load_config(fname_or_config):
@@ -245,7 +247,7 @@ def build_project_name(config):
     day = date.day
     d = str(month[0:3] + str(day))
     date = dt.today().strftime("%Y-%m-%d")
-    project_name = f"wbfm_{task_name}-{experimenter}-{date}"
+    project_name = f"{task_name}-{experimenter}-{date}"
 
     return project_name
 
@@ -259,7 +261,7 @@ def build_avi_fnames(config):
     """
 
     c = load_config(config)
-    dir_name = os.path.dirname(c.config_filename)
+    dir_name = c.get_dirname()
 
     frames = c.preprocessing.num_frames
     which_slices = c.preprocessing.which_slices()
