@@ -190,7 +190,7 @@ def write_minimax_projection_from_btf(config_file):
 
     c = load_config(config_file)
     # Make sure the target filenames exist
-    build_avi_fnames(c)
+    c = build_avi_fnames(c)
 
     # Get preprocessing settings
     frame_height, frame_width = c.datafiles.get_frame_size()
@@ -218,6 +218,8 @@ def write_minimax_projection_from_btf(config_file):
     write_video_projection_from_ome_file_subset(video_fname,
                                                 out_fname,
                                                 **params)
+
+    return c
 
 
 

@@ -285,3 +285,5 @@ def build_avi_fnames(config):
         c.datafiles.red_avi_fname = red_avi_fname
 
     save_config(c)
+
+    return c
