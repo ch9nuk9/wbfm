@@ -277,11 +277,11 @@ def build_avi_fnames(config):
     suffix = f'fr{frames}_sl{start}_{end}.avi'
 
     if c.datafiles.green_avi_fname is None:
-        green_avi_fname = os.path.join(dir_name, 'green', suffix)
+        green_avi_fname = os.path.join(dir_name, "green"+suffix)
         c.datafiles.green_avi_fname = green_avi_fname
 
     if c.datafiles.red_avi_fname is None:
-        red_avi_fname = os.path.join(dir_name, 'red', suffix)
+        red_avi_fname = os.path.join(dir_name, "red"+suffix)
         c.datafiles.red_avi_fname = red_avi_fname
 
     save_config(c)
