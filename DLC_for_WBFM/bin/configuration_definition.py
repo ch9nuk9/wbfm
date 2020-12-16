@@ -282,6 +282,6 @@ def build_avi_fnames(config):
 
     if c.datafiles.red_avi_fname is None:
         red_avi_fname = os.path.join(dir_name, 'red', suffix)
-        c.datafiles.green_avi_fname = red_avi_fname
+        c.datafiles.red_avi_fname = red_avi_fname
 
     save_config(c)
