@@ -166,7 +166,7 @@ def load_config(fname_or_config, always_reload=True):
         else:
             return fname_or_config
     else:
-        raise TypeError, "Must be file path or DLCForWBFMConfig"
+        raise TypeError#, "Must be file path or DLCForWBFMConfig"
 
 
 
@@ -213,7 +213,7 @@ def create_project(
 
     """
 
-    config = load_config(config)
+    config = load_config(config, always_reload=False)
 
     project_name = build_project_name(config)
     if working_directory == None:
@@ -283,3 +283,5 @@ def build_avi_fnames(config):
     if c.datafiles.red_avi_fname is None:
         red_avi_fname = os.path.join(dir_name, 'red', suffix)
         c.datafiles.green_avi_fname = red_avi_fname
+
+    save_config(c)
