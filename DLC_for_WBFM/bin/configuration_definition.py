@@ -151,16 +151,23 @@ class DLCForWBFMConfig:
                 traces: {self.traces is not None}\n"
 
 
-def load_config(fname_or_config):
+def load_config(fname_or_config, always_reload=True):
     """
     Helper to check if you passed the filename or the object itself
+
+    By default reloads the file from disk to make sure they are synchronized
     """
 
     if isinstance(fname_or_config, str):
         return pickle.load(open(fname_or_config, 'rb'))
+    elif isinstance(fname_or_config, DLCForWBFMConfig):
+        if always_reload:
+            return pickle.load(open(fname_or_config.config_filename, 'rb'))
+        else:
+            return fname_or_config
     else:
-        assert isinstance(fname_or_config, DLCForWBFMConfig), "Must be file path or DLCForWBFMConfig"
-        return fname_or_config
+        raise TypeError, "Must be file path or DLCForWBFMConfig"
+
 
 
 def save_config(config):
