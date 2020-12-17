@@ -161,14 +161,18 @@ def load_config(fname_or_config, always_reload=True):
     """
 
     if isinstance(fname_or_config, str):
-        return pickle.load(open(fname_or_config, 'rb'))
+        with open(fname_or_config, 'rb') as f:
+            config = pickle.load(f)
     elif isinstance(fname_or_config, DLCForWBFMConfig):
         if always_reload:
-            return pickle.load(open(fname_or_config.config_filename, 'rb'))
+            with open(fname_or_config.config_filename, 'rb') as f:
+                config = pickle.load(f)
         else:
             return fname_or_config
     else:
         raise TypeError#, "Must be file path or DLCForWBFMConfig"
+
+    return config
 
 
 
@@ -187,7 +191,8 @@ def save_config(config):
         fname = fname + ".pickle"
     if config.verbose >= 2:
         print(f"Saving config to filename '{fname}''")
-    pickle.dump(config, open(fname, 'wb'))
+    with open(fname, 'wb') as f:
+        pickle.dump(config, f)
 
 
 def create_project(
