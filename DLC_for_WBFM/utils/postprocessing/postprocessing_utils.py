@@ -146,7 +146,7 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
                                   alpha=1.0,
                                   actually_create=True,
                                   actually_crop=True,
-                                  verbose=True):
+                                  verbose=1):
     """
     Reads in a subset of a very large .btf file.
 
@@ -189,6 +189,9 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
     actually_crop : bool
         Debug variable; if false, crop_sz is ignored
 
+    verbose : int
+        Verbosity (0,1,2)
+
     Input-Output:
         ome.tiff -> np.array
     """
@@ -217,10 +220,10 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
         full_sz = (num_frames, len(which_slices), frame_width, frame_height)
         final_cropped_video = np.zeros(full_sz)
 
-        if start_of_each_frame < 5:
+        if start_of_each_frame < 5 and verbose >= 1:
             warnings.warn("As of 14.10.2020, the first several frames are very bad! Do you really mean to use these?")
 
-        if verbose:
+        if verbose >= 1:
             print(f'Cropping {len(which_slices)} slices, starting at {start_of_each_frame}' )
 
         return start_of_each_frame, end_of_each_frame, which_slices, \
@@ -240,7 +243,7 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
                 if not actually_crop:
                     full_sz = (num_frames, num_slices,) + full_sz
                     final_cropped_video = np.zeros(full_sz)
-                if verbose:
+                if verbose >= 1:
                     print(f"Full size read as {full_sz}")
                 x_ind, y_ind = update_ind(i_rel_volume, crop_sz)
             this_abs_slice = i % num_slices
@@ -248,7 +251,7 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
             # Align start of annotations and .btf
             if i < start_volume or this_abs_slice not in which_slices:
                 continue
-            if verbose:
+            if verbose >= 2:
                 print(f'Page {i}/{num_frames*num_slices}; volume {i_rel_volume}/{num_frames} to cropped array slice {this_rel_slice}')
 
             tmp = (alpha*page.asarray()).astype('uint8')
@@ -302,7 +305,8 @@ def _get_crop_from_ometiff_virtual(config_file,
                                                 alpha=c.preprocessing.alpha,
                                                 start_volume=c.preprocessing.start_volume,
                                                 actually_crop=True,
-                                                flip_x=flip_x)
+                                                flip_x=flip_x,
+                                                verbose=c.verbose)
     return cropped_dat
 
 ##
