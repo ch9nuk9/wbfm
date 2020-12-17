@@ -185,7 +185,8 @@ def save_config(config):
     fname = config.config_filename
     if '.pickle' not in fname:
         fname = fname + ".pickle"
-    print(f"Saving config to filename '{fname}''")
+    if config.verbose >= 2:
+        print(f"Saving config to filename '{fname}''")
     pickle.dump(config, open(fname, 'wb'))
 
 
@@ -226,10 +227,12 @@ def create_project(
     # Create project and sub-directories
     if project_path.exists():
     # if not DEBUG and project_path.exists():
-        print('Project "{}" already exists!'.format(project_path))
+        if config.verbose >= 1:
+            print('Project "{}" already exists!'.format(project_path))
     else:
         project_path.mkdir()
-        print(f'Created Project folder "{project_path}"')
+        if config.verbose >= 1:
+            print(f'Created Project folder "{project_path}"')
 
     # Finally, save the config file in this folder
     config_filename = os.path.join(project_path,"config.pickle")
