@@ -120,7 +120,8 @@ def extract_single_trace_cp(config_filename,
                                 do_3D=True,
                                 **cellpose_opt)
 
-        print(f"Segmenting Volume: {i}/{num_frames}")
+        if c.verbose >= 2:
+            print(f"Segmenting Volume: {i}/{num_frames}")
         all_masks.append(m)
 
     # TODO: better saving
@@ -168,7 +169,8 @@ def brightness_from_roi(img, all_masks, which_neuron):
 
 
 def calc_best_overlap(mask_v0, # Only one mask
-                      masks_v1):
+                      masks_v1,
+                      verbose=1):
     """
     Calculates the best overlap between an initial mask and all subsequent masks
         Note: calculates pairwise for adjacent time points
@@ -194,13 +196,14 @@ def calc_best_overlap(mask_v0, # Only one mask
             best_overlap = overlap
             best_ind = i
             best_mask = this_neuron_mask
-
-    print(f'Best Neuron: {best_ind}, overlap between {best_overlap} and original')
+    if verbose >= 2:
+        print(f'Best Neuron: {best_ind}, overlap between {best_overlap} and original')
     return best_ind, best_overlap, best_mask
 
 
 def calc_all_overlaps(start_neuron,
-                      all_multi_masks):
+                      all_multi_masks,
+                      verbose=1):
     """
     Get the "tube" of a neuron through time via most overlapping pixels
 
@@ -232,7 +235,8 @@ def calc_all_overlaps(start_neuron,
 
         all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, masks_v1)
         if all_overlaps[i]==0:
-            print("Lost neuron tracking, attempting to find...")
+            if c.verbose >= 1:
+                print("Lost neuron tracking, attempting to find...")
             all_neurons[i], this_mask, has_track = attempt_to_refind_neuron(prev_mask, masks_v1)
         else:
             has_track = True
@@ -241,7 +245,8 @@ def calc_all_overlaps(start_neuron,
     return all_neurons, all_overlaps, all_masks
 
 
-def calc_center_neuron(initial_mask):
+def calc_center_neuron(initial_mask,
+                       verbose=1):
     """
     Calculates neuron that is closest to the center
 
@@ -255,17 +260,17 @@ def calc_center_neuron(initial_mask):
         if i==0:
             continue
         this_center = center_of_mass(initial_mask==i)
-#         print(this_center)
         dist = np.linalg.norm(this_center-center_point)
         if dist < best_dist:
             closest_neuron = i
             best_dist = dist
+    if verbose >= 1:
+        print(f'Found closest neuron to be {closest_neuron}')
 
-    # print(f'Found closest neuron to be {closest_neuron}')
     return closest_neuron, best_dist
 
 
-def attempt_to_refind_neuron(prev_mask, masks_v1):
+def attempt_to_refind_neuron(prev_mask, masks_v1, verbose=1):
     """
     Try to refind the neuron when there is no overlap
     """
@@ -274,7 +279,8 @@ def attempt_to_refind_neuron(prev_mask, masks_v1):
     # If so, Get the object closest to center
     closest_neuron, best_dist = calc_center_neuron(masks_v1)
     if closest_neuron==0:
-        print("No neurons detected, hopefully the tracking will succeed later")
+        if verbose >= 1:
+            print("No neurons detected, hopefully the tracking will succeed later")
         return 0, np.zeros_like(masks_v1), False
     else:
         this_mask = masks_v1==closest_neuron
@@ -283,9 +289,11 @@ def attempt_to_refind_neuron(prev_mask, masks_v1):
     sz0 = np.count_nonzero(prev_mask)
     sz1 = np.count_nonzero(this_mask)
     if (sz0 < 2*sz1) and (sz0 > sz1/2):
-        print("Re-found neuron!")
+        if c.verbose >= 1:
+            print("Re-found neuron!")
         return closest_neuron, this_mask, True
     else:
-        print(f"New Object size ({sz1}) was too different ({sz0}); rejecting")
+        if c.verbose >= 1:
+            print(f"New Object size ({sz1}) was too different ({sz0}); rejecting")
         # print("Hopefully the tracking will succeed later")
         return 0, np.zeros_like(masks_v1), False
