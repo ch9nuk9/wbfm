@@ -62,11 +62,12 @@ class DLCForWBFMPreprocessing:
 @dataclass
 class DLCForWBFMTracking:
     """
-    Collects input and output for a DLC run on a single slice
+    Collects input and output for a DLC run on a single video
     """
 
-    # One DLC run (input)
-    DLC_project_foldername: str
+    # One DLC config file
+    # TODO: list?
+    DLC_config_fname: str
 
     # One DLC run (output)
     labeled_video_fname: str = None

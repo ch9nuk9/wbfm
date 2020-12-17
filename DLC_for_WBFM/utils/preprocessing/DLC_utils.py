@@ -21,6 +21,10 @@ def create_dlc_project_from_config(config, label='',copy_videos=True):
                'copy_videos':copy_videos,
                'working_directory':c.get_dirname()}
 
-    dlc_config_file = deeplabcut.create_new_project(**dlc_opt)
+    dlc_config_fname = deeplabcut.create_new_project(**dlc_opt)
 
-    return dlc_config_file
+    tracking = DLCForWBFMTracking(dlc_config_fname)
+    c.tracking = tracking
+    save_config(c)
+
+    return dlc_config_fname
