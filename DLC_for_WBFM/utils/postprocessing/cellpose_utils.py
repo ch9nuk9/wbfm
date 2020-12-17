@@ -50,12 +50,15 @@ def extract_all_traces_cp(config_file,
     if which_neurons is None:
         num_neurons, which_neurons, tmp = get_number_of_annotations(c.tracking.annotation_fname)
 
+    # Traces will be saved in overall config file folder
+    # TODO
+    trace_fname = os.path.join(c.get_dirname(), trace_fname)
+
     # Save configuration
-    # TODO: overwrite old
     traces_config = DLCForWBFMTraces(is_3d,
-                                        crop_sz,
-                                        trace_fname,
-                                        which_neurons)
+                                     crop_sz,
+                                     trace_fname,
+                                     which_neurons)
     c.traces = traces_config
     save_config(c)
 
