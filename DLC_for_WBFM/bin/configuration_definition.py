@@ -134,6 +134,7 @@ class DLCForWBFMConfig:
     traces: DLCForWBFMTraces = None
 
     config_filename: str = None
+    verbose: int = 1
 
     def get_dirname(self):
         return os.path.dirname(self.config_filename)

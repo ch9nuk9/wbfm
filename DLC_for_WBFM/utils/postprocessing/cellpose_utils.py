@@ -72,7 +72,8 @@ def extract_all_traces_cp(config_file,
                                                   num_frames=num_frames))
 
     end = time.time()
-    print('Finished in ' + str(end-start) + ' seconds')
+    if c.verbose >= 1:
+        print('Finished in ' + str(end-start) + ' seconds')
 
     # Save traces
     pickle.dump(all_traces, open(trace_fname, 'wb'))
