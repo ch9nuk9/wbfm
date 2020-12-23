@@ -11,6 +11,8 @@ import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 import glob
 import re
+from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels
+
 
 ##
 ## Helper functions
@@ -27,18 +29,23 @@ def prepare_source_and_target_nonrigid_3d(source_filename,
     target = o3.geometry.PointCloud()
 
     # Read a dataframe, not just a text file
-    df1 = pd.read_csv(target_filename)
-    df2 = pd.read_csv(source_filename)
-    target_np = df1[['XM', 'YM', 'ZM']].to_numpy()
-    source_np = df2[['XM', 'YM', 'ZM']].to_numpy()
-    # Test: normalize each column
-    target_np = target_np / target_np.max(axis=0)
-    source_np = source_np / source_np.max(axis=0)
+    try:
+        df1 = pd.read_csv(target_filename)
+        df2 = pd.read_csv(source_filename)
+        target_np = df1[['XM', 'YM', 'ZM']].to_numpy()
+        source_np = df2[['XM', 'YM', 'ZM']].to_numpy()
+        # Test: normalize each column
+        # target_np = target_np / target_np.max(axis=0)
+        # source_np = source_np / source_np.max(axis=0)
+    except:
+        source_np = np.loadtxt(source_filename)
+        target_np = np.loadtxt(target_filename)
 
     source.points = o3.utility.Vector3dVector(source_np)
     target.points = o3.utility.Vector3dVector(target_np)
-    source = source.voxel_down_sample(voxel_size=voxel_size)
-    target = target.voxel_down_sample(voxel_size=voxel_size)
+    if voxel_size is not None:
+        source = source.voxel_down_sample(voxel_size=voxel_size)
+        target = target.voxel_down_sample(voxel_size=voxel_size)
     print(source)
     print(target)
     return source, target
@@ -103,10 +110,10 @@ def save_indices_DLC(indices,
         if centroid_format == 'DLC':
             centroid_dfs.append(pd.read_csv(fname))
         else:
-            names = ['X', 'Y', 'Z']
+            # names = ['X', 'Y', 'Z']
+            names = ['Z', 'X', 'Y'] # TODO: update this
             centroid_dfs.append(pd.read_csv(fname, sep=' ', names=names))
-    print(centroid_nums)
-    # print(type(centroid_nums[0]))
+
     dataFrame = None
     coords = np.empty((len(centroid_dfs),3,))
 
@@ -149,9 +156,11 @@ def save_indices_DLC(indices,
 
         # Get xyz coordinates for one neuron, for all files
 
-        for i2, df in enumerate(centroid_dfs):
-            i3 = ind_in_files[i2] # The neuron index for this file
-            coords[i2,:] = np.array([df['X'][i3], df['Y'][i3], df['Z'][i3]])
+        for i_source, df in enumerate(centroid_dfs):
+            i_target = ind_in_files[i_source] # The neuron index for this file
+            x, y, z = [df['X'][i_target], df['Y'][i_target], df['Z'][i_target]]
+            z, x, y = bcpd_to_pixels([z, x, y]) # Convert back to pixel space
+            coords[i_source,:] = np.array([x, y, z])
             # print("Coordinates for neuron {}, file {}".format(i, i2), coords[i2,:])
 
         index = pd.MultiIndex.from_product([[scorer], [bodypart],
