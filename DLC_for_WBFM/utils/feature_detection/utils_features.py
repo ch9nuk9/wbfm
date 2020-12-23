@@ -4,7 +4,7 @@ import numpy as np
 from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels, pixels_to_bcpd
 import cv2
 import open3d as o3d
-
+from scipy import stats
 
 ##
 ## First, extract features and match
@@ -47,6 +47,29 @@ def detect_features_and_match(im1, im2,
 
 
 def match_using_known_keypoints(im1, kp1, im2, kp2, max_features=1000, use_flann=False):
+    """ Match using previously detected points, e.g. neurons
+
+    Parameters
+    ----------
+    im1 : array
+        First image
+    kp1 : list of cv2.KeyPoint
+        First image's keypoints
+    im2 : array
+        Second image
+    kp2 : list of cv2.KeyPoint
+        Keypoints
+    max_features : int
+        number of features; NOT USED
+    use_flann : bool
+        option for fancier optimizer... BROKEN
+
+    Returns
+    -------
+    kp1, kp2, matches
+        keypoints and matches
+
+    """
 
     # Match features.
     if use_flann:
@@ -88,6 +111,20 @@ def match_using_known_keypoints(im1, kp1, im2, kp2, max_features=1000, use_flann
 ##
 
 def extract_location_of_matches(matches, keypoints1, keypoints2):
+    """Gets location from cv2 objects
+
+    Parameters
+    ----------
+    matches : list of cv2.match
+        Determined e.g. using orb
+    keypoints1 : list of cv2.Keypoint
+    keypoints2 : list of cv2.Keypoint
+
+    Returns
+    -------
+    points1, points2
+
+    """
 
     points1 = np.zeros((len(matches), 2), dtype=np.float32)
     points2 = np.zeros((len(matches), 2), dtype=np.float32)
@@ -101,7 +138,8 @@ def extract_location_of_matches(matches, keypoints1, keypoints2):
 
 def build_neuron_tree(neurons):
     """
-    Build neuron point cloud
+    Build neuron point cloud from a list of 3d neuron positions
+        Expected input syntax: ZXY
     """
     pc = o3d.geometry.PointCloud()
 
@@ -120,6 +158,8 @@ def build_neuron_tree(neurons):
 def build_feature_tree(features, which_slice=None):
     """
     Build feature point cloud
+        If the input is 2d, then a 3rd dimension is added to form:
+        ZXY
     """
     pc = o3d.geometry.PointCloud()
 
@@ -186,7 +226,6 @@ def match_centroids_using_tree(neurons0,
             o3d.visualization.draw_geometries([one_point,pc_f0])
 
     # Second, loop through neurons of first frame
-    from scipy import stats
     all_matches = []
     for i in range(neurons0.shape[0]):
         # Get features of this neuron
@@ -234,7 +273,9 @@ def build_features_on_all_planes(fname0, fname1,
                                 sz=31.0,
                                 alpha=0.15,
                                 dat_foldername = r'..\point_cloud_alignment'):
-
+    """
+    Multi-plane wrapper around: match_centroids_using_tree
+    """
     f = lambda tif : (alpha*tif.asarray()).astype('uint8')
 
     vol0 = os.path.join(dat_foldername, fname0)
@@ -275,10 +316,29 @@ def build_features_on_all_planes(fname0, fname1,
     return np.array(all_features0), np.array(all_features1), keypoints0, keypoints1
 
 
-def get_keypoints_from_3dseg(kp0, i, sz=31.0):
+def get_keypoints_from_3dseg(kp0, i, sz=31.0, neuron_height=3):
+    """Translate numpy array to cv2.Keypoints, based off one slice
+
+    Parameters
+    ----------
+    kp0 : array-like
+        Original positions
+    i : int
+        current slice
+    sz : float
+        Size for cv2 keypoints... not sure if this matters
+    neuron_height : float
+        Radius around original annotations to add the keypoint to
+
+    Returns
+    -------
+    type
+        Description of returned object.
+
+    """
     kp_cv2 = []
     for z,x,y in kp0:
-        if abs(z-i) < 3.0:
+        if abs(z-i) < neuron_height:
             kp_cv2.append(cv2.KeyPoint(y,x,sz))
 
     return kp_cv2
