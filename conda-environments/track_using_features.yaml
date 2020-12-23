@@ -1,0 +1,23 @@
+# track_using_features.yaml
+
+# Made by Charles Fieseler for neuron tracking
+
+#Licensed under GNU Lesser General Public License v3.0
+
+# First, cd to the conda-environments folder
+# install: conda env create -f track_using_features.yaml
+
+name: track_using_features
+dependencies:
+  - python=3.7
+  - pip
+  - jupyter
+  - nb_conda
+  - opencv
+  - scikit-learn
+  - scikit-image
+  - tensorflow==1.13.1
+  - lxml
+  - pip:
+    - tifffile
+    - open3d
