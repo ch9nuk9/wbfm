@@ -26,10 +26,31 @@ def write_pointcloud_from_masks(mask, fname):
 #                 m[2] = m[2]/250 -1.0# z dimension is much smaller
 
             if not math.isnan(m[0]) and m[0] > 1.0:
-                factor = 2.0
-                m = factor*np.array(m)
-                m[0] = m[0]/100 -0.2
-                m[1] = m[1]/250 -1.0
-                m[2] = m[2]/250 -1.0
+                m = pixels_to_bcpd(m)
                 w.writerow(m)
     return com
+
+
+##
+## Translations between the region that works for bcpd and pixel space
+##
+
+## Note: hardcoded to be inversions of each other... TODO
+
+def pixels_to_bcpd(m):
+    factor = 2.0
+    m = factor*np.array(m)
+    m[0] = m[0]/100 - 0.2
+    m[1] = m[1]/250 - 1.0
+    m[2] = m[2]/250 - 1.0
+
+    return m
+
+def bcpd_to_pixels(m):
+    factor = 2.0
+    m = np.array(m)
+    m[0] = (m[0]+0.2)*100/factor
+    m[1] = (m[1]+1.0)*250/factor
+    m[2] = (m[2]+1.0)*250/factor
+
+    return m
