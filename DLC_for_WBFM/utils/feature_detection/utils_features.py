@@ -5,6 +5,7 @@ from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixe
 import cv2
 import open3d as o3d
 from scipy import stats
+import tifffile
 
 ##
 ## First, extract features and match

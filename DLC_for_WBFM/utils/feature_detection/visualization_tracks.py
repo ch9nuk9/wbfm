@@ -1,6 +1,6 @@
 import open3d as o3d
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
-
+import numpy as np
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
