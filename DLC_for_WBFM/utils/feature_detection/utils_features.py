@@ -188,7 +188,8 @@ def match_centroids_using_tree(neurons0,
                                radius=1,
                                max_nn=10,
                                min_features_needed=1,
-                               verbose=0):
+                               verbose=0,
+                               which_slice=None):
     """
     Uses a combined point cloud (neurons and features) to do the following:
     1. Assign features, f0, in vol0 to neurons in vol0, n0
@@ -197,8 +198,8 @@ def match_centroids_using_tree(neurons0,
     """
 
     # Build point clouds and trees
-    num_features0, pc_f0, tree_features0 = build_feature_tree(features0)
-    num_features1, pc_f1, tree_features1 = build_feature_tree(features1)
+    num_features0, pc_f0, tree_features0 = build_feature_tree(features0,which_slice)
+    num_features1, pc_f1, tree_features1 = build_feature_tree(features1,which_slice)
     num_neurons0, pc_n0, _ = build_neuron_tree(neurons0)
     num_neurons1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1)
 
