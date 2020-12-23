@@ -161,7 +161,6 @@ def find_xml_in_project(path_config_file):
     return project_folder, xml_folder, xml_fname, png_fnames
 
 
-
 ##
 ## Synchronizing the config file
 ##
