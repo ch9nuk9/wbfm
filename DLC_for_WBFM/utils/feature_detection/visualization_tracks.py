@@ -1,6 +1,7 @@
 import open3d as o3d
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
@@ -40,3 +41,13 @@ def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
         o3d.visualization.draw_geometries([failed_line_set, successful_line_set, pc_n0, pc_n1])
     else:
         o3d.visualization.draw_geometries([successful_line_set, pc_n0, pc_n1])
+
+
+def visualize_cluster_labels(labels, pc):
+
+    max_label = labels.max()
+    print(f"point cloud has {max_label + 1} clusters")
+    colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
+    colors[labels < 0] = 0
+    pc.colors = o3d.utility.Vector3dVector(colors[:, :3])
+    o3d.visualization.draw_geometries([pc])
