@@ -5,6 +5,7 @@
 from DLC_for_WBFM.bin.configuration_definition import *
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import _get_crop_from_ometiff_virtual
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import _get_crop_from_avi
 from cellpose import models
 from cellpose import utils as cellutils
 from scipy.ndimage import center_of_mass
@@ -100,17 +101,29 @@ def extract_single_trace_cp(config_filename,
     """
 
     c = load_config(config_filename)
+    is_3d = c.traces.is_3d
 
     # Two channels
-    cropped_dat_red = _get_crop_from_ometiff_virtual(c,
-                                                     which_neuron=which_neuron,
-                                                     num_frames=num_frames,
-                                                     use_red_channel=True)
+    if is_3d:
+        cropped_dat_red = _get_crop_from_ometiff_virtual(c,
+                                                         which_neuron=which_neuron,
+                                                         num_frames=num_frames,
+                                                         use_red_channel=True)
+        cropped_dat_green = _get_crop_from_ometiff_virtual(c,
+                                                           which_neuron=which_neuron,
+                                                           num_frames=num_frames,
+                                                           use_red_channel=False)
+    else:
+        cropped_dat_red = _get_crop_from_avi(c,
+                                             which_neuron=which_neuron,
+                                             num_frames=num_frames,
+                                             use_red_channel=True)
+        cropped_dat_green = _get_crop_from_avi(c,
+                                               which_neuron=which_neuron,
+                                               num_frames=num_frames,
+                                               use_red_channel=False)
 
-    cropped_dat_green = _get_crop_from_ometiff_virtual(c,
-                                                       which_neuron=which_neuron,
-                                                       num_frames=num_frames,
-                                                       use_red_channel=False)
+
     # Do the segmentation on red only
     channels = [0,0]
     model = models.Cellpose(gpu=False, model_type='nuclei')
@@ -121,7 +134,7 @@ def extract_single_trace_cp(config_filename,
         this_vol = np.squeeze(cropped_dat_red[i,...])
         m, f, s, d = model.eval(this_vol,
                                 channels=channels,
-                                do_3D=True,
+                                do_3D=is_3d,
                                 **cellpose_opt)
 
         if c.verbose >= 2:

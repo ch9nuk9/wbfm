@@ -11,7 +11,37 @@ def get_crop_coords(center, sz=(28,28)):
     return list(x_ind), list(y_ind)
 
 
+
+def _get_crop_from_avi(config_file,
+                       which_neuron,
+                       num_frames,
+                       use_red_channel=True):
+
+    c = load_config(config_file)
+
+    # Get track
+    this_xy, this_prob = xy_from_dlc_dat(c.tracking.annotation_fname,
+                                        which_neuron=which_neuron,
+                                        num_frames=num_frames)
+    # Get data
+    if use_red_channel:
+        fname = c.datafiles.red_bigtiff_fname
+        flip_x = False
+    else:
+        fname = c.datafiles.green_bigtiff_fname
+        flip_x = c.preprocessing.red_and_green_mirrored
+
+    cropped_dat = get_crop_from_avi(fname, this_xy, num_frames, c.traces.crop_sz)
+
+    return cropped_dat
+
+
 def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
+    """
+    Gets np.array from .avi video
+
+    Note: reads in entire array into memory
+    """
 
     if not os.path.isfile(fname):
         raise FileException
