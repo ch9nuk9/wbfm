@@ -42,13 +42,13 @@ class DLCForWBFMPreprocessing:
     # In time
     start_volume: int
     num_frames: int
-    # In z
-    num_total_slices: int
-    num_crop_slices: int
-    center_slice: int
-    alpha: float # For conversion to uint8
-
     fps: float
+
+    alpha: float # For conversion to uint8
+    # In z
+    num_total_slices: int = None
+    num_crop_slices: int = None
+    center_slice: int = None
 
     # As of Nov 2020
     red_and_green_mirrored: bool = True
