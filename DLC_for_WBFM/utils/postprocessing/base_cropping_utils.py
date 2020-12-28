@@ -6,6 +6,8 @@ from DLC_for_WBFM.bin.configuration_definition import *
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 
+
+
 def get_crop_coords(center, sz=(28,28)):
     x_ind = range(int(center[0] - sz[0]/2), int(center[0] + sz[0]/2))
     y_ind = range(int(center[1] - sz[1]/2), int(center[1] + sz[1]/2))
@@ -45,7 +47,7 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
     """
 
     if not os.path.isfile(fname):
-        raise FileException
+        raise ValueError
 
     cap = cv2.VideoCapture(fname)
 
