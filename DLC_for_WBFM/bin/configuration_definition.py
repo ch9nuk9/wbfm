@@ -17,8 +17,8 @@ class DLCForWBFMDatafiles:
     """
 
     # Original 3d files
-    red_bigtiff_fname: str
-    green_bigtiff_fname: str
+    red_bigtiff_fname: str = None
+    green_bigtiff_fname: str = None
 
     # Place to initially write the videos
     red_avi_fname: str = None
