@@ -44,7 +44,11 @@ def visualize_mcherry_and_gcamp(t_dict,
                                 make_new_title=True,
                                 ax1 = None,
                                 ax2 = None,
-                                to_normalize=False):
+                                to_normalize=False,
+                                preprocess_func=None):
+    """
+    TODO: preprocess_func is nonfunctional
+    """
     if make_new_fig:
         plt.figure(figsize=(35,5))#, fontsize=12)
 
