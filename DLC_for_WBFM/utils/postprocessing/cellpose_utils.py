@@ -52,7 +52,7 @@ def extract_all_traces_cp(config_file,
         num_neurons, which_neurons, tmp = get_number_of_annotations(c.tracking.annotation_fname)
     # Assume if these aren't set that there is already a traces subobject
     if not overwrite_trace_settings:
-        trace_fname = c.traces.trace_fname
+        trace_fname = c.traces.traces_fname
     else:
         # Traces will be saved in overall config file folder
         # TODO
