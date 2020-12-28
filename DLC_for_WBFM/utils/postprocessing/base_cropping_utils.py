@@ -40,7 +40,7 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28),start_frame=0):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         try:
             cropped = gray[:,x_ind][y_ind]
-            cropped_dat[i,0,:,:] = cropped
+            cropped_dat[i-start_frame,0,:,:] = cropped
         except:
             continue
 
