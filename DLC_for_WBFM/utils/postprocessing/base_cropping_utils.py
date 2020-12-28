@@ -25,10 +25,10 @@ def _get_crop_from_avi(config_file,
                                         num_frames=num_frames)
     # Get data
     if use_red_channel:
-        fname = c.datafiles.red_bigtiff_fname
+        fname = c.datafiles.red_avi_fname
         flip_x = False
     else:
-        fname = c.datafiles.green_bigtiff_fname
+        fname = c.datafiles.green_avi_fname
         flip_x = c.preprocessing.red_and_green_mirrored
 
     cropped_dat = get_crop_from_avi(fname, this_xy, num_frames, c.traces.crop_sz)
