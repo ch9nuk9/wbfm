@@ -43,6 +43,29 @@ def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
         o3d.visualization.draw_geometries([successful_line_set, pc_n0, pc_n1])
 
 
+
+def visualize_tracks_simple(pc0, pc1, matches):
+    pc0.paint_uniform_color([1,0,0])
+    pc1.paint_uniform_color([0,1,0])
+
+    # Plot lines from initial neuron to target
+    points = np.vstack((pc0.points,pc1.points))
+    n0 = len(pc0.points)
+
+    tmp = list(matches)
+    for i,match in enumerate(matches):
+        tmp[i][1] = (n0 + match[1])
+
+    colors = [[0, 0, 1] for i in range(len(tmp))]
+    line_set = o3d.geometry.LineSet(
+        points=o3d.utility.Vector3dVector(points),
+        lines=o3d.utility.Vector2iVector(tmp),
+    )
+    line_set.colors = o3d.utility.Vector3dVector(colors)
+
+    o3d.visualization.draw_geometries([line_set, pc0, pc1])
+
+
 def visualize_cluster_labels(labels, pc):
 
     max_label = labels.max()
