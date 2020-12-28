@@ -9,6 +9,7 @@ from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import _get_crop_from
 from cellpose import models
 from cellpose import utils as cellutils
 from scipy.ndimage import center_of_mass
+from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import *
 
 
 ##
@@ -71,10 +72,11 @@ def extract_all_traces_cp(config_file,
     # TODO: Cellpose options
     start = time.time()
     all_traces = []
+    all_masks = []
     for neuron in which_neurons:
-        all_traces.append(extract_single_trace_cp(c,
-                                                  which_neuron=neuron,
-                                                  num_frames=num_frames))
+        t, m = extract_single_trace_cp(c,which_neuron=neuron,num_frames=num_frames)
+        all_traces.append(t)
+        all_masks.append(m)
 
     end = time.time()
     if c.verbose >= 1:
@@ -82,6 +84,7 @@ def extract_all_traces_cp(config_file,
 
     # Save traces
     pickle.dump(all_traces, open(trace_fname, 'wb'))
+    pickle.dump(all_masks, open('test_masks.pickle', 'wb'))
 
     return all_traces
 
@@ -167,7 +170,7 @@ def extract_single_trace_cp(config_filename,
                    'green': trace_green,
                    'num_pixels': num_pixels}
 
-    return final_trace
+    return final_trace, all_masks
 
 
 def brightness_from_roi(img, all_masks, which_neuron):
