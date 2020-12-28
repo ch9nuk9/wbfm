@@ -18,9 +18,10 @@ def extract_all_traces_cp(config_file,
                           which_neurons=None,
                           num_frames=None,
                           crop_sz=None,
-                          is_3d=False,
+                          is_3d=None,
                           params=None,
-                          trace_fname='test_cellpose.pickle'):
+                          trace_fname='test_cellpose.pickle',
+                          overwrite_trace_settings=True):
     """
     Extracts all traces using cellpose
 
@@ -49,18 +50,21 @@ def extract_all_traces_cp(config_file,
         num_frames = c.preprocessing.num_frames
     if which_neurons is None:
         num_neurons, which_neurons, tmp = get_number_of_annotations(c.tracking.annotation_fname)
+    # Assume if these aren't set that there is already a traces subobject
+    if not overwrite_trace_settings:
+        trace_fname = c.traces.trace_fname
+    else:
+        # Traces will be saved in overall config file folder
+        # TODO
+        trace_fname = os.path.join(c.get_dirname(), trace_fname)
 
-    # Traces will be saved in overall config file folder
-    # TODO
-    trace_fname = os.path.join(c.get_dirname(), trace_fname)
-
-    # Save configuration
-    traces_config = DLCForWBFMTraces(is_3d,
-                                     crop_sz,
-                                     trace_fname,
-                                     which_neurons)
-    c.traces = traces_config
-    save_config(c)
+        # Save configuration
+        traces_config = DLCForWBFMTraces(is_3d,
+                                         crop_sz,
+                                         trace_fname,
+                                         which_neurons)
+        c.traces = traces_config
+        save_config(c)
 
     # Actually calculate
     # TODO: Cellpose options
