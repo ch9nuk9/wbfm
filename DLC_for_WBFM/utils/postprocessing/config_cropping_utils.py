@@ -24,7 +24,13 @@ def _get_crop_from_avi(config_file,
         fname = c.datafiles.green_avi_fname
         flip_x = c.preprocessing.red_and_green_mirrored
 
-    cropped_dat = get_crop_from_avi(fname, this_xy, num_frames, c.traces.crop_sz)
+    start_frame = c.preprocessing.start_volume
+
+    cropped_dat = get_crop_from_avi(fname,
+                                    this_xy,
+                                    num_frames,
+                                    c.traces.crop_sz,
+                                    start_frame)
 
     return cropped_dat
 

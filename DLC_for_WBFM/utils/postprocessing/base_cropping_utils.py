@@ -13,7 +13,7 @@ def get_crop_coords(center, sz=(28,28)):
     return list(x_ind), list(y_ind)
 
 
-def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
+def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28),start_frame=0):
     """
     Gets np.array from .avi video
 
@@ -32,6 +32,8 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
     all_dat = []
 
     for i in range(num_frames):
+        if i < start_frame:
+            continue
         ret, frame = cap.read()
 
         x_ind, y_ind = get_crop_coords(this_xy[i], sz)
