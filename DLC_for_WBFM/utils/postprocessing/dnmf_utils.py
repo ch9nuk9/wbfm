@@ -7,6 +7,7 @@ import torch
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
 from DLC_for_WBFM.bin.configuration_definition import *
+from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 ##
 ## Full workflow

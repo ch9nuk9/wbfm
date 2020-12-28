@@ -5,9 +5,10 @@ import matplotlib.patches as patches
 import imageio
 import pickle
 
-from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import xy_from_dlc_dat, get_crop_from_ometiff_virtual, _get_crop_from_ometiff_virtual, get_tracking_channel, get_measurement_channel, set_big_font
+from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual, _get_crop_from_ometiff_virtual, get_tracking_channel, get_measurement_channel, set_big_font
 from DLC_for_WBFM.bin.configuration_definition import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
+from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 ##
 ## Functions for visualizing how the tracking went

@@ -5,9 +5,11 @@
 from DLC_for_WBFM.bin.configuration_definition import *
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import _get_crop_from_ometiff_virtual
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import _get_crop_from_avi
 from cellpose import models
 from cellpose import utils as cellutils
 from scipy.ndimage import center_of_mass
+from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import *
 
 
 ##
@@ -18,9 +20,10 @@ def extract_all_traces_cp(config_file,
                           which_neurons=None,
                           num_frames=None,
                           crop_sz=None,
-                          is_3d=False,
+                          is_3d=None,
                           params=None,
-                          trace_fname='test_cellpose.pickle'):
+                          trace_fname='test_cellpose.pickle',
+                          overwrite_trace_settings=True):
     """
     Extracts all traces using cellpose
 
@@ -49,27 +52,31 @@ def extract_all_traces_cp(config_file,
         num_frames = c.preprocessing.num_frames
     if which_neurons is None:
         num_neurons, which_neurons, tmp = get_number_of_annotations(c.tracking.annotation_fname)
+    # Assume if these aren't set that there is already a traces subobject
+    if not overwrite_trace_settings:
+        trace_fname = c.traces.traces_fname
+    else:
+        # Traces will be saved in overall config file folder
+        # TODO
+        trace_fname = os.path.join(c.get_dirname(), trace_fname)
 
-    # Traces will be saved in overall config file folder
-    # TODO
-    trace_fname = os.path.join(c.get_dirname(), trace_fname)
-
-    # Save configuration
-    traces_config = DLCForWBFMTraces(is_3d,
-                                     crop_sz,
-                                     trace_fname,
-                                     which_neurons)
-    c.traces = traces_config
-    save_config(c)
+        # Save configuration
+        traces_config = DLCForWBFMTraces(is_3d,
+                                         crop_sz,
+                                         trace_fname,
+                                         which_neurons)
+        c.traces = traces_config
+        save_config(c)
 
     # Actually calculate
     # TODO: Cellpose options
     start = time.time()
     all_traces = []
+    all_masks = []
     for neuron in which_neurons:
-        all_traces.append(extract_single_trace_cp(c,
-                                                  which_neuron=neuron,
-                                                  num_frames=num_frames))
+        t, m = extract_single_trace_cp(c,which_neuron=neuron,num_frames=num_frames)
+        all_traces.append(t)
+        all_masks.append(m)
 
     end = time.time()
     if c.verbose >= 1:
@@ -77,6 +84,7 @@ def extract_all_traces_cp(config_file,
 
     # Save traces
     pickle.dump(all_traces, open(trace_fname, 'wb'))
+    pickle.dump(all_masks, open('test_masks.pickle', 'wb'))
 
     return all_traces
 
@@ -96,17 +104,29 @@ def extract_single_trace_cp(config_filename,
     """
 
     c = load_config(config_filename)
+    is_3d = c.traces.is_3d
 
     # Two channels
-    cropped_dat_red = _get_crop_from_ometiff_virtual(c,
-                                                     which_neuron=which_neuron,
-                                                     num_frames=num_frames,
-                                                     use_red_channel=True)
+    if is_3d:
+        cropped_dat_red = _get_crop_from_ometiff_virtual(c,
+                                                         which_neuron=which_neuron,
+                                                         num_frames=num_frames,
+                                                         use_red_channel=True)
+        cropped_dat_green = _get_crop_from_ometiff_virtual(c,
+                                                           which_neuron=which_neuron,
+                                                           num_frames=num_frames,
+                                                           use_red_channel=False)
+    else:
+        cropped_dat_red = _get_crop_from_avi(c,
+                                             which_neuron=which_neuron,
+                                             num_frames=num_frames,
+                                             use_red_channel=True)
+        cropped_dat_green = _get_crop_from_avi(c,
+                                               which_neuron=which_neuron,
+                                               num_frames=num_frames,
+                                               use_red_channel=False)
 
-    cropped_dat_green = _get_crop_from_ometiff_virtual(c,
-                                                       which_neuron=which_neuron,
-                                                       num_frames=num_frames,
-                                                       use_red_channel=False)
+
     # Do the segmentation on red only
     channels = [0,0]
     model = models.Cellpose(gpu=False, model_type='nuclei')
@@ -117,7 +137,7 @@ def extract_single_trace_cp(config_filename,
         this_vol = np.squeeze(cropped_dat_red[i,...])
         m, f, s, d = model.eval(this_vol,
                                 channels=channels,
-                                do_3D=True,
+                                do_3D=is_3d,
                                 **cellpose_opt)
 
         if c.verbose >= 2:
@@ -150,7 +170,7 @@ def extract_single_trace_cp(config_filename,
                    'green': trace_green,
                    'num_pixels': num_pixels}
 
-    return final_trace
+    return final_trace, all_masks
 
 
 def brightness_from_roi(img, all_masks, which_neuron):
@@ -235,7 +255,7 @@ def calc_all_overlaps(start_neuron,
 
         all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, masks_v1)
         if all_overlaps[i]==0:
-            if c.verbose >= 1:
+            if verbose >= 1:
                 print("Lost neuron tracking, attempting to find...")
             all_neurons[i], this_mask, has_track = attempt_to_refind_neuron(prev_mask, masks_v1)
         else:
@@ -289,11 +309,11 @@ def attempt_to_refind_neuron(prev_mask, masks_v1, verbose=1):
     sz0 = np.count_nonzero(prev_mask)
     sz1 = np.count_nonzero(this_mask)
     if (sz0 < 2*sz1) and (sz0 > sz1/2):
-        if c.verbose >= 1:
+        if verbose >= 1:
             print("Re-found neuron!")
         return closest_neuron, this_mask, True
     else:
-        if c.verbose >= 1:
+        if verbose >= 1:
             print(f"New Object size ({sz1}) was too different ({sz0}); rejecting")
         # print("Hopefully the tracking will succeed later")
         return 0, np.zeros_like(masks_v1), False

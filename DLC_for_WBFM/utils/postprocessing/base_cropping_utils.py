@@ -2,6 +2,9 @@ import os
 import numpy as np
 import cv2
 from math import ceil
+from DLC_for_WBFM.bin.configuration_definition import *
+from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
+
 
 
 
@@ -11,15 +14,47 @@ def get_crop_coords(center, sz=(28,28)):
     return list(x_ind), list(y_ind)
 
 
+
+def _get_crop_from_avi(config_file,
+                       which_neuron,
+                       num_frames,
+                       use_red_channel=True):
+
+    c = load_config(config_file)
+
+    # Get track
+    this_xy, this_prob = xy_from_dlc_dat(c.tracking.annotation_fname,
+                                        which_neuron=which_neuron,
+                                        num_frames=num_frames)
+    # Get data
+    if use_red_channel:
+        fname = c.datafiles.red_avi_fname
+        flip_x = False
+    else:
+        fname = c.datafiles.green_avi_fname
+        flip_x = c.preprocessing.red_and_green_mirrored
+
+    cropped_dat = get_crop_from_avi(fname, this_xy, num_frames, c.traces.crop_sz)
+
+    return cropped_dat
+
+
 def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
+    """
+    Gets np.array from .avi video
+
+    Note: reads in entire array into memory
+
+    Output format is TZXY (Z is 1d)
+    """
 
     if not os.path.isfile(fname):
-        raise FileException
+        raise ValueError
 
     cap = cv2.VideoCapture(fname)
 
     # Pre-allocate in proper size for future
-    cropped_dat = np.zeros(sz+(1,num_frames))
+    cropped_dat = np.zeros((num_frames,1)+sz)
     all_dat = []
 
     for i in range(num_frames):
@@ -29,7 +64,7 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         try:
             cropped = gray[:,x_ind][y_ind]
-            cropped_dat[:,:,0,i] = cropped
+            cropped_dat[i,0,:,:] = cropped
         except:
             continue
 
