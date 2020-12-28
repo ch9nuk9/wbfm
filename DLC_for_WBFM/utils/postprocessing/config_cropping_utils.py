@@ -1,7 +1,8 @@
-from DLC_for_WBFM.bin.configuration_definition import *
+from DLC_for_WBFM.bin.configuration_definition import load_config
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
-from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
-from DLC_for_WBFM.utils.postprocessing.ppostprocessing_utils import *
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_from_avi
+from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual
+# from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 
 
 def _get_crop_from_avi(config_file,
