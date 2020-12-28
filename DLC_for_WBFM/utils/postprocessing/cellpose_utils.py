@@ -3,7 +3,7 @@
 
 # Use the project config file
 from DLC_for_WBFM.bin.configuration_definition import *
-from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import _get_crop_from_ometiff_virtual
+from DLC_for_WBFM.utils.postprocessing.cconfig_cropping_utils import _get_crop_from_ometiff_virtual
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import _get_crop_from_avi
 from cellpose import models
