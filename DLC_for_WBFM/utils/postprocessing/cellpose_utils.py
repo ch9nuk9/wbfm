@@ -255,7 +255,7 @@ def calc_all_overlaps(start_neuron,
 
         all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, masks_v1)
         if all_overlaps[i]==0:
-            if c.verbose >= 1:
+            if verbose >= 1:
                 print("Lost neuron tracking, attempting to find...")
             all_neurons[i], this_mask, has_track = attempt_to_refind_neuron(prev_mask, masks_v1)
         else:
@@ -309,11 +309,11 @@ def attempt_to_refind_neuron(prev_mask, masks_v1, verbose=1):
     sz0 = np.count_nonzero(prev_mask)
     sz1 = np.count_nonzero(this_mask)
     if (sz0 < 2*sz1) and (sz0 > sz1/2):
-        if c.verbose >= 1:
+        if verbose >= 1:
             print("Re-found neuron!")
         return closest_neuron, this_mask, True
     else:
-        if c.verbose >= 1:
+        if verbose >= 1:
             print(f"New Object size ({sz1}) was too different ({sz0}); rejecting")
         # print("Hopefully the tracking will succeed later")
         return 0, np.zeros_like(masks_v1), False
