@@ -1,5 +1,6 @@
 import unittest
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
+from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 from numpy import array_equal
 

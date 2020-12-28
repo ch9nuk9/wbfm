@@ -2,7 +2,8 @@ import os
 import numpy as np
 import cv2
 from math import ceil
-
+from DLC_for_WBFM.bin.configuration_definition import *
+from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 
 def get_crop_coords(center, sz=(28,28)):
