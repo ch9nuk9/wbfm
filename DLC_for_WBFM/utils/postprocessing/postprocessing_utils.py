@@ -294,7 +294,7 @@ def _get_crop_from_ometiff_virtual(config_file,
         flip_x = False
     else:
         fname = c.datafiles.green_bigtiff_fname
-        flip_x = True
+        flip_x = c.preprocessing.red_and_green_mirrored
     cropped_dat = get_crop_from_ometiff_virtual(fname,
                                                 this_xy,
                                                 which_z=c.preprocessing.center_slice,
