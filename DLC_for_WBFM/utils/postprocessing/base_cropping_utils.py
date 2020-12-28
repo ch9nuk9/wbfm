@@ -44,6 +44,8 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
     Gets np.array from .avi video
 
     Note: reads in entire array into memory
+
+    Output format is TZXY (Z is 1d)
     """
 
     if not os.path.isfile(fname):
@@ -52,7 +54,7 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
     cap = cv2.VideoCapture(fname)
 
     # Pre-allocate in proper size for future
-    cropped_dat = np.zeros(sz+(1,num_frames))
+    cropped_dat = np.zeros((num_frames,1)+sz)
     all_dat = []
 
     for i in range(num_frames):
@@ -62,7 +64,7 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28)):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         try:
             cropped = gray[:,x_ind][y_ind]
-            cropped_dat[:,:,0,i] = cropped
+            cropped_dat[i,0,:,:] = cropped
         except:
             continue
 
