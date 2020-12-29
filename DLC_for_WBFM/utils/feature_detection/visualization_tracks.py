@@ -2,6 +2,7 @@ import open3d as o3d
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
@@ -49,21 +50,55 @@ def visualize_tracks_simple(pc0, pc1, matches):
     pc1.paint_uniform_color([0,1,0])
 
     # Plot lines from initial neuron to target
+    line_set = build_line_set_from_matches(pc0, pc1, matches)
+
+    o3d.visualization.draw_geometries([line_set, pc0, pc1])
+
+
+def visualize_tracks_multiple_matches(all_pc, all_matches):
+    """
+    Visualizes tracks between multiple point clouds that have pair-wise matchings
+
+    See also visualize_tracks_simple
+    """
+
+    all_lines = []
+    for i, match in enumerate(all_matches):
+        pc0 = all_pc[i]
+        pc0.paint_uniform_color([0.5,0.5,0.5])
+        pc1 = all_pc[i+1]
+
+        new_lines = build_line_set_from_matches(pc0, pc1, match)
+
+        if new_lines.has_lines():
+            all_lines.append(new_lines)
+
+    pc1.paint_uniform_color([0,0,0]) # Last one
+
+
+    pc_and_lines = copy.copy(all_pc)
+    pc_and_lines.extend(all_lines)
+    o3d.visualization.draw_geometries(pc_and_lines)
+
+
+def build_line_set_from_matches(pc0, pc1, matches,
+                                color=[0, 0, 1]):
     points = np.vstack((pc0.points,pc1.points))
     n0 = len(pc0.points)
 
-    tmp = list(matches)
+    # Convert matches to the coordinates of the combine point cloud
+    combined_matches = list(matches)
     for i,match in enumerate(matches):
-        tmp[i][1] = (n0 + match[1])
+        combined_matches[i][1] = (n0 + match[1])
 
-    colors = [[0, 0, 1] for i in range(len(tmp))]
+    colors = [color for i in range(len(matches))]
     line_set = o3d.geometry.LineSet(
         points=o3d.utility.Vector3dVector(points),
-        lines=o3d.utility.Vector2iVector(tmp),
+        lines=o3d.utility.Vector2iVector(combined_matches),
     )
     line_set.colors = o3d.utility.Vector3dVector(colors)
 
-    o3d.visualization.draw_geometries([line_set, pc0, pc1])
+    return line_set
 
 
 def visualize_cluster_labels(labels, pc):
