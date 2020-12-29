@@ -69,7 +69,7 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
     for i_match, reg in enumerate(all_registrations):
         if verbose >= 1:
             print("==============================================================")
-            print(f"{i_match} / {num_slices}")
+            print(f"{i_match} / {len(all_registrations)}")
         # Get transform to global coordinates
         this_pc = all_pcs[i_match]
         this_xyz = np.asarray(this_pc.points)
