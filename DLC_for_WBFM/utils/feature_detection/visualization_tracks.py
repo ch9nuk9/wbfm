@@ -3,6 +3,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tre
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
+import pandas as pd
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
@@ -109,6 +110,31 @@ def visualize_cluster_labels(labels, pc):
     colors[labels < 0] = 0
     pc.colors = o3d.utility.Vector3dVector(colors[:, :3])
     o3d.visualization.draw_geometries([pc])
+
+
+def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0):
+    # Assign colors to the data frame based on cluster id
+    max_label = clust_df['clust_ind'].max()
+    clust_df['colors'] = list(plt.get_cmap("tab20")(pd.to_numeric(clust_df.clust_ind, downcast='float') / max_label))
+
+    # Add colors to actual point cloud
+    full_pc.paint_uniform_color([0,0,0])
+    final_colors = np.asarray(full_pc.colors)
+
+    for i, row in clust_df.iterrows():
+        these_ind = row.all_ind_global
+        if len(these_ind) < 3:
+            continue
+        this_color = row['colors']
+        if verbose >= 1:
+            print(f"Color {this_color[:3]} for neurons {these_ind}")
+
+        all_colors = np.vstack([this_color[:3] for i in these_ind])
+        final_colors[these_ind,:] = all_colors
+
+    full_pc.colors = o3d.utility.Vector3dVector(final_colors)
+
+    o3d.visualization.draw_geometries([full_pc])
 
 
 def draw_registration_result(source, target, transformation, base=None):
