@@ -89,7 +89,7 @@ def build_correspondence_icp(all_keypoints_pcs,
 
     for i in range(len(all_keypoints_pcs)-1):
         if verbose >= 1:
-            print(f"{i} / {num_slices}")
+            print(f"{i} / {len(all_keypoints_pcs)}")
         this_pc = all_keypoints_pcs[i]
         next_pc = all_keypoints_pcs[i+1]
 
