@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 ##
 ## Helper functions for tracks
@@ -8,6 +9,7 @@ def create_new_track(i0, i1, next_clust_ind,
                     this_point_cloud_offset,
                     next_point_cloud_offset,
                     which_slice,
+                    i1_global,
                     verbose=0):
 
     new_track = pd.DataFrame({'clust_ind':next_clust_ind,
@@ -47,7 +49,7 @@ def extend_track(i1, i1_global, row, i, clust_df, which_slice, verbose=0):
 def build_tracklets_from_matches(all_pcs, all_registrations,
                                  verbose = 0):
     """
-    Builds tracklets from
+    Builds tracklets from an array of pairwise matches
     """
 
     # Use registration results to build a combined and colored pointcloud
@@ -83,7 +85,7 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
             if verbose >= 2:
                 print(f"Clusters available to check: {np.where(ind_to_check)}")
             if len(ind_to_check)==0:
-                next_clust_ind, new_track = create_new_track(i0, i1, next_clust_ind, **offsets)
+                next_clust_ind, new_track = create_new_track(i0, i1, next_clust_ind, i1_global=i1_global, **offsets)
                 all_new_tracks.append(new_track)
                 continue
             # Add to previous track if possible
@@ -95,7 +97,7 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
                     break
             else:
                 # Create new track
-                next_clust_ind, new_track = create_new_track(i0, i1, next_clust_ind, **offsets)
+                next_clust_ind, new_track = create_new_track(i0, i1, next_clust_ind, i1_global=i1_global, **offsets)
                 all_new_tracks.append(new_track)
 
         # Actually add the tracks to the dataframe
