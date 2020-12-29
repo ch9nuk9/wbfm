@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 import open3d as o3d
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
+from DLC_for_WBFM.utils.feature_detection.utils_features import *
+
 
 
 def detect_blobs(im1_raw):
@@ -92,3 +95,31 @@ def build_correspondence_icp(all_keypoints_pcs,
         all_icp.append(reg)
 
     return all_icp
+
+
+##
+## Full function
+##
+
+def detect_neurons_using_ICP(dat, num_slices, alpha=1.0, verbose=0):
+    """
+    Use blob detection and ICP to find neurons on multiple planes and link
+    """
+
+    # Build point clouds for each plane
+    all_keypoints_pcs = build_point_clouds_for_volume(dat,
+                                                  num_slices,
+                                                  alpha)
+    if verbose >= 1:
+      print("Building pairwise correspondence...")
+    all_icp = build_correspondence_icp(all_keypoints_pcs)
+    if verbose >= 1:
+        print("Building clusters...")
+    clust_df = build_tracklets_from_matches(all_keypoints_pcs, all_icp)
+
+    f = lambda x : np.mean(x, axis=0)
+    centroids = clust_df['all_xyz'].apply(f)
+    if verbose >= 1:
+        print("Finished ID'ing neurons")
+
+    return centroids, clust_df
