@@ -54,7 +54,8 @@ def detect_blobs(im1_raw):
 
 def build_point_clouds_for_volume(dat,
                                   num_slices,
-                                  alpha):
+                                  alpha,
+                                  verbose=0):
     """
     Build point clouds for each plane, with points = neurons
     """
@@ -80,13 +81,15 @@ def build_point_clouds_for_volume(dat,
 
 
 def build_correspondence_icp(all_keypoints_pcs,
-                            opt = {'max_correspondence_distance':4.0}):
+                            opt = {'max_correspondence_distance':4.0},
+                            verbose=0):
     # Build correspondence between each pair of planes
 
     all_icp = []
 
     for i in range(len(all_keypoints_pcs)-1):
-    #     print(f"{i} / {num_slices}")
+        if verbose >= 1:
+            print(f"{i} / {num_slices}")
         this_pc = all_keypoints_pcs[i]
         next_pc = all_keypoints_pcs[i+1]
 
@@ -109,13 +112,14 @@ def detect_neurons_using_ICP(dat, num_slices, alpha=1.0, verbose=0):
     # Build point clouds for each plane
     all_keypoints_pcs = build_point_clouds_for_volume(dat,
                                                   num_slices,
-                                                  alpha)
+                                                  alpha,
+                                                  verbose=verbose)
     if verbose >= 1:
       print("Building pairwise correspondence...")
-    all_icp = build_correspondence_icp(all_keypoints_pcs)
+    all_icp = build_correspondence_icp(all_keypoints_pcs, verbose=verbose)
     if verbose >= 1:
         print("Building clusters...")
-    clust_df = build_tracklets_from_matches(all_keypoints_pcs, all_icp)
+    clust_df = build_tracklets_from_matches(all_keypoints_pcs, all_icp, verbose=verbose)
 
     f = lambda x : np.mean(x, axis=0)
     centroids = clust_df['all_xyz'].apply(f)
