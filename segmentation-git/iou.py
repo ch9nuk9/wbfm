@@ -10,9 +10,6 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-
-
-
 # load numpy data
 
 path = r"C:\Users\niklas.khoss\Desktop\cp_vol\one_volume_seg.npy"
@@ -40,6 +37,5 @@ plt.imshow(mask_5)
 plt.show()
 
 
-
-
+# end of program
 print('end')
