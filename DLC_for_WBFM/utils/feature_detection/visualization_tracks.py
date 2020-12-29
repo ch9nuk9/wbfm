@@ -109,3 +109,16 @@ def visualize_cluster_labels(labels, pc):
     colors[labels < 0] = 0
     pc.colors = o3d.utility.Vector3dVector(colors[:, :3])
     o3d.visualization.draw_geometries([pc])
+
+
+def draw_registration_result(source, target, transformation, base=None):
+    source_temp = copy.deepcopy(source)
+    target_temp = copy.deepcopy(target)
+    source_temp.paint_uniform_color([0, 1, 0])
+    target_temp.paint_uniform_color([1, 0, 0])
+
+    source_temp.transform(transformation)
+    if base is not None:
+        o3d.visualization.draw_geometries([base, source_temp, target_temp])
+    else:
+        o3d.visualization.draw_geometries([source_temp, target_temp])
