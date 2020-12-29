@@ -5,7 +5,10 @@ import numpy as np
 ## Helper functions for tracks
 ##
 
-def create_new_track(i0, i1, next_clust_ind,
+def create_new_track(i0, i1,
+                    i0_xyz,
+                    i1_xyz,
+                    next_clust_ind,
                     this_point_cloud_offset,
                     next_point_cloud_offset,
                     which_slice,
@@ -15,6 +18,7 @@ def create_new_track(i0, i1, next_clust_ind,
     new_track = pd.DataFrame({'clust_ind':next_clust_ind,
                               'all_ind_local':[[i0,i1]],
                               'all_ind_global':[[this_point_cloud_offset+i0, i1_global]],
+                              'all_xyz':[[i0_xyz,i1_xyz]],
                               'slice_ind':[[which_slice, which_slice+1]],
                               'extended_this_slice':True,
                               'not_finished':True})
@@ -26,14 +30,17 @@ def create_new_track(i0, i1, next_clust_ind,
     return next_clust_ind, new_track
 
 
-def extend_track(i1, i1_global, row, i, clust_df, which_slice, verbose=0):
+def extend_track(row, i, clust_df, which_slice, i1, i1_global, i1_xyz, verbose=0):
     row['all_ind_local'].append(i1)
     clust_df.at[i,'all_ind_local'] = list(row['all_ind_local'])
     row['all_ind_global'].append(i1_global)
     clust_df.at[i,'all_ind_global'] = list(row['all_ind_global'])
+    row['all_xyz'].append(i1_xyz)
+    clust_df.at[i,'all_xyz'] = list(row['all_xyz'])
     row['slice_ind'].append(which_slice+1)
     clust_df.at[i,'slice_ind'] = list(row['slice_ind'])
     clust_df.at[i,'extended_this_slice'] = True
+
 
     clust_ind = row['clust_ind']
     tmp = len(row['all_ind_local'])
@@ -53,7 +60,7 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
     """
 
     # Use registration results to build a combined and colored pointcloud
-    clust_df = pd.DataFrame(columns=['clust_ind', 'all_ind_local', 'all_ind_global','slice_ind','extended_this_slice', 'not_finished'])
+    clust_df = pd.DataFrame(columns=['clust_ind', 'all_ind_local', 'all_ind_global', 'all_xyz','slice_ind','extended_this_slice', 'not_finished'])
 
     next_clust_ind = 0
     this_point_cloud_offset = 0
@@ -65,12 +72,14 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
             print(f"{i_match} / {num_slices}")
         # Get transform to global coordinates
         this_pc = all_pcs[i_match]
+        this_xyz = np.asarray(this_pc.points)
         next_pc = all_pcs[i_match+1]
+        next_xyz = np.asarray(next_pc.points)
         next_point_cloud_offset = next_point_cloud_offset + len(this_pc.points)
 
         offsets = {'next_point_cloud_offset':next_point_cloud_offset,
                    'this_point_cloud_offset':this_point_cloud_offset,
-                  'which_slice':i_match}
+                   'which_slice':i_match}
 
         pairs = np.asarray(reg.correspondence_set)
         # Initialize ALL as to-be-finished
@@ -78,14 +87,19 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
 
         all_new_tracks = []
         for i0, i1 in pairs:
-            i1_global = next_point_cloud_offset+i1
+            next_point = {'i1':i1,
+                          'i1_xyz':next_xyz[i1,:],
+                          'i1_global':next_point_cloud_offset+i1}
+            current_point = {'i0':i0,
+                             'i0_xyz':this_xyz[i0,:],
+                             'next_clust_ind':next_clust_ind}
             # If no tracks, initialize
             ind_to_check = clust_df['not_finished'] & ~clust_df['extended_this_slice']
 
             if verbose >= 2:
                 print(f"Clusters available to check: {np.where(ind_to_check)}")
             if len(ind_to_check)==0:
-                next_clust_ind, new_track = create_new_track(i0, i1, next_clust_ind, i1_global=i1_global, **offsets)
+                next_clust_ind, new_track = create_new_track(**current_point, **next_point, **offsets)
                 all_new_tracks.append(new_track)
                 continue
             # Add to previous track if possible
@@ -93,11 +107,11 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
                 if verbose >= 2:
                     print(f"pair: {i0}, {i1}, trying cluster: {i}")
                 if i0 == row['all_ind_local'][-1]:
-                    clust_df = extend_track(i1, i1_global, row, i, clust_df,i_match)
+                    clust_df = extend_track(row, i, clust_df, i_match, **next_point)
                     break
             else:
                 # Create new track
-                next_clust_ind, new_track = create_new_track(i0, i1, next_clust_ind, i1_global=i1_global, **offsets)
+                next_clust_ind, new_track = create_new_track(**current_point, **next_point, **offsets)
                 all_new_tracks.append(new_track)
 
         # Actually add the tracks to the dataframe
@@ -110,9 +124,11 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
             print(f"Finished tracks {np.where(to_finish)[0]}")
         clust_df.loc[to_finish,'not_finished'] = False
 
-        if verbose >= 2 and len(pairs) > 0:
+        if verbose >= 3 and len(pairs) > 0:
             visualize_tracks_simple(this_pc, next_pc, pairs)
 
         this_point_cloud_offset = next_point_cloud_offset
+
+    clust_df['all_xyz'] = clust_df['all_xyz'].apply(np.array)
 
     return clust_df
