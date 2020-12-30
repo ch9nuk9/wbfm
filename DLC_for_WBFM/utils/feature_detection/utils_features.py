@@ -183,6 +183,33 @@ def build_feature_tree(features, which_slice=None):
     return num_features, pc, pc_tree
 
 
+def keep_best_match(all_matches, all_confidences, verbose=0):
+    # Get duplicates
+    match_array = np.array(all_matches)
+    vals, counts = np.unique(match_array[:,1], return_counts=True)
+    duplicate_vals = vals[counts>1]
+
+    to_remove = []
+    for val in duplicate_vals:
+        # Find duplicate matches
+        these_duplicates = np.where(match_array[:,1]==val)[0]
+        # Get highest confidence value, and keep it
+        best_match = np.argmax(np.array(all_confidences)[these_duplicates])
+        if verbose >= 2:
+            print(f"Keeping best match {best_match} among confidences {np.array(all_conf)[these_duplicates]}")
+        these_duplicates = np.delete(these_duplicates,best_match)
+
+        to_remove.extend(these_duplicates)
+
+    to_remove.sort(reverse=True)
+    if verbose >= 1:
+        print(f"Removed the following duplicates: {to_remove}")
+    for i in to_remove:
+        all_matches.pop(i)
+        all_confidences.pop(i)
+
+    return all_matches, all_confidences
+
 def match_centroids_using_tree(neurons0,
                                neurons1,
                                features0,
@@ -261,11 +288,13 @@ def match_centroids_using_tree(neurons0,
             if verbose >= 1:
                 print(f"Matched neuron {i} based on {len(this_f0)} features")
         else:
-            all_matches.append([i, 0]) # TODO
+            #all_matches.append([i, np.nan]) # TODO
+            #all_confidences.append(0)
             if verbose >= 1:
                 print(f"Could not match neuron {i}")
 
-    
+    if only_keep_best_match:
+        all_matches, all_confidences = keep_best_match(all_matches, all_confidences, verbose=verbose)
 
     return all_matches, features_to_neurons1, all_confidences
 
