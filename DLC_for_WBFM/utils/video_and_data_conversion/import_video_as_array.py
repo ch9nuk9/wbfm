@@ -45,8 +45,8 @@ def get_video_from_ome_file_subset(video_fname,
 def get_single_volume(fname, which_vol, num_slices):
     # Convert to page coordinates
     start_ind = num_slices*which_vol
-    keys = range(start_ind, start_ind+num_slices)
-    return tifffile.imread(fname, keys=keys)
+    key = range(start_ind, start_ind+num_slices)
+    return tifffile.imread(fname, key=key)
 
 
 def get_adjacent_volumes(fname, first_vol, num_slices):
