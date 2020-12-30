@@ -15,13 +15,13 @@ def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
     # Plot lines from initial neuron to target
     points = np.vstack((pc_n0.points,pc_n1.points))
 
-    tmp = list(matches)
+    combined_matches = []
     for i,match in enumerate(matches):
-        tmp[i][1] = (n0 + match[1])
+        combined_matches.append([match[0], n0 + match[1]])
 
     successful_lines = []
     failed_lines = []
-    for row in tmp:
+    for row in combined_matches:
         if row[1] != n0:
             successful_lines.append(row)
         else:
@@ -135,6 +135,16 @@ def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0):
     full_pc.colors = o3d.utility.Vector3dVector(final_colors)
 
     o3d.visualization.draw_geometries([full_pc])
+
+
+def build_full_pc_from_list(all_keypoints_pcs):
+
+    full_pc = o3d.geometry.PointCloud()
+    for pc in all_keypoints_pcs:
+        full_pc = full_pc + pc
+    full_pc.paint_uniform_color([0.5,0.5,0.5])
+
+    return full_pc
 
 
 def draw_registration_result(source, target, transformation, base=None):

@@ -61,7 +61,6 @@ def build_point_clouds_for_volume(dat,
     """
 
     all_keypoints_pcs = []
-    all_ims_with_kps = []
 
     f = lambda dat, which_slice : (alpha*dat[which_slice]).astype('uint8')
 
@@ -99,12 +98,29 @@ def build_correspondence_icp(all_keypoints_pcs,
 
     return all_icp
 
+def get_centroids_from_df(clust_df, min_detections=3, verbose=0):
+    # Remove clusters that aren't long enough
+    f = lambda x : (len(x) > min_detections)
+    valid_detections = clust_df['all_xyz'].apply(f)
+    if verbose >= 1:
+        num_not_valid = len(np.where(~valid_detections))
+        print(f"Removing {num_not_valid} detections of length < {min_detections}")
+
+    f = lambda x : np.mean(x, axis=0)
+    centroids = clust_df.loc[valid_detections,'all_xyz'].apply(f)
+
+    return centroids
+
 
 ##
 ## Full function
 ##
 
-def detect_neurons_using_ICP(dat, num_slices, alpha=1.0, verbose=0):
+def detect_neurons_using_ICP(dat,
+                             num_slices,
+                             alpha=1.0,
+                             min_detections=3,
+                             verbose=0):
     """
     Use blob detection and ICP to find neurons on multiple planes and link
     """
@@ -115,15 +131,17 @@ def detect_neurons_using_ICP(dat, num_slices, alpha=1.0, verbose=0):
                                                   alpha,
                                                   verbose=verbose)
     if verbose >= 1:
-      print("Building pairwise correspondence...")
-    all_icp = build_correspondence_icp(all_keypoints_pcs, verbose=verbose)
+        print("Building pairwise correspondence...")
+    all_icp = build_correspondence_icp(all_keypoints_pcs,
+                                       verbose=verbose-1)
     if verbose >= 1:
         print("Building clusters...")
-    clust_df = build_tracklets_from_matches(all_keypoints_pcs, all_icp, verbose=verbose)
+    clust_df = build_tracklets_from_matches(all_keypoints_pcs,
+                                            all_icp,
+                                            verbose=verbose-1)
 
-    f = lambda x : np.mean(x, axis=0)
-    centroids = clust_df['all_xyz'].apply(f)
+    centroids = get_centroids_from_df(clust_df, min_detections, verbose=verbose-1)
     if verbose >= 1:
         print("Finished ID'ing neurons")
 
-    return centroids, clust_df
+    return centroids, clust_df, all_icp, all_keypoints_pcs

@@ -137,7 +137,7 @@ def extract_location_of_matches(matches, keypoints1, keypoints2):
     return points1, points2
 
 
-def build_neuron_tree(neurons):
+def build_neuron_tree(neurons, to_mirror=True):
     """
     Build neuron point cloud from a list of 3d neuron positions
         Expected input syntax: ZXY
@@ -146,8 +146,9 @@ def build_neuron_tree(neurons):
 
     num_neurons = neurons.shape[0]
     # the segmentations are mirrored
-    flip = lambda n : np.array([n[0], n[2], n[1]])
-    neurons = np.array([flip(row) for row in neurons])
+    if to_mirror:
+        flip = lambda n : np.array([n[0], n[2], n[1]])
+        neurons = np.array([flip(row) for row in neurons])
 
     # Build point cloud and tree
     pc.points = o3d.utility.Vector3dVector(neurons)
@@ -190,6 +191,7 @@ def match_centroids_using_tree(neurons0,
                                max_nn=10,
                                min_features_needed=1,
                                verbose=0,
+                               to_mirror=True,
                                which_slice=None):
     """
     Uses a combined point cloud (neurons and features) to do the following:
@@ -201,8 +203,8 @@ def match_centroids_using_tree(neurons0,
     # Build point clouds and trees
     num_features0, pc_f0, tree_features0 = build_feature_tree(features0,which_slice)
     num_features1, pc_f1, tree_features1 = build_feature_tree(features1,which_slice)
-    num_neurons0, pc_n0, _ = build_neuron_tree(neurons0)
-    num_neurons1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1)
+    num_neurons0, pc_n0, _ = build_neuron_tree(neurons0, to_mirror)
+    num_neurons1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror)
 
     # First, build dictionary to translate features to neurons
     features_to_neurons1 = np.zeros(len(features1))
