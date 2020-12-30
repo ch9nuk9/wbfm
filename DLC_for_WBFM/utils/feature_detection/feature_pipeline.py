@@ -42,8 +42,9 @@ def track_neurons_two_volumes(dat0,
                                                             np.array(neurons1),
                                                             all_f0,
                                                             all_f1,
-                                                            **opts)
+                                                            **opt)
     return all_matches, all_conf
+
 
 def track_neurons_full_video(vid_fname,
                              start_frame=0,
@@ -66,6 +67,7 @@ def track_neurons_full_video(vid_fname,
     frame_range = range(start_frame+1, end_frame)
     for i_frame in frame_range:
         if verbose >= 1:
+            print("===========================================================")
             print(f"Matching frames {i_frame-1} and {i_frame} (end at {end_frame})")
         dat1 = get_single_volume(vid_fname, i_frame, **import_opt)
 
