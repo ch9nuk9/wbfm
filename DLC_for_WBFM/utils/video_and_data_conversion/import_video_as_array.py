@@ -46,7 +46,7 @@ def get_single_volume(fname, which_vol, num_slices, alpha=1.0):
     # Convert to page coordinates
     start_ind = num_slices*which_vol
     key = range(start_ind, start_ind+num_slices)
-    return alpha*tifffile.imread(fname, key=key)
+    return alpha*tifffile.imread(fname, key=key).astype('uint8')
 
 
 def get_adjacent_volumes(fname, first_vol, num_slices):

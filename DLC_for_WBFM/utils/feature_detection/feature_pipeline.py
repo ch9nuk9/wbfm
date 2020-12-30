@@ -13,14 +13,13 @@ import numpy as np
 def track_neurons_two_volumes(dat0,
                               dat1,
                               num_slices=33,
-                              alpha=0.15,
                               verbose=1):
     """
     Matches neurons between two volumes
     """
     # Detect neurons, then features for each volume
     opt = {'num_slices':num_slices,
-           'alpha':alpha,
+           'alpha':1.0, # Already multiplied when imported
            'verbose':verbose-1}
     neurons0, _, _, _ = detect_neurons_using_ICP(dat0, **opt)
     neurons1, _, _, _ = detect_neurons_using_ICP(dat1, **opt)
@@ -63,13 +62,17 @@ def track_neurons_full_video(vid_fname,
     # Loop through all pairs
     all_matches = []
     all_conf = []
-    frame_range = range(start_frame+1, start_frame+num_frames)
-    for i, i_frame in enumerate(frame_range):
+    end_frame = start_frame+num_frames
+    frame_range = range(start_frame+1, end_frame)
+    for i_frame in frame_range:
         if verbose >= 1:
-            print(f"Matching frames {i-1} and {i} of {num_frames}")
-        dat1 = get_single_volume(vid_fname, i, **import_opt)
+            print(f"Matching frames {i_frame-1} and {i_frame} (end at {end_frame})")
+        dat1 = get_single_volume(vid_fname, i_frame, **import_opt)
 
-        matches, conf = track_neurons_two_volumes(dat0,dat1,**import_opt)
+        matches, conf = track_neurons_two_volumes(dat0,
+                                                  dat1,
+                                                  num_slices=num_slices,
+                                                  verbose=verbose-1)
         all_matches.append(matches)
         all_conf.append(conf)
 
