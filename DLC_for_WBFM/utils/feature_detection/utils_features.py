@@ -192,7 +192,8 @@ def match_centroids_using_tree(neurons0,
                                min_features_needed=1,
                                verbose=0,
                                to_mirror=True,
-                               which_slice=None):
+                               which_slice=None,
+                               only_keep_best_match=True):
     """
     Uses a combined point cloud (neurons and features) to do the following:
     1. Assign features, f0, in vol0 to neurons in vol0, n0
@@ -210,7 +211,6 @@ def match_centroids_using_tree(neurons0,
     features_to_neurons1 = np.zeros(len(features1))
     for i in range(num_features1):
         # Get features of this neuron and save
-#         this_feature = np.hstack((which_slice, this_feature))
         this_feature = np.asarray(pc_f1.points)[i]
         [k, this_fn1, _] = tree_neurons1.search_hybrid_vector_3d(this_feature, radius=5*radius, max_nn=1)
 
@@ -218,6 +218,7 @@ def match_centroids_using_tree(neurons0,
             features_to_neurons1[i] = this_fn1[0]
 
         if verbose >= 4:
+            # Note: displays the full image
             pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
 
             one_point = o3d.geometry.PointCloud()
@@ -225,12 +226,12 @@ def match_centroids_using_tree(neurons0,
             one_point.paint_uniform_color([1,0,0])
 
             np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
-
-#             print("Visualize the point cloud.")
             o3d.visualization.draw_geometries([one_point,pc_f0])
 
     # Second, loop through neurons of first frame
     all_matches = []
+    confidence_func = lambda matches, total : matches / (9+total)
+    all_confidences = []
     for i in range(neurons0.shape[0]):
         # Get features of this neuron
         this_neuron = np.asarray(pc_n0.points)[i]
@@ -251,7 +252,12 @@ def match_centroids_using_tree(neurons0,
         # Get the corresponding neurons in vol1, and vote
         this_n1 = features_to_neurons1[this_f0]
         if len(this_n1) >= min_features_needed:
-            all_matches.append([i, int(stats.mode(this_n1)[0][0])])
+            this_match = int(stats.mode(this_n1)[0][0])
+            all_matches.append([i, this_match])
+            # Also calculate a heuristic confidence
+            num_matches = np.count_nonzero(abs(this_n1-this_match) < 0.1)
+            conf = confidence_func(num_matches, len(this_n1))
+            all_confidences.append(conf)
             if verbose >= 1:
                 print(f"Matched neuron {i} based on {len(this_f0)} features")
         else:
@@ -259,7 +265,9 @@ def match_centroids_using_tree(neurons0,
             if verbose >= 1:
                 print(f"Could not match neuron {i}")
 
-    return all_matches, features_to_neurons1
+    
+
+    return all_matches, features_to_neurons1, all_confidences
 
 
 ##
@@ -276,6 +284,8 @@ def build_features_on_all_planes(fname0, fname1,
                                 kp1=None,
                                 sz=31.0,
                                 alpha=0.15,
+                                num_features_per_plane=1000,
+                                matches_to_keep=0.5,
                                 dat_foldername = r'..\point_cloud_alignment'):
     """
     Multi-plane wrapper around: match_centroids_using_tree
@@ -297,7 +307,7 @@ def build_features_on_all_planes(fname0, fname1,
         im0 = np.squeeze(dat0[i,...])
         im1 = np.squeeze(dat1[i,...])
         if detect_keypoints:
-            keypoints0, keypoints1, matches = detect_features_and_match(im0, im1, 10000, 0.5)
+            keypoints0, keypoints1, matches = detect_features_and_match(im0, im1, num_features_per_plane, matches_to_keep)
         else:
             kp0_cv2 = get_keypoints_from_3dseg(kp0, i, sz=sz)
             kp1_cv2 = get_keypoints_from_3dseg(kp1, i, sz=sz)
