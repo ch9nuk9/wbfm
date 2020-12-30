@@ -306,27 +306,18 @@ def match_centroids_using_tree(neurons0,
 # Get images with segmentation
 
 
-def build_features_on_all_planes(fname0, fname1,
+def build_features_on_all_planes(dat0, dat1,
                                 verbose=1, start_plane=10,
                                 detect_keypoints=True,
                                 kp0=None,
                                 kp1=None,
                                 sz=31.0,
-                                alpha=0.15,
                                 num_features_per_plane=1000,
                                 matches_to_keep=0.5,
                                 dat_foldername = r'..\point_cloud_alignment'):
     """
     Multi-plane wrapper around: match_centroids_using_tree
     """
-    f = lambda tif : (alpha*tif.asarray()).astype('uint8')
-
-    vol0 = os.path.join(dat_foldername, fname0)
-    vol1 = os.path.join(dat_foldername, fname1)
-    with tifffile.TiffFile(vol0) as tif0:
-        dat0 = f(tif0)
-    with tifffile.TiffFile(vol1) as tif1:
-        dat1 = f(tif1)
 
     all_features0 = []
     all_features1 = []
@@ -385,3 +376,15 @@ def get_keypoints_from_3dseg(kp0, i, sz=31.0, neuron_height=3):
             kp_cv2.append(cv2.KeyPoint(y,x,sz))
 
     return kp_cv2
+
+
+##
+## Full pipeline
+##
+
+def track_neurons(vid_fname,
+                  to_detect=True):
+    """
+    Detects and tracks neurons using opencv-based feature matching
+    """
+    print("WIP")
