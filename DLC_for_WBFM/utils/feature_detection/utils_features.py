@@ -6,6 +6,7 @@ import cv2
 import open3d as o3d
 from scipy import stats
 import tifffile
+import copy
 
 ##
 ## First, extract features and match
@@ -376,15 +377,3 @@ def get_keypoints_from_3dseg(kp0, i, sz=31.0, neuron_height=3):
             kp_cv2.append(cv2.KeyPoint(y,x,sz))
 
     return kp_cv2
-
-
-##
-## Full pipeline
-##
-
-def track_neurons(vid_fname,
-                  to_detect=True):
-    """
-    Detects and tracks neurons using opencv-based feature matching
-    """
-    print("WIP")
