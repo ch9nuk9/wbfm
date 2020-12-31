@@ -20,6 +20,18 @@ def convert_to_grayscale(im1):
     return im1Gray
 
 
+def detect_features(im1, im2, max_features):
+
+    im1Gray = convert_to_grayscale(im1)
+    im2Gray = convert_to_grayscale(im2)
+
+    orb = cv2.ORB_create(max_features)
+    kp1, d1 = orb.detectAndCompute(im1Gray, None)
+    kp2, d2 = orb.detectAndCompute(im2Gray, None)
+
+    return kp1, d1, kp2, d2
+
+
 def detect_features_and_match(im1, im2,
                               max_features=3000,
                               matches_to_keep=0.2):
@@ -27,12 +39,10 @@ def detect_features_and_match(im1, im2,
     Uses orb to detect and match generic features
     """
 
-    im1Gray = convert_to_grayscale(im1)
-    im2Gray = convert_to_grayscale(im2)
-
-    orb = cv2.ORB_create(max_features)
-    keypoints1, descriptors1 = orb.detectAndCompute(im1Gray, None)
-    keypoints2, descriptors2 = orb.detectAndCompute(im2Gray, None)
+    keypoints1, descriptors1, keypoints2, descriptors2 = detect_features(im1, im2, max_features)
+    if len(keypoints1)==0 or len(keypoints2)==0:
+        print("Found no keypoints on at least one frame; skipping")
+        return keypoints1, keypoints2, []
 
     # Match features.
     matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
@@ -328,12 +338,16 @@ def build_features_on_all_planes(dat0, dat1,
         im0 = np.squeeze(dat0[i,...])
         im1 = np.squeeze(dat1[i,...])
         if detect_keypoints:
+            #keypoints0, _, keypoints1, _ = detect_features(im1, im2, num_features_per_plane)
             keypoints0, keypoints1, matches = detect_features_and_match(im0, im1, num_features_per_plane, matches_to_keep)
+            if len(matches)==0:
+                continue
         else:
             kp0_cv2 = get_keypoints_from_3dseg(kp0, i, sz=sz)
             kp1_cv2 = get_keypoints_from_3dseg(kp1, i, sz=sz)
             keypoints0, keypoints1, matches = match_using_known_keypoints(im0, kp0_cv2, im1, kp1_cv2, 1000)
         features0, features1 = extract_location_of_matches(matches, keypoints0, keypoints1)
+        # TODO: These features are sorted by matches... is this necessary??
 
         if verbose >= 3:
             imMatches = cv2.drawMatches(im0, keypoints0, im1, keypoints1, matches, None)
