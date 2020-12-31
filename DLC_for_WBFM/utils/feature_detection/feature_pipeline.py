@@ -4,7 +4,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 import copy
 import numpy as np
-
+import time
 
 ##
 ## Full pipeline
@@ -43,7 +43,7 @@ def track_neurons_two_volumes(dat0,
                                                             all_f0,
                                                             all_f1,
                                                             **opt)
-    return all_matches, all_conf
+    return all_matches, all_conf, neurons0, neurons1
 
 
 def track_neurons_full_video(vid_fname,
@@ -55,6 +55,7 @@ def track_neurons_full_video(vid_fname,
     """
     Detects and tracks neurons using opencv-based feature matching
     """
+    start_time = time.time()
 
     # Get initial volume; settings are same for all
     import_opt = {'num_slices':num_slices, 'alpha':alpha}
@@ -63,6 +64,7 @@ def track_neurons_full_video(vid_fname,
     # Loop through all pairs
     all_matches = []
     all_conf = []
+    all_neurons = []
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
     for i_frame in frame_range:
@@ -71,13 +73,20 @@ def track_neurons_full_video(vid_fname,
             print(f"Matching frames {i_frame-1} and {i_frame} (end at {end_frame})")
         dat1 = get_single_volume(vid_fname, i_frame, **import_opt)
 
-        matches, conf = track_neurons_two_volumes(dat0,
+        m, c, n0, n1 = track_neurons_two_volumes(dat0,
                                                   dat1,
                                                   num_slices=num_slices,
                                                   verbose=verbose-1)
-        all_matches.append(matches)
-        all_conf.append(conf)
+        all_matches.append(m)
+        all_conf.append(c)
+        if len(all_neurons)==0:
+            all_neurons.append(np.array([r for r in n0]))
+        all_neurons.append(np.array([r for r in n1]))
 
         dat0 = copy.copy(dat1)
 
-    return all_matches, all_conf
+    if verbose >= 1:
+        total = time.time() - start_time
+        print(f"Finished {num_frames} frames in {total} seconds")
+
+    return all_matches, all_conf, all_neurons
