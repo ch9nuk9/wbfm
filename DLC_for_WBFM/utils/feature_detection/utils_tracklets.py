@@ -53,10 +53,14 @@ def extend_track(row, i, clust_df, which_slice, i1, i1_global, i1_xyz, verbose=0
 ## Main function
 ##
 
-def build_tracklets_from_matches(all_pcs, all_registrations,
+def build_tracklets_from_matches(all_neurons,
+                                 all_matches,
                                  verbose = 0):
     """
     Builds tracklets from an array of pairwise matches
+
+    Can accept points as list of np.arrays
+    Can accept matchings as list of np.arrays
     """
 
     # Use registration results to build a combined and colored pointcloud
@@ -66,22 +70,22 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
     this_point_cloud_offset = 0
     next_point_cloud_offset = 0
 
-    for i_match, reg in enumerate(all_registrations):
+    for i_match, match in enumerate(all_matches):
         if verbose >= 1:
             print("==============================================================")
-            print(f"{i_match} / {len(all_registrations)}")
+            print(f"{i_match} / {len(all_matches)}")
         # Get transform to global coordinates
-        this_pc = all_pcs[i_match]
-        this_xyz = np.asarray(this_pc.points)
-        next_pc = all_pcs[i_match+1]
-        next_xyz = np.asarray(next_pc.points)
-        next_point_cloud_offset = next_point_cloud_offset + len(this_pc.points)
+        these_neurons = all_neurons[i_match]
+        this_xyz = np.asarray(these_neurons)
+        next_neurons = all_neurons[i_match+1]
+        next_xyz = np.asarray(next_neurons)
+        next_point_cloud_offset = next_point_cloud_offset + len(these_neurons)
 
         offsets = {'next_point_cloud_offset':next_point_cloud_offset,
                    'this_point_cloud_offset':this_point_cloud_offset,
                    'which_slice':i_match}
 
-        pairs = np.asarray(reg.correspondence_set)
+        pairs = np.asarray(match)
         # Initialize ALL as to-be-finished
         clust_df['extended_this_slice'] = False
 
@@ -125,7 +129,8 @@ def build_tracklets_from_matches(all_pcs, all_registrations,
         clust_df.loc[to_finish,'not_finished'] = False
 
         if verbose >= 3 and len(pairs) > 0:
-            visualize_tracks_simple(this_pc, next_pc, pairs)
+            print("TODO")
+            #visualize_tracks_simple(this_pc, next_pc, pairs)
 
         this_point_cloud_offset = next_point_cloud_offset
 
