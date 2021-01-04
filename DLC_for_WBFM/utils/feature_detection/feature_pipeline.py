@@ -13,16 +13,22 @@ import time
 def track_neurons_two_volumes(dat0,
                               dat1,
                               num_slices=33,
+                              neurons0=None,
+                              neurons1=None,
                               verbose=1):
     """
     Matches neurons between two volumes
+
+    Can use previously detected neurons, if passed
     """
     # Detect neurons, then features for each volume
     opt = {'num_slices':num_slices,
            'alpha':1.0, # Already multiplied when imported
            'verbose':verbose-1}
-    neurons0, _, _, _ = detect_neurons_using_ICP(dat0, **opt)
-    neurons1, _, _, _ = detect_neurons_using_ICP(dat1, **opt)
+    if neurons0 is None:
+        neurons0, _, _, _ = detect_neurons_using_ICP(dat0, **opt)
+    if neurons1 is None:
+        neurons1, _, _, _ = detect_neurons_using_ICP(dat1, **opt)
 
     opt = {'verbose':verbose-1,
            'matches_to_keep':0.8,
@@ -65,6 +71,7 @@ def track_neurons_full_video(vid_fname,
     all_matches = []
     all_conf = []
     all_neurons = []
+    previous_neurons = None
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
     for i_frame in frame_range:
@@ -76,14 +83,18 @@ def track_neurons_full_video(vid_fname,
         m, c, n0, n1 = track_neurons_two_volumes(dat0,
                                                   dat1,
                                                   num_slices=num_slices,
-                                                  verbose=verbose-1)
+                                                  verbose=verbose-1,
+                                                  neurons0=previous_neurons)
         all_matches.append(m)
         all_conf.append(c)
         if len(all_neurons)==0:
+            # After the first time, n0 doesn't need to be saved
             all_neurons.append(np.array([r for r in n0]))
         all_neurons.append(np.array([r for r in n1]))
+        previous_neurons = n1
 
         dat0 = copy.copy(dat1)
+        # dat0 = get_single_volume(vid_fname, i_frame, **import_opt)
 
     if verbose >= 1:
         total = time.time() - start_time
