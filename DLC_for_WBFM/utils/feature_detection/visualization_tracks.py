@@ -112,7 +112,7 @@ def visualize_cluster_labels(labels, pc):
     o3d.visualization.draw_geometries([pc])
 
 
-def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0):
+def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0, smallest_cluster=3):
     # Assign colors to the data frame based on cluster id
     max_label = clust_df['clust_ind'].max()
     clust_df['colors'] = list(plt.get_cmap("tab20")(pd.to_numeric(clust_df.clust_ind, downcast='float') / max_label))
@@ -123,7 +123,7 @@ def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0):
 
     for i, row in clust_df.iterrows():
         these_ind = row.all_ind_global
-        if len(these_ind) < 3:
+        if len(these_ind) < smallest_cluster:
             continue
         this_color = row['colors']
         if verbose >= 1:
@@ -135,6 +135,8 @@ def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0):
     full_pc.colors = o3d.utility.Vector3dVector(final_colors)
 
     o3d.visualization.draw_geometries([full_pc])
+
+    return final_colors
 
 
 def build_full_pc_from_list(all_keypoints_pcs):
