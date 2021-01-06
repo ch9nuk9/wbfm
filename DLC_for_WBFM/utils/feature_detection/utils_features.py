@@ -34,7 +34,8 @@ def detect_features(im1, im2, max_features):
 
 def detect_features_and_match(im1, im2,
                               max_features=3000,
-                              matches_to_keep=0.2):
+                              matches_to_keep=0.2,
+                              use_GMS=True):
     """
     Uses orb to detect and match generic features
     """
@@ -47,6 +48,10 @@ def detect_features_and_match(im1, im2,
     # Match features.
     matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
     matches = matcher.match(descriptors1, descriptors2, None)
+
+    if use_GMS:
+        opt = {'keypoints1':keypoints1, 'keypoints2':keypoints2, 'matches1to2':matches}
+        matches = cv2.xfeatures2d.matchGMS(im1.shape, im2.shape, **opt)
 
     # Sort matches by score
     matches.sort(key=lambda x: x.distance, reverse=False)
@@ -237,6 +242,8 @@ def match_centroids_using_tree(neurons0,
     1. Assign features, f0, in vol0 to neurons in vol0, n0
     2. Match features f0 to features in vol1, f1
     3. Find the single neuron in vol1, n1, matching most of the features, f1
+
+    Note: Assumes the features are already matched by ordering
     """
 
     # Build point clouds and trees
