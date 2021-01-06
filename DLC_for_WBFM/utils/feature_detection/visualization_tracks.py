@@ -112,13 +112,13 @@ def visualize_cluster_labels(labels, pc):
     o3d.visualization.draw_geometries([pc])
 
 
-def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0, smallest_cluster=3):
+def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0, smallest_cluster=3, default_color=[0,0,0]):
     # Assign colors to the data frame based on cluster id
     max_label = clust_df['clust_ind'].max()
     clust_df['colors'] = list(plt.get_cmap("tab20")(pd.to_numeric(clust_df.clust_ind, downcast='float') / max_label))
 
     # Add colors to actual point cloud
-    full_pc.paint_uniform_color([0,0,0])
+    full_pc.paint_uniform_color(default_color)
     final_colors = np.asarray(full_pc.colors)
 
     for i, row in clust_df.iterrows():
