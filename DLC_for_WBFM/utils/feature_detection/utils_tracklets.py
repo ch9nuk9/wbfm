@@ -8,6 +8,7 @@ import numpy as np
 def create_new_track(i0, i1,
                     i0_xyz,
                     i1_xyz,
+                    i1_prob,
                     next_clust_ind,
                     this_point_cloud_offset,
                     next_point_cloud_offset,
@@ -19,6 +20,7 @@ def create_new_track(i0, i1,
                               'all_ind_local':[[i0,i1]],
                               'all_ind_global':[[this_point_cloud_offset+i0, i1_global]],
                               'all_xyz':[[i0_xyz,i1_xyz]],
+                              'all_prob':[[i1_prob]],
                               'slice_ind':[[which_slice, which_slice+1]],
                               'extended_this_slice':True,
                               'not_finished':True})
@@ -30,17 +32,19 @@ def create_new_track(i0, i1,
     return next_clust_ind, new_track
 
 
-def extend_track(row, i, clust_df, which_slice, i1, i1_global, i1_xyz, verbose=0):
+def extend_track(row, i, clust_df, which_slice, i1, i1_global,
+                 i1_xyz, i1_prob, verbose=0):
     row['all_ind_local'].append(i1)
     clust_df.at[i,'all_ind_local'] = list(row['all_ind_local'])
     row['all_ind_global'].append(i1_global)
     clust_df.at[i,'all_ind_global'] = list(row['all_ind_global'])
     row['all_xyz'].append(i1_xyz)
     clust_df.at[i,'all_xyz'] = list(row['all_xyz'])
+    row['all_prob'].append(i1_prob)
+    clust_df.at[i,'all_prob'] = list(row['all_prob'])
     row['slice_ind'].append(which_slice+1)
     clust_df.at[i,'slice_ind'] = list(row['slice_ind'])
     clust_df.at[i,'extended_this_slice'] = True
-
 
     clust_ind = row['clust_ind']
     tmp = len(row['all_ind_local'])
@@ -55,6 +59,7 @@ def extend_track(row, i, clust_df, which_slice, i1, i1_global, i1_xyz, verbose=0
 
 def build_tracklets_from_matches(all_neurons,
                                  all_matches,
+                                 all_likelihoods,
                                  verbose = 0):
     """
     Builds tracklets from an array of pairwise matches
@@ -64,7 +69,10 @@ def build_tracklets_from_matches(all_neurons,
     """
 
     # Use registration results to build a combined and colored pointcloud
-    clust_df = pd.DataFrame(columns=['clust_ind', 'all_ind_local', 'all_ind_global', 'all_xyz','slice_ind','extended_this_slice', 'not_finished'])
+    columns=['clust_ind', 'all_ind_local', 'all_ind_global', 'all_xyz',
+             'all_prob',
+             'slice_ind','extended_this_slice', 'not_finished']
+    clust_df = pd.DataFrame(columns=columns)
 
     next_clust_ind = 0
     this_point_cloud_offset = 0
@@ -81,6 +89,12 @@ def build_tracklets_from_matches(all_neurons,
         next_xyz = np.asarray(next_neurons)
         next_point_cloud_offset = next_point_cloud_offset + len(these_neurons)
 
+        # Get the probabilities as well
+        this_prob = all_likelihoods[i_match]
+        this_prob = np.asarray(this_prob)
+        # next_prob = all_likelihoods[i_match+1]
+        # next_prob = np.asarray(next_prob)
+
         offsets = {'next_point_cloud_offset':next_point_cloud_offset,
                    'this_point_cloud_offset':this_point_cloud_offset,
                    'which_slice':i_match}
@@ -90,9 +104,10 @@ def build_tracklets_from_matches(all_neurons,
         clust_df['extended_this_slice'] = False
 
         all_new_tracks = []
-        for i0, i1 in pairs:
+        for i_pair, (i0, i1) in enumerate(pairs):
             next_point = {'i1':i1,
                           'i1_xyz':next_xyz[i1,:],
+                          'i1_prob':this_prob[i_pair], # Probability is attached to the pair
                           'i1_global':next_point_cloud_offset+i1}
             current_point = {'i0':i0,
                              'i0_xyz':this_xyz[i0,:],
