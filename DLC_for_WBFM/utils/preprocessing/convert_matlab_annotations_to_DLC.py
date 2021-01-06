@@ -116,7 +116,7 @@ def wb_tracker2config_names(path_config_file):
         #c_writer.writerow(row)
      #   print(row[:])
 
-def csv_annotations2config_names(path_config_file, num_dims=2):
+def csv_annotations2config_names(path_config_file, annotations_fname=None, num_dims=2):
     """
     Automatically updates the config file with the proper number of neurons, and deletes any other default bodyparts.
     Only affects the "bodyparts" field
@@ -125,7 +125,8 @@ def csv_annotations2config_names(path_config_file, num_dims=2):
     # Get number of neurons from annotations
     home = os.path.dirname(path_config_file)
     # TODO: hardcoded folder
-    annotations_fname = os.path.join(home,'labeled-data', 'test_100frames.ome','CollectedData_Charlie.csv')
+    if annotations_fname is None:
+        annotations_fname = os.path.join(home,'labeled-data', 'test_100frames.ome','CollectedData_Charlie.csv')
     df = pd.read_csv(annotations_fname)
     num_neurons = int(df.shape[1] / num_dims)
     print("Adding body part annotations for {} neurons".format(num_neurons))
