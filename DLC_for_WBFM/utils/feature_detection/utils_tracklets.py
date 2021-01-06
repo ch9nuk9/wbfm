@@ -59,7 +59,7 @@ def extend_track(row, i, clust_df, which_slice, i1, i1_global,
 
 def build_tracklets_from_matches(all_neurons,
                                  all_matches,
-                                 all_likelihoods,
+                                 all_likelihoods=None,
                                  verbose = 0):
     """
     Builds tracklets from an array of pairwise matches
@@ -67,6 +67,9 @@ def build_tracklets_from_matches(all_neurons,
     Can accept points as list of np.arrays
     Can accept matchings as list of np.arrays
     """
+
+    if all_likelihoods is None:
+        all_likelihoods = [np.ones(len(m)) for m in all_matches]
 
     # Use registration results to build a combined and colored pointcloud
     columns=['clust_ind', 'all_ind_local', 'all_ind_global', 'all_xyz',
