@@ -18,6 +18,7 @@ dependencies:
   - scikit-image
   - tensorflow==1.13.1
   - lxml
+  - tqdm
   - pip:
     - tifffile
     - open3d
