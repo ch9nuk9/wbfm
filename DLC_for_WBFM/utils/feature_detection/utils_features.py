@@ -20,16 +20,13 @@ def convert_to_grayscale(im1):
     return im1Gray
 
 
-def detect_features(im1, im2, max_features):
+def detect_features(im1, max_features):
 
     im1Gray = convert_to_grayscale(im1)
-    im2Gray = convert_to_grayscale(im2)
-
     orb = cv2.ORB_create(max_features)
     kp1, d1 = orb.detectAndCompute(im1Gray, None)
-    kp2, d2 = orb.detectAndCompute(im2Gray, None)
 
-    return kp1, d1, kp2, d2
+    return kp1, d1
 
 
 def detect_features_and_match(im1, im2,
@@ -40,7 +37,8 @@ def detect_features_and_match(im1, im2,
     Uses orb to detect and match generic features
     """
 
-    keypoints1, descriptors1, keypoints2, descriptors2 = detect_features(im1, im2, max_features)
+    keypoints1, descriptors1 = detect_features(im1, max_features)
+    keypoints2, descriptors2 = detect_features(im2, max_features)
     if len(keypoints1)==0 or len(keypoints2)==0:
         print("Found no keypoints on at least one frame; skipping")
         return keypoints1, keypoints2, []
