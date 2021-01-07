@@ -367,8 +367,12 @@ def match_centroids_using_tree(neurons0,
 
 # Get images with segmentation
 
+def build_features_1volume(dat, num_features_per_plane=1000, verbose=0):
+    return dats
 
-def build_features_on_all_planes(dat0, dat1,
+
+
+def build_features_and_match_2volumes(dat0, dat1,
                                 verbose=1, start_plane=10,
                                 detect_keypoints=True,
                                 kp0=None,
