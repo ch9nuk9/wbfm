@@ -15,3 +15,7 @@ Scratch/
 
 # Too large
 *.pickle
+*.png
+*.tif
+*.mp4
+*.avi
