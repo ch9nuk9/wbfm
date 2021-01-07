@@ -257,6 +257,62 @@ def build_f2n_map(features1,
     return features_to_neurons1
 
 
+def calc_2frame_matches(neurons0,
+                        pc_n0,
+                        tree_features0,
+                        features_to_neurons1,
+                        radius,
+                        max_nn,
+                        min_features_needed,
+                        verbose=0):
+    """
+    Calculates the matches between the features of two frames and translates to
+    neuron space
+    """
+
+    nn_opt = {'radius':radius, 'max_nn':max_nn}
+
+    all_matches = []
+    confidence_func = lambda matches, total : matches / (9+total)
+    all_confidences = []
+    for i in range(neurons0.shape[0]):
+        # Get features of this neuron
+        # I use pc_n0 because there may be a coordinate transformation in the pc
+        this_neuron = np.asarray(pc_n0.points)[i]
+        [_, this_f0, _] = tree_features0.search_hybrid_vector_3d(this_neuron, **nn_opt)
+
+        if verbose >= 3:
+            pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
+
+            one_point = o3d.geometry.PointCloud()
+            one_point.points = o3d.utility.Vector3dVector([this_neuron])
+            one_point.paint_uniform_color([1,0,0])
+
+            np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
+
+#             print("Visualize the point cloud.")
+            o3d.visualization.draw_geometries([one_point,pc_f0])
+
+        # Get the corresponding neurons in vol1, and vote
+        this_n1 = features_to_neurons1[this_f0]
+        if len(this_n1) >= min_features_needed:
+            this_match = int(stats.mode(this_n1)[0][0])
+            all_matches.append([i, this_match])
+            # Also calculate a heuristic confidence
+            num_matches = np.count_nonzero(abs(this_n1-this_match) < 0.1)
+            conf = confidence_func(num_matches, len(this_n1))
+            all_confidences.append(conf)
+            if verbose >= 1:
+                print(f"Matched neuron {i} based on {len(this_f0)} features")
+        else:
+            #all_matches.append([i, np.nan]) # TODO
+            #all_confidences.append(0)
+            if verbose >= 1:
+                print(f"Could not match neuron {i}")
+
+    return all_matches, all_confidences
+
+
 def match_centroids_using_tree(neurons0,
                                neurons1,
                                features0,
@@ -291,43 +347,15 @@ def match_centroids_using_tree(neurons0,
                                            tree_n1,
                                            verbose=0)
 
-    # Second, loop through neurons of first frame
-    all_matches = []
-    confidence_func = lambda matches, total : matches / (9+total)
-    all_confidences = []
-    for i in range(neurons0.shape[0]):
-        # Get features of this neuron
-        this_neuron = np.asarray(pc_n0.points)[i]
-        [_, this_f0, _] = tree_features0.search_hybrid_vector_3d(this_neuron, radius=radius, max_nn=max_nn)
-
-        if verbose >= 3:
-            pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
-
-            one_point = o3d.geometry.PointCloud()
-            one_point.points = o3d.utility.Vector3dVector([this_neuron])
-            one_point.paint_uniform_color([1,0,0])
-
-            np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
-
-#             print("Visualize the point cloud.")
-            o3d.visualization.draw_geometries([one_point,pc_f0])
-
-        # Get the corresponding neurons in vol1, and vote
-        this_n1 = features_to_neurons1[this_f0]
-        if len(this_n1) >= min_features_needed:
-            this_match = int(stats.mode(this_n1)[0][0])
-            all_matches.append([i, this_match])
-            # Also calculate a heuristic confidence
-            num_matches = np.count_nonzero(abs(this_n1-this_match) < 0.1)
-            conf = confidence_func(num_matches, len(this_n1))
-            all_confidences.append(conf)
-            if verbose >= 1:
-                print(f"Matched neuron {i} based on {len(this_f0)} features")
-        else:
-            #all_matches.append([i, np.nan]) # TODO
-            #all_confidences.append(0)
-            if verbose >= 1:
-                print(f"Could not match neuron {i}")
+    # Second, loop through neurons of first frame and match
+    all_matches, all_confidences = calc_2frame_matches(neurons0,
+                                                        pc_n0,
+                                                        tree_features0,
+                                                        features_to_neurons1,
+                                                        radius,
+                                                        max_nn,
+                                                        min_features_needed,
+                                                        verbose=0)
 
     if only_keep_best_match:
         all_matches, all_confidences = keep_best_match(all_matches, all_confidences, verbose=verbose)
