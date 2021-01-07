@@ -7,6 +7,7 @@ import numpy as np
 import time
 import tqdm
 import random
+from dataclasses import dataclass
 
 ##
 ## Full pipeline
@@ -114,14 +115,14 @@ class ReferenceFrame():
     """ Information for registered reference frames"""
 
     # Data for registration
-    self.neuron_locs: list
-    self.all_features: list
-    self.features_to_neurons: list
-    self.neuron_ids: list = None # global neuron index
+    neuron_locs: list
+    all_features: list
+    features_to_neurons: list
+    neuron_ids: list = None # global neuron index
 
     # Metadata
-    self.frame_ind: ind = None
-    #self.
+    frame_ind: int = None
+
 
 def get_reference_frames(num_reference_frames,
                          vid_fname,
@@ -151,12 +152,12 @@ def get_reference_frames(num_reference_frames,
                                                              alpha=1.0,
                                                              min_detections=3,
                                                              verbose=0)
-        features = build_features_1volume(dat, num_features_per_plane=1000)
+        kp_locs, features = build_features_1volume(dat, num_features_per_plane=1000)
 
         # The map requires some open3d subfunctions
-        num_f, pc_f, _ = build_feature_tree(features, which_slice=None)
+        num_f, pc_f, _ = build_feature_tree(kp_locs, which_slice=None)
         _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
-        f2n_map = build_f2n_map(features,
+        f2n_map = build_f2n_map(kp_locs,
                                num_f,
                                pc_f,
                                neuron_feature_radius,
@@ -164,7 +165,7 @@ def get_reference_frames(num_reference_frames,
                                verbose=0)
 
         # Finally, my summary class
-        ref_frames.append(ReferenceFrame(neurons, features, f2n_map))
+        ref_frames.append(ReferenceFrame(neurons, features, f2n_map, None, ind))
 
     return ref_dat, ref_frames
 
@@ -200,12 +201,12 @@ def track_via_reference_frames(vid_fname,
                  'num_slices':num_slices,
                  'alpha':alpha,
                  'neuron_feature_radius':neuron_feature_radius}
-    ref_dat, ref_ind = get_reference_frames(num_reference_frames, **video_opt)
+    ref_dat, ref_frames = get_reference_frames(num_reference_frames, **video_opt)
 
     # dataframe with features and feature-ind dict (separated by ref frame)
     if verbose >= 1:
         print("Analyzing reference frames...")
-    ref_results = register_reference_frames(ref_dat, ref_ind, num_slices)
+    #ref_results = register_reference_frames(ref_dat, ref_ind, num_slices)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
