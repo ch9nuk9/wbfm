@@ -39,8 +39,6 @@ class TestFullPipeline(unittest.TestCase):
         # Detect neurons
         opt = {'num_slices':self.num_slices, 'alpha':1.0, 'verbose':1}
         self.neurons0 = detect_neurons_using_ICP(vol0, **opt)[0]
-        
-    # def
 
 
     def test_full_function(self):
