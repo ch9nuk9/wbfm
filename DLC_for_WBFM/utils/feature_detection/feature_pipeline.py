@@ -6,6 +6,7 @@ import copy
 import numpy as np
 import time
 import tqdm
+import random
 
 ##
 ## Full pipeline
@@ -108,6 +109,55 @@ def track_neurons_full_video(vid_fname,
 ## Different strategy: reference frames
 ##
 
+@dataclass
+class ReferenceFrame():
+    """ Information for registered reference frames"""
+
+    # Data for registration
+    self.neuron_ids: list # global neuron index
+    self.neuron_locs: list
+    self.all_features: list
+    self.features_to_neurons: list
+
+    # Metadata
+    self.frame_ind: ind = None
+    #self.
+
+def get_reference_frames(num_reference_frames,
+                         vid_fname,
+                         start_frame,
+                         num_frames,
+                         num_slices,
+                         alpha):
+
+    frame_range = range(start_frame, start_frame+num_frames)
+    ref_ind = random.sample(frame_range, num_reference_frames)
+
+    ref_dat = []
+    video_opt = {'num_slices':num_slices,
+                 'alpha':alpha}
+    for ind in ref_ind:
+        ref_dat.append(vid_fname, ind, **video_opt)
+
+    return ref_dat, ref_ind
+
+
+def register_reference_frames(ref_dat, ref_ind, num_slices):
+    """
+    Registers a set of reference frames, aligning their neuron indices
+    """
+
+    ref_results = []
+
+    for ind, dat in zip(ref_dat, ref_ind):
+        neuron_locs, _, _, icp_kps = detect_neurons_using_ICP(dat,
+                                                             num_slices,
+                                                             alpha=1.0,
+                                                             min_detections=3,
+                                                             verbose=0)
+
+
+
 def track_via_reference_frames(vid_fname,
                                start_frame=0,
                                num_frames=10,
@@ -120,10 +170,19 @@ def track_via_reference_frames(vid_fname,
     """
 
     # First, analyze the reference frames
+    if verbose >= 1:
+        print("Loading reference frames...")
     video_opt = {'vid_fname':vid_fname,
                  'start_frame':start_frame,
-                 'num_frames':num_frames}
+                 'num_frames':num_frames,
+                 'num_slices':num_slices,
+                 'alpha':alpha}
     ref_dat, ref_ind = get_reference_frames(num_reference_frames, **video_opt)
 
     # dataframe with features and feature-ind dict (separated by ref frame)
-    ref_results = register_reference_frames(ref_dat)
+    if verbose >= 1:
+        print("Analyzing reference frames...")
+    ref_results = register_reference_frames(ref_dat, ref_ind, num_slices)
+
+    if verbose >= 1:
+        print("Matching other frames to reference...")
