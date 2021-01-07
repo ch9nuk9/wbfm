@@ -114,10 +114,10 @@ class ReferenceFrame():
     """ Information for registered reference frames"""
 
     # Data for registration
-    self.neuron_ids: list # global neuron index
     self.neuron_locs: list
     self.all_features: list
     self.features_to_neurons: list
+    self.neuron_ids: list = None # global neuron index
 
     # Metadata
     self.frame_ind: ind = None
@@ -128,33 +128,54 @@ def get_reference_frames(num_reference_frames,
                          start_frame,
                          num_frames,
                          num_slices,
+                         neuron_feature_radius,
                          alpha):
+    """
+    Selects a sample of reference frames, then builds features for them
+    """
 
     frame_range = range(start_frame, start_frame+num_frames)
     ref_ind = random.sample(frame_range, num_reference_frames)
 
     ref_dat = []
+    ref_frames = []
     video_opt = {'num_slices':num_slices,
                  'alpha':alpha}
     for ind in ref_ind:
-        ref_dat.append(vid_fname, ind, **video_opt)
+        dat = get_single_volume(vid_fname, ind, **video_opt)
+        ref_dat.append(dat)
 
-    return ref_dat, ref_ind
-
-
-def register_reference_frames(ref_dat, ref_ind, num_slices):
-    """
-    Registers a set of reference frames, aligning their neuron indices
-    """
-
-    ref_results = []
-
-    for ind, dat in zip(ref_dat, ref_ind):
+        # Get neurons and features, and a map between them
         neuron_locs, _, _, icp_kps = detect_neurons_using_ICP(dat,
-                                                             num_slices,
+                                                             num_slices=num_slices,
                                                              alpha=1.0,
                                                              min_detections=3,
                                                              verbose=0)
+        features = build_features_1volume(dat, num_features_per_plane=1000)
+
+        # The map requires some open3d subfunctions
+        num_f, pc_f, _ = build_feature_tree(features, which_slice=None)
+        _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
+        f2n_map = build_f2n_map(features,
+                               num_f,
+                               pc_f,
+                               neuron_feature_radius,
+                               tree_neurons,
+                               verbose=0)
+
+        # Finally, my summary class
+        ref_frames.append(ReferenceFrame(neurons, features, f2n_map))
+
+    return ref_dat, ref_frames
+
+
+def register_reference_frames(ref_frames, ref_dat):
+    """
+    Registers a set of reference frames, aligning their neuron indices
+    """
+    print("WIP")
+
+    #for ind, dat in zip(ref_dat, ref_ind):
 
 
 
@@ -163,6 +184,7 @@ def track_via_reference_frames(vid_fname,
                                num_frames=10,
                                num_slices=33,
                                alpha=0.15,
+                               neuron_feature_radius=5.0,
                                verbose=0,
                                num_reference_frames=5):
     """
@@ -176,7 +198,8 @@ def track_via_reference_frames(vid_fname,
                  'start_frame':start_frame,
                  'num_frames':num_frames,
                  'num_slices':num_slices,
-                 'alpha':alpha}
+                 'alpha':alpha,
+                 'neuron_feature_radius':neuron_feature_radius}
     ref_dat, ref_ind = get_reference_frames(num_reference_frames, **video_opt)
 
     # dataframe with features and feature-ind dict (separated by ref frame)
