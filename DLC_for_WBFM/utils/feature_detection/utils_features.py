@@ -344,7 +344,7 @@ def match_centroids_using_tree(neurons0,
                                            num_features1,
                                            pc_f1,
                                            radius,
-                                           tree_n1,
+                                           tree_neurons1,
                                            verbose=0)
 
     # Second, loop through neurons of first frame and match

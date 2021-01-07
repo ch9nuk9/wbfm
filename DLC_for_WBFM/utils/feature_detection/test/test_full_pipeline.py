@@ -29,23 +29,17 @@ class TestFullPipeline(unittest.TestCase):
         btf_fname_red = r'test2020-10-22_16-15-20_test4-channel-0-pco_camera1\test2020-10-22_16-15-20_test4-channel-0-pco_camera1bigtiff.btf'
         self.fname = os.path.join(bigtiff_folder, btf_fname_red)
 
+        print("Finished setting up.")
+
+
+    def test_dataset(self):
         opt = {'num_slices':self.num_slices, 'alpha':self.alpha}
         vol0 = get_single_volume(self.fname, 0, **opt)
-        vol1 = get_single_volume(self.fname, 1, **opt)
 
         # Detect neurons
         opt = {'num_slices':self.num_slices, 'alpha':1.0, 'verbose':1}
         self.neurons0 = detect_neurons_using_ICP(vol0, **opt)[0]
-        self.neurons1 = detect_neurons_using_ICP(vol1, **opt)[0]
-
-        print("Finished setting up.")
-
-
-    #def test_dataset(self):
-        # Test
-        #vol0 = get_single_volume(self.fname, 0, num_slices=self.num_slices, alpha=self.alpha)
-
-
+        
     # def
 
 
