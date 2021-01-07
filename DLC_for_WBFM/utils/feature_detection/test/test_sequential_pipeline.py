@@ -16,7 +16,7 @@ from DLC_for_WBFM.utils.feature_detection.visualization_tracks import *
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import *
 
 
-class TestFullPipeline(unittest.TestCase):
+class TestSequentialPipeline(unittest.TestCase):
 
     def setUp(self):
         print("Setting up...")
