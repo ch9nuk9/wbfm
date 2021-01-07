@@ -368,7 +368,17 @@ def match_centroids_using_tree(neurons0,
 # Get images with segmentation
 
 def build_features_1volume(dat, num_features_per_plane=1000, verbose=0):
-    return dats
+
+    all_features = []
+    for i in range(dat.shape[0]):
+        im = np.squeeze(dat[i,...])
+
+        features, kp = detect_features(im, num_features_per_plane)
+
+        features_3d = np.array([np.hstack((i, row)) for row in features])
+        all_features.extend(features_3d)
+
+    return np.array(all_features)
 
 
 
