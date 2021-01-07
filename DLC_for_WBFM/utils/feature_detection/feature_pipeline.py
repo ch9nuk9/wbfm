@@ -5,6 +5,7 @@ from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import g
 import copy
 import numpy as np
 import time
+import tqdm
 
 ##
 ## Full pipeline
@@ -101,3 +102,28 @@ def track_neurons_full_video(vid_fname,
         print(f"Finished {num_frames} frames in {total} seconds")
 
     return all_matches, all_conf, all_neurons
+
+
+##
+## Different strategy: reference frames
+##
+
+def track_via_reference_frames(vid_fname,
+                               start_frame=0,
+                               num_frames=10,
+                               num_slices=33,
+                               alpha=0.15,
+                               verbose=0,
+                               num_reference_frames=5):
+    """
+    Tracks neurons by registering them to a set of reference frames
+    """
+
+    # First, analyze the reference frames
+    video_opt = {'vid_fname':vid_fname,
+                 'start_frame':start_frame,
+                 'num_frames':num_frames}
+    ref_dat, ref_ind = get_reference_frames(num_reference_frames, **video_opt)
+
+    # dataframe with features and feature-ind dict (separated by ref frame)
+    ref_results = register_reference_frames(ref_dat)
