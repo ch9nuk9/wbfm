@@ -370,15 +370,18 @@ def match_centroids_using_tree(neurons0,
 def build_features_1volume(dat, num_features_per_plane=1000, verbose=0):
 
     all_features = []
+    all_locs = []
     for i in range(dat.shape[0]):
         im = np.squeeze(dat[i,...])
 
-        features, kp = detect_features(im, num_features_per_plane)
+        kp, features = detect_features(im, num_features_per_plane)
 
-        features_3d = np.array([np.hstack((i, row)) for row in features])
-        all_features.extend(features_3d)
+        all_features.append(features)
 
-    return np.array(all_features)
+        locs_3d = np.array([np.hstack((i, row.pt)) for row in kp])
+        all_locs.extend(locs_3d)
+
+    return np.array(all_locs), all_features
 
 
 
@@ -395,8 +398,8 @@ def build_features_and_match_2volumes(dat0, dat1,
     Multi-plane wrapper around: detect_features_and_match
     """
 
-    all_features0 = []
-    all_features1 = []
+    all_locs0 = []
+    all_locs1 = []
     for i in range(dat0.shape[0]):
         if i<start_plane:
             continue
@@ -411,8 +414,8 @@ def build_features_and_match_2volumes(dat0, dat1,
             kp0_cv2 = get_keypoints_from_3dseg(kp0, i, sz=sz)
             kp1_cv2 = get_keypoints_from_3dseg(kp1, i, sz=sz)
             keypoints0, keypoints1, matches = match_using_known_keypoints(im0, kp0_cv2, im1, kp1_cv2, 1000)
-        features0, features1 = extract_location_of_matches(matches, keypoints0, keypoints1)
-        # TODO: These features are sorted by matches... is this necessary??
+        locs0, locs1 = extract_location_of_matches(matches, keypoints0, keypoints1)
+        # TODO: These locs are sorted by matches... is this necessary??
 
         if verbose >= 3:
             imMatches = cv2.drawMatches(im0, keypoints0, im1, keypoints1, matches, None)
@@ -420,14 +423,14 @@ def build_features_and_match_2volumes(dat0, dat1,
             plt.imshow(imMatches)
 
         if verbose >= 2:
-            print(f"Adding {len(features0)} features from plane {i}")
-#             print(f"Adding {len(features1)} features from plane {i} in volume 1")
-        features_3d = np.array([np.hstack((i, row)) for row in features0])
-        all_features0.extend(features_3d)
-        features_3d = np.array([np.hstack((i, row)) for row in features1])
-        all_features1.extend(features_3d)
+            print(f"Adding {len(locs0)} locations from plane {i}")
+#             print(f"Adding {len(locs1)} locs from plane {i} in volume 1")
+        locs_3d = np.array([np.hstack((i, row)) for row in locs0])
+        all_locs0.extend(locs_3d)
+        locs_3d = np.array([np.hstack((i, row)) for row in locs1])
+        all_locs1.extend(locs_3d)
 
-    return np.array(all_features0), np.array(all_features1), keypoints0, keypoints1
+    return np.array(all_locs0), np.array(all_locs1), keypoints0, keypoints1
 
 
 def get_keypoints_from_3dseg(kp0, i, sz=31.0, neuron_height=3):
