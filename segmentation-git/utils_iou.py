@@ -25,6 +25,7 @@ def calculate_iou(ground_truth_path: str, cellpose_results_path: str):
     For now, a list of arrays containing GT-ID, CP-ID & Iou (%)
 
     """
+    print('Start of IoU calculation')
     print('ground truth path: ', ground_truth_path, '\ncellpose results path: ', cellpose_results_path)
 
     # quick logging. All commandline output will be written to a file (log_path)
@@ -92,7 +93,7 @@ def calculate_iou(ground_truth_path: str, cellpose_results_path: str):
                 # e.g. [254, 45, 63.43]
                 ious = np.zeros((len(gt_list), 3))
 
-                print('best match shape: ', best_match.shape)
+                # print('best match shape: ', best_match.shape)
 
                 for i, neuron in enumerate(gt_list):
                     print('... mask ', i)
@@ -133,7 +134,7 @@ def calculate_iou(ground_truth_path: str, cellpose_results_path: str):
                             iou_interim = (area_intersect / area_union) * 100
                             ious[i, 2] = round(iou_interim, 2)
                         else:
-                            print('Area = 0 for i = ', i)
+                            # print('Area = 0 for i = ', i)
                             ious[i, 1] = 0
 
                 list_of_ious.append(ious)
@@ -143,10 +144,10 @@ def calculate_iou(ground_truth_path: str, cellpose_results_path: str):
             else:
                 print('ERROR: Shapes of cp/gt arrays do not match!')
 
-        # TODO 3. Save the IOUs
+        # TODO 3. Save the IOUs (possibly better to return the IoUs and save it outside)
         # pickle/dump the list 'list_of_ious' in an output folder
 
-        output_path = r"C:\Users\niklas.khoss\Desktop\cp_vol\outputs\list_of_ious.pickle"
+        output_path = r"./list_of_ious.pickle"
         with open(output_path, 'wb') as pickle_out:
             pickle.dump(list_of_ious, pickle_out)
 
