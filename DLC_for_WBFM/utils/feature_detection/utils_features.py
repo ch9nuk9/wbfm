@@ -226,6 +226,37 @@ def keep_best_match(all_matches, all_confidences, verbose=0):
 
     return all_matches, all_confidences
 
+
+def build_f2n_map(features1,
+                   num_features1,
+                   pc_f1,
+                   radius,
+                   tree_n1,
+                   verbose=0):
+    features_to_neurons1 = np.zeros(len(features1))
+    nn_opt = { 'radius':5*radius, 'max_nn':1}
+    for i in range(num_features1):
+        # Get features of this neuron and save
+        this_feature = np.asarray(pc_f1.points)[i]
+        [k, this_fn1, _] = tree_n1.search_hybrid_vector_3d(this_feature, **nn_opt)
+
+        if k>0:
+            features_to_neurons1[i] = this_fn1[0]
+
+        if verbose >= 4:
+            # Note: displays the full image
+            pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
+
+            one_point = o3d.geometry.PointCloud()
+            one_point.points = o3d.utility.Vector3dVector([this_feature])
+            one_point.paint_uniform_color([1,0,0])
+
+            np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
+            o3d.visualization.draw_geometries([one_point,pc_f0])
+
+    return features_to_neurons1
+
+
 def match_centroids_using_tree(neurons0,
                                neurons1,
                                features0,
@@ -252,26 +283,13 @@ def match_centroids_using_tree(neurons0,
     num_neurons0, pc_n0, _ = build_neuron_tree(neurons0, to_mirror)
     num_neurons1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror)
 
-    # First, build dictionary to translate features to neurons
-    features_to_neurons1 = np.zeros(len(features1))
-    for i in range(num_features1):
-        # Get features of this neuron and save
-        this_feature = np.asarray(pc_f1.points)[i]
-        [k, this_fn1, _] = tree_neurons1.search_hybrid_vector_3d(this_feature, radius=5*radius, max_nn=1)
-
-        if k>0:
-            features_to_neurons1[i] = this_fn1[0]
-
-        if verbose >= 4:
-            # Note: displays the full image
-            pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
-
-            one_point = o3d.geometry.PointCloud()
-            one_point.points = o3d.utility.Vector3dVector([this_feature])
-            one_point.paint_uniform_color([1,0,0])
-
-            np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
-            o3d.visualization.draw_geometries([one_point,pc_f0])
+    # First, build array to translate features to neurons
+    features_to_neurons1 = build_f2n_map(features1,
+                                           num_features1,
+                                           pc_f1,
+                                           radius,
+                                           tree_n1,
+                                           verbose=0)
 
     # Second, loop through neurons of first frame
     all_matches = []
@@ -334,7 +352,7 @@ def build_features_on_all_planes(dat0, dat1,
                                 matches_to_keep=0.5,
                                 dat_foldername = r'..\point_cloud_alignment'):
     """
-    Multi-plane wrapper around: match_centroids_using_tree
+    Multi-plane wrapper around: detect_features_and_match
     """
 
     all_features0 = []
