@@ -16,8 +16,28 @@ Comparing two sets of masks.
 
 ### TODO
 
-1. Divide matches (intersections) by unions to get full IOUs
+4. Get all IOUs across parameters/folders and save
+--1. Refactor as a function
+--2. Make a new script, that calls this script to be used on commandline. BASH job array!
+--3. Core function working on one folder! Extra script iterates over subfolders containing the cellpose results
+
+5. Plot
+--1. What do we want to plot?
+--2. How long do cellpose runs take on the cluster?
+--3. Plot cellpose 2D/3D and STARDIST results together
+
+6. Refactor to use Pandas dataframes
+--1. After labmeeting > February
+
+7. STARDIST
+--1. Installation on cluster
+--2. First test on volume
+--3. Parameter & model testing
+--4. Quantify
+
+
+### DONE:
+
+1. Divide matches (intersections) by unions to get full IoUs
 2. Get all IOUs across planes
 3. Save the IOUs
-4. Get all IOUs across parameters and save
-5. Plot

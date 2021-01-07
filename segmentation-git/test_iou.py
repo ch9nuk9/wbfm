@@ -1,8 +1,4 @@
-"""
 
-IoU (Intersection over Union) to be calculated from masks
-
-"""
 import sys
 import os
 import numpy as np
@@ -11,26 +7,25 @@ import matplotlib.pyplot as plt
 import logging
 import pickle
 
-print('start')
+log_path = r'C:\Users\niklas.khoss\Desktop\cp_vol\3d_nuclei\testlog.log'
 
-# quick logging. All commandline output will be written to a file (log_path)
-log_path = r"C:\Users\niklas.khoss\Desktop\cp_vol\outputs\testlog.log"
 with open(log_path, 'w') as log_file:
     # actual logging
     sys.stdout = log_file
+    print('First try with iou as a function')
 
     # Paths to data. Change this to test locally on your machine
-    gt_path = r"C:\Users\niklas.khoss\Desktop\cp_vol\one_volume_seg.npy"
-    cp_path = r"C:\Users\niklas.khoss\Desktop\cp_vol\3d_nuclei\np_masks_3D__diam-100_flow-40.npy"
+    gt_path = ground_truth_path  # r"C:\Users\niklas.khoss\Desktop\cp_vol\one_volume_seg.npy"
+    cp_path = cellpose_results_path  # r"C:\Users\niklas.khoss\Desktop\cp_vol\3d_nuclei\np_masks_3D__diam-100_flow-40.npy"
 
     # load ground truth and cellpose numpy data
-    ground_truth = np.load(gt_path, allow_pickle=True).item()   # load gt. Allow pickle, as it is pickled data
+    ground_truth = np.load(gt_path, allow_pickle=True).item()  # load gt. Allow pickle, as it is pickled data
     # print(ground_truth.keys())
     ground_truth = ground_truth['masks']
 
-    cp = np.load(cp_path, allow_pickle=True)                    # load cp data
+    cp = np.load(cp_path, allow_pickle=True)  # load cp data
 
-    print('cp shape: ', cp.shape, ' gt shape: ', ground_truth.shape)    # print shapes to compare and check
+    print('cp shape: ', cp.shape, ' gt shape: ', ground_truth.shape)  # print shapes to compare and check
 
     # TODO 2. Get all IOUs across planes
     # looping over all planes within the ground truth and try to use corresponding planes in cellpose result.
@@ -48,7 +43,7 @@ with open(log_path, 'w') as log_file:
 
             # load actual cellpose results (3D!)
             cp_plane = cp[plane]
-            print(cp_plane.shape)
+            # print(cp_plane.shape)
 
             # some plotting of planes etc
             # plt.figure()
@@ -87,7 +82,7 @@ with open(log_path, 'w') as log_file:
                 values, counts = np.unique(intersection, return_counts=True)
 
                 # store the ID of the pixels with the largest overlap of the intersection
-                match_value = values[np.argmax(counts)]        # argmax returns the index of max value
+                match_value = values[np.argmax(counts)]  # argmax returns the index of max value
                 best_match[i, 0] = neuron
                 best_match[i, 1] = values[np.argmax(counts)]  # match_value
                 ious[i, 1] = values[np.argmax(counts)]
@@ -104,9 +99,9 @@ with open(log_path, 'w') as log_file:
                     area_intersect = np.max(counts)
 
                     # area of union; get the masks of gt and cp (cp: where cp == match_value)
-                    area_match = cp_plane == match_value                # array of matched value in cp
-                    area_union = np.add(area_match, mask)           # add arrays of mask and match
-                    area_union = np.count_nonzero(area_union)       # count non-zero elements in summed array
+                    area_match = cp_plane == match_value  # array of matched value in cp
+                    area_union = np.add(area_match, mask)  # add arrays of mask and match
+                    area_union = np.count_nonzero(area_union)  # count non-zero elements in summed array
 
                     # IoU calculation and saving in 'ious' for each match
                     if area_union > 0 and area_intersect > 0:
@@ -125,7 +120,7 @@ with open(log_path, 'w') as log_file:
 
     # TODO 3. Save the IOUs
     # pickle/dump the list 'list_of_ious' in an output folder
-    output_path = r"C:\Users\niklas.khoss\Desktop\cp_vol\outputs\list_of_ious"
+    output_path = r"C:\Users\niklas.khoss\Desktop\cp_vol\outputs\list_of_ious.pickle"
     with open(output_path, 'wb') as pickle_out:
         pickle.dump(list_of_ious, pickle_out)
 
@@ -136,5 +131,7 @@ with open(log_path, 'w') as log_file:
     # Maybe make this script a function, which takes (at least) 2 inputs: gt & cp paths, and then runs this whole show.
     # The new function should iterate over folder contents of the cp-results.
     # It should write the output for each cp-file and maybe compare across
+    #
 
     # TODO 5. Plot
+    #
