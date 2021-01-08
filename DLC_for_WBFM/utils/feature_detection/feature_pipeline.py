@@ -232,12 +232,14 @@ def register_all_reference_frames(ref_frames, verbose=1):
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
     for i0, frame0 in tqdm(enumerate(ref_frames), total=len(ref_frames)):
-        all_matches
+        matches_this_frame = []
         for i1, frame1 in enumerate(ref_frames):
             if i1==i0:
                 continue
-            all_matches.append(calc_2frame_matches_using_class(frame0, frame1))
+            matches_this_frame.append(calc_2frame_matches_using_class(frame0, frame1))
         # TODO: actually use the matches
+
+    return ref_neuron_ind
 
 
 def match_to_reference_frames(this_frame, ref_frames):
