@@ -4,6 +4,7 @@ Here we are plotting the IoU results
 
 import matplotlib.pyplot as plt
 import pickle
+import numpy as np
 import os
 
 # Get a filename for the data
@@ -12,7 +13,7 @@ fname = 'list_of_ious.pickle'
 fname = os.path.join(dat_folder, fname)
 
 # Import the data
-with open(fname,'r') as file:
+with open(fname,'rb') as file:
     dat = pickle.load(file)
 
 # Check the sizes and whatnot
@@ -35,18 +36,24 @@ for i, slice in enumerate(dat):
         if this_iou > 0.0:
             this_slice_iou.append(this_iou) # add scalar to list
 
+    # Main summary per slice
+    if len(this_slice_iou)>0:
+        mean_iou_per_slice.append(np.mean(this_slice_iou))
+    else:
+        mean_iou_per_slice.append(0)
+
+    # All ious
     num_neurons_per_slice.append(len(slice))
     all_ious.extend(this_slice_iou) # do NOT add list to list
     if i > 0:
         all_ious_no_flyback.extend(this_slice_iou)
-    mean_iou_per_slice.append(np.mean(this_slice_iou))
 
 # Multiple Plots
 
-plt.scatter(all_ious)
+plt.plot(all_ious, 'o')
 plt.title('All ious')
 
-plt.scatter(all_ious_no_flyback)
+plt.plot(all_ious_no_flyback, 'o')
 plt.title('All ious no flyback')
 
 plt.plot(mean_iou_per_slice)
