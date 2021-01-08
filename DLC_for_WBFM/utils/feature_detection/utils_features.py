@@ -404,11 +404,11 @@ def build_features_1volume(dat, num_features_per_plane=1000, verbose=0):
     all_locs = []
     for i in range(dat.shape[0]):
         im = np.squeeze(dat[i,...])
-
         kp, features = detect_features(im, num_features_per_plane)
 
+        if features is None:
+            continue
         all_features.append(features)
-
         locs_3d = np.array([np.hstack((i, row.pt)) for row in kp])
         all_locs.extend(locs_3d)
 
