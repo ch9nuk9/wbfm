@@ -144,6 +144,18 @@ def match_using_known_keypoints(im1, kp1, im2, kp2, max_features=1000, use_flann
 ## Second, combine with neuron segmentations (one plane)
 ##
 
+def extract_indices_of_matches(matches):
+    """
+    Get np.array from list of cv2 Match objects
+    """
+    matches_array = np.zeros((len(matches),2),dtype=int)
+
+    for i, m in enumerate(matches):
+        matches_array[i,0] = m.trainIdx
+        matches_array[i,1] = m.queryIdx
+
+    return matches_array
+
 def extract_location_of_matches(matches, keypoints1, keypoints2):
     """Gets location from cv2 objects
 

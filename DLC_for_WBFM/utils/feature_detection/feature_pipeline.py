@@ -210,7 +210,7 @@ def calc_2frame_matches_using_class(frame0,
                                            frame1.keypoints,
                                            frame0.vol_shape[1:],
                                            frame1.vol_shape[1:])
-    # TODO: is this a single list?
+    feature_matches = extract_indices_of_matches(feature_matches)
 
     # Second, get neuron matches
     all_neuron_matches = []
@@ -219,7 +219,8 @@ def calc_2frame_matches_using_class(frame0,
         # Get features of this neuron
         this_f0 = frame0.get_features_of_neuron(i)
         # Use matches to translate to the indices of frame1
-        this_f1 = feature_matches[this_f0]
+        # TODO: debug this line
+        this_f1 = feature_matches[this_f0, 1]
         # Get the corresponding neurons in vol1, and vote
         this_n1 = features_to_neurons1[this_f1]
 
