@@ -116,7 +116,7 @@ class ReferenceFrame():
 
     # Data for registration
     neuron_locs: list
-    all_features: list
+    all_features: np.array
     features_to_neurons: list
     neuron_ids: list = None # global neuron index
 

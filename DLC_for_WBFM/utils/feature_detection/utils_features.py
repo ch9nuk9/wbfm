@@ -412,7 +412,7 @@ def build_features_1volume(dat, num_features_per_plane=1000, verbose=0):
         locs_3d = np.array([np.hstack((i, row.pt)) for row in kp])
         all_locs.extend(locs_3d)
 
-    return np.array(all_locs), all_features
+    return np.array(all_locs), np.array(all_features)
 
 
 
