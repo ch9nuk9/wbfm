@@ -12,7 +12,7 @@ import pickle
 from contextlib import redirect_stdout
 
 
-def calculate_iou(ground_truth_path:str, cellpose_results_path:str):
+def calculate_iou(ground_truth_path, cellpose_results_path):
     """
     Calculates the IoUs of a given segmentation result versus the ground truth
 
