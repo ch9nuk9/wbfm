@@ -29,19 +29,9 @@ def detect_features(im1, max_features):
     return kp1, d1
 
 
-def detect_features_and_match(im1, im2,
-                              max_features=3000,
-                              matches_to_keep=0.2,
-                              use_GMS=True):
-    """
-    Uses orb to detect and match generic features
-    """
-
-    keypoints1, descriptors1 = detect_features(im1, max_features)
-    keypoints2, descriptors2 = detect_features(im2, max_features)
-    if len(keypoints1)==0 or len(keypoints2)==0:
-        print("Found no keypoints on at least one frame; skipping")
-        return keypoints1, keypoints2, []
+def match_known_features(descriptors1, descriptors2,
+                         matches_to_keep=1.0,
+                         use_GMS=True):
 
     # Match features.
     matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
@@ -57,6 +47,27 @@ def detect_features_and_match(im1, im2,
     # Remove not so good matches
     numGoodMatches = int(len(matches) * matches_to_keep)
     matches = matches[:numGoodMatches]
+
+    return matches
+
+
+def detect_features_and_match(im1, im2,
+                              max_features=3000,
+                              matches_to_keep=0.2,
+                              use_GMS=True):
+    """
+    Uses orb to detect and match generic features
+    """
+
+    keypoints1, descriptors1 = detect_features(im1, max_features)
+    keypoints2, descriptors2 = detect_features(im2, max_features)
+    if len(keypoints1)==0 or len(keypoints2)==0:
+        print("Found no keypoints on at least one frame; skipping")
+        return keypoints1, keypoints2, []
+
+    matches = match_known_features(descriptors1, descriptors2,
+                                   matches_to_keep=matches_to_keep,
+                                   use_GMS=use_GMS)
 
     return keypoints1, keypoints2, matches
 
