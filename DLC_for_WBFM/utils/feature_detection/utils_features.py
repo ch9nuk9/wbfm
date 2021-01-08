@@ -35,7 +35,7 @@ def match_known_features(descriptors1, descriptors2,
 
     # Match features.
     matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
-    matches = matcher.match(descriptors1, descriptors2, None)
+    matches = matcher.match(descriptors1, descriptors2)
 
     if use_GMS:
         opt = {'keypoints1':keypoints1, 'keypoints2':keypoints2, 'matches1to2':matches}
