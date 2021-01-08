@@ -227,10 +227,12 @@ def calc_2frame_matches_using_class(frame0,
         # Get the corresponding neurons in vol1, and vote
         this_n1 = frame1.features_to_neurons[this_f1]
 
+        min_features_needed = 5 # TODO
         all_neuron_matches, all_confidences = add_neuron_match(
             all_neuron_matches,
             all_confidences,
             i,
+            5,
             this_n1,
             verbose
         )

@@ -289,6 +289,7 @@ def build_f2n_map(features1,
 def add_neuron_match(all_neuron_matches,
                     all_confidences,
                     i,
+                    min_features_needed,
                     this_n1,
                     verbose):
 
@@ -355,6 +356,7 @@ def calc_2frame_matches(neurons0,
             all_matches,
             all_confidences,
             i,
+            min_features_needed,
             this_n1,
             verbose
         )
