@@ -143,7 +143,7 @@ def build_reference_frames(num_reference_frames,
     Selects a sample of reference frames, then builds features for them
     """
 
-    other_ind = range(start_frame, start_frame+num_frames)
+    other_ind = list(range(start_frame, start_frame+num_frames))
     ref_ind = random.sample(other_ind, num_reference_frames)
     for ind in ref_ind:
         other_ind.remove(ind)
