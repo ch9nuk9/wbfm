@@ -128,8 +128,11 @@ class ReferenceFrame():
         for neuron in self.neuron_locs:
             yield neuron
 
+    def get_features_of_neuron(self, which_neuron):
+        return np.where(self.features_to_neurons == which_neuron)
 
-def get_reference_frames(num_reference_frames,
+
+def build_reference_frames(num_reference_frames,
                          vid_fname,
                          start_frame,
                          num_frames,
@@ -177,6 +180,51 @@ def get_reference_frames(num_reference_frames,
     return ref_dat, ref_frames, other_ind
 
 
+def calc_2frame_matches_using_class(frame0, frame1,
+                                    radius,
+                                    max_nn,
+                                    min_features_needed,
+                                    verbose=0):
+    """
+    Similar to older function, but this doesn't assume the features are
+    already matched
+
+    See also: calc_2frame_matches
+    """
+
+    # First, get feature matches
+
+
+    # Second, get neuron matches
+    all_neuron_matches = []
+    confidence_func = lambda matches, total : matches / (9+total)
+    all_confidences = []
+    for i, neuron in frame0.iter_neurons():
+        # Get features of this neuron
+        this_f0 = frame0.get_features_of_neuron(i)
+        # Use matches to translate to the indices of frame1
+        this_f1 = feature_matches[this_f0]
+        # Get the corresponding neurons in vol1, and vote
+        this_n1 = features_to_neurons1[this_f1]
+
+        if len(this_n1) >= min_features_needed:
+            this_match = int(stats.mode(this_n1)[0][0])
+            all_neuron_matches.append([i, this_match])
+            # Also calculate a heuristic confidence
+            num_matches = np.count_nonzero(abs(this_n1-this_match) < 0.1)
+            conf = confidence_func(num_matches, len(this_n1))
+            all_confidences.append(conf)
+            if verbose >= 1:
+                print(f"Matched neuron {i} based on {len(this_f0)} features")
+        else:
+            #all_matches.append([i, np.nan]) # TODO
+            #all_confidences.append(0)
+            if verbose >= 1:
+                print(f"Could not match neuron {i}")
+
+    return all_neuron_matches, all_confidences
+
+
 def register_all_reference_frames(ref_frames):
     """
     Registers a set of reference frames, aligning their neuron indices
@@ -222,7 +270,7 @@ def track_via_reference_frames(vid_fname,
                  'num_slices':num_slices,
                  'alpha':alpha,
                  'neuron_feature_radius':neuron_feature_radius}
-    ref_dat, ref_frames, other_ind = get_reference_frames(num_reference_frames, **video_opt)
+    ref_dat, ref_frames, other_ind = build_reference_frames(num_reference_frames, **video_opt)
 
     # dataframe with features and feature-ind dict (separated by ref frame)
     if verbose >= 1:
