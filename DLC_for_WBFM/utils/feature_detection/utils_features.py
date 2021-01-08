@@ -256,12 +256,12 @@ def build_f2n_map(features1,
 
 
 def calc_2frame_matches(neurons0,
-                        pc_n0,
                         tree_features0,
                         features_to_neurons1,
                         radius,
                         max_nn,
                         min_features_needed,
+                        pc_n0=None,
                         verbose=0):
     """
     Calculates the matches between the features of two frames and translates to
@@ -275,8 +275,11 @@ def calc_2frame_matches(neurons0,
     all_confidences = []
     for i in range(neurons0.shape[0]):
         # Get features of this neuron
-        # I use pc_n0 because there may be a coordinate transformation in the pc
-        this_neuron = np.asarray(pc_n0.points)[i]
+        if pc_n0 is None:
+            this_neuron = neurons0[i,:]
+        else:
+            # I use pc_n0 because there may be a coordinate transformation in the pc
+            this_neuron = np.asarray(pc_n0.points)[i]
         [_, this_f0, _] = tree_features0.search_hybrid_vector_3d(this_neuron, **nn_opt)
 
         if verbose >= 3:
@@ -347,12 +350,12 @@ def match_centroids_using_tree(neurons0,
 
     # Second, loop through neurons of first frame and match
     all_matches, all_confidences = calc_2frame_matches(neurons0,
-                                                        pc_n0,
                                                         tree_features0,
                                                         features_to_neurons1,
                                                         radius,
                                                         max_nn,
                                                         min_features_needed,
+                                                        pc_n0=pc_n0,
                                                         verbose=0)
 
     if only_keep_best_match:
