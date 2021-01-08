@@ -215,7 +215,7 @@ def calc_2frame_matches_using_class(frame0,
     # Second, get neuron matches
     all_neuron_matches = []
     all_confidences = []
-    for i, neuron in frame0.iter_neurons():
+    for i, neuron in enumerate(frame0.iter_neurons()):
         # Get features of this neuron
         this_f0 = frame0.get_features_of_neuron(i)
         # Use matches to translate to the indices of frame1
