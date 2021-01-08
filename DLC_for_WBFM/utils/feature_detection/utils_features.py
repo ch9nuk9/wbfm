@@ -30,6 +30,8 @@ def detect_features(im1, max_features):
 
 
 def match_known_features(descriptors1, descriptors2,
+                         keypoints1=None,
+                         keypoints2=None,
                          matches_to_keep=1.0,
                          use_GMS=True):
 
@@ -402,6 +404,7 @@ def build_features_1volume(dat, num_features_per_plane=1000, verbose=0):
 
     all_features = []
     all_locs = []
+    all_kps = []
     for i in range(dat.shape[0]):
         im = np.squeeze(dat[i,...])
         kp, features = detect_features(im, num_features_per_plane)
@@ -409,10 +412,11 @@ def build_features_1volume(dat, num_features_per_plane=1000, verbose=0):
         if features is None:
             continue
         all_features.extend(features)
+        all_kps.extend(kp)
         locs_3d = np.array([np.hstack((i, row.pt)) for row in kp])
         all_locs.extend(locs_3d)
 
-    return np.array(all_locs), np.array(all_features)
+    return all_kps, np.array(all_locs), np.array(all_features)
 
 
 
@@ -446,7 +450,6 @@ def build_features_and_match_2volumes(dat0, dat1,
             kp1_cv2 = get_keypoints_from_3dseg(kp1, i, sz=sz)
             keypoints0, keypoints1, matches = match_using_known_keypoints(im0, kp0_cv2, im1, kp1_cv2, 1000)
         locs0, locs1 = extract_location_of_matches(matches, keypoints0, keypoints1)
-        # TODO: These locs are sorted by matches... is this necessary??
 
         if verbose >= 3:
             imMatches = cv2.drawMatches(im0, keypoints0, im1, keypoints1, matches, None)
@@ -455,7 +458,6 @@ def build_features_and_match_2volumes(dat0, dat1,
 
         if verbose >= 2:
             print(f"Adding {len(locs0)} locations from plane {i}")
-#             print(f"Adding {len(locs1)} locs from plane {i} in volume 1")
         locs_3d = np.array([np.hstack((i, row)) for row in locs0])
         all_locs0.extend(locs_3d)
         locs_3d = np.array([np.hstack((i, row)) for row in locs1])

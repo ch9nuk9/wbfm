@@ -116,6 +116,8 @@ class ReferenceFrame():
 
     # Data for registration
     neuron_locs: list
+    keypoints: list
+    keypoint_locs: list # Just the z coordinate
     all_features: np.array
     features_to_neurons: list
     neuron_ids: list = None # global neuron index
@@ -133,6 +135,7 @@ class ReferenceFrame():
 
     def num_neurons(self):
         return self.neuron_locs.shape[0]
+
 
 def build_reference_frames(num_reference_frames,
                          vid_fname,
@@ -167,12 +170,12 @@ def build_reference_frames(num_reference_frames,
                                                              alpha=1.0,
                                                              min_detections=3,
                                                              verbose=0)
-        kp_locs, features = build_features_1volume(dat, num_features_per_plane=1000)
+        kps, kp_3d_locs, features = build_features_1volume(dat, num_features_per_plane=1000)
 
         # The map requires some open3d subfunctions
         num_f, pc_f, _ = build_feature_tree(kp_locs, which_slice=None)
         _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
-        f2n_map = build_f2n_map(kp_locs,
+        f2n_map = build_f2n_map(kp_3d_locs,
                                num_f,
                                pc_f,
                                neuron_feature_radius,
@@ -180,7 +183,8 @@ def build_reference_frames(num_reference_frames,
                                verbose=0)
 
         # Finally, my summary class
-        ref_frames.append(ReferenceFrame(neuron_locs, features, f2n_map, None, ind))
+        f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map, None, ind)
+        ref_frames.append(f)
 
     return ref_dat, ref_frames, other_ind
 
@@ -196,7 +200,10 @@ def calc_2frame_matches_using_class(frame0,
     """
 
     # First, get feature matches
-    matches = match_known_features(frame0.all_features, frame1.all_features)
+    matches = match_known_features(frame0.all_features,
+                                   frame1.all_features,
+                                   frame0.keypoints,
+                                   frame1.keypoints)
     # TODO: is this a single list?
 
     # Second, get neuron matches
