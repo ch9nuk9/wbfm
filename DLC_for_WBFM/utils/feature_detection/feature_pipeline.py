@@ -173,7 +173,7 @@ def build_reference_frames(num_reference_frames,
         kps, kp_3d_locs, features = build_features_1volume(dat, num_features_per_plane=1000)
 
         # The map requires some open3d subfunctions
-        num_f, pc_f, _ = build_feature_tree(kp_locs, which_slice=None)
+        num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
         _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
         f2n_map = build_f2n_map(kp_3d_locs,
                                num_f,
