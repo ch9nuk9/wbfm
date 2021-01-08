@@ -408,7 +408,7 @@ def build_features_1volume(dat, num_features_per_plane=1000, verbose=0):
 
         if features is None:
             continue
-        all_features.append(features)
+        all_features.extend(features)
         locs_3d = np.array([np.hstack((i, row.pt)) for row in kp])
         all_locs.extend(locs_3d)
 
