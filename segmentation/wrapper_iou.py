@@ -11,7 +11,7 @@ Usage: python -m wrapper_iou.py gt_path cp_path
 
 import os
 import sys
-from utils_iou import calculate_iou
+from segmentation.utils_iou import calculate_iou
 
 # ground truth path
 ground_truth_path = r'/groups/zimmer/shared_projects/wbfm/ground_truth/one_volume_seg.npy'
