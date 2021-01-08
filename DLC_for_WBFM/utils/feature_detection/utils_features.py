@@ -266,6 +266,30 @@ def build_f2n_map(features1,
     return features_to_neurons1
 
 
+def add_neuron_match(all_neuron_matches,
+                    all_confidences,
+                    i,
+                    this_n1,
+                    verbose):
+
+    confidence_func = lambda matches, total : matches / (9+total)
+    if len(this_n1) >= min_features_needed:
+        this_match = int(stats.mode(this_n1)[0][0])
+        all_neuron_matches.append([i, this_match])
+        # Also calculate a heuristic confidence
+        num_matches = np.count_nonzero(abs(this_n1-this_match) < 0.1)
+        conf = confidence_func(num_matches, len(this_n1))
+        all_confidences.append(conf)
+        if verbose >= 1:
+            print(f"Matched neuron {i} based on {len(this_f0)} features")
+    else:
+        #all_matches.append([i, np.nan]) # TODO
+        #all_confidences.append(0)
+        if verbose >= 1:
+            print(f"Could not match neuron {i}")
+
+    return all_neuron_matches, all_confidences
+
 def calc_2frame_matches(neurons0,
                         tree_features0,
                         features_to_neurons1,
@@ -282,7 +306,6 @@ def calc_2frame_matches(neurons0,
     nn_opt = {'radius':radius, 'max_nn':max_nn}
 
     all_matches = []
-    confidence_func = lambda matches, total : matches / (9+total)
     all_confidences = []
     for i in range(neurons0.shape[0]):
         # Get features of this neuron
@@ -307,20 +330,14 @@ def calc_2frame_matches(neurons0,
 
         # Get the corresponding neurons in vol1, and vote
         this_n1 = features_to_neurons1[this_f0]
-        if len(this_n1) >= min_features_needed:
-            this_match = int(stats.mode(this_n1)[0][0])
-            all_matches.append([i, this_match])
-            # Also calculate a heuristic confidence
-            num_matches = np.count_nonzero(abs(this_n1-this_match) < 0.1)
-            conf = confidence_func(num_matches, len(this_n1))
-            all_confidences.append(conf)
-            if verbose >= 1:
-                print(f"Matched neuron {i} based on {len(this_f0)} features")
-        else:
-            #all_matches.append([i, np.nan]) # TODO
-            #all_confidences.append(0)
-            if verbose >= 1:
-                print(f"Could not match neuron {i}")
+
+        all_matches, all_confidences = add_neuron_match(
+            all_matches,
+            all_confidences,
+            i,
+            this_n1,
+            verbose
+        )
 
     return all_matches, all_confidences
 
