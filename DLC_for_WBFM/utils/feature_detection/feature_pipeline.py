@@ -120,10 +120,13 @@ class ReferenceFrame():
     keypoint_locs: list # Just the z coordinate
     all_features: np.array
     features_to_neurons: list
-    neuron_ids: list = None # global neuron index
 
     # Metadata
     frame_ind: int = None
+    vol_shape: tuple = None
+
+    # To be finished with a set of other registered frames
+    neuron_ids: list = None # global neuron index
 
     def iter_neurons(self):
         # Practice with yield
@@ -183,7 +186,8 @@ def build_reference_frames(num_reference_frames,
                                verbose=0)
 
         # Finally, my summary class
-        f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map, None, ind)
+        metadata = {'frame_ind':ind, 'vol_shape':dat.shape}
+        f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map, **metadata)
         ref_frames.append(f)
 
     return ref_dat, ref_frames, other_ind
@@ -203,7 +207,9 @@ def calc_2frame_matches_using_class(frame0,
     matches = match_known_features(frame0.all_features,
                                    frame1.all_features,
                                    frame0.keypoints,
-                                   frame1.keypoints)
+                                   frame1.keypoints,
+                                   frame0.vol_shape[1:],
+                                   frame1.vol_shape[1:])
     # TODO: is this a single list?
 
     # Second, get neuron matches

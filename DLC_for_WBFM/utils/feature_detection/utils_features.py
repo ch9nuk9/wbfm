@@ -32,6 +32,8 @@ def detect_features(im1, max_features):
 def match_known_features(descriptors1, descriptors2,
                          keypoints1=None,
                          keypoints2=None,
+                         im1_shape=None,
+                         im2_shape=None,
                          matches_to_keep=1.0,
                          use_GMS=True):
 
@@ -68,6 +70,10 @@ def detect_features_and_match(im1, im2,
         return keypoints1, keypoints2, []
 
     matches = match_known_features(descriptors1, descriptors2,
+                                   keypoints1,
+                                   keypoints2,
+                                   im1.shape,
+                                   im2.shape,
                                    matches_to_keep=matches_to_keep,
                                    use_GMS=use_GMS)
 
