@@ -222,7 +222,7 @@ def calc_2frame_matches_using_class(frame0,
         # TODO: debug this line
         this_f1 = feature_matches[this_f0, 1]
         # Get the corresponding neurons in vol1, and vote
-        this_n1 = features_to_neurons1[this_f1]
+        this_n1 = frame1.features_to_neurons[this_f1]
 
         all_neuron_matches, all_confidences = add_neuron_match(
             all_neuron_matches,
