@@ -43,7 +43,7 @@ def match_known_features(descriptors1, descriptors2,
 
     if use_GMS:
         opt = {'keypoints1':keypoints1, 'keypoints2':keypoints2, 'matches1to2':matches}
-        matches = cv2.xfeatures2d.matchGMS(im1.shape, im2.shape, **opt)
+        matches = cv2.xfeatures2d.matchGMS(im1_shape, im2_shape, **opt)
 
     # Sort matches by score
     matches.sort(key=lambda x: x.distance, reverse=False)
