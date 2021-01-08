@@ -204,12 +204,12 @@ def calc_2frame_matches_using_class(frame0,
     """
 
     # First, get feature matches
-    matches = match_known_features(frame0.all_features,
-                                   frame1.all_features,
-                                   frame0.keypoints,
-                                   frame1.keypoints,
-                                   frame0.vol_shape[1:],
-                                   frame1.vol_shape[1:])
+    feature_matches = match_known_features(frame0.all_features,
+                                           frame1.all_features,
+                                           frame0.keypoints,
+                                           frame1.keypoints,
+                                           frame0.vol_shape[1:],
+                                           frame1.vol_shape[1:])
     # TODO: is this a single list?
 
     # Second, get neuron matches
