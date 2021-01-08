@@ -5,7 +5,7 @@ from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import g
 import copy
 import numpy as np
 import time
-import tqdm
+from tqdm import tqdm
 import random
 from dataclasses import dataclass
 
@@ -131,6 +131,8 @@ class ReferenceFrame():
     def get_features_of_neuron(self, which_neuron):
         return np.where(self.features_to_neurons == which_neuron)
 
+    def num_neurons(self):
+        return self.neuron_locs.shape[0]
 
 def build_reference_frames(num_reference_frames,
                          vid_fname,
@@ -138,7 +140,8 @@ def build_reference_frames(num_reference_frames,
                          num_frames,
                          num_slices,
                          neuron_feature_radius,
-                         alpha):
+                         alpha,
+                         verbose=1):
     """
     Selects a sample of reference frames, then builds features for them
     """
@@ -152,7 +155,9 @@ def build_reference_frames(num_reference_frames,
     ref_frames = []
     video_opt = {'num_slices':num_slices,
                  'alpha':alpha}
-    for ind in ref_ind:
+    if verbose >= 1:
+        print("Building reference frames...")
+    for ind in tqdm(ref_ind, total=len(ref_ind)):
         dat = get_single_volume(vid_fname, ind, **video_opt)
         ref_dat.append(dat)
 
@@ -180,11 +185,9 @@ def build_reference_frames(num_reference_frames,
     return ref_dat, ref_frames, other_ind
 
 
-def calc_2frame_matches_using_class(frame0, frame1,
-                                    radius,
-                                    max_nn,
-                                    min_features_needed,
-                                    verbose=0):
+def calc_2frame_matches_using_class(frame0,
+                                    frame1,
+                                    verbose=1):
     """
     Similar to older function, but this doesn't assume the features are
     already matched
@@ -218,18 +221,23 @@ def calc_2frame_matches_using_class(frame0, frame1,
     return all_neuron_matches, all_confidences
 
 
-def register_all_reference_frames(ref_frames):
+def register_all_reference_frames(ref_frames, verbose=1):
     """
     Registers a set of reference frames, aligning their neuron indices
 
     Builds all
     """
-    print("WIP")
 
     ref_neuron_ind = []
-    for frame in ref_frames:
-        break
-
+    if verbose >= 1:
+        print("Pairwise matching all reference frames...")
+    for i0, frame0 in tqdm(enumerate(ref_frames), total=len(ref_frames)):
+        all_matches
+        for i1, frame1 in enumerate(ref_frames):
+            if i1==i0:
+                continue
+            all_matches.append(calc_2frame_matches_using_class(frame0, frame1))
+        # TODO: actually use the matches
 
 
 def match_to_reference_frames(this_frame, ref_frames):
