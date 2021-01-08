@@ -220,7 +220,10 @@ def calc_2frame_matches_using_class(frame0,
         this_f0 = frame0.get_features_of_neuron(i)
         # Use matches to translate to the indices of frame1
         # TODO: debug this line
-        this_f1 = feature_matches[this_f0, 1]
+        this_f1 = []
+        for f0 in this_f0:
+            i_match = np.where(feature_matches[0,:]==f0)
+            this_f1.append(feature_matches[i_match, 1])
         # Get the corresponding neurons in vol1, and vote
         this_n1 = frame1.features_to_neurons[this_f1]
 
