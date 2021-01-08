@@ -10,7 +10,7 @@ LOG_DIR="$(pwd)/log"
 # iterate over subdirectories
 for dir in ./*/; do
     [ -d "${dir}" ] || continue
-    echo $dir
+#     echo $dir
     cd $dir
     # gets path of cellpose result (a mask; .npy)
     MASK_PATH="$(find ~+ -name "np_masks*npy")"
