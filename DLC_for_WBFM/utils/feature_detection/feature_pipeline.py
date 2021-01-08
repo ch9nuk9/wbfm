@@ -123,6 +123,11 @@ class ReferenceFrame():
     # Metadata
     frame_ind: int = None
 
+    def iter_neurons(self):
+        # Practice with yield
+        for neuron in self.neuron_locs:
+            yield neuron
+
 
 def get_reference_frames(num_reference_frames,
                          vid_fname,
@@ -135,8 +140,10 @@ def get_reference_frames(num_reference_frames,
     Selects a sample of reference frames, then builds features for them
     """
 
-    frame_range = range(start_frame, start_frame+num_frames)
+    other_ind = range(start_frame, start_frame+num_frames)
     ref_ind = random.sample(frame_range, num_reference_frames)
+    for ind in ref_ind:
+        other_ind.remove(ind)
 
     ref_dat = []
     ref_frames = []
@@ -165,19 +172,33 @@ def get_reference_frames(num_reference_frames,
                                verbose=0)
 
         # Finally, my summary class
-        ref_frames.append(ReferenceFrame(neurons, features, f2n_map, None, ind))
+        ref_frames.append(ReferenceFrame(neuron_locs, features, f2n_map, None, ind))
 
-    return ref_dat, ref_frames
+    return ref_dat, ref_frames, other_ind
 
 
-def register_reference_frames(ref_frames, ref_dat):
+def register_all_reference_frames(ref_frames):
     """
     Registers a set of reference frames, aligning their neuron indices
+
+    Builds all
     """
     print("WIP")
 
-    #for ind, dat in zip(ref_dat, ref_ind):
+    ref_neuron_ind = []
+    for frame in ref_frames:
+        break
 
+
+
+def match_to_reference_frames(this_frame, ref_frames):
+    """
+    Registers a single frame to a set of references
+    """
+
+    matches = []
+
+    return matches
 
 
 def track_via_reference_frames(vid_fname,
@@ -201,12 +222,22 @@ def track_via_reference_frames(vid_fname,
                  'num_slices':num_slices,
                  'alpha':alpha,
                  'neuron_feature_radius':neuron_feature_radius}
-    ref_dat, ref_frames = get_reference_frames(num_reference_frames, **video_opt)
+    ref_dat, ref_frames, other_ind = get_reference_frames(num_reference_frames, **video_opt)
 
     # dataframe with features and feature-ind dict (separated by ref frame)
     if verbose >= 1:
         print("Analyzing reference frames...")
-    #ref_results = register_reference_frames(ref_dat, ref_ind, num_slices)
+    ref_frames = register_all_reference_frames(ref_frames)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
+    video_opt = {'num_slices':num_slices,
+                 'alpha':alpha}
+    all_matches = []
+    for ind in other_ind:
+        break
+        this_frame = get_single_volume(vid_fname, ind, **video_opt)
+        matches = match_to_reference_frames(this_frame, ref_frames)
+        all_matches.append(matches)
+
+    return ref_frames
