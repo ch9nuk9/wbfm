@@ -11,7 +11,7 @@ import logging
 import pickle
 
 
-def calculate_iou(ground_truth_path: str, cellpose_results_path: str):
+def calculate_iou(ground_truth_path:str, cellpose_results_path:str):
     """
     Calculates the IoUs of a given segmentation result versus the ground truth
 
@@ -29,11 +29,10 @@ def calculate_iou(ground_truth_path: str, cellpose_results_path: str):
     print('ground truth path: ', ground_truth_path, '\ncellpose results path: ', cellpose_results_path)
 
     # quick logging. All commandline output will be written to a file (log_path)
-    log_interim = cellpose_results_path.split('\\')
-    log_path = "C:" + os.path.join('\\', *log_interim[1:-1], 'testlog.log')     # when just using split then join, the first '\' after 'C:' will be omitted!! →Problem
+    # log_interim = cellpose_results_path.split('\\')
+    # log_path = "C:" + os.path.join('\\', *log_interim[1:-1], 'testlog.log')     # when just using split then join, the first '\' after 'C:' will be omitted!! →Problem
 
-    # l = open(log_path, 'wb')
-    # l.close()
+    log_path = "./iou_log.log"
 
     with open(log_path, 'w') as log_file:
         # actual logging
