@@ -193,7 +193,8 @@ def calc_2frame_matches_using_class(frame0, frame1,
     """
 
     # First, get feature matches
-
+    matches = match_known_features(frame0.all_features, frame1.all_features)
+    # TODO: is this a single list?
 
     # Second, get neuron matches
     all_neuron_matches = []
