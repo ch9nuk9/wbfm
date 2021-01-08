@@ -31,7 +31,7 @@ def calculate_iou(ground_truth_path, cellpose_results_path):
 
     # quick logging. All commandline output will be written to a file (log_path)
     # log_interim = cellpose_results_path.split('\\')
-    # log_path = "C:" + os.path.join('\\', *log_interim[1:-1], 'testlog.log')     # when just using split then join, the first '\' after 'C:' will be omitted!! →Problem
+    # log_path = "C:" + os.path.join('\\', *log_interim[1:-1], 'testlog.log')     # when just using split then join, the first '\' after 'C:' will be omitted!! =Problem
 
     log_path = "./iou_log.log"
 
