@@ -17,7 +17,10 @@ from utils_iou import calculate_iou
 ground_truth_path = r'/groups/zimmer/shared_projects/wbfm/ground_truth/one_volume_seg.npy'
 
 # use input argument from bash script
-cellpose_path = sys.argv[1]
+if isinstance(sys.argv[1], str):
+    cellpose_path = sys.argv[1]
+else:
+    sys.exit("Input to wrapper_iou.py was not a string! (should be cellpose results path)\nCheck it!")
 
 # get current folder
 #current_path = os.getcwd()
