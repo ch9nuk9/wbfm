@@ -144,17 +144,22 @@ def match_using_known_keypoints(im1, kp1, im2, kp2, max_features=1000, use_flann
 ## Second, combine with neuron segmentations (one plane)
 ##
 
-def extract_indices_of_matches(matches):
+def extract_map1to2_from_matches(matches):
     """
-    Get np.array from list of cv2 Match objects
+    Get dict from list of cv2 Match objects
     """
-    matches_array = np.zeros((len(matches),2),dtype=int)
-
+    #matches_array = np.zeros((len(matches),2),dtype=int)
+    matches_dict = {}
     for i, m in enumerate(matches):
-        matches_array[i,0] = m.trainIdx
-        matches_array[i,1] = m.queryIdx
+        # TODO: Which one should be first?
+        # Maybe, queryIdx: https://stackoverflow.com/questions/22082598/how-to-get-matches-drawn-by-drawmatches-in-an-array-for-example-in-a-dmatch-s/24183734
+        #matches_array[i,0] = m.queryIdx
+        #matches_array[i,1] = m.trainIdx
 
-    return matches_array
+        # TODO: may overwrite if not 1-to-1
+        matches_dict[m.queryIdx] = m.trainIdx
+
+    return matches_dict
 
 def extract_location_of_matches(matches, keypoints1, keypoints2):
     """Gets location from cv2 objects
@@ -291,10 +296,11 @@ def add_neuron_match(all_neuron_matches,
                     i,
                     min_features_needed,
                     this_n1,
+                    this_f1,
                     verbose):
 
     confidence_func = lambda matches, total : matches / (9+total)
-    if len(this_n1) >= min_features_needed:
+    if len(this_f1) >= min_features_needed:
         this_match = int(stats.mode(this_n1)[0][0])
         all_neuron_matches.append([i, this_match])
         # Also calculate a heuristic confidence
@@ -302,7 +308,7 @@ def add_neuron_match(all_neuron_matches,
         conf = confidence_func(num_matches, len(this_n1))
         all_confidences.append(conf)
         if verbose >= 1:
-            print(f"Matched neuron {i} based on {len(this_f0)} features")
+            print(f"Matched neuron {i} to {this_match} based on {len(this_f1)} features")
     else:
         #all_matches.append([i, np.nan]) # TODO
         #all_confidences.append(0)
@@ -358,6 +364,7 @@ def calc_2frame_matches(neurons0,
             i,
             min_features_needed,
             this_n1,
+            this_f0,
             verbose
         )
 

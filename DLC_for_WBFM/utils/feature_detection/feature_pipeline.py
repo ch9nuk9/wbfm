@@ -8,7 +8,8 @@ import time
 from tqdm import tqdm
 import random
 from dataclasses import dataclass
-
+import matplotlib.pyplot as plt
+import cv2
 ##
 ## Full pipeline
 ##
@@ -123,7 +124,9 @@ class ReferenceFrame():
 
     # Metadata
     frame_ind: int = None
+    video_fname: str = None
     vol_shape: tuple = None
+    alpha: float = 1.0
 
     # To be finished with a set of other registered frames
     neuron_ids: list = None # global neuron index
@@ -134,10 +137,16 @@ class ReferenceFrame():
             yield neuron
 
     def get_features_of_neuron(self, which_neuron):
-        return np.where(self.features_to_neurons == which_neuron)
+        return np.argwhere(self.features_to_neurons == which_neuron)
 
     def num_neurons(self):
         return self.neuron_locs.shape[0]
+
+    def get_data(self):
+        return get_single_volume(self.video_fname,
+                                 self.frame_ind,
+                                 num_slices=self.vol_shape[0],
+                                 alpha=self.alpha)
 
 
 def build_reference_frames(num_reference_frames,
@@ -186,7 +195,10 @@ def build_reference_frames(num_reference_frames,
                                verbose=0)
 
         # Finally, my summary class
-        metadata = {'frame_ind':ind, 'vol_shape':dat.shape}
+        metadata = {'frame_ind':ind,
+                    'vol_shape':dat.shape,
+                    'video_fname':vid_fname,
+                    'alpha':alpha}
         f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map, **metadata)
         ref_frames.append(f)
 
@@ -195,7 +207,8 @@ def build_reference_frames(num_reference_frames,
 
 def calc_2frame_matches_using_class(frame0,
                                     frame1,
-                                    verbose=1):
+                                    verbose=1,
+                                    DEBUG=False):
     """
     Similar to older function, but this doesn't assume the features are
     already matched
@@ -210,32 +223,59 @@ def calc_2frame_matches_using_class(frame0,
                                            frame1.keypoints,
                                            frame0.vol_shape[1:],
                                            frame1.vol_shape[1:])
-    feature_matches = extract_indices_of_matches(feature_matches)
+    feature_matches_dict = extract_map1to2_from_matches(feature_matches)
+    if DEBUG:
+        print("All feature matches: ")
+        # Draw first 10 matches.
+        img1 = frame0.get_data()[15,...]
+        img2 = frame1.get_data()[15,...]
+        kp1, kp2 = frame0.keypoints, frame1.keypoints
+        img3 = cv2.drawMatches(img1,kp1,img2,kp2,feature_matches[:100],None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        #plt.figure(figsize=(25,45))
+        #plt.imshow(img3),plt.show()
+        #[print(f) for f in feature_matches]
+        #return img3
 
     # Second, get neuron matches
     all_neuron_matches = []
     all_confidences = []
-    for i, neuron in enumerate(frame0.iter_neurons()):
+    for neuron0_ind, neuron0_loc in enumerate(frame0.iter_neurons()):
         # Get features of this neuron
-        this_f0 = frame0.get_features_of_neuron(i)
+        this_f0 = frame0.get_features_of_neuron(neuron0_ind)
+        if DEBUG:
+            print(f"=======Neuron {neuron0_ind}=========")
+            #print("Features in vol0: ", this_f0)
         # Use matches to translate to the indices of frame1
-        # TODO: debug this line
+        # TODO: debug this line... maybe switch matches to dict
         this_f1 = []
         for f0 in this_f0:
-            i_match = np.where(feature_matches[0,:]==f0)
-            this_f1.append(feature_matches[i_match, 1])
+            #i_match = np.argwhere(feature_matches_ind[0,:]==f0)
+            i_match = feature_matches_dict.get(f0[0])
+            #print(f"Feature 0 {f0} matched with index {i_match}")
+            #if len(i_match) > 0:
+            if i_match is not None:
+                this_f1.append(i_match)
+                #this_f1.append(feature_matches_ind[i_match, 1])
+        #this_f1 = np.array(this_f1)
+        if DEBUG:
+            print("Features in volume 1: ", this_f1)
         # Get the corresponding neurons in vol1, and vote
         this_n1 = frame1.features_to_neurons[this_f1]
+        if DEBUG:
+            print("Matching neuron in volume 1: ", this_n1)
 
         min_features_needed = 5 # TODO
         all_neuron_matches, all_confidences = add_neuron_match(
             all_neuron_matches,
             all_confidences,
-            i,
+            neuron0_ind,
             5,
             this_n1,
+            this_f1,
             verbose
         )
+        if DEBUG:
+            break
 
     return all_neuron_matches, all_confidences
 
@@ -257,6 +297,7 @@ def register_all_reference_frames(ref_frames, verbose=1):
                 continue
             matches_this_frame.append(calc_2frame_matches_using_class(frame0, frame1))
         # TODO: actually use the matches
+        ref_neuron_ind.append(matches_this_frame)
 
     return ref_neuron_ind
 
@@ -297,7 +338,7 @@ def track_via_reference_frames(vid_fname,
     # dataframe with features and feature-ind dict (separated by ref frame)
     if verbose >= 1:
         print("Analyzing reference frames...")
-    ref_frames = register_all_reference_frames(ref_frames)
+    ref_neuron_ind = register_all_reference_frames(ref_frames)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
@@ -305,9 +346,9 @@ def track_via_reference_frames(vid_fname,
                  'alpha':alpha}
     all_matches = []
     for ind in other_ind:
-        break
+        break # WIP
         this_frame = get_single_volume(vid_fname, ind, **video_opt)
         matches = match_to_reference_frames(this_frame, ref_frames)
         all_matches.append(matches)
 
-    return ref_frames
+    return ref_frames, all_matches
