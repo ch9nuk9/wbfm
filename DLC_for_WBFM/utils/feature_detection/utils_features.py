@@ -34,7 +34,7 @@ def match_known_features(descriptors1, descriptors2,
                          keypoints2=None,
                          im1_shape=None,
                          im2_shape=None,
-                         matches_to_keep=1.0,
+                         matches_to_keep=0.3,
                          use_GMS=True):
 
     # Match features.
@@ -267,6 +267,7 @@ def build_f2n_map(features1,
                    radius,
                    tree_n1,
                    verbose=0):
+    # TODO: change the default from 0... make into dict?
     features_to_neurons1 = np.zeros(len(features1))
     nn_opt = { 'radius':5*radius, 'max_nn':1}
     for i in range(num_features1):
@@ -277,16 +278,19 @@ def build_f2n_map(features1,
         if k>0:
             features_to_neurons1[i] = this_fn1[0]
 
-        if verbose >= 4:
-            # Note: displays the full image
-            pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
+            if verbose >= 4:
+                # Note: displays the full image
+                # Default color = gray
+                pc_f1.paint_uniform_color([0.9, 0.9, 0.9])
+                # Current feature being queried
+                one_point = o3d.geometry.PointCloud()
+                one_point.points = o3d.utility.Vector3dVector([this_feature])
+                #one_point.points = o3d.utility.Vector3dVector(this_neighbor)
+                one_point.paint_uniform_color([0,0,1])
+                # Found closest neuron
+                np.asarray(pc_f1.colors)[this_fn1[1:], :] = [0, 1, 0]
 
-            one_point = o3d.geometry.PointCloud()
-            one_point.points = o3d.utility.Vector3dVector([this_feature])
-            one_point.paint_uniform_color([1,0,0])
-
-            np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
-            o3d.visualization.draw_geometries([one_point,pc_f0])
+                o3d.visualization.draw_geometries([one_point,pc_f1])
 
     return features_to_neurons1
 
