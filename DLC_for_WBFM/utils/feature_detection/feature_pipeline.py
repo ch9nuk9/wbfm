@@ -10,6 +10,8 @@ import random
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import cv2
+import networkx as nx
+
 ##
 ## Full pipeline
 ##
@@ -156,13 +158,20 @@ def build_reference_frames(num_reference_frames,
                          num_slices,
                          neuron_feature_radius,
                          alpha,
+                         is_sequential=True,
                          verbose=1):
     """
     Selects a sample of reference frames, then builds features for them
+
+    FOR NOW:
+    By default, these frames are sequential
     """
 
     other_ind = list(range(start_frame, start_frame+num_frames))
-    ref_ind = random.sample(other_ind, num_reference_frames)
+    if is_sequential:
+        ref_ind = list(range(start_frame, start_frame+num_reference_frames))
+    else:
+        ref_ind = random.sample(other_ind, num_reference_frames)
     for ind in ref_ind:
         other_ind.remove(ind)
 
@@ -182,17 +191,19 @@ def build_reference_frames(num_reference_frames,
                                                              alpha=1.0,
                                                              min_detections=3,
                                                              verbose=0)
+        neuron_locs = np.array([n for n in neuron_locs])
         kps, kp_3d_locs, features = build_features_1volume(dat, num_features_per_plane=1000)
 
         # The map requires some open3d subfunctions
         num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
         _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
+        #zzz
         f2n_map = build_f2n_map(kp_3d_locs,
                                num_f,
                                pc_f,
                                neuron_feature_radius,
                                tree_neurons,
-                               verbose=0)
+                               verbose=verbose-1)
 
         # Finally, my summary class
         metadata = {'frame_ind':ind,
@@ -222,7 +233,8 @@ def calc_2frame_matches_using_class(frame0,
                                            frame0.keypoints,
                                            frame1.keypoints,
                                            frame0.vol_shape[1:],
-                                           frame1.vol_shape[1:])
+                                           frame1.vol_shape[1:],
+                                           matches_to_keep=0.1)
     feature_matches_dict = extract_map1to2_from_matches(feature_matches)
     if DEBUG:
         print("All feature matches: ")
@@ -272,12 +284,49 @@ def calc_2frame_matches_using_class(frame0,
             5,
             this_n1,
             this_f1,
-            verbose
+            verbose-1
         )
         if DEBUG:
             break
 
-    return all_neuron_matches, all_confidences
+    return all_neuron_matches, all_confidences, feature_matches
+
+
+##
+## Networkx-based construction of reference indices
+##
+
+def get_node_name(frame_ind, neuron_ind):
+    """The graph is indexed by integer, so all neurons must be unique"""
+    return frame_ind*1000 + neuron_ind
+
+def unpack_node_name(node_name):
+    """Inverse of get_node_name"""
+    return divmod(node_name, 1000)
+
+def neuron_global_id_from_multiple_matches(pairwise_matches_dict):
+    """
+    Builds a vector of neuron matches from pairwise matchings to multiple frames
+
+    Input format:
+        pairwise_matches_dict[T] -> match_array
+        where T is a tuple indexing the pairwise matches, e.g. (1,2)
+        and match_array is an 'n x 2' array of the neuron indices in that frame
+
+    Algorithm:
+        Builds a directed graph from all individual frame's neurons
+        Neurons with the same identity are connected components
+        If this doesn't fully separate them, then the remaining ones are clustered
+
+    Output format:
+        global_ind_dict[frame_ind] -> neuron_vector_dict
+        where 'frame_ind' is the frame whose indices are
+    """
+    return
+
+##
+## Matching the features of the frames
+##
 
 
 def register_all_reference_frames(ref_frames, verbose=1):
@@ -288,18 +337,24 @@ def register_all_reference_frames(ref_frames, verbose=1):
     """
 
     ref_neuron_ind = []
+    pairwise_matches_dict = {}
+    feature_matches_dict = {}
+    pairwise_conf_dict = {}
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
     for i0, frame0 in tqdm(enumerate(ref_frames), total=len(ref_frames)):
-        matches_this_frame = []
         for i1, frame1 in enumerate(ref_frames):
             if i1==i0:
                 continue
-            matches_this_frame.append(calc_2frame_matches_using_class(frame0, frame1))
-        # TODO: actually use the matches
-        ref_neuron_ind.append(matches_this_frame)
+            match, conf, feature_matches = calc_2frame_matches_using_class(frame0, frame1)
+            key = (i0, i1)
+            pairwise_matches_dict[key] = match
+            pairwise_conf_dict[key] = conf
+            feature_matches_dict[key] = feature_matches
+    # TODO: Use the matches to be build a global index
+    global_neuron_ind = neuron_global_id_from_multiple_matches(pairwise_matches_dict)
 
-    return ref_neuron_ind
+    return global_neuron_ind, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict
 
 
 def match_to_reference_frames(this_frame, ref_frames):
@@ -311,6 +366,10 @@ def match_to_reference_frames(this_frame, ref_frames):
 
     return matches
 
+
+##
+## Full pipeline function
+##
 
 def track_via_reference_frames(vid_fname,
                                start_frame=0,
@@ -332,13 +391,14 @@ def track_via_reference_frames(vid_fname,
                  'num_frames':num_frames,
                  'num_slices':num_slices,
                  'alpha':alpha,
-                 'neuron_feature_radius':neuron_feature_radius}
+                 'neuron_feature_radius':neuron_feature_radius,
+                 'verbose':verbose-1}
     ref_dat, ref_frames, other_ind = build_reference_frames(num_reference_frames, **video_opt)
 
     # dataframe with features and feature-ind dict (separated by ref frame)
     if verbose >= 1:
         print("Analyzing reference frames...")
-    ref_neuron_ind = register_all_reference_frames(ref_frames)
+    ref_neuron_ind, pairwise_matches, pairwise_conf, feature_matches = register_all_reference_frames(ref_frames)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
@@ -351,4 +411,4 @@ def track_via_reference_frames(vid_fname,
         matches = match_to_reference_frames(this_frame, ref_frames)
         all_matches.append(matches)
 
-    return ref_frames, all_matches
+    return ref_frames, all_matches, pairwise_matches, pairwise_conf, feature_matches
