@@ -268,7 +268,8 @@ def build_f2n_map(features1,
                    tree_n1,
                    verbose=0):
     # TODO: change the default from 0... make into dict?
-    features_to_neurons1 = np.zeros(len(features1))
+    #features_to_neurons1 = np.zeros(len(features1))
+    features_to_neurons1 = dict()
     nn_opt = { 'radius':5*radius, 'max_nn':1}
     for i in range(num_features1):
         # Get features of this neuron and save
@@ -302,9 +303,10 @@ def add_neuron_match(all_neuron_matches,
                     this_n1,
                     this_f1,
                     verbose):
+    this_n1 = np.array(this_n1)
 
     confidence_func = lambda matches, total : matches / (9+total)
-    if len(this_f1) >= min_features_needed:
+    if len(this_n1) >= min_features_needed:
         this_match = int(stats.mode(this_n1)[0][0])
         all_neuron_matches.append([i, this_match])
         # Also calculate a heuristic confidence
@@ -360,7 +362,10 @@ def calc_2frame_matches(neurons0,
             o3d.visualization.draw_geometries([one_point,pc_f0])
 
         # Get the corresponding neurons in vol1, and vote
-        this_n1 = features_to_neurons1[this_f0]
+        #this_n1 = features_to_neurons1[this_f0]
+        f2n = features_to_neurons1
+        this_n1 = [f2n[f1] for f1 in this_f1 if f1 in f2n]
+        #this_n1 = [features_to_neurons1[f] for f in this_f0]
 
         all_matches, all_confidences = add_neuron_match(
             all_matches,

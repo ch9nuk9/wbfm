@@ -122,7 +122,7 @@ class ReferenceFrame():
     keypoints: list
     keypoint_locs: list # Just the z coordinate
     all_features: np.array
-    features_to_neurons: list
+    features_to_neurons: dict
 
     # Metadata
     frame_ind: int = None
@@ -139,7 +139,9 @@ class ReferenceFrame():
             yield neuron
 
     def get_features_of_neuron(self, which_neuron):
-        return np.argwhere(self.features_to_neurons == which_neuron)
+        iter_tmp = self.features_to_neurons.items()
+        return [key for key,val in iter_tmp if val == which_neuron]
+        #return np.argwhere(self.features_to_neurons == which_neuron)
 
     def num_neurons(self):
         return self.neuron_locs.shape[0]
@@ -262,7 +264,8 @@ def calc_2frame_matches_using_class(frame0,
         this_f1 = []
         for f0 in this_f0:
             #i_match = np.argwhere(feature_matches_ind[0,:]==f0)
-            i_match = feature_matches_dict.get(f0[0])
+            #i_match = feature_matches_dict.get(f0[0])
+            i_match = feature_matches_dict.get(f0)
             #print(f"Feature 0 {f0} matched with index {i_match}")
             #if len(i_match) > 0:
             if i_match is not None:
@@ -272,7 +275,8 @@ def calc_2frame_matches_using_class(frame0,
         if DEBUG:
             print("Features in volume 1: ", this_f1)
         # Get the corresponding neurons in vol1, and vote
-        this_n1 = frame1.features_to_neurons[this_f1]
+        f2n = frame1.features_to_neurons
+        this_n1 = [f2n.get(f1) for f1 in this_f1 if f1 in f2n]
         if DEBUG:
             print("Matching neuron in volume 1: ", this_n1)
 
