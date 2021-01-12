@@ -20,11 +20,18 @@ def convert_to_grayscale(im1):
     return im1Gray
 
 
-def detect_features(im1, max_features):
+def detect_features(im1, max_features,
+                    setFastThreshold=True,
+                    use_sift=True):
 
     im1Gray = convert_to_grayscale(im1)
-    orb = cv2.ORB_create(max_features)
-    kp1, d1 = orb.detectAndCompute(im1Gray, None)
+    if use_sift:
+        detector = cv2.xfeatures2d.SIFT_create(max_features)
+    else:
+        detector = cv2.ORB_create(max_features)
+        if setFastThreshold:
+            detector.setFastThreshold(0)
+    kp1, d1 = detector.detectAndCompute(im1Gray, None)
 
     return kp1, d1
 
@@ -35,14 +42,29 @@ def match_known_features(descriptors1, descriptors2,
                          im1_shape=None,
                          im2_shape=None,
                          matches_to_keep=0.3,
-                         use_GMS=True):
+                         use_GMS=True,
+                         use_sift=True):
 
     # Match features.
-    matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
-    matches = matcher.match(descriptors1, descriptors2)
+    if use_sift:
+        matcher = cv2.BFMatcher()
+        tmp = matcher.knnMatch(descriptors1,descriptors2, k=2)
+        # This returns a pair of matches for each "match"
+        # Apply ratio test
+        matches = []
+        for m,n in tmp:
+            if m.distance < 0.75*n.distance:
+                matches.append(m)
+    else:
+        matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
+        matches = matcher.match(descriptors1, descriptors2)
 
     if use_GMS:
-        opt = {'keypoints1':keypoints1, 'keypoints2':keypoints2, 'matches1to2':matches}
+        opt = {'keypoints1':keypoints1,
+               'keypoints2':keypoints2,
+               'matches1to2':matches,
+               'withRotation':False,
+               'thresholdFactor':3.0}
         matches = cv2.xfeatures2d.matchGMS(im1_shape, im2_shape, **opt)
 
     # Sort matches by score
@@ -82,6 +104,8 @@ def detect_features_and_match(im1, im2,
 
 def match_using_known_keypoints(im1, kp1, im2, kp2, max_features=1000, use_flann=False):
     """ Match using previously detected points, e.g. neurons
+
+    # TODO: combine with match_known_keypoints()
 
     Parameters
     ----------
