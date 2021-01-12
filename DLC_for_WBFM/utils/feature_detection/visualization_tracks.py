@@ -45,7 +45,6 @@ def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
         o3d.visualization.draw_geometries([successful_line_set, pc_n0, pc_n1])
 
 
-
 def visualize_tracks_simple(pc0, pc1, matches):
     pc0.paint_uniform_color([1,0,0])
     pc1.paint_uniform_color([0,1,0])
@@ -160,3 +159,40 @@ def draw_registration_result(source, target, transformation, base=None):
         o3d.visualization.draw_geometries([base, source_temp, target_temp])
     else:
         o3d.visualization.draw_geometries([source_temp, target_temp])
+
+
+##
+## Using ReferenceFrame class
+##
+
+def plot_match_example(all_frames,
+                       neuron_matches,
+                       feature_matches,
+                       which_frame_pair,
+                       neuron0,
+                       which_slice=15):
+    # Get frame objects and data
+    frame0 = all_frames[which_frame_pair[0]]
+    frame1 = all_frames[which_frame_pair[1]]
+    img0 = frame0.get_data()[which_slice,...]
+    img1 = frame1.get_data()[which_slice,...]
+    # Get the matching neuron in frame1, and the relevant indices
+    this_match = np.array(neuron_matches[which_frame_pair])
+    neuron1 = this_match[this_match[:,0]==neuron0, 1]
+    # Get keypoints and feature, then the subsets
+    kp_ind0 = frame0.get_features_of_neuron(neuron0)
+    print(f"Displaying {len(kp_ind0)}/{len(frame0.features_to_neurons)} matches")
+    kp0, kp1 = frame0.keypoints, frame1.keypoints
+
+    these_features = []
+    tmp = feature_matches[which_frame_pair]
+    for this_fmatch in tmp:
+        if this_fmatch.queryIdx in kp_ind0:
+            these_features.append(this_fmatch)
+
+    img3 = cv2.drawMatches(img0,kp0,img1,kp1,these_features,None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+    plt.figure(figsize=(25,45))
+    plt.imshow(img3)
+    plt.title(f"Feature matches for neuron {neuron0} to {neuron1} in frames {which_frame_pair}")
+    plt.show()
+        
