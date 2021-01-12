@@ -26,7 +26,10 @@ def detect_features(im1, max_features,
 
     im1Gray = convert_to_grayscale(im1)
     if use_sift:
-        detector = cv2.xfeatures2d.SIFT_create(max_features)
+        detector = cv2.xfeatures2d.SURF_create()
+        #opt = {'contrastThreshold':0.01,
+        #       'sigma':1.0}
+        #detector = cv2.xfeatures2d.SIFT_create(max_features, **opt)
     else:
         detector = cv2.ORB_create(max_features)
         if setFastThreshold:
@@ -47,14 +50,16 @@ def match_known_features(descriptors1, descriptors2,
 
     # Match features.
     if use_sift:
-        matcher = cv2.BFMatcher()
-        tmp = matcher.knnMatch(descriptors1,descriptors2, k=2)
+        matcher = cv2.BFMatcher(crossCheck=True)
+        matches = matcher.match(descriptors1,descriptors2)
+        #tmp = matcher.knnMatch(descriptors1,descriptors2, k=1)
         # This returns a pair of matches for each "match"
         # Apply ratio test
-        matches = []
-        for m,n in tmp:
-            if m.distance < 0.75*n.distance:
-                matches.append(m)
+        #matches = []
+        #for m,n in tmp:
+        #    #if m.distance < 0.75*n.distance:
+        #    if m.distance < 0.99*n.distance:
+        #        matches.append(m)
     else:
         matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
         matches = matcher.match(descriptors1, descriptors2)
