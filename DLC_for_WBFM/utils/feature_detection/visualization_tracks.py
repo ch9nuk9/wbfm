@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 import pandas as pd
+import cv2
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
@@ -195,4 +196,3 @@ def plot_match_example(all_frames,
     plt.imshow(img3)
     plt.title(f"Feature matches for neuron {neuron0} to {neuron1} in frames {which_frame_pair}")
     plt.show()
-        
