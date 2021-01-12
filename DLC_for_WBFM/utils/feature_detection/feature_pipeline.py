@@ -1,13 +1,14 @@
 from DLC_for_WBFM.utils.feature_detection.utils_features import *
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import *
+
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 import copy
 import numpy as np
 import time
 from tqdm import tqdm
 import random
-from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import cv2
 import networkx as nx
@@ -112,46 +113,6 @@ def track_neurons_full_video(vid_fname,
 ##
 ## Different strategy: reference frames
 ##
-
-@dataclass
-class ReferenceFrame():
-    """ Information for registered reference frames"""
-
-    # Data for registration
-    neuron_locs: list
-    keypoints: list
-    keypoint_locs: list # Just the z coordinate
-    all_features: np.array
-    features_to_neurons: dict
-
-    # Metadata
-    frame_ind: int = None
-    video_fname: str = None
-    vol_shape: tuple = None
-    alpha: float = 1.0
-
-    # To be finished with a set of other registered frames
-    neuron_ids: list = None # global neuron index
-
-    def iter_neurons(self):
-        # Practice with yield
-        for neuron in self.neuron_locs:
-            yield neuron
-
-    def get_features_of_neuron(self, which_neuron):
-        iter_tmp = self.features_to_neurons.items()
-        return [key for key,val in iter_tmp if val == which_neuron]
-        #return np.argwhere(self.features_to_neurons == which_neuron)
-
-    def num_neurons(self):
-        return self.neuron_locs.shape[0]
-
-    def get_data(self):
-        return get_single_volume(self.video_fname,
-                                 self.frame_ind,
-                                 num_slices=self.vol_shape[0],
-                                 alpha=self.alpha)
-
 
 def build_reference_frames(num_reference_frames,
                          vid_fname,
@@ -299,14 +260,6 @@ def calc_2frame_matches_using_class(frame0,
 ##
 ## Networkx-based construction of reference indices
 ##
-
-def get_node_name(frame_ind, neuron_ind):
-    """The graph is indexed by integer, so all neurons must be unique"""
-    return frame_ind*1000 + neuron_ind
-
-def unpack_node_name(node_name):
-    """Inverse of get_node_name"""
-    return divmod(node_name, 1000)
 
 def neuron_global_id_from_multiple_matches(pairwise_matches_dict):
     """
