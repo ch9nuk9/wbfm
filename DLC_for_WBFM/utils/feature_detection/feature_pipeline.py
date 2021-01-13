@@ -155,7 +155,8 @@ def build_reference_frames(num_reference_frames,
                                                              min_detections=3,
                                                              verbose=0)
         neuron_locs = np.array([n for n in neuron_locs])
-        kps, kp_3d_locs, features = build_features_1volume(dat, num_features_per_plane=1000)
+        feature_opt = {'num_features_per_plane':1000, 'start_plane':5}
+        kps, kp_3d_locs, features = build_features_1volume(dat, **feature_opt)
 
         # The map requires some open3d subfunctions
         num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
@@ -197,7 +198,7 @@ def calc_2frame_matches_using_class(frame0,
                                            frame1.keypoints,
                                            frame0.vol_shape[1:],
                                            frame1.vol_shape[1:],
-                                           matches_to_keep=0.1)
+                                           matches_to_keep=0.5)
     feature_matches_dict = extract_map1to2_from_matches(feature_matches)
     if DEBUG:
         print("All feature matches: ")
