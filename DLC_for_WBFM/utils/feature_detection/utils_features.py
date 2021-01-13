@@ -22,16 +22,17 @@ def convert_to_grayscale(im1):
 
 def detect_features(im1, max_features,
                     setFastThreshold=True,
-                    use_sift=True):
+                    use_sift=False):
 
     im1Gray = convert_to_grayscale(im1)
     if use_sift:
-        detector = cv2.xfeatures2d.SURF_create()
+        opt = {'hessianThreshold':0.1}
+        detector = cv2.xfeatures2d.SURF_create(**opt)
         #opt = {'contrastThreshold':0.01,
         #       'sigma':1.0}
         #detector = cv2.xfeatures2d.SIFT_create(max_features, **opt)
     else:
-        detector = cv2.ORB_create(max_features)
+        detector = cv2.ORB_create(max_features)#, WTA_K=3)#zzz
         if setFastThreshold:
             detector.setFastThreshold(0)
     kp1, d1 = detector.detectAndCompute(im1Gray, None)
@@ -46,7 +47,7 @@ def match_known_features(descriptors1, descriptors2,
                          im2_shape=None,
                          matches_to_keep=0.3,
                          use_GMS=True,
-                         use_sift=True):
+                         use_sift=False):
 
     # Match features.
     if use_sift:
@@ -61,7 +62,9 @@ def match_known_features(descriptors1, descriptors2,
         #    if m.distance < 0.99*n.distance:
         #        matches.append(m)
     else:
-        matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
+        # zzz
+        matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        #matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING, crossCheck=True)
         matches = matcher.match(descriptors1, descriptors2)
 
     if use_GMS:
@@ -69,7 +72,7 @@ def match_known_features(descriptors1, descriptors2,
                'keypoints2':keypoints2,
                'matches1to2':matches,
                'withRotation':False,
-               'thresholdFactor':3.0}
+               'thresholdFactor':6.0}
         matches = cv2.xfeatures2d.matchGMS(im1_shape, im2_shape, **opt)
 
     # Sort matches by score
@@ -84,7 +87,7 @@ def match_known_features(descriptors1, descriptors2,
 
 def detect_features_and_match(im1, im2,
                               max_features=3000,
-                              matches_to_keep=0.2,
+                              matches_to_keep=0.3,
                               use_GMS=True):
     """
     Uses orb to detect and match generic features
@@ -465,12 +468,17 @@ def match_centroids_using_tree(neurons0,
 
 # Get images with segmentation
 
-def build_features_1volume(dat, num_features_per_plane=1000, verbose=0):
+def build_features_1volume(dat,
+                           num_features_per_plane=1000,
+                           start_plane=0,
+                           verbose=0):
 
     all_features = []
     all_locs = []
     all_kps = []
     for i in range(dat.shape[0]):
+        if i < start_plane:
+            continue
         im = np.squeeze(dat[i,...])
         kp, features = detect_features(im, num_features_per_plane)
 
