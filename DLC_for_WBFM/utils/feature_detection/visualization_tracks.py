@@ -182,7 +182,6 @@ def plot_match_example(all_frames,
     neuron1 = this_match[this_match[:,0]==neuron0, 1]
     # Get keypoints and feature, then the subsets
     kp_ind0 = frame0.get_features_of_neuron(neuron0)
-    print(f"Displaying {len(kp_ind0)}/{len(frame0.features_to_neurons)} matches")
     kp0, kp1 = frame0.keypoints, frame1.keypoints
 
     these_features = []
@@ -191,6 +190,8 @@ def plot_match_example(all_frames,
         if this_fmatch.queryIdx in kp_ind0:
             these_features.append(this_fmatch)
 
+    print(f"Displaying {len(these_features)}/{len(tmp)} matches")
+    print(f"of a total of {len(frame0.features_to_neurons)} features")
     img3 = cv2.drawMatches(img0,kp0,img1,kp1,these_features,None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
     plt.figure(figsize=(25,45))
     plt.imshow(img3)
