@@ -147,7 +147,7 @@ def build_tracklets_from_matches(all_neurons,
         clust_df.loc[to_finish,'not_finished'] = False
 
         if verbose >= 3 and len(pairs) > 0:
-            print("TODO")
+            print("WIP")
             #visualize_tracks_simple(this_pc, next_pc, pairs)
 
         this_point_cloud_offset = next_point_cloud_offset

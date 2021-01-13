@@ -35,8 +35,7 @@ def write_pointcloud_from_masks(mask, fname):
 ## Translations between the region that works for bcpd and pixel space
 ##
 
-## Note: hardcoded to be inversions of each other... TODO
-
+## Note: hardcoded to be inversions of each other...
 def pixels_to_bcpd(m):
     factor = 2.0
     m = factor*np.array(m)

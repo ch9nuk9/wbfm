@@ -28,9 +28,6 @@ def detect_features(im1, max_features,
     if use_sift:
         opt = {'hessianThreshold':0.1}
         detector = cv2.xfeatures2d.SURF_create(**opt)
-        #opt = {'contrastThreshold':0.01,
-        #       'sigma':1.0}
-        #detector = cv2.xfeatures2d.SIFT_create(max_features, **opt)
     else:
         detector = cv2.ORB_create(max_features)#, WTA_K=3)#zzz
         if setFastThreshold:
@@ -53,18 +50,8 @@ def match_known_features(descriptors1, descriptors2,
     if use_sift:
         matcher = cv2.BFMatcher(crossCheck=True)
         matches = matcher.match(descriptors1,descriptors2)
-        #tmp = matcher.knnMatch(descriptors1,descriptors2, k=1)
-        # This returns a pair of matches for each "match"
-        # Apply ratio test
-        #matches = []
-        #for m,n in tmp:
-        #    #if m.distance < 0.75*n.distance:
-        #    if m.distance < 0.99*n.distance:
-        #        matches.append(m)
     else:
-        # zzz
         matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-        #matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING, crossCheck=True)
         matches = matcher.match(descriptors1, descriptors2)
 
     if use_GMS:
@@ -139,7 +126,7 @@ def match_using_known_keypoints(im1, kp1, im2, kp2, max_features=1000, use_flann
 
     # Match features.
     if use_flann:
-        # TODO: not working!
+        #  not working!
         # Initiate SIFT detector
         sift = cv2.SIFT()
 
@@ -180,14 +167,9 @@ def extract_map1to2_from_matches(matches):
     """
     Get dict from list of cv2 Match objects
     """
-    #matches_array = np.zeros((len(matches),2),dtype=int)
     matches_dict = {}
     for i, m in enumerate(matches):
-        # TODO: Which one should be first?
         # Maybe, queryIdx: https://stackoverflow.com/questions/22082598/how-to-get-matches-drawn-by-drawmatches-in-an-array-for-example-in-a-dmatch-s/24183734
-        #matches_array[i,0] = m.queryIdx
-        #matches_array[i,1] = m.trainIdx
-
         # TODO: may overwrite if not 1-to-1
         matches_dict[m.queryIdx] = m.trainIdx
 
@@ -299,8 +281,6 @@ def build_f2n_map(features1,
                    radius,
                    tree_n1,
                    verbose=0):
-    # TODO: change the default from 0... make into dict?
-    #features_to_neurons1 = np.zeros(len(features1))
     features_to_neurons1 = dict()
     nn_opt = { 'radius':5*radius, 'max_nn':1}
     for i in range(num_features1):
@@ -348,7 +328,7 @@ def add_neuron_match(all_neuron_matches,
         if verbose >= 1:
             print(f"Matched neuron {i} to {this_match} based on {len(this_f1)} features")
     else:
-        #all_matches.append([i, np.nan]) # TODO
+        #all_matches.append([i, np.nan])
         #all_confidences.append(0)
         if verbose >= 1:
             print(f"Could not match neuron {i}")

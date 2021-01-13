@@ -66,7 +66,7 @@ class DLCForWBFMTracking:
     """
 
     # One DLC config file
-    # TODO: list?
+    # Future: list?
     DLC_config_fname: str
 
     # One DLC run (output)
@@ -85,7 +85,7 @@ class DLCForWBFMTraces:
     crop_sz: tuple
     # Note: also uses values from the preprocessing portion
 
-    # TODO: which folder should these go in?
+    # Future: which folder should these go in?
     traces_fname: str
 
     which_neurons: str = None
@@ -96,7 +96,7 @@ class DLCForWBFMSegmentation:
     """
     Segmentation related variables
 
-    TODO
+    WIP
 
     See also: cellpose
     """
@@ -183,7 +183,7 @@ def save_config(config):
     Saves config file in the location the object remembers
     i.e. config.config_filename
 
-    # TODO: do basic checks
+    # Future: do basic checks
     - Right operating system
     - Not a different project
     """

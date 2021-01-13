@@ -222,18 +222,11 @@ def calc_2frame_matches_using_class(frame0,
             print(f"=======Neuron {neuron0_ind}=========")
             #print("Features in vol0: ", this_f0)
         # Use matches to translate to the indices of frame1
-        # TODO: debug this line... maybe switch matches to dict
         this_f1 = []
         for f0 in this_f0:
-            #i_match = np.argwhere(feature_matches_ind[0,:]==f0)
-            #i_match = feature_matches_dict.get(f0[0])
             i_match = feature_matches_dict.get(f0)
-            #print(f"Feature 0 {f0} matched with index {i_match}")
-            #if len(i_match) > 0:
             if i_match is not None:
                 this_f1.append(i_match)
-                #this_f1.append(feature_matches_ind[i_match, 1])
-        #this_f1 = np.array(this_f1)
         if DEBUG:
             print("Features in volume 1: ", this_f1)
         # Get the corresponding neurons in vol1, and vote

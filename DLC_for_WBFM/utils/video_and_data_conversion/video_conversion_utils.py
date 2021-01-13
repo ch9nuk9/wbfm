@@ -155,7 +155,7 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
             if alpha is None:
                 alpha =  0.9 * 255.0 / np.max(tif.pages[0].asarray())
                 print(f'Calculated alpha as {alpha}')
-        # TODO: also get the number of z-slices
+        # Future: also get the number of z-slices
 
     if alpha is None:
         alpha = 1.0
