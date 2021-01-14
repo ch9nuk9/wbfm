@@ -5,6 +5,7 @@ from pathlib import Path
 import cv2
 
 
+
 def get_video_from_ome_file_subset(video_fname,
                                    num_frames = 100,
                                    frame_width = 608,
@@ -46,7 +47,9 @@ def get_single_volume(fname, which_vol, num_slices, alpha=1.0, dtype='uint8'):
     # Convert to page coordinates
     start_ind = num_slices*which_vol
     key = range(start_ind, start_ind+num_slices)
-    return (alpha*tifffile.imread(fname, key=key)).astype(dtype)
+    dat = (alpha*tifffile.imread(fname, key=key)).astype(dtype)
+
+    return dat
 
 
 def get_adjacent_volumes(fname, first_vol, num_slices):
