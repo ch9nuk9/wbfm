@@ -1,7 +1,7 @@
 import numpy as np
-import open3d as o3
-import transformations as trans
-from probreg import bcpd
+import open3d as o3d
+#import transformations as trans
+from probreg import bcpd, cpd
 from probreg import callbacks
 import copy
 import os
@@ -11,11 +11,12 @@ import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 import glob
 import re
-from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels
-
+from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels, pixels_to_bcpd
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
+import scipy
 
 ##
-## Helper functions
+## Helper functions based on importing keypoints
 ##
 
 def prepare_source_and_target_nonrigid_3d(source_filename,
@@ -25,8 +26,8 @@ def prepare_source_and_target_nonrigid_3d(source_filename,
     Import data from FIJI-created .csv files using pandas and normalize
     Output: 2 open3d PointCloud objects
     """
-    source = o3.geometry.PointCloud()
-    target = o3.geometry.PointCloud()
+    source = o3d.geometry.PointCloud()
+    target = o3d.geometry.PointCloud()
 
     # Read a dataframe, not just a text file
     try:
@@ -41,8 +42,8 @@ def prepare_source_and_target_nonrigid_3d(source_filename,
         source_np = np.loadtxt(source_filename)
         target_np = np.loadtxt(target_filename)
 
-    source.points = o3.utility.Vector3dVector(source_np)
-    target.points = o3.utility.Vector3dVector(target_np)
+    source.points = o3d.utility.Vector3dVector(source_np)
+    target.points = o3d.utility.Vector3dVector(target_np)
     if voxel_size is not None:
         source = source.voxel_down_sample(voxel_size=voxel_size)
         target = target.voxel_down_sample(voxel_size=voxel_size)
@@ -60,7 +61,7 @@ def correspondence_from_transform(tf_param, source, target):
 
     Uses sklearn.neighbors
     """
-    cv = lambda x: np.asarray(x.points if isinstance(x, o3.geometry.PointCloud) else x)
+    cv = lambda x: np.asarray(x.points if isinstance(x, o3d.geometry.PointCloud) else x)
 
     result = copy.deepcopy(source)
     result.points = tf_param.transform(result.points)
@@ -71,8 +72,112 @@ def correspondence_from_transform(tf_param, source, target):
     distances, indices = nbrs.kneighbors(result_loc)
     # print("Fitting {} transformed points to {} target points".format(len(result_loc), len(target_loc)))
 
-    return indices
+    return indices, distances
 
+
+##
+## Full matching pipeline
+##
+
+def match_2vol_BCPD(neurons0, neurons1,
+                    w=0.0,
+                    bcpd_kwargs={},
+                    do_zscore=False,
+                    voxel_size=None,
+                    DEBUG=False):
+    """
+    Matches using Bayesian Coherent Point drift
+
+    VERY sensitive to settings:
+        w - Weight of the uniform distribution in matching
+        bcpd_kwargs = {'lmd':2.0, 'k':1.0e20, 'gamma':1.0}
+            Lambda. Positive. It controls the expected length of displacement vectors.
+            Kappa. Positive. It controls the randomness of mixing coefficients.
+            Gamma. Positive. It defines the randomness of the point matching during the early stage of the optimization.
+
+    See also: https://github.com/ohirose/bcpd#tuning-parameters
+    """
+
+    # Build pointclouds with normalized coordinates
+    opt = {'to_mirror':False}
+    if not do_zscore:
+        f = lambda this_n : pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
+    else:
+        f = lambda this_n : scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
+    _, pc0, _ = build_neuron_tree(f(neurons0), **opt)
+    _, pc1, _ = build_neuron_tree(f(neurons1), **opt)
+    if DEBUG:
+        pc0.paint_uniform_color([0.5,0.5,0.5])
+        pc1.paint_uniform_color([0,0,0])
+        o3d.visualization.draw_geometries([pc0, pc1])
+        #print("Points of pc0: ", np.asarray(pc0.points))
+
+    if voxel_size is not None:
+        pc0 = pc0.voxel_down_sample(voxel_size=voxel_size)
+        pc1 = pc1.voxel_down_sample(voxel_size=voxel_size)
+    # Do BCPD
+    opt = {'w':w,'maxiter':500, 'tol':1e-8}
+    tf_param = bcpd.registration_bcpd(pc0, pc1, **opt, **bcpd_kwargs)
+
+    ## Convert into pairwise matches
+    all_matches, all_conf = correspondence_from_transform(tf_param, pc0, pc1)
+    all_matches = np.array([[i,val[0]] for i,val in enumerate(all_matches)])
+
+    return all_matches, all_conf
+
+
+
+def match_2vol_rigid(neurons0, neurons1,
+                    w=0.0,
+                    do_zscore=False,
+                    voxel_size=None,
+                    tf_type_name='rigid',
+                    DEBUG=False):
+    """
+    Matches using RIGID Coherent Point drift
+
+    See also: match_2vol_BCPD
+    """
+
+    # Build pointclouds with normalized coordinates
+    opt = {'to_mirror':False}
+    if not do_zscore:
+        f = lambda this_n : pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
+    else:
+        f = lambda this_n : scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
+    _, pc0, _ = build_neuron_tree(f(neurons0), **opt)
+    _, pc1, _ = build_neuron_tree(f(neurons1), **opt)
+
+    if voxel_size is not None:
+        pc0 = pc0.voxel_down_sample(voxel_size=voxel_size)
+        pc1 = pc1.voxel_down_sample(voxel_size=voxel_size)
+    # See: https://github.com/neka-nat/probreg/blob/master/examples/cpd_rigid_cuda.py
+
+    # compute cpd registration
+    tf_param, _, _ = cpd.registration_cpd(pc0, pc1,
+                                          tol=1e-8,
+                                          tf_type_name=tf_type_name)
+
+    if DEBUG:
+        result = copy.deepcopy(pc0)
+        result.points = tf_param.transform(result.points)
+
+        # draw result
+        pc0.paint_uniform_color([0.5, 0.5, 0.5])
+        pc1.paint_uniform_color([0, 0, 0])
+        result.paint_uniform_color([0, 0, 1])
+        o3d.visualization.draw_geometries([pc0, pc1, result])
+
+    ## Convert into pairwise matches
+    all_matches, all_conf = correspondence_from_transform(tf_param, pc0, pc1)
+    all_matches = np.array([[i,val[0]] for i,val in enumerate(all_matches)])
+
+    return all_matches, all_conf
+
+
+##
+## For saving the output
+##
 
 def save_indices(indices, fname=None):
     """ Saves indices (csv) using a standard format """
