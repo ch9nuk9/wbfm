@@ -376,7 +376,7 @@ def calc_2frame_matches(neurons0,
         # Get the corresponding neurons in vol1, and vote
         #this_n1 = features_to_neurons1[this_f0]
         f2n = features_to_neurons1
-        this_n1 = [f2n[f1] for f1 in this_f1 if f1 in f2n]
+        this_n1 = [f2n[f1] for f1 in this_f0 if f1 in f2n]
         #this_n1 = [features_to_neurons1[f] for f in this_f0]
 
         all_matches, all_confidences = add_neuron_match(
