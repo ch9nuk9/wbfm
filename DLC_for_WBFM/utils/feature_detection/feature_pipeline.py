@@ -12,6 +12,8 @@ import random
 import matplotlib.pyplot as plt
 import cv2
 import networkx as nx
+import scipy.ndimage as ndi
+
 
 ##
 ## Full pipeline
@@ -64,6 +66,7 @@ def track_neurons_full_video(vid_fname,
                              num_frames=10,
                              num_slices=33,
                              alpha=0.15,
+                             use_mini_max_projection=False,
                              verbose=0):
     """
     Detects and tracks neurons using opencv-based feature matching
@@ -73,6 +76,8 @@ def track_neurons_full_video(vid_fname,
     # Get initial volume; settings are same for all
     import_opt = {'num_slices':num_slices, 'alpha':alpha}
     dat0 = get_single_volume(vid_fname, start_frame, **import_opt)
+    if use_mini_max_projection:
+        dat0 = ndi.maximum_filter(dat0, size=(5,1,1))
 
     # Loop through all pairs
     all_matches = []
@@ -86,6 +91,8 @@ def track_neurons_full_video(vid_fname,
             print("===========================================================")
             print(f"Matching frames {i_frame-1} and {i_frame} (end at {end_frame})")
         dat1 = get_single_volume(vid_fname, i_frame, **import_opt)
+        if use_mini_max_projection:
+            dat1 = ndi.maximum_filter(dat1, size=(5,1,1))
 
         m, c, n0, n1 = track_neurons_two_volumes(dat0,
                                                   dat1,
@@ -122,6 +129,7 @@ def build_reference_frames(num_reference_frames,
                          neuron_feature_radius,
                          alpha,
                          is_sequential=True,
+                         do_mini_max_projections=True,
                          verbose=1):
     """
     Selects a sample of reference frames, then builds features for them
@@ -146,6 +154,8 @@ def build_reference_frames(num_reference_frames,
         print("Building reference frames...")
     for ind in tqdm(ref_ind, total=len(ref_ind)):
         dat = get_single_volume(vid_fname, ind, **video_opt)
+        if do_mini_max_projections:
+            dat = ndi.maximum_filter(dat, size=(5,1,1))
         ref_dat.append(dat)
 
         # Get neurons and features, and a map between them
@@ -161,7 +171,6 @@ def build_reference_frames(num_reference_frames,
         # The map requires some open3d subfunctions
         num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
         _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
-        #zzz
         f2n_map = build_f2n_map(kp_3d_locs,
                                num_f,
                                pc_f,
@@ -357,6 +366,7 @@ def track_via_reference_frames(vid_fname,
                  'alpha':alpha}
     all_matches = []
     for ind in other_ind:
+        print("WIP... aborting early")
         break # WIP
         this_frame = get_single_volume(vid_fname, ind, **video_opt)
         matches = match_to_reference_frames(this_frame, ref_frames)
