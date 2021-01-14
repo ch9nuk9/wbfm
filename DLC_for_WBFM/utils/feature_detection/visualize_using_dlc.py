@@ -50,13 +50,15 @@ def build_dlc_annotation_one_tracklet(row,
     return frame
 
 
-def build_dlc_annotation_all(clust_df, min_length, verbose=0):
+def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=0):
     new_dlc_df = None
     all_bodyparts = np.asarray(clust_df['clust_ind'])
 
     neuron_ind = 1
     for i, row in tqdm(clust_df.iterrows(), total=clust_df.shape[0]):
-        opt = {'min_length':min_length, 'verbose':verbose-1,'neuron_ind':neuron_ind}
+        opt = {'min_length':min_length, 'verbose':verbose-1,
+               'neuron_ind':neuron_ind,
+               'num_frames':num_frames}
         frame = build_dlc_annotation_one_tracklet(row, all_bodyparts, **opt)
         if frame is not None:
             new_dlc_df = pd.concat([new_dlc_df, frame],axis=1)
