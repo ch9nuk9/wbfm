@@ -191,6 +191,7 @@ def build_reference_frames(num_reference_frames,
 
 def calc_2frame_matches_using_class(frame0,
                                     frame1,
+                                    use_bipartite_matching=True,
                                     verbose=1,
                                     DEBUG=False):
     """
@@ -224,6 +225,7 @@ def calc_2frame_matches_using_class(frame0,
     # Second, get neuron matches
     all_neuron_matches = []
     all_confidences = []
+    all_candidate_matches = []
     for neuron0_ind, neuron0_loc in enumerate(frame0.iter_neurons()):
         # Get features of this neuron
         this_f0 = frame0.get_features_of_neuron(neuron0_ind)
@@ -244,20 +246,36 @@ def calc_2frame_matches_using_class(frame0,
         if DEBUG:
             print("Matching neuron in volume 1: ", this_n1)
 
-        min_features_needed = 5 # TODO
-        all_neuron_matches, all_confidences = add_neuron_match(
+        min_features_needed = 2 # TODO
+        all_neuron_matches, all_confidences, all_candidate_matches = add_neuron_match(
             all_neuron_matches,
             all_confidences,
             neuron0_ind,
-            5,
+            min_features_needed,
             this_n1,
             this_f1,
-            verbose-1
+            verbose=verbose-1,
+            all_candidate_matches=all_candidate_matches
         )
         if DEBUG:
             break
 
-    return all_neuron_matches, all_confidences, feature_matches
+    if use_bipartite_matching:
+        neuron_graph = nx.Graph()
+        # Rename the second frame's neurons so the graph is truly bipartite
+        for candidate in all_candidate_matches:
+            candidate[1] = get_node_name(1, candidate[1])
+            neuron_graph.add_weighted_edges_from([candidate])
+        if verbose >= 2:
+            print("Performing bipartite matching")
+        all_bp_matches = nx.max_weight_matching(neuron_graph, maxcardinality=True)
+        # Translate back into neuron index space
+        for m in all_bp_matches:
+            m[1] = unpack_node_name(m[1])[1]
+    else:
+        all_bp_matches = None
+
+    return all_neuron_matches, all_confidences, feature_matches, all_bp_matches
 
 
 ##
@@ -289,7 +307,7 @@ def neuron_global_id_from_multiple_matches(pairwise_matches_dict):
 ##
 
 
-def register_all_reference_frames(ref_frames, verbose=1):
+def register_all_reference_frames(ref_frames, use_bipartite_matching=True, verbose=1):
     """
     Registers a set of reference frames, aligning their neuron indices
 
@@ -300,21 +318,23 @@ def register_all_reference_frames(ref_frames, verbose=1):
     pairwise_matches_dict = {}
     feature_matches_dict = {}
     pairwise_conf_dict = {}
+    bp_matches_dict = {}
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
     for i0, frame0 in tqdm(enumerate(ref_frames), total=len(ref_frames)):
         for i1, frame1 in enumerate(ref_frames):
             if i1==i0:
                 continue
-            match, conf, feature_matches = calc_2frame_matches_using_class(frame0, frame1)
+            match, conf, feature_matches, bp_matches = calc_2frame_matches_using_class(frame0, frame1, use_bipartite_matching)
             key = (i0, i1)
             pairwise_matches_dict[key] = match
             pairwise_conf_dict[key] = conf
             feature_matches_dict[key] = feature_matches
-    # TODO: Use the matches to be build a global index
+            bp_matches_dict[key] = list(bp_matches)
+    # TODO: Use the matches to build a global index
     global_neuron_ind = neuron_global_id_from_multiple_matches(pairwise_matches_dict)
 
-    return global_neuron_ind, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict
+    return global_neuron_ind, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
 
 
 def match_to_reference_frames(this_frame, ref_frames):
@@ -358,7 +378,7 @@ def track_via_reference_frames(vid_fname,
     # dataframe with features and feature-ind dict (separated by ref frame)
     if verbose >= 1:
         print("Analyzing reference frames...")
-    ref_neuron_ind, pairwise_matches, pairwise_conf, feature_matches = register_all_reference_frames(ref_frames)
+    ref_neuron_ind, pairwise_matches, pairwise_conf, feature_matches, bp_matches = register_all_reference_frames(ref_frames)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
@@ -372,4 +392,4 @@ def track_via_reference_frames(vid_fname,
         matches = match_to_reference_frames(this_frame, ref_frames)
         all_matches.append(matches)
 
-    return ref_frames, all_matches, pairwise_matches, pairwise_conf, feature_matches
+    return ref_frames, all_matches, pairwise_matches, pairwise_conf, feature_matches, bp_matches
