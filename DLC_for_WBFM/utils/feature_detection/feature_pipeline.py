@@ -12,7 +12,6 @@ import random
 import matplotlib.pyplot as plt
 import cv2
 import networkx as nx
-import scipy.ndimage as ndi
 
 
 ##
@@ -121,7 +120,7 @@ def track_neurons_full_video(vid_fname,
 ## Different strategy: reference frames
 ##
 
-def build_reference_frames(num_reference_frames,
+def build_all_reference_frames(num_reference_frames,
                          vid_fname,
                          start_frame,
                          num_frames,
@@ -154,36 +153,14 @@ def build_reference_frames(num_reference_frames,
         print("Building reference frames...")
     for ind in tqdm(ref_ind, total=len(ref_ind)):
         dat = get_single_volume(vid_fname, ind, **video_opt)
-        if do_mini_max_projections:
-            dat = ndi.maximum_filter(dat, size=(5,1,1))
         ref_dat.append(dat)
 
-        # Get neurons and features, and a map between them
-        neuron_locs, _, _, icp_kps = detect_neurons_using_ICP(dat,
-                                                             num_slices=num_slices,
-                                                             alpha=1.0,
-                                                             min_detections=3,
-                                                             verbose=0)
-        neuron_locs = np.array([n for n in neuron_locs])
-        feature_opt = {'num_features_per_plane':1000, 'start_plane':5}
-        kps, kp_3d_locs, features = build_features_1volume(dat, **feature_opt)
-
-        # The map requires some open3d subfunctions
-        num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
-        _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
-        f2n_map = build_f2n_map(kp_3d_locs,
-                               num_f,
-                               pc_f,
-                               neuron_feature_radius,
-                               tree_neurons,
-                               verbose=verbose-1)
-
-        # Finally, my summary class
         metadata = {'frame_ind':ind,
                     'vol_shape':dat.shape,
                     'video_fname':vid_fname,
                     'alpha':alpha}
-        f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map, **metadata)
+        f = build_reference_frame(dat, num_slices, neuron_feature_radius,
+                                  metadata=metadata)
         ref_frames.append(f)
 
     return ref_dat, ref_frames, other_ind
@@ -261,17 +238,7 @@ def calc_2frame_matches_using_class(frame0,
             break
 
     if use_bipartite_matching:
-        neuron_graph = nx.Graph()
-        # Rename the second frame's neurons so the graph is truly bipartite
-        for candidate in all_candidate_matches:
-            candidate[1] = get_node_name(1, candidate[1])
-            neuron_graph.add_weighted_edges_from([candidate])
-        if verbose >= 2:
-            print("Performing bipartite matching")
-        all_bp_matches = nx.max_weight_matching(neuron_graph, maxcardinality=True)
-        # Translate back into neuron index space
-        for m in all_bp_matches:
-            m[1] = unpack_node_name(m[1])[1]
+        all_bp_matches = calc_bipartite_matches(all_candidate_matches, verbose-1)
     else:
         all_bp_matches = None
 
@@ -282,12 +249,13 @@ def calc_2frame_matches_using_class(frame0,
 ## Networkx-based construction of reference indices
 ##
 
-def neuron_global_id_from_multiple_matches(pairwise_matches_dict):
+def neuron_global_id_from_multiple_matches(matches, conf, total_frames,
+                                           edge_threshs = [0,0.1,0.2,0.3]):
     """
     Builds a vector of neuron matches from pairwise matchings to multiple frames
 
     Input format:
-        pairwise_matches_dict[T] -> match_array
+        matches[T] -> match_array
         where T is a tuple indexing the pairwise matches, e.g. (1,2)
         and match_array is an 'n x 2' array of the neuron indices in that frame
 
@@ -300,14 +268,26 @@ def neuron_global_id_from_multiple_matches(pairwise_matches_dict):
         global_ind_dict[frame_ind] -> neuron_vector_dict
         where 'frame_ind' is the frame whose indices are
     """
-    return
+
+    G = build_digraph_from_matches(matches, conf, verbose=0)
+    global2local = {}
+    local2global = {}
+    current_ind = 0
+    opt = {'current_ind':current_ind,'total_frames':total_frames}
+
+    for t in edge_threshs:
+        g2l, l2g, current_ind, G = add_all_good_components(G, thresh=t,**opt)
+        global2local.update(g2l)
+        local2global.update(l2g)
+
+    return global2local, local2global
 
 ##
 ## Matching the features of the frames
 ##
 
 
-def register_all_reference_frames(ref_frames, use_bipartite_matching=True, verbose=1):
+def register_all_reference_frames(ref_frames, use_bipartite_matching=False, verbose=1):
     """
     Registers a set of reference frames, aligning their neuron indices
 
@@ -330,11 +310,16 @@ def register_all_reference_frames(ref_frames, use_bipartite_matching=True, verbo
             pairwise_matches_dict[key] = match
             pairwise_conf_dict[key] = conf
             feature_matches_dict[key] = feature_matches
-            bp_matches_dict[key] = list(bp_matches)
+            if bp_matches is not None:
+                bp_matches_dict[key] = list(bp_matches)
     # TODO: Use the matches to build a global index
-    global_neuron_ind = neuron_global_id_from_multiple_matches(pairwise_matches_dict)
+    global2local, local2global = neuron_global_id_from_multiple_matches(
+        pairwise_matches_dict,
+        pairwise_conf_dict,
+        len(ref_frames)
+    )
 
-    return global_neuron_ind, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
+    return global2local, local2global, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
 
 
 def match_to_reference_frames(this_frame, ref_frames):
@@ -373,12 +358,12 @@ def track_via_reference_frames(vid_fname,
                  'alpha':alpha,
                  'neuron_feature_radius':neuron_feature_radius,
                  'verbose':verbose-1}
-    ref_dat, ref_frames, other_ind = build_reference_frames(num_reference_frames, **video_opt)
+    ref_dat, ref_frames, other_ind = build_all_reference_frames(num_reference_frames, **video_opt)
 
     # dataframe with features and feature-ind dict (separated by ref frame)
     if verbose >= 1:
         print("Analyzing reference frames...")
-    ref_neuron_ind, pairwise_matches, pairwise_conf, feature_matches, bp_matches = register_all_reference_frames(ref_frames)
+    global2local, local2global, pairwise_matches, pairwise_conf, feature_matches, bp_matches = register_all_reference_frames(ref_frames)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
@@ -392,4 +377,15 @@ def track_via_reference_frames(vid_fname,
         matches = match_to_reference_frames(this_frame, ref_frames)
         all_matches.append(matches)
 
-    return ref_frames, all_matches, pairwise_matches, pairwise_conf, feature_matches, bp_matches
+    # Return some intermediate objects for plotting and debugging
+    reference_set = RegisteredReferenceFrames(
+        global2local,
+        local2global,
+        ref_frames,
+        pairwise_matches,
+        pairwise_conf,
+        feature_matches,
+        bp_matches
+    )
+
+    return all_matches, reference_set

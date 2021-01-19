@@ -1,8 +1,12 @@
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
+from DLC_for_WBFM.utils.feature_detection.utils_features import *
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
+from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 import numpy as np
 import networkx as nx
 import collections
 from dataclasses import dataclass
+import scipy.ndimage as ndi
 
 ##
 ## Basic class definition
@@ -47,6 +51,63 @@ class ReferenceFrame():
                                  num_slices=self.vol_shape[0],
                                  alpha=self.alpha)
 
+
+##
+## Class for Set of reference frames
+##
+
+@dataclass
+class RegisteredReferenceFrames():
+    """Data for matched reference frames"""
+
+    # Global coordinate system
+    global2local : dict
+    local2global : dict
+
+    # Intermediate products
+    reference_frames : list
+    pairwise_matches : list
+    pairwise_conf : list
+
+    # More detailed intermediates and alternate matchings
+    feature_matches : list = None
+    bipartite_matches : list = None
+
+
+def build_reference_frame(dat,
+                          num_slices,
+                          neuron_feature_radius,
+                          do_mini_max_projections=True,
+                          mini_max_size=5,
+                          metadata={},
+                          verbose=0):
+    """Main convinience constructor for ReferenceFrame class"""
+    if do_mini_max_projections:
+        dat = ndi.maximum_filter(dat, size=(mini_max_size,1,1))
+
+    # Get neurons and features, and a map between them
+    neuron_locs, _, _, icp_kps = detect_neurons_using_ICP(dat,
+                                                         num_slices=num_slices,
+                                                         alpha=1.0,
+                                                         min_detections=3,
+                                                         verbose=0)
+    neuron_locs = np.array([n for n in neuron_locs])
+    feature_opt = {'num_features_per_plane':1000, 'start_plane':5}
+    kps, kp_3d_locs, features = build_features_1volume(dat, **feature_opt)
+
+    # The map requires some open3d subfunctions
+    num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
+    _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
+    f2n_map = build_f2n_map(kp_3d_locs,
+                           num_f,
+                           pc_f,
+                           neuron_feature_radius,
+                           tree_neurons,
+                           verbose=verbose-1)
+
+    # Finally, my summary class
+    f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map, **metadata)
+    return f
 
 ##
 ## Utilities for combining frames into a reference set
@@ -112,3 +173,95 @@ def plot_degree_hist(DG):
 
     fig, ax = plt.subplots()
     plt.bar(deg, cnt, width=0.80, color="b")
+
+
+def calc_bipartite_matches(all_candidate_matches, verbose=0):
+
+    G = nx.Graph()
+    # Rename the second frame's neurons so the graph is truly bipartite
+    for candidate in all_candidate_matches:
+        candidate = list(candidate)
+        candidate[1] = get_node_name(1, candidate[1])
+        #candidate[2] = 1/candidate[2]
+        # Otherwise the sets are unordered
+        G.add_node(candidate[0], bipartite=0)
+        G.add_node(candidate[1], bipartite=1)
+        G.add_weighted_edges_from([candidate])
+    if verbose >= 2:
+        print("Performing bipartite matching")
+    #set0 = [n for n, d in G.nodes(data=True) if d['bipartite'] == 0]
+    tmp_bp_matches = nx.max_weight_matching(G, maxcardinality=True)
+    #all_bp_dict = nx.bipartite.minimum_weight_full_matching(G, set0)
+    # Translate back into neuron index space
+    # all_bp_matches = []
+    # for neur0,v in all_bp_dict.items():
+    #     neur1 = unpack_node_name(v)[1]
+    #     all_bp_matches.append([neur0, neur1])
+    all_bp_matches = []
+    for m in tmp_bp_matches:
+        m = list(m) # unordered by default
+        m.sort()
+        m[1] = unpack_node_name(m[1])[1]
+        all_bp_matches.append(m)
+
+    return all_bp_matches
+
+
+##
+## For determining the full reference set
+##
+
+
+def is_one_neuron_per_frame(node_names, min_size=None, total_frames=10):
+    """
+    Checks a connected component (list of nodes) to make sure each frame is only represented once
+    """
+    if min_size is None:
+        min_size = total_frames / 2.0
+
+    # Heuristic check
+    sz = len(node_names)
+    if sz <= min_size or sz > total_frames:
+        return False
+
+    # Actual check
+    all_frames = []
+    for n in node_names:
+        all_frames.append(unpack_node_name(n)[0])
+
+    if len(all_frames) > len(set(all_frames)):
+        return False
+
+    return True
+
+
+def add_all_good_components(G,
+                            thresh=0.0,
+                            reference_ind=0,
+                            total_frames=10):
+    """
+    Loops through a list of all connected components and adds to a global dict
+
+    Builds two dictionaries:
+        Indexed by global neuron index, returning a list of local frame indices
+        Indexed by frame index and local neuron index, returning the global ind
+
+    Also removes these found neurons from the original graph, G
+    """
+    global2local = {}
+    local2global = {}
+    G_tmp = get_subgraph_with_strong_weights(G, thresh)
+    all_components = list(nx.strongly_connected_components(G_tmp))
+    for comp in all_components:
+        is_good_cluster = is_one_neuron_per_frame(comp, total_frames=total_frames)
+        if is_good_cluster:
+            all_local_ind = []
+            for global_ind in comp:
+                frame_ind, local_ind = unpack_node_name(global_ind)
+                local2global[(frame_ind, local_ind)] = reference_ind
+                all_local_ind.append(local_ind)
+            global2local[reference_ind] = all_local_ind
+            reference_ind += 1
+            G.remove_nodes_from(comp)
+
+    return global2local, local2global, reference_ind, G
