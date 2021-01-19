@@ -272,11 +272,11 @@ def neuron_global_id_from_multiple_matches(matches, conf, total_frames,
     G = build_digraph_from_matches(matches, conf, verbose=0)
     global2local = {}
     local2global = {}
-    current_ind = 0
-    opt = {'current_ind':current_ind,'total_frames':total_frames}
+    reference_ind = 0
 
     for t in edge_threshs:
-        g2l, l2g, current_ind, G = add_all_good_components(G, thresh=t,**opt)
+        opt = {'reference_ind':reference_ind,'total_frames':total_frames,'thresh':t}
+        g2l, l2g, reference_ind, G = add_all_good_components(G,**opt)
         global2local.update(g2l)
         local2global.update(l2g)
 
