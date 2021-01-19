@@ -65,9 +65,9 @@ class RegisteredReferenceFrames():
     local2global : dict
 
     # Intermediate products
-    reference_frames : list
-    pairwise_matches : list
-    pairwise_conf : list
+    reference_frames : list = None
+    pairwise_matches : list = None
+    pairwise_conf : list = None
 
     # More detailed intermediates and alternate matchings
     feature_matches : list = None
