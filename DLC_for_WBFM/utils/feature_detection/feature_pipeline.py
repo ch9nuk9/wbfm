@@ -12,6 +12,7 @@ import random
 import matplotlib.pyplot as plt
 import cv2
 import networkx as nx
+from collections import defaultdict
 
 
 ##
@@ -168,7 +169,7 @@ def build_all_reference_frames(num_reference_frames,
 
 def calc_2frame_matches_using_class(frame0,
                                     frame1,
-                                    use_bipartite_matching=True,
+                                    use_bipartite_matching=False,
                                     verbose=1,
                                     DEBUG=False):
     """
@@ -230,7 +231,6 @@ def calc_2frame_matches_using_class(frame0,
             neuron0_ind,
             min_features_needed,
             this_n1,
-            this_f1,
             verbose=verbose-1,
             all_candidate_matches=all_candidate_matches
         )
@@ -322,14 +322,47 @@ def register_all_reference_frames(ref_frames, use_bipartite_matching=False, verb
     return global2local, local2global, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
 
 
-def match_to_reference_frames(this_frame, ref_frames):
+def match_to_reference_frames(this_frame, reference_set):
     """
     Registers a single frame to a set of references
     """
 
-    matches = []
+    # Build a map from this frame's indices to the global neuron frame
+    all_global_matches = []
+    all_conf = []
+    for ref in reference_set.ref_frames:
+        # Get matches (coordinates are local to this reference frame)
+        local_matches, conf, _, _ = calc_2frame_matches_using_class(this_frame, ref)
+        # Convert to global coordinates
+        global_matches = []
+        frame_ind = ref.frame_ind
+        for m in local_matches:
+            ref_neuron_ind = m[1]
+            global_ind = reference_set.local2global[(frame_ind, ref_neuron_ind)]
+            global_matches.append([m[0], global_ind])
+        all_global_matches.append(global_matches)
+        all_conf.append(conf)
 
-    return matches
+    # Compact each reference frame ID into a single list
+    per_neuron_matches = defaultdict(list)
+    for frame_match in all_global_matches:
+        per_neuron_matches[frame_match[0]].append(frame_match[1])
+
+    # Then, use the matches to vote for the best neuron
+    # TODO: use graph connected components
+    final_matches = []
+    final_conf = []
+    min_features_needed = len(reference_set.reference_frames)/2.0
+    for this_local_ind, these_matches in per_neuron_matches.items():
+        final_matches, final_conf = add_neuron_match(
+            final_matches,
+            final_conf,
+            this_local_ind,
+            min_features_needed,
+            these_matches
+        )
+
+    return final_matches, final_conf
 
 
 ##
@@ -365,19 +398,8 @@ def track_via_reference_frames(vid_fname,
         print("Analyzing reference frames...")
     global2local, local2global, pairwise_matches, pairwise_conf, feature_matches, bp_matches = register_all_reference_frames(ref_frames)
 
-    if verbose >= 1:
-        print("Matching other frames to reference...")
-    video_opt = {'num_slices':num_slices,
-                 'alpha':alpha}
-    all_matches = []
-    for ind in other_ind:
-        print("WIP... aborting early")
-        break # WIP
-        this_frame = get_single_volume(vid_fname, ind, **video_opt)
-        matches = match_to_reference_frames(this_frame, ref_frames)
-        all_matches.append(matches)
 
-    # Return some intermediate objects for plotting and debugging
+    # Build a class for the full set of registered frames
     reference_set = RegisteredReferenceFrames(
         global2local,
         local2global,
@@ -387,5 +409,25 @@ def track_via_reference_frames(vid_fname,
         feature_matches,
         bp_matches
     )
+
+    if verbose >= 1:
+        print("Matching other frames to reference...")
+    video_opt = {'num_slices':num_slices,
+                 'alpha':alpha}
+    all_matches = []
+    metadata = {'vol_shape':ref_dat[0].shape,
+                'video_fname':vid_fname,
+                'alpha':alpha}
+    for ind in other_ind:
+        print("WIP... ")
+        #break # WIP
+        this_frame = get_single_volume(vid_fname, ind, **video_opt)
+        metadata['frame_ind'] = ind
+
+        f = build_reference_frame(dat, num_slices, neuron_feature_radius,
+                                  metadata=metadata)
+        matches, _ = match_to_reference_frames(f, reference_set)
+        all_matches.append(matches)
+
 
     return all_matches, reference_set

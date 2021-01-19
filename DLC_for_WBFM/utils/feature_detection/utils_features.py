@@ -313,11 +313,23 @@ def add_neuron_match(all_best_matches,
                     i,
                     min_features_needed,
                     this_n1,
-                    this_f1,
                     verbose=0,
                     all_candidate_matches=None):
     """
-    Processes an array of feature matches into a neuron match
+    Processes an array of neuron matches into a neuron match
+
+    Parameters
+    =============
+    all_best_matches : list
+        List to extend
+    all_confidences : list
+        List to extend
+    i : int
+        The index of this neuron (local to this frame)
+    min_features_needed : int
+        Under this, no match is counted
+    this_n1 : list
+        List of candidate matches
 
     if all_candidate_matches is passed, then all candidates are saved
     """
@@ -325,7 +337,7 @@ def add_neuron_match(all_best_matches,
 
     n = len(this_n1)
     get_num_matches = lambda this_match : np.count_nonzero(abs(this_n1-this_match)<0.1)
-    get_conf = lambda num_matches : num_matches / (9+n)
+    get_conf = lambda num_matches : num_matches / (1+n)
     if n >= min_features_needed:
         # Simple plurality voting
         best_match = int(stats.mode(this_n1)[0][0])
@@ -338,7 +350,7 @@ def add_neuron_match(all_best_matches,
             new_candidates = [(i, v, get_conf(c)) for v,c in zip(vals, counts)]
             all_candidate_matches.extend(new_candidates)
         if verbose >= 1:
-            print(f"Matched neuron {i} to {this_match} based on {len(this_f1)} features")
+            print(f"Matched neuron {i} to {this_match} based on {len(this_n1)} matches")
     else:
         #all_matches.append([i, np.nan])
         #all_confidences.append(0)
@@ -397,7 +409,6 @@ def calc_2frame_matches(neurons0,
             i,
             min_features_needed,
             this_n1,
-            this_f0,
             verbose
         )
 
