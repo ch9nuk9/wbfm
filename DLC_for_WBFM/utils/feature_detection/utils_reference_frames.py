@@ -60,7 +60,7 @@ def unpack_node_name(node_name):
     """Inverse of get_node_name"""
     return divmod(node_name, 1000)
 
-def build_digraph_from_matches(pairwise_matches, pairwise_conf,
+def build_digraph_from_matches(pairwise_matches, pairwise_conf=None,
                               verbose=1):
     DG = nx.DiGraph()
     for frames, all_neurons in pairwise_matches.items():
@@ -68,7 +68,10 @@ def build_digraph_from_matches(pairwise_matches, pairwise_conf,
             print("==============================")
             print("Analyzing pair:")
             print(frames)
-        all_conf = pairwise_conf[frames]
+        if pairwise_conf is not None:
+            all_conf = pairwise_conf[frames]
+        else:
+            all_conf = np.ones_like(np.array(all_neurons)[:,0])
         for neuron_pair, this_conf in zip(all_neurons, all_conf):
             #print(neuron_pair)
             node1 = get_node_name(frames[0], neuron_pair[0])
