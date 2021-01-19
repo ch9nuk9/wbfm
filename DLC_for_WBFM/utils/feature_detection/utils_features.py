@@ -308,23 +308,35 @@ def build_f2n_map(features1,
     return features_to_neurons1
 
 
-def add_neuron_match(all_neuron_matches,
+def add_neuron_match(all_best_matches,
                     all_confidences,
                     i,
                     min_features_needed,
                     this_n1,
                     this_f1,
-                    verbose):
+                    verbose=0,
+                    all_candidate_matches=None):
+    """
+    Processes an array of feature matches into a neuron match
+
+    if all_candidate_matches is passed, then all candidates are saved
+    """
     this_n1 = np.array(this_n1)
 
-    confidence_func = lambda matches, total : matches / (9+total)
-    if len(this_n1) >= min_features_needed:
-        this_match = int(stats.mode(this_n1)[0][0])
-        all_neuron_matches.append([i, this_match])
+    n = len(this_n1)
+    get_num_matches = lambda this_match : np.count_nonzero(abs(this_n1-this_match)<0.1)
+    get_conf = lambda num_matches : num_matches / (9+n)
+    if n >= min_features_needed:
+        # Simple plurality voting
+        best_match = int(stats.mode(this_n1)[0][0])
+        all_best_matches.append([i, best_match])
         # Also calculate a heuristic confidence
-        num_matches = np.count_nonzero(abs(this_n1-this_match) < 0.1)
-        conf = confidence_func(num_matches, len(this_n1))
+        conf = get_conf(get_num_matches(best_match))
         all_confidences.append(conf)
+        if all_candidate_matches is not None:
+            vals, counts = np.unique(this_n1, return_counts=True)
+            new_candidates = [(i, v, get_conf(c)) for v,c in zip(vals, counts)]
+            all_candidate_matches.extend(new_candidates)
         if verbose >= 1:
             print(f"Matched neuron {i} to {this_match} based on {len(this_f1)} features")
     else:
@@ -333,7 +345,7 @@ def add_neuron_match(all_neuron_matches,
         if verbose >= 1:
             print(f"Could not match neuron {i}")
 
-    return all_neuron_matches, all_confidences
+    return all_best_matches, all_confidences, all_candidate_matches
 
 def calc_2frame_matches(neurons0,
                         tree_features0,
