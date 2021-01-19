@@ -330,20 +330,24 @@ def match_to_reference_frames(this_frame, reference_set):
     # Build a map from this frame's indices to the global neuron frame
     all_global_matches = []
     all_conf = []
-    for ref in reference_set.ref_frames:
+    for ref in reference_set.reference_frames:
         # Get matches (coordinates are local to this reference frame)
+        # TODO: only attempt to check the subset of reference neurons
         local_matches, conf, _, _ = calc_2frame_matches_using_class(this_frame, ref)
         # Convert to global coordinates
         global_matches = []
         frame_ind = ref.frame_ind
+        l2g = reference_set.local2global
         for m in local_matches:
             ref_neuron_ind = m[1]
-            global_ind = reference_set.local2global[(frame_ind, ref_neuron_ind)]
-            global_matches.append([m[0], global_ind])
+            global_ind = l2g.get((frame_ind, ref_neuron_ind), None)
+            # The matched neuron may not be part of the actual reference set
+            if global_ind is not None:
+                global_matches.append([m[0], global_ind])
         all_global_matches.append(global_matches)
         all_conf.append(conf)
 
-    # Compact each reference frame ID into a single list
+    # Compact the matches of each reference frame ID into a single list
     per_neuron_matches = defaultdict(list)
     for frame_match in all_global_matches:
         per_neuron_matches[frame_match[0]].append(frame_match[1])
@@ -418,10 +422,10 @@ def track_via_reference_frames(vid_fname,
     metadata = {'vol_shape':ref_dat[0].shape,
                 'video_fname':vid_fname,
                 'alpha':alpha}
-    for ind in other_ind:
+    for ind in tqdm(other_ind, total=len(other_ind)):
         print("WIP... ")
         #break # WIP
-        this_frame = get_single_volume(vid_fname, ind, **video_opt)
+        dat = get_single_volume(vid_fname, ind, **video_opt)
         metadata['frame_ind'] = ind
 
         f = build_reference_frame(dat, num_slices, neuron_feature_radius,
