@@ -403,7 +403,7 @@ def calc_2frame_matches(neurons0,
         this_n1 = [f2n[f1] for f1 in this_f0 if f1 in f2n]
         #this_n1 = [features_to_neurons1[f] for f in this_f0]
 
-        all_matches, all_confidences = add_neuron_match(
+        all_matches, all_confidences, _ = add_neuron_match(
             all_matches,
             all_confidences,
             i,
