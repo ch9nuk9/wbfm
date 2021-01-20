@@ -319,7 +319,19 @@ def register_all_reference_frames(ref_frames, use_bipartite_matching=False, verb
         len(ref_frames)
     )
 
-    return global2local, local2global, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
+    # Build a class to store all the information
+    reference_set = RegisteredReferenceFrames(
+        global2local,
+        local2global,
+        ref_frames,
+        pairwise_matches,
+        pairwise_conf,
+        feature_matches,
+        bp_matches
+    )
+
+    return reference_set
+    #return global2local, local2global, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
 
 
 def match_to_reference_frames(this_frame, reference_set):
@@ -350,7 +362,8 @@ def match_to_reference_frames(this_frame, reference_set):
     # Compact the matches of each reference frame ID into a single list
     per_neuron_matches = defaultdict(list)
     for frame_match in all_global_matches:
-        per_neuron_matches[frame_match[0]].append(frame_match[1])
+        for neuron_matches in frame_match:
+            per_neuron_matches[neuron_matches[0]].append(neuron_matches[1])
 
     # Then, use the matches to vote for the best neuron
     # TODO: use graph connected components
@@ -358,7 +371,7 @@ def match_to_reference_frames(this_frame, reference_set):
     final_conf = []
     min_features_needed = len(reference_set.reference_frames)/2.0
     for this_local_ind, these_matches in per_neuron_matches.items():
-        final_matches, final_conf = add_neuron_match(
+        final_matches, final_conf, _ = add_neuron_match(
             final_matches,
             final_conf,
             this_local_ind,
@@ -366,8 +379,36 @@ def match_to_reference_frames(this_frame, reference_set):
             these_matches
         )
 
-    return final_matches, final_conf
+    return final_matches, final_conf, per_neuron_matches
 
+
+def match_all_to_reference_frames(reference_set,
+                                  vid_fname,
+                                  other_ind,
+                                  video_opt,
+                                  metadata,
+                                  num_slices,
+                                  neuron_feature_radius):
+    """
+    Multi-frame wrapper around match_to_reference_frames()
+    """
+
+    all_matches = []
+    all_other_frames = []
+
+    for ind in tqdm(other_ind, total=len(other_ind)):
+        dat = get_single_volume(vid_fname, ind, **video_opt)
+        metadata['frame_ind'] = ind
+
+        f = build_reference_frame(dat, num_slices, neuron_feature_radius,
+                              metadata=metadata)
+        matches, _, per_neuron_matches = match_to_reference_frames(f, reference_set)
+
+        all_matches.append(matches)
+        f.neuron_ids = per_neuron_matches
+        all_other_frames.append(f)
+
+    return all_matches, all_other_frames
 
 ##
 ## Full pipeline function
@@ -397,41 +438,25 @@ def track_via_reference_frames(vid_fname,
                  'verbose':verbose-1}
     ref_dat, ref_frames, other_ind = build_all_reference_frames(num_reference_frames, **video_opt)
 
-    # dataframe with features and feature-ind dict (separated by ref frame)
     if verbose >= 1:
         print("Analyzing reference frames...")
-    global2local, local2global, pairwise_matches, pairwise_conf, feature_matches, bp_matches = register_all_reference_frames(ref_frames)
-
-
-    # Build a class for the full set of registered frames
-    reference_set = RegisteredReferenceFrames(
-        global2local,
-        local2global,
-        ref_frames,
-        pairwise_matches,
-        pairwise_conf,
-        feature_matches,
-        bp_matches
-    )
+    reference_set = register_all_reference_frames(ref_frames)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
     video_opt = {'num_slices':num_slices,
                  'alpha':alpha}
-    all_matches = []
     metadata = {'vol_shape':ref_dat[0].shape,
                 'video_fname':vid_fname,
                 'alpha':alpha}
-    for ind in tqdm(other_ind, total=len(other_ind)):
-        print("WIP... ")
-        #break # WIP
-        dat = get_single_volume(vid_fname, ind, **video_opt)
-        metadata['frame_ind'] = ind
+    all_matches, all_other_frames = match_all_to_reference_frames(
+        reference_set,
+        vid_fname,
+        other_ind,
+        video_opt,
+        metadata,
+        num_slices,
+        neuron_feature_radius
+    )
 
-        f = build_reference_frame(dat, num_slices, neuron_feature_radius,
-                                  metadata=metadata)
-        matches, _ = match_to_reference_frames(f, reference_set)
-        all_matches.append(matches)
-
-
-    return all_matches, reference_set
+    return all_matches, all_other_frames, reference_set
