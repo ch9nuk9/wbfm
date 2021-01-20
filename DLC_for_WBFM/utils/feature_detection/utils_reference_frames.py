@@ -97,7 +97,7 @@ def remove_first_frame(reference_set):
         l2g[new_key] = val
 
     # Offset keys by one (both indices)
-    pm, pc, fm = {}, {}, {}, {}
+    pm, pc, fm = {}, {}, {}
     for key in reference_set.pairwise_matches:
         if key[0]==0 or key[1]==0:
             continue
@@ -111,7 +111,7 @@ def remove_first_frame(reference_set):
         g2l,
         l2g,
         new_frames,
-        pw,
+        pm,
         pc,
         fm,
         None

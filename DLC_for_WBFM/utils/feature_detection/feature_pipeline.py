@@ -295,17 +295,17 @@ def align_dictionaries(ref_set, global2local, local2global):
     l2g_out = {}
 
     old2new = {}
-    for key_true, val_true in ref_set.global2local:
+    for key_true, val_true in ref_set.global2local.items():
         # Check which this corresponds to in the new dict
-        for key_tmp, val_tmp in global2local:
+        for key_tmp, val_tmp in global2local.items():
             if is_ordered_subset(val_true, val_tmp):
                 old2new[key_tmp] = key_true
                 g2l_out[key_true] = val_tmp
                 break
     # Same for other dict
-    for key_tmp, val in local2global:
-        key = old2new[key_tmp]
-        l2g_out[key] = val
+    for key, val in local2global.items():
+        if val in old2new:
+            l2g_out[key] = old2new[val]
 
     return g2l_out, l2g_out
 
@@ -317,7 +317,7 @@ def align_dictionaries(ref_set, global2local, local2global):
 def register_all_reference_frames(ref_frames,
                                   use_bipartite_matching=False,
                                   previous_ref_set=None,
-                                  verbose=1):
+                                  verbose=0):
     """
     Registers a set of reference frames, aligning their neuron indices
 
@@ -332,10 +332,12 @@ def register_all_reference_frames(ref_frames,
         pairwise_conf_dict = {}
         bp_matches_dict = {}
     else:
+        previous_ref_set.reference_frames.extend(ref_frames)
+        ref_frames = previous_ref_set.reference_frames
         pairwise_matches_dict = previous_ref_set.pairwise_matches
         feature_matches_dict = previous_ref_set.feature_matches
         pairwise_conf_dict = previous_ref_set.pairwise_conf
-        bp_matches_dict = previous_ref_set.bp_matches
+        bp_matches_dict = previous_ref_set.bipartite_matches
 
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
@@ -365,15 +367,22 @@ def register_all_reference_frames(ref_frames,
             local2global
         )
 
+    # Update the global indices of the individual reference frames
+    for f in ref_frames:
+        f.neuron_ids = []
+    for local_ind, global_ind in local2global.items():
+        frame_ind, local_neuron = local_ind
+        ref_frames[frame_ind].neuron_ids.append([local_neuron, global_ind])
+
     # Build a class to store all the information
     reference_set = RegisteredReferenceFrames(
         global2local,
         local2global,
         ref_frames,
-        pairwise_matches,
-        pairwise_conf,
-        feature_matches,
-        bp_matches
+        pairwise_matches_dict,
+        pairwise_conf_dict,
+        feature_matches_dict,
+        bp_matches_dict
     )
 
     return reference_set
@@ -533,14 +542,15 @@ def track_via_sequence_consensus(vid_fname,
     _, ref_frames, _ = build_all_reference_frames(num_consensus_frames-1, **video_opt)
     reference_set_minus1 = register_all_reference_frames(ref_frames)
 
-    all_frames = ref_frames.copy()
-    for i_frame in range():
+    all_frames = reference_set_minus1.reference_frames.copy()
+    ind = range(start_frame+num_consensus_frames, start_frame+num_frames)
+    frame_video_opt = {'num_slices':num_slices,
+                 'alpha':alpha}
+    metadata = ref_frames[0].get_metadata()
+    for i_frame in tqdm(ind, total=len(ind)):
         # Build the next frame
-        frame_video_opt = {'num_slices':num_slices,
-                     'alpha':alpha}
-        metadata = ref_frames[0].get_metadata()
-        next_frame_ind = num_consensus_frames
-        dat = get_single_volume(vid_fname, next_frame_ind, **frame_video_opt)
+        metadata['frame_ind'] = i_frame
+        dat = get_single_volume(vid_fname, i_frame, **frame_video_opt)
         next_frame = build_reference_frame(dat, num_slices, neuron_feature_radius,
                                            metadata=metadata)
         # Match this frame
@@ -552,6 +562,6 @@ def track_via_sequence_consensus(vid_fname,
         # Adjust by 1: the new reference set partially overlaps with the previous
         reference_set_minus1 = remove_first_frame(reference_set)
 
-        all_frames.append(next_frame)
+        all_frames.append(reference_set.reference_frames[-1])
 
     return all_frames
