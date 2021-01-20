@@ -282,42 +282,88 @@ def neuron_global_id_from_multiple_matches(matches, conf, total_frames,
 
     return global2local, local2global
 
+
+def align_dictionaries(ref_set, global2local, local2global):
+    """
+    Align global and local neuron indices:
+        Overwrite keys of 'global2local' and replace with corresponding keys from ref_set
+
+    TODO: for now doesn't allow new neurons to be created
+    """
+
+    g2l_out = {}
+    l2g_out = {}
+
+    old2new = {}
+    for key_true, val_true in ref_set.global2local:
+        # Check which this corresponds to in the new dict
+        for key_tmp, val_tmp in global2local:
+            if is_ordered_subset(val_true, val_tmp):
+                old2new[key_tmp] = key_true
+                g2l_out[key_true] = val_tmp
+                break
+    # Same for other dict
+    for key_tmp, val in local2global:
+        key = old2new[key_tmp]
+        l2g_out[key] = val
+
+    return g2l_out, l2g_out
+
 ##
 ## Matching the features of the frames
 ##
 
 
-def register_all_reference_frames(ref_frames, use_bipartite_matching=False, verbose=1):
+def register_all_reference_frames(ref_frames,
+                                  use_bipartite_matching=False,
+                                  previous_ref_set=None,
+                                  verbose=1):
     """
     Registers a set of reference frames, aligning their neuron indices
 
-    Builds all
+    Builds all pairwise matches
+        Alternate option: extend a previously built reference_set
     """
 
     ref_neuron_ind = []
-    pairwise_matches_dict = {}
-    feature_matches_dict = {}
-    pairwise_conf_dict = {}
-    bp_matches_dict = {}
+    if previous_ref_set is None:
+        pairwise_matches_dict = {}
+        feature_matches_dict = {}
+        pairwise_conf_dict = {}
+        bp_matches_dict = {}
+    else:
+        pairwise_matches_dict = previous_ref_set.pairwise_matches
+        feature_matches_dict = previous_ref_set.feature_matches
+        pairwise_conf_dict = previous_ref_set.pairwise_conf
+        bp_matches_dict = previous_ref_set.bp_matches
+
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
     for i0, frame0 in tqdm(enumerate(ref_frames), total=len(ref_frames)):
         for i1, frame1 in enumerate(ref_frames):
-            if i1==i0:
+            key = (i0, i1)
+            if i1==i0 and key not in pairwise_matches_dict:
                 continue
             match, conf, feature_matches, bp_matches = calc_2frame_matches_using_class(frame0, frame1, use_bipartite_matching)
-            key = (i0, i1)
             pairwise_matches_dict[key] = match
             pairwise_conf_dict[key] = conf
             feature_matches_dict[key] = feature_matches
             if bp_matches is not None:
                 bp_matches_dict[key] = list(bp_matches)
-    # TODO: Use the matches to build a global index
+    # Use the matches to build a global index
     global2local, local2global = neuron_global_id_from_multiple_matches(
         pairwise_matches_dict,
         pairwise_conf_dict,
         len(ref_frames)
     )
+
+    # TODO: align to previous global match, if it exists
+    if previous_ref_set is not None:
+        global2local, local2global = align_dictionaries(
+            previous_ref_set,
+            global2local,
+            local2global
+        )
 
     # Build a class to store all the information
     reference_set = RegisteredReferenceFrames(
@@ -446,9 +492,7 @@ def track_via_reference_frames(vid_fname,
         print("Matching other frames to reference...")
     video_opt = {'num_slices':num_slices,
                  'alpha':alpha}
-    metadata = {'vol_shape':ref_dat[0].shape,
-                'video_fname':vid_fname,
-                'alpha':alpha}
+    metadata = ref_frames[0].get_metdata()
     all_matches, all_other_frames = match_all_to_reference_frames(
         reference_set,
         vid_fname,
@@ -460,3 +504,54 @@ def track_via_reference_frames(vid_fname,
     )
 
     return all_matches, all_other_frames, reference_set
+
+
+def track_via_sequence_consensus(vid_fname,
+                                 start_frame=0,
+                                 num_frames=10,
+                                 num_slices=33,
+                                 alpha=0.15,
+                                 neuron_feature_radius=5.0,
+                                 verbose=0,
+                                 num_consensus_frames=3):
+    """
+    Tracks neurons by finding consensus between a sliding window of frames
+
+    Note: if num_consensus_frames=2, this is tracking via adjacent frames
+    """
+
+    # Initial frame calculations
+
+    # Build a reference set of the first n-1 frames
+    video_opt = {'vid_fname':vid_fname,
+                 'start_frame':start_frame,
+                 'num_frames':num_frames,
+                 'num_slices':num_slices,
+                 'alpha':alpha,
+                 'neuron_feature_radius':neuron_feature_radius,
+                 'verbose':verbose-1}
+    _, ref_frames, _ = build_all_reference_frames(num_consensus_frames-1, **video_opt)
+    reference_set_minus1 = register_all_reference_frames(ref_frames)
+
+    all_frames = ref_frames.copy()
+    for i_frame in range():
+        # Build the next frame
+        frame_video_opt = {'num_slices':num_slices,
+                     'alpha':alpha}
+        metadata = ref_frames[0].get_metadata()
+        next_frame_ind = num_consensus_frames
+        dat = get_single_volume(vid_fname, next_frame_ind, **frame_video_opt)
+        next_frame = build_reference_frame(dat, num_slices, neuron_feature_radius,
+                                           metadata=metadata)
+        # Match this frame
+        reference_set = register_all_reference_frames(
+            [next_frame],
+            previous_ref_set=reference_set_minus1
+        )
+
+        # Adjust by 1: the new reference set partially overlaps with the previous
+        reference_set_minus1 = remove_first_frame(reference_set)
+
+        all_frames.append(next_frame)
+
+    return all_frames

@@ -32,6 +32,12 @@ class ReferenceFrame():
     # To be finished with a set of other registered frames
     neuron_ids: list = None # global neuron index
 
+    def get_metadata(self):
+        return {'frame_ind':self.frame_ind,
+                'video_fname':self.video_fname,
+                'vol_shape':self.vol_shape,
+                'alpha':self.alpha}
+
     def iter_neurons(self):
         # Practice with yield
         for neuron in self.neuron_locs:
@@ -72,6 +78,46 @@ class RegisteredReferenceFrames():
     # More detailed intermediates and alternate matchings
     feature_matches : list = None
     bipartite_matches : list = None
+
+
+def remove_first_frame(reference_set):
+    # Remove first element
+    new_frames = reference_set.reference_frames.copy()
+    new_frames.pop()
+
+    g2l = reference_set.global2local.copy()
+    for key in g2l:
+        g2l[key].pop()
+    # Offset keys by one
+    l2g = {}
+    for key,val in reference_set.local2global.items():
+        if key[0] == 0:
+            continue
+        new_key = (key[0]-1,key[1])
+        l2g[new_key] = val
+
+    # Offset keys by one (both indices)
+    pm, pc, fm = {}, {}, {}, {}
+    for key in reference_set.pairwise_matches:
+        if key[0]==0 or key[1]==0:
+            continue
+        new_key = (key[0]-1, key[1]-1)
+        pm[new_key] = reference_set.pairwise_matches[key]
+        pc[new_key] = reference_set.pairwise_conf[key]
+        fm[new_key] = reference_set.feature_matches[key]
+
+    # Build a class to store all the information
+    reference_set_minus1 = RegisteredReferenceFrames(
+        g2l,
+        l2g,
+        new_frames,
+        pw,
+        pc,
+        fm,
+        None
+    )
+
+    return reference_set_minus1
 
 
 def build_reference_frame(dat,
@@ -265,3 +311,12 @@ def add_all_good_components(G,
             G.remove_nodes_from(comp)
 
     return global2local, local2global, reference_ind, G
+
+
+def is_ordered_subset(list1, list2):
+    n = min(len(list1), len(list2))
+    # First element must match
+    for i in range(n):
+        if list1[i] != list2[i]:
+            return False
+    return True
