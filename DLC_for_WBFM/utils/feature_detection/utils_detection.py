@@ -101,7 +101,7 @@ def build_correspondence_icp(all_keypoints_pcs,
 def get_centroids_from_df(clust_df, min_detections=3, verbose=0):
     # Remove clusters that aren't long enough
     f = lambda x : (len(x) > min_detections)
-    valid_detections = clust_df['all_xyz'].apply(f)
+    valid_detections = clust_df['all_ind_local'].apply(f)
     if verbose >= 1:
         num_not_valid = len(np.where(~valid_detections))
         print(f"Removing {num_not_valid} detections of length < {min_detections}")

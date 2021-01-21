@@ -70,7 +70,7 @@ def append_to_track(row, i, clust_df, which_slice, i1, i1_global,
     append_or_extend(row['all_ind_global'], i1_global)
     clust_df.at[i,'all_ind_global'] = list(row['all_ind_global'])
     if type(i1_xyz) is np.ndarray:
-        np.vstack([row['all_xyz'], i1_xyz])
+        row['all_xyz'] = np.vstack([row['all_xyz'], i1_xyz])
         clust_df.at[i,'all_xyz'] = row['all_xyz']
     else:
         append_or_extend(row['all_xyz'], i1_xyz)
