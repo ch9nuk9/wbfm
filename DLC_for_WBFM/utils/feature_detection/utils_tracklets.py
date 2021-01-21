@@ -121,7 +121,8 @@ def build_tracklets_from_matches(all_neurons,
     this_point_cloud_offset = 0
     next_point_cloud_offset = 0
 
-    for i_match, match in tqdm(enumerate(all_matches), total=len(all_matches)):
+    #for i_match, match in tqdm(enumerate(all_matches), total=len(all_matches)):
+    for i_match, match in enumerate(all_matches):
         if verbose >= 1:
             print("==============================================================")
             print(f"{i_match} / {len(all_matches)}")
