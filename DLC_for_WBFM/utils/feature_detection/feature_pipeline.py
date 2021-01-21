@@ -61,7 +61,7 @@ def track_neurons_two_volumes(dat0,
     return all_matches, all_conf, neurons0, neurons1
 
 
-def track_neurons_full_video(vid_fname,
+def track_neurons_full_video_legacy(vid_fname,
                              start_frame=0,
                              num_frames=10,
                              num_slices=33,
@@ -117,6 +117,64 @@ def track_neurons_full_video(vid_fname,
     return all_matches, all_conf, all_neurons
 
 
+def track_neurons_full_video(vid_fname,
+                             start_frame=0,
+                             num_frames=10,
+                             num_slices=33,
+                             alpha=0.15,
+                             neuron_feature_radius=5.0,
+                             do_mini_max_projections=False,
+                             verbose=0):
+    """
+    Detects and tracks neurons using opencv-based feature matching
+
+    New: uses and returns my class of features
+    """
+    # Get initial volume; settings are same for all
+    import_opt = {'num_slices':num_slices, 'alpha':alpha}
+    ref_opt = {'do_mini_max_projections':do_mini_max_projections,
+               'neuron_feature_radius':neuron_feature_radius}
+    def local_build_frame(frame_ind,
+                          vid_fname=vid_fname,
+                          import_opt=import_opt,
+                          ref_opt=ref_opt):
+        dat = get_single_volume(vid_fname, frame_ind, **import_opt)
+        metadata = {'frame_ind':frame_ind,
+                    'vol_shape':dat.shape,
+                    'video_fname':vid_fname,
+                    'alpha':import_opt['alpha']}
+        f = build_reference_frame(dat,
+                                  num_slices=import_opt['num_slices'],
+                                  **ref_opt,
+                                  metadata=metadata)
+        return f
+
+    if verbose >= 1:
+        print("Building initial frame...")
+    frame0 = local_build_frame(start_frame)
+
+    # Loop through all pairs
+    pairwise_matches_dict = {}
+    pairwise_conf_dict = {}
+    all_frames = [frame0]
+    end_frame = start_frame+num_frames
+    frame_range = range(start_frame+1, end_frame)
+    for i_frame in tqdm(frame_range):
+        frame1 = local_build_frame(i_frame)
+
+        m, c, fm, _ = calc_2frame_matches_using_class(frame0, frame1)
+        # Save to dictionaries
+        key = (i_frame-1, i_frame)
+        pairwise_matches_dict[key] = m
+        pairwise_conf_dict[key] = c
+        # Save frame to list
+        all_frames.append(frame1)
+        frame0 = frame1
+
+    return pairwise_matches_dict, pairwise_conf_dict, all_frames
+
+
+
 ##
 ## Different strategy: reference frames
 ##
@@ -165,84 +223,6 @@ def build_all_reference_frames(num_reference_frames,
         ref_frames.append(f)
 
     return ref_dat, ref_frames, other_ind
-
-
-def calc_2frame_matches_using_class(frame0,
-                                    frame1,
-                                    use_bipartite_matching=False,
-                                    verbose=1,
-                                    DEBUG=False):
-    """
-    Similar to older function, but this doesn't assume the features are
-    already matched
-
-    See also: calc_2frame_matches
-    """
-
-    # First, get feature matches
-    feature_matches = match_known_features(frame0.all_features,
-                                           frame1.all_features,
-                                           frame0.keypoints,
-                                           frame1.keypoints,
-                                           frame0.vol_shape[1:],
-                                           frame1.vol_shape[1:],
-                                           matches_to_keep=0.5)
-    feature_matches_dict = extract_map1to2_from_matches(feature_matches)
-    if DEBUG:
-        print("All feature matches: ")
-        # Draw first 10 matches.
-        img1 = frame0.get_data()[15,...]
-        img2 = frame1.get_data()[15,...]
-        kp1, kp2 = frame0.keypoints, frame1.keypoints
-        img3 = cv2.drawMatches(img1,kp1,img2,kp2,feature_matches[:100],None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-        #plt.figure(figsize=(25,45))
-        #plt.imshow(img3),plt.show()
-        #[print(f) for f in feature_matches]
-        #return img3
-
-    # Second, get neuron matches
-    all_neuron_matches = []
-    all_confidences = []
-    all_candidate_matches = []
-    for neuron0_ind, neuron0_loc in enumerate(frame0.iter_neurons()):
-        # Get features of this neuron
-        this_f0 = frame0.get_features_of_neuron(neuron0_ind)
-        if DEBUG:
-            print(f"=======Neuron {neuron0_ind}=========")
-            #print("Features in vol0: ", this_f0)
-        # Use matches to translate to the indices of frame1
-        this_f1 = []
-        for f0 in this_f0:
-            i_match = feature_matches_dict.get(f0)
-            if i_match is not None:
-                this_f1.append(i_match)
-        if DEBUG:
-            print("Features in volume 1: ", this_f1)
-        # Get the corresponding neurons in vol1, and vote
-        f2n = frame1.features_to_neurons
-        this_n1 = [f2n.get(f1) for f1 in this_f1 if f1 in f2n]
-        if DEBUG:
-            print("Matching neuron in volume 1: ", this_n1)
-
-        min_features_needed = 2 # TODO
-        all_neuron_matches, all_confidences, all_candidate_matches = add_neuron_match(
-            all_neuron_matches,
-            all_confidences,
-            neuron0_ind,
-            min_features_needed,
-            this_n1,
-            verbose=verbose-1,
-            all_candidate_matches=all_candidate_matches
-        )
-        if DEBUG:
-            break
-
-    if use_bipartite_matching:
-        all_bp_matches = calc_bipartite_matches(all_candidate_matches, verbose-1)
-    else:
-        all_bp_matches = None
-
-    return all_neuron_matches, all_confidences, feature_matches, all_bp_matches
 
 
 ##
