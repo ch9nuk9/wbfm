@@ -1,6 +1,6 @@
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.feature_detection.utils_features import *
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
+#from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 import numpy as np
 import networkx as nx
@@ -120,7 +120,7 @@ def remove_first_frame(reference_set):
     return reference_set_minus1
 
 
-def build_reference_frame(dat,
+def build_reference_frame(dat_raw,
                           num_slices,
                           neuron_feature_radius,
                           do_mini_max_projections=True,
@@ -129,7 +129,9 @@ def build_reference_frame(dat,
                           verbose=0):
     """Main convinience constructor for ReferenceFrame class"""
     if do_mini_max_projections:
-        dat = ndi.maximum_filter(dat, size=(mini_max_size,1,1))
+        dat = ndi.maximum_filter(dat_raw, size=(mini_max_size,1,1))
+    else:
+        dat = dat_raw
 
     # Get neurons and features, and a map between them
     neuron_locs, _, _, icp_kps = detect_neurons_using_ICP(dat,
@@ -138,6 +140,9 @@ def build_reference_frame(dat,
                                                          min_detections=3,
                                                          verbose=0)
     neuron_locs = np.array([n for n in neuron_locs])
+    if len(neuron_locs)==0:
+        print("No neurons detected... check data settings")
+        raise ValueError
     feature_opt = {'num_features_per_plane':1000, 'start_plane':5}
     kps, kp_3d_locs, features = build_features_1volume(dat, **feature_opt)
 
@@ -320,3 +325,81 @@ def is_ordered_subset(list1, list2):
         if list1[i] != list2[i]:
             return False
     return True
+
+
+def calc_2frame_matches_using_class(frame0,
+                                    frame1,
+                                    use_bipartite_matching=False,
+                                    verbose=1,
+                                    DEBUG=False):
+    """
+    Similar to older function, but this doesn't assume the features are
+    already matched
+
+    See also: calc_2frame_matches
+    """
+
+    # First, get feature matches
+    feature_matches = match_known_features(frame0.all_features,
+                                           frame1.all_features,
+                                           frame0.keypoints,
+                                           frame1.keypoints,
+                                           frame0.vol_shape[1:],
+                                           frame1.vol_shape[1:],
+                                           matches_to_keep=0.5)
+    feature_matches_dict = extract_map1to2_from_matches(feature_matches)
+    if DEBUG:
+        print("All feature matches: ")
+        # Draw first 10 matches.
+        img1 = frame0.get_data()[15,...]
+        img2 = frame1.get_data()[15,...]
+        kp1, kp2 = frame0.keypoints, frame1.keypoints
+        img3 = cv2.drawMatches(img1,kp1,img2,kp2,feature_matches[:100],None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        #plt.figure(figsize=(25,45))
+        #plt.imshow(img3),plt.show()
+        #[print(f) for f in feature_matches]
+        #return img3
+
+    # Second, get neuron matches
+    all_neuron_matches = []
+    all_confidences = []
+    all_candidate_matches = []
+    for neuron0_ind, neuron0_loc in enumerate(frame0.iter_neurons()):
+        # Get features of this neuron
+        this_f0 = frame0.get_features_of_neuron(neuron0_ind)
+        if DEBUG:
+            print(f"=======Neuron {neuron0_ind}=========")
+            #print("Features in vol0: ", this_f0)
+        # Use matches to translate to the indices of frame1
+        this_f1 = []
+        for f0 in this_f0:
+            i_match = feature_matches_dict.get(f0)
+            if i_match is not None:
+                this_f1.append(i_match)
+        if DEBUG:
+            print("Features in volume 1: ", this_f1)
+        # Get the corresponding neurons in vol1, and vote
+        f2n = frame1.features_to_neurons
+        this_n1 = [f2n.get(f1) for f1 in this_f1 if f1 in f2n]
+        if DEBUG:
+            print("Matching neuron in volume 1: ", this_n1)
+
+        min_features_needed = 2 # TODO
+        all_neuron_matches, all_confidences, all_candidate_matches = add_neuron_match(
+            all_neuron_matches,
+            all_confidences,
+            neuron0_ind,
+            min_features_needed,
+            this_n1,
+            verbose=verbose-1,
+            all_candidate_matches=all_candidate_matches
+        )
+        if DEBUG:
+            break
+
+    if use_bipartite_matching:
+        all_bp_matches = calc_bipartite_matches(all_candidate_matches, verbose-1)
+    else:
+        all_bp_matches = None
+
+    return all_neuron_matches, all_confidences, feature_matches, all_bp_matches
