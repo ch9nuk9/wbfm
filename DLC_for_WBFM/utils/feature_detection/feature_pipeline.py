@@ -86,7 +86,7 @@ def track_neurons_full_video(vid_fname,
     previous_neurons = None
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
-    for i_frame in frame_range:
+    for i_frame in tqdm(frame_range):
         if verbose >= 1:
             print("===========================================================")
             print(f"Matching frames {i_frame-1} and {i_frame} (end at {end_frame})")
