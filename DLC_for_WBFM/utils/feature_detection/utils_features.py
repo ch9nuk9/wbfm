@@ -539,7 +539,7 @@ def build_features_and_match_2volumes(dat0, dat1,
         locs_3d = np.array([np.hstack((i, row)) for row in locs1])
         all_locs1.extend(locs_3d)
 
-    return np.array(all_locs0), np.array(all_locs1), keypoints0, keypoints1
+    return np.array(all_locs0), np.array(all_locs1), keypoints0, keypoints1, matches
 
 
 def get_keypoints_from_3dseg(kp0, i, sz=31.0, neuron_height=3):
