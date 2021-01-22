@@ -5,6 +5,7 @@ from pathlib import Path
 import platform
 import cv2
 from DLC_for_WBFM.bin.configuration_definition import *
+from tqdm import tqdm
 
 import warnings
 
@@ -227,7 +228,8 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
                                                 start_volume=None, num_frames=None,
                                                 fps=10, frame_width=608, frame_height=610, num_slices=33,
                                                 alpha=1.0,
-                                                flip_x=False):
+                                                flip_x=False,
+                                                verbose=0):
     """
     Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
         This takes a max projection of the slices in 'which_slices', which is a FULL LIST of the desired frames
@@ -250,7 +252,7 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
     # By default skip the first volume
     if start_volume is None:
         start_volume = num_slices
-    if start_volume % num_slices != 0:
+    if verbose >= 2 & (start_volume % num_slices != 0):
         print(f'Converting volume index {start_volume} to frame index {start_volume * num_slices}')
         start_volume = start_volume * num_slices
 
@@ -264,7 +266,8 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
     i_frame_count = 0
     img_tmp = np.zeros((len(which_slices), frame_height, frame_width))
 
-    print(f'Taking a max of {len(which_slices)} slices, starting at {start_of_each_frame}' )
+    if verbose >= 2:
+        print(f'Taking a max of {len(which_slices)} slices, starting at {start_of_each_frame}' )
 
     with tifffile.TiffFile(video_fname, multifile=False) as tif:
         for i_page, page in enumerate(tif.pages):
@@ -273,7 +276,8 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
             # Skip some frames
             if i_page < start_volume or i_slice_raw not in which_slices:
                 continue
-            print(f'Page {i_page}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {i_slice_tmp}')
+            if verbose >= 2:
+                print(f'Page {i_page}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {i_slice_tmp}')
 
             img_tmp[i_slice_tmp,...] = page.asarray()
 
