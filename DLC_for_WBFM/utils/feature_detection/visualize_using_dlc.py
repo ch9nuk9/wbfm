@@ -128,3 +128,14 @@ def make_labeled_video_custom_annotations(dlc_config,
                 displaycropped,
                 color_by
             )
+
+
+##
+## Full pipeline: from dataframe to video
+##
+
+def make_labeled_video_from_dataframe(config):
+    """
+    See make_labeled_video_custom_annotations()
+    """
+    return
