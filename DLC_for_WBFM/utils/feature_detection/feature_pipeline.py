@@ -45,7 +45,7 @@ def track_neurons_two_volumes(dat0,
            'detect_keypoints':True,
            'kp0':neurons0,
            'kp1':neurons1}
-    all_f0, all_f1, _, _ = build_features_and_match_2volumes(dat0,dat1,**opt)
+    all_f0, all_f1, _, _, _ = build_features_and_match_2volumes(dat0,dat1,**opt)
 
     # Now, match the neurons using feature space
     opt = {'radius':8,
@@ -545,3 +545,98 @@ def track_via_sequence_consensus(vid_fname,
         all_frames.append(reference_set.reference_frames[-1])
 
     return all_frames
+
+
+##
+## Postprocessing
+##
+
+
+
+def stitch_tracklets(clust_df,
+                     all_frames,
+                     max_stitch_distance=10,
+                     min_starting_tracklet_length=3,
+                     minimum_match_confidence=0.4,
+                     distant_matches_dict={},
+                     distant_conf_dict={},
+                     verbose=0):
+    """
+    Takes tracklets in a dataframe and attempts to stitch them together
+    Uses list of original frame data
+
+    Only attempts to match the last frame to first frames of other tracklets
+
+    Can pass distant_matches_dict and distant_conf_dict from a previous run
+    """
+    if verbose >= 1:
+        print(f"Trying to consolidate {clust_df.shape[0]} tracklets")
+        print("Note: computational time of this function is front-loaded")
+    # Get tracklet starting and ending indices in frame space
+    all_starts = clust_df['slice_ind'].apply(lambda x : x[0])
+    all_ends = clust_df['slice_ind'].apply(lambda x : x[-1])
+    all_long_enough = np.where(all_ends - all_starts > min_starting_tracklet_length)[0]
+    is_available = clust_df['slice_ind'].apply(lambda x : True)
+
+    # Reuse distant matches calculations
+    tracklet_matches = []
+    tracklet_conf = []
+
+    for ind in tqdm(all_long_enough):
+        # Get frame and individual neuron to match
+        i_end_frame = all_ends.at[ind]
+        frame0 = all_frames[i_end_frame]
+        neuron0 = clust_df.at[ind,'all_ind_local'][-1]
+
+        # Get all close-by starts
+        start_is_after = all_starts.gt(i_end_frame+1)
+        start_is_close = all_starts.lt(max_stitch_distance+i_end_frame)
+        tmp = start_is_after & start_is_close & is_available
+        possible_start_tracks = np.where(tmp)[0]
+        if len(possible_start_tracks)==0:
+            continue
+
+        # Loop through possible next tracklets
+        for i_start_track in possible_start_tracks:
+            i_start_frame = all_starts.at[i_start_track]
+            frame1 = all_frames[i_start_frame]
+            neuron1 = clust_df.at[i_start_track,'all_ind_local'][0]
+
+            if verbose >= 4:
+                print(f"Trying to match tracklets {ind} and {i_start_track}")
+            key = (i_end_frame, i_start_frame)
+            if key in distant_matches_dict:
+                matches = distant_matches_dict[key]
+                conf = distant_conf_dict[key]
+            else:
+                # Otherwise, calculate from scratch
+                if verbose >= 3:
+                    print(f"Calculating new matches between frames {key}")
+                out = calc_2frame_matches_using_class(frame0, frame1)
+                matches, conf = out[0], out[1]
+                # Save for future
+                distant_matches_dict[key] = matches
+                distant_conf_dict[key] = conf
+
+            # Find if these specific neurons are matched in the frames
+            n_key = [neuron0, neuron1]
+            t_key = [ind, i_start_track]
+            if n_key in matches:
+                this_conf = conf[matches.index(n_key)]
+                if verbose >= 2:
+                    print(f"Matched tracks {t_key} with confidence {this_conf}")
+                    print(f"(frames {key} and neurons {n_key})")
+                if this_conf < minimum_match_confidence:
+                    #2err
+                    continue
+                tracklet_matches.append(t_key)
+                tracklet_conf.append(this_conf)
+                is_available.at[i_start_track] = False
+                # TODO: just take the first match
+                break
+
+    df = consolidate_tracklets(clust_df.copy(), tracklet_matches, verbose)
+    if verbose >= 1:
+        print("Finished")
+    intermediates = (distant_matches_dict, distant_conf_dict, tracklet_matches, all_starts, all_ends)
+    return df, intermediates
