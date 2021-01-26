@@ -26,7 +26,7 @@ import pickle
 # logging
 arg1 = round(float(sys.argv[1]) * 10)
 arg2 = round(float(sys.argv[2]) * 100)
-sv_base = "diam-" + str(arg1) + "_flow-" + str(arg2)
+sv_base = "diam-" + str(arg1/10) + "_flow-" + str(arg2)
 log_name = 'log_' + sv_base + '.log'
 
 logging.basicConfig(filename=log_name, level=logging.DEBUG)

@@ -12,14 +12,14 @@ import pickle
 from contextlib import redirect_stdout
 
 
-def calculate_iou(ground_truth_path, cellpose_results_path):
+def calculate_iou(ground_truth_path, algorithm_results_path):
     """
     Calculates the IoUs of a given segmentation result versus the ground truth
 
     Parameters
     ----------
     ground_truth_path:      path to ground truth data (seg.npy file)
-    cellpose_results_path:  path to cellpose results data (.npy file)
+    algorithm_results_path:  path to cellpose results data (.npy file)
 
     Returns
     -------
@@ -27,10 +27,10 @@ def calculate_iou(ground_truth_path, cellpose_results_path):
 
     """
     print('Start of IoU calculation')
-    print('ground truth path: ', ground_truth_path, '\ncellpose results path: ', cellpose_results_path)
+    print('ground truth path: ', ground_truth_path, '\ncellpose results path: ', algorithm_results_path)
 
     # quick logging. All commandline output will be written to a file (log_path)
-    # log_interim = cellpose_results_path.split('\\')
+    # log_interim = algorithm_results_path.split('\\')
     # log_path = "C:" + os.path.join('\\', *log_interim[1:-1], 'testlog.log')     # when just using split then join, the first '\' after 'C:' will be omitted!! =Problem
 
     log_path = "./iou_log.log"
@@ -43,7 +43,7 @@ def calculate_iou(ground_truth_path, cellpose_results_path):
 
             # Paths to data. Change this to test locally on your machine
             gt_path = ground_truth_path  # r"C:\Users\niklas.khoss\Desktop\cp_vol\one_volume_seg.npy"
-            cp_path = cellpose_results_path  # r"C:\Users\niklas.khoss\Desktop\cp_vol\3d_nuclei\np_masks_3D__diam-100_flow-40.npy"
+            cp_path = algorithm_results_path  # r"C:\Users\niklas.khoss\Desktop\cp_vol\3d_nuclei\np_masks_3D__diam-100_flow-40.npy"
 
             # load ground truth and cellpose numpy data
             ground_truth = np.load(gt_path, allow_pickle=True).item()  # load gt. Allow pickle, as it is pickled data
@@ -54,7 +54,7 @@ def calculate_iou(ground_truth_path, cellpose_results_path):
 
             print('cp shape: ', cp.shape, ' gt shape: ', ground_truth.shape)  # print shapes to compare and check
 
-            # TODO 2. Get all IOUs across planes
+            # Get all IOUs across planes
             # looping over all planes within the ground truth and try to use corresponding planes in cellpose result.
             # Add failsaves for mismatching amount of planes
 
@@ -114,7 +114,7 @@ def calculate_iou(ground_truth_path, cellpose_results_path):
                         best_match[i, 1] = values[np.argmax(counts)]  # match_value
                         ious[i, 1] = values[np.argmax(counts)]
 
-                        # TODO 1. Divide matches (intersections) by unions to get full IOUs
+                        # Divide matches (intersections) by unions to get full IOUs
                         # make an IF clause, if match_value = 0 (== 0, if there is no match!)
                         if match_value > 0:
                             # print('--- Match = %d in i = %d' % (match_value, i))
@@ -145,7 +145,8 @@ def calculate_iou(ground_truth_path, cellpose_results_path):
                 else:
                     print('ERROR: Shapes of cp/gt arrays do not match!')
 
-            # TODO 3. Save the IOUs (possibly better to return the IoUs and save it outside)
+            # TODO: save the IoUs as pandas dataframes!
+            # Save the IOUs (possibly better to return the IoUs and save it outside)
             # pickle/dump the list 'list_of_ious' in an output folder
 
             output_path = r"./list_of_ious.pickle"
@@ -155,11 +156,181 @@ def calculate_iou(ground_truth_path, cellpose_results_path):
             # end of program
             print('end')
 
-            # TODO 4. Get all IOUs across parameters and save
-            # Maybe make this script a function, which takes (at least) 2 inputs: gt & cp paths, and then runs this whole show.
-            # The new function should iterate over folder contents of the cp-results.
-            # It should write the output for each cp-file and maybe compare across
-            #
 
-            # TODO 5. Plot
-            #
+def plot_iou(working_directory, output_directory='./dat/'):
+    """
+    Plots the following IoU results:
+        - Average across slices within a dataset
+        -
+    Parameters
+    ----------
+    working_directory
+    output_directory
+
+    Returns
+    -------
+
+    """
+    import matplotlib.pyplot as plt
+    import pickle
+    import numpy as np
+    import os
+
+    # Parent folder. Maybe change all of this script into a function and then use arg1 as parent!
+    # for now: get current working directory
+    parent = working_directory
+    dirs = [d.name for d in os.scandir(parent) if d.is_dir()]  # list of subdirectories
+
+    # TODO: how to determine the heatmap matrix dimensions
+    # there is now a metadata.csv file in the parent folder. It contains the dimensions of parameter testings
+    # we have 9x8 parameters (pixels 5:1:12 & flow 0.4:0.05:0.8)
+    means_across_parameters = np.zeros((9, 8))
+
+    minima = []
+    counter = 0
+
+    # iterate over folders
+    for folder in dirs:
+        cwd = os.path.join(parent, folder)
+
+        # check, if folder contains any pickle files
+        flist = os.listdir(cwd)
+        for f in flist:
+            if f.endswith('.pickle'):
+                break
+        else:
+            continue
+
+        os.chdir(cwd)
+
+        # Get a filename for the input and output data
+        fname = 'list_of_ious.pickle'
+        fname = os.path.join(cwd, fname)
+
+        savename_prefix = cwd.split(os.path.sep)
+        savename_prefix = savename_prefix[-1].split('-')
+        savename_prefix = 'p' + str(f[1]) + '_f' + str(f[3]) + '_'
+
+        # Import the data
+        with open(fname, 'rb') as file:
+            dat = pickle.load(file)
+
+        # ! means are identical, therefore print a slice to compare results across parameters
+        #     print(dat[16])
+
+        # Check the sizes and whatnot
+        # 3 columns: neuron index of gt, index of algorithm, iou value
+        #     print(f"Number of slices found: {len(dat)}") # == 33
+        #     print(f"Number of neurons on slice 0: {dat[0].shape[0]}") # == number of ground truth neurons on slice 0
+
+        # Get data to plot
+        all_ious = []
+        all_ious_no_flyback = []
+        mean_iou_per_slice = []
+        num_neurons_per_slice = []
+
+        for i, slice in enumerate(dat):
+
+            this_slice_iou = []
+            for neuron in slice:
+                this_iou = neuron[2]  # scalar
+                if this_iou > 0.0:
+                    this_slice_iou.append(this_iou)  # add scalar to list
+
+            # Main summary per slice
+            if len(this_slice_iou) > 0:
+                mean_iou_per_slice.append(np.mean(this_slice_iou))
+            else:
+                mean_iou_per_slice.append(0)
+
+            # All ious
+            num_neurons_per_slice.append(len(slice))
+            all_ious.extend(this_slice_iou)  # do NOT add list to list
+            if i > 0:
+                all_ious_no_flyback.extend(this_slice_iou)
+
+        # calculate mean across slices with IoUs > 0 & without the flyback AND if > 10% (non-trivial)
+        non_triv_means = [m for m in all_ious[1:] if m > 10]
+        mean_across_slices = round(np.mean(non_triv_means), 2)
+
+        # add IoU values to matrix for heatmap
+        row = counter % means_across_parameters.shape[0]
+        column = counter // means_across_parameters.shape[0]
+        means_across_parameters[row, column] = mean_across_slices
+
+        # Add the minimum IoU of each parameter set
+        min_iou = min(all_ious)  # needed to use that roundabout way
+        minima.append(min_iou)
+
+        plots = False
+
+        if plots:
+            # Scatterplot: All IoUs (per neuron) within one dataset
+            plt.figure()
+            plt.plot(all_ious, 'o')
+            plt.title('All ious')
+            plt.savefig(os.path.join(cwd, savename_prefix, "all_ious.png"))
+
+            # Scatterplot: All IoUs (per neuron) across slices without flyback-slice within one dataset
+            plt.figure()
+            plt.plot(all_ious_no_flyback, 'o')
+            plt.title('All ious no flyback')
+            plt.savefig(os.path.join(cwd, savename_prefix, "all_ious_no_flyback.png"))
+
+            # Mean of IoUs within one slice across one dataset
+            plt.figure()
+            plt.plot(mean_iou_per_slice)
+            plt.xlabel("slice")
+            plt.title("Mean iou per slice")
+            plt.savefig(os.path.join(cwd, savename_prefix, "mean_ious_per_slice.png"))
+
+            plt.figure()
+            plt.plot(num_neurons_per_slice)
+            plt.xlabel("slice")
+            plt.title("Number of neurons identified")
+            plt.savefig(os.path.join(cwd, savename_prefix, "neurons_identified.png"))
+
+            plt.close('all')
+
+        #     plt.show()
+
+        # change folder back to parent
+        os.chdir(parent)
+
+        counter += 1
+
+    # plot heatmap of means of all IoUs within one dataset across parameters
+    fig, ax = plt.subplots(figsize=(16, 16))
+    plt.title('Mean IoUs across parameters')
+    im = plt.imshow(means_across_parameters)
+    # create labels for axes
+    xlabels = [str(x) for x in range(5, 13)]
+    ylabels = [str(y / 100) for y in range(40, 85, 5)]
+
+    # set the ticks before labelling, otherwise ticks/labels will be moved!
+    ax.set_xticks(np.arange(len(xlabels)))
+    ax.set_yticks(np.arange(len(ylabels)))
+
+    ax.set_xticklabels(xlabels)
+    ax.set_yticklabels(ylabels)
+    plt.ylabel('Flow threshold')
+    plt.xlabel('Diameter [Pixels]')
+    for i in np.arange(means_across_parameters.shape[0]):
+        for j in np.arange(means_across_parameters.shape[1]):
+            text = ax.text(j, i, means_across_parameters[i, j],
+                           ha="center", va="center", color="k")
+
+    plt.savefig(os.path.join(output_directory, 'heatmap_of_IoU_means.png'))
+
+    # plot minima of IoUs across parameters
+    plt.figure()
+    plt.title('IoU minima across parameters')
+    plt.plot(minima, 'o')
+    plt.xlabel('parameter [a.u.]')
+    plt.ylabel('IoU (%)')
+
+    plt.show
+
+    plt.savefig(os.path.join(output_directory, 'IoU_minima_across_parameters.png'))
+
+    print('end of script')
