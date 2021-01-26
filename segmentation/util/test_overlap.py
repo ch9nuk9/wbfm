@@ -1,8 +1,13 @@
 import numpy as np
 import unittest
-from overlap import calc_best_overlap, calc_all_overlaps
+from overlap import calc_best_overlap, calc_all_overlaps, convert_to_3d
 
 class TestOverlaps(unittest.TestCase):
+    """
+
+    Tests for calculating the overlap between neurons predicted by algorithms.
+
+    """
 
     # we want to test all overlap functions
 
@@ -15,6 +20,7 @@ class TestOverlaps(unittest.TestCase):
         example_data = 0
 
     def test_calc_best_overlap(self):
+
         example_mask_s0 = np.array([[1, 1], [1, 0]])
         example_masks_s1 = np.array([[2, 0], [2, 1]])
 
@@ -27,6 +33,15 @@ class TestOverlaps(unittest.TestCase):
         self.assertEqual(expected_ind, best_ind)
         self.assertEqual(expected_overlap, best_overlap)
         self.assertTrue((expected_mask == best_mask).all())
+
+    def test_convert_to_3d(self):
+
+        example_input = r'C:\Users\niklas.khoss\Desktop\stardist_testdata'
+        expected_output_shape = (32, 700, 900)
+
+        test_3d = convert_to_3d(example_input)
+
+        self.assertEqual(test_3d.shape, expected_output_shape)
 
 if __name__ == '__main__':
     unittest.main()
