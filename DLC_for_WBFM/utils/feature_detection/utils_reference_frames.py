@@ -71,17 +71,17 @@ class ReferenceFrame():
 class RegisteredReferenceFrames():
     """Data for matched reference frames"""
 
-    # Global coordinate system
+    # Global neuron coordinate system
     global2local : dict
     local2global : dict
 
     # Intermediate products
     reference_frames : list = None
-    pairwise_matches : list = None
-    pairwise_conf : list = None
+    pairwise_matches : dict = None
+    pairwise_conf : dict = None
 
     # More detailed intermediates and alternate matchings
-    feature_matches : list = None
+    feature_matches : dict = None
     bipartite_matches : list = None
 
     def __str__(self):
@@ -135,6 +135,7 @@ def build_reference_frame(dat_raw,
                           neuron_feature_radius,
                           do_mini_max_projections=True,
                           mini_max_size=5,
+                          start_slice=2,
                           metadata={},
                           verbose=0):
     """Main convinience constructor for ReferenceFrame class"""
@@ -148,6 +149,7 @@ def build_reference_frame(dat_raw,
                                                          num_slices=num_slices,
                                                          alpha=1.0,
                                                          min_detections=3,
+                                                         start_slice=start_slice,
                                                          verbose=0)
     neuron_locs = np.array([n for n in neuron_locs])
     if len(neuron_locs)==0:

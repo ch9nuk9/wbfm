@@ -56,6 +56,7 @@ def detect_blobs(im1_raw):
 def build_point_clouds_for_volume(dat,
                                   num_slices,
                                   alpha,
+                                  start_slice=2,
                                   verbose=0):
     """
     Build point clouds for each plane, with points = neurons
@@ -66,6 +67,8 @@ def build_point_clouds_for_volume(dat,
     f = lambda dat, which_slice : (alpha*dat[which_slice]).astype('uint8')
 
     for i in range(num_slices):
+        if i < start_slice:
+            continue
         im1_raw = f(dat, i)
         kp, im1 = detect_blobs(im1_raw)
         # Add to make the format: ZXY
@@ -121,6 +124,7 @@ def detect_neurons_using_ICP(dat,
                              num_slices,
                              alpha=1.0,
                              min_detections=3,
+                             start_slice=2,
                              verbose=0):
     """
     Use blob detection and ICP to find neurons on multiple planes and link
@@ -130,6 +134,7 @@ def detect_neurons_using_ICP(dat,
     all_keypoints_pcs = build_point_clouds_for_volume(dat,
                                                   num_slices,
                                                   alpha,
+                                                  start_slice=start_slice,
                                                   verbose=verbose)
     if verbose >= 1:
         print("Building pairwise correspondence...")

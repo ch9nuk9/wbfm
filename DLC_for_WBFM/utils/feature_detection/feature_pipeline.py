@@ -186,6 +186,7 @@ def build_all_reference_frames(num_reference_frames,
                          num_slices,
                          neuron_feature_radius,
                          alpha,
+                         start_slice=2,
                          is_sequential=True,
                          do_mini_max_projections=True,
                          verbose=1):
@@ -219,6 +220,7 @@ def build_all_reference_frames(num_reference_frames,
                     'video_fname':vid_fname,
                     'alpha':alpha}
         f = build_reference_frame(dat, num_slices, neuron_feature_radius,
+                                  start_slice=start_slice,
                                   metadata=metadata)
         ref_frames.append(f)
 
@@ -455,6 +457,7 @@ def track_via_reference_frames(vid_fname,
                                num_slices=33,
                                alpha=0.15,
                                neuron_feature_radius=5.0,
+                               start_slice=2,
                                verbose=0,
                                num_reference_frames=5):
     """
