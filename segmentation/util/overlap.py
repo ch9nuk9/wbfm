@@ -1,5 +1,6 @@
 import numpy as np
-
+from natsort import natsorted
+import os
 
 def calc_all_overlaps(start_neuron,
                       all_2d_masks,
@@ -47,7 +48,7 @@ def calc_all_overlaps(start_neuron,
 
 
 def calc_best_overlap(mask_s0, # Only one mask
-                      masks_v1,
+                      masks_s1,
                       verbose=1):
     """
     Calculates the best overlap between an initial mask and all subsequent masks
@@ -57,18 +58,18 @@ def calc_best_overlap(mask_s0, # Only one mask
     ----------
     mask_s0 : array_like
         Mask of the original neuron
-    masks_v1 : list
+    masks_s1 : list
         Masks of all neurons detected in the next frame
 
     """
     best_overlap = 0
     best_ind = None
-    best_mask = np.zeros_like(masks_v1)
-    all_vals = np.unique(masks_v1)
+    best_mask = np.zeros_like(masks_s1)
+    all_vals = np.unique(masks_s1)
     for i,val in enumerate(all_vals):
         if val == 0:
             continue
-        this_neuron_mask = masks_v1==val
+        this_neuron_mask = masks_s1==val
         overlap = np.count_nonzero(mask_s0*this_neuron_mask)
         if overlap > best_overlap:
             best_overlap = overlap
@@ -84,3 +85,46 @@ def calc_min_overlap():
     TODO: make this a function of track length?
     """
     return 0.0
+
+
+def convert_to_3d(files_path: str):
+    """
+    Converts all 2d numpy arrays within a folder to a 3d array. Throws error if not a dir or no npy files within.
+
+    Parameters
+    ----------
+    files_path : str
+        path of directory containing .npy arrays of masks
+
+    Returns
+    -------
+    masks_3d : 3d numpy array
+        a 3d array of the concatenated masks from a segmentation algorithm (e.g. stardist)
+
+    """
+    # check, if input str is a valid directory
+    if not os.path.isdir(files_path):
+        print(f'convert to 3d: {files_path} is no directory!')
+        return False
+
+    # check, if folder contains npy files and if, find all npy files
+    files_list = [os.path.join(files_path, x.name) for x in os.scandir(files_path) if x.name.endswith('.npy')]
+
+    if not files_list:
+        print(f'There are no .npy files in {files_path}')
+        return False
+    files_list = natsorted(files_list)
+
+    # iterate over files, load the mask and concatenate them into a 3D array
+    # initialize output array (ZXY): size = (#files, file.shape)
+    slice_for_size = np.load(files_list[0])
+    size_3d = (len(files_list), ) + (slice_for_size.shape)
+    masks_3d = np.zeros(size_3d, dtype=np.int8)
+
+    # print(f'masks_3d size: {masks_3d.shape}')
+
+    for i, file in enumerate(files_list):
+        slice = np.load(file)
+        masks_3d[i] = slice     # appending this way instead of np.dstack or concatenate
+
+    return masks_3d
