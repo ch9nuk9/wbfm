@@ -19,7 +19,7 @@ class ReferenceFrame():
     # Data for registration
     neuron_locs: list
     keypoints: list
-    keypoint_locs: list # Just the z coordinate
+    keypoint_locs: list # Includes the z coordinate
     all_features: np.array
     features_to_neurons: dict
 
@@ -57,6 +57,11 @@ class ReferenceFrame():
                                  num_slices=self.vol_shape[0],
                                  alpha=self.alpha)
 
+    def __str__(self):
+        return f"=======================================\n\
+                ReferenceFrame:\n\
+                Frame index: {self.frame_ind} \n\
+                Number of neurons: {len(self.neuron_locs)} \n"
 
 ##
 ## Class for Set of reference frames
@@ -79,6 +84,11 @@ class RegisteredReferenceFrames():
     feature_matches : list = None
     bipartite_matches : list = None
 
+    def __str__(self):
+        [print(r) for r in self.reference_frames]
+        return f"=======================================\n\
+                RegisteredReferenceFrames:\n\
+                Number of frames: {len(self.reference_frames)} \n"
 
 def remove_first_frame(reference_set):
     # Remove first element
