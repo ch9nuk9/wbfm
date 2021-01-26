@@ -46,7 +46,7 @@ def calc_all_overlaps(start_neuron,
 
 
 
-def calc_best_overlap(mask_v0, # Only one mask
+def calc_best_overlap(mask_s0, # Only one mask
                       masks_v1,
                       verbose=1):
     """
@@ -55,7 +55,7 @@ def calc_best_overlap(mask_v0, # Only one mask
 
     Parameters
     ----------
-    mask_v0 : array_like
+    mask_s0 : array_like
         Mask of the original neuron
     masks_v1 : list
         Masks of all neurons detected in the next frame
@@ -69,7 +69,7 @@ def calc_best_overlap(mask_v0, # Only one mask
         if val == 0:
             continue
         this_neuron_mask = masks_v1==val
-        overlap = np.count_nonzero(mask_v0*this_neuron_mask)
+        overlap = np.count_nonzero(mask_s0*this_neuron_mask)
         if overlap > best_overlap:
             best_overlap = overlap
             best_ind = i
