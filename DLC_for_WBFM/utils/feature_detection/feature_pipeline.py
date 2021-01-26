@@ -481,7 +481,7 @@ def track_via_reference_frames(vid_fname,
         print("Matching other frames to reference...")
     video_opt = {'num_slices':num_slices,
                  'alpha':alpha}
-    metadata = ref_frames[0].get_metdata()
+    metadata = ref_frames[0].get_metadata()
     all_matches, all_other_frames = match_all_to_reference_frames(
         reference_set,
         vid_fname,
