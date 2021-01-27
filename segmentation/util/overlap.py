@@ -16,57 +16,56 @@ def calc_all_overlaps(all_2d_masks,
     """
     num_slices = len(all_2d_masks)
 
-	# Final output matrix: one big mask
+    # Final output matrix: one big mask
     # Syntax: ZXY
     sz = (num_slices, ) + all_2d_masks[0].shape
     full_3d_mask = np.zeros(sz)
 
     # Initial neuron and mask
-	global_current_neuron = 1
+    global_current_neuron = 1
 
-	# Loop over slices to start (2d masks)
+    # Loop over slices to start (2d masks)
     for i_slice in range(num_slices-1):
-		this_mask_all_neurons = all_2d_masks[i_slice]
+        this_mask_all_neurons = all_2d_masks[i_slice]
 
-		all_neurons_this_mask = np.unique(this_mask)
-		if verbose >= 1:
-			print(f"Found {len(all_neurons_this_mask)} neurons on slice {i_slice}")
-		# Pick a neuron, and finalize it by looping over ALL later slices
-		for this_neuron in all_neurons_this_mask:
-			# Get the initial mask, which will be propagated across slices
-			this_mask_binary = (this_mask_all_neurons==this_neuron)
-			for i_next_slice in range(i_slice+1, num_slices):
-				next_mask_all_neurons = all_2d_masks[i_next_slice]
+        all_neurons_this_mask = np.unique(this_mask_all_neurons)
+        if verbose >= 1:
+            print(f"Found {len(all_neurons_this_mask)} neurons on slice {i_slice}")
+        # Pick a neuron, and finalize it by looping over ALL later slices
+        for this_neuron in all_neurons_this_mask:
+            # Get the initial mask, which will be propagated across slices
+            this_mask_binary = (this_mask_all_neurons==this_neuron)
+            for i_next_slice in range(i_slice+1, num_slices):
+                next_mask_all_neurons = all_2d_masks[i_next_slice]
 
-				len_of_current_neuron = i_next_slice - i_slice + 1
+                len_of_current_neuron = i_next_slice - i_slice + 1
 
-				# Get best overlap between the current mask and the next slice
-				# TODO: FIX THIS FUNCTION OUTPUT
-		        this_overlap, next_mask_binary = calc_best_overlap(
-					this_mask_binary,
-					next_mask_all_neurons
-				)
+            # Get best overlap between the current mask and the next slice
+            # TODO: FIX THIS FUNCTION OUTPUT
+                this_overlap, next_mask_binary = calc_best_overlap(this_mask_binary,next_mask_all_neurons)
 
-				# If good enough, save in the master 3d mask
-				min_overlap = calc_min_overlap()
-				if this_overlap > min_overlap:
-					full_3d_mask[next_mask_binary] = global_current_neuron
-					# TODO: ZERO OUT THIS NEURON
-					this_mask_binary = next_mask_binary
-				else:
-					# If no overlap, start the next neuron
-					global_current_neuron += 1
-					if verbose >= 1:
-						print(f"Finished neuron {global_current_neuron}")
-						print(f"Includes {len_of_current_neuron} slices")
-					break
+            # If good enough, save in the master 3d mask
+            min_overlap = calc_min_overlap()
+            if this_overlap > min_overlap:
+                full_3d_mask[i_next_slice,:,:][next_mask_binary] = global_current_neuron
+                # zero out used neurons on slice
+                all_2d_masks[i_next_slice][next_mask_binary] = 0
+                this_mask_binary = next_mask_binary
 
-	        # get all neuron IDs and best overlaps of a given neuron mask across all other masks
-	        # all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, this_mask)
-	        # min_overlap = calc_min_overlap()
-	        # if all_overlaps[i] <= min_overlap:
-	        #     # Start a new neuron
-	        #     break
+            else:
+                # If no overlap, start the next neuron
+                global_current_neuron += 1
+            if verbose >= 1:
+                print(f"Finished neuron {global_current_neuron}")
+                print(f"Includes {len_of_current_neuron} slices")
+            break
+
+        # get all neuron IDs and best overlaps of a given neuron mask across all other masks
+        # all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, this_mask)
+        # min_overlap = calc_min_overlap()
+        # if all_overlaps[i] <= min_overlap:
+        #     # Start a new neuron
+        #     break
         # all_masks.append(this_mask)
 
     return full_3d_mask
