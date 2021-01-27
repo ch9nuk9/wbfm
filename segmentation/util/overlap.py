@@ -2,15 +2,7 @@ import numpy as np
 from natsort import natsorted
 import os
 
-<<<<<<< HEAD
 def calc_all_overlaps(all_2d_masks,
-=======
-# 'stitching'
-# top level function should get pat h as input and call 'calc_all_overlaps'
-# in calc_all_overlaps, call a helper function to get list of
-def calc_all_overlaps(start_neuron,
-                      all_2d_masks,
->>>>>>> 64c5f8521c5fee3401123f8863d12d0584590e88
                       verbose=1):
     """
     Get the "tube" of a neuron through z slices via most overlapping pixels
