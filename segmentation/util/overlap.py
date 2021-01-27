@@ -47,7 +47,7 @@ def calc_all_overlaps(all_2d_masks: list,
                 next_mask_all_neurons = all_2d_masks[i_next_slice]
                 len_of_current_neuron = i_next_slice - i_slice + 1
 
-            # Get best overlap between the current mask and the next slice
+                # Get best overlap between the current mask and the next slice
                 this_overlap, next_mask_binary = calc_best_overlap(this_mask_binary, next_mask_all_neurons)
 
                 # If good enough, save in the master 3d mask
@@ -55,31 +55,30 @@ def calc_all_overlaps(all_2d_masks: list,
                 if not min_overlap:
                     min_overlap = 10
 
-                if this_overlap > min_overlap:
-                    full_3d_mask[i_next_slice, : ,:][next_mask_binary] = global_current_neuron
+
+                is_good_enough = (this_overlap > min_overlap)
+                if is_good_enough:
+                    # CHECK
+                    full_3d_mask[i_next_slice,:,:][next_mask_binary] = global_current_neuron
                     # zero out used neurons on slice
                     all_2d_masks[i_next_slice][next_mask_binary] = 0
                     this_mask_binary = next_mask_binary
 
-                else:
+                # Finalize this neuron, and move to next neuron
+                is_on_last_slice = i_next_slice==(num_slices-1)
+                if not is_good_enough or is_on_last_slice:
                     len_of_current_neuron = i_next_slice - i_slice + 1
                     # TODO for hist_dict: find a way to figure out, whether there has been any match found on last slice. Otherwise len-1
-                    hist_dict[str(global_current_neuron)] = len_of_current_neuron - 1
+                    if is_on_last_slice:
+                        hist_dict[str(global_current_neuron)] = len_of_current_neuron
+                    else:
+                        hist_dict[str(global_current_neuron)] = len_of_current_neuron - 1
 
-                    # If no overlap, start the next neuron
                     global_current_neuron += 1
                     if verbose >= 1:
                         print(f"Finished neuron {global_current_neuron}")
                         print(f"Includes {len_of_current_neuron} slices")
                     break
-
-        # get all neuron IDs and best overlaps of a given neuron mask across all other masks
-        # all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, this_mask)
-        # min_overlap = calc_min_overlap()
-        # if all_overlaps[i] <= min_overlap:
-        #     # Start a new neuron
-        #     break
-        # all_masks.append(this_mask)
 
     # TODO histogram of neuron length in Z (<4 = incorrect)
 
@@ -179,7 +178,14 @@ def convert_to_3d(files_path: str):
 
     return masks_3d
 
+<<<<<<< HEAD
 # print(f'starting the overlapping')
 # example_input = r'C:\Users\niklas.khoss\Desktop\stardist_testdata'
 # stitched_3d_output = convert_to_3d(example_input)
 # print(f'3d output shape: {stitched_3d_output.shape}')
+=======
+print(f'starting the overlapping')
+example_input = r'C:\Users\niklas.khoss\Desktop\stardist_testdata'
+stitched_3d_output = convert_to_3d(example_input)
+print(f'3d output shape: {stitched_3d_output.shape}')
+>>>>>>> 210f9b3da0162dd936e712c21c3b199f9e08e8f0
