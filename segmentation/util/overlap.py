@@ -2,6 +2,9 @@ import numpy as np
 from natsort import natsorted
 import os
 
+# 'stitching'
+# top level function should get pat h as input and call 'calc_all_overlaps'
+# in calc_all_overlaps, call a helper function to get list of
 def calc_all_overlaps(start_neuron,
                       all_2d_masks,
                       verbose=1):
@@ -36,6 +39,7 @@ def calc_all_overlaps(start_neuron,
         # Retain the last successful mask
         prev_mask = all_2d_masks[i-1] == all_neurons[i-1]
 
+        # get all neuron IDs and best overlaps of a given neuron mask across all other masks
         all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, this_mask)
         min_overlap = calc_min_overlap()
         if all_overlaps[i] <= min_overlap:
@@ -118,13 +122,13 @@ def convert_to_3d(files_path: str):
     # iterate over files, load the mask and concatenate them into a 3D array
     # initialize output array (ZXY): size = (#files, file.shape)
     slice_for_size = np.load(files_list[0])
-    size_3d = (len(files_list), ) + (slice_for_size.shape)
+    size_3d = (len(files_list), ) + (slice_for_size.shape)      # tuple addition
     masks_3d = np.zeros(size_3d, dtype=np.int8)
 
     # print(f'masks_3d size: {masks_3d.shape}')
 
     for i, file in enumerate(files_list):
         slice = np.load(file)
-        masks_3d[i] = slice     # appending this way instead of np.dstack or concatenate
+        masks_3d[i] = slice     # appending this way instead of np.dstack or concatenate (need a 3d-array as seed)
 
     return masks_3d
