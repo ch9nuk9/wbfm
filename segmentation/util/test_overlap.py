@@ -17,24 +17,25 @@ class TestOverlaps(unittest.TestCase):
 
     # test calc_all_overlaps
     def test_calc_all_overlaps(self):
-        example_data = 0
+        # TODO: test 3d output array for unique numbers and zeroed out positions
+        pass
 
     def test_calc_best_overlap(self):
 
         example_mask_s0 = np.array([[1, 1], [1, 0]])
         example_masks_s1 = np.array([[2, 0], [2, 1]])
 
-        best_ind, best_overlap, best_mask = calc_best_overlap(example_mask_s0, example_masks_s1)
+        best_overlap, best_mask = calc_best_overlap(example_mask_s0, example_masks_s1)
 
-        expected_ind = 2
         expected_overlap = 2
         expected_mask = np.array([[1, 0], [1, 0]])
 
-        self.assertEqual(expected_ind, best_ind)
         self.assertEqual(expected_overlap, best_overlap)
         self.assertTrue((expected_mask == best_mask).all())
 
     def test_convert_to_3d(self):
+
+        # TODO: add output test for 3d; check for consecutive & unique numbers in array
 
         example_input = r'C:\Users\niklas.khoss\Desktop\stardist_testdata'
         expected_output_shape = (32, 700, 900)
