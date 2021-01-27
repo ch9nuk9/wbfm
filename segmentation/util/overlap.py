@@ -2,31 +2,26 @@ import numpy as np
 from natsort import natsorted
 import os
 
-def calc_all_overlaps(start_neuron,
-                      all_2d_masks,
+def calc_all_overlaps(all_2d_masks,
                       verbose=1):
     """
     Get the "tube" of a neuron through z slices via most overlapping pixels
 
     Parameters
     ----------
-    start_neuron : int
-        Which neuron to take as the initial one
     all_2d_masks : list
         List of all masks across z
 
     See also: calc_best_overlap
     """
     num_slices = len(all_2d_masks)
-    all_masks = []
-    all_neurons = np.zeros(num_slices)
-    all_overlaps = np.zeros(num_slices)
 
     # Syntax: ZXY
     sz = (num_slices, ) + all_2d_masks[0].shape
     full_3d_mask = np.zeros(sz)
 
-    # Initial neuron
+    # Initial neuron and mask
+	i_neuron = 1
     all_masks.append(all_2d_masks[0] == start_neuron)
     all_neurons[0] = start_neuron
 
