@@ -56,7 +56,7 @@ def calc_all_overlaps(all_2d_masks: list,
                     min_overlap = 10
 
                 if this_overlap > min_overlap:
-                    full_3d_mask[i_next_slice,:,:][next_mask_binary] = global_current_neuron
+                    full_3d_mask[i_next_slice, : ,:][next_mask_binary] = global_current_neuron
                     # zero out used neurons on slice
                     all_2d_masks[i_next_slice][next_mask_binary] = 0
                     this_mask_binary = next_mask_binary
@@ -179,7 +179,7 @@ def convert_to_3d(files_path: str):
 
     return masks_3d
 
-print(f'starting the overlapping')
-example_input = r'C:\Users\niklas.khoss\Desktop\stardist_testdata'
-stitched_3d_output = convert_to_3d(example_input)
-print(f'3d output shape: {stitched_3d_output.shape}')
+# print(f'starting the overlapping')
+# example_input = r'C:\Users\niklas.khoss\Desktop\stardist_testdata'
+# stitched_3d_output = convert_to_3d(example_input)
+# print(f'3d output shape: {stitched_3d_output.shape}')
