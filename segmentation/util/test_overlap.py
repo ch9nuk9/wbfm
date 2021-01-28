@@ -18,6 +18,7 @@ class TestOverlaps(unittest.TestCase):
     # test calc_all_overlaps
     def test_calc_all_overlaps(self):
         # TODO: test 3d output array for unique numbers and zeroed out positions
+        # could take real results and just use 3-4 slices
         pass
 
     def test_calc_best_overlap(self):
