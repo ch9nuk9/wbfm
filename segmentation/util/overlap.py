@@ -206,6 +206,19 @@ def convert_to_3d(files_path: str, verbose=0):
 
     return stitched_3d_masks, neuron_lengths
 
+
+# histogram of neuron 'lengths' across Z
+def neuron_length_hist(lengths_dict):
+    # plots the lengths of neurons in a histogram and barplot
+    vals = lengths_dict.values()
+    plt.figure()
+    plt.hist(vals, bins=np.arange(1, max(vals)+1) - 0.5, align='mid')
+    plt.xticks(np.arange(1, max(vals) + 1))
+    # TODO add automated y-axis limits
+    plt.yticks(np.arange(0, 27, 2))
+    plt.xlabel('neuron length')
+    plt.ylabel('# of neurons')
+    plt.title('neuron lengths')
 # print(f'starting the overlapping')
 # example_input = r'C:\Users\niklas.khoss\Desktop\stardist_testdata\masks\'
 # stitched_3d_output, neuron_lengths = convert_to_3d(example_input)
