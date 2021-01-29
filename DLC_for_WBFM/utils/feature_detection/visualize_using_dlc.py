@@ -112,7 +112,7 @@ def make_labeled_video_custom_annotations(dlc_config,
     # Actual function call
     CreateVideo(clip,
                 df,
-                cfg["pcutoff"],
+                0.0, # Do not remove neurons for confidence
                 cfg["dotsize"],
                 cfg["colormap"],
                 labeled_bpts,
