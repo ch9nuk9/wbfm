@@ -1,6 +1,6 @@
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.feature_detection.utils_features import *
-#from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
+from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 import numpy as np
 import networkx as nx
@@ -339,40 +339,10 @@ def is_ordered_subset(list1, list2):
     return True
 
 
-def calc_2frame_matches_using_class(frame0,
-                                    frame1,
-                                    use_bipartite_matching=False,
-                                    verbose=1,
-                                    DEBUG=False):
-    """
-    Similar to older function, but this doesn't assume the features are
-    already matched
+def calc_matches_using_feature_voting(frame0, frame1,
+                                      feature_matches_dict,
+                                      DEBUG=False):
 
-    See also: calc_2frame_matches
-    """
-
-    # First, get feature matches
-    feature_matches = match_known_features(frame0.all_features,
-                                           frame1.all_features,
-                                           frame0.keypoints,
-                                           frame1.keypoints,
-                                           frame0.vol_shape[1:],
-                                           frame1.vol_shape[1:],
-                                           matches_to_keep=0.5)
-    feature_matches_dict = extract_map1to2_from_matches(feature_matches)
-    if DEBUG:
-        print("All feature matches: ")
-        # Draw first 10 matches.
-        img1 = frame0.get_data()[15,...]
-        img2 = frame1.get_data()[15,...]
-        kp1, kp2 = frame0.keypoints, frame1.keypoints
-        img3 = cv2.drawMatches(img1,kp1,img2,kp2,feature_matches[:100],None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-        #plt.figure(figsize=(25,45))
-        #plt.imshow(img3),plt.show()
-        #[print(f) for f in feature_matches]
-        #return img3
-
-    # Second, get neuron matches
     all_neuron_matches = []
     all_confidences = []
     all_candidate_matches = []
@@ -381,7 +351,6 @@ def calc_2frame_matches_using_class(frame0,
         this_f0 = frame0.get_features_of_neuron(neuron0_ind)
         if DEBUG:
             print(f"=======Neuron {neuron0_ind}=========")
-            #print("Features in vol0: ", this_f0)
         # Use matches to translate to the indices of frame1
         this_f1 = []
         for f0 in this_f0:
@@ -406,8 +375,54 @@ def calc_2frame_matches_using_class(frame0,
             verbose=verbose-1,
             all_candidate_matches=all_candidate_matches
         )
-        if DEBUG:
-            break
+    return all_neuron_matches, all_confidences, all_candidate_matches
+
+
+def calc_2frame_matches_using_class(frame0,
+                                    frame1,
+                                    use_bipartite_matching=False,
+                                    verbose=1,
+                                    use_affine_matching=False,
+                                    DEBUG=False):
+    """
+    Similar to older function, but this doesn't assume the features are
+    already matched
+
+    See also: calc_2frame_matches
+    """
+
+    # First, get feature matches
+    feature_matches = match_known_features(frame0.all_features,
+                                           frame1.all_features,
+                                           frame0.keypoints,
+                                           frame1.keypoints,
+                                           frame0.vol_shape[1:],
+                                           frame1.vol_shape[1:],
+                                           matches_to_keep=0.5)
+    if DEBUG:
+        print("All feature matches: ")
+        # Draw first 10 matches.
+        img1 = frame0.get_data()[15,...]
+        img2 = frame1.get_data()[15,...]
+        kp1, kp2 = frame0.keypoints, frame1.keypoints
+        img3 = cv2.drawMatches(img1,kp1,img2,kp2,feature_matches[:100],None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        #plt.figure(figsize=(25,45))
+        #plt.imshow(img3),plt.show()
+        #[print(f) for f in feature_matches]
+        #return img3
+
+    # Second, get neuron matches
+    if not use_affine_matching:
+        f = calc_matches_using_feature_voting
+        feature_matches_dict = extract_map1to2_from_matches(feature_matches)
+        opt = {'feature_matches_dict':feature_matches_dict}
+    else:
+        f = calc_matches_using_affine_propagation
+        opt = {'all_feature_matches':feature_matches}
+    all_neuron_matches, all_confidences, all_candidate_matches = f(
+                                          frame0, frame1,
+                                          **opt,
+                                          DEBUG=False)
 
     if use_bipartite_matching:
         all_bp_matches = calc_bipartite_matches(all_candidate_matches, verbose-1)
