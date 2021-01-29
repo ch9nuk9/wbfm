@@ -103,8 +103,17 @@ def build_tracklets_from_matches(all_neurons,
     """
     Builds tracklets from an array of pairwise matches
 
-    Can accept points as list of np.arrays
-    Can accept matchings as list of np.arrays
+    Parameters
+    ===============
+    all_neurons : list
+        List of lists, with integers for all neurons present in a frame
+        Can also be a list of ReferenceFrame objects
+    all_matches : list
+        Matches between adjacent frames in the coordinates local to each frame
+        Can also be a dict of pairwise matches
+    all_likelihoods : list
+        Same as all_matches, but for the confidence of the matchs
+        Can also be a dict
     """
 
     if all_likelihoods is None:
@@ -266,3 +275,24 @@ def consolidate_tracklets(df, tracklet_matches, verbose=0):
         print(f"Extended and dropped {len(rows_to_drop)}/{df.shape[0]} rows")
 
     return df.drop(rows_to_drop, axis=0)
+
+
+##
+## API functions
+##
+
+def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
+    # Convert from dict and Frame objects to just lists
+    all_matches, all_conf = [], []
+    all_neurons = []
+    for i in range(len(tmp_matches)-1):
+        # Assume keys describe pairwise matches
+        k = (i, i+1)
+        all_matches.append(tmp_matches[k])
+        all_conf.append(tmp_conf[k])
+        # This is a ReferenceFrame object
+        all_neurons.append(tmp_neurons[i].neuron_locs)
+    # This list is one element longer
+    all_neurons.append(tmp_neurons[-1].neuron_locs)
+
+    return all_matches, all_conf, all_neurons
