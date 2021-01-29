@@ -117,64 +117,6 @@ def track_neurons_full_video_legacy(vid_fname,
     return all_matches, all_conf, all_neurons
 
 
-def track_neurons_full_video(vid_fname,
-                             start_frame=0,
-                             num_frames=10,
-                             num_slices=33,
-                             alpha=0.15,
-                             neuron_feature_radius=5.0,
-                             do_mini_max_projections=False,
-                             verbose=0):
-    """
-    Detects and tracks neurons using opencv-based feature matching
-
-    New: uses and returns my class of features
-    """
-    # Get initial volume; settings are same for all
-    import_opt = {'num_slices':num_slices, 'alpha':alpha}
-    ref_opt = {'do_mini_max_projections':do_mini_max_projections,
-               'neuron_feature_radius':neuron_feature_radius}
-    def local_build_frame(frame_ind,
-                          vid_fname=vid_fname,
-                          import_opt=import_opt,
-                          ref_opt=ref_opt):
-        dat = get_single_volume(vid_fname, frame_ind, **import_opt)
-        metadata = {'frame_ind':frame_ind,
-                    'vol_shape':dat.shape,
-                    'video_fname':vid_fname,
-                    'alpha':import_opt['alpha']}
-        f = build_reference_frame(dat,
-                                  num_slices=import_opt['num_slices'],
-                                  **ref_opt,
-                                  metadata=metadata)
-        return f
-
-    if verbose >= 1:
-        print("Building initial frame...")
-    frame0 = local_build_frame(start_frame)
-
-    # Loop through all pairs
-    pairwise_matches_dict = {}
-    pairwise_conf_dict = {}
-    all_frames = [frame0]
-    end_frame = start_frame+num_frames
-    frame_range = range(start_frame+1, end_frame)
-    for i_frame in tqdm(frame_range):
-        frame1 = local_build_frame(i_frame)
-
-        m, c, fm, _ = calc_2frame_matches_using_class(frame0, frame1)
-        # Save to dictionaries
-        key = (i_frame-1, i_frame)
-        pairwise_matches_dict[key] = m
-        pairwise_conf_dict[key] = c
-        # Save frame to list
-        all_frames.append(frame1)
-        frame0 = frame1
-
-    return pairwise_matches_dict, pairwise_conf_dict, all_frames
-
-
-
 ##
 ## Different strategy: reference frames
 ##
@@ -447,9 +389,72 @@ def match_all_to_reference_frames(reference_set,
 
     return all_matches, all_other_frames
 
+
 ##
 ## Full pipeline function
 ##
+
+
+def track_neurons_full_video(vid_fname,
+                             start_frame=0,
+                             num_frames=10,
+                             num_slices=33,
+                             alpha=0.15,
+                             neuron_feature_radius=5.0,
+                             do_mini_max_projections=False,
+                             use_affine_matching=False,
+                             verbose=0):
+    """
+    Detects and tracks neurons using opencv-based feature matching
+    Note: only compares adjacent frames
+        Thus, if a neuron is lost in a single frame, the track ends
+
+    New: uses and returns my class of features
+    """
+    # Get initial volume; settings are same for all
+    import_opt = {'num_slices':num_slices, 'alpha':alpha}
+    ref_opt = {'do_mini_max_projections':do_mini_max_projections,
+               'neuron_feature_radius':neuron_feature_radius}
+    def local_build_frame(frame_ind,
+                          vid_fname=vid_fname,
+                          import_opt=import_opt,
+                          ref_opt=ref_opt):
+        dat = get_single_volume(vid_fname, frame_ind, **import_opt)
+        metadata = {'frame_ind':frame_ind,
+                    'vol_shape':dat.shape,
+                    'video_fname':vid_fname,
+                    'alpha':import_opt['alpha']}
+        f = build_reference_frame(dat,
+                                  num_slices=import_opt['num_slices'],
+                                  **ref_opt,
+                                  metadata=metadata)
+        return f
+
+    if verbose >= 1:
+        print("Building initial frame...")
+    frame0 = local_build_frame(start_frame)
+
+    # Loop through all pairs
+    pairwise_matches_dict = {}
+    pairwise_conf_dict = {}
+    all_frames = [frame0]
+    end_frame = start_frame+num_frames
+    frame_range = range(start_frame+1, end_frame)
+    for i_frame in tqdm(frame_range):
+        frame1 = local_build_frame(i_frame)
+
+        m, c, fm, _ = calc_2frame_matches_using_class(frame0, frame1,
+                                                      use_affine_matching=use_affine_matching)
+        # Save to dictionaries
+        key = (i_frame-1, i_frame)
+        pairwise_matches_dict[key] = m
+        pairwise_conf_dict[key] = c
+        # Save frame to list
+        all_frames.append(frame1)
+        frame0 = frame1
+
+    return pairwise_matches_dict, pairwise_conf_dict, all_frames
+
 
 def track_via_reference_frames(vid_fname,
                                start_frame=0,
