@@ -9,11 +9,16 @@ from tqdm import tqdm
 def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
                                radius=10.0,
                                min_matches=100,
+                               no_match_mode='negative_position',
                                verbose=0):
     """
     1. Gets a cloud of features around a neuron (first frame)
     2. Fits an affine model based on the feature matches (second frame)
     3. Propagates the neuron to a final position
+
+    If the affine fitting fails, then a dummy point is added according to 'no_match_mode'
+    The default is to add a point add [-10, -10, -10]
+    (this keeps the indices of the pushed point cloud aligned with the original)
     """
 
     ## Get a neuron, then get the features around it
@@ -46,7 +51,10 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
     np.asarray(pc0.colors)[close_features[1:], :] = [0, 1, 0]
 
     # Now calculate the affine transformation
-    neuron0_trans = None
+    if no_match_mode is 'negative_position':
+        neuron0_trans = np.array([[-10.0, -10.0, -10.0]])
+    else:
+        neuron0_trans = None
     success = False
     if (len(pts0)>2) & (len(pts1)>2):
         val, h, inliers = cv2.estimateAffine3D(pts0,pts1, confidence=0.999)
@@ -76,12 +84,14 @@ def propagate_all_neurons(f0, f1, all_feature_matches,
     """
     all_propagated = None
 
-    opt = {'f0':f0, 'f1':f1, 'all_feature_matches':all_feature_matches}
+    opt = {'f0':f0, 'f1':f1, 'all_feature_matches':all_feature_matches,
+           'radius':radius, 'min_matches':min_matches}
     # for which_neuron in tqdm(range(len(f0.neuron_locs))):
     for which_neuron in range(len(f0.neuron_locs)):
         success, n0_propagated = propagate_via_affine_model(which_neuron, **opt)
-        if not success:
-            continue
+        # Note: needs the failed neurons to keep the indices aligned
+        # if not success:
+        #     continue
         pc1_propagated = o3d.geometry.PointCloud()
         pc1_propagated.points = o3d.utility.Vector3dVector(n0_propagated)
 
@@ -101,7 +111,7 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
                                           verbose=0,
                                           DEBUG=False):
     """
-    Propogates the neuron cloud in f0 using all_feature_matches
+    Propagates the neuron cloud in f0 using all_feature_matches
     Matches to neurons in f1 if the neighbors are close enough
     """
 
@@ -115,12 +125,12 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
     # Loop over locations of pushed v0 neurons
     all_matches = [] # Without confidence
     all_conf = []
-    nn_opt = { 'radius':20.0, 'max_nn':2}
+    nn_opt = { 'radius':5.0, 'max_nn':1}
     conf_func = lambda dist : 1.0 / (dist/10+1.0)
     for i, neuron in enumerate(np.array(all_propagated.points)):
         [k, two_neighbors, two_dist] = tree_n1.search_hybrid_vector_3d(neuron, **nn_opt)
-
-        if k==0:
+        # For some reason this function seems to allow points that are too far away
+        if k==0 or (two_dist[0] > nn_opt['radius']):
             continue
 
         if k==1:
