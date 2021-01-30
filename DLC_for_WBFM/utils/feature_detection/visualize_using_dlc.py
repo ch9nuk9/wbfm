@@ -1,6 +1,7 @@
 import deeplabcut
 from deeplabcut.utils.make_labeled_video import CreateVideo
 from deeplabcut.utils.video_processor import VideoProcessorCV as vp
+from DLC_for_WBFM.bin.configuration_definition import *
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -134,8 +135,58 @@ def make_labeled_video_custom_annotations(dlc_config,
 ## Full pipeline: from dataframe to video
 ##
 
-def make_labeled_video_from_dataframe(config):
+def create_video_from_annotations(config, df_fname,
+                                  scorer=None,
+                                  min_track_length=50,
+                                  total_num_frames=500):
     """
-    See make_labeled_video_custom_annotations()
+    Creates a video starting from a saved dataframe of tracklets
     """
-    return
+
+    c = load_config(config)
+    project_folder = c.get_dirname()
+
+    # Load the dataframe name, and produce DLC-style annotations
+    with open(df_fname, 'rb') as f:
+        clust_df = pickle.load(f)
+    new_dlc_df = build_dlc_annotation_all(clust_df, min_length=min_track_length, num_frames=total_num_frames, verbose=0)
+
+    # Save using DLC-style names
+    if scorer is None:
+        # Assume the df filename is something like blah_blah_blah_informative.pickle
+        scorer_base = df_fname.split('.')[0] # get rid of extension
+        scorer = scorer_base.split('_')[-1]
+        scorer = f"feature_tracker_{scorer}"
+
+    def build_dlc_name(ext):
+        return os.path.join(project_folder,"CollectedData_" + scorer + ext)
+    with open(build_dlc_name(".csv"), 'w') as f:
+        new_dlc_df.to_csv(f)
+#     with open(build_dlc_name(".h5"), 'wb') as f:
+#         new_dlc_df.to_hdf(f, key="df_with_missing", mode="w")
+    new_dlc_df.to_hdf(build_dlc_name(".h5"), key="df_with_missing", mode="w")
+    with open(build_dlc_name(".pickle"), 'wb') as f:
+        new_dlc_df.to_pickle(f)
+
+    # Add these annotations to the config file
+    # Assume the dlc project is initialized propery
+    dlc_config = c.tracking.DLC_config_fname
+
+    annotation_fname = build_dlc_name(".h5")
+    annotation_fname = os.path.join(project_folder, annotation_fname)
+
+    vid_fname = c.datafiles.red_avi_fname
+    tracking = DLCForWBFMTracking(dlc_config, vid_fname, annotation_fname)
+
+    c.tracking = tracking
+    save_config(c)
+
+    # Synchronize the DLC config file
+    # Assumes the DLC project is already made
+    csv_annotations = c.tracking.annotation_fname.replace('h5', 'csv')
+    csv_annotations2config_names(dlc_config, csv_annotations)
+
+    # Finally, make the video
+    make_labeled_video_custom_annotations(dlc_config, vid_fname, new_dlc_df)
+
+    return new_dlc_df
