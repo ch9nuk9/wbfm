@@ -85,12 +85,14 @@ def visualize_tracks_multiple_matches(all_pc, all_matches):
     o3d.visualization.draw_geometries(pc_and_lines)
 
 
-def build_line_set_from_matches(pc0, pc1, matches,
+def build_line_set_from_matches(pc0, pc1, matches=None,
                                 color=[0, 0, 1]):
     points = np.vstack((pc0.points,pc1.points))
     n0 = len(pc0.points)
 
     # Convert matches to the coordinates of the combine point cloud
+    if matches is None:
+        matches = [[i,i] for i in range(n0)]
     combined_matches = list(matches)
     for i,match in enumerate(matches):
         combined_matches[i][1] = (n0 + match[1])
