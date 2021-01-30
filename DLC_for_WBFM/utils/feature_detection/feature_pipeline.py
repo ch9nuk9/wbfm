@@ -33,7 +33,8 @@ def track_neurons_two_volumes(dat0,
     # Detect neurons, then features for each volume
     opt = {'num_slices':num_slices,
            'alpha':1.0, # Already multiplied when imported
-           'verbose':verbose-1}
+           'verbose':verbose-1,
+           'min_detections':5}
     if neurons0 is None:
         neurons0, _, _, _ = detect_neurons_using_ICP(dat0, **opt)
     if neurons1 is None:
