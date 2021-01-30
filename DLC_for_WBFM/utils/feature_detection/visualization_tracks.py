@@ -8,8 +8,8 @@ import cv2
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
-    n0, pc_n0, tree_neurons0 = build_neuron_tree(neurons0)
-    n1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1)
+    n0, pc_n0, tree_neurons0 = build_neuron_tree(neurons0, to_mirror=False)
+    n1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror=False)
     pc_n0.paint_uniform_color([0.5,0.5,0.5])
     pc_n1.paint_uniform_color([0,0,0])
 
@@ -41,9 +41,12 @@ def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
             lines=o3d.utility.Vector2iVector(failed_lines),
         )
         failed_line_set.colors = o3d.utility.Vector3dVector(failed_colors)
-        o3d.visualization.draw_geometries([failed_line_set, successful_line_set, pc_n0, pc_n1])
+        to_draw = [failed_line_set, successful_line_set, pc_n0, pc_n1]
     else:
-        o3d.visualization.draw_geometries([successful_line_set, pc_n0, pc_n1])
+        to_draw = [successful_line_set, pc_n0, pc_n1]
+
+    o3d.visualization.draw_geometries(to_draw)
+    return to_draw
 
 
 def visualize_tracks_simple(pc0, pc1, matches):
