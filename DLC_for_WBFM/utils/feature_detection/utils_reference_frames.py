@@ -341,6 +341,7 @@ def is_ordered_subset(list1, list2):
 
 def calc_matches_using_feature_voting(frame0, frame1,
                                       feature_matches_dict,
+                                      verbose=0,
                                       DEBUG=False):
 
     all_neuron_matches = []
