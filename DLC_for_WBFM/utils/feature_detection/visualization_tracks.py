@@ -58,6 +58,8 @@ def visualize_tracks_simple(pc0, pc1, matches):
 
     o3d.visualization.draw_geometries([line_set, pc0, pc1])
 
+    return line_set
+
 
 def visualize_tracks_multiple_matches(all_pc, all_matches):
     """
@@ -87,13 +89,20 @@ def visualize_tracks_multiple_matches(all_pc, all_matches):
 
 def build_line_set_from_matches(pc0, pc1, matches=None,
                                 color=[0, 0, 1]):
-    points = np.vstack((pc0.points,pc1.points))
-    n0 = len(pc0.points)
+    try:
+        # If point clouds are passed
+        points = np.vstack((pc0.points,pc1.points))
+        n0 = len(pc0.points)
+    except:
+        # If numpy arrays are passed
+        points = np.vstack((pc0,pc1))
+        n0 = pc0.shape[0]
 
     # Convert matches to the coordinates of the combine point cloud
     if matches is None:
         matches = [[i,i] for i in range(n0)]
-    combined_matches = list(matches)
+    # I've been having problems with overwriting the original list
+    combined_matches = list([list(m) for m in matches])
     for i,match in enumerate(matches):
         combined_matches[i][1] = (n0 + match[1])
 
