@@ -47,10 +47,6 @@ def calc_all_overlaps(all_2d_masks: list,
         if verbose >= 1:
             print(f"Found {len(all_neurons_this_mask)} neurons on slice {i_slice}")
 
-        # TODO check, why IDs of slice 0 are not being used for subsequent slices! (see GT-stitching result)
-        if i_slice == 0:
-            full_3d_mask[0] = all_2d_masks[0]
-
         # Pick a neuron, and finalize it by looping over ALL later slices
         for this_neuron in all_neurons_this_mask:
             # skip background value
@@ -59,6 +55,12 @@ def calc_all_overlaps(all_2d_masks: list,
 
             # Get the initial mask, which will be propagated across slices
             this_mask_binary = (this_mask_all_neurons==this_neuron)
+
+            # create correct masks for slice 0
+            if i_slice == 0:
+                first_slice = full_3d_mask[0]
+                first_slice[this_mask_binary] = global_current_neuron
+                full_3d_mask[0] = first_slice
 
             for i_next_slice in range(i_slice+1, num_slices):
                 next_mask_all_neurons = all_2d_masks[i_next_slice]
@@ -69,13 +71,13 @@ def calc_all_overlaps(all_2d_masks: list,
 
                 # If good enough, save in the master 3d mask
                 min_overlap = calc_min_overlap()
+                # TODO add default of 10 to calc_min_overlap
                 if not min_overlap:
                     min_overlap = 10
 
 
                 is_good_enough = (this_overlap > min_overlap)
                 if is_good_enough:
-                    # TODO: add first slice to full_3d!
                     tmp = full_3d_mask[i_next_slice, ...]
                     tmp[next_mask_binary] = global_current_neuron
                     full_3d_mask[i_next_slice, ...] = tmp
@@ -83,6 +85,8 @@ def calc_all_overlaps(all_2d_masks: list,
                     # zero out used neurons on slice
                     all_2d_masks[i_next_slice][next_mask_binary] = 0
                     this_mask_binary = next_mask_binary
+
+                # TODO add loop to split long tracks
 
                 # Finalize this neuron, and move to next neuron
                 is_on_last_slice = i_next_slice==(num_slices-1)
@@ -101,9 +105,9 @@ def calc_all_overlaps(all_2d_masks: list,
 
     # TODO histogram of neuron length in Z (<4 = incorrect)
 
-
     # maybe save file as TIFF
     # TODO decide on file format (tiff or numpy)
+
     # TODO visualize 3d in fiji
 
     print(f'end of calc_all_overlaps: full_3d non-zeros: {np.count_nonzero(full_3d_mask)}')
@@ -211,7 +215,7 @@ def convert_to_3d(files_path: str, verbose=0):
 def neuron_length_hist(lengths_dict):
     # plots the lengths of neurons in a histogram and barplot
     vals = lengths_dict.values()
-    plt.figure()
+    fig = plt.figure()
     plt.hist(vals, bins=np.arange(1, max(vals)+1) - 0.5, align='mid')
     plt.xticks(np.arange(1, max(vals) + 1))
     # TODO add automated y-axis limits
@@ -219,8 +223,13 @@ def neuron_length_hist(lengths_dict):
     plt.xlabel('neuron length')
     plt.ylabel('# of neurons')
     plt.title('neuron lengths')
+
+    return fig
+
+# TODO: write a new main function, which can discern between 2d & 3d data and call overlaps
+
 # print(f'starting the overlapping')
-# example_input = r'C:\Users\niklas.khoss\Desktop\stardist_testdata\masks\'
+# example_input = r'C:\Segmentation_working_area\gt_masks_npy'
 # stitched_3d_output, neuron_lengths = convert_to_3d(example_input)
 # print(f'calc_all_overlaps OUTPUT: full_3d non-zeros: {np.count_nonzero(stitched_3d_output)}')
 # print(f'3d output shape: {stitched_3d_output.shape}')
