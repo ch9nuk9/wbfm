@@ -184,6 +184,7 @@ def unpack_node_name(node_name):
     """Inverse of get_node_name"""
     return divmod(node_name, 1000)
 
+
 def build_digraph_from_matches(pairwise_matches, pairwise_conf=None,
                               verbose=1):
     DG = nx.DiGraph()
@@ -216,6 +217,7 @@ def get_subgraph_with_strong_weights(DG, min_weight):
     G.remove_edges_from((e for e, w in edge_weights.items() if w < min_weight))
     return G
 
+
 def calc_connected_components(DG):
     all_neurons = list(nx.strongly_connected_components(DG))
     all_len = [len(c) for c in all_neurons]
@@ -226,6 +228,7 @@ def calc_connected_components(DG):
     big_DG = DG.subgraph(all_neurons[big_comp])
 
     return big_DG, all_len
+
 
 def plot_degree_hist(DG):
     import collections
