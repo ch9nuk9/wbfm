@@ -66,7 +66,7 @@ def calculate_iou(ground_truth_path, algorithm_results_path):
                     print(' --- PLANE ', plane, ' ---')
 
                     # get masks out of ground_truth
-                    gt_5 = ground_truth[plane]
+                    gt_plane = ground_truth[plane]
 
                     # load actual cellpose results (3D!)
                     cp_plane = cp[plane]
@@ -79,11 +79,11 @@ def calculate_iou(ground_truth_path, algorithm_results_path):
                     # plt.imshow(cp_plane)
                     # plt.subplot(1,2,2)
                     # plt.title('ground truth')
-                    # plt.imshow(gt_5)
+                    # plt.imshow(gt_plane)
                     # plt.show()
 
                     # Get neurons
-                    gt_list = np.unique(gt_5)
+                    gt_list = np.unique(gt_plane)
                     # print('gt_list: ', gt_list)
 
                     # initialize match output. the ID of the best match will be saved
@@ -99,7 +99,7 @@ def calculate_iou(ground_truth_path, algorithm_results_path):
                     for i, neuron in enumerate(gt_list):
                         print('... mask ', i)
 
-                        mask = gt_5 == neuron
+                        mask = gt_plane == neuron
 
                         # Intersection: comparing with cp results;
                         intersection = cp_plane[mask]
