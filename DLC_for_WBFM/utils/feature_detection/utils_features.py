@@ -272,7 +272,7 @@ def keep_best_match(all_matches, all_confidences, verbose=0):
         all_matches.pop(i)
         all_confidences.pop(i)
 
-    return all_matches, all_confidences
+    return all_matches, all_confidences, to_remove
 
 
 def build_f2n_map(features1,
@@ -460,7 +460,7 @@ def match_centroids_using_tree(neurons0,
                                                         verbose=0)
 
     if only_keep_best_match:
-        all_matches, all_confidences = keep_best_match(all_matches, all_confidences, verbose=verbose)
+        all_matches, all_confidences, _ = keep_best_match(all_matches, all_confidences, verbose=verbose)
 
     return all_matches, features_to_neurons1, all_confidences
 
