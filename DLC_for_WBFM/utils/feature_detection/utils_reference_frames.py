@@ -2,133 +2,17 @@ from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import g
 from DLC_for_WBFM.utils.feature_detection.utils_features import *
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
 import numpy as np
 import networkx as nx
 import collections
 from dataclasses import dataclass
 import scipy.ndimage as ndi
 
-##
-## Basic class definition
-##
-
-@dataclass
-class ReferenceFrame():
-    """ Information for registered reference frames"""
-
-    # Data for registration
-    neuron_locs: list
-    keypoints: list
-    keypoint_locs: list # Includes the z coordinate
-    all_features: np.array
-    features_to_neurons: dict
-
-    # Metadata
-    frame_ind: int = None
-    video_fname: str = None
-    vol_shape: tuple = None
-    alpha: float = 1.0
-
-    # To be finished with a set of other registered frames
-    neuron_ids: list = None # global neuron index
-
-    def get_metadata(self):
-        return {'frame_ind':self.frame_ind,
-                'video_fname':self.video_fname,
-                'vol_shape':self.vol_shape,
-                'alpha':self.alpha}
-
-    def iter_neurons(self):
-        # Practice with yield
-        for neuron in self.neuron_locs:
-            yield neuron
-
-    def get_features_of_neuron(self, which_neuron):
-        iter_tmp = self.features_to_neurons.items()
-        return [key for key,val in iter_tmp if val == which_neuron]
-        #return np.argwhere(self.features_to_neurons == which_neuron)
-
-    def num_neurons(self):
-        return self.neuron_locs.shape[0]
-
-    def get_data(self):
-        return get_single_volume(self.video_fname,
-                                 self.frame_ind,
-                                 num_slices=self.vol_shape[0],
-                                 alpha=self.alpha)
-
-    def __str__(self):
-        return f"=======================================\n\
-                ReferenceFrame:\n\
-                Frame index: {self.frame_ind} \n\
-                Number of neurons: {len(self.neuron_locs)} \n"
 
 ##
-## Class for Set of reference frames
+## Main convinience constructors
 ##
-
-@dataclass
-class RegisteredReferenceFrames():
-    """Data for matched reference frames"""
-
-    # Global neuron coordinate system
-    global2local : dict
-    local2global : dict
-
-    # Intermediate products
-    reference_frames : list = None
-    pairwise_matches : dict = None
-    pairwise_conf : dict = None
-
-    # More detailed intermediates and alternate matchings
-    feature_matches : dict = None
-    bipartite_matches : list = None
-
-    def __str__(self):
-        [print(r) for r in self.reference_frames]
-        return f"=======================================\n\
-                RegisteredReferenceFrames:\n\
-                Number of frames: {len(self.reference_frames)} \n"
-
-def remove_first_frame(reference_set):
-    # Remove first element
-    new_frames = reference_set.reference_frames.copy()
-    new_frames.pop()
-
-    g2l = reference_set.global2local.copy()
-    for key in g2l:
-        g2l[key].pop()
-    # Offset keys by one
-    l2g = {}
-    for key,val in reference_set.local2global.items():
-        if key[0] == 0:
-            continue
-        new_key = (key[0]-1,key[1])
-        l2g[new_key] = val
-
-    # Offset keys by one (both indices)
-    pm, pc, fm = {}, {}, {}
-    for key in reference_set.pairwise_matches:
-        if key[0]==0 or key[1]==0:
-            continue
-        new_key = (key[0]-1, key[1]-1)
-        pm[new_key] = reference_set.pairwise_matches[key]
-        pc[new_key] = reference_set.pairwise_conf[key]
-        fm[new_key] = reference_set.feature_matches[key]
-
-    # Build a class to store all the information
-    reference_set_minus1 = RegisteredReferenceFrames(
-        g2l,
-        l2g,
-        new_frames,
-        pm,
-        pc,
-        fm,
-        None
-    )
-
-    return reference_set_minus1
-
 
 def build_reference_frame(dat_raw,
                           num_slices,
@@ -172,6 +56,10 @@ def build_reference_frame(dat_raw,
     f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map, **metadata)
     return f
 
+
+def perform_preprocessing(ReferenceFrame):
+
+
 ##
 ## Utilities for combining frames into a reference set
 ##
@@ -205,6 +93,47 @@ def build_digraph_from_matches(pairwise_matches, pairwise_conf=None,
             DG.add_weighted_edges_from([e])
 
     return DG
+
+
+
+def remove_first_frame(reference_set):
+    # Remove first element
+    new_frames = reference_set.reference_frames.copy()
+    new_frames.pop()
+
+    g2l = reference_set.global2local.copy()
+    for key in g2l:
+        g2l[key].pop()
+    # Offset keys by one
+    l2g = {}
+    for key,val in reference_set.local2global.items():
+        if key[0] == 0:
+            continue
+        new_key = (key[0]-1,key[1])
+        l2g[new_key] = val
+
+    # Offset keys by one (both indices)
+    pm, pc, fm = {}, {}, {}
+    for key in reference_set.pairwise_matches:
+        if key[0]==0 or key[1]==0:
+            continue
+        new_key = (key[0]-1, key[1]-1)
+        pm[new_key] = reference_set.pairwise_matches[key]
+        pc[new_key] = reference_set.pairwise_conf[key]
+        fm[new_key] = reference_set.feature_matches[key]
+
+    # Build a class to store all the information
+    reference_set_minus1 = RegisteredReferenceFrames(
+        g2l,
+        l2g,
+        new_frames,
+        pm,
+        pc,
+        fm,
+        None
+    )
+
+    return reference_set_minus1
 
 ##
 ## Related helper and visualization functions

@@ -2,6 +2,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_features import *
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import *
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
 
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 import copy
