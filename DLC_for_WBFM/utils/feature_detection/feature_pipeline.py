@@ -132,7 +132,7 @@ def build_all_reference_frames(num_reference_frames,
                          alpha,
                          start_slice=2,
                          is_sequential=True,
-                         do_mini_max_projections=True,
+                         preprocessing_settings=PreprocessingSettings(),
                          verbose=1):
     """
     Selects a sample of reference frames, then builds features for them
@@ -165,7 +165,8 @@ def build_all_reference_frames(num_reference_frames,
                     'alpha':alpha}
         f = build_reference_frame(dat, num_slices, neuron_feature_radius,
                                   start_slice=start_slice,
-                                  metadata=metadata)
+                                  metadata=metadata,
+                                  preprocessing_settings=preprocessing_settings)
         ref_frames.append(f)
 
     return ref_dat, ref_frames, other_ind
@@ -369,7 +370,8 @@ def match_all_to_reference_frames(reference_set,
                                   video_opt,
                                   metadata,
                                   num_slices,
-                                  neuron_feature_radius):
+                                  neuron_feature_radius,
+                                  preprocessing_settings):
     """
     Multi-frame wrapper around match_to_reference_frames()
     """
@@ -382,7 +384,8 @@ def match_all_to_reference_frames(reference_set,
         metadata['frame_ind'] = ind
 
         f = build_reference_frame(dat, num_slices, neuron_feature_radius,
-                              metadata=metadata)
+                              metadata=metadata,
+                              preprocessing_settings=preprocessing_settings)
         matches, _, per_neuron_matches = match_to_reference_frames(f, reference_set)
 
         all_matches.append(matches)
@@ -403,7 +406,7 @@ def track_neurons_full_video(vid_fname,
                              num_slices=33,
                              alpha=0.15,
                              neuron_feature_radius=5.0,
-                             do_mini_max_projections=False,
+                             preprocessing_settings=PreprocessingSettings(),
                              use_affine_matching=False,
                              verbose=0):
     """
@@ -429,7 +432,8 @@ def track_neurons_full_video(vid_fname,
         f = build_reference_frame(dat,
                                   num_slices=import_opt['num_slices'],
                                   **ref_opt,
-                                  metadata=metadata)
+                                  metadata=metadata,
+                                  preprocessing_settings=preprocessing_settings)
         return f
 
     if verbose >= 1:
@@ -466,7 +470,8 @@ def track_via_reference_frames(vid_fname,
                                neuron_feature_radius=5.0,
                                start_slice=2,
                                verbose=0,
-                               num_reference_frames=5):
+                               num_reference_frames=5,
+                               preprocessing_settings=PreprocessingSettings()):
     """
     Tracks neurons by registering them to a set of reference frames
     """
@@ -481,7 +486,11 @@ def track_via_reference_frames(vid_fname,
                  'alpha':alpha,
                  'neuron_feature_radius':neuron_feature_radius,
                  'verbose':verbose-1}
-    ref_dat, ref_frames, other_ind = build_all_reference_frames(num_reference_frames, **video_opt)
+    ref_dat, ref_frames, other_ind = build_all_reference_frames(
+        num_reference_frames,
+        **video_opt,
+        preprocessing_settings=preprocessing_settings
+    )
 
     if verbose >= 1:
         print("Analyzing reference frames...")
@@ -499,7 +508,8 @@ def track_via_reference_frames(vid_fname,
         video_opt,
         metadata,
         num_slices,
-        neuron_feature_radius
+        neuron_feature_radius,
+        preprocessing_settings=preprocessing_settings
     )
 
     return all_matches, all_other_frames, reference_set
@@ -512,7 +522,8 @@ def track_via_sequence_consensus(vid_fname,
                                  alpha=0.15,
                                  neuron_feature_radius=5.0,
                                  verbose=0,
-                                 num_consensus_frames=3):
+                                 num_consensus_frames=3,
+                                 preprocessing_settings=PreprocessingSettings()):
     """
     Tracks neurons by finding consensus between a sliding window of frames
 
@@ -529,7 +540,11 @@ def track_via_sequence_consensus(vid_fname,
                  'alpha':alpha,
                  'neuron_feature_radius':neuron_feature_radius,
                  'verbose':verbose-1}
-    _, ref_frames, _ = build_all_reference_frames(num_consensus_frames-1, **video_opt)
+    _, ref_frames, _ = build_all_reference_frames(
+        num_consensus_frames-1,
+        **video_opt,
+        preprocessing_settings=preprocessing_settings
+    )
     reference_set_minus1 = register_all_reference_frames(ref_frames)
 
     all_frames = reference_set_minus1.reference_frames.copy()
@@ -542,7 +557,8 @@ def track_via_sequence_consensus(vid_fname,
         metadata['frame_ind'] = i_frame
         dat = get_single_volume(vid_fname, i_frame, **frame_video_opt)
         next_frame = build_reference_frame(dat, num_slices, neuron_feature_radius,
-                                           metadata=metadata)
+                                           metadata=metadata,
+                                           preprocessing_settings=preprocessing_settings)
         # Match this frame
         reference_set = register_all_reference_frames(
             [next_frame],
