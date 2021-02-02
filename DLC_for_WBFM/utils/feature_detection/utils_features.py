@@ -98,7 +98,9 @@ def detect_features_and_match(im1, im2,
 
 
 def match_using_known_keypoints(im1, kp1, im2, kp2, max_features=1000, use_flann=False):
-    """ Match using previously detected points, e.g. neurons
+    """ OLD
+
+    Match using previously detected points, e.g. neurons
 
     # TODO: combine with match_known_keypoints()
 

@@ -23,10 +23,6 @@ def build_reference_frame(dat_raw,
                           verbose=0):
     """Main convinience constructor for ReferenceFrame class"""
     dat = perform_preprocessing(dat_raw, preprocessing_settings)
-    # if do_mini_max_projections:
-    #     dat = ndi.maximum_filter(dat_raw, size=(mini_max_size,1,1))
-    # else:
-    #     dat = dat_raw
 
     # Get neurons and features, and a map between them
     neuron_locs, _, _, icp_kps = detect_neurons_using_ICP(dat,
@@ -64,12 +60,12 @@ def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings)
     See PreprocessingSettings for options
     """
 
+    if preprocessing_settings.do_rigid_alignment:
+        dat_raw = do_rigid_alignment(dat_raw)
+
     if preprocessing_settings.do_mini_max_projection:
         mini_max_size = preprocessing_settings.mini_max_size
         dat_raw = ndi.maximum_filter(dat_raw, size=(mini_max_size,1,1))
-
-    if preprocessing_settings.do_rigid_alignment:
-        dat_raw = do_rigid_alignment(dat_raw)
 
     return dat_raw
 

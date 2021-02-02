@@ -13,11 +13,11 @@ class PreprocessingSettings():
     """
 
     # Mini max
-    do_mini_max_projection : Bool = False
-    mini_max_size : Int = 3
+    do_mini_max_projection : bool = False
+    mini_max_size : int = 3
 
     # Rigid alignment (slices to each other)
-    do_rigid_alignment : Bool = False
+    do_rigid_alignment : bool = False
 
 
 ##
