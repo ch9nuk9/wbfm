@@ -186,6 +186,9 @@ def plot_match_example(all_frames,
                        which_frame_pair,
                        neuron0,
                        which_slice=15):
+    """
+    Shows 2d feature matches for an example neuron on one slice
+    """
     # Get frame objects and data
     frame0 = all_frames[which_frame_pair[0]]
     frame1 = all_frames[which_frame_pair[1]]
@@ -211,3 +214,29 @@ def plot_match_example(all_frames,
     plt.imshow(img3)
     plt.title(f"Feature matches for neuron {neuron0} to {neuron1} in frames {which_frame_pair}")
     plt.show()
+
+
+def plot_matched_point_clouds(all_frames,
+                              neuron_matches,
+                              which_pair,
+                              color=[0,0,1],
+                              actually_draw=True):
+    """
+    Plots the matched neurons between two frames
+    """
+    frame0 = all_frames[which_pair[0]]
+    frame1 = all_frames[which_pair[1]]
+    match = neuron_matches[which_pair]
+
+    # Build point clouds and match lines
+    pc0 = build_neuron_tree(frame0.neuron_locs, False)[1]
+    pc0.paint_uniform_color([0.5,0.5,0.5])
+    pc1 = build_neuron_tree(frame1.neuron_locs, False)[1]
+    pc1.paint_uniform_color([0,0,0])
+    match_lines = build_line_set_from_matches(pc0, pc1, matches=match, color=color)
+
+    to_draw = [pc0, pc1, match_lines]
+    if actually_draw:
+        o3d.visualization.draw_geometries(to_draw)
+
+    return to_draw
