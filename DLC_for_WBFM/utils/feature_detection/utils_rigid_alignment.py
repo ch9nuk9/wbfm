@@ -167,7 +167,7 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN, terminatio
     return warp_matrix
 
 
-def align_stack(stack_to_align):
+def align_stack(stack_to_align, hide_progress=True):
     """
     Takes a z stack (format: ZXY) and rigidly aligns planes sequentially
     """
@@ -183,14 +183,14 @@ def align_stack(stack_to_align):
     # From i_center_plane to 0
     # Calculates the matrix per plane, and cumulatively multiplies them
     warp_mat = np.identity(3)[0:2,:]
-    for i in tqdm(range(i_center_plane,0,-1)):
+    for i in tqdm(range(i_center_plane,0,-1), disable=hide_progress):
         im_next, im_prev = stack_to_align[i-1], stack_to_align[i]
         warp_mat = get_warp_mat(im_prev, im_next, warp_mat)
         stack_aligned[i-1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     # From i_center_plane to end (usually 33)
     warp_mat = np.identity(3)[0:2,:]
-    for i in tqdm(range(i_center_plane,(stack_to_align.shape[0]-1))):
+    for i in tqdm(range(i_center_plane,(stack_to_align.shape[0]-1)), disable=hide_progress):
         im_prev, im_next = stack_to_align[i], stack_to_align[i+1]
         warp_mat = get_warp_mat(im_prev, im_next, warp_mat)
         stack_aligned[i+1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
