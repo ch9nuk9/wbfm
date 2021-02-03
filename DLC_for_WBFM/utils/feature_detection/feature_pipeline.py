@@ -418,8 +418,7 @@ def track_neurons_full_video(vid_fname,
     """
     # Get initial volume; settings are same for all
     import_opt = {'num_slices':num_slices, 'alpha':alpha}
-    ref_opt = {'do_mini_max_projections':do_mini_max_projections,
-               'neuron_feature_radius':neuron_feature_radius}
+    ref_opt = {'neuron_feature_radius':neuron_feature_radius}
     def local_build_frame(frame_ind,
                           vid_fname=vid_fname,
                           import_opt=import_opt,

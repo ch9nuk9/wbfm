@@ -1,7 +1,7 @@
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.feature_detection.utils_features import *
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
-from DLC_for_WBFM.utils.feature_detection.utils_rutils_rigid_alignment import align_stack, filter_stack
+from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
 import numpy as np
@@ -61,8 +61,8 @@ def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings)
     See PreprocessingSettings for options
     """
 
-    if prepreprocessing_settings.do_filtering:
-        dat_raw = filter_stack(dat_raw, prepreprocessing_settings.filter_opt)
+    if preprocessing_settings.do_filtering:
+        dat_raw = filter_stack(dat_raw, preprocessing_settings.filter_opt)
 
     if preprocessing_settings.do_rigid_alignment:
         dat_raw = align_stack(dat_raw)
