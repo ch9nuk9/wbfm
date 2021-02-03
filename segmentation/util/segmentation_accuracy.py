@@ -10,6 +10,7 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
     Finds matching mask pairs and returns dictionaries containing the IDs of the neuron masks, which matched.
     Input needs to be in 3D format and already stitched (i.e. overlapping neurons in Z have the same ID).
     Dict entry is empty/None, when no match is found.
+
     Parameters
     ----------
     ground_truth_path: str
@@ -25,6 +26,8 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
         dictionary containing the matches of algo-masks to gt.
 
     """
+    # TODO rewrite the input to use the actual 3D-stitched arrays instead of file paths!
+
     # load stitched 3d arrays
     data_path = r'C:\Segmentation_working_area\stitched_3d_data'
     gt_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\gt_stitched_3d.npy')
@@ -72,6 +75,7 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
 
     print(f'There are {underseg} instances of undersegmentation')
 
+    # TODO save results in text file in algorithm folder
 
     return gt_to_algo, algo_to_gt
 
@@ -142,58 +146,6 @@ def create_3d_match_dict(dataset1, dataset2):
         interim_area = list()
 
     return matches_dict, areas_dict
-
-def create_match_dict(dataset1, dataset2):
-
-    print(f'ID matching start')
-
-    # loop over unique entries in ground truth
-    dataset1_uniq = np.unique(dataset1).astype(int)
-
-    interim_match = list()
-    matches_dict = dict.fromkeys(dataset1_uniq)
-
-
-    for neuron in dataset1_uniq:
-        # loop over GT slices and check for neuron
-        if neuron == 0:
-            continue
-        print(f'Neuron: {neuron}')
-
-        # TODO: re-write this part to be 3D-analysis. Re-use best_overlap and return 2 dicts:
-        # 1. IDs of matches (in 3D)
-        # 2. Confidence = sum of pixels matched
-
-        for i_slice, d1_slice in enumerate(dataset1):
-            # check, if neuron on slice
-            if neuron in d1_slice:
-                # create mask of neuron on slice
-                this_mask = d1_slice == neuron
-
-                # TODO create mask of neuron in 3D instead of slices
-                # check same slice of dataset2 and save all unique IDs, if 'this_mask' has matched anything
-                match_mask = this_mask * dataset2[i_slice]
-
-
-                # TODO add a threshold (pixels)!
-                # if there is a match, non-zero values should
-                if np.amax(match_mask) > 0 and np.count_nonzero(match_mask) > 10:
-                    matched_ids = np.unique(match_mask).astype(int)
-                    interim_match.extend(matched_ids)
-
-        true_matches = list(np.unique(interim_match))
-        if 0 in true_matches:
-            true_matches.remove(0)
-
-        matches_dict[neuron] = true_matches
-
-        # clear interim
-        interim_match = list()
-    # remove '0' keys
-    if 0 in matches_dict.keys():
-        del matches_dict[0]
-
-    return matches_dict
 
 # gt_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\gt_stitched.npy')
 # algo_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\stardist_fluo_stitched.npy')
