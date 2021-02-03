@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from collections import defaultdict
 
 def create_2d_masks_gt():
     # creates separate 2d masks of the annotated ground truth
@@ -111,3 +112,6 @@ def calc_best_overlap(mask_s0, # shall be 3d mask
         print(f'Best Neuron: {best_ind}, overlap of {best_overlap} between it and original')
 
     return best_overlap, best_mask
+
+# refactor into using 3d arrays instead of 2d
+
