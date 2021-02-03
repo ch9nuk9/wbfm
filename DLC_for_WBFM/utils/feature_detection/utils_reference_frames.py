@@ -73,13 +73,6 @@ def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings)
 
     return dat_raw
 
-##
-## Other preprocessing utilities
-##
-
-def do_rigid_alignment(dat):
-
-    return dat
 
 ##
 ## Utilities for combining frames into a reference set
@@ -114,7 +107,6 @@ def build_digraph_from_matches(pairwise_matches, pairwise_conf=None,
             DG.add_weighted_edges_from([e])
 
     return DG
-
 
 
 def remove_first_frame(reference_set):
