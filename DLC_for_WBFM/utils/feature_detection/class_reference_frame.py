@@ -1,6 +1,8 @@
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from dataclasses import dataclass
-
+from typing import List
+from dataclasses import field
+import numpy as np
 
 ##
 ## Class to hold preprocessing settings
@@ -14,7 +16,7 @@ class PreprocessingSettings():
 
     # Filtering
     do_filtering : bool = False
-    filter_opt : dict = {'high_freq':2.0, 'low_freq':5000.0}
+    filter_opt : List = field(default_factory=lambda: {'high_freq':2.0, 'low_freq':5000.0})
 
     # Mini max
     do_mini_max_projection : bool = False
