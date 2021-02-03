@@ -8,9 +8,6 @@ import math
 import sys
 import os
 import matplotlib.pyplot as plt
-# from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-# from skimage.filters import difference_of_gaussians
-# from skimage import exposure
 from tqdm import tqdm
 
 
@@ -171,6 +168,9 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN, terminatio
 
 
 def align_stack(stack_to_align):
+    """
+    Takes a z stack (format: ZXY) and rigidly aligns planes sequentially
+    """
     # Settings for the actual warping
     sz = stack_to_align[0].shape
     sz = (sz[1],sz[0])

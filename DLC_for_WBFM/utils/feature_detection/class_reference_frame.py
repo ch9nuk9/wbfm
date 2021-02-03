@@ -12,6 +12,10 @@ class PreprocessingSettings():
     Holds settings that will be applied to the ReferenceFrame class
     """
 
+    # Filtering
+    do_filtering : bool = False
+    filter_opt : dict = {'high_freq':2.0, 'low_freq':5000.0}
+
     # Mini max
     do_mini_max_projection : bool = False
     mini_max_size : int = 3
