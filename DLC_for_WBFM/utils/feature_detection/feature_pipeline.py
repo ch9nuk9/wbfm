@@ -129,7 +129,6 @@ def build_all_reference_frames(num_reference_frames,
                          num_frames,
                          num_slices,
                          neuron_feature_radius,
-                         alpha,
                          start_slice=2,
                          is_sequential=True,
                          preprocessing_settings=PreprocessingSettings(),
@@ -152,7 +151,8 @@ def build_all_reference_frames(num_reference_frames,
     ref_dat = []
     ref_frames = []
     video_opt = {'num_slices':num_slices,
-                 'alpha':alpha}
+                 'alpha':1.0,
+                 'dtype':preprocessing_settings.initial_dtype}
     if verbose >= 1:
         print("Building reference frames...")
     for ind in tqdm(ref_ind, total=len(ref_ind)):
@@ -161,8 +161,7 @@ def build_all_reference_frames(num_reference_frames,
 
         metadata = {'frame_ind':ind,
                     'vol_shape':dat.shape,
-                    'video_fname':vid_fname,
-                    'alpha':alpha}
+                    'video_fname':vid_fname}
         f = build_reference_frame(dat, num_slices, neuron_feature_radius,
                                   start_slice=start_slice,
                                   metadata=metadata,
@@ -404,7 +403,6 @@ def track_neurons_full_video(vid_fname,
                              start_frame=0,
                              num_frames=10,
                              num_slices=33,
-                             alpha=0.15,
                              neuron_feature_radius=5.0,
                              preprocessing_settings=PreprocessingSettings(),
                              use_affine_matching=False,
@@ -417,7 +415,9 @@ def track_neurons_full_video(vid_fname,
     New: uses and returns my class of features
     """
     # Get initial volume; settings are same for all
-    import_opt = {'num_slices':num_slices, 'alpha':alpha}
+    import_opt = {'num_slices':num_slices,
+                 'alpha':1.0,
+                 'dtype':preprocessing_settings.initial_dtype}
     ref_opt = {'neuron_feature_radius':neuron_feature_radius}
     def local_build_frame(frame_ind,
                           vid_fname=vid_fname,
@@ -426,8 +426,7 @@ def track_neurons_full_video(vid_fname,
         dat = get_single_volume(vid_fname, frame_ind, **import_opt)
         metadata = {'frame_ind':frame_ind,
                     'vol_shape':dat.shape,
-                    'video_fname':vid_fname,
-                    'alpha':import_opt['alpha']}
+                    'video_fname':vid_fname}
         f = build_reference_frame(dat,
                                   num_slices=import_opt['num_slices'],
                                   **ref_opt,
@@ -465,7 +464,6 @@ def track_via_reference_frames(vid_fname,
                                start_frame=0,
                                num_frames=10,
                                num_slices=33,
-                               alpha=0.15,
                                neuron_feature_radius=5.0,
                                start_slice=2,
                                verbose=0,
@@ -482,7 +480,6 @@ def track_via_reference_frames(vid_fname,
                  'start_frame':start_frame,
                  'num_frames':num_frames,
                  'num_slices':num_slices,
-                 'alpha':alpha,
                  'neuron_feature_radius':neuron_feature_radius,
                  'verbose':verbose-1}
     ref_dat, ref_frames, other_ind = build_all_reference_frames(
@@ -498,7 +495,8 @@ def track_via_reference_frames(vid_fname,
     if verbose >= 1:
         print("Matching other frames to reference...")
     video_opt = {'num_slices':num_slices,
-                 'alpha':alpha}
+                 'alpha':1.0,
+                 'dtype':preprocessing_settings.initial_dtype}
     metadata = ref_frames[0].get_metadata()
     all_matches, all_other_frames = match_all_to_reference_frames(
         reference_set,
@@ -518,7 +516,6 @@ def track_via_sequence_consensus(vid_fname,
                                  start_frame=0,
                                  num_frames=10,
                                  num_slices=33,
-                                 alpha=0.15,
                                  neuron_feature_radius=5.0,
                                  verbose=0,
                                  num_consensus_frames=3,
@@ -536,7 +533,6 @@ def track_via_sequence_consensus(vid_fname,
                  'start_frame':start_frame,
                  'num_frames':num_frames,
                  'num_slices':num_slices,
-                 'alpha':alpha,
                  'neuron_feature_radius':neuron_feature_radius,
                  'verbose':verbose-1}
     _, ref_frames, _ = build_all_reference_frames(
@@ -549,7 +545,8 @@ def track_via_sequence_consensus(vid_fname,
     all_frames = reference_set_minus1.reference_frames.copy()
     ind = range(start_frame+num_consensus_frames, start_frame+num_frames)
     frame_video_opt = {'num_slices':num_slices,
-                 'alpha':alpha}
+                  'alpha':1.0,
+                  'dtype':preprocessing_settings.initial_dtype}
     metadata = ref_frames[0].get_metadata()
     for i_frame in tqdm(ind, total=len(ind)):
         # Build the next frame
@@ -575,8 +572,6 @@ def track_via_sequence_consensus(vid_fname,
 ##
 ## Postprocessing
 ##
-
-
 
 def stitch_tracklets(clust_df,
                      all_frames,

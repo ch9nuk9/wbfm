@@ -23,7 +23,6 @@ class TestReferencePipeline(unittest.TestCase):
         # Get the 3d bigtiff folder
         bigtiff_folder = r'D:\More-stabilized-wbfm'
         self.num_slices = 33
-        self.alpha = 0.15
 
         btf_fname_red = r'test2020-10-22_16-15-20_test4-channel-0-pco_camera1\test2020-10-22_16-15-20_test4-channel-0-pco_camera1bigtiff.btf'
         self.fname = os.path.join(bigtiff_folder, btf_fname_red)
@@ -33,5 +32,4 @@ class TestReferencePipeline(unittest.TestCase):
     def test_pipeline(self):
         track_via_reference_frames(self.fname,
                                     num_slices = self.num_slices,
-                                    alpha=self.alpha,
                                     num_reference_frames=3)

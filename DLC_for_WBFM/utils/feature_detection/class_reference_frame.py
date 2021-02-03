@@ -25,6 +25,11 @@ class PreprocessingSettings():
     # Rigid alignment (slices to each other)
     do_rigid_alignment : bool = False
 
+    # Datatypes and scaling
+    initial_dtype : str = 'uint16' # Filtering etc. will act on this
+    final_dtype : str = 'uint8'
+    alpha : float = 0.15
+
 
 ##
 ## Basic class definition
@@ -45,7 +50,6 @@ class ReferenceFrame():
     frame_ind: int = None
     video_fname: str = None
     vol_shape: tuple = None
-    alpha: float = 1.0
 
     preprocessing_settings: PreprocessingSettings = None
 
@@ -55,8 +59,7 @@ class ReferenceFrame():
     def get_metadata(self):
         return {'frame_ind':self.frame_ind,
                 'video_fname':self.video_fname,
-                'vol_shape':self.vol_shape,
-                'alpha':self.alpha}
+                'vol_shape':self.vol_shape}
 
     def iter_neurons(self):
         # Practice with yield
@@ -75,7 +78,7 @@ class ReferenceFrame():
         return get_single_volume(self.video_fname,
                                  self.frame_ind,
                                  num_slices=self.vol_shape[0],
-                                 alpha=self.alpha)
+                                 alpha=self.preprocessing_settings.alpha)
 
     def __str__(self):
         return f"=======================================\n\

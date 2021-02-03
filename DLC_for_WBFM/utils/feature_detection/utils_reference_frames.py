@@ -50,7 +50,9 @@ def build_reference_frame(dat_raw,
                            verbose=verbose-1)
 
     # Finally, my summary class
-    f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map, **metadata)
+    f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map,
+                       **metadata,
+                       preprocessing_settings=preprocessing_settings)
     return f
 
 
@@ -61,15 +63,20 @@ def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings)
     See PreprocessingSettings for options
     """
 
-    if preprocessing_settings.do_filtering:
-        dat_raw = filter_stack(dat_raw, preprocessing_settings.filter_opt)
+    s = preprocessing_settings
 
-    if preprocessing_settings.do_rigid_alignment:
+    if s.do_filtering:
+        dat_raw = filter_stack(dat_raw, s.filter_opt)
+
+    if s.do_rigid_alignment:
         dat_raw = align_stack(dat_raw)
 
-    if preprocessing_settings.do_mini_max_projection:
-        mini_max_size = preprocessing_settings.mini_max_size
+    if s.do_mini_max_projection:
+        mini_max_size = s.mini_max_size
         dat_raw = ndi.maximum_filter(dat_raw, size=(mini_max_size,1,1))
+
+    dat_raw *= s.alpha
+    dat_raw = dat_raw.astype(s.final_dtype)
 
     return dat_raw
 

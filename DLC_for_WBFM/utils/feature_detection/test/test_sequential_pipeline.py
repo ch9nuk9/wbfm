@@ -10,6 +10,7 @@ import pandas as pd
 
 from DLC_for_WBFM.utils.feature_detection.utils_features import *
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import *
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.visualization_tracks import *
@@ -24,7 +25,7 @@ class TestSequentialPipeline(unittest.TestCase):
         # Get the 3d bigtiff folder
         bigtiff_folder = r'D:\More-stabilized-wbfm'
         self.num_slices = 33
-        self.alpha = 0.15
+        self.preprocessing_settings = PreprocessingSettings()
 
         btf_fname_red = r'test2020-10-22_16-15-20_test4-channel-0-pco_camera1\test2020-10-22_16-15-20_test4-channel-0-pco_camera1bigtiff.btf'
         self.fname = os.path.join(bigtiff_folder, btf_fname_red)
@@ -33,7 +34,7 @@ class TestSequentialPipeline(unittest.TestCase):
 
 
     def test_dataset(self):
-        opt = {'num_slices':self.num_slices, 'alpha':self.alpha}
+        opt = {'num_slices':self.num_slices, 'alpha':self.preprocessing_settings.alpha}
         vol0 = get_single_volume(self.fname, 0, **opt)
 
         # Detect neurons
@@ -46,5 +47,5 @@ class TestSequentialPipeline(unittest.TestCase):
                              start_frame=0,
                              num_frames=2,
                              num_slices=self.num_slices,
-                             alpha=self.alpha,
+                             preprocessing_settings=self.preprocessing_settings,
                              verbose=0)
