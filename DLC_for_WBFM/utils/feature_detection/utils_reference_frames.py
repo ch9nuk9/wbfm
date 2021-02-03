@@ -75,8 +75,7 @@ def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings)
         mini_max_size = s.mini_max_size
         dat_raw = ndi.maximum_filter(dat_raw, size=(mini_max_size,1,1))
 
-    dat_raw *= s.alpha
-    dat_raw = dat_raw.astype(s.final_dtype)
+    dat_raw = (dat_raw*s.alpha).astype(s.final_dtype)
 
     return dat_raw
 
