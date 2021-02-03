@@ -71,7 +71,7 @@ def filter_stack(stack_to_align, filter_opt={'high_freq':2.0, 'low_freq':5000.0}
     # First, filter all planes
     filtered_stack = np.array(stack_to_align)
     for i in range(stack_to_align.shape[0]):
-        filtered_stack[i,...] = filter_image(filtered_stack[i,...], **opt)
+        filtered_stack[i,...] = filter_image(filtered_stack[i,...], **filter_opt)
     return filtered_stack
 
 
