@@ -406,6 +406,7 @@ def track_neurons_full_video(vid_fname,
                              neuron_feature_radius=5.0,
                              preprocessing_settings=PreprocessingSettings(),
                              use_affine_matching=False,
+                             save_candidate_matches=False,
                              verbose=0):
     """
     Detects and tracks neurons using opencv-based feature matching
@@ -440,24 +441,28 @@ def track_neurons_full_video(vid_fname,
 
     # Loop through all pairs
     pairwise_matches_dict = {}
+    pairwise_candidates_dict = {}
     pairwise_conf_dict = {}
     all_frames = [frame0]
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
+    match_opt = {'use_affine_matching':use_affine_matching}
     for i_frame in tqdm(frame_range):
         frame1 = local_build_frame(i_frame)
 
-        m, c, fm, _ = calc_2frame_matches_using_class(frame0, frame1,
-                                                      use_affine_matching=use_affine_matching)
+        out = calc_2frame_matches_using_class(frame0, frame1,**match_opt)
+        match, conf, fm, candidates = out
         # Save to dictionaries
         key = (i_frame-1, i_frame)
-        pairwise_matches_dict[key] = m
-        pairwise_conf_dict[key] = c
+        pairwise_matches_dict[key] = match
+        pairwise_conf_dict[key] = conf
+        if save_candidate_matches:
+            pairwise_candidates_dict[key] = candidates
         # Save frame to list
         all_frames.append(frame1)
         frame0 = frame1
 
-    return pairwise_matches_dict, pairwise_conf_dict, all_frames
+    return pairwise_matches_dict, pairwise_conf_dict, all_frames, pairwise_candidates_dict
 
 
 def track_via_reference_frames(vid_fname,

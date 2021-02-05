@@ -332,7 +332,6 @@ def calc_matches_using_feature_voting(frame0, frame1,
 
 def calc_2frame_matches_using_class(frame0,
                                     frame1,
-                                    use_bipartite_matching=False,
                                     verbose=1,
                                     use_affine_matching=False,
                                     DEBUG=False):
@@ -376,9 +375,4 @@ def calc_2frame_matches_using_class(frame0,
                                           **opt,
                                           DEBUG=False)
 
-    if use_bipartite_matching:
-        all_bp_matches = calc_bipartite_matches(all_candidate_matches, verbose-1)
-    else:
-        all_bp_matches = None
-
-    return all_neuron_matches, all_confidences, feature_matches, all_bp_matches
+    return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches
