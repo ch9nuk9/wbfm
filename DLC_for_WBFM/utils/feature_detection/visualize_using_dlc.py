@@ -2,6 +2,7 @@ import deeplabcut
 from deeplabcut.utils.make_labeled_video import CreateVideo
 from deeplabcut.utils.video_processor import VideoProcessorCV as vp
 from DLC_for_WBFM.bin.configuration_definition import *
+from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -84,8 +85,10 @@ def make_labeled_video_custom_annotations(dlc_config,
     annotations
     """
 
-    videooutname = video_fname.replace('.avi', '_labeled.mp4')
-    codec="mp4v"
+    # videooutname = video_fname.replace('.avi', '_labeled.mp4')
+    # codec="mp4v"
+    videooutname = video_fname.replace('.avi', '_labeled.avi')
+    codec = 'JPEG'
     clip = vp(fname=video_fname, sname=videooutname, codec=codec)
     cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
 
