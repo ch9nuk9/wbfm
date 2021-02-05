@@ -166,8 +166,11 @@ def get_subgraph_with_strong_weights(DG, min_weight):
     return G
 
 
-def calc_connected_components(DG):
-    all_neurons = list(nx.strongly_connected_components(DG))
+def calc_connected_components(DG, only_strong_components=True):
+    if only_strong_components:
+        all_neurons = list(nx.strongly_connected_components(DG))
+    else:
+        all_neurons = list(nx.weakly_connected_components(DG))
     all_len = [len(c) for c in all_neurons]
     #print(all_len)
     big_comp = np.argmax(all_len)
@@ -190,6 +193,9 @@ def plot_degree_hist(DG):
 
 
 def calc_bipartite_matches(all_candidate_matches, verbose=0):
+    """
+    Calculates the globally optimally matching from an overmatched array with weights
+    """
 
     G = nx.Graph()
     # Rename the second frame's neurons so the graph is truly bipartite
@@ -293,6 +299,7 @@ def is_ordered_subset(list1, list2):
 def calc_matches_using_feature_voting(frame0, frame1,
                                       feature_matches_dict,
                                       verbose=0,
+                                      min_features_needed=2,
                                       DEBUG=False):
 
     all_neuron_matches = []
@@ -317,7 +324,6 @@ def calc_matches_using_feature_voting(frame0, frame1,
         if DEBUG:
             print("Matching neuron in volume 1: ", this_n1)
 
-        min_features_needed = 2 # TODO
         all_neuron_matches, all_confidences, all_candidate_matches = add_neuron_match(
             all_neuron_matches,
             all_confidences,
