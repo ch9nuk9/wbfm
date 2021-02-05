@@ -121,7 +121,9 @@ def get_warp_mat(im_prev, im_next, warp_mat):
 ## Alignment
 ##
 
-def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN, termination_eps=1e-3):
+def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
+                  termination_eps=2e-2,
+                  number_of_iterations=10000):
     # prefilter Images, helps to correlate
     # for best performance a filter which keeps good features to align should be used.
     # for example: with strong differences in brightnes but identical edges an edge dector can be used to filter.
