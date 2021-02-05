@@ -1,0 +1,86 @@
+import numpy as np
+
+
+def calc_all_overlaps(start_neuron,
+                      all_2d_masks,
+                      verbose=1):
+    """
+    Get the "tube" of a neuron through z slices via most overlapping pixels
+
+    Parameters
+    ----------
+    start_neuron : int
+        Which neuron to take as the initial one
+    all_2d_masks : list
+        List of all masks across z
+
+    See also: calc_best_overlap
+    """
+    num_slices = len(all_2d_masks)
+    all_masks = []
+    all_neurons = np.zeros(num_slices)
+    all_overlaps = np.zeros(num_slices)
+
+    # Syntax: ZXY
+    sz = (num_slices, ) + all_2d_masks[0].shape
+    full_3d_mask = np.zeros(sz)
+
+    # Initial neuron
+    all_masks.append(all_2d_masks[0] == start_neuron)
+    all_neurons[0] = start_neuron
+
+    for i, this_mask in enumerate(all_2d_masks):
+        if i==0:
+            continue
+        # Retain the last successful mask
+        prev_mask = all_2d_masks[i-1] == all_neurons[i-1]
+
+        all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, this_mask)
+        min_overlap = calc_min_overlap()
+        if all_overlaps[i] <= min_overlap:
+            # Start a new neuron
+            break
+        all_masks.append(this_mask)
+
+    return all_neurons, all_overlaps, all_masks
+
+
+
+def calc_best_overlap(mask_v0, # Only one mask
+                      masks_v1,
+                      verbose=1):
+    """
+    Calculates the best overlap between an initial mask and all subsequent masks
+        Note: calculates pairwise for adjacent time points
+
+    Parameters
+    ----------
+    mask_v0 : array_like
+        Mask of the original neuron
+    masks_v1 : list
+        Masks of all neurons detected in the next frame
+
+    """
+    best_overlap = 0
+    best_ind = None
+    best_mask = np.zeros_like(masks_v1)
+    all_vals = np.unique(masks_v1)
+    for i,val in enumerate(all_vals):
+        if val == 0:
+            continue
+        this_neuron_mask = masks_v1==val
+        overlap = np.count_nonzero(mask_v0*this_neuron_mask)
+        if overlap > best_overlap:
+            best_overlap = overlap
+            best_ind = i
+            best_mask = this_neuron_mask
+    if verbose >= 2:
+        print(f'Best Neuron: {best_ind}, overlap between {best_overlap} and original')
+    return best_ind, best_overlap, best_mask
+
+
+def calc_min_overlap():
+    """
+    TODO: make this a function of track length?
+    """
+    return 0.0
