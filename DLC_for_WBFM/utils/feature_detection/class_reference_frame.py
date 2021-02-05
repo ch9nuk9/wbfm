@@ -1,4 +1,5 @@
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
+from DLC_for_WBFM.utils.feature_detection.utils_features import get_keypoints_from_3dseg
 from dataclasses import dataclass
 from typing import List
 from dataclasses import field
@@ -79,6 +80,22 @@ class ReferenceFrame():
                                  self.frame_ind,
                                  num_slices=self.vol_shape[0],
                                  alpha=self.preprocessing_settings.alpha)
+
+    def prep_for_pickle(self):
+        """Deletes the cv2.Keypoints (the locations are stored though)"""
+        self.keypoints = []
+
+
+    def rebuild_keypoints(self):
+        """
+        Rebuilds keypoints from keypoint_locs
+        see also self.prep_for_pickle()
+        """
+        if len(self.keypoints) > 0:
+            print("Overwriting existing keypoints...")
+        k = get_keypoints_from_3dseg(self.keypoint_locs)
+        self.keypoints = k
+
 
     def __str__(self):
         return f"=======================================\n\
