@@ -178,7 +178,7 @@ def calc_connected_components(DG, only_strong_components=True):
     #print(big_comp)
     big_DG = DG.subgraph(all_neurons[big_comp])
 
-    return big_DG, all_len
+    return big_DG, all_len, all_neurons
 
 
 def plot_degree_hist(DG):
@@ -340,6 +340,7 @@ def calc_2frame_matches_using_class(frame0,
                                     frame1,
                                     verbose=1,
                                     use_affine_matching=False,
+                                    add_affine_to_candidates=False,
                                     DEBUG=False):
     """
     Similar to older function, but this doesn't assume the features are
@@ -378,7 +379,14 @@ def calc_2frame_matches_using_class(frame0,
         opt = {'all_feature_matches':feature_matches}
     all_neuron_matches, all_confidences, all_candidate_matches = f(
                                           frame0, frame1,
-                                          **opt,
-                                          DEBUG=False)
+                                          **opt)
+
+    if add_affine_to_candidates:
+        f = calc_matches_using_affine_propagation
+        opt = {'all_feature_matches':feature_matches}
+        _, _, new_candidate_matches = f(
+                                              frame0, frame1,
+                                              **opt)
+        all_candidate_matches.extend(new_candidate_matches)
 
     return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches

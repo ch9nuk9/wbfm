@@ -408,6 +408,7 @@ def track_neurons_full_video(vid_fname,
                              neuron_feature_radius=5.0,
                              preprocessing_settings=PreprocessingSettings(),
                              use_affine_matching=False,
+                             add_affine_to_candidates=False,
                              save_candidate_matches=False,
                              verbose=0):
     """
@@ -448,7 +449,8 @@ def track_neurons_full_video(vid_fname,
     all_frames = [frame0]
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
-    match_opt = {'use_affine_matching':use_affine_matching}
+    match_opt = {'use_affine_matching':use_affine_matching,
+                 'add_affine_to_candidates':add_affine_to_candidates}
     for i_frame in tqdm(frame_range):
         frame1 = local_build_frame(i_frame)
 
@@ -528,6 +530,7 @@ def track_neurons_full_video_window(vid_fname,
                              preprocessing_settings=PreprocessingSettings(),
                              num_subsequent_matches=2,
                              use_affine_matching=False,
+                             add_affine_to_candidates=False,
                              save_candidate_matches=False,
                              verbose=0):
     """
@@ -563,24 +566,25 @@ def track_neurons_full_video_window(vid_fname,
     pairwise_matches_dict = {}
     pairwise_candidates_dict = {}
     pairwise_conf_dict = {}
-    all_frames = []
+    all_frame_dict = {}
     end_frame = start_frame+num_frames
-    frame_range = range(start_frame, end_frame)
-    match_opt = {'use_affine_matching':use_affine_matching}
-    for i_frame_in_list, i_base_frame in tqdm(enumerate(frame_range)):
+    frame_range = list(range(start_frame, end_frame))
+    match_opt = {'use_affine_matching':use_affine_matching,
+                 'add_affine_to_candidates':add_affine_to_candidates}
+    for i_base_frame in tqdm(frame_range):
         # Check if we already built the frame
-        if len(all_frames) > i_frame_in_list:
-            base_frame = all_frames[i_frame_in_list]
+        if i_base_frame in all_frame_dict:
+            base_frame = all_frame_dict[i_base_frame]
         else:
             base_frame = local_build_frame(i_base_frame)
-            all_frames.append(base_frame)
+            all_frame_dict[i_base_frame] = base_frame
         window_range = range(i_base_frame+1, i_base_frame+num_subsequent_matches+1)
         for i_next_frame in window_range:
-            if len(all_frames) > (i_frame_in_list+i_next_frame):
-                next_frame = all_frames[i_frame_in_list+i_next_frame]
+            if i_next_frame in all_frame_dict:
+                next_frame = all_frame_dict[i_next_frame]
             else:
                 next_frame = local_build_frame(i_next_frame)
-                all_frames.append(next_frame)
+                all_frame_dict[i_next_frame] = next_frame
 
             out = calc_2frame_matches_using_class(base_frame, next_frame,**match_opt)
             match, conf, fm, candidates = out
@@ -591,7 +595,7 @@ def track_neurons_full_video_window(vid_fname,
             if save_candidate_matches:
                 pairwise_candidates_dict[key] = candidates
 
-    return pairwise_matches_dict, pairwise_conf_dict, all_frames, pairwise_candidates_dict
+    return pairwise_matches_dict, pairwise_conf_dict, all_frame_dict, pairwise_candidates_dict
 
 
 
