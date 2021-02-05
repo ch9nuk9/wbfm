@@ -265,6 +265,7 @@ def register_all_reference_frames(ref_frames,
         pairwise_conf_dict = previous_ref_set.pairwise_conf
         bp_matches_dict = previous_ref_set.bipartite_matches
 
+    match_opt = {'save_candidate_matches':use_bipartite_matching}
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
     for i0, frame0 in tqdm(enumerate(ref_frames), total=len(ref_frames)):
@@ -272,7 +273,8 @@ def register_all_reference_frames(ref_frames,
             key = (i0, i1)
             if i1==i0 and key not in pairwise_matches_dict:
                 continue
-            match, conf, feature_matches, bp_matches = calc_2frame_matches_using_class(frame0, frame1, use_bipartite_matching)
+            out = calc_2frame_matches_using_class(frame0, frame1,**match_opt)
+            match, conf, feature_matches, bp_matches = out
             pairwise_matches_dict[key] = match
             pairwise_conf_dict[key] = conf
             feature_matches_dict[key] = feature_matches
