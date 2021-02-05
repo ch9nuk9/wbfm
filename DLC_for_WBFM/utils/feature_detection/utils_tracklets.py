@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 
 ##
 ## Helper functions for tracks
@@ -107,14 +108,19 @@ def build_tracklets_from_matches(all_neurons,
     ===============
     all_neurons : list
         List of lists, with integers for all neurons present in a frame
-        Can also be a list of ReferenceFrame objects
     all_matches : list
         Matches between adjacent frames in the coordinates local to each frame
-        Can also be a dict of pairwise matches
     all_likelihoods : list
         Same as all_matches, but for the confidence of the matchs
-        Can also be a dict
+
+    See build_tracklets_from_classes() if using ReferenceFrame class
     """
+
+    if type(all_neurons[0]) == ReferenceFrame:
+        print("===============")
+        print("Found type ReferenceFrame")
+        print("Did you mean to call build_tracklets_from_classes()?")
+        raise ValueError
 
     if all_likelihoods is None:
         all_likelihoods = [np.ones(len(m)) for m in all_matches]
