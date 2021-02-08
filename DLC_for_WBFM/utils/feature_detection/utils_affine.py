@@ -125,6 +125,7 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
     # Loop over locations of pushed v0 neurons
     all_matches = [] # Without confidence
     all_conf = []
+    all_candidate_matches = []
     nn_opt = { 'radius':5.0, 'max_nn':1}
     conf_func = lambda dist : 1.0 / (dist/10+1.0)
     for i, neuron in enumerate(np.array(all_propagated.points)):
@@ -153,7 +154,10 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
         all_matches.append([i, i_match])
         all_conf.append(conf_func(dist))
 
-    all_candidate_matches = None # For signature matching
+        # TODO: clean this up
+        all_m = [(i, n, conf_func(dist)) for n, dist in zip(two_neighbors, two_dist)]
+        all_candidate_matches.extend(all_m)
+
     return all_matches, all_conf, all_candidate_matches
 
 ##

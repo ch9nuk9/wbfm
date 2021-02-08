@@ -384,9 +384,7 @@ def calc_2frame_matches_using_class(frame0,
     if add_affine_to_candidates:
         f = calc_matches_using_affine_propagation
         opt = {'all_feature_matches':feature_matches}
-        _, _, new_candidate_matches = f(
-                                              frame0, frame1,
-                                              **opt)
+        _, _, new_candidate_matches = f(frame0, frame1, **opt)
         all_candidate_matches.extend(new_candidate_matches)
 
     return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches
