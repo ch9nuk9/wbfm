@@ -14,7 +14,7 @@ from contextlib import redirect_stdout
 
 def calculate_iou(ground_truth_path, algorithm_results_path):
     """
-    Calculates the IoUs of a given segmentation result versus the ground truth
+    Calculates the IoUs of a given segmentation result (3d array!) versus the ground truth
 
     Parameters
     ----------

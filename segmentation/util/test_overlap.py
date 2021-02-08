@@ -45,5 +45,8 @@ class TestOverlaps(unittest.TestCase):
 
         self.assertEqual(test_3d.shape, expected_output_shape)
 
+    def test_create_3d_array(self):
+        pass
+
 if __name__ == '__main__':
     unittest.main()

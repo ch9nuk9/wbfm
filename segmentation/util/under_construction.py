@@ -1,6 +1,8 @@
 import numpy as np
 import os
 from collections import defaultdict
+import segmentation.util.overlap as ol
+from sklearn.mixture import GaussianMixture as GMM
 
 def create_2d_masks_gt():
     # creates separate 2d masks of the annotated ground truth
@@ -114,4 +116,42 @@ def calc_best_overlap(mask_s0, # shall be 3d mask
     return best_overlap, best_mask
 
 # refactor into using 3d arrays instead of 2d
+def gmm():
+    # create a data -> brightness from a single neuron
+    # data needed: original 3d array, stitched array of choice, neuron lengths
 
+    img_data_path = r'C:\Segmentation_working_area\test_volume'
+    og_3d = ol.create_3d_array_from_tiff(img_data_path)
+
+    # stitched array (Stardist)
+    sd_path = r'C:\Segmentation_working_area\stardist_testdata\masks'
+    sd_3d = ol.create_3d_array(sd_path)
+    sd_stitch, sd_nlen = ol.calc_all_overlaps(sd_3d)
+    sd_bright = ol.calc_brightness(og_3d, sd_stitch, sd_nlen)
+
+    # choose example neuron with z>20;
+    # N > 16: [1, 13, 20, 23, 26, 29, 37, 39, 45, 47, 49, 52, 67]
+    example_dist = sd_bright['1']
+    # reshape distribution
+    example_dist = example_dist.reshape(1, -1)
+
+    gmm = GMM(n_components=2)
+
+    model = gmm.fit(example_dist)
+    x = np.linspace(1, len(example_dist), len(example_dist))
+
+
+    print('Done with GMM')
+    return
+
+def what_is_x_when_y_is(input, x, y):
+    order = y.argsort()
+    x = x[order]
+    y = y[order]
+
+    # finds closest x-index of y-value coming from the left side
+    return x[y.searchsorted(input, 'left')]
+
+
+
+# gmm()
