@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 import tifffile as tiff
 import os
 from collections import defaultdict
+from scipy.optimize import curve_fit
+import pickle
 from tqdm import tqdm
 
 def calc_all_overlaps(array_3d,
@@ -109,9 +111,9 @@ def calc_all_overlaps(array_3d,
                         full_3d_mask[i_slice] = interim_slice
 
                     if is_on_last_slice:
-                        hist_dict[str(global_current_neuron)] = len_of_current_neuron
+                        hist_dict[global_current_neuron] = len_of_current_neuron
                     else:
-                        hist_dict[str(global_current_neuron)] = len_of_current_neuron - 1
+                        hist_dict[global_current_neuron] = len_of_current_neuron - 1
 
                     global_current_neuron += 1
                     if verbose >= 1:
@@ -226,7 +228,7 @@ def convert_to_3d(files_path: str, verbose=0):
 
 
 # histogram of neuron 'lengths' across Z
-def neuron_length_hist(lengths_dict: dict, save_flag=0):
+def neuron_length_hist(lengths_dict: dict, save_path, save_flag=0):
     # plots the lengths of neurons in a histogram and barplot
     vals = lengths_dict.values()
     keys = lengths_dict.keys()
@@ -241,8 +243,9 @@ def neuron_length_hist(lengths_dict: dict, save_flag=0):
     plt.title('neuron lengths histogram')
     plt.show()
 
+    # TODO: change save folder
     if save_flag >= 1:
-        plt.savefig(r'C:\Segmentation_working_area\neuron_lengths\example_results_n_lengths.png')
+        plt.savefig(os.path.join(save_path, 'neuron_lengths.png'))
 
     fig1 = plt.figure()
     plt.bar(keys, vals)
@@ -251,7 +254,7 @@ def neuron_length_hist(lengths_dict: dict, save_flag=0):
     plt.xlabel('Neuron #')
 
     if save_flag >= 1:
-        plt.savefig(r'C:\Segmentation_working_area\neuron_lengths\example_results_n_lengths_bar.png')
+        plt.savefig(os.path.join(save_path, 'neuron_lengths_bar.png'))
 
     return fig, fig1
 
@@ -260,47 +263,61 @@ def remove_short_neurons(array, neuron_lengths, length_cutoff):
 
     rm_list = list()
     for key, value in neuron_lengths.items():
-        if int(value) < length_cutoff:
+        if value < length_cutoff:
             print(f'removed {key}')
             # remove from 3d array
-            cull = array == int(key)
+            cull = array == key
             array[cull] = 0
 
             rm_list.append(key)
 
     # remove entry from dictionary
     for r in rm_list:
-        del neuron_lengths[str(r)]
+        del neuron_lengths[r]
 
     return array, neuron_lengths, rm_list
 
 
-def split_long_neurons(array, neuron_lengths: dict, neuron_brightnesses, global_current_neuron):
+def split_long_neurons(array,
+                       neuron_lengths: dict,
+                       neuron_brightnesses: dict,
+                       global_current_neuron,
+                       maximum_length):
     # if a neuron is too long (>12 slices), it will be cut off and a new neuron will be initialized
 
-    neuron_brightnesses = calc_brightness(array)
+    # iterate over neuron lengths dict, and if z >= 12, try to split it
+    for i in range(1, len(neuron_lengths) + 1):
+        if neuron_lengths[i] >= maximum_length:
 
-    # iterate over new_indices dict and split neurons accordingly. Change current neuron length and
-    # append new neurons at end of dict
-    # for key, value in neuron_lengths.items():
-    #     if len_counter > max_neuron_length:
-    #         # add the neuron to the lenghts-dict
-    #         neuron_lengths[str(global_current_neuron)] = len_counter - 1 #len_of_current_neuron
-    #         print(f'Neuron {global_current_neuron} > 12')
-    #         global_current_neuron += 1
-    #         len_counter = 1
+            x_means = calc_means_via_brightnesses(neuron_brightnesses[i])
+            # if neuron can be split
+            if x_means:
+                x_split = round(sum(x_means) / 2)
+                print(f'Splitting neuron {i} at {x_split}, new neuron {global_current_neuron + 1}')
 
-            # use split_one_neuron in loop, if logic says too long
-    return array, neuron_lengths
-    pass
+                # create new entry
+                global_current_neuron += 1
+                neuron_lengths[global_current_neuron] = neuron_lengths[i] - x_split - 1
 
-def split_one_neuron(brightness_across_z):
-    # decides, whether a neuron is too long according to brightness distribution
-    # return new_indices
-    return
+                # update neuron lengths and brightnesses entries; 0-x_split = neuron 1
+                neuron_lengths[i] = x_split + 1
+
+                # update mask array with new mask IDs
+                for i_plane, plane in enumerate(array[x_split:]):
+                    if i in plane:
+                        inter_plane = plane == i
+                        plane[inter_plane] = global_current_neuron
+
+                # update brightnesses
+                neuron_brightnesses[global_current_neuron] = neuron_brightnesses[i][x_split + 1:]
+                neuron_brightnesses[i] = neuron_brightnesses[i][:x_split]
+
+            else:
+                print(f'Could not split neuron {i}, although it is longer than {maximum_length}')
+
+    return array, neuron_lengths, neuron_brightnesses, global_current_neuron
 
 def calc_brightness(original_array, stitched_masks, neuron_lengths):
-    # TODO: add brightness (avg per mask per slice) to a dict {'global neuron': [list of brightnesses]}
     print('Start with brightness calculations')
     # add default dict
     brightness_dict = defaultdict(list)
@@ -333,6 +350,59 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths):
     print(f'Done with brightness')
     return brightness_dict
 
+def calc_means_via_brightnesses(brightnesses, plots=0):
+    # calculate the means of 2 underlying neuron brightness distributions
+
+    y_data = np.array(brightnesses)
+    x_data = np.array(np.arange(len(y_data)))
+
+    # Define model function to be used to fit to the data above:
+    # Adapt it to as many gaussians you may want
+    # by copying the function with different A2,mu2,sigma2 parameters
+
+    def gauss2(x, *p):
+        A1, mu1, sigma1, A2, mu2, sigma2 = p
+        return A1*np.exp(-(x-mu1)**2/(2.*sigma1**2)) + A2*np.exp(-(x-mu2)**2/(2.*sigma2**2))
+
+    # p0 is the initial guess for the fitting coefficients initialize them differently so the optimization algorithm works better
+    height = len(y_data)/4
+    p0 = [np.mean(y_data), height , height, np.mean(y_data), height * 3, height]
+
+    try:
+        # optimize and in the end you will have 6 coeff (3 for each gaussian)
+        coeff, var_matrix = curve_fit(gauss2, x_data, y_data, p0=p0)
+    except RuntimeError:
+        print('Oh oh, could not fit')
+        return list()
+
+    means = [round(coeff[1]), round(coeff[4])]
+
+    if plots >= 1:
+        # you can plot each gaussian separately using
+        pg1 = np.zeros_like(p0)
+        pg1[0:3] = coeff[0:3]
+        pg2 =np.zeros_like(p0)
+        pg2[0:3] = coeff[3:]
+
+        g1 = gauss2(x_data, *pg1)
+        g2 = gauss2(x_data, *pg2)
+
+        plt.figure()
+        plt.plot(x_data, y_data, label='Data')
+        plt.plot(x_data, g1, label='Fit1')
+        plt.plot(x_data, g2, label='Fit2')
+
+        plt.scatter(means, y_data[means], c='red')
+
+        plt.title('brightness dist & underlying dists')
+        plt.ylabel('brightness')
+        plt.xlabel('slice')
+        plt.legend(loc='upper right')
+
+        plt.show()
+        plt.savefig(r'.\brightnesses_gausian_fit.png')
+
+    return means
 
 def create_3d_array(files_path, verbose=0):
     """
@@ -447,28 +517,53 @@ def main_overlap(img_data_path, algo_data_path):
     img_array_3d = create_3d_array_from_tiff(img_data_path)   # original imaging data as 3d array
 
     # F2: overlap + post-processing
-    end_results = level2_overlap(img_array_3d, algo_array_3d)
+    # end result should be a 3D matrix of masks
+    masks, neuron_lengths, brightnesses = level2_overlap(img_array_3d, algo_array_3d)
 
-    pass
+    # save results somewhere
+    # first, create results folder if not existent
+    results_path = os.path.join(os.path.split(algo_data_path)[0], 'results')
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+    np.save(os.path.join(results_path, 'final_mask'), masks, allow_pickle=True)
 
-def level2_overlap(img_array, algo_array):
+    with open(os.path.join(results_path, 'lengths_and_brightnesses.pickle'), 'wb') as pickle_out:
+        pickle.dump([neuron_lengths, brightnesses], pickle_out)
+
+    # save length histograms
+    neuron_length_hist(neuron_lengths, results_path, 0)
+
+
+    print('---- Done with the main overlap function ----')
+
+    return masks, neuron_lengths, brightnesses
+
+def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_length=3):
     # this function shall call the necessary calculation functions etc
     # returns the mask_arrays, neuron lengths, brightnesses, etc
+
+    # TODO put min/max lengths in a settings class
 
     stitched_3d_masks, neuron_lengths = calc_all_overlaps(algo_array)
 
     # calculate average brightness per neuron mask
     brightness_dict = calc_brightness(img_array, stitched_3d_masks, neuron_lengths)
 
-    # split long neurons
+    # split long neurons using gaussian mixture model
 
+    split_array, split_neuron_lenghts, split_brightness, global_current_neuron = split_long_neurons(stitched_3d_masks,
+                                                                             neuron_lengths,
+                                                                             brightness_dict,
+                                                                             len(neuron_lengths),
+                                                                             max_neuron_length)
     # remove short neurons
-
+    final_mask_array, final_neuron_lengths, removed_list = remove_short_neurons(split_array,
+                                                                                split_neuron_lenghts,
+                                                                                min_neuron_length)
     # neuron length histogram
-    h1, h2 = neuron_length_hist(neuron_lengths)
+    h1, h2 = neuron_length_hist(neuron_lengths, 1)
 
-
-    return
+    return final_mask_array, final_neuron_lengths, split_brightness # result should be the corrected masks in 3D
 
 # gt_path = r'C:\Segmentation_working_area\gt_masks_npy'
 # sd_path = r'C:\Segmentation_working_area\stardist_testdata\masks'
