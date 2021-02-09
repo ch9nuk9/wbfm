@@ -3,17 +3,33 @@
 Main function of segmenting volumes. It generates predicted masks of volumes, which have
 been given as input.
 
-Input: filepath
-Output: 3D mask segmented (by StarDist)
-
 """
 import segmentation.util.overlap as ol
 
 def main_segmentation_sd(volume_path, align_flag=False):
+    """
+    Top level function; Pipeline from raw data volume (input) to stitched segmented 3D masks (output)
+
+    Parameters
+    ----------
+    volume_path : str
+        Absolute volume path
+    align_flag : bool
+        Flag for optional pre-alignment
+
+    Returns
+    -------
+    stitched_array : npy array
+        3D array of segmented masks, stitched together with unique IDs
+    neuron_lengths : dict
+        Dictionary of "tube" lengths of identified and segmented neurons
+    brightnesses : dict
+        Dictionary of average brightnesses per neuron per slice
+
+    """
     print('Starting to segment and stitch')
     # Read in volume and pass it as array to calculation function
 
-    # TODO: decide on when to segment with stardist! (pass folder or path to stardist!)
     raw_array, algo_array = ol.array_dispatcher(volume_path, align_flag)
     print(f'.. done with data preparation --> stitching')
 
@@ -37,3 +53,5 @@ def main_segmentation_sd(volume_path, align_flag=False):
     print(f'----- Done with all functions! -----')
 
     return stitched_array, neuron_lengths, brightnesses
+
+# TODO decide where to cut off fliyback!
