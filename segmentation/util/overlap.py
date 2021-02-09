@@ -18,6 +18,8 @@ import os
 from collections import defaultdict
 from scipy.optimize import curve_fit
 import pickle
+import segmentation.util.prealignment_test as prealign
+import segmentation.util.stardist_seg as sd
 from tqdm import tqdm
 
 def calc_all_overlaps(array_3d,
@@ -264,7 +266,7 @@ def remove_short_neurons(array, neuron_lengths, length_cutoff):
     rm_list = list()
     for key, value in neuron_lengths.items():
         if value < length_cutoff:
-            print(f'removed {key}')
+            # print(f'removed {key}')
             # remove from 3d array
             cull = array == key
             array[cull] = 0
@@ -293,7 +295,7 @@ def split_long_neurons(array,
             # if neuron can be split
             if x_means:
                 x_split = round(sum(x_means) / 2)
-                print(f'Splitting neuron {i} at {x_split}, new neuron {global_current_neuron + 1}')
+                # print(f'Splitting neuron {i} at {x_split}, new neuron {global_current_neuron + 1}')
 
                 # create new entry
                 global_current_neuron += 1
@@ -463,7 +465,7 @@ def create_3d_array(files_path, verbose=0):
             print(f'Shape of output array: {array_3d.shape}')
         return array_3d
 
-def create_3d_array_from_tiff(img_path: str, flyback_flag=1):
+def create_3d_array_from_tiff(img_path: str, flyback_flag=0):
     """
     Creates a 3D array from a 3D tiff file. Made for one volume (!), but it will concatenate all tif-files within
     the folder in a natural sorted manner according to filenames.
@@ -493,6 +495,11 @@ def create_3d_array_from_tiff(img_path: str, flyback_flag=1):
     if not img_list:
         print(f'There are no .tif files in {img_path}')
         return False
+
+    if len(img_list) >= 2:
+        print('There is more than 1 TIFF file in the folder! Are you sure, that is the correct folder?')
+        print(img_list)
+        print(f'Will use {img_list[0]}')
 
     with tiff.TiffFile(img_list[0]) as my_tiff:
         size = (len(my_tiff.pages), *my_tiff.pages[0].asarray().shape)  # '*' to unpack tuple right away
@@ -564,6 +571,41 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
     h1, h2 = neuron_length_hist(neuron_lengths, 1)
 
     return final_mask_array, final_neuron_lengths, split_brightness # result should be the corrected masks in 3D
+
+def array_dispatcher(vol_path, align=0):
+    """
+    Checks, whether the data is .tif or .npy and creates a 3D array accordingly.
+
+    Parameters
+    ----------
+    vol_path : str
+        Path of volume
+    align : bool
+        If 1, TIFF file is assumed and will be pre-aligned.
+    Returns
+    -------
+        3D numpy array
+    """
+    # check, for folder content
+    files = [os.path.join(vol_path, f.name) for f in os.scandir(vol_path) if f.is_file()]
+
+    if align and '.tif' in files[0]:
+        raw_array_3d = prealign.rigid_prealignment(files[0])
+    elif align and '.tif' not in files[0]:
+        print(f'Unexpected problem! {files[0]} is not a TIF file, but pre-alignment was ON.\nExiting.')
+    else:
+        if '.tif' in files[0]:
+            raw_array_3d = create_3d_array_from_tiff(vol_path)
+        elif '.npy' in files[0]:
+            raw_array_3d = create_3d_array(vol_path)
+        else:
+            print('Neither TIFF nor npy file in folder! Exiting!')
+            pass
+
+    print(f'... Segmentation start (in dispatcher). File: {files[0]}')
+    seg_array_3d = sd.segment_with_stardist(files[0])
+
+    return raw_array_3d, seg_array_3d
 
 # gt_path = r'C:\Segmentation_working_area\gt_masks_npy'
 # sd_path = r'C:\Segmentation_working_area\stardist_testdata\masks'

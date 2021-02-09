@@ -7,17 +7,33 @@ Input: filepath
 Output: 3D mask segmented (by StarDist)
 
 """
+import segmentation.util.overlap as ol
 
-from segmentation.util.stardist_seg import seg_with_stardist
+def main_segmentation_sd(volume_path, align_flag=False):
+    print('Starting to segment and stitch')
+    # Read in volume and pass it as array to calculation function
 
-def main_segmentation_sd(volume_path):
+    # TODO: decide on when to segment with stardist! (pass folder or path to stardist!)
+    raw_array, algo_array = ol.array_dispatcher(volume_path, align_flag)
+    print(f'.. done with data preparation --> stitching')
 
-    # Read in volume
+    # calculations and stitching. Optionally, set max/min neuron length here
+    stitched_array, neuron_lengths, brightnesses = ol.level2_overlap(raw_array, algo_array)
 
-    # optional prealignment
+    # possible saving function and neuron lengths histogram plotting
 
-    # segment with StarDist
-
+    # # first, create results folder if not existent
+    # results_path = os.path.join(os.path.split(algo_data_path)[0], 'results')
+    # if not os.path.exists(results_path):
+    #     os.mkdir(results_path)
+    # np.save(os.path.join(results_path, 'final_mask'), masks, allow_pickle=True)
     #
+    # with open(os.path.join(results_path, 'lengths_and_brightnesses.pickle'), 'wb') as pickle_out:
+    #     pickle.dump([neuron_lengths, brightnesses], pickle_out)
+    #
+    # # save length histograms
+    # neuron_length_hist(neuron_lengths, results_path, 0)
 
-    return
+    print(f'----- Done with all functions! -----')
+
+    return stitched_array, neuron_lengths, brightnesses

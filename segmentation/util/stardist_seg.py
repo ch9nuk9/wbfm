@@ -1,17 +1,11 @@
 from __future__ import print_function, unicode_literals, absolute_import, division
-import sys
-import os
 import numpy as np
-
-from glob import glob
 import tifffile as tiff
 from csbdeep.utils import Path, normalize
-from csbdeep.io import save_tiff_imagej_compatible
-
-from stardist import random_label_cmap, _draw_polygons, export_imagej_rois
 from stardist.models import StarDist2D
 
-def seg_with_stardist(vol_path):
+
+def segment_with_stardist(vol_path):
     # segments a volume (via path)
     # vars set
     # Stardist models: versatile showed best results
