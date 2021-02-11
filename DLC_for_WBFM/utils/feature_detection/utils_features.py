@@ -211,6 +211,8 @@ def build_neuron_tree(neurons, to_mirror=True):
     pc = o3d.geometry.PointCloud()
 
     num_neurons = neurons.shape[0]
+    if len(neurons.shape)==1:
+        neurons = np.expand_dims(neurons,0)
     # the segmentations are mirrored
     if to_mirror:
         flip = lambda n : np.array([n[0], n[2], n[1]])
