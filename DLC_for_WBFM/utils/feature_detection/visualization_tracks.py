@@ -274,3 +274,21 @@ def match2quiver(all_frames, all_matches, which_pair, actually_draw=True):
         plt.quiver(xyz[:,1], xyz[:,2], dat[:,1], dat[:,2])
     # plt.title('Neuron matches based on features (has mistakes)')
     return xyz, dat
+
+
+##
+## Histograms
+##
+
+def hist_of_tracklet_lens(df,
+                          min_len = 50,
+                          bin_width = 50,
+                          num_frames = 500,
+                          ylim = 100):
+    """Histogram of the lengths of tracklets"""
+
+    all_len = df['slice_ind'].apply(len)
+    bins = int((num_frames-min_len) / bin_width)
+    plt.hist(all_len[all_len>min_len], bins=bins)
+    plt.ylim([0,ylim])
+    plt.title(f"Lengths of individual tracks (minimum={min_len})")
