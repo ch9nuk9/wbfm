@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
+import copy
 
 ##
 ## Helper functions for tracks
@@ -65,24 +66,34 @@ def append_to_track(row, i, clust_df, which_slice, i1, i1_global,
             list.extend allows full rows to be combined
 
     """
-    append_or_extend(row['all_ind_local'], i1)
-    clust_df.at[i,'all_ind_local'] = list(row['all_ind_local'])
-    append_or_extend(row['all_ind_global'], i1_global)
-    clust_df.at[i,'all_ind_global'] = list(row['all_ind_global'])
+    r = row['all_ind_local'][:]
+    append_or_extend(r, i1)
+    clust_df.at[i,'all_ind_local'] = r
+
+    r = row['all_ind_global'][:]
+    append_or_extend(r, i1_global)
+    clust_df.at[i,'all_ind_global'] = r
+
+    r = row['all_xyz'][:]
     if type(i1_xyz) is np.ndarray:
         # row['all_xyz'] = np.vstack([row['all_xyz'], i1_xyz])
-        clust_df.at[i,'all_xyz'] = np.vstack([row['all_xyz'], i1_xyz])
+        clust_df.at[i,'all_xyz'] = np.vstack([r, i1_xyz])
     else:
-        append_or_extend(row['all_xyz'], i1_xyz)
-        clust_df.at[i,'all_xyz'] = list(row['all_xyz'])
+        append_or_extend(r, i1_xyz)
+        clust_df.at[i,'all_xyz'] = r
     append_or_extend(row['all_prob'], i1_prob)
-    clust_df.at[i,'all_prob'] = list(row['all_prob'])
+
+    r = row['all_prob'][:]
+    clust_df.at[i,'all_prob'] = r
+
+    r = row['slice_ind'][:]
     if type(which_slice) is int:
-        append_or_extend(row['slice_ind'], which_slice+1)
+        append_or_extend(r, which_slice+1)
     else:
         # Assume they are already the to-be-matched indices
-        append_or_extend(row['slice_ind'], which_slice)
-    clust_df.at[i,'slice_ind'] = list(row['slice_ind'])
+        append_or_extend(r, which_slice)
+    clust_df.at[i,'slice_ind'] = r
+
     clust_df.at[i,'extended_this_slice'] = True
 
     if verbose >= 1:
@@ -257,23 +268,31 @@ def build_tracklets_from_classes(all_frames,
 ## Postprocessing: stitching tracklets together
 ##
 
-def consolidate_tracklets(df, tracklet_matches, verbose=0):
-    # Consolidate tracklets using matches
+def consolidate_tracklets(df_raw, tracklet_matches, verbose=0):
+    """Consolidate tracklets using matches
+
+    Note: assumes that the indices in tracklet_matches correspond to the clust_ind column
+    """
     rows_to_drop = []
+    # df = df_raw.copy(deep=True) # Note: not a recursive copy
+    df = copy.deepcopy(df_raw)
     for row0_ind, row1_ind in tracklet_matches:
-        base_row = df.loc[row0_ind]
-        row_to_add = df.loc[row1_ind]
+        base_row = df.loc[row0_ind].copy(deep=True)
+        row_to_add = df.loc[row1_ind].copy(deep=True)
+        # Actually get a copy
+        # base_row = df.query('clust_ind==@row0_ind')
+        # row_to_add = df.query('clust_ind==@row1_ind')
         if verbose >= 2:
             print(f"Adding track {row1_ind} to track {row0_ind}")
 
         df = append_to_track(base_row,
                              row0_ind,
                              df,
-                             row_to_add['slice_ind'],
-                             row_to_add['all_ind_local'],
-                             row_to_add['all_ind_global'],
-                             row_to_add['all_xyz'],
-                             row_to_add['all_prob'],
+                             row_to_add['slice_ind'][:],
+                             row_to_add['all_ind_local'][:],
+                             row_to_add['all_ind_global'][:],
+                             row_to_add['all_xyz'][:],
+                             row_to_add['all_prob'][:],
                              append_or_extend=list.extend)
         rows_to_drop.append(row1_ind)
 
