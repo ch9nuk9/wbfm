@@ -292,3 +292,5 @@ def hist_of_tracklet_lens(df,
     plt.hist(all_len[all_len>min_len], bins=bins)
     plt.ylim([0,ylim])
     plt.title(f"Lengths of individual tracks (minimum={min_len})")
+
+    return all_len
