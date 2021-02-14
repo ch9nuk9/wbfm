@@ -273,17 +273,19 @@ def consolidate_tracklets(df_raw, tracklet_matches, verbose=0):
 
     Note: assumes that the indices in tracklet_matches correspond to the clust_ind column
     """
+    base_of_dropped_rows = {}
     rows_to_drop = []
-    # df = df_raw.copy(deep=True) # Note: not a recursive copy
     df = copy.deepcopy(df_raw)
     for row0_ind, row1_ind in tracklet_matches:
+        # If we have two matches: (0,1) and later (1,10), add directly to track 0
+        # TODO: what if the matches are out of order?
+        if row0_ind in rows_to_drop:
+            row0_ind = base_of_dropped_rows[row0_ind]
         base_row = df.loc[row0_ind].copy(deep=True)
         row_to_add = df.loc[row1_ind].copy(deep=True)
-        # Actually get a copy
-        # base_row = df.query('clust_ind==@row0_ind')
-        # row_to_add = df.query('clust_ind==@row1_ind')
         if verbose >= 2:
             print(f"Adding track {row1_ind} to track {row0_ind}")
+
 
         df = append_to_track(base_row,
                              row0_ind,
@@ -294,6 +296,7 @@ def consolidate_tracklets(df_raw, tracklet_matches, verbose=0):
                              row_to_add['all_xyz'][:],
                              row_to_add['all_prob'][:],
                              append_or_extend=list.extend)
+        base_of_dropped_rows[row1_ind] = row0_ind
         rows_to_drop.append(row1_ind)
 
     if verbose >= 1:
