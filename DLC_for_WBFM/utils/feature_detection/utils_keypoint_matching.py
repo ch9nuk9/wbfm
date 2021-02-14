@@ -1,8 +1,10 @@
 import numpy as np
 import open3d as o3d
 import pandas as pd
-
+from tqdm import tqdm
 import pickle
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
+from scipy.spatial.distance import cdist
 
 
 ##
@@ -98,6 +100,32 @@ def calc_all_tracklet_features(kp_df, tracklet_df, start_ind, window_length, onl
 
     return all_tracklet_features
 
+
+def calc_feature_dist(f0, f1,
+                      check_distance_early,
+                      max_distance,
+                      use_cdist=True):
+    """Like a Hausdorf distance, but averaging instead of worst case"""
+
+    if use_cdist:
+        f01_dist = np.min(cdist(f0,f1, metric='seuclidean'), axis=1)
+    else:
+        sigma0 = np.std(f0,axis=0)
+        f01_dist = []
+        for t0 in range(f0.shape[0]):
+            t0_dist = []
+            v0 = f0[t0,:]/sigma0
+            for t1 in range(f1.shape[0]):
+                v1 = f1[t1,:]/sigma0
+                t0_dist.append(np.linalg.norm(v1-v0))
+                if t1==check_distance_early and (np.mean(t0_dist)>max_distance):
+                    # Don't bother to calculate the rest of the distances
+                    break
+            f01_dist.append(np.min(t0_dist))
+
+    return np.mean(f01_dist)
+
+
 ##
 ## Final matching
 ##
@@ -105,33 +133,39 @@ def calc_all_tracklet_features(kp_df, tracklet_df, start_ind, window_length, onl
 
 def match_tracklets_using_features(all_tracklet_features,
                                    max_distance=15.0,
-                                   enforce_bidirectional_matches=True):
+                                   check_distance_early=10,
+                                   use_cdist=True,
+                                   enforce_bidirectional_matches=True,
+                                   check_index_overlap=True,
+                                   tracklet_df=None):
     """
     Matches tracklets using pairwise matching of frames within the tracklets
 
+    tracklet_df is only needed if metadata is being checked
     """
 
+    if check_index_overlap:
+        assert not tracklet_df is None
+
+    dist_opt = {'check_distance_early':check_distance_early,
+                'max_distance':max_distance,
+                'use_cdist':use_cdist}
     # Build distance matrix
     n = len(all_tracklet_features)
     all_dist = np.zeros((n,n))
     all_dist[:] = np.nan
     for i0 in tqdm(range(n)):
         f0 = np.array(all_tracklet_features[i0])
-        sigma0 = np.std(f0,axis=0)
         for i1 in range(i0+1, n):
+            if check_index_overlap:
+                if is_any_index_overlap(i0,i1,tracklet_df):
+                    continue
             f1 = np.array(all_tracklet_features[i1])
             # Match this feature (min of partner)
-            f01_dist = []
-            for t0 in range(f0.shape[0]):
-                t0_dist = []
-                v0 = f0[t0,:]/sigma0
-                for t1 in range(f1.shape[0]):
-                    v1 = f1[t1,:]/sigma0
-                    t0_dist.append(np.linalg.norm(v1-v0))
-                f01_dist.append(np.min(t0_dist))
-            all_dist[i0,i1] = np.mean(f01_dist)
+            dist = calc_feature_dist(f0, f1, **dist_opt)
+            all_dist[i0,i1] = dist
             # FOR NOW: force symmetry
-            all_dist[i1,i0] = np.mean(f01_dist)
+            all_dist[i1,i0] = dist
 
     # Build greedy matches
     edges = {}
@@ -144,6 +178,7 @@ def match_tracklets_using_features(all_tracklet_features,
         except:
             pass
 
+    # Postprocess matches
     if enforce_bidirectional_matches:
         to_remove = []
         for k, v in edges.items():
@@ -160,14 +195,21 @@ def match_tracklets_using_features(all_tracklet_features,
 ## Utitlies
 ##
 
-def get_indices_of_tracklet(i):
+def get_indices_of_tracklet(i, tracklet_df):
     ind = tracklet_df['slice_ind'].iloc[i]
     return ind
 
-def get_index_overlap(i0, i1):
-    ind0 = set(get_indices_of_tracklet(i0))
-    ind1 = set(get_indices_of_tracklet(i1))
+
+def get_index_overlap(i0, i1, tracklet_df):
+    ind0 = set(get_indices_of_tracklet(i0, tracklet_df))
+    ind1 = set(get_indices_of_tracklet(i1, tracklet_df))
     return ind0.intersection(ind1)
+
+
+def is_any_index_overlap(i0, i1, tracklet_df):
+    overlap = get_index_overlap(i0, i1, tracklet_df)
+    return len(overlap)>0
+
 
 def get_index_overlap_list(all_i, verbose=1):
     n = len(all_i)
@@ -179,12 +221,14 @@ def get_index_overlap_list(all_i, verbose=1):
                 print(overlap)
 
 
-def visualize_tracklet_in_body(i_tracklet, i_frame, to_plot=False):
+def visualize_tracklet_in_body(i_tracklet, i_frame,
+                               tracklet_df, kp_df, all_frames,
+                               to_plot=False):
     if type(i_tracklet)!=list:
         i_tracklet = [i_tracklet]
 
     for i_t in i_tracklet:
-        tracklet_ind = get_indices_of_tracklet(i_t)
+        tracklet_ind = get_indices_of_tracklet(i_t, tracklet_df)
         if not i_frame in tracklet_ind:
             print(f"{i_frame} is not in tracklet; try one of {tracklet_ind}")
 
