@@ -1,9 +1,9 @@
 import numpy as np
 import os
+import pickle
 from segmentation.util.overlap import convert_to_3d, calc_all_overlaps, calc_best_overlap
 from natsort import natsorted
 import matplotlib.pyplot as plt
-
 
 def seg_accuracy(ground_truth_path=None, algorithm_path=None):
     """
@@ -26,13 +26,20 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
         dictionary containing the matches of algo-masks to gt.
 
     """
-    # TODO rewrite the input to use the actual 3D-stitched arrays instead of file paths!
-
+    # TODO load data via path
     # load stitched 3d arrays
-    data_path = r'C:\Segmentation_working_area\stitched_3d_data'
-    gt_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\gt_stitched_3d.npy')
-    algo_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\stardist_fluo_stitched_3d.npy')
+    # data_path = r'C:\Segmentation_working_area\stitched_3d_data'
+    # algorithm_path = r'C:\Segmentation_working_area\stitched_3d_data\cp_diam_10.npy'
+    # gt_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\gt_stitched_3d.npy')
+    # algo_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\cp_diam_10.npy')
 
+    gt_3d = np.load(ground_truth_path)
+    algo_3d = np.load(algorithm_path)
+
+    if algo_3d.shape[0] == 33:
+        algo_3d = algo_3d[1:]
+
+    # TODO put everything below into a subfunction (input 2 mask arrays)
     # create 2 dictionaries (key = neuron ID, value = matched neuron ID):
     #   1. gt → algo
     #   2. algo → gt
@@ -47,7 +54,8 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
         if not v:
             fn_count += 1
 
-    print(f'False negatives: {fn_count} of {len(gt_to_algo.keys())} or {round(fn_count / len(gt_to_algo.keys()), 3)}')
+    fn_p = round(fn_count / len(gt_to_algo.keys()), 2) * 100
+    print(f'False negatives: {fn_count} of {len(gt_to_algo.keys())} or {fn_p}%')
 
     # false positives = if neuron was found by algorithm, but not existent in ground truth, i.e. [] in algo_to_gt
     fp_count = 0
@@ -56,7 +64,18 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
         if not x:
             fp_count += 1
 
-    print(f'False positives: {fp_count} of {len(algo_to_gt.keys())} or {round(fp_count / len(algo_to_gt.keys()), 3)}')
+    fp_p = round(fp_count / len(algo_to_gt.keys()), 2) * 100
+    print(f'False positives: {fp_count} of {len(algo_to_gt.keys())} or {fp_p}%')
+
+    # True positives = if existing neuron was found by algorithm
+    tp_count = 0
+    for p in algo_vals:
+        if p:
+            tp_count += 1
+            # TODO check TPs
+
+    tp_p = round(tp_count / len(algo_to_gt.keys()), 2) * 100
+    print(f'True positives: {tp_count} of {len(algo_to_gt.keys())} or {tp_p}%')
 
     # Oversegmentation: when the algorithm splits a neuron into 2 or more parts
     # i.e. when there is > 1 value for an entry when using GT as base for comparison with algo
@@ -75,9 +94,21 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
 
     print(f'There are {underseg} instances of undersegmentation')
 
-    # TODO save results in text file in algorithm folder
+    # TODO save results as variables. Pickle them and save in results folder
+    accuracy_results = {'fn': fn_count,
+                        'fn_p': fn_p,
+                        'fp': fp_count,
+                        'fp_p': fp_p,
+                        'tp': tp_count,
+                        'tp_p': tp_p,
+                        'os': overseg,
+                        'us': underseg,
+                        'vol_gt': gt_to_algo_areas,
+                        'vol_algo': algo_to_gt_areas
+                        }
 
-    return gt_to_algo, algo_to_gt
+    return accuracy_results
+
 
 def create_3d_match_dict(dataset1, dataset2):
     """
@@ -113,7 +144,8 @@ def create_3d_match_dict(dataset1, dataset2):
         # loop over GT slices and check for neuron
         if neuron == 0:
             continue
-        print(f'Neuron: {neuron}')
+        if int(neuron) % 50 == 0:
+            print(f'Neuron: {neuron}')
 
         # create 3D mask of neuron
         this_mask = dataset1 == neuron

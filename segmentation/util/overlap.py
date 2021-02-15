@@ -42,8 +42,7 @@ def calc_all_overlaps(array_3d,
 
     See also: calc_best_overlap
     """
-    # TODO: Debug the following problem:
-    #  when using Stardist data, the stitched array does not contain a neuron 9, although the neuron length dict has one
+    # TODO: improve speed by using views of slices (= sub-areas within a slice) instead of whole slices
 
     print(f'Starting with stitching. Array shape: {array_3d.shape}')
     num_slices = len(array_3d)
@@ -128,6 +127,8 @@ def calc_all_overlaps(array_3d,
 
     # TODO visualize 3d in fiji
 
+    # TODO think about adding the start-plane to neuron length dict!
+
     print(f'end of calc_all_overlaps: full_3d non-zeros: {np.count_nonzero(full_3d_mask)}')
     print(f'Shape: {full_3d_mask.shape}')
     return full_3d_mask, hist_dict
@@ -175,62 +176,8 @@ def calc_min_overlap():
     return default_min
 
 
-def convert_to_3d(files_path: str, verbose=0):
-    """
-    Converts all 2d numpy arrays within a folder to a 3d array. Throws error if not a dir or no npy files within.
-
-    Parameters
-    ----------
-    files_path : str
-        path of directory containing .npy arrays of masks
-
-    Returns
-    -------
-    masks_3d : 3d numpy array
-        a 3d array of the concatenated masks from a segmentation algorithm (e.g. stardist)
-
-    """
-    print(f'Start of overlap')
-
-    # check, if input str is a valid directory
-    if not os.path.isdir(files_path):
-        print(f'convert to 3d: {files_path} is no directory!')
-        return False
-
-    # check, if folder contains npy files and if, find all npy files
-    files_list = [os.path.join(files_path, x.name) for x in os.scandir(files_path) if x.name.endswith('.npy')]
-    # TODO add some checks for folder content
-
-    if not files_list:
-        print(f'There are no .npy files in {files_path}')
-        return False
-    files_list = natsorted(files_list)
-
-    # iterate over files, load the mask and concatenate them into a 3D array
-    # initialize output array (ZXY): size = (#files, file.shape)
-    slice_for_size = np.load(files_list[0])
-    size_3d = (len(files_list), ) + (slice_for_size.shape)      # tuple addition
-
-    all_2d_masks = []
-
-    for i, file in enumerate(files_list):
-        slice = np.load(file)
-        # create a list of 2d masks to pass to calc_all_overlap
-        all_2d_masks.append(slice)
-
-    stitched_3d_masks, neuron_lengths = calc_all_overlaps(all_2d_masks, verbose)
-    # TODO post-processing: brightness, long-neuron-split, short neuron removal
-    # make a new loop to process the above
-
-    # TODO: top level function (path to data) -> create 3d array if not already there THEN next-level function (3d array) -> processing
-
-    f1, f2 = neuron_length_hist(neuron_lengths)
-
-    return stitched_3d_masks, neuron_lengths
-
-
 # histogram of neuron 'lengths' across Z
-def neuron_length_hist(lengths_dict: dict, save_path, save_flag=0):
+def neuron_length_hist(lengths_dict: dict, save_path='', save_flag=0):
     # plots the lengths of neurons in a histogram and barplot
     vals = lengths_dict.values()
     keys = lengths_dict.keys()
@@ -259,6 +206,7 @@ def neuron_length_hist(lengths_dict: dict, save_path, save_flag=0):
         plt.savefig(os.path.join(save_path, 'neuron_lengths_bar.png'))
 
     return fig, fig1
+
 
 def remove_short_neurons(array, neuron_lengths, length_cutoff):
     # remove all neurons, which are too short (e.g. < 3)
@@ -291,7 +239,7 @@ def split_long_neurons(array,
     for i in range(1, len(neuron_lengths) + 1):
         if neuron_lengths[i] >= maximum_length:
 
-            x_means = calc_means_via_brightnesses(neuron_brightnesses[i])
+            x_means, _, _ = calc_means_via_brightnesses(neuron_brightnesses[i])
             # if neuron can be split
             if x_means:
                 x_split = round(sum(x_means) / 2)
@@ -319,7 +267,9 @@ def split_long_neurons(array,
 
     return array, neuron_lengths, neuron_brightnesses, global_current_neuron
 
+
 def calc_brightness(original_array, stitched_masks, neuron_lengths):
+
     print('Start with brightness calculations')
     # add default dict
     brightness_dict = defaultdict(list)
@@ -352,6 +302,7 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths):
     print(f'Done with brightness')
     return brightness_dict
 
+
 def calc_means_via_brightnesses(brightnesses, plots=0):
     # calculate the means of 2 underlying neuron brightness distributions
 
@@ -366,7 +317,8 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
         A1, mu1, sigma1, A2, mu2, sigma2 = p
         return A1*np.exp(-(x-mu1)**2/(2.*sigma1**2)) + A2*np.exp(-(x-mu2)**2/(2.*sigma2**2))
 
-    # p0 is the initial guess for the fitting coefficients initialize them differently so the optimization algorithm works better
+    # p0 is the initial guess for the fitting coefficients
+    # initialize them differently so the optimization algorithm works better
     height = len(y_data)/4
     p0 = [np.mean(y_data), height , height, np.mean(y_data), height * 3, height]
 
@@ -379,15 +331,16 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
 
     means = [round(coeff[1]), round(coeff[4])]
 
-    if plots >= 1:
-        # you can plot each gaussian separately using
-        pg1 = np.zeros_like(p0)
-        pg1[0:3] = coeff[0:3]
-        pg2 =np.zeros_like(p0)
-        pg2[0:3] = coeff[3:]
+    # you can plot each gaussian separately using
+    pg1 = np.zeros_like(p0)
+    pg1[0:3] = coeff[0:3]
+    pg2 =np.zeros_like(p0)
+    pg2[0:3] = coeff[3:]
 
-        g1 = gauss2(x_data, *pg1)
-        g2 = gauss2(x_data, *pg2)
+    g1 = gauss2(x_data, *pg1)
+    g2 = gauss2(x_data, *pg2)
+
+    if plots >= 1:
 
         plt.figure()
         plt.plot(x_data, y_data, label='Data')
@@ -402,9 +355,10 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
         plt.legend(loc='upper right')
 
         plt.show()
-        plt.savefig(r'.\brightnesses_gausian_fit.png')
+        # plt.savefig(r'.\brightnesses_gaussian_fit.png')
 
-    return means
+    return means, g1, g2
+
 
 def create_3d_array(files_path, verbose=0):
     """
@@ -463,9 +417,10 @@ def create_3d_array(files_path, verbose=0):
 
         if verbose >= 1:
             print(f'Shape of output array: {array_3d.shape}')
-        return array_3d
+    return array_3d
 
-def create_3d_array_from_tiff(img_path: str, flyback_flag=0):
+
+def create_3d_array_from_tiff(img_path: str, flyback_flag=1):
     """
     Creates a 3D array from a 3D tiff file. Made for one volume (!), but it will concatenate all tif-files within
     the folder in a natural sorted manner according to filenames.
@@ -514,6 +469,7 @@ def create_3d_array_from_tiff(img_path: str, flyback_flag=0):
 
     return img_3d_array
 
+
 # TODO: write a new main function, which can discern between 2d & 3d data and call overlaps
 def main_overlap(img_data_path, algo_data_path):
 
@@ -545,6 +501,7 @@ def main_overlap(img_data_path, algo_data_path):
 
     return masks, neuron_lengths, brightnesses
 
+
 def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_length=3):
     # this function shall call the necessary calculation functions etc
     # returns the mask_arrays, neuron lengths, brightnesses, etc
@@ -559,20 +516,21 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
     # split long neurons using gaussian mixture model
 
     split_array, split_neuron_lenghts, split_brightness, global_current_neuron = split_long_neurons(stitched_3d_masks,
-                                                                             neuron_lengths,
-                                                                             brightness_dict,
-                                                                             len(neuron_lengths),
-                                                                             max_neuron_length)
+                                                                                                    neuron_lengths,
+                                                                                                    brightness_dict,
+                                                                                                    len(neuron_lengths),
+                                                                                                    max_neuron_length)
     # remove short neurons
     final_mask_array, final_neuron_lengths, removed_list = remove_short_neurons(split_array,
                                                                                 split_neuron_lenghts,
                                                                                 min_neuron_length)
     # neuron length histogram
-    h1, h2 = neuron_length_hist(neuron_lengths, 1)
+    # h1, h2 = neuron_length_hist(neuron_lengths, 1)
 
     return final_mask_array, final_neuron_lengths, split_brightness # result should be the corrected masks in 3D
 
-def array_dispatcher(vol_path, align=0):
+
+def array_dispatcher(vol_path, align=False, remove_flyback=True):
     """
     Checks, whether the data is .tif or .npy and creates a 3D array accordingly.
 
@@ -581,7 +539,9 @@ def array_dispatcher(vol_path, align=0):
     vol_path : str
         Path of volume
     align : bool
-        If 1, TIFF file is assumed and will be pre-aligned.
+        If True, raw TIFF file is assumed and will be pre-aligned.
+    remove_flyback : bool
+        If True, the first slice will be removed AFTER pre-aligning or segmenting.
     Returns
     -------
         3D numpy array
@@ -602,8 +562,13 @@ def array_dispatcher(vol_path, align=0):
             print('Neither TIFF nor npy file in folder! Exiting!')
             pass
 
+    # TODO change segmentation method/algo depending on the accuracy results
     print(f'... Segmentation start (in dispatcher). File: {files[0]}')
     seg_array_3d = sd.segment_with_stardist(files[0])
+
+    if remove_flyback:
+        raw_array_3d = raw_array_3d[1:]
+        seg_array_3d = seg_array_3d[1:]
 
     return raw_array_3d, seg_array_3d
 

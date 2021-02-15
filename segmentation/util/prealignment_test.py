@@ -24,9 +24,6 @@ def rigid_prealignment(fname):
     import_opt = {'which_vol':0, 'num_slices':33, 'alpha': 1.0, 'dtype': 'uint16'}
     dat_raw = get_single_volume(fname, **import_opt)
 
-    # Get rid of flyback
-    dat_raw = dat_raw[1:]
-
     ## Preprocessing
 
     # Initilize settings

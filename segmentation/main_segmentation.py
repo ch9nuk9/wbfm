@@ -6,7 +6,7 @@ been given as input.
 """
 import segmentation.util.overlap as ol
 
-def main_segmentation_sd(volume_path, align_flag=False):
+def main_segmentation_sd(volume_path, align_flag=False, remove_flyback=True):
     """
     Top level function; Pipeline from raw data volume (input) to stitched segmented 3D masks (output)
 
@@ -27,10 +27,10 @@ def main_segmentation_sd(volume_path, align_flag=False):
         Dictionary of average brightnesses per neuron per slice
 
     """
-    print('Starting to segment and stitch')
+    print(f'Starting to segment and stitch. Pre-aligning: {align_flag}, Remove flyback: {remove_flyback}')
     # Read in volume and pass it as array to calculation function
 
-    raw_array, algo_array = ol.array_dispatcher(volume_path, align_flag)
+    raw_array, algo_array = ol.array_dispatcher(volume_path, align_flag, remove_flyback)
     print(f'.. done with data preparation --> stitching')
 
     # calculations and stitching. Optionally, set max/min neuron length here
@@ -52,6 +52,6 @@ def main_segmentation_sd(volume_path, align_flag=False):
 
     print(f'----- Done with all functions! -----')
 
-    return stitched_array, neuron_lengths, brightnesses
+    return stitched_array
 
 # TODO decide where to cut off fliyback!
