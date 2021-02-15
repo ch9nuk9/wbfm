@@ -190,27 +190,40 @@ def plot_degree_hist(DG):
 
 
 def calc_bipartite_matches(all_candidate_matches, verbose=0):
+    """
+    Calculates bipartite matches from a list of candidate matches
+
+    Parameters
+    ==================
+    all_candidate_matches : list of lists
+        For example: [[0,1,0.1], [0,2,0.8]]
+        Many candidate matches for neurons between two slices
+        Assumes that the node in index [1] are local names
+            Made to be used with get_node_name() and unpack_node_name()
+        The value in index [2] is a weight; no need to be between 0.0 and 1.0
+
+
+    Returns:
+    =================
+    all_bp_matches : list of lists
+        For example: [[0,1], [1,2]]
+        Same format as the input candidate matches, but WITHOUT weight
+        But now are unique one-to-one matches
+
+    """
 
     G = nx.Graph()
     # Rename the second frame's neurons so the graph is truly bipartite
     for candidate in all_candidate_matches:
         candidate = list(candidate)
         candidate[1] = get_node_name(1, candidate[1])
-        #candidate[2] = 1/candidate[2]
         # Otherwise the sets are unordered
         G.add_node(candidate[0], bipartite=0)
         G.add_node(candidate[1], bipartite=1)
         G.add_weighted_edges_from([candidate])
     if verbose >= 2:
         print("Performing bipartite matching")
-    #set0 = [n for n, d in G.nodes(data=True) if d['bipartite'] == 0]
     tmp_bp_matches = nx.max_weight_matching(G, maxcardinality=True)
-    #all_bp_dict = nx.bipartite.minimum_weight_full_matching(G, set0)
-    # Translate back into neuron index space
-    # all_bp_matches = []
-    # for neur0,v in all_bp_dict.items():
-    #     neur1 = unpack_node_name(v)[1]
-    #     all_bp_matches.append([neur0, neur1])
     all_bp_matches = []
     for m in tmp_bp_matches:
         m = list(m) # unordered by default
