@@ -5,6 +5,7 @@ from tqdm import tqdm
 import pickle
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 from scipy.spatial.distance import cdist
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
 
 
 ##
@@ -108,7 +109,12 @@ def calc_feature_dist(f0, f1,
     """Like a Hausdorf distance, but averaging instead of worst case"""
 
     if use_cdist:
-        f01_dist = np.min(cdist(f0,f1, metric='seuclidean'), axis=1)
+        V01 = np.var(f0, axis=0, ddof=1) # Only do variance of f0
+        all_pairwise_dist = cdist(f0,f1, metric='seuclidean', V=V01)
+        f01_dist = np.min(all_pairwise_dist, axis=1)
+        # CV01 = np.inv(np.cov(f0.T)).T # Only do variance of f0
+        # all_pairwise_dist = cdist(f0,f1, metric='mahalnobis', CV=V01)
+        # f01_dist = np.min(all_pairwise_dist, axis=1)
     else:
         sigma0 = np.std(f0,axis=0)
         f01_dist = []
@@ -123,7 +129,23 @@ def calc_feature_dist(f0, f1,
                     break
             f01_dist.append(np.min(t0_dist))
 
-    return np.mean(f01_dist)
+    return np.mean(f01_dist), f01_dist
+
+
+##
+## Manipulations of distance matrix
+##
+
+def distance_to_similarity_matrix(dist_mat, max_dist=10.0):
+    """
+    Build symmetrized similarity matrix from distance matrix
+    Assumes that 'no connection' is np.nan in the distance matrix
+    """
+    d = dist_mat.copy()
+    d[d>max_dist] = np.nan
+    d = d + d.T # If the other direction is nan, now both are
+    d = 1.0/d
+    return d
 
 
 ##
@@ -137,7 +159,8 @@ def match_tracklets_using_features(all_tracklet_features,
                                    use_cdist=True,
                                    enforce_bidirectional_matches=True,
                                    check_index_overlap=True,
-                                   tracklet_df=None):
+                                   tracklet_df=None,
+                                   force_symmetry=False):
     """
     Matches tracklets using pairwise matching of frames within the tracklets
 
@@ -156,16 +179,23 @@ def match_tracklets_using_features(all_tracklet_features,
     all_dist[:] = np.nan
     for i0 in tqdm(range(n)):
         f0 = np.array(all_tracklet_features[i0])
-        for i1 in range(i0+1, n):
+        if force_symmetry:
+            i_start = i0+1
+        else:
+            i_start = 0
+        for i1 in range(i_start, n):
+            if i0 == i1:
+                continue
             if check_index_overlap:
                 if is_any_index_overlap(i0,i1,tracklet_df):
                     continue
             f1 = np.array(all_tracklet_features[i1])
             # Match this feature (min of partner)
-            dist = calc_feature_dist(f0, f1, **dist_opt)
+            dist, _ = calc_feature_dist(f0, f1, **dist_opt)
             all_dist[i0,i1] = dist
-            # FOR NOW: force symmetry
-            all_dist[i1,i0] = dist
+            if force_symmetry:
+                # FOR NOW: force symmetry
+                all_dist[i1,i0] = dist
 
     # Build greedy matches
     edges = {}
@@ -189,6 +219,74 @@ def match_tracklets_using_features(all_tracklet_features,
             del edges[k]
 
     return edges, all_dist
+
+
+##
+## Stepwise bipartite matching
+##
+
+def get_sources(df, i, min_len=3):
+    """Get the indices of the nodes ending at the given frame"""
+    f = lambda ind : (ind[-1]==i) and (len(ind)>min_len)
+    ind = np.where(df['slice_ind'].apply(f))[0]
+    clust_ind = df['clust_ind'].iloc[ind]
+    return list(zip(ind, list(clust_ind)))
+
+
+def get_sinks(df, i, min_len=3):
+    """Get the indices of the nodes starting at the given frame"""
+    f = lambda ind : (ind[0]==i) and (len(ind)>min_len)
+    ind = np.where(df['slice_ind'].apply(f))[0]
+    clust_ind = df['clust_ind'].iloc[ind]
+    return list(zip(ind, list(clust_ind)))
+
+
+def get_sink_source_matches(df, all_dist, i, source_ind=[]):
+    """Assume that all_dist has been made symmetric
+
+    Also assume that np.nan means no connection"""
+    new_source_ind = get_sources(df, i-1)
+    source_ind.extend(new_source_ind)
+    sink_ind = get_sinks(df, i)
+
+    all_candidates = []
+    # These are each tuples; the first entry is the matrix index
+    # i.e. for interfacing with the distance matrix
+    for i0 in source_ind:
+        for i1 in sink_ind:
+            w = all_dist[i0[0],i1[0]]
+            if not np.isnan(w):
+                all_candidates.append([i0[1],i1[1],w])
+
+    return all_candidates
+
+
+def stepwise_bipartite_match(df, all_dist, i_start, num_frames):
+    """Matches tracklets by optimizing over every step, and taking the first optimal match"""
+
+    previous_sources = []
+    all_bp_matches = []
+    all_candidates = []
+    for i in range(i_start, i_start+num_frames):
+        candidates = get_sink_source_matches(df, all_dist, i, source_ind=previous_sources)
+        bp_matches = calc_bipartite_matches(candidates)
+
+        # Remove the found matches
+        to_pop = []
+        next_sources = []
+        for s in previous_sources:
+            for m in bp_matches:
+                if s[1] == m[0]:
+                    break
+            else:
+                # i.e. no match exists
+                next_sources.append(s)
+        previous_sources = next_sources
+
+        all_bp_matches.extend(bp_matches)
+        all_candidates.append(candidates)
+
+    return all_bp_matches, all_candidates
 
 
 ##
