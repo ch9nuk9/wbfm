@@ -5,13 +5,19 @@ import segmentation.util.overlap as ol
 from sklearn.mixture import GaussianMixture as GMM
 import matplotlib.pyplot as plt
 
+# bipartite matching modules/functions
+import networkx as nx
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import get_node_name
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import unpack_node_name
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
+
 def create_2d_masks_gt():
     # creates separate 2d masks of the annotated ground truth
-    path = r'C:\Users\niklas.khoss\Desktop\cp_vol\one_volume_seg.npy'
+    path = r'C:\Segmentation_working_area\ground_truth\one_volume_seg.npy'
     arr = np.load(path, allow_pickle=True).item()
     masks = arr['masks']
 
-    sv_path = r'C:\Users\niklas.khoss\Desktop\cp_vol\gt_masks_npy'
+    sv_path = r'C:\Segmentation_working_area\ground_truth\gt_masks_npy'
     c = 0
     for m in masks[1:]:
         np.save(os.path.join(sv_path, 'gt_mask_' + str(c)), m, allow_pickle=True)
@@ -88,4 +94,102 @@ def brightness_histograms(brightness_dict: dict):
     return
 
 
-# gmm()
+def bipartite_stitching(array_3d, verbose=0):
+
+    # iterate over slices and their neurons and calculate the best matches using bipartite matching
+
+    print(f'Starting with stitching. Array shape: {array_3d.shape}')
+    num_slices = len(array_3d)
+
+    # Initialize output matrix: full_3d_mask
+    # Dimensions: ZXY
+    output_3d_mask = np.zeros_like(array_3d)
+
+    global_current_neuron = 1
+
+    # loop over slices
+    for i_slice in range(num_slices-1):
+        print(f'--- Slice: {i_slice}')
+
+        this_slice = array_3d[i_slice]
+        next_slice = array_3d[i_slice + 1]
+
+        this_slice_candidates = list()
+        this_slice_candidates = create_matches_list(this_slice, next_slice)
+
+        # Bipartite matching after creating overlap list for all neurons on slice
+        bp_matches = list()
+        bp_matches = calc_bipartite_matches(this_slice_candidates, 2)
+
+        # rename neurons on existing slice according to best match
+        for match in bp_matches:
+            next_slice = np.where(next_slice == match[1], match[0], next_slice)
+
+        array_3d[i_slice + 1] = next_slice
+
+    # renaming all found neurons in array; in a sorted manner
+    sorted_stitched_array = renaming_stitched_array(array_3d)
+
+    return sorted_stitched_array    # stitched_array
+
+
+def create_matches_list(slice_1, slice_2):
+
+    # find all matches of a given neuron in the next slice
+    neurons_this_slice = np.unique(slice_1)
+    bip_list = list()
+
+    # iterate over all neurons found in array[i_slice]
+    for this_neuron in neurons_this_slice:
+        bip_inter = list()
+        if this_neuron == 0:
+            continue
+
+        print(f'... Neuron: {int(this_neuron)}')
+        # new unique name for this_neuron
+        # unique_neuron_this_slice = get_node_name(i_slice, this_neuron)
+
+        # Get the initial mask, which will be propagated across slices
+        this_mask_binary = (slice_1 == this_neuron)
+
+        # overlap
+        this_overlap_neurons = np.unique(this_mask_binary * slice_2)
+
+        for overlap_neuron in this_overlap_neurons:
+            if overlap_neuron == 0:
+                continue
+            overlap_slice = slice_2 == overlap_neuron
+            overlap_slice = overlap_slice * this_mask_binary
+            overlap_area = np.count_nonzero(overlap_slice)
+
+            bip_inter.append([int(this_neuron), int(overlap_neuron), int(overlap_area)])
+
+        bip_list.extend(bip_inter)
+
+    # return a list of lists with all matches and their overlaps
+    return bip_list
+
+
+def renaming_stitched_array(arr):
+    """
+    Takes an array and changes the values of masks, so that it starts at 1 on slice 1 and increases consistently
+    Parameters
+    ----------
+    arr : numpy array (3d)
+
+    Returns
+    -------
+    sorted array
+    """
+    print(f'Starting to rename stitched array')
+    arr = np.where(arr > 0, arr + 10000, arr)
+    uniq_arr = np.unique(arr)
+    uniq_arr = np.delete(uniq_arr, np.where(uniq_arr == 0))
+
+    new_ids = list(range(1, len(uniq_arr) + 1))
+    mapped_dict = dict(zip(uniq_arr, new_ids))
+
+    for k, v in mapped_dict.items():
+        arr = np.where((arr == k), v, arr)
+
+    return arr
