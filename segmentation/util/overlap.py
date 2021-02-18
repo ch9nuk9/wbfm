@@ -20,11 +20,15 @@ from scipy.optimize import curve_fit
 import pickle
 import segmentation.util.prealignment_test as prealign
 import segmentation.util.stardist_seg as sd
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
 from tqdm import tqdm
+
 
 def calc_all_overlaps(array_3d,
                       verbose=0):
     """
+    Outdated! Use 'bipartite_stitching' instead!
+
     Get the "tube" of a neuron through z slices via most overlapping pixels
 
     Parameters
@@ -54,7 +58,6 @@ def calc_all_overlaps(array_3d,
     # Initial neuron and mask
     global_current_neuron = 1
     hist_dict = {}
-    brightness_dict = defaultdict(list)
 
     # Loop over slices to start (2d masks)
     for i_slice in range(num_slices-1):
@@ -176,13 +179,114 @@ def calc_min_overlap():
     return default_min
 
 
+def bipartite_stitching(array_3d, verbose=0):
+
+    # iterate over slices and their neurons and calculate the best matches using bipartite matching
+
+    print(f'Starting with stitching. Array shape: {array_3d.shape}')
+    num_slices = len(array_3d)
+
+    # Initialize output matrix: full_3d_mask
+    # Dimensions: ZXY
+    output_3d_mask = np.zeros_like(array_3d)
+
+    global_current_neuron = 1
+
+    # loop over slices
+    for i_slice in range(num_slices-1):
+        print(f'--- Slice: {i_slice}')
+
+        this_slice = array_3d[i_slice]
+        next_slice = array_3d[i_slice + 1]
+
+        this_slice_candidates = list()
+        this_slice_candidates = create_matches_list(this_slice, next_slice)
+
+        # Bipartite matching after creating overlap list for all neurons on slice
+        bp_matches = list()
+        bp_matches = calc_bipartite_matches(this_slice_candidates, 2)
+
+        # rename neurons on existing slice according to best match
+        for match in bp_matches:
+            next_slice = np.where(next_slice == match[1], match[0], next_slice)
+
+        array_3d[i_slice + 1] = next_slice
+
+    # renaming all found neurons in array; in a sorted manner
+    sorted_stitched_array = renaming_stitched_array(array_3d)
+
+    return sorted_stitched_array
+
+
+def create_matches_list(slice_1, slice_2):
+
+    # find all matches of a given neuron in the next slice
+    neurons_this_slice = np.unique(slice_1)
+    bip_list = list()
+
+    # iterate over all neurons found in array[i_slice]
+    for this_neuron in neurons_this_slice:
+        bip_inter = list()
+        if this_neuron == 0:
+            continue
+
+        print(f'... Neuron: {int(this_neuron)}')
+        # new unique name for this_neuron
+        # unique_neuron_this_slice = get_node_name(i_slice, this_neuron)
+
+        # Get the initial mask, which will be propagated across slices
+        this_mask_binary = (slice_1 == this_neuron)
+
+        # overlap
+        this_overlap_neurons = np.unique(this_mask_binary * slice_2)
+
+        for overlap_neuron in this_overlap_neurons:
+            if overlap_neuron == 0:
+                continue
+            overlap_slice = slice_2 == overlap_neuron
+            overlap_slice = overlap_slice * this_mask_binary
+            overlap_area = np.count_nonzero(overlap_slice)
+
+            bip_inter.append([int(this_neuron), int(overlap_neuron), int(overlap_area)])
+
+        bip_list.extend(bip_inter)
+
+    # return a list of lists with all matches and their overlaps
+    return bip_list
+
+
+def renaming_stitched_array(arr):
+    """
+    Takes an array and changes the values of masks, so that it starts at 1 on slice 1 and increases consistently
+    Parameters
+    ----------
+    arr : numpy array (3d)
+
+    Returns
+    -------
+    sorted array
+    """
+    print(f'Starting to rename stitched array')
+    arr = np.where(arr > 0, arr + 10000, arr)
+    uniq_arr = np.unique(arr)
+    uniq_arr = np.delete(uniq_arr, np.where(uniq_arr == 0))
+
+    new_ids = list(range(1, len(uniq_arr) + 1))
+    mapped_dict = dict(zip(uniq_arr, new_ids))
+
+    for k, v in mapped_dict.items():
+        arr = np.where((arr == k), v, arr)
+
+    return arr
+
+
 # histogram of neuron 'lengths' across Z
 def neuron_length_hist(lengths_dict: dict, save_path='', save_flag=0):
     # plots the lengths of neurons in a histogram and barplot
     vals = lengths_dict.values()
     keys = lengths_dict.keys()
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(1920/96, 1080/96), dpi=96)
     plt.hist(vals, bins=np.arange(1, max(vals)+2), align='left')
     plt.xticks(np.arange(1, max(vals) + 2))
     # TODO add automated y-axis limits for histograms
@@ -190,20 +294,20 @@ def neuron_length_hist(lengths_dict: dict, save_path='', save_flag=0):
     plt.xlabel('neuron length')
     plt.ylabel('# of neurons')
     plt.title('neuron lengths histogram')
-    plt.show()
+    # plt.show()
 
     # TODO: change save folder
     if save_flag >= 1:
-        plt.savefig(os.path.join(save_path, 'neuron_lengths.png'))
+        plt.savefig(os.path.join(save_path, 'neuron_lengths.png'), dpi=96)
 
-    fig1 = plt.figure()
+    fig1 = plt.figure(figsize=(1920/96, 1080/96), dpi=96)
     plt.bar(keys, vals)
     plt.title('Neuron lengths per neuron')
     plt.ylabel('Length')
     plt.xlabel('Neuron #')
 
     if save_flag >= 1:
-        plt.savefig(os.path.join(save_path, 'neuron_lengths_bar.png'))
+        plt.savefig(os.path.join(save_path, 'neuron_lengths_bar.png'), dpi=96)
 
     return fig, fig1
 
@@ -360,6 +464,37 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
     return means, g1, g2
 
 
+def get_neuron_lengths_dict(arr):
+    """
+    Gets the length of each neuron/mask across Z.
+
+    Parameters
+    ----------
+    arr : numpy array
+        Data array (ZXY) of masks
+
+    Returns
+    -------
+    lengths : dict
+        Dictionary with keys = neuron # and values = length of neuron
+    """
+    neurons = np.unique(arr)
+    lengths = defaultdict(int)
+
+    for neuron in neurons:
+        if neuron == 0:
+            continue
+        z_count = 0
+
+        for plane in range(len(arr)):
+            if neuron in arr[plane]:
+                z_count += 1
+
+        lengths[neuron] = z_count
+
+    return lengths
+
+
 def create_3d_array(files_path, verbose=0):
     """
     Creates a 3D numpy array from many 2D arrays in a folder. It concatenates them, so that dimensions are ZXY.
@@ -420,7 +555,7 @@ def create_3d_array(files_path, verbose=0):
     return array_3d
 
 
-def create_3d_array_from_tiff(img_path: str, flyback_flag=1):
+def create_3d_array_from_tiff(img_path: str, flyback_flag=0):
     """
     Creates a 3D array from a 3D tiff file. Made for one volume (!), but it will concatenate all tif-files within
     the folder in a natural sorted manner according to filenames.
@@ -470,7 +605,8 @@ def create_3d_array_from_tiff(img_path: str, flyback_flag=1):
     return img_3d_array
 
 
-# TODO: write a new main function, which can discern between 2d & 3d data and call overlaps
+# TODO: write a new main function, which can discern between 2d & 3d (i.e. use 'array_dispatcher' function
+#  data and call overlaps
 def main_overlap(img_data_path, algo_data_path):
 
     # F1: load/create 3d array of algorithm results and original imaging data
@@ -508,7 +644,8 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
 
     # TODO put min/max lengths in a settings class
 
-    stitched_3d_masks, neuron_lengths = calc_all_overlaps(algo_array)
+    stitched_3d_masks = bipartite_stitching(algo_array)
+    neuron_lengths = get_neuron_lengths_dict(stitched_3d_masks)
 
     # calculate average brightness per neuron mask
     brightness_dict = calc_brightness(img_array, stitched_3d_masks, neuron_lengths)
@@ -529,7 +666,7 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
 
     return final_mask_array, final_neuron_lengths, split_brightness # result should be the corrected masks in 3D
 
-
+# TODO work on dispatcher! n
 def array_dispatcher(vol_path, align=False, remove_flyback=True):
     """
     Checks, whether the data is .tif or .npy and creates a 3D array accordingly.
@@ -563,6 +700,7 @@ def array_dispatcher(vol_path, align=False, remove_flyback=True):
             pass
 
     # TODO change segmentation method/algo depending on the accuracy results
+    # TODO segment incoming volume, not a file
     print(f'... Segmentation start (in dispatcher). File: {files[0]}')
     seg_array_3d = sd.segment_with_stardist(files[0])
 
@@ -575,12 +713,3 @@ def array_dispatcher(vol_path, align=False, remove_flyback=True):
 # gt_path = r'C:\Segmentation_working_area\gt_masks_npy'
 # sd_path = r'C:\Segmentation_working_area\stardist_testdata\masks'
 # img_data_path = r'C:\Segmentation_working_area\test_volume'
-#
-# # sd_3d_stitched = np.load(r'C:\Segmentation_working_area\stitched_3d_data\stardist_fluo_stitched_3d.npy')
-#
-# og_3d = create_3d_array_from_tiff(img_data_path)
-#
-# sd_3d = create_3d_array(sd_path)
-# sd_stitch, sd_nlen = calc_all_overlaps(sd_3d)
-# sd_bright = calc_brightness(og_3d, sd_stitch, sd_nlen)
-# print('end')
