@@ -409,6 +409,7 @@ def track_neurons_full_video(vid_fname,
                              preprocessing_settings=PreprocessingSettings(),
                              use_affine_matching=False,
                              add_affine_to_candidates=False,
+                             add_gp_to_candidates=False,
                              save_candidate_matches=False,
                              verbose=0):
     """
@@ -450,7 +451,8 @@ def track_neurons_full_video(vid_fname,
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
     match_opt = {'use_affine_matching':use_affine_matching,
-                 'add_affine_to_candidates':add_affine_to_candidates}
+                 'add_affine_to_candidates':add_affine_to_candidates,
+                 'add_gp_to_candidates':add_gp_to_candidates}
     for i_frame in tqdm(frame_range):
         frame1 = local_build_frame(i_frame)
 
@@ -531,6 +533,7 @@ def track_neurons_full_video_window(vid_fname,
                              num_subsequent_matches=2,
                              use_affine_matching=False,
                              add_affine_to_candidates=False,
+                             add_gp_to_candidates=False,
                              save_candidate_matches=False,
                              verbose=0):
     """
@@ -570,7 +573,8 @@ def track_neurons_full_video_window(vid_fname,
     end_frame = start_frame+num_frames
     frame_range = list(range(start_frame, end_frame))
     match_opt = {'use_affine_matching':use_affine_matching,
-                 'add_affine_to_candidates':add_affine_to_candidates}
+                 'add_affine_to_candidates':add_affine_to_candidates,
+                 'add_gp_to_candidates':add_gp_to_candidates}
     for i_base_frame in tqdm(frame_range):
         # Check if we already built the frame
         if i_base_frame in all_frame_dict:
