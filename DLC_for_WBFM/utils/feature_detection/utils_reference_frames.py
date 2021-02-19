@@ -86,11 +86,11 @@ def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings)
 
 def get_node_name(frame_ind, neuron_ind):
     """The graph is indexed by integer, so all neurons must be unique"""
-    return frame_ind*1000 + neuron_ind
+    return frame_ind*10000 + neuron_ind
 
 def unpack_node_name(node_name):
     """Inverse of get_node_name"""
-    return divmod(node_name, 1000)
+    return divmod(node_name, 10000)
 
 
 def build_digraph_from_matches(pairwise_matches, pairwise_conf=None,
