@@ -4,11 +4,13 @@ from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using
 from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
+from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 import numpy as np
 import networkx as nx
 import collections
 from dataclasses import dataclass
 import scipy.ndimage as ndi
+from collections import defaultdict
 
 
 ##
@@ -182,8 +184,6 @@ def calc_connected_components(DG, only_strong_components=True):
 
 
 def plot_degree_hist(DG):
-    import collections
-
     degree_sequence = sorted([d for n, d in DG.degree()], reverse=True)  # degree sequence
     degreeCount = collections.Counter(degree_sequence)
     deg, cnt = zip(*degreeCount.items())
@@ -341,6 +341,7 @@ def calc_2frame_matches_using_class(frame0,
                                     verbose=1,
                                     use_affine_matching=False,
                                     add_affine_to_candidates=False,
+                                    add_gp_to_candidates=False,
                                     DEBUG=False):
     """
     Similar to older function, but this doesn't assume the features are
@@ -386,5 +387,17 @@ def calc_2frame_matches_using_class(frame0,
         opt = {'all_feature_matches':feature_matches}
         _, _, new_candidate_matches = f(frame0, frame1, **opt)
         all_candidate_matches.extend(new_candidate_matches)
+
+    if add_gp_to_candidates:
+        n0 = frame0.neuron_locs.copy()
+        n1 = frame1.neuron_locs.copy()
+
+        # TODO: Increase z distances
+        n0[:,0] *= 3
+        n1[:,0] *= 3
+        # Actually match
+        opt = {'this_match':all_neuron_matches, 'this_conf':all_confidences}
+        matches, conf, _, _ = calc_matches_using_gaussian_process(n0, n1, **opt)
+        all_candidate_matches.extend(matches)
 
     return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches
