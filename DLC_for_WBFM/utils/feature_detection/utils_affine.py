@@ -28,6 +28,7 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
     pc0.paint_uniform_color([0.9,0.9,0.9])
 
     # See also calc_2frame_matches
+    # Iteratively increases the radius if not enough matches are found
     for i in range(5):
         nn_opt = {'radius':radius, 'max_nn':5000}
         [_, close_features, _] = tree_features0.search_hybrid_vector_3d(np.asarray(this_neuron), **nn_opt)
@@ -50,7 +51,7 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
 
     np.asarray(pc0.colors)[close_features[1:], :] = [0, 1, 0]
 
-    # Now calculate the affine transformation
+    # Now calculate and apply the affine transformation
     if no_match_mode is 'negative_position':
         neuron0_trans = np.array([[-10.0, -10.0, -10.0]])
     else:

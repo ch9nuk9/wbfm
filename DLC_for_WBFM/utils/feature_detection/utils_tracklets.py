@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 import copy
+from collections import defaultdict
 
 ##
 ## Helper functions for tracks
@@ -241,21 +242,42 @@ def build_tracklets_from_classes(all_frames,
     # Input of build_tracklets_from_matches:
     #   1. List of all pairwise matches
     #   2. List of all neuron 3d locations
-
-    all_neurons = [all_frames[0].neuron_locs]
+    # if type(all_frames)==dict:
+        # TODO: make the below loops work for dict
+        # all_frames = list(all_frames.values())
+        # print("If this is a dict, then the indices are probably off.")
+        # raise ValueError
+    try:
+        all_neurons = [all_frames[0].neuron_locs]
+        final_frame_ind = len(all_frames)
+        start_frame_ind = 0
+    except:
+        k = list(all_frames)
+        all_neurons = [all_frames[k[0]].neuron_locs]
+        start_frame_ind = min(k)
+        final_frame_ind = max(k)
     all_matches = []
     if all_likelihoods_dict is None:
         all_likelihoods = None
     else:
         all_likelihoods = []
-    for i in range(1,len(all_frames)):
+    for i in range(1, final_frame_ind):
+        # Pad the initials with empties if this is a dict
+    # for key, i in zip(all_matches_dict, all_frames):
         # Get matches and conf
         key = (i-1,i)
-        all_matches.append(all_matches_dict[key])
+        if key in all_matches_dict:
+            all_matches.append(all_matches_dict[key])
+        else:
+            all_matches.append([])
         if all_likelihoods is not None:
             all_likelihoods.append(all_likelihoods_dict[key])
 
-        all_neurons.append(all_frames[i].neuron_locs)
+        if i < start_frame_ind:
+            all_neurons.append([])
+        else:
+            all_neurons.append(all_frames[i].neuron_locs)
+        # all_neurons.append(frame.neuron_locs)
 
     # Call old function
     return build_tracklets_from_matches(all_neurons,
