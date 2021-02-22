@@ -20,6 +20,8 @@ from scipy.optimize import curve_fit
 import pickle
 import segmentation.util.prealignment_test as prealign
 import segmentation.util.stardist_seg as sd
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import get_node_name
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import unpack_node_name
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
 from tqdm import tqdm
 
@@ -101,7 +103,6 @@ def calc_all_overlaps(array_3d,
                     # zero out used neurons on slice
                     array_3d[i_next_slice][next_mask_binary] = 0
                     this_mask_binary = next_mask_binary
-
 
                 # Finalize this neuron, and move to next neuron
                 is_on_last_slice = i_next_slice==(num_slices-1)
@@ -218,7 +219,62 @@ def bipartite_stitching(array_3d, verbose=0):
     return sorted_stitched_array
 
 
-def create_matches_list(slice_1, slice_2):
+def get_node_name(frame_ind, neuron_ind):
+    """The graph is indexed by integer, so all neurons must be unique"""
+    return frame_ind*10000 + neuron_ind
+
+
+def unpack_node_name(node_name):
+    """Inverse of get_node_name"""
+    return divmod(node_name, 10000)
+
+
+def calc_bipartite_matches(all_candidate_matches, verbose=0):
+    """
+    Calculates bipartite matches from a list of candidate matches
+
+    Parameters
+    ==================
+    all_candidate_matches : list of lists
+        For example: [[0,1,0.1], [0,2,0.8]]
+        Many candidate matches for neurons between two slices
+        Assumes that the node in index [1] are local names
+            Made to be used with get_node_name() and unpack_node_name()
+        The value in index [2] is a weight; no need to be between 0.0 and 1.0
+
+
+    Returns:
+    =================
+    all_bp_matches : list of lists
+        For example: [[0,1], [1,2]]
+        Same format as the input candidate matches, but WITHOUT weight
+        But now are unique one-to-one matches
+
+    """
+
+    G = nx.Graph()
+    # Rename the second frame's neurons so the graph is truly bipartite
+    for candidate in all_candidate_matches:
+        candidate = list(candidate)
+        candidate[1] = get_node_name(1, candidate[1])
+        # Otherwise the sets are unordered
+        G.add_node(candidate[0], bipartite=0)
+        G.add_node(candidate[1], bipartite=1)
+        G.add_weighted_edges_from([candidate])
+    if verbose >= 2:
+        print("Performing bipartite matching")
+    tmp_bp_matches = nx.max_weight_matching(G, maxcardinality=True)
+    all_bp_matches = []
+    for m in tmp_bp_matches:
+        m = list(m) # unordered by default
+        m.sort()
+        m[1] = unpack_node_name(m[1])[1]
+        all_bp_matches.append(m)
+
+    return all_bp_matches
+
+
+def create_matches_list(slice_1, slice_2, verbose=0):
 
     # find all matches of a given neuron in the next slice
     neurons_this_slice = np.unique(slice_1)
@@ -230,7 +286,8 @@ def create_matches_list(slice_1, slice_2):
         if this_neuron == 0:
             continue
 
-        print(f'... Neuron: {int(this_neuron)}')
+        if verbose >= 2:
+            print(f'... Neuron: {int(this_neuron)}')
         # new unique name for this_neuron
         # unique_neuron_this_slice = get_node_name(i_slice, this_neuron)
 
@@ -343,7 +400,11 @@ def split_long_neurons(array,
     for i in range(1, len(neuron_lengths) + 1):
         if neuron_lengths[i] >= maximum_length:
 
-            x_means, _, _ = calc_means_via_brightnesses(neuron_brightnesses[i])
+            try:
+                x_means, _, _ = calc_means_via_brightnesses(neuron_brightnesses[i])
+            except ValueError:
+                print(f'! ValueError while splitting neuron {i}. Probably could not fit 2 Gaussians! Will continue.')
+                continue
             # if neuron can be split
             if x_means:
                 x_split = round(sum(x_means) / 2)
@@ -644,8 +705,9 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
 
     # TODO put min/max lengths in a settings class
 
-    stitched_3d_masks = bipartite_stitching(algo_array)
-    neuron_lengths = get_neuron_lengths_dict(stitched_3d_masks)
+    # stitched_3d_masks = bipartite_stitching(algo_array)
+    # neuron_lengths = get_neuron_lengths_dict(stitched_3d_masks)
+    stitched_3d_masks, neuron_lengths = calc_all_overlaps(algo_array)
 
     # calculate average brightness per neuron mask
     brightness_dict = calc_brightness(img_array, stitched_3d_masks, neuron_lengths)
@@ -710,6 +772,6 @@ def array_dispatcher(vol_path, align=False, remove_flyback=True):
 
     return raw_array_3d, seg_array_3d
 
-# gt_path = r'C:\Segmentation_working_area\gt_masks_npy'
+# gt_path = r'C:\Segmentation_working_area\ground_truth\gt_masks_npy'
 # sd_path = r'C:\Segmentation_working_area\stardist_testdata\masks'
 # img_data_path = r'C:\Segmentation_working_area\test_volume'
