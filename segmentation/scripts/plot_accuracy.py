@@ -69,4 +69,4 @@ with open(r'C:\Segmentation_working_area\accuracy\accuracy_results.pickle', 'rb'
 
     plt.show()
 
-    # TODO create a table with all results
+    # TODO create a table (pandas dataframe) with all results

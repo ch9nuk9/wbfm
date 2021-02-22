@@ -10,7 +10,7 @@ def segment_with_stardist(vol_path):
     # vars set
     # Stardist models: versatile showed best results
 
-    model_list = [ '2D_paper_dsb2018', '2D_versatile_fluo', '2D_demo' ]
+    model_list = ['2D_paper_dsb2018', '2D_versatile_fluo', '2D_demo']
     mdl = model_list[0]  # '2D_versatile_fluo'
     axis_norm = (0, 1)
     n_channel = 1
