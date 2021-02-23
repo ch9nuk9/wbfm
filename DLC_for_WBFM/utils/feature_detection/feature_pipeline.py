@@ -241,8 +241,10 @@ def align_dictionaries(ref_set, global2local, local2global):
 
 
 def register_all_reference_frames(ref_frames,
-                                  use_bipartite_matching=False,
                                   previous_ref_set=None,
+                                  add_gp_to_candidates=False,
+                                  add_affine_to_candidates=False,
+                                  use_affine_matching=False,
                                   verbose=0):
     """
     Registers a set of reference frames, aligning their neuron indices
@@ -265,7 +267,9 @@ def register_all_reference_frames(ref_frames,
         pairwise_conf_dict = previous_ref_set.pairwise_conf
         bp_matches_dict = previous_ref_set.bipartite_matches
 
-    match_opt = {'save_candidate_matches':use_bipartite_matching}
+    match_opt = {'use_affine_matching':use_affine_matching,
+                 'add_affine_to_candidates':add_affine_to_candidates,
+                 'add_gp_to_candidates':add_gp_to_candidates}
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
     for i0, frame0 in tqdm(enumerate(ref_frames), total=len(ref_frames)):
@@ -479,6 +483,9 @@ def track_via_reference_frames(vid_fname,
                                start_slice=2,
                                verbose=0,
                                num_reference_frames=5,
+                               add_gp_to_candidates=False,
+                               add_affine_to_candidates=False,
+                               use_affine_matching=False,
                                preprocessing_settings=PreprocessingSettings()):
     """
     Tracks neurons by registering them to a set of reference frames
@@ -501,7 +508,10 @@ def track_via_reference_frames(vid_fname,
 
     if verbose >= 1:
         print("Analyzing reference frames...")
-    reference_set = register_all_reference_frames(ref_frames)
+    match_opt = {'use_affine_matching':use_affine_matching,
+                 'add_affine_to_candidates':add_affine_to_candidates,
+                 'add_gp_to_candidates':add_gp_to_candidates}
+    reference_set = register_all_reference_frames(ref_frames, **match_opt)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
