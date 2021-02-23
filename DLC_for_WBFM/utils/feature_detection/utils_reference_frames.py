@@ -397,7 +397,7 @@ def calc_2frame_matches_using_class(frame0,
         n1[:,0] *= 3
         # Actually match
         opt = {'this_match':all_neuron_matches, 'this_conf':all_confidences}
-        matches, conf, _, _ = calc_matches_using_gaussian_process(n0, n1, **opt)
+        matches, _, _ = calc_matches_using_gaussian_process(n0, n1, **opt)
         all_candidate_matches.extend(matches)
 
     return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches
