@@ -68,9 +68,10 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     # Process, including a confidence value
     matches = np.asarray(reg.correspondence_set)
     conf_func = lambda x : 1 - (x/max_dist)
-    conf = np.zeros((matches.shape[0],))
+    conf = np.zeros((matches.shape[0],1))
     for i, (m0, m1) in enumerate(matches):
         dist = np.linalg.norm(n0_unmatched[m0] - n1_unmatched[m1])
         conf[i] = conf_func(dist)
+    matches_with_conf = np.hstack([matches, conf])
 
-    return matches, conf, pc_pushed, pc_target
+    return matches_with_conf, pc_pushed, pc_target
