@@ -1,6 +1,10 @@
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches, build_digraph_from_matches
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches, build_digraph_from_matches, unpack_node_name
 from networkx.algorithms.community import k_clique_communities
 import networkx as nx
+from collections import defaultdict
+import numpy as np
+
+
 
 
 def calc_all_bipartite_matches(min_edge_weight=0.5):
