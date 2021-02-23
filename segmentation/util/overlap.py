@@ -20,8 +20,7 @@ from scipy.optimize import curve_fit
 import pickle
 import segmentation.util.prealignment_test as prealign
 import segmentation.util.stardist_seg as sd
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import get_node_name
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import unpack_node_name
+
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
 from tqdm import tqdm
 
@@ -205,7 +204,7 @@ def bipartite_stitching(array_3d, verbose=0):
 
         # Bipartite matching after creating overlap list for all neurons on slice
         bp_matches = list()
-        bp_matches = calc_bipartite_matches(this_slice_candidates, 2)
+        bp_matches = calc_bipartite_matches(this_slice_candidates)
 
         # rename neurons on existing slice according to best match
         for match in bp_matches:
@@ -219,62 +218,20 @@ def bipartite_stitching(array_3d, verbose=0):
     return sorted_stitched_array
 
 
-def get_node_name(frame_ind, neuron_ind):
-    """The graph is indexed by integer, so all neurons must be unique"""
-    return frame_ind*10000 + neuron_ind
-
-
-def unpack_node_name(node_name):
-    """Inverse of get_node_name"""
-    return divmod(node_name, 10000)
-
-
-def calc_bipartite_matches(all_candidate_matches, verbose=0):
-    """
-    Calculates bipartite matches from a list of candidate matches
-
-    Parameters
-    ==================
-    all_candidate_matches : list of lists
-        For example: [[0,1,0.1], [0,2,0.8]]
-        Many candidate matches for neurons between two slices
-        Assumes that the node in index [1] are local names
-            Made to be used with get_node_name() and unpack_node_name()
-        The value in index [2] is a weight; no need to be between 0.0 and 1.0
-
-
-    Returns:
-    =================
-    all_bp_matches : list of lists
-        For example: [[0,1], [1,2]]
-        Same format as the input candidate matches, but WITHOUT weight
-        But now are unique one-to-one matches
-
-    """
-
-    G = nx.Graph()
-    # Rename the second frame's neurons so the graph is truly bipartite
-    for candidate in all_candidate_matches:
-        candidate = list(candidate)
-        candidate[1] = get_node_name(1, candidate[1])
-        # Otherwise the sets are unordered
-        G.add_node(candidate[0], bipartite=0)
-        G.add_node(candidate[1], bipartite=1)
-        G.add_weighted_edges_from([candidate])
-    if verbose >= 2:
-        print("Performing bipartite matching")
-    tmp_bp_matches = nx.max_weight_matching(G, maxcardinality=True)
-    all_bp_matches = []
-    for m in tmp_bp_matches:
-        m = list(m) # unordered by default
-        m.sort()
-        m[1] = unpack_node_name(m[1])[1]
-        all_bp_matches.append(m)
-
-    return all_bp_matches
-
-
 def create_matches_list(slice_1, slice_2, verbose=0):
+    """
+    Creates a list of lists with all matches between every slice 1 and 2. A match is counted, when a neuron mask on
+    slice 1 overlaps
+    Parameters
+    ----------
+    slice_1
+    slice_2
+    verbose
+
+    Returns
+    -------
+
+    """
 
     # find all matches of a given neuron in the next slice
     neurons_this_slice = np.unique(slice_1)
@@ -314,7 +271,8 @@ def create_matches_list(slice_1, slice_2, verbose=0):
 
 def renaming_stitched_array(arr):
     """
-    Takes an array and changes the values of masks, so that it starts at 1 on slice 1 and increases consistently
+    Takes an array and changes the values of masks, so that it starts at 1 on slice 1 and increases consistently/consecutively
+
     Parameters
     ----------
     arr : numpy array (3d)
@@ -323,6 +281,7 @@ def renaming_stitched_array(arr):
     -------
     sorted array
     """
+
     print(f'Starting to rename stitched array')
     arr = np.where(arr > 0, arr + 10000, arr)
     uniq_arr = np.unique(arr)
@@ -342,6 +301,10 @@ def neuron_length_hist(lengths_dict: dict, save_path='', save_flag=0):
     # plots the lengths of neurons in a histogram and barplot
     vals = lengths_dict.values()
     keys = lengths_dict.keys()
+    if save_path:
+        fname = os.path.split(save_path)[1]
+    else:
+        fname=''
 
     fig = plt.figure(figsize=(1920/96, 1080/96), dpi=96)
     plt.hist(vals, bins=np.arange(1, max(vals)+2), align='left')
@@ -350,21 +313,21 @@ def neuron_length_hist(lengths_dict: dict, save_path='', save_flag=0):
     #plt.yticks(np.arange(0, 27, 2))
     plt.xlabel('neuron length')
     plt.ylabel('# of neurons')
-    plt.title('neuron lengths histogram')
+    plt.title('neuron lengths histogram ' + fname)
     # plt.show()
 
     # TODO: change save folder
     if save_flag >= 1:
-        plt.savefig(os.path.join(save_path, 'neuron_lengths.png'), dpi=96)
+        plt.savefig(os.path.join(save_path, fname + '_neuron_lengths.png'), dpi=96)
 
     fig1 = plt.figure(figsize=(1920/96, 1080/96), dpi=96)
     plt.bar(keys, vals)
-    plt.title('Neuron lengths per neuron')
+    plt.title('Neuron lengths per neuron ' + fname)
     plt.ylabel('Length')
     plt.xlabel('Neuron #')
 
     if save_flag >= 1:
-        plt.savefig(os.path.join(save_path, 'neuron_lengths_bar.png'), dpi=96)
+        plt.savefig(os.path.join(save_path, fname + '_neuron_lengths_bar.png'), dpi=96)
 
     return fig, fig1
 
@@ -703,11 +666,12 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
     # this function shall call the necessary calculation functions etc
     # returns the mask_arrays, neuron lengths, brightnesses, etc
 
-    # TODO put min/max lengths in a settings class
+    # preprocessing step, which removes areas > 1000 pixels
+    algo_array = remove_large_areas(algo_array)
 
-    # stitched_3d_masks = bipartite_stitching(algo_array)
-    # neuron_lengths = get_neuron_lengths_dict(stitched_3d_masks)
-    stitched_3d_masks, neuron_lengths = calc_all_overlaps(algo_array)
+    stitched_3d_masks = bipartite_stitching(algo_array)
+    neuron_lengths = get_neuron_lengths_dict(stitched_3d_masks)
+    # stitched_3d_masks, neuron_lengths = calc_all_overlaps(algo_array)
 
     # calculate average brightness per neuron mask
     brightness_dict = calc_brightness(img_array, stitched_3d_masks, neuron_lengths)
@@ -727,6 +691,7 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
     # h1, h2 = neuron_length_hist(neuron_lengths, 1)
 
     return final_mask_array, final_neuron_lengths, split_brightness # result should be the corrected masks in 3D
+
 
 # TODO work on dispatcher! n
 def array_dispatcher(vol_path, align=False, remove_flyback=True):
@@ -771,6 +736,32 @@ def array_dispatcher(vol_path, align=False, remove_flyback=True):
         seg_array_3d = seg_array_3d[1:]
 
     return raw_array_3d, seg_array_3d
+
+
+def remove_large_areas(arr, threshold=1000):
+    """
+    removes areas from each plane, which are larger than threshold
+    Parameters
+    ----------
+    arr
+    threshold
+
+    Returns
+    -------
+    array with removed areas
+    """
+
+    for i, plane in enumerate(arr):
+        uniq = np.unique(plane)
+
+        for u in uniq:
+            if np.count_nonzero(plane == u) >= 1000:
+                plane = np.where(plane == u, 0, plane)
+
+        arr[i] = plane
+
+    return arr
+
 
 # gt_path = r'C:\Segmentation_working_area\ground_truth\gt_masks_npy'
 # sd_path = r'C:\Segmentation_working_area\stardist_testdata\masks'
