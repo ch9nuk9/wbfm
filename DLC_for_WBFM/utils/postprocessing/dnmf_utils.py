@@ -4,6 +4,8 @@ import os
 import time
 from dNMF.Demix.dNMF import dNMF
 import torch
+import h5py
+import pandas as pd
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
 from DLC_for_WBFM.bin.configuration_definition import *
@@ -72,8 +74,8 @@ def _extract_all_traces(config_file,
 
     # Actually get traces
     all_traces = extract_all_traces(annotation_fname,
-                           video_fname_mcherry,
-                           video_fname_gcamp,
+                           video_fname_red,
+                           video_fname_green,
                            which_neurons,
                            num_frames,
                            crop_sz,
@@ -85,6 +87,30 @@ def _extract_all_traces(config_file,
     pickle.dump(all_traces, open(trace_fname, 'wb'))
 
     return all_traces
+
+
+def get_defaults_from_dlc(annotation_fname, num_frames, which_neurons):
+    # Some files can only be read a different way... not sure what's up
+
+    try:
+        with h5py.File(annotation_fname, 'r') as dlc_dat:
+            dlc_table = dlc_dat['df_with_missing']['table']
+            # Each table entry has: x, y, probability
+            if which_neurons is None:
+                num_neurons = len(dlc_table[0][1])//3
+                which_neurons = range(num_neurons)
+            if num_frames is None:
+                num_frames = len(dlc_table)
+    except:
+        dlc_table = pd.read_hdf(annotation_fname)
+        if which_neurons is None:
+            num_neurons = len(dlc_table.columns)//3
+            which_neurons = range(num_neurons)
+        if num_frames is None:
+            num_frames = len(dlc_table)
+    print(f'Found annotations for {num_neurons} neurons and {num_frames} frames')
+
+    return which_neurons, num_neurons, num_frames
 
 
 def extract_all_traces(annotation_fname,
@@ -136,15 +162,8 @@ def extract_all_traces(annotation_fname,
 
     # Get the number of neurons
     if which_neurons is None or num_frames is None:
-        with h5py.File(annotation_fname, 'r') as dlc_dat:
-            dlc_table = dlc_dat['df_with_missing']['table']
-            # Each table entry has: x, y, probability
-            if which_neurons is None:
-                num_neurons = len(dlc_table[0][1])//3
-                which_neurons = range(num_neurons)
-            if num_frames is None:
-                num_frames = len(dlc_table)
-        print(f'Found annotations for {num_neurons} neurons and {num_frames} frames')
+        out = get_defaults_from_dlc(annotation_fname, num_frames, which_neurons)
+        which_neurons, num_neurons, num_frames = out
 
     # Initialize
     all_traces = []
@@ -241,6 +260,7 @@ def extract_single_trace(annotation_fname,
         which_z, num_slices, alpha, start_volume = z_params
         cropped_dat = get_crop_from_ometiff_virtual(video_fname,
                                                     this_xy,
+                                                    this_prob,
                                                     which_z,
                                                     num_frames,
                                                     crop_sz=crop_sz,
@@ -284,7 +304,7 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None, is_3d=False):
         params = {'positions':positions[:,:,0][:,:,np.newaxis],\
                   'radius':params['radius'],'step_S':params['step_S'],'gamma':params['gamma'],\
                   'use_gpu':False,'initial_p':positions[:,:,0],'sigma_inv':params['sigma_inv'],\
-                  'method':'1->t', 'verbose':True}
+                  'method':'1->t', 'verbose':False}
     else:
         positions =[list(crop_sz),[1, 1, 0]] # Add a dummy position
         positions = np.expand_dims(positions,2)/2.0 # Return the center of the crop
@@ -292,7 +312,7 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None, is_3d=False):
         params = {'positions':positions,\
                   'radius':params['radius'],'step_S':params['step_S'],'gamma':params['gamma'],\
                   'use_gpu':False,'initial_p':positions[:,:,0],'sigma_inv':params['sigma_inv'],\
-                  'method':'1->t', 'verbose':True}
+                  'method':'1->t', 'verbose':False}
 
     # Finally, create the analysis object
     dnmf_obj = dNMF(dat_torch, params=params)
