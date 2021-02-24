@@ -43,7 +43,7 @@ def get_number_of_annotations(annotation_fname):
             num_frames = len(dlc_table)
     except:
         dlc_table = pd.read_hdf(annotation_fname)
-        num_neurons = len(dlc_table.columns)
+        num_neurons = len(dlc_table.columns)//3
         which_neurons = range(num_neurons)
         num_frames = len(dlc_table)
     # print(f'Found annotations for {num_neurons} neurons and {num_frames} frames')
