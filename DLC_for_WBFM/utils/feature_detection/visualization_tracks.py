@@ -245,6 +245,26 @@ def plot_matched_point_clouds(all_frames,
     return to_draw
 
 
+def plot_three_point_clouds(all_frames, neuron_matches, ind=(0,1,2)):
+    """See also plot_matched_point_clouds"""
+    opt = {'all_frames':all_frames,
+           'neuron_matches':neuron_matches,
+           'actually_draw':False}
+    k = (ind[0], ind[1])
+    lines01 = plot_matched_point_clouds(which_pair=k,color=[1,0,0],**opt)
+    k = (ind[0], ind[2])
+    lines02 = plot_matched_point_clouds(which_pair=k,color=[0,1,0],**opt)
+    k = (ind[1], ind[2])
+    lines12 = plot_matched_point_clouds(which_pair=k,color=[0,0,1],**opt)
+
+    to_draw = list(lines01)
+    to_draw.extend(lines02)
+    to_draw.extend(lines12)
+    o3d.visualization.draw_geometries(to_draw)
+
+    return to_draw
+
+
 ##
 ## 2d visualizations
 ##
