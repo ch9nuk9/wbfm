@@ -52,7 +52,7 @@ def build_dlc_annotation_one_tracklet(row,
     return frame
 
 
-def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=0):
+def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=1):
     new_dlc_df = None
     all_bodyparts = np.asarray(clust_df['clust_ind'])
 
@@ -69,6 +69,9 @@ def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=0):
 #         if verbose >= 1:
 #             print("============================")
 #             print(f"Row {i}/{len(all_bodyparts)}")
+
+    if verbose >= 1 and new_dlc_df is not None:
+        print(f"Found {len(new_dlc_df)} tracks of length >{min_length}")
 
     return new_dlc_df
 
@@ -203,8 +206,11 @@ def create_video_from_annotations(config, df_fname,
     # Load the dataframe name, and produce DLC-style annotations
     with open(df_fname, 'rb') as f:
         clust_df = pickle.load(f)
-    opt = {'min_length':min_track_length, 'num_frames':total_num_frames, 'verbose':0}
+    opt = {'min_length':min_track_length, 'num_frames':total_num_frames, 'verbose':1}
     new_dlc_df = build_dlc_annotation_all(clust_df, **opt)
+    if new_dlc_df is None:
+        print("Found no tracks long enough; aborting")
+        return None
 
     # Save annotations using DLC-style names, and update the config files
     build_dlc_name = save_dlc_annotations(scorer, df_fname, c, new_dlc_df)[0]
