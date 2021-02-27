@@ -250,6 +250,9 @@ def plot_three_point_clouds(all_frames, neuron_matches, ind=(0,1,2)):
     opt = {'all_frames':all_frames,
            'neuron_matches':neuron_matches,
            'actually_draw':False}
+    if type(ind)==int:
+        ind = (ind, ind+1, ind+2)
+
     k = (ind[0], ind[1])
     lines01 = plot_matched_point_clouds(which_pair=k,color=[1,0,0],**opt)
     k = (ind[0], ind[2])
