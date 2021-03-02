@@ -18,10 +18,12 @@ import os
 from collections import defaultdict
 from scipy.optimize import curve_fit
 import pickle
+import pandas as pd
 import segmentation.util.prealignment_test as prealign
 import segmentation.util.stardist_seg as sd
 
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
 from tqdm import tqdm
 
 
@@ -189,31 +191,64 @@ def bipartite_stitching(array_3d, verbose=0):
     # Initialize output matrix: full_3d_mask
     # Dimensions: ZXY
     output_3d_mask = np.zeros_like(array_3d)
-
-    global_current_neuron = 1
+    all_matches = []
+    all_centroids = []
 
     # loop over slices
-    for i_slice in range(num_slices-1):
+    for i_slice in range(num_slices):
         print(f'--- Slice: {i_slice}')
 
         this_slice = array_3d[i_slice]
-        next_slice = array_3d[i_slice + 1]
+        bp_matches = []
+        these_centroids = []
 
-        this_slice_candidates = list()
-        this_slice_candidates = create_matches_list(this_slice, next_slice)
+        if i_slice < num_slices - 1:
+            next_slice = array_3d[i_slice + 1]
+            this_slice_candidates = list()
+            this_slice_candidates = create_matches_list(this_slice, next_slice)
 
-        # Bipartite matching after creating overlap list for all neurons on slice
-        bp_matches = list()
-        bp_matches = calc_bipartite_matches(this_slice_candidates)
+            # Bipartite matching after creating overlap list for all neurons on slice
+            bp_matches = list()
+            bp_matches = sorted(calc_bipartite_matches(this_slice_candidates))
 
-        # rename neurons on existing slice according to best match
-        for match in bp_matches:
-            next_slice = np.where(next_slice == match[1], match[0], next_slice)
+            all_matches.append(bp_matches)
 
-        array_3d[i_slice + 1] = next_slice
+        # get centroid coordinates for all found neurons/masks
+        for this_neuron in np.unique(this_slice):
+            this_x, this_y = np.where(this_slice == this_neuron)
+
+            these_centroids.append([i_slice, round(np.mean(this_x)), round(np.mean(this_y))])
+
+        # # rename neurons on existing slice according to best match
+        # for match in bp_matches:
+        #     next_slice = np.where(next_slice == match[1], match[0], next_slice)
+        #
+        # array_3d[i_slice + 1] = next_slice
+        all_centroids.append(these_centroids)
+
+    # TODO add charlies tracklets from matches function
+    # INPUT:
+    # 1. ZXY coordinates of centers of masks for ALL neurons! (save the created list)
+    # 2. all_matches
+
+    # # check lists for consistent lengths
+    # for n in range(len(all_matches)):
+    #     if len(all_matches[n]) is not len(all_centroids[n]):
+    #         print(f'ERROR: in {n}: matches and centroids lists do not have the same lengths!')
+    #         break
+
+    clust_df = build_tracklets_from_matches(all_centroids, all_matches)
+    # cant finish Charlies function, because of dimensional mismatch!
+    # I think, that I misunderstood the centroids! I am taking centroids of every matched neuron on 'this_slice', but
+    # his function needs centroids of this and next slice at the same time! So each entry in centroids list should
+    # contain both centroid values, BUT the lists are not allowed to contain the IDs and are assumed to be sorted
+    # and consistent! What to do?
+
+    print(f'tracklets output')
+
 
     # renaming all found neurons in array; in a sorted manner
-    sorted_stitched_array = renaming_stitched_array(array_3d)
+    sorted_stitched_array = renaming_stitched_array(array_3d, clust_df)
 
     return sorted_stitched_array
 
@@ -269,7 +304,7 @@ def create_matches_list(slice_1, slice_2, verbose=0):
     return bip_list
 
 
-def renaming_stitched_array(arr):
+def renaming_stitched_array(arr, df):
     """
     Takes an array and changes the values of masks, so that it starts at 1 on slice 1 and increases consistently/consecutively
 
@@ -281,20 +316,18 @@ def renaming_stitched_array(arr):
     -------
     sorted array
     """
+    print(f'Starting to rename stitched array using Charlies dataframe')
+    renamed_array = np.zeros_like(arr)
 
-    print(f'Starting to rename stitched array')
-    arr = np.where(arr > 0, arr + 10000, arr)
-    uniq_arr = np.unique(arr)
-    uniq_arr = np.delete(uniq_arr, np.where(uniq_arr == 0))
+    # clust_ind = new neuron number
+    # all_ind_local = local old IDs
+    # slice_ind = original slice index
+    # now, change ALL local indices on slice_ind to clust_ind + 1 to create a new neuron
+    for i, row in df.iterrows():
+        for elem, og_slice in enumerate(row['slice_ind']):
+            renamed_array[og_slice, arr[og_slice] == row['all_ind_local'][elem]] = row['clust_ind'] + 1
 
-    new_ids = list(range(1, len(uniq_arr) + 1))
-    mapped_dict = dict(zip(uniq_arr, new_ids))
-
-    for k, v in mapped_dict.items():
-        arr = np.where((arr == k), v, arr)
-
-    return arr
-
+    return renamed_array
 
 # histogram of neuron 'lengths' across Z
 def neuron_length_hist(lengths_dict: dict, save_path='', save_flag=0):
@@ -330,7 +363,6 @@ def neuron_length_hist(lengths_dict: dict, save_path='', save_flag=0):
         plt.savefig(os.path.join(save_path, fname + '_neuron_lengths_bar.png'), dpi=96)
 
     return fig, fig1
-
 
 def remove_short_neurons(array, neuron_lengths, length_cutoff):
     # remove all neurons, which are too short (e.g. < 3)
@@ -491,6 +523,7 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
 def get_neuron_lengths_dict(arr):
     """
     Gets the length of each neuron/mask across Z.
+    Stitched array is assumed (= unique and consecutive values only!)
 
     Parameters
     ----------
@@ -502,6 +535,8 @@ def get_neuron_lengths_dict(arr):
     lengths : dict
         Dictionary with keys = neuron # and values = length of neuron
     """
+    # TODO add part to keep track, if a found ID has gaps within Z-planes
+
     neurons = np.unique(arr)
     lengths = defaultdict(int)
 
@@ -678,17 +713,17 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
 
     # split long neurons using gaussian mixture model
 
-    split_array, split_neuron_lenghts, split_brightness, global_current_neuron = split_long_neurons(stitched_3d_masks,
+    split_array, split_neuron_lengths, split_brightness, global_current_neuron = split_long_neurons(stitched_3d_masks,
                                                                                                     neuron_lengths,
                                                                                                     brightness_dict,
                                                                                                     len(neuron_lengths),
                                                                                                     max_neuron_length)
     # remove short neurons
     final_mask_array, final_neuron_lengths, removed_list = remove_short_neurons(split_array,
-                                                                                split_neuron_lenghts,
+                                                                                split_neuron_lengths,
                                                                                 min_neuron_length)
     # neuron length histogram
-    # h1, h2 = neuron_length_hist(neuron_lengths, 1)
+    h1, h2 = neuron_length_hist(neuron_lengths, 1)
 
     return final_mask_array, final_neuron_lengths, split_brightness # result should be the corrected masks in 3D
 
@@ -750,16 +785,20 @@ def remove_large_areas(arr, threshold=1000):
     -------
     array with removed areas
     """
+    if len(arr.shape) > 2:
+        for i, plane in enumerate(arr):
+            uniq = np.unique(plane)
 
-    for i, plane in enumerate(arr):
-        uniq = np.unique(plane)
+            for u in uniq:
+                if np.count_nonzero(plane == u) >= threshold:
+                    plane = np.where(plane == u, 0, plane)
 
+            arr[i] = plane
+    else:
+        uniq = np.unique(arr)
         for u in uniq:
-            if np.count_nonzero(plane == u) >= 1000:
-                plane = np.where(plane == u, 0, plane)
-
-        arr[i] = plane
-
+            if np.count_nonzero(arr == u) >= threshold:
+                arr = np.where(arr == u, 0, arr)
     return arr
 
 
