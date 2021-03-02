@@ -1,9 +1,10 @@
 import numpy as np
 import os
 import pickle
-from segmentation.util.overlap import convert_to_3d, calc_all_overlaps, calc_best_overlap
+from segmentation.util.overlap import calc_all_overlaps, calc_best_overlap
 from natsort import natsorted
 import matplotlib.pyplot as plt
+
 
 def seg_accuracy(ground_truth_path=None, algorithm_path=None):
     """
@@ -36,21 +37,19 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
     gt_3d = np.load(ground_truth_path)
     algo_3d = np.load(algorithm_path)
 
-    if algo_3d.shape[0] == 33:
-        algo_3d = algo_3d[1:]
-
     # TODO put everything below into a subfunction (input 2 mask arrays)
+    # TODO change areas to volumes
     # create 2 dictionaries (key = neuron ID, value = matched neuron ID):
-    #   1. gt → algo
+    #   1. gt → algo # TODO write results in python syntax
     #   2. algo → gt
-    gt_to_algo, gt_to_algo_areas = create_3d_match_dict(gt_3d, algo_3d)
-    algo_to_gt, algo_to_gt_areas = create_3d_match_dict(algo_3d, gt_3d)
+    gt_to_algo, gt_to_algo_volumes = create_3d_match_dict(gt_3d, algo_3d)
+    algo_to_gt, algo_to_gt_volumes = create_3d_match_dict(algo_3d, gt_3d)
 
     # false negatives = if neuron was not found by algorithm, i.e. [] in gt_to_algo
     # count empty in gt_to_algo
     fn_count = 0
-    gt_vals = gt_to_algo.values()
-    for v in gt_vals:
+    algo_vals = gt_to_algo.values()
+    for v in algo_vals:
         if not v:
             fn_count += 1
 
@@ -59,37 +58,37 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
 
     # false positives = if neuron was found by algorithm, but not existent in ground truth, i.e. [] in algo_to_gt
     fp_count = 0
-    algo_vals = algo_to_gt.values()
-    for x in algo_vals:
+    gt_vals = algo_to_gt.values()
+    for x in gt_vals:
         if not x:
             fp_count += 1
 
-    fp_p = round(fp_count / len(algo_to_gt.keys()), 2) * 100
-    print(f'False positives: {fp_count} of {len(algo_to_gt.keys())} or {fp_p}%')
+    fp_p = round(fp_count / len(gt_to_algo.keys()), 2) * 100
+    print(f'False positives: {fp_count} of {len(gt_to_algo.keys())} or {fp_p}%')
 
     # True positives = if existing neuron was found by algorithm
     tp_count = 0
-    for p in algo_vals:
-        if p:
+    for k, v in gt_to_algo.items():
+        if v:
             tp_count += 1
             # TODO check TPs
 
-    tp_p = round(tp_count / len(algo_to_gt.keys()), 2) * 100
-    print(f'True positives: {tp_count} of {len(algo_to_gt.keys())} or {tp_p}%')
+    tp_p = round(tp_count / len(gt_to_algo.keys()), 2) * 100
+    print(f'True positives: {tp_count} of {len(gt_to_algo.keys())} or {tp_p}%')
 
     # Oversegmentation: when the algorithm splits a neuron into 2 or more parts
     # i.e. when there is > 1 value for an entry when using GT as base for comparison with algo
     overseg = 0
-    for o in gt_vals:
-        if len(o) > 1:
+    for k, v in gt_to_algo.items():
+        if len(v) > 1:
             overseg += 1
 
     print(f'There are {overseg} instances of oversegmentation')
 
     # Undersegmentation: when algorithm fuses 2 neurons
     underseg = 0
-    for u in algo_vals:
-        if len(u) > 1:
+    for k, v in algo_to_gt.items():
+        if len(v) > 1:
             underseg += 1
 
     print(f'There are {underseg} instances of undersegmentation')
@@ -103,9 +102,12 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
                         'tp_p': tp_p,
                         'os': overseg,
                         'us': underseg,
-                        'vol_gt': gt_to_algo_areas,
-                        'vol_algo': algo_to_gt_areas
+                        'vol_gt': gt_to_algo_volumes,
+                        'vol_algo': algo_to_gt_volumes
                         }
+
+    # TODO create a histogram for each neuron (and direction (algo to gt)). find a cutoff
+    # if found, only take underseg results, if vol > cutoff
 
     return accuracy_results
 
