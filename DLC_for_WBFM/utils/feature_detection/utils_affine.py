@@ -28,6 +28,7 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
     pc0.paint_uniform_color([0.9,0.9,0.9])
 
     # See also calc_2frame_matches
+    # Iteratively increases the radius if not enough matches are found
     for i in range(5):
         nn_opt = {'radius':radius, 'max_nn':5000}
         [_, close_features, _] = tree_features0.search_hybrid_vector_3d(np.asarray(this_neuron), **nn_opt)
@@ -50,7 +51,7 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
 
     np.asarray(pc0.colors)[close_features[1:], :] = [0, 1, 0]
 
-    # Now calculate the affine transformation
+    # Now calculate and apply the affine transformation
     if no_match_mode is 'negative_position':
         neuron0_trans = np.array([[-10.0, -10.0, -10.0]])
     else:
@@ -125,6 +126,7 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
     # Loop over locations of pushed v0 neurons
     all_matches = [] # Without confidence
     all_conf = []
+    all_candidate_matches = []
     nn_opt = { 'radius':5.0, 'max_nn':1}
     conf_func = lambda dist : 1.0 / (dist/10+1.0)
     for i, neuron in enumerate(np.array(all_propagated.points)):
@@ -153,7 +155,10 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
         all_matches.append([i, i_match])
         all_conf.append(conf_func(dist))
 
-    all_candidate_matches = None # For signature matching
+        # TODO: clean this up
+        all_m = [(i, n, conf_func(dist)) for n, dist in zip(two_neighbors, two_dist)]
+        all_candidate_matches.extend(all_m)
+
     return all_matches, all_conf, all_candidate_matches
 
 ##

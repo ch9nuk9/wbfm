@@ -52,7 +52,7 @@ def build_dlc_annotation_one_tracklet(row,
     return frame
 
 
-def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=0):
+def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=1):
     new_dlc_df = None
     all_bodyparts = np.asarray(clust_df['clust_ind'])
 
@@ -70,6 +70,9 @@ def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=0):
 #             print("============================")
 #             print(f"Row {i}/{len(all_bodyparts)}")
 
+    if verbose >= 1 and new_dlc_df is not None:
+        print(f"Found {len(new_dlc_df)} tracks of length >{min_length}")
+
     return new_dlc_df
 
 
@@ -79,7 +82,8 @@ def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=0):
 
 def make_labeled_video_custom_annotations(dlc_config,
                                           video_fname,
-                                          df):
+                                          df,
+                                          video_suffix=''):
     """
     Wrapper around the deeplabcut video creation functions to work with custom
     annotations
@@ -87,7 +91,7 @@ def make_labeled_video_custom_annotations(dlc_config,
 
     # videooutname = video_fname.replace('.avi', '_labeled.mp4')
     # codec="mp4v"
-    videooutname = video_fname.replace('.avi', '_labeled.avi')
+    videooutname = video_fname.replace('.avi', f'_labeled-{video_suffix}.avi')
     codec = 'JPEG'
     clip = vp(fname=video_fname, sname=videooutname, codec=codec)
     cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
@@ -133,26 +137,13 @@ def make_labeled_video_custom_annotations(dlc_config,
                 color_by
             )
 
-
 ##
-## Full pipeline: from dataframe to video
+## Utilities for saving intermediate DLC products
 ##
 
-def create_video_from_annotations(config, df_fname,
-                                  scorer=None,
-                                  min_track_length=50,
-                                  total_num_frames=500):
-    """
-    Creates a video starting from a saved dataframe of tracklets
-    """
+def save_dlc_annotations(scorer, df_fname, c, new_dlc_df):
 
-    c = load_config(config)
     project_folder = c.get_dirname()
-
-    # Load the dataframe name, and produce DLC-style annotations
-    with open(df_fname, 'rb') as f:
-        clust_df = pickle.load(f)
-    new_dlc_df = build_dlc_annotation_all(clust_df, min_length=min_track_length, num_frames=total_num_frames, verbose=0)
 
     # Save using DLC-style names
     if scorer is None:
@@ -161,18 +152,27 @@ def create_video_from_annotations(config, df_fname,
         scorer = scorer_base.split('_')[-1]
         scorer = f"feature_tracker_{scorer}"
 
+    # Build the filenames that will be written
     def build_dlc_name(ext):
         return os.path.join(project_folder,"CollectedData_" + scorer + ext)
-    with open(build_dlc_name(".csv"), 'w') as f:
+    all_ext = [".csv", ".h5", ".pickle"]
+    all_fnames = [build_dlc_name(ext) for ext in all_ext]
+
+    with open(all_fnames[0], 'w') as f:
         new_dlc_df.to_csv(f)
-#     with open(build_dlc_name(".h5"), 'wb') as f:
-#         new_dlc_df.to_hdf(f, key="df_with_missing", mode="w")
-    new_dlc_df.to_hdf(build_dlc_name(".h5"), key="df_with_missing", mode="w")
-    with open(build_dlc_name(".pickle"), 'wb') as f:
+    new_dlc_df.to_hdf(all_fnames[1], key="df_with_missing", mode="w")
+    with open(all_fnames[2], 'wb') as f:
         new_dlc_df.to_pickle(f)
 
+    return build_dlc_name, all_fnames
+
+
+def synchronize_config_files(c, build_dlc_name):
+    """Synchronizes my config file and the DLC config file"""
+
+    project_folder = c.get_dirname()
     # Add these annotations to the config file
-    # Assume the dlc project is initialized propery
+    # Assume the dlc project is initialized properly
     dlc_config = c.tracking.DLC_config_fname
 
     annotation_fname = build_dlc_name(".h5")
@@ -189,7 +189,96 @@ def create_video_from_annotations(config, df_fname,
     csv_annotations = c.tracking.annotation_fname.replace('h5', 'csv')
     csv_annotations2config_names(dlc_config, csv_annotations)
 
+##
+## Full pipeline: from dataframe to video
+##
+
+def create_video_from_annotations(config, df_fname,
+                                  scorer=None,
+                                  min_track_length=50,
+                                  total_num_frames=500):
+    """
+    Creates a video starting from a saved dataframe of tracklets
+    """
+
+    c = load_config(config)
+
+    # Load the dataframe name, and produce DLC-style annotations
+    with open(df_fname, 'rb') as f:
+        clust_df = pickle.load(f)
+    opt = {'min_length':min_track_length, 'num_frames':total_num_frames, 'verbose':1}
+    new_dlc_df = build_dlc_annotation_all(clust_df, **opt)
+    if new_dlc_df is None:
+        print("Found no tracks long enough; aborting")
+        return None
+
+    # Save annotations using DLC-style names, and update the config files
+    build_dlc_name = save_dlc_annotations(scorer, df_fname, c, new_dlc_df)[0]
+    synchronize_config_files(c, build_dlc_name)
+
     # Finally, make the video
+    dlc_config = c.tracking.DLC_config_fname
+    vid_fname = c.datafiles.red_avi_fname
     make_labeled_video_custom_annotations(dlc_config, vid_fname, new_dlc_df)
 
     return new_dlc_df
+
+
+def create_many_videos_from_annotations(config, df_fname,
+                                      min_track_length=400,
+                                      total_num_frames=500,
+                                      num_videos_to_make=None,
+                                      verbose=1):
+    """
+    Creates a large number of videos from a single annotation dataframe
+        One neuron per video, for ease of manual error checking
+
+    See create_video_from_annotations()
+
+    """
+    c = load_config(config)
+    project_folder = c.get_dirname()
+
+    # Load the dataframe name, and produce DLC-style annotations
+    with open(df_fname, 'rb') as f:
+        clust_df = pickle.load(f)
+    opt = {'min_length':min_track_length, 'num_frames':total_num_frames, 'verbose':0}
+    # Loop through tracklets, and make a video for each
+    all_bodyparts = np.asarray(clust_df['clust_ind'])
+
+    neuron_ind = 1 # Only for video indices
+    opt['neuron_ind'] = 1
+    for _, row in clust_df.iterrows():
+        this_dlc_df = build_dlc_annotation_one_tracklet(row, all_bodyparts, **opt)
+        if this_dlc_df is None:
+            continue
+        else:
+            neuron_ind = neuron_ind + 1
+
+        # Check the folder to build a unique name for the scorer
+        scorer = f'neuron-{neuron_ind-1}'
+        _, _, filenames = next(os.walk(project_folder))
+        tmp_files = [f for f in filenames if scorer in f]
+        if len(tmp_files)>0:
+            print(f"Temporary files found; delete or move them:")
+            print(tmp_files)
+            print("ABORTING")
+            return
+
+        # Save annotations using DLC-style names, and update the config files
+        build_dlc_name, prev_fnames = save_dlc_annotations(scorer, df_fname, c, this_dlc_df)
+        synchronize_config_files(c, build_dlc_name)
+
+        # Finally, make the video
+        dlc_config = c.tracking.DLC_config_fname
+        vid_fname = c.datafiles.red_avi_fname
+        make_labeled_video_custom_annotations(dlc_config, vid_fname, this_dlc_df,
+                                              video_suffix=scorer)
+
+        # Clean up by deleting the temporary .h5/.csv/.pickle files
+        [os.remove(f) for f in prev_fnames]
+        if (num_videos_to_make is not None) and (neuron_ind > num_videos_to_make):
+            break
+
+    if verbose >= 1:
+        print(f"Finished making videos for {neuron_ind-1} neurons")

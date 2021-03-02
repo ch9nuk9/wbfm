@@ -106,6 +106,9 @@ def build_line_set_from_matches(pc0, pc1, matches=None,
     for i,match in enumerate(matches):
         combined_matches[i][1] = (n0 + match[1])
 
+    # If the passed match data also has a weight, just take the first 2
+    if len(combined_matches[0]) > 2:
+        combined_matches = [c[:2] for c in combined_matches]
     colors = [color for i in range(len(matches))]
     line_set = o3d.geometry.LineSet(
         points=o3d.utility.Vector3dVector(points),
@@ -240,3 +243,77 @@ def plot_matched_point_clouds(all_frames,
         o3d.visualization.draw_geometries(to_draw)
 
     return to_draw
+
+
+def plot_three_point_clouds(all_frames, neuron_matches, ind=(0,1,2)):
+    """See also plot_matched_point_clouds"""
+    opt = {'all_frames':all_frames,
+           'neuron_matches':neuron_matches,
+           'actually_draw':False}
+    if type(ind)==int:
+        ind = (ind, ind+1, ind+2)
+
+    k = (ind[0], ind[1])
+    lines01 = plot_matched_point_clouds(which_pair=k,color=[1,0,0],**opt)
+    k = (ind[0], ind[2])
+    lines02 = plot_matched_point_clouds(which_pair=k,color=[0,1,0],**opt)
+    k = (ind[1], ind[2])
+    lines12 = plot_matched_point_clouds(which_pair=k,color=[0,0,1],**opt)
+
+    to_draw = list(lines01)
+    to_draw.extend(lines02)
+    to_draw.extend(lines12)
+    o3d.visualization.draw_geometries(to_draw)
+
+    return to_draw
+
+
+##
+## 2d visualizations
+##
+
+def match2quiver(all_frames, all_matches, which_pair, actually_draw=True):
+    """
+    Plots matches as a quiver plot
+    """
+
+    n0_unmatched = all_frames[which_pair[0]].keypoint_locs
+    n1_unmatched = all_frames[which_pair[1]].keypoint_locs
+    matches = all_matches[which_pair]
+
+    # Align the keypoints via matches
+    xyz = np.zeros((len(matches), 3), dtype=np.float32) # Start point
+    dat = np.zeros((len(matches), 3), dtype=np.float32) # Difference vector
+
+    for m, match in enumerate(matches):
+        v0 = n0_unmatched[match[0]]
+        v1 = n1_unmatched[match[1]]
+        xyz[m, :] = v0
+        dat[m, :] = v1 - v0
+
+
+    # C = dat[:,2] / np.max(dat[:,1])
+    if actually_draw:
+        plt.quiver(xyz[:,1], xyz[:,2], dat[:,1], dat[:,2])
+    # plt.title('Neuron matches based on features (has mistakes)')
+    return xyz, dat
+
+
+##
+## Histograms
+##
+
+def hist_of_tracklet_lens(df,
+                          min_len = 50,
+                          bin_width = 50,
+                          num_frames = 500,
+                          ylim = 100):
+    """Histogram of the lengths of tracklets"""
+
+    all_len = df['slice_ind'].apply(len)
+    bins = int((num_frames-min_len) / bin_width)
+    plt.hist(all_len[all_len>min_len], bins=bins)
+    plt.ylim([0,ylim])
+    plt.title(f"Lengths of individual tracks (minimum={min_len})")
+
+    return all_len

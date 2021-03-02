@@ -61,6 +61,7 @@ def _get_crop_from_ometiff_virtual(config_file,
         flip_x = c.preprocessing.red_and_green_mirrored
     cropped_dat = get_crop_from_ometiff_virtual(fname,
                                                 this_xy,
+                                                this_prob,
                                                 which_z=c.preprocessing.center_slice,
                                                 num_frames=num_frames,
                                                 crop_sz=c.traces.crop_sz,

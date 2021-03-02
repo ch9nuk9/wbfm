@@ -86,6 +86,7 @@ def visualize_ratio(t_dict,
                     which_neuron,
                     tspan=None,
                     background=[0,0],
+                    ylim=[0,1],
                     preprocess_func=None):
     """
     Divides the green by the red channel to produce a normalized time series
@@ -107,7 +108,7 @@ def visualize_ratio(t_dict,
     else:
         plt.plot(tspan, dat)
     plt.xlabel('Seconds')
-    plt.ylim([0,2])
+    plt.ylim(ylim)
     plt.title(f"Ratiometric for neuron {name}")
 
 

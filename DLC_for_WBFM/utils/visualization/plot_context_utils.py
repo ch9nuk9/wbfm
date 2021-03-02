@@ -7,7 +7,7 @@ import pickle
 
 from DLC_for_WBFM.utils.visualization.plot_traces import get_tracking_channel, get_measurement_channel, set_big_font
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual
-from DLC_for_WBFM.utils.postprocessing.coconfig_cropping_utils import _get_crop_from_ometiff_virtual
+from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_from_ometiff_virtual
 from DLC_for_WBFM.bin.configuration_definition import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
@@ -150,6 +150,7 @@ def plot_video_crop_trace(vid_fname,
                                          num_frames=num_frames)
     cropped_dat_mcherry = get_crop_from_ometiff_virtual(mcherry_fname,
                                                 this_xy,
+                                                this_prob,
                                                 which_z,
                                                 num_frames,
                                                 crop_sz=crop_sz,
@@ -160,6 +161,7 @@ def plot_video_crop_trace(vid_fname,
                                                 verbose=False)
     cropped_dat_gcamp = get_crop_from_ometiff_virtual(gcamp_fname,
                                                this_xy,
+                                               this_prob,
                                                which_z,
                                                num_frames,
                                                crop_sz=crop_sz,
@@ -197,7 +199,7 @@ def plot_video_crop_trace_frame(t, z, video_dat,
     """
 
     # plt.figure()
-    fig = plt.figure(figsize=(45,15))
+    fig = plt.figure(figsize=(25,5))
     # specs = fig.add_gridspec(ncols=1,nrows=3, height_ratios=[10,5,1])
 
     # 2d video; no z component
@@ -223,7 +225,8 @@ def plot_video_crop_trace_frame(t, z, video_dat,
     # Trace: all with a line
     plt.subplot(313)
     plt.plot(trace_data)
-    plt.vlines(t,0,np.max(np.array(trace_data)), colors='r')
+    # plt.vlines(t,0,np.max(np.array(trace_data)), colors='r')
+    plt.vlines(t,0,2, colors='r')
     plt.title('Trace')
     plt.ylim([0,2])
 

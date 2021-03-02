@@ -103,11 +103,13 @@ def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28,28,10
     return cropped_dat
 
 
-def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
+def get_crop_from_ometiff_virtual(fname, this_xy, this_prob,
+                                  which_z, num_frames,
                                   crop_sz=(28,28,10),
                                   num_slices=None,
                                   flip_x=False,
                                   start_volume=0,
+                                  prob_threshold=0.4,
                                   alpha=1.0,
                                   actually_create=True,
                                   actually_crop=True,
@@ -125,6 +127,9 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
 
     this_xy : array
         DLC output of the neuron positions
+
+    this_prob : array
+        DLC output of the tracking probabilities (confidence)
 
     which_z : int
         Which slice to center the crop around
@@ -144,6 +149,9 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
     start_volume : int
         Number of volumes to skip at the beginning
 
+    prob_threshold : float
+        Threshold below which to just skip the plane, i.e. set it to zeros
+
     alpha : float
         Multiplicative factor; needed if the original .btf needs format conversion
         e.g. uint16 -> uint8
@@ -162,7 +170,7 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
     """
 
     def update_ind(i, crop_sz):
-        """Translate DLC coordinates to cropp coordinates"""
+        """Translate DLC coordinates to crop coordinates"""
         center = this_xy[i]
 
         x_ind, y_ind = get_crop_coords(center, sz=crop_sz[0:2])
@@ -211,22 +219,25 @@ def get_crop_from_ometiff_virtual(fname, this_xy, which_z, num_frames,
                 if verbose >= 1:
                     print(f"Full size read as {full_sz}")
                 x_ind, y_ind = update_ind(i_rel_volume, crop_sz)
+            # Set up relative indices
             this_abs_slice = i % num_slices
             this_rel_slice = this_abs_slice - start_of_each_frame
             # Align start of annotations and .btf
             if i < start_volume or this_abs_slice not in which_slices:
                 continue
-            if verbose >= 2:
-                print(f'Page {i}/{num_frames*num_slices}; volume {i_rel_volume}/{num_frames} to cropped array slice {this_rel_slice}')
+            # Skip if tracking is below confidence
+            if this_prob[i_rel_volume] > prob_threshold:
+                if verbose >= 2:
+                    print(f'Page {i}/{num_frames*num_slices}; volume {i_rel_volume}/{num_frames} to cropped array slice {this_rel_slice}')
 
-            tmp = (alpha*page.asarray()).astype('uint8')
-            if flip_x:
-                tmp = np.flip(tmp,axis=1)
+                tmp = (alpha*page.asarray()).astype('uint8')
+                if flip_x:
+                    tmp = np.flip(tmp,axis=1)
 
-            if actually_crop:
-                final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind][y_ind]
-            else:
-                final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp
+                if actually_crop:
+                    final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind][y_ind]
+                else:
+                    final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp
 
             # Update time index and tracking location
             if this_abs_slice == end_of_each_frame:

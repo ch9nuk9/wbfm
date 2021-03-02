@@ -241,8 +241,10 @@ def align_dictionaries(ref_set, global2local, local2global):
 
 
 def register_all_reference_frames(ref_frames,
-                                  use_bipartite_matching=False,
                                   previous_ref_set=None,
+                                  add_gp_to_candidates=False,
+                                  add_affine_to_candidates=False,
+                                  use_affine_matching=False,
                                   verbose=0):
     """
     Registers a set of reference frames, aligning their neuron indices
@@ -265,6 +267,9 @@ def register_all_reference_frames(ref_frames,
         pairwise_conf_dict = previous_ref_set.pairwise_conf
         bp_matches_dict = previous_ref_set.bipartite_matches
 
+    match_opt = {'use_affine_matching':use_affine_matching,
+                 'add_affine_to_candidates':add_affine_to_candidates,
+                 'add_gp_to_candidates':add_gp_to_candidates}
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
     for i0, frame0 in tqdm(enumerate(ref_frames), total=len(ref_frames)):
@@ -272,7 +277,8 @@ def register_all_reference_frames(ref_frames,
             key = (i0, i1)
             if i1==i0 and key not in pairwise_matches_dict:
                 continue
-            match, conf, feature_matches, bp_matches = calc_2frame_matches_using_class(frame0, frame1, use_bipartite_matching)
+            out = calc_2frame_matches_using_class(frame0, frame1,**match_opt)
+            match, conf, feature_matches, bp_matches = out
             pairwise_matches_dict[key] = match
             pairwise_conf_dict[key] = conf
             feature_matches_dict[key] = feature_matches
@@ -406,6 +412,9 @@ def track_neurons_full_video(vid_fname,
                              neuron_feature_radius=5.0,
                              preprocessing_settings=PreprocessingSettings(),
                              use_affine_matching=False,
+                             add_affine_to_candidates=False,
+                             add_gp_to_candidates=False,
+                             save_candidate_matches=False,
                              verbose=0):
     """
     Detects and tracks neurons using opencv-based feature matching
@@ -440,24 +449,30 @@ def track_neurons_full_video(vid_fname,
 
     # Loop through all pairs
     pairwise_matches_dict = {}
+    pairwise_candidates_dict = {}
     pairwise_conf_dict = {}
     all_frames = [frame0]
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
+    match_opt = {'use_affine_matching':use_affine_matching,
+                 'add_affine_to_candidates':add_affine_to_candidates,
+                 'add_gp_to_candidates':add_gp_to_candidates}
     for i_frame in tqdm(frame_range):
         frame1 = local_build_frame(i_frame)
 
-        m, c, fm, _ = calc_2frame_matches_using_class(frame0, frame1,
-                                                      use_affine_matching=use_affine_matching)
+        out = calc_2frame_matches_using_class(frame0, frame1,**match_opt)
+        match, conf, fm, candidates = out
         # Save to dictionaries
         key = (i_frame-1, i_frame)
-        pairwise_matches_dict[key] = m
-        pairwise_conf_dict[key] = c
+        pairwise_matches_dict[key] = match
+        pairwise_conf_dict[key] = conf
+        if save_candidate_matches:
+            pairwise_candidates_dict[key] = candidates
         # Save frame to list
         all_frames.append(frame1)
         frame0 = frame1
 
-    return pairwise_matches_dict, pairwise_conf_dict, all_frames
+    return pairwise_matches_dict, pairwise_conf_dict, all_frames, pairwise_candidates_dict
 
 
 def track_via_reference_frames(vid_fname,
@@ -468,6 +483,9 @@ def track_via_reference_frames(vid_fname,
                                start_slice=2,
                                verbose=0,
                                num_reference_frames=5,
+                               add_gp_to_candidates=False,
+                               add_affine_to_candidates=False,
+                               use_affine_matching=False,
                                preprocessing_settings=PreprocessingSettings()):
     """
     Tracks neurons by registering them to a set of reference frames
@@ -490,7 +508,10 @@ def track_via_reference_frames(vid_fname,
 
     if verbose >= 1:
         print("Analyzing reference frames...")
-    reference_set = register_all_reference_frames(ref_frames)
+    match_opt = {'use_affine_matching':use_affine_matching,
+                 'add_affine_to_candidates':add_affine_to_candidates,
+                 'add_gp_to_candidates':add_gp_to_candidates}
+    reference_set = register_all_reference_frames(ref_frames, **match_opt)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
@@ -512,6 +533,93 @@ def track_via_reference_frames(vid_fname,
     return all_matches, all_other_frames, reference_set
 
 
+
+def track_neurons_full_video_window(vid_fname,
+                             start_frame=0,
+                             num_frames=10,
+                             num_slices=33,
+                             neuron_feature_radius=5.0,
+                             preprocessing_settings=PreprocessingSettings(),
+                             num_subsequent_matches=2,
+                             use_affine_matching=False,
+                             add_affine_to_candidates=False,
+                             add_gp_to_candidates=False,
+                             save_candidate_matches=False,
+                             verbose=0):
+    """
+    Detects and tracks neurons using opencv-based feature matching
+    Compares each frame to the next (num_subsequent_matches) frames
+
+    See also: track_neurons_full_video
+    """
+    # Get initial volume; settings are same for all
+    import_opt = {'num_slices':num_slices,
+                 'alpha':1.0,
+                 'dtype':preprocessing_settings.initial_dtype}
+    ref_opt = {'neuron_feature_radius':neuron_feature_radius}
+    def local_build_frame(frame_ind,
+                          vid_fname=vid_fname,
+                          import_opt=import_opt,
+                          ref_opt=ref_opt):
+        dat = get_single_volume(vid_fname, frame_ind, **import_opt)
+        metadata = {'frame_ind':frame_ind,
+                    'vol_shape':dat.shape,
+                    'video_fname':vid_fname}
+        f = build_reference_frame(dat,
+                                  num_slices=import_opt['num_slices'],
+                                  **ref_opt,
+                                  metadata=metadata,
+                                  preprocessing_settings=preprocessing_settings)
+        return f
+
+    if verbose >= 1:
+        print("Building initial frame...")
+
+    # Loop through all pairs
+    pairwise_matches_dict = {}
+    pairwise_candidates_dict = {}
+    pairwise_conf_dict = {}
+    all_frame_dict = {}
+    end_frame = start_frame+num_frames
+    frame_range = list(range(start_frame, end_frame))
+    match_opt = {'use_affine_matching':use_affine_matching,
+                 'add_affine_to_candidates':add_affine_to_candidates,
+                 'add_gp_to_candidates':add_gp_to_candidates}
+    for i_base_frame in tqdm(frame_range):
+        # Check if we already built the frame
+        if i_base_frame in all_frame_dict:
+            base_frame = all_frame_dict[i_base_frame]
+        else:
+            base_frame = local_build_frame(i_base_frame)
+            all_frame_dict[i_base_frame] = base_frame
+        window_range = range(i_base_frame+1, i_base_frame+num_subsequent_matches+1)
+        for i_next_frame in window_range:
+            if i_next_frame in all_frame_dict:
+                next_frame = all_frame_dict[i_next_frame]
+            else:
+                next_frame = local_build_frame(i_next_frame)
+                all_frame_dict[i_next_frame] = next_frame
+
+            out = calc_2frame_matches_using_class(base_frame, next_frame,**match_opt)
+            match, conf, fm, candidates = out
+            # Save to dictionaries
+            key = (i_base_frame, i_next_frame)
+            pairwise_matches_dict[key] = match
+            pairwise_conf_dict[key] = conf
+            if save_candidate_matches:
+                pairwise_candidates_dict[key] = candidates
+
+    return pairwise_matches_dict, pairwise_conf_dict, all_frame_dict, pairwise_candidates_dict
+
+
+
+
+
+
+
+
+
+
 def track_via_sequence_consensus(vid_fname,
                                  start_frame=0,
                                  num_frames=10,
@@ -521,6 +629,8 @@ def track_via_sequence_consensus(vid_fname,
                                  num_consensus_frames=3,
                                  preprocessing_settings=PreprocessingSettings()):
     """
+    OLD
+
     Tracks neurons by finding consensus between a sliding window of frames
 
     Note: if num_consensus_frames=2, this is tracking via adjacent frames

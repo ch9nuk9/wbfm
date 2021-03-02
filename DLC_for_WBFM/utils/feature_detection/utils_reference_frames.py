@@ -4,11 +4,13 @@ from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using
 from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
+from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 import numpy as np
 import networkx as nx
 import collections
 from dataclasses import dataclass
 import scipy.ndimage as ndi
+from collections import defaultdict
 
 
 ##
@@ -166,8 +168,11 @@ def get_subgraph_with_strong_weights(DG, min_weight):
     return G
 
 
-def calc_connected_components(DG):
-    all_neurons = list(nx.strongly_connected_components(DG))
+def calc_connected_components(DG, only_strong_components=True):
+    if only_strong_components:
+        all_neurons = list(nx.strongly_connected_components(DG))
+    else:
+        all_neurons = list(nx.weakly_connected_components(DG))
     all_len = [len(c) for c in all_neurons]
     #print(all_len)
     big_comp = np.argmax(all_len)
@@ -175,12 +180,10 @@ def calc_connected_components(DG):
     #print(big_comp)
     big_DG = DG.subgraph(all_neurons[big_comp])
 
-    return big_DG, all_len
+    return big_DG, all_len, all_neurons
 
 
 def plot_degree_hist(DG):
-    import collections
-
     degree_sequence = sorted([d for n, d in DG.degree()], reverse=True)  # degree sequence
     degreeCount = collections.Counter(degree_sequence)
     deg, cnt = zip(*degreeCount.items())
@@ -191,7 +194,7 @@ def plot_degree_hist(DG):
 
 def calc_bipartite_matches(all_candidate_matches, verbose=0):
     """
-    Calculates bipartite matches from a list of candidate matches
+    Calculates the globally optimally matching from an overmatched array with weights
 
     Parameters
     ==================
@@ -209,7 +212,6 @@ def calc_bipartite_matches(all_candidate_matches, verbose=0):
         For example: [[0,1], [1,2]]
         Same format as the input candidate matches, but WITHOUT weight
         But now are unique one-to-one matches
-
     """
 
     G = nx.Graph()
@@ -220,6 +222,8 @@ def calc_bipartite_matches(all_candidate_matches, verbose=0):
         # Otherwise the sets are unordered
         G.add_node(candidate[0], bipartite=0)
         G.add_node(candidate[1], bipartite=1)
+        if len(candidate)==2:
+            candidate.append(1)
         G.add_weighted_edges_from([candidate])
     if verbose >= 2:
         print("Performing bipartite matching")
@@ -306,6 +310,7 @@ def is_ordered_subset(list1, list2):
 def calc_matches_using_feature_voting(frame0, frame1,
                                       feature_matches_dict,
                                       verbose=0,
+                                      min_features_needed=2,
                                       DEBUG=False):
 
     all_neuron_matches = []
@@ -330,7 +335,6 @@ def calc_matches_using_feature_voting(frame0, frame1,
         if DEBUG:
             print("Matching neuron in volume 1: ", this_n1)
 
-        min_features_needed = 2 # TODO
         all_neuron_matches, all_confidences, all_candidate_matches = add_neuron_match(
             all_neuron_matches,
             all_confidences,
@@ -345,9 +349,10 @@ def calc_matches_using_feature_voting(frame0, frame1,
 
 def calc_2frame_matches_using_class(frame0,
                                     frame1,
-                                    use_bipartite_matching=False,
                                     verbose=1,
                                     use_affine_matching=False,
+                                    add_affine_to_candidates=False,
+                                    add_gp_to_candidates=False,
                                     DEBUG=False):
     """
     Similar to older function, but this doesn't assume the features are
@@ -386,12 +391,24 @@ def calc_2frame_matches_using_class(frame0,
         opt = {'all_feature_matches':feature_matches}
     all_neuron_matches, all_confidences, all_candidate_matches = f(
                                           frame0, frame1,
-                                          **opt,
-                                          DEBUG=False)
+                                          **opt)
 
-    if use_bipartite_matching:
-        all_bp_matches = calc_bipartite_matches(all_candidate_matches, verbose-1)
-    else:
-        all_bp_matches = None
+    if add_affine_to_candidates:
+        f = calc_matches_using_affine_propagation
+        opt = {'all_feature_matches':feature_matches}
+        _, _, new_candidate_matches = f(frame0, frame1, **opt)
+        all_candidate_matches.extend(new_candidate_matches)
 
-    return all_neuron_matches, all_confidences, feature_matches, all_bp_matches
+    if add_gp_to_candidates:
+        n0 = frame0.neuron_locs.copy()
+        n1 = frame1.neuron_locs.copy()
+
+        # TODO: Increase z distances
+        n0[:,0] *= 3
+        n1[:,0] *= 3
+        # Actually match
+        opt = {'this_match':all_neuron_matches, 'this_conf':all_confidences}
+        matches, _, _ = calc_matches_using_gaussian_process(n0, n1, **opt)
+        all_candidate_matches.extend(matches)
+
+    return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches
