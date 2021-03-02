@@ -299,7 +299,7 @@ def plot_iou(working_directory, output_directory='./dat/'):
 
         counter += 1
 
-    # plot heatmap of means of all IoUs within one dataset across parameters
+    # heatmap of means of all IoUs within one dataset across parameters
     fig, ax = plt.subplots(figsize=(16, 16))
     plt.title('Mean IoUs across parameters')
     im = plt.imshow(means_across_parameters)

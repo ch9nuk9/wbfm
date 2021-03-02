@@ -7,6 +7,7 @@ import os
 import matplotlib.pyplot as plt
 import tifffile as tiff
 
+
 def rigid_prealignment(fname):
     """
     Pre-aligns neurons on slices across Z.
@@ -14,14 +15,14 @@ def rigid_prealignment(fname):
 
     Parameters
     ----------
-    vol_path : str
+    fname : str
         Path to volume, which shall be aligned
     Returns
     -------
     3D array with pre-aligned neurons
     """
 
-    import_opt = {'which_vol':0, 'num_slices':33, 'alpha': 1.0, 'dtype': 'uint16'}
+    import_opt = {'which_vol': 0, 'num_slices': 32, 'alpha': 1.0, 'dtype': 'uint16'}
     dat_raw = get_single_volume(fname, **import_opt)
 
     ## Preprocessing

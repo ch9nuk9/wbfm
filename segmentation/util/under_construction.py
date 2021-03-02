@@ -11,6 +11,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import get_node
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import unpack_node_name
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
 
+
 def create_2d_masks_gt():
     # creates separate 2d masks of the annotated ground truth
     path = r'C:\Segmentation_working_area\ground_truth\one_volume_seg.npy'
@@ -56,6 +57,7 @@ def gmm():
     print('Done with GMM')
     return
 
+
 def what_is_x_when_y_is(input, x, y):
     order = y.argsort()
     x = x[order]
@@ -63,6 +65,7 @@ def what_is_x_when_y_is(input, x, y):
 
     # finds closest x-index of y-value coming from the left side
     return x[y.searchsorted(input, 'left')]
+
 
 def brightness_histograms(brightness_dict: dict):
     plt.figure()
@@ -193,3 +196,13 @@ def renaming_stitched_array(arr):
         arr = np.where((arr == k), v, arr)
 
     return arr
+
+sd_dir = r'C:\Segmentation_working_area\data\stardist_raw\3d'
+sd_files = [os.path.join(sd_dir, f.name) for f in os.scandir(sd_dir) if f.is_file()]
+sd_array = np.load(sd_files[4])
+
+print('Start with bipartite shit')
+rm_array = ol.remove_large_areas(sd_array, 1000)
+bp_array = ol.bipartite_stitching(sd_array)
+
+print('Done')

@@ -11,7 +11,7 @@ def segment_with_stardist(vol_path):
     # Stardist models: versatile showed best results
 
     model_list = ['2D_paper_dsb2018', '2D_versatile_fluo', '2D_demo']
-    mdl = model_list[0]  # '2D_versatile_fluo'
+    mdl = model_list[1]  # '2D_versatile_fluo'
     axis_norm = (0, 1)
     n_channel = 1
 
@@ -27,7 +27,7 @@ def segment_with_stardist(vol_path):
             # initialize output dimensions
             z = len(vol.pages)
             xy = vol.pages[1].shape
-            output_file = np.zeros((z, *xy))
+            output_file = np.zeros((z, *xy))    # '*' = tuple unpacking
 
             # iterate over images to run stardist on single images
             for idx, page in enumerate(vol.pages):

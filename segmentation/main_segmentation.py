@@ -6,6 +6,7 @@ been given as input.
 """
 import segmentation.util.overlap as ol
 
+
 def main_segmentation_sd(volume_path, align_flag=False, remove_flyback=True):
     """
     Top level function; Pipeline from raw data volume (input) to stitched segmented 3D masks (output)
