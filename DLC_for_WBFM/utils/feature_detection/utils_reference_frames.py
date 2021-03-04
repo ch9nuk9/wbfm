@@ -95,8 +95,10 @@ def unpack_node_name(node_name):
     return divmod(node_name, 10000)
 
 
-def build_digraph_from_matches(pairwise_matches, pairwise_conf=None,
-                              verbose=1):
+def build_digraph_from_matches(pairwise_matches,
+                               pairwise_conf=None,
+                               min_conf=0.0,
+                               verbose=1):
     DG = nx.DiGraph()
     for frames, all_neurons in pairwise_matches.items():
         if verbose >= 1:
@@ -108,7 +110,8 @@ def build_digraph_from_matches(pairwise_matches, pairwise_conf=None,
         else:
             all_conf = np.ones_like(np.array(all_neurons)[:,0])
         for neuron_pair, this_conf in zip(all_neurons, all_conf):
-            #print(neuron_pair)
+            if this_conf < min_conf:
+                continue
             node1 = get_node_name(frames[0], neuron_pair[0])
             node2 = get_node_name(frames[1], neuron_pair[1])
             e = (node1, node2, this_conf)
