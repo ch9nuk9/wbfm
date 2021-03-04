@@ -215,15 +215,20 @@ def neuron_global_id_from_multiple_matches_thresholds(matches, conf, total_frame
 def neuron_global_id_from_multiple_matches(matches,
                                            total_size=None,
                                            k_values=None,
-                                           list_min_sizes=None):
+                                           list_min_sizes=None,
+                                           verbose=1):
     """
     Builds a consistent set of neuron IDs using k-clique clustering
     """
     if list_min_sizes is None and k_values is None:
         list_min_sizes = [2]
-        k_values = [total_size-1, total_size-2, total_size-3]
+        k_values = list(range(total_size,2,-1))
+        if len(k_values) > 4:
+            k_values = k_values[:4]
 
     # Get a list of the neuron names that belong to each community
+    if verbose >= 1:
+        print("Calculating communities. Allowed sizes: ", k_values)
     all_communities = calc_neurons_using_k_cliques(matches,
                                      k_values = k_values,
                                      list_min_sizes = list_min_sizes,
@@ -323,8 +328,9 @@ def register_all_reference_frames(ref_frames,
     # Use the matches to build a global index
     if use_k_cliques:
         global2local, local2global = neuron_global_id_from_multiple_matches(
-            candidate_matches,
-            total_size=len(ref_frames)
+            bp_matches_dict,
+            total_size=len(ref_frames),
+            verbose=verbose
         )
     else:
         global2local, local2global = neuron_global_id_from_multiple_matches_thresholds(
@@ -554,7 +560,8 @@ def track_via_reference_frames(vid_fname,
     match_opt = {'use_affine_matching':use_affine_matching,
                  'add_affine_to_candidates':add_affine_to_candidates,
                  'add_gp_to_candidates':add_gp_to_candidates,
-                 'use_k_cliques':use_k_cliques}
+                 'use_k_cliques':use_k_cliques,
+                 'verbose':verbose-1}
     reference_set = register_all_reference_frames(ref_frames, **match_opt)
 
     if verbose >= 1:
