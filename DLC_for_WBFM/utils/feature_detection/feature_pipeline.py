@@ -3,6 +3,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
+from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques
 
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 import copy
@@ -175,10 +176,12 @@ def build_all_reference_frames(num_reference_frames,
 ## Networkx-based construction of reference indices
 ##
 
-def neuron_global_id_from_multiple_matches(matches, conf, total_frames,
+def neuron_global_id_from_multiple_matches_thresholds(matches, conf, total_frames,
                                            edge_threshs = [0,0.1,0.2,0.3]):
     """
     Builds a vector of neuron matches from pairwise matchings to multiple frames
+        Uses a list of thresholds to check for strongly connected components
+        DEPRECATED
 
     Input format:
         matches[T] -> match_array
@@ -205,6 +208,38 @@ def neuron_global_id_from_multiple_matches(matches, conf, total_frames,
         g2l, l2g, reference_ind, G = add_all_good_components(G,**opt)
         global2local.update(g2l)
         local2global.update(l2g)
+
+    return global2local, local2global
+
+
+def neuron_global_id_from_multiple_matches(matches,
+                                           total_size=None,
+                                           k_values=None,
+                                           list_min_sizes=None):
+    """
+    Builds a consistent set of neuron IDs using k-clique clustering
+    """
+    if list_min_sizes is None and k_values is None:
+        list_min_sizes = [2]
+        k_values = [total_size-1, total_size-2, total_size-3]
+
+    # Get a list of the neuron names that belong to each community
+    all_communities = calc_neurons_using_k_cliques(matches,
+                                     k_values = k_values,
+                                     list_min_sizes = list_min_sizes,
+                                     max_size = total_size)
+
+    # Build output format
+    local2global = {}
+    global2local = defaultdict(list)
+    for i_comm, this_comm in enumerate(all_communities):
+        for this_neuron in this_comm:
+            key = unpack_node_name(this_neuron)
+            # Map from local to community index = global neuron ID
+            local2global[key] = i_comm
+            # Opposite direction: from global ID to list of local indices
+            frame_ind, neuron_ind = key
+            global2local[frame_ind].append(neuron_ind)
 
     return global2local, local2global
 
@@ -245,6 +280,7 @@ def register_all_reference_frames(ref_frames,
                                   add_gp_to_candidates=False,
                                   add_affine_to_candidates=False,
                                   use_affine_matching=False,
+                                  use_k_cliques=True,
                                   verbose=0):
     """
     Registers a set of reference frames, aligning their neuron indices
@@ -278,18 +314,24 @@ def register_all_reference_frames(ref_frames,
             if i1==i0 and key not in pairwise_matches_dict:
                 continue
             out = calc_2frame_matches_using_class(frame0, frame1,**match_opt)
-            match, conf, feature_matches, bp_matches = out
+            match, conf, feature_matches, candidate_matches = out
             pairwise_matches_dict[key] = match
             pairwise_conf_dict[key] = conf
             feature_matches_dict[key] = feature_matches
-            if bp_matches is not None:
-                bp_matches_dict[key] = list(bp_matches)
+            if candidate_matches is not None:
+                bp_matches_dict[key] = list(candidate_matches)
     # Use the matches to build a global index
-    global2local, local2global = neuron_global_id_from_multiple_matches(
-        pairwise_matches_dict,
-        pairwise_conf_dict,
-        len(ref_frames)
-    )
+    if use_k_cliques:
+        global2local, local2global = neuron_global_id_from_multiple_matches(
+            candidate_matches,
+            total_size=len(ref_frames)
+        )
+    else:
+        global2local, local2global = neuron_global_id_from_multiple_matches_thresholds(
+            pairwise_matches_dict,
+            pairwise_conf_dict,
+            len(ref_frames)
+        )
 
     # TODO: align to previous global match, if it exists
     if previous_ref_set is not None:
@@ -486,6 +528,7 @@ def track_via_reference_frames(vid_fname,
                                add_gp_to_candidates=False,
                                add_affine_to_candidates=False,
                                use_affine_matching=False,
+                               use_k_cliques=True,
                                preprocessing_settings=PreprocessingSettings()):
     """
     Tracks neurons by registering them to a set of reference frames
@@ -510,7 +553,8 @@ def track_via_reference_frames(vid_fname,
         print("Analyzing reference frames...")
     match_opt = {'use_affine_matching':use_affine_matching,
                  'add_affine_to_candidates':add_affine_to_candidates,
-                 'add_gp_to_candidates':add_gp_to_candidates}
+                 'add_gp_to_candidates':add_gp_to_candidates,
+                 'use_k_cliques':use_k_cliques}
     reference_set = register_all_reference_frames(ref_frames, **match_opt)
 
     if verbose >= 1:
