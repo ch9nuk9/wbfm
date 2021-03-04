@@ -103,6 +103,9 @@ class ReferenceFrame():
                 Frame index: {self.frame_ind} \n\
                 Number of neurons: {len(self.neuron_locs)} \n"
 
+    def __repr__(self):
+        return f"Number of neurons: {len(self.neuron_locs)} \n"
+
 ##
 ## Class for Set of reference frames
 ##
@@ -125,6 +128,9 @@ class RegisteredReferenceFrames():
     bipartite_matches : list = None
 
     def __str__(self):
+        return f"RegisteredReferenceFrames with {len(self.reference_frames)} Frames \n"
+
+    def __repr__(self):
         [print(r) for r in self.reference_frames]
         return f"=======================================\n\
                 RegisteredReferenceFrames:\n\
