@@ -286,6 +286,31 @@ def build_tracklets_from_classes(all_frames,
                                         verbose=verbose)
 
 
+
+def build_tracklets_simple(all_matches, verbose=0):
+    """
+    Build tracklets without requiring other data
+        Especially neuron position
+
+    See also: build_tracklets_from_matches
+    """
+
+    num_neurons = 0
+    for m in all_matches:
+        max_neuron = np.max(np.array(m))
+        num_neurons = max(num_neurons, max_neuron)
+
+    def dummy_xyz_factory(num_neurons=num_neurons):
+        return np.zeros((num_neurons,3))
+
+    all_neurons = defaultdict(dummy_xyz_factory)
+
+    # Call old function
+    return build_tracklets_from_matches(all_neurons,
+                                        all_matches,
+                                        None,
+                                        verbose=verbose)
+
 ##
 ## Postprocessing: stitching tracklets together
 ##
