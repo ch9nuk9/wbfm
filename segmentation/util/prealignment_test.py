@@ -16,14 +16,15 @@ def rigid_prealignment(fname):
     Parameters
     ----------
     fname : str
-        Path to volume, which shall be aligned
+        Path to TIF volume, which shall be aligned
     Returns
     -------
     3D array with pre-aligned neurons
     """
 
-    import_opt = {'which_vol': 0, 'num_slices': 32, 'alpha': 1.0, 'dtype': 'uint16'}
+    import_opt = {'which_vol': 0, 'num_slices': 33, 'alpha': 1.0, 'dtype': 'uint16'}
     dat_raw = get_single_volume(fname, **import_opt)
+    print(f'after loading {dat_raw.shape}')
 
     ## Preprocessing
 
@@ -37,19 +38,20 @@ def rigid_prealignment(fname):
 
     # Actually do it... can take a while
     dat = perform_preprocessing(dat_raw, preprocessing_settings)
+    print(f'after preprocessing {dat.shape}')
 
     # optional plotting
     # Look at the data
-#     plt.figure()
-#     plt.imshow(np.max(dat, axis=0))
-#     plt.title('maxP dat')
-#
-#     plt.figure()
-#     plt.imshow(np.max(dat_raw, axis=0))
-#     plt.title('maxP raw')
-#     save preprocessed data as a new test volume
-#     tiff.imsave(r'C:\Segmentation_working_area\test_volume\preprocessed_volume.tif', dat)
-#
-#     plt.show()
+    # plt.figure()
+    # plt.imshow(np.max(dat, axis=0))
+    # plt.title('maxP dat')
+    #
+    # plt.figure()
+    # plt.imshow(np.max(dat_raw, axis=0))
+    # plt.title('maxP raw')
+    # save preprocessed data as a new test volume
+    # tiff.imsave(r'C:\Segmentation_working_area\ground_truth\bipartite_stitched_gt\postaligned_gt_bp_stitch.tif', dat)
+
+    # plt.show()
 
     return dat
