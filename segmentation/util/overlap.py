@@ -196,11 +196,10 @@ def bipartite_stitching(array_3d, verbose=0):
 
     # loop over slices
     for i_slice in range(num_slices):
-        print(f'--- Slice: {i_slice}')
+        # print(f'--- Slice: {i_slice}')
 
         this_slice = array_3d[i_slice]
         bp_matches = []
-        these_centroids = []
 
         if i_slice < num_slices - 1:
             next_slice = array_3d[i_slice + 1]
@@ -214,10 +213,16 @@ def bipartite_stitching(array_3d, verbose=0):
             all_matches.append(bp_matches)
 
         # get centroid coordinates for all found neurons/masks
-        for this_neuron in np.unique(this_slice):
+        these_centroids = []
+        for this_neuron in range(int(np.amax(this_slice)) + 1):
+            # if this_neuron == 0:
+            #     continue
             this_x, this_y = np.where(this_slice == this_neuron)
 
-            these_centroids.append([i_slice, round(np.mean(this_x)), round(np.mean(this_y))])
+            if len(this_x) == 0:
+                these_centroids.append([-15, -15, -15])
+            else:
+                these_centroids.append([i_slice, round(np.mean(this_x)), round(np.mean(this_y))])
 
         # # rename neurons on existing slice according to best match
         # for match in bp_matches:
@@ -238,19 +243,14 @@ def bipartite_stitching(array_3d, verbose=0):
     #         break
 
     clust_df = build_tracklets_from_matches(all_centroids, all_matches)
-    # cant finish Charlies function, because of dimensional mismatch!
-    # I think, that I misunderstood the centroids! I am taking centroids of every matched neuron on 'this_slice', but
-    # his function needs centroids of this and next slice at the same time! So each entry in centroids list should
-    # contain both centroid values, BUT the lists are not allowed to contain the IDs and are assumed to be sorted
-    # and consistent! What to do?
 
-    print(f'tracklets output')
+    # print(f'tracklets output')
 
 
     # renaming all found neurons in array; in a sorted manner
     sorted_stitched_array = renaming_stitched_array(array_3d, clust_df)
 
-    return sorted_stitched_array
+    return sorted_stitched_array, (clust_df, all_centroids, all_matches)
 
 
 def create_matches_list(slice_1, slice_2, verbose=0):
@@ -329,6 +329,7 @@ def renaming_stitched_array(arr, df):
 
     return renamed_array
 
+
 # histogram of neuron 'lengths' across Z
 def neuron_length_hist(lengths_dict: dict, save_path='', save_flag=0):
     # plots the lengths of neurons in a histogram and barplot
@@ -364,9 +365,10 @@ def neuron_length_hist(lengths_dict: dict, save_path='', save_flag=0):
 
     return fig, fig1
 
+
 def remove_short_neurons(array, neuron_lengths, length_cutoff):
     # remove all neurons, which are too short (e.g. < 3)
-
+    # TODO: remove short neurons from brightness dict too!
     rm_list = list()
     for key, value in neuron_lengths.items():
         if value < length_cutoff:
@@ -392,8 +394,9 @@ def split_long_neurons(array,
     # if a neuron is too long (>12 slices), it will be cut off and a new neuron will be initialized
 
     # iterate over neuron lengths dict, and if z >= 12, try to split it
+    # TODO iterate over the dictionary itself
     for i in range(1, len(neuron_lengths) + 1):
-        if neuron_lengths[i] >= maximum_length:
+        if neuron_lengths[i] > maximum_length:
 
             try:
                 x_means, _, _ = calc_means_via_brightnesses(neuron_brightnesses[i])
@@ -433,10 +436,12 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths):
     print('Start with brightness calculations')
     # add default dict
     brightness_dict = defaultdict(list)
+    brightness_planes = defaultdict(list)
 
     # loop over the actual data and calculate average brightness per neuron per slice/mask
     for neuron in neuron_lengths.keys():
         current_list = list()
+        planes_list = list()
 
         for i_slice, slice in enumerate(stitched_masks):
             # get the mask
@@ -449,6 +454,7 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths):
                 # extend the brightness dict
                 if current_brightness is not np.nan:
                     current_list.append(current_brightness)
+                    planes_list.append(i_slice)
                 else:
                     print(f'NaN in neuron {neuron} slice {i_slice}')
 
@@ -457,10 +463,11 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths):
 
         # add list of brightnesses to dict
         brightness_dict[neuron].extend(current_list)
+        brightness_planes[neuron].extend(planes_list)
 
     print(f'Brightness: {len(brightness_dict)}    Masks: {len(neuron_lengths)}')
     print(f'Done with brightness')
-    return brightness_dict
+    return brightness_dict, brightness_planes
 
 
 def calc_means_via_brightnesses(brightnesses, plots=0):
@@ -487,9 +494,14 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
         coeff, var_matrix = curve_fit(gauss2, x_data, y_data, p0=p0)
     except RuntimeError:
         print('Oh oh, could not fit')
-        return list()
+        return []
 
     means = [round(coeff[1]), round(coeff[4])]
+
+    if any([x < 0 or x > len(brightnesses) for x in means]):
+        print(f'Error in brightness: Means = {means}')
+        return []
+
 
     # you can plot each gaussian separately using
     pg1 = np.zeros_like(p0)
@@ -516,6 +528,8 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
 
         plt.show()
         # plt.savefig(r'.\brightnesses_gaussian_fit.png')
+
+        return means, g1, g2
 
     return means, g1, g2
 
@@ -643,7 +657,7 @@ def create_3d_array_from_tiff(img_path: str, flyback_flag=0):
 
     if not img_list:
         print(f'There are no .tif files in {img_path}')
-        return False
+        return []
 
     if len(img_list) >= 2:
         print('There is more than 1 TIFF file in the folder! Are you sure, that is the correct folder?')
@@ -704,12 +718,12 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
     # preprocessing step, which removes areas > 1000 pixels
     algo_array = remove_large_areas(algo_array)
 
-    stitched_3d_masks = bipartite_stitching(algo_array)
+    stitched_3d_masks, df = bipartite_stitching(algo_array)
     neuron_lengths = get_neuron_lengths_dict(stitched_3d_masks)
     # stitched_3d_masks, neuron_lengths = calc_all_overlaps(algo_array)
 
     # calculate average brightness per neuron mask
-    brightness_dict = calc_brightness(img_array, stitched_3d_masks, neuron_lengths)
+    brightness_dict, brightness_planes = calc_brightness(img_array, stitched_3d_masks, neuron_lengths)
 
     # split long neurons using gaussian mixture model
 
@@ -723,9 +737,9 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
                                                                                 split_neuron_lengths,
                                                                                 min_neuron_length)
     # neuron length histogram
-    h1, h2 = neuron_length_hist(neuron_lengths, 1)
+    # h1, h2 = neuron_length_hist(neuron_lengths, 1)
 
-    return final_mask_array, final_neuron_lengths, split_brightness # result should be the corrected masks in 3D
+    return final_mask_array, final_neuron_lengths, split_brightness, brightness_planes, df # result should be the corrected masks in 3D
 
 
 # TODO work on dispatcher! n
@@ -762,7 +776,7 @@ def array_dispatcher(vol_path, align=False, remove_flyback=True):
             pass
 
     # TODO change segmentation method/algo depending on the accuracy results
-    # TODO segment incoming volume, not a file
+    # TODO segment incoming volume, not a file!
     print(f'... Segmentation start (in dispatcher). File: {files[0]}')
     seg_array_3d = sd.segment_with_stardist(files[0])
 
@@ -800,6 +814,7 @@ def remove_large_areas(arr, threshold=1000):
             if np.count_nonzero(arr == u) >= threshold:
                 arr = np.where(arr == u, 0, arr)
     return arr
+
 
 
 # gt_path = r'C:\Segmentation_working_area\ground_truth\gt_masks_npy'
