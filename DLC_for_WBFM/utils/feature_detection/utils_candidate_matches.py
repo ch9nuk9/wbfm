@@ -3,9 +3,56 @@ from networkx.algorithms.community import k_clique_communities
 import networkx as nx
 from collections import defaultdict
 import numpy as np
+from scipy.optimize import linear_sum_assignment
+from scipy.spatial.distance import cdist
 
 
+##
+## Non networkx way to get bipartite matches
+##
 
+def calc_bipartite_from_distance(xyz0, xyz1, max_dist=None):
+    """
+    Uses scipy implementation of linear_sum_assignment to calculate best matches
+
+    Parameters
+    ==============
+    xyz0 - array-like; shape=(n0,m)
+        The 3d positions of a point cloud
+        Note that m==3 is not required
+    xyz1 - array-like; shape=(n1,m)
+        The 3d positions of a second point cloud
+    max_dist - float or None (default)
+        Distance over which to remove matches
+
+    """
+    # TODO: use sparse distance matrix: https://stackoverflow.com/questions/52366421/how-to-do-n-d-distance-and-nearest-neighbor-calculations-on-numpy-arrays
+    cost_matrix = cdist(np.array(xyz0), np.array(xyz1), 'euclidean')
+    matches = linear_sum_assignment(cost_matrix)
+    matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
+
+    # Postprocess to remove distance matches
+    if max_dist is not None:
+        match_dist = [cost_matrix[i,j] for (i,j) in matches]
+        to_remove = [i for i, d in enumerate(match_dist) if d>max_dist]
+        to_remove.reverse()
+        [matches.pop(i) for i in to_remove]
+
+        conf_func = lambda dist : 1.0 / (dist/max_dist+1.0)
+    else:
+        conf_func = lambda dist : 1.0 / (dist/10.0+1.0)
+
+    # Calculate confidences from distance
+    match_dist = [cost_matrix[i,j] for (i,j) in matches]
+    conf = [conf_func(d) for d in match_dist]
+
+    # Return matches twice to fit old function signature
+    return matches, conf, matches
+
+
+##
+## Convinience function
+##
 
 def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):
     bp_match_dict = {}
