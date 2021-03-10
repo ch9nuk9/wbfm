@@ -3,9 +3,9 @@ import open3d as o3d
 import pandas as pd
 from tqdm import tqdm
 import pickle
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 from scipy.spatial.distance import cdist
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
 
 
 ##

@@ -5,6 +5,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_sta
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name
 import numpy as np
 import networkx as nx
 import collections
@@ -86,39 +87,6 @@ def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings)
 ## Utilities for combining frames into a reference set
 ##
 
-def get_node_name(frame_ind, neuron_ind):
-    """The graph is indexed by integer, so all neurons must be unique"""
-    return frame_ind*10000 + neuron_ind
-
-def unpack_node_name(node_name):
-    """Inverse of get_node_name"""
-    return divmod(node_name, 10000)
-
-
-def build_digraph_from_matches(pairwise_matches,
-                               pairwise_conf=None,
-                               min_conf=0.0,
-                               verbose=1):
-    DG = nx.DiGraph()
-    for frames, all_neurons in pairwise_matches.items():
-        if verbose >= 1:
-            print("==============================")
-            print("Analyzing pair:")
-            print(frames)
-        if pairwise_conf is not None:
-            all_conf = pairwise_conf[frames]
-        else:
-            all_conf = np.ones_like(np.array(all_neurons)[:,0])
-        for neuron_pair, this_conf in zip(all_neurons, all_conf):
-            if this_conf < min_conf:
-                continue
-            node1 = get_node_name(frames[0], neuron_pair[0])
-            node2 = get_node_name(frames[1], neuron_pair[1])
-            e = (node1, node2, this_conf)
-            DG.add_weighted_edges_from([e])
-
-    return DG
-
 
 def remove_first_frame(reference_set):
     # Remove first element
@@ -194,42 +162,6 @@ def plot_degree_hist(DG):
     fig, ax = plt.subplots()
     plt.bar(deg, cnt, width=0.80, color="b")
 
-
-def calc_bipartite_matches(all_candidate_matches, verbose=0):
-    """
-    Calculates the globally optimally matching from an overmatched array with weights
-    """
-
-    G = nx.Graph()
-    # Rename the second frame's neurons so the graph is truly bipartite
-    for candidate in all_candidate_matches:
-        candidate = list(candidate)
-        candidate[1] = get_node_name(1, candidate[1])
-        #candidate[2] = 1/candidate[2]
-        # Otherwise the sets are unordered
-        G.add_node(candidate[0], bipartite=0)
-        G.add_node(candidate[1], bipartite=1)
-        if len(candidate)==2:
-            candidate.append(1)
-        G.add_weighted_edges_from([candidate])
-    if verbose >= 2:
-        print("Performing bipartite matching")
-    #set0 = [n for n, d in G.nodes(data=True) if d['bipartite'] == 0]
-    tmp_bp_matches = nx.max_weight_matching(G, maxcardinality=True)
-    #all_bp_dict = nx.bipartite.minimum_weight_full_matching(G, set0)
-    # Translate back into neuron index space
-    # all_bp_matches = []
-    # for neur0,v in all_bp_dict.items():
-    #     neur1 = unpack_node_name(v)[1]
-    #     all_bp_matches.append([neur0, neur1])
-    all_bp_matches = []
-    for m in tmp_bp_matches:
-        m = list(m) # unordered by default
-        m.sort()
-        m[1] = unpack_node_name(m[1])[1]
-        all_bp_matches.append(m)
-
-    return all_bp_matches
 
 
 ##

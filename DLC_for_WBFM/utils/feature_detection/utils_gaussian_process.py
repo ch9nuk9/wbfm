@@ -3,7 +3,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, WhiteKernel, DotProduct
 from sklearn import preprocessing
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
-from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_bipartite_from_distance
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
 import open3d as o3d
 
 

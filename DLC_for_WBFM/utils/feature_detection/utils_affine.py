@@ -2,7 +2,7 @@ import open3d as o3d
 import cv2
 import numpy as np
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree, build_neuron_tree
-from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_bipartite_from_distance
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
 from tqdm import tqdm
 
 
