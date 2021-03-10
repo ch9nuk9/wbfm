@@ -58,26 +58,28 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     zxy_predict = np.vstack([z_predict,x_predict,y_predict]).T
     zxy_predict = scaler2.inverse_transform(zxy_predict)
 
-    # New: get matches using bipartite matching on distances
-    # xyz0, xyz1 = n0_unmatched+zxy_predict, n1_unmatched
-    # out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=max_dist)
-    # matches, conf, _ = out
-
-    # Point cloud for the pushed and target neurons
+    # # Point cloud for the pushed and target neurons
     pc_pushed = build_neuron_tree(n0_unmatched+zxy_predict, False)[1]
     pc_target = build_neuron_tree(n1_unmatched, False)[1]
 
-    # Get final matches using ICP
-    opt = {'max_correspondence_distance':max_dist}
-    reg = o3d.pipelines.registration.registration_icp(pc_pushed, pc_target, **opt)
+    # New: get matches using bipartite matching on distances
+    # xyz0, xyz1 = n0_unmatched+zxy_predict, n1_unmatched
+    xyz0, xyz1 = pc_pushed.points, pc_target.points
+    out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=max_dist)
+    matches, conf, _ = out
 
-    # Process, including a confidence value
-    matches = np.asarray(reg.correspondence_set)
-    conf_func = lambda x : 1 - (x/max_dist)
-    conf = np.zeros((matches.shape[0],1))
-    for i, (m0, m1) in enumerate(matches):
-        dist = np.linalg.norm(n0_unmatched[m0] - n1_unmatched[m1])
-        conf[i] = conf_func(dist)
+    # # Get final matches using ICP
+    # opt = {'max_correspondence_distance':max_dist}
+    # reg = o3d.pipelines.registration.registration_icp(pc_pushed, pc_target, **opt)
+    #
+    # # Process, including a confidence value
+    # matches = np.asarray(reg.correspondence_set)
+    # conf_func = lambda x : 1 - (x/max_dist)
+    # conf = np.zeros((matches.shape[0],1))
+    # for i, (m0, m1) in enumerate(matches):
+    #     dist = np.linalg.norm(n0_unmatched[m0] - n1_unmatched[m1])
+    #     conf[i] = conf_func(dist)
+
     matches_with_conf = np.hstack([matches, conf])
 
     return matches_with_conf, pc_pushed, pc_target

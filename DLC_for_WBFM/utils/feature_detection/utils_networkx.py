@@ -116,13 +116,17 @@ def calc_bipartite_from_distance(xyz0, xyz1, max_dist=None):
         to_remove.reverse()
         [matches.pop(i) for i in to_remove]
 
-        conf_func = lambda dist : 1.0 / (dist/max_dist+1.0)
+        conf_func = lambda dist : 1.0 / (1.0 - dist/max_dist)
     else:
-        conf_func = lambda dist : 1.0 / (dist/10.0+1.0)
+        conf_func = lambda dist : 1.0 / (1.0 - dist/10.0)
 
     # Calculate confidences from distance
-    match_dist = [cost_matrix[i,j] for (i,j) in matches]
-    conf = [conf_func(d) for d in match_dist]
+    matches = np.array(matches)
+    conf = np.zeros((matches.shape[0],1))
+    for i, (m0, m1) in enumerate(matches):
+        dist = cost_matrix[m0, m1]
+        conf[i] = conf_func(dist)
+    # conf = [conf_func(d) for d in match_dist]
 
     # Return matches twice to fit old function signature
     return matches, conf, matches
