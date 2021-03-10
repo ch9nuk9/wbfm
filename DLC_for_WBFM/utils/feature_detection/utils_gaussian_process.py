@@ -3,6 +3,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, WhiteKernel, DotProduct
 from sklearn import preprocessing
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
+from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_bipartite_from_distance
 import open3d as o3d
 
 
@@ -56,6 +57,11 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     # Get back to original space
     zxy_predict = np.vstack([z_predict,x_predict,y_predict]).T
     zxy_predict = scaler2.inverse_transform(zxy_predict)
+
+    # New: get matches using bipartite matching on distances
+    # xyz0, xyz1 = n0_unmatched+zxy_predict, n1_unmatched
+    # out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=max_dist)
+    # matches, conf, _ = out
 
     # Point cloud for the pushed and target neurons
     pc_pushed = build_neuron_tree(n0_unmatched+zxy_predict, False)[1]
