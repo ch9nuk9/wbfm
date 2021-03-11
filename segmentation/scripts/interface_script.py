@@ -20,6 +20,7 @@ def segment_full_video(video_path,
                        stardist_model_name='versatile',
                        preprocessing=PreprocessingSettings(do_filtering=False,alpha=1.0),
                        num_slices=33,
+                       to_remove_border=True,
                        options={}):
     """
 
@@ -98,6 +99,9 @@ def segment_full_video(video_path,
                                                                                           split_lengths,
                                                                                           length_lower_cutoff)
 
+        if to_remove_border:
+            final_masks = remove_border(final_masks, border=100)
+
         # concatenate masks to tiff file
         if i == start_volume:
             tiff.imwrite(output_fname,
@@ -116,3 +120,15 @@ def segment_full_video(video_path,
         metadata[i] = meta_df
 
     return output_fname, metadata
+
+
+
+def remove_border(masks, border=100):
+    _, x_sz, y_sz = masks.shape
+
+    masks[:,:border,:] = 0.0
+    masks[:,(x_sz-border):,:] = 0.0
+    masks[:,:,:border] = 0.0
+    masks[:,:,(y_sz-border):] = 0.0
+
+    return masks
