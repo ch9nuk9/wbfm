@@ -287,13 +287,13 @@ def create_matches_list(slice_1, slice_2, verbose=0):
         this_mask_binary = (slice_1 == this_neuron)
 
         # overlap
-        this_overlap_neurons = np.unique(this_mask_binary * slice_2)
+        this_overlap_neurons = np.unique(slice_2[this_mask_binary])
 
         for overlap_neuron in this_overlap_neurons:
             if overlap_neuron == 0:
                 continue
             overlap_slice = slice_2 == overlap_neuron
-            overlap_slice = overlap_slice * this_mask_binary
+            overlap_slice = this_mask_binary[overlap_slice]
             overlap_area = np.count_nonzero(overlap_slice)
 
             bip_inter.append([int(this_neuron), int(overlap_neuron), int(overlap_area)])

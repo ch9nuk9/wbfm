@@ -5,10 +5,10 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
-plot = 0
+plot = 1
 
-sv_path = r'C\Segmentation_working_area\results\new_acc_metrics\leifer'
-filepath = r'C:\Segmentation_working_area\results\new_acc_metrics\leifer\leifer_all_accuracy_results_with_volumes_and_percentages.pickle'
+sv_path = r'C\Segmentation_working_area\results\new_acc_metrics\prealigned_vol'
+filepath = r'C:\Segmentation_working_area\results\new_acc_metrics\prealigned_vol\prealigned_volume_accuracy_results.pickle'
 
 with open(filepath, 'rb') as file:
     results = pickle.load(file)
@@ -78,22 +78,16 @@ with open(filepath, 'rb') as file:
     # TODO create a table (pandas dataframe) with all results
     # list of lists for pandas table
 
-    # remove areas
-    for k, v in results.items():
-        try:
-            v.pop('area_gt')
-        except KeyError:
-            print(f'{k}: could not remove area')
-
     df = pd.DataFrame.from_dict(results)
     df.index = ['False negative', 'False negative %', 'False Positives', 'False Positives %',
-                'True Positives', 'True Positives %', 'Under-segmentations', 'Over-segmentations', 'v1', 'v2']
+                'True Positives', 'True Positives %', 'Over-segmentations', 'Under-segmentations',
+                'gt matched', 'algo matched', 'v1', 'v2', 'total_neurons']
     pd.set_option('display.max_rows', None, 'display.max_columns', None)
 
     print(tabulate(df, headers='keys', tablefmt='psql'))
     print(f'Means of rows:\n{df.mean(axis=1)}')
 
-    df.to_csv(r'C:\Segmentation_working_area\results\new_acc_metrics\normal_vol_bipartite_accuracy_summary.csv')
+    df.to_csv(r'C:\Segmentation_working_area\results\new_acc_metrics\prealigned_vol_accuracy_summary.csv')
     # save the table
     # with open(os.path.join(sv_path, 'dataframe_accuracy_results.pickle')) as p_file:
     #     pickle.dump(df, p_file)

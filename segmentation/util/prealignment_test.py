@@ -55,3 +55,34 @@ def rigid_prealignment(fname):
     # plt.show()
 
     return dat
+
+
+def rigid_prealignment_pipeline(dat_raw):
+    """
+    Pre-aligns neurons on slices across Z.
+    May cause large artefacts at the edges.
+
+    Parameters
+    ----------
+    fname : str
+        Path to TIF volume, which shall be aligned
+    Returns
+    -------
+    3D array with pre-aligned neurons
+    """
+
+    ## Preprocessing
+
+    # Initilize settings
+    preprocessing_settings = PreprocessingSettings()
+    preprocessing_settings.do_filtering = False  # Can take a LONG time
+    preprocessing_settings.do_rigid_alignment = True
+    # IF the data is initially uint16, this should be changed
+    preprocessing_settings.alpha = 1.0
+    preprocessing_settings.final_dtype = 'uint16'
+
+    # Actually do it... can take a while
+    dat = perform_preprocessing(dat_raw, preprocessing_settings)
+    print(f'after preprocessing {dat.shape}')
+
+    return dat
