@@ -499,7 +499,7 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
     means = [round(coeff[1]), round(coeff[4])]
 
     if any([x < 0 or x > len(brightnesses) for x in means]):
-        print(f'Error in brightness: Means = {means}')
+        print(f'Error in brightness: Means = {means} length of brightness list = {len(brightnesses)}')
         return []
 
 
