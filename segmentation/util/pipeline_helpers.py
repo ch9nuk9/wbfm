@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from skimage.measure import label, regionprops
-import tqdm
 from stardist.models import StarDist2D
 import os
 from pathlib import Path
