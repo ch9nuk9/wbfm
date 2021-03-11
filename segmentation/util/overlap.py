@@ -22,7 +22,7 @@ import pandas as pd
 import segmentation.util.prealignment_test as prealign
 import segmentation.util.stardist_seg as sd
 
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
 from tqdm import tqdm
 
