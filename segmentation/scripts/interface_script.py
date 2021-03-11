@@ -16,7 +16,7 @@ from collections import defaultdict
 def segment_full_video(video_path,
                        start_volume,
                        num_frames,
-                       stardist_model_name=str,
+                       stardist_model_name='versatile',
                        preprocessing=PreprocessingSettings(do_filtering=False,alpha=1.0),
                        num_slices=33,
                        options={}):
@@ -55,7 +55,6 @@ def segment_full_video(video_path,
     # Some vars, that need to be in options object
     length_upper_cutoff = 12
     length_lower_cutoff = 3
-    stardist_model_name = 'versatile'
 
     # we won't read in the WHOLE video!
     # add Option: range of timepoints/volumes, that shall be analyzed
