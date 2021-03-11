@@ -3,6 +3,8 @@ import pandas as pd
 from skimage.measure import label, regionprops
 import tqdm
 from stardist.models import StarDist2D
+import os
+from pathlib import Path
 
 
 def get_metadata_dictionary(masks, original_vol):
@@ -76,7 +78,11 @@ def get_stardist_model(model_name):
 
     """
     # all self-trained StarDist models reside in that folder
-    folder = r'/groups/zimmer/shared_projects/wbfm/TrainedStardist'
+
+    if os.name=='nt':
+        folder = Path('Y:/shared_projects/wbfm/TrainedStardist')
+    else:
+        folder = Path('/groups/zimmer/shared_projects/wbfm/TrainedStardist')
     sd_options = ['versatile', 'lukas', 'charlie']
 
     # create aliases for each model_name
