@@ -179,7 +179,8 @@ def csv_annotations2config_names(path_config_file, num_dims=2, actually_write=Tr
     # annotations_fname = os.path.join(home,'labeled-data', 'test_100frames.ome','CollectedData_Charlie.csv')
     df = pd.read_csv(annotations_fname)
     num_neurons = int(df.shape[1] / num_dims)
-    print("Adding body part annotations for {} neurons".format(num_neurons))
+    print(f"Adding body part annotations for {num_neurons} neurons")
+    print("(Note: postprocessing may filter these tracks and only display a subset)")
 
     # Read in entire config file into a list
     config_rows = []
