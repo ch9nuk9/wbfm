@@ -33,7 +33,6 @@ def get_metadata_dictionary(masks, original_vol):
     brightnesses = []
 
     for n in neurons:
-        print(f'{n}')
         neuron_mask = masks == n
         neuron_vol = np.count_nonzero(neuron_mask)
         total_brightness = np.sum(original_vol[neuron_mask])

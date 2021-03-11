@@ -74,7 +74,6 @@ def segment_with_stardist_pipeline(vol, model=StarDist2D.from_pretrained('2D_ver
     # iterate over images to run stardist on single images
     for idx, plane in enumerate(vol):
         img = plane
-        print(idx, img.shape)
 
         # normalizing images (stardist function)
         img = normalize(img, 1, 99.8, axis=axis_norm)
