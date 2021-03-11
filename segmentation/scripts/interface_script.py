@@ -20,6 +20,36 @@ def segment_full_video(video_path,
                        preprocessing=PreprocessingSettings(do_filtering=False,alpha=1.0),
                        num_slices=33,
                        options={}):
+    """
+
+    Parameters
+    ----------
+    video_path : str
+        path to recording
+    start_volume : int
+        starting frame in absolute number starting from 0
+    num_frames : int
+        number of volumes to be analyzed
+    stardist_model_name : str
+        Name/alias of the StarDist model to be used for segmentation
+    preprocessing : PreprocessingSettings() object
+        Object containing preprocessing options
+    num_slices : int
+        number of total Z-slices per volume
+    options : object
+        contains further necessary options for running
+
+    Returns
+    -------
+    output_fname : str
+        path to the TIF-file of segmented masks
+    metadata : dict
+        dictionary containing metadata per volume and neuron. Each volume's dataframe has N rows, where
+        N = number of unique neurons in that slice and 3 columns = ('total_brightness', 'neuron_volume', 'centroids')
+        {volume_number : [dataframe('total_brightness', 'neuron_volume', 'centroids')]}
+
+        Use the column name to index directly into the dataframe to get all e.g. centroid values
+    """
 
     # TODO add the following values to an options object!
     # Some vars, that need to be in options object

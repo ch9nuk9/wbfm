@@ -6,6 +6,23 @@ from stardist.models import StarDist2D
 
 
 def get_metadata_dictionary(masks, original_vol):
+    """
+    Creates a dataframe with metadata ('total_brightness', 'neuron_volume', 'centroids') for a volume
+    Parameters
+    ----------
+    masks : 3D numpy arrray
+        contains the segmented and stitched masks
+    original_vol : 3d numpy arrray
+        original volume of the recording, which was segmented into 'masks'.
+        Contains the actual brightness values.
+
+    Returns
+    -------
+    df : pandas dataframe
+        for each neuron (=row) the total brightness, volume and centroid is saved
+        dataframe(columns = 'total_brightness', 'neuron_volume', 'centroids';
+                  rows = neuron #)
+    """
     # metadata_dict = {(Vol #, Neuron #) = [Total brightness, neuron volume, centroids]}
     neurons = np.unique(masks)
     neurons = np.delete(neurons, np.where(neurons == 0))
