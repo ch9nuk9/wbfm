@@ -24,8 +24,13 @@ def get_metadata_dictionary(masks, original_vol):
                   rows = neuron #)
     """
     # metadata_dict = {(Vol #, Neuron #) = [Total brightness, neuron volume, centroids]}
-    neurons = np.unique(masks)
-    neurons = np.delete(neurons, np.where(neurons == 0))
+    neurons_list = np.unique(masks)
+    neurons_list = np.delete(neurons, np.where(neurons == 0))
+    neurons = []
+    # create list of integers for each neuron ID (instead of float)
+    for x in neurons_list:
+        neurons.append(int(x))
+
     # print(neurons)
 
     all_centroids = []
