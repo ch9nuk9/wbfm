@@ -76,8 +76,8 @@ def segment_full_video(video_path,
         # preallocate single volume
 
         # preprocess
-        volume = perform_preprocessing(volume)
-        
+        volume = perform_preprocessing(volume, preprocessing)
+
         # segment the volume using Stardist
         masks = sd.segment_with_stardist_pipeline(volume, sd_model)
 
@@ -116,4 +116,3 @@ def segment_full_video(video_path,
         metadata[i] = meta_df
 
     return output_fname, metadata
-
