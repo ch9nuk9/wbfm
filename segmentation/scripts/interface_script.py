@@ -6,6 +6,7 @@ from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import g
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import PreprocessingSettings
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import perform_preprocessing
 from segmentation.util.prealignment_test import rigid_prealignment_pipeline
+from tqdm import tqdm
 
 import numpy as np
 import os
@@ -67,7 +68,7 @@ def segment_full_video(video_path,
     # get stardist model object
     sd_model = get_stardist_model(stardist_model_name)
 
-    for i in range(start_volume, start_volume + num_frames):
+    for i in tqdm(list(range(start_volume, start_volume + num_frames))):
         # use get single volume function from charlie
         import_opt = {'which_vol': i, 'num_slices': num_slices, 'alpha': 1.0, 'dtype': 'uint16'}
         volume = get_single_volume(video_path, **import_opt)
