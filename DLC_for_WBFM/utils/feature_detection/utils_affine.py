@@ -2,6 +2,7 @@ import open3d as o3d
 import cv2
 import numpy as np
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree, build_neuron_tree
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
 from tqdm import tqdm
 
 
@@ -120,14 +121,34 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
                               radius=radius,
                               min_matches=min_matches)
 
-    # Build tree to query v1 neurons
-    num_n, _, tree_n1 = build_neuron_tree(f1.neuron_locs, to_mirror=False)
-
     # Loop over locations of pushed v0 neurons
+    # out = calc_matches_using_2nn(all_propagated, f1.neuron_locs, distance_ratio=distance_ratio)
+    # all_matches, all_conf, all_candidate_matches = out
+
+    xyz0 = np.array(all_propagated.points)
+    xyz1 = f1.neuron_locs
+
+    out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=10*distance_ratio)
+    all_matches, all_conf, all_candidate_matches = out
+
+    return all_matches, all_conf, all_candidate_matches
+
+
+def calc_matches_using_2nn(all_propagated, n1_locs, max_dist=5.0):
+    """
+    Custom function to calculate matches based on 2 nearest neighbors
+        DEPRECATED
+
+    See: calc_bipartite_from_distance
+    """
+
+    # Build tree to query v1 neurons
+    num_n, _, tree_n1 = build_neuron_tree(n1_locs, to_mirror=False)
+
     all_matches = [] # Without confidence
     all_conf = []
     all_candidate_matches = []
-    nn_opt = { 'radius':5.0, 'max_nn':1}
+    nn_opt = { 'radius':max_dist, 'max_nn':1}
     conf_func = lambda dist : 1.0 / (dist/10+1.0)
     for i, neuron in enumerate(np.array(all_propagated.points)):
         [k, two_neighbors, two_dist] = tree_n1.search_hybrid_vector_3d(neuron, **nn_opt)
@@ -160,6 +181,7 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
         all_candidate_matches.extend(all_m)
 
     return all_matches, all_conf, all_candidate_matches
+
 
 ##
 ## Visualization

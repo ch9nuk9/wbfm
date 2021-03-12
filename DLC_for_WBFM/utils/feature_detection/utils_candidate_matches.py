@@ -1,15 +1,16 @@
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches, build_digraph_from_matches, unpack_node_name
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, unpack_node_name
 from networkx.algorithms.community import k_clique_communities
 import networkx as nx
 from collections import defaultdict
 import numpy as np
 
+##
+## Convinience function
+##
 
-
-
-def calc_all_bipartite_matches(min_edge_weight=0.5):
+def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):
     bp_match_dict = {}
-    for key in all_matches:
+    for key in candidates:
         these_candidates = [c for c in candidates[key] if c[-1]>min_edge_weight]
         bp_matches = calc_bipartite_matches(these_candidates)
         bp_match_dict[key] = bp_matches
@@ -24,22 +25,28 @@ def calc_all_bipartite_matches(min_edge_weight=0.5):
 def calc_neurons_using_k_cliques(all_matches,
                                  k_values = [5,4,3],
                                  list_min_sizes = [450, 400, 350, 300, 250],
-                                 max_size = 500):
+                                 max_size = 500,
+                                 min_conf=0.0,
+                                 verbose=1):
     # Do a list of descending clique sizes
-    G = build_digraph_from_matches(all_matches, verbose=0).to_undirected()
+    G = build_digraph_from_matches(all_matches, verbose=0, min_conf=min_conf).to_undirected()
+
+    # Precompute cliques... doesn't work if nodes are removed
+    # all_cliques = list(nx.find_cliques(G))
 
     all_communities = []
     # Multiple passes: take largest communities first
     for min_size in list_min_sizes:
         for k in k_values:
-            communities = list(k_clique_communities(G, k=k))
+            communities = list(k_clique_communities(G, k=k))#, cliques=all_cliques))
             nodes_to_remove = []
             for c in communities:
                 if len(c) > min_size and len(c) < max_size:
                     nodes_to_remove.extend(c)
                     all_communities.append(c)
             G.remove_nodes_from(nodes_to_remove)
-            print(f"{len(G.nodes)} nodes remaining")
+            if verbose >= 1:
+                print(f"{len(G.nodes)} nodes remaining")
         max_size = min_size
 
     return all_communities

@@ -71,7 +71,7 @@ def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=1):
 #             print(f"Row {i}/{len(all_bodyparts)}")
 
     if verbose >= 1 and new_dlc_df is not None:
-        print(f"Found {len(new_dlc_df)} tracks of length >{min_length}")
+        print(f"Found {len(new_dlc_df.columns)/3} tracks of length >{min_length}")
 
     return new_dlc_df
 
