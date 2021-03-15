@@ -519,7 +519,7 @@ def track_neurons_full_video(vid_fname,
     pairwise_candidates_dict = {}
     pairwise_conf_dict = {}
     # all_frames = [frame0]
-    all_frame_dict[start_frame] = frame0
+    all_frame_dict = {start_frame:frame0}
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
     match_opt = {'use_affine_matching':use_affine_matching,
