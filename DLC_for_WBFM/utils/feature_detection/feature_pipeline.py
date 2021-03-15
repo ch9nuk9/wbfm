@@ -541,7 +541,7 @@ def track_neurons_full_video(vid_fname,
         all_frame_dict[i_frame] = frame1
         frame0 = frame1
 
-    return pairwise_matches_dict, pairwise_conf_dict, all_frames, pairwise_candidates_dict
+    return pairwise_matches_dict, pairwise_conf_dict, all_frame_dict, pairwise_candidates_dict
 
 
 def track_via_reference_frames(vid_fname,
