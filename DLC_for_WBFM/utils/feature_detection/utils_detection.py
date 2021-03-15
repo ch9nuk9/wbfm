@@ -101,7 +101,7 @@ def build_correspondence_icp(all_keypoints_pcs,
         all_icp.append(reg)
 
     return all_icp
-    
+
 
 def get_centroids_from_df(clust_df, min_detections=3, verbose=0):
     # Remove clusters that aren't long enough
@@ -155,3 +155,15 @@ def detect_neurons_using_ICP(dat,
         print("Finished ID'ing neurons")
 
     return centroids, clust_df, all_icp, all_keypoints_pcs
+
+
+##
+## Alternative: read from pipeline
+##
+
+def detect_neurons_from_file(detection_fname, verbose=0):
+    """
+    Designed to be used with centroids detected using a different pipeline
+    """
+
+    
