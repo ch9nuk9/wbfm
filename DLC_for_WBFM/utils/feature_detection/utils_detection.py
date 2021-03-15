@@ -4,7 +4,7 @@ import open3d as o3d
 #from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
 from DLC_for_WBFM.utils.feature_detection.utils_features import *
-
+import pickle
 
 
 def detect_blobs(im1_raw):
@@ -161,9 +161,10 @@ def detect_neurons_using_ICP(dat,
 ## Alternative: read from pipeline
 ##
 
-def detect_neurons_from_file(detection_fname, verbose=0):
+def detect_neurons_from_file(detection_fname, which_volume, verbose=0):
     """
     Designed to be used with centroids detected using a different pipeline
     """
-
-    
+    with pickle.load(detection_fname, 'rb') as f:
+        neuron_locs = f['neuron_xyz'][which_volume]
+    return neuron_locs

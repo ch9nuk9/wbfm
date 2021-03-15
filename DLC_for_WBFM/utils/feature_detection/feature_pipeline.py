@@ -27,6 +27,7 @@ def track_neurons_two_volumes(dat0,
                               num_slices=33,
                               neurons0=None,
                               neurons1=None,
+                              external_detections=None,
                               verbose=1):
     """
     Matches neurons between two volumes
@@ -478,6 +479,7 @@ def track_neurons_full_video(vid_fname,
                              add_affine_to_candidates=False,
                              add_gp_to_candidates=False,
                              save_candidate_matches=False,
+                             external_detections=None,
                              verbose=0):
     """
     Detects and tracks neurons using opencv-based feature matching
@@ -494,7 +496,8 @@ def track_neurons_full_video(vid_fname,
     def local_build_frame(frame_ind,
                           vid_fname=vid_fname,
                           import_opt=import_opt,
-                          ref_opt=ref_opt):
+                          ref_opt=ref_opt,
+                          external_detections=external_detections):
         dat = get_single_volume(vid_fname, frame_ind, **import_opt)
         metadata = {'frame_ind':frame_ind,
                     'vol_shape':dat.shape,
@@ -503,7 +506,8 @@ def track_neurons_full_video(vid_fname,
                                   num_slices=import_opt['num_slices'],
                                   **ref_opt,
                                   metadata=metadata,
-                                  preprocessing_settings=preprocessing_settings)
+                                  preprocessing_settings=preprocessing_settings,
+                                  external_detections=external_detections)
         return f
 
     if verbose >= 1:
@@ -624,6 +628,7 @@ def track_neurons_full_video_window(vid_fname,
                              add_affine_to_candidates=False,
                              add_gp_to_candidates=False,
                              save_candidate_matches=False,
+                             external_detections=None,
                              verbose=0):
     """
     Detects and tracks neurons using opencv-based feature matching
@@ -639,16 +644,18 @@ def track_neurons_full_video_window(vid_fname,
     def local_build_frame(frame_ind,
                           vid_fname=vid_fname,
                           import_opt=import_opt,
-                          ref_opt=ref_opt):
+                          ref_opt=ref_opt,
+                          external_detections=external_detections):
         dat = get_single_volume(vid_fname, frame_ind, **import_opt)
         metadata = {'frame_ind':frame_ind,
-                    'vol_shape':dat.shape,
+                    'vol_shape':dat.shape,zzz
                     'video_fname':vid_fname}
         f = build_reference_frame(dat,
                                   num_slices=import_opt['num_slices'],
                                   **ref_opt,
                                   metadata=metadata,
-                                  preprocessing_settings=preprocessing_settings)
+                                  preprocessing_settings=preprocessing_settings,
+                                  external_detections=external_detections)
         return f
 
     if verbose >= 1:

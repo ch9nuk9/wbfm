@@ -24,18 +24,24 @@ def build_reference_frame(dat_raw,
                           preprocessing_settings=PreprocessingSettings(),
                           start_slice=2,
                           metadata={},
+                          external_detections=None,
                           verbose=0):
     """Main convinience constructor for ReferenceFrame class"""
     dat = perform_preprocessing(dat_raw, preprocessing_settings)
 
     # Get neurons and features, and a map between them
-    neuron_locs, _, _, icp_kps = detect_neurons_using_ICP(dat,
+    if external_detections is None:
+        neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
                                                          num_slices=num_slices,
                                                          alpha=1.0,
                                                          min_detections=3,
                                                          start_slice=start_slice,
                                                          verbose=0)
-    neuron_locs = np.array([n for n in neuron_locs])
+        neuron_locs = np.array([n for n in neuron_locs])
+    else:
+        i = metadata['frame_ind']
+        neurons_locs = detect_neurons_from_file(external_detections, i)
+
     if len(neuron_locs)==0:
         print("No neurons detected... check data settings")
         raise ValueError
