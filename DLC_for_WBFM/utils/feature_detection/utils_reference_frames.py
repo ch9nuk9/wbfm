@@ -40,7 +40,7 @@ def build_reference_frame(dat_raw,
         neuron_locs = np.array([n for n in neuron_locs])
     else:
         i = metadata['frame_ind']
-        neurons_locs = detect_neurons_from_file(external_detections, i)
+        neuron_locs = detect_neurons_from_file(external_detections, i)
 
     if len(neuron_locs)==0:
         print("No neurons detected... check data settings")

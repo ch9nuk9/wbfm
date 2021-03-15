@@ -648,7 +648,7 @@ def track_neurons_full_video_window(vid_fname,
                           external_detections=external_detections):
         dat = get_single_volume(vid_fname, frame_ind, **import_opt)
         metadata = {'frame_ind':frame_ind,
-                    'vol_shape':dat.shape,zzz
+                    'vol_shape':dat.shape,
                     'video_fname':vid_fname}
         f = build_reference_frame(dat,
                                   num_slices=import_opt['num_slices'],
