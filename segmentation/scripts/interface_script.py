@@ -195,33 +195,33 @@ def segment_full_video_3d(video_path,
         volume = perform_preprocessing(volume, preprocessing)
 
         # segment the volume using Stardist
-        segmented_masks = sd.segment_with_stardist_3d(volume, sd_model)
+        masks = sd.segment_with_stardist_3d(volume, sd_model)
 
         if do_post_processing:
             print('--- Post processing Start ---')
             # process masks: remove large areas, stitch, split long neurons, remove short neurons
-            final_masks, neuron_lengths, brightness = perform_post_processing_3d(segmented_masks,
-                                                                                 volume,
-                                                                                 border_width_to_be_removed,
-                                                                                 to_remove_border,
-                                                                                 length_upper_cutoff,
-                                                                                 length_lower_cutoff)
+            masks, neuron_lengths, brightness = perform_post_processing_3d(masks,
+                                                                           volume,
+                                                                           border_width_to_be_removed,
+                                                                           to_remove_border,
+                                                                           length_upper_cutoff,
+                                                                           length_lower_cutoff)
 
         # concatenate masks to tiff file and save
         if i == start_volume:
             tiff.imwrite(output_fname,
-                         final_masks,
+                         masks,
                          append=False,
                          bigtiff=True)
         else:
             tiff.imwrite(output_fname,
-                         final_masks,
+                         masks,
                          append=True,
                          bigtiff=True)
 
         # metadata dictionary
         # metadata_dict = {(Vol #, Neuron #) = [Total brightness, neuron volume, centroids]}
-        meta_df = get_metadata_dictionary(final_masks, volume)
+        meta_df = get_metadata_dictionary(masks, volume)
         metadata[i] = meta_df
         metadata_filename = os.path.join(output_folder, 'metadata.pickle')
         with open(metadata_filename, 'wb') as meta_save:
