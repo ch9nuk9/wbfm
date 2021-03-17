@@ -82,7 +82,7 @@ def get_stardist_model(model_name, folder=None):
 
     """
     # all self-trained StarDist models reside in that folder. 'nt' for windows, when working locally
-    if not folder:
+    if folder is None:
         if os.name == 'nt':
             folder = Path(r'C:\Segmentation_working_area\stardist_models')
         else:
@@ -90,6 +90,8 @@ def get_stardist_model(model_name, folder=None):
 
     # available models' aliases
     sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d']
+    sd_names = ['2D_versatile_fluo', 'stardistNiklas',,]
+    # TODO create a dictionary with key = 'alias', value = name
 
     # create aliases for each model_name
     if model_name == 'versatile':
@@ -162,7 +164,7 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
     return final_masks
 
 
-def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, remove_border_flag,
+def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, remove_border_flag=True,
                                upper_length_threshold=12, lower_length_threshold=3):
     """
     Performs post-processing of segmented masks. Includes: splitting long masks, removing large areas,
