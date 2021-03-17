@@ -25,11 +25,11 @@ def build_dlc_annotation_one_tracklet(row,
     all_frames = list(range(num_frames))
 
     tracklet_length = len(row['all_xyz'])
+
+    if verbose >= 2:
+        print(f"Found tracklet of length {tracklet_length}")
     if tracklet_length < min_length:
         return None
-
-    if verbose >= 1:
-        print(f"Found tracklet of length {tracklet_length}")
 
     # Build a dataframe for one neuron across all frames
     # Will be zeros if not detected in a given frame

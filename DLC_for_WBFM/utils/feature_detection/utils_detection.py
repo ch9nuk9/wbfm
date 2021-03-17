@@ -1,10 +1,9 @@
 import cv2
 import numpy as np
 import open3d as o3d
-#from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
 from DLC_for_WBFM.utils.feature_detection.utils_features import *
-
+import pickle
 
 
 def detect_blobs(im1_raw):
@@ -101,7 +100,7 @@ def build_correspondence_icp(all_keypoints_pcs,
         all_icp.append(reg)
 
     return all_icp
-    
+
 
 def get_centroids_from_df(clust_df, min_detections=3, verbose=0):
     # Remove clusters that aren't long enough
@@ -155,3 +154,21 @@ def detect_neurons_using_ICP(dat,
         print("Finished ID'ing neurons")
 
     return centroids, clust_df, all_icp, all_keypoints_pcs
+
+
+##
+## Alternative: read from pipeline
+##
+
+def detect_neurons_from_file(detection_fname, which_volume, verbose=0):
+    """
+    Designed to be used with centroids detected using a different pipeline
+    """
+    # dat = pd.read_pickle(detection_fname)
+    with open(detection_fname, 'rb') as f:
+        # Note: dict of dataframes
+        neuron_locs = pickle.load(f)[which_volume]['centroids']
+    # In current format: flipped x and y
+    neuron_locs = np.array([n for n in neuron_locs])
+    neuron_locs = neuron_locs[:,[0,2,1]]
+    return neuron_locs

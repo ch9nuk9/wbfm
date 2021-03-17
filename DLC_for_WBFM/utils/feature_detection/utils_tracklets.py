@@ -149,9 +149,10 @@ def build_tracklets_from_matches(all_neurons,
 
     #for i_match, match in tqdm(enumerate(all_matches), total=len(all_matches)):
     for i_match, match in enumerate(all_matches):
-        if verbose >= 1:
+        if verbose >= 2:
             print("==============================================================")
             print(f"{i_match} / {len(all_matches)}")
+            print(f"Found {len(match)} matches")
         # Get transform to global coordinates
         these_neurons = all_neurons[i_match]
         this_xyz = np.asarray(these_neurons)
@@ -231,6 +232,16 @@ def build_tracklets_from_classes(all_frames,
     """
     Build tracklets starting from a different format
 
+    Parameters
+    ===========================
+    all_frames - list
+        Simple list of ReferenceFrame objects
+    all_matches_dict - dict
+        Dictionary of matches, which are lists of local neuron indices
+        all_matches_dict[(0,1)] = list(list())
+    all_likelihoods_dict - dict
+        Same format as all_matches_dict
+
     See also: build_tracklets_from_matches
     """
 
@@ -261,6 +272,10 @@ def build_tracklets_from_classes(all_frames,
         all_likelihoods = None
     else:
         all_likelihoods = []
+
+    if verbose > 1:
+        print("Casting class data in list form...")
+    nonzero_matches = 0
     for i in range(1, final_frame_ind):
         # Pad the initials with empties if this is a dict
     # for key, i in zip(all_matches_dict, all_frames):
@@ -268,6 +283,7 @@ def build_tracklets_from_classes(all_frames,
         key = (i-1,i)
         if key in all_matches_dict:
             all_matches.append(all_matches_dict[key])
+            nonzero_matches += 1
         else:
             all_matches.append([])
         if all_likelihoods is not None:
@@ -278,8 +294,15 @@ def build_tracklets_from_classes(all_frames,
         else:
             all_neurons.append(all_frames[i].neuron_locs)
         # all_neurons.append(frame.neuron_locs)
+    if verbose > 1:
+        print(f"Found {nonzero_matches} nonzero matches")
+    if nonzero_matches==0:
+        print("Found no matches; is the dictionary in the proper format?")
+        return None
 
     # Call old function
+    if verbose > 1:
+        print("Calling build_tracklets_from_matches()")
     return build_tracklets_from_matches(all_neurons,
                                         all_matches,
                                         all_likelihoods,
