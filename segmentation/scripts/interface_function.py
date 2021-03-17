@@ -1,3 +1,6 @@
+"""
+Maybe
+"""
 import segmentation.util.overlap as ol
 import segmentation.util.stardist_seg as sd
 from segmentation.util.pipeline_helpers import get_metadata_dictionary
@@ -19,7 +22,9 @@ def segment_full_video(video_path,
                        start_volume,
                        num_frames,
                        stardist_model_name='lukas',
-                       preprocessing=PreprocessingSettings(do_filtering=False, do_rigid_alignment=True, alpha=1.0),
+                       preprocessing=PreprocessingSettings(do_filtering=False, do_rigid_alignment=True,
+                                                           alpha=1.0, final_dtype='uint16',
+                                                           ),
                        num_slices=33,
                        to_remove_border=True,
                        options={}):
@@ -66,6 +71,7 @@ def segment_full_video(video_path,
     length_lower_cutoff = 3
     output_folder = None
     border_width_to_be_removed = 100
+    # maybe the preprocessing options too
 
     # initialization of variables
     output_folder = os.path.split(video_path)[0]
@@ -126,7 +132,7 @@ def segment_full_video_3d(video_path,
                           start_volume,
                           num_frames,
                           stardist_model_name='lukas',
-                          preprocessing=PreprocessingSettings(do_filtering=False, alpha=1.0),
+                          preprocessing=PreprocessingSettings(do_filtering=False, do_rigid_alignment=True, alpha=1.0),
                           num_slices=33,
                           to_remove_border=True,
                           do_post_processing=False,
