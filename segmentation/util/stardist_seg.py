@@ -49,19 +49,21 @@ def segment_with_stardist(vol_path):
     return output_file
 
 
-def segment_with_stardist_pipeline(vol, model=StarDist2D.from_pretrained('2D_versatile_fluo')):
+def segment_with_stardist_2d(vol, model=StarDist2D.from_pretrained('2D_versatile_fluo')):
     """
-    Segments slices of a 3D numpy array (input) and outputs the masks
+    Segments slices of a 3D numpy array (input) and outputs their masks.
+    Best model (so far) is Lukas' self-trained 2D model
     Parameters
     ----------
     vol : 3D numpy array
+        Original image array
     model : StarDist2D model object
         Object of a Stardist model, which will be used for prediction
     Returns
     -------
     segmented_masks : 3D numpy array
         2D segmentations of slices concatenated to a 3D array. Each slice has unique values within
-        a slice, but will be duplicated across slices!
+        a slice, but will be duplicated across slices (needs to be stitched in next step)!
     """
 
     # initialize output dimensions and other variables
@@ -85,3 +87,34 @@ def segment_with_stardist_pipeline(vol, model=StarDist2D.from_pretrained('2D_ver
         segmented_masks[idx] = labels
 
     return segmented_masks
+
+
+def segment_with_stardist_3d(vol, model):
+    """
+    Segments a 3D volume using stardists 3D-segmentation.
+    For now, only one self-trained 3D model is available.
+
+    Parameters
+    ----------
+    vol : 3D numpy array
+        3D array of volume to segment
+    model : StarDist3D object
+        StarDist3D model to be used for segmentation
+
+    Returns
+    -------
+    labels : 3D numpy array
+        3D array with segmented masks. Each mask should have a unique ID/value.
+    """
+
+    # initialize variables
+    axis_norm = (0, 1, 2)
+    n_channel = 1
+
+    # normalizing images (stardist function)
+    img = normalize(vol, 1, 99.8, axis=axis_norm)
+
+    # run the prediction
+    labels, details = model.predict_instances(img)
+
+    return labels
