@@ -136,7 +136,8 @@ def build_all_reference_frames(num_reference_frames,
                          is_sequential=True,
                          preprocessing_settings=PreprocessingSettings(),
                          verbose=1,
-                         recalculate_reference_frames=True):
+                         recalculate_reference_frames=True,
+                         external_detections=None):
     """
     Selects a sample of reference frames, then builds features for them
 
@@ -172,7 +173,8 @@ def build_all_reference_frames(num_reference_frames,
             f = build_reference_frame(dat, num_slices, neuron_feature_radius,
                                       start_slice=start_slice,
                                       metadata=metadata,
-                                      preprocessing_settings=preprocessing_settings)
+                                      preprocessing_settings=preprocessing_settings,
+                                      external_detections=external_detections)
             ref_frames.append(f)
 
     return ref_dat, ref_frames, other_ind
@@ -440,7 +442,8 @@ def match_all_to_reference_frames(reference_set,
                                   metadata,
                                   num_slices,
                                   neuron_feature_radius,
-                                  preprocessing_settings):
+                                  preprocessing_settings,
+                                  external_detections=None):
     """
     Multi-frame wrapper around match_to_reference_frames()
     """
@@ -454,7 +457,8 @@ def match_all_to_reference_frames(reference_set,
 
         f = build_reference_frame(dat, num_slices, neuron_feature_radius,
                               metadata=metadata,
-                              preprocessing_settings=preprocessing_settings)
+                              preprocessing_settings=preprocessing_settings,
+                              external_detections=external_detections)
         matches, _, per_neuron_matches = match_to_reference_frames(f, reference_set)
 
         all_matches.append(matches)
@@ -557,7 +561,8 @@ def track_via_reference_frames(vid_fname,
                                use_affine_matching=False,
                                use_k_cliques=True,
                                preprocessing_settings=PreprocessingSettings(),
-                               reference_set=None):
+                               reference_set=None,
+                               external_detections=None):
     """
     Tracks neurons by registering them to a set of reference frames
     """
@@ -576,7 +581,8 @@ def track_via_reference_frames(vid_fname,
             num_reference_frames,
             **video_opt,
             preprocessing_settings=preprocessing_settings,
-            recalculate_reference_frames=True
+            recalculate_reference_frames=True,
+            external_detections=external_detections
         )
     else:
         # Reuse previous reference frames, but still build the metadata
@@ -612,7 +618,8 @@ def track_via_reference_frames(vid_fname,
         metadata,
         num_slices,
         neuron_feature_radius,
-        preprocessing_settings=preprocessing_settings
+        preprocessing_settings=preprocessing_settings,
+        external_detections=external_detections
     )
 
     return all_matches, all_other_frames, reference_set
