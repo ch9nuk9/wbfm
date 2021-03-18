@@ -278,7 +278,7 @@ def calc_2frame_matches_using_class(frame0,
                                            frame1.keypoints,
                                            frame0.vol_shape[1:],
                                            frame1.vol_shape[1:],
-                                           matches_to_keep=0.5)
+                                           matches_to_keep=0.2)
     if DEBUG:
         print("All feature matches: ")
         # Draw first 10 matches.
