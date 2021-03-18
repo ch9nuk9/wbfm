@@ -67,7 +67,7 @@ def calc_neuron_using_voronoi(all_matches,
     global2local = {}
     global_current_ind = 0
     if target_size_vec is None:
-        stop_size = max(1, total_frames-3)
+        stop_size = max(1, int(total_frames/2))
         target_size_vec = list(range(total_frames,stop_size,-1))
 
     for target_size in target_size_vec:
