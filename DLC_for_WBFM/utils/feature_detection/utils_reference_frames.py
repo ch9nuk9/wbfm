@@ -5,7 +5,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_sta
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name, is_one_neuron_per_frame
 import numpy as np
 import networkx as nx
 import collections
@@ -174,28 +174,6 @@ def plot_degree_hist(DG):
 ## For determining the full reference set
 ##
 
-
-def is_one_neuron_per_frame(node_names, min_size=None, total_frames=10):
-    """
-    Checks a connected component (list of nodes) to make sure each frame is only represented once
-    """
-    if min_size is None:
-        min_size = total_frames / 2.0
-
-    # Heuristic check
-    sz = len(node_names)
-    if sz < min_size or sz > total_frames:
-        return False
-
-    # Actual check
-    all_frames = []
-    for n in node_names:
-        all_frames.append(unpack_node_name(n)[0])
-
-    if len(all_frames) > len(set(all_frames)):
-        return False
-
-    return True
 
 
 def add_all_good_components(G,

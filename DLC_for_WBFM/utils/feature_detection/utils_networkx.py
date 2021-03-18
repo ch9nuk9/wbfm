@@ -55,7 +55,13 @@ def get_node_name(frame_ind, neuron_ind):
 
 def unpack_node_name(node_name):
     """Inverse of get_node_name"""
-    return divmod(node_name, 10000)
+    if type(node_name)==int:
+        return divmod(node_name, 10000)
+    elif type(node_name)==tuple:
+        return node_name
+    else:
+        raise ValueError
+
 
 
 def build_digraph_from_matches(pairwise_matches,
@@ -130,3 +136,26 @@ def calc_bipartite_from_distance(xyz0, xyz1, max_dist=None):
 
     # Return matches twice to fit old function signature
     return matches, conf, matches
+
+
+def is_one_neuron_per_frame(node_names, min_size=None, total_frames=10):
+    """
+    Checks a connected component (list of nodes) to make sure each frame is only represented once
+    """
+    if min_size is None:
+        min_size = total_frames / 2.0
+
+    # Heuristic check
+    sz = len(node_names)
+    if sz < min_size or sz > total_frames:
+        return False
+
+    # Actual check
+    all_frames = []
+    for n in node_names:
+        all_frames.append(unpack_node_name(n)[0])
+
+    if len(all_frames) > len(set(all_frames)):
+        return False
+
+    return True
