@@ -59,14 +59,18 @@ def calc_neuron_using_voronoi(all_matches,
                               verbose=0):
     # Cluster using voronoi cells
     DG = build_digraph_from_matches(all_matches, dist, verbose=0)
+    # Indices may not start at 0
+    # Syntax: https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-list-of-lists
+    all_pairs = all_matches.keys()
+    unique_nodes = set(node for pair in all_pairs for node in pair)
 
     global2local = {}
     global_current_ind = 0
     if target_size_vec is None:
-        target_size_vec = [total_frames,total_frames-1,total_frames-2]
+        target_size_vec = [total_frames,total_frames-1]
 
     for target_size in target_size_vec:
-        for start_vol in range(total_frames):
+        for start_vol in unique_nodes:
             # Get simple centers: all neurons in a "start" volume
             center_nodes = []
             for n in DG.nodes():

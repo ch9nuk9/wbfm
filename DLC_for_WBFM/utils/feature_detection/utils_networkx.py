@@ -150,12 +150,9 @@ def is_one_neuron_per_frame(node_names, min_size=None, total_frames=10):
     if sz < min_size or sz > total_frames:
         return False
 
-    # Actual check
-    all_frames = []
-    for n in node_names:
-        all_frames.append(unpack_node_name(n)[0])
+    # Actual check for duplicates
+    all_frames = [unpack_node_name(n)[0] for n in node_names]
 
     if len(all_frames) > len(set(all_frames)):
         return False
-
     return True

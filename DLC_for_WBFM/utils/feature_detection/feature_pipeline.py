@@ -156,7 +156,7 @@ def build_all_reference_frames(num_reference_frames,
         other_ind.remove(ind)
 
     ref_dat = []
-    ref_frames = []
+    ref_frames = {}
     video_opt = {'num_slices':num_slices,
                  'alpha':1.0,
                  'dtype':preprocessing_settings.initial_dtype}
@@ -175,7 +175,8 @@ def build_all_reference_frames(num_reference_frames,
                                       metadata=metadata,
                                       preprocessing_settings=preprocessing_settings,
                                       external_detections=external_detections)
-            ref_frames.append(f)
+            ref_frames[f.frame_ind] = f
+            # ref_frames.append(f)
 
     return ref_dat, ref_frames, other_ind
 
@@ -359,10 +360,11 @@ def register_all_reference_frames(ref_frames,
                  'add_gp_to_candidates':add_gp_to_candidates}
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
-    for i0, frame0 in tqdm(enumerate(ref_frames), total=len(ref_frames)):
-        for i1, frame1 in enumerate(ref_frames):
-            key = (i0, i1)
-            if i1==i0 and key not in pairwise_matches_dict:
+    for frame0 in tqdm(ref_frames, total=len(ref_frames)):
+        for frame1 in ref_frames:
+            # Note: frame_ind does not necessarily start at 0
+            key = (frame0.frame_ind, frame1.frame_ind)
+            if key[1]==key[0] and key not in pairwise_matches_dict:
                 continue
             out = calc_2frame_matches_using_class(frame0, frame1,**match_opt)
             match, conf, feature_matches, candidate_matches = out
