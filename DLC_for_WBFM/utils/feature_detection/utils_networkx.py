@@ -22,6 +22,7 @@ def calc_bipartite_matches(all_candidate_matches, verbose=0):
         # Otherwise the sets are unordered
         G.add_node(candidate[0], bipartite=0)
         G.add_node(candidate[1], bipartite=1)
+        # Default weight
         if len(candidate)==2:
             candidate.append(1)
         G.add_weighted_edges_from([candidate])
