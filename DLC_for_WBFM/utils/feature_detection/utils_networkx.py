@@ -11,6 +11,9 @@ import networkx as nx
 def calc_bipartite_matches(all_candidate_matches, verbose=0):
     """
     Calculates the globally optimally matching from an overmatched array with weights
+
+    Uses nx.max_weight_matching()
+        i.e. assumes weight=good, for example confidence
     """
 
     G = nx.Graph()
