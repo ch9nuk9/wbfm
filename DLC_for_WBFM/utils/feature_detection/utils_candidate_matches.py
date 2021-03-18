@@ -1,4 +1,4 @@
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, unpack_node_name
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, unpack_node_name, is_one_neuron_per_frame
 from networkx.algorithms.community import k_clique_communities
 import networkx as nx
 from collections import defaultdict
@@ -50,6 +50,46 @@ def calc_neurons_using_k_cliques(all_matches,
         max_size = min_size
 
     return all_communities
+
+
+def calc_neuron_using_voronoi(all_matches,
+                              dist,
+                              total_frames,
+                              target_size_vec=None,
+                              verbose=0):
+    # Cluster using voronoi cells
+    DG = build_digraph_from_matches(all_matches, dist, verbose=0)
+
+    global2local = {}
+    global_current_ind = 0
+    if target_size_vec is None:
+        target_size_vec = [total_frames,total_frames-1,total_frames-2]
+
+    for target_size in target_size_vec:
+        for start_vol in range(total_frames):
+            # Get simple centers: all neurons in a "start" volume
+            center_nodes = []
+            for n in DG.nodes():
+                frame_ind, _ = unpack_node_name(n)
+                if frame_ind == start_vol:
+                    center_nodes.append(n)
+            if len(center_nodes)==0:
+                continue
+            cells = nx.voronoi_cells(DG, center_nodes)
+
+            # Heuristic
+            # If the cells have a unique node in each frame, then take it as true
+            for k, v in cells.items():
+                if is_one_neuron_per_frame(v, min_size=target_size, total_frames=total_frames):
+                    global2local[global_current_ind] = v
+                    global_current_ind += 1
+                    DG.remove_nodes_from(v)
+            if verbose >= 2:
+                print(f"{len(DG)} nodes remaining (across all frames)")
+        if verbose >= 1:
+            print(f"Found {global_current_ind} neurons of size at least {target_size}")
+
+    return global2local
 
 ##
 ## Utilities

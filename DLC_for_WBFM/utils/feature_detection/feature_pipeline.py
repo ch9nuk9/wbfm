@@ -3,7 +3,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
-from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, calc_all_bipartite_matches, community_to_matches
+from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, calc_all_bipartite_matches, community_to_matches, calc_neuron_using_voronoi
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name
 
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
@@ -267,6 +267,34 @@ def neuron_global_id_from_multiple_matches(matches,
     return global2local, local2global
 
 
+def neuron_global_id_from_multiple_matches_voronoi(matches, conf, total_frames,
+                                                   verbose=0):
+    """
+    Builds global ID based on voronoi cells
+    """
+
+    # Convert confidences to distance
+    dist = {}
+    for k, v in conf.items():
+        these_dist = [(1.0/conf) for conf in v]
+        dist[k] = these_dist
+    # Actual clustering
+    global2local = calc_neuron_using_voronoi(matches,
+                                              dist,
+                                              total_frames,
+                                              target_size_vec=None,
+                                              verbose=verbose)
+    # Align formatting
+    local2global = {}
+    for global_ind, v in global2local.items():
+        for node in v:
+            key = unpack_node_name(node)
+            local2global[key] = global_ind
+
+    return global2local, local2global
+
+
+
 def align_dictionaries(ref_set, global2local, local2global):
     """
     Align global and local neuron indices:
@@ -303,7 +331,7 @@ def register_all_reference_frames(ref_frames,
                                   add_gp_to_candidates=False,
                                   add_affine_to_candidates=False,
                                   use_affine_matching=False,
-                                  use_k_cliques=True,
+                                  neuron_cluster_mode='threshold',
                                   verbose=0):
     """
     Registers a set of reference frames, aligning their neuron indices
@@ -344,18 +372,29 @@ def register_all_reference_frames(ref_frames,
             if candidate_matches is not None:
                 bp_matches_dict[key] = list(candidate_matches)
     # Use the matches to build a global index
-    if use_k_cliques:
+    all_cluster_modes = ['k_clique', 'threshold', 'voronoi']
+    if neuron_cluster_mode == 'k_clique':
         global2local, local2global = neuron_global_id_from_multiple_matches(
             bp_matches_dict,
             total_size=len(ref_frames),
             verbose=verbose
         )
-    else:
+    elif neuron_cluster_mode == 'threshold':
         global2local, local2global = neuron_global_id_from_multiple_matches_thresholds(
             pairwise_matches_dict,
             pairwise_conf_dict,
             len(ref_frames)
         )
+    elif neuron_cluster_mode == 'voronoi':
+        global2local, local2global = neuron_global_id_from_multiple_matches_voronoi(
+            pairwise_matches_dict,
+            pairwise_conf_dict,
+            len(ref_frames),
+            verbose=verbose
+        )
+    else:
+        print("Unrecognized cluster mode; finishing without global neuron labels")
+        print(f"Allowed cluster modes are: {all_cluster_modes}")
 
     # TODO: align to previous global match, if it exists
     if previous_ref_set is not None:
@@ -559,7 +598,7 @@ def track_via_reference_frames(vid_fname,
                                add_gp_to_candidates=False,
                                add_affine_to_candidates=False,
                                use_affine_matching=False,
-                               use_k_cliques=True,
+                               neuron_cluster_mode='threshold',
                                preprocessing_settings=PreprocessingSettings(),
                                reference_set=None,
                                external_detections=None):
@@ -599,7 +638,7 @@ def track_via_reference_frames(vid_fname,
     match_opt = {'use_affine_matching':use_affine_matching,
                  'add_affine_to_candidates':add_affine_to_candidates,
                  'add_gp_to_candidates':add_gp_to_candidates,
-                 'use_k_cliques':use_k_cliques,
+                 'neuron_cluster_mode':neuron_cluster_mode,
                  'verbose':verbose-1}
     if reference_set is None:
         reference_set = register_all_reference_frames(ref_frames, **match_opt)
