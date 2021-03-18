@@ -45,7 +45,7 @@ def track_neurons_two_volumes(dat0,
         neurons1, _, _, _ = detect_neurons_using_ICP(dat1, **opt)
 
     opt = {'verbose':verbose-1,
-           'matches_to_keep':0.8,
+           'matches_to_keep':0.2,
            'num_features_per_plane':10000,
            'detect_keypoints':True,
            'kp0':neurons0,
@@ -429,7 +429,7 @@ def register_all_reference_frames(ref_frames,
     #return global2local, local2global, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
 
 
-def match_to_reference_frames(this_frame, reference_set):
+def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
     """
     Registers a single frame to a set of references
     """
@@ -437,34 +437,37 @@ def match_to_reference_frames(this_frame, reference_set):
     # Build a map from this frame's indices to the global neuron frame
     all_global_matches = []
     all_conf = []
-    for frame_ind, ref in reference_set.reference_frames.items():
+    for ref_frame_ind, ref in reference_set.reference_frames.items():
         # Get matches (coordinates are local to this reference frame)
         # TODO: only attempt to check the subset of reference neurons
         local_matches, conf, _, _ = calc_2frame_matches_using_class(this_frame, ref)
         # Convert to global coordinates
         global_matches = []
-        # frame_ind = ref.frame_ind
+        global_conf = []
         l2g = reference_set.local2global
-        for m in local_matches:
+        for m, c in zip(local_matches, conf):
+            # Check each match between the test frame and the current ref
             ref_neuron_ind = m[1]
-            global_ind = l2g.get((frame_ind, ref_neuron_ind), None)
+            global_ind = l2g.get((ref_frame_ind, ref_neuron_ind), None)
             # The matched neuron may not be part of the actual reference set
-            if global_ind is not None:
+            if global_ind is not None and c > min_conf:
                 global_matches.append([m[0], global_ind])
+                global_conf.append(c)
         all_global_matches.append(global_matches)
         all_conf.append(conf)
 
     # Different approach: bipartite matching between reference set and each frame
     edges_dict = defaultdict(int)
-    for frame_match in all_global_matches:
-        for neuron_matches in frame_match:
+    for frame_match, frame_conf in zip(all_global_matches, all_conf):
+        for neuron_matches, neuron_conf in zip(frame_match, frame_conf):
             key = (neuron_matches[0], neuron_matches[1])
             # TODO: add conf
-            edges_dict[key] += 1
+            edges_dict[key] += neuron_conf
     edges = [[k[0],k[1],v] for k, v in edges_dict.items()]
     all_bp_matches = calc_bipartite_matches(edges)
 
-    return all_bp_matches, [], []
+    # TODO: fix last return value zzz
+    return all_bp_matches, all_conf, edges
 
     # # Compact the matches of each reference frame ID into a single list
     # per_neuron_matches = defaultdict(list)
@@ -499,6 +502,7 @@ def match_all_to_reference_frames(reference_set,
                                   num_slices,
                                   neuron_feature_radius,
                                   preprocessing_settings,
+                                  min_conf=1.0,
                                   external_detections=None):
     """
     Multi-frame wrapper around match_to_reference_frames()
@@ -515,11 +519,14 @@ def match_all_to_reference_frames(reference_set,
                               metadata=metadata,
                               preprocessing_settings=preprocessing_settings,
                               external_detections=external_detections)
-        matches, _, per_neuron_matches = match_to_reference_frames(f, reference_set)
+        matches, _, _ = match_to_reference_frames(f, reference_set, min_conf=min_conf)
 
         all_matches.append(matches)
-        f.neuron_ids = per_neuron_matches
+        # f.neuron_ids = per_neuron_matches
         all_other_frames.append(f)
+    # Also save indices within the frame
+    for m, f, in zip(all_matches, all_other_frames):
+        f.neuron_ids = m
 
     return all_matches, all_other_frames
 
@@ -676,7 +683,8 @@ def track_via_reference_frames(vid_fname,
         num_slices,
         neuron_feature_radius,
         preprocessing_settings=preprocessing_settings,
-        external_detections=external_detections
+        external_detections=external_detections,
+        min_conf=num_reference_frames/3.0
     )
 
     return all_matches, all_other_frames, reference_set
