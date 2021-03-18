@@ -184,7 +184,7 @@ def is_one_neuron_per_frame(node_names, min_size=None, total_frames=10):
 
     # Heuristic check
     sz = len(node_names)
-    if sz <= min_size or sz > total_frames:
+    if sz < min_size or sz > total_frames:
         return False
 
     # Actual check

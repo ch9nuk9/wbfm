@@ -63,6 +63,8 @@ def convert_labels_to_matches(labels, offset=None, max_frames=None, DEBUG=False)
     """
     Turns a dict of classes per neuron (labels) into framewise matches
         Note: not every neuron needs to be labeled
+    Format:
+        labels[node_ind] = global_neuron_label
 
     Assumes the node indices can be unpacked using unpack_node_name()
     """
@@ -91,8 +93,9 @@ def convert_labels_to_matches(labels, offset=None, max_frames=None, DEBUG=False)
                     k = (i_f0-offset, i_f1-offset)
                 else:
                     k = (i_f0, i_f1)
-                if k[0]>=max_frames or k[1]>=max_frames:
-                    continue
+                if max_frames is not None:
+                    if k[0]>=max_frames or k[1]>=max_frames:
+                        continue
                 match_dict[k].append([i_l0, i_l1])
 
     return match_dict
