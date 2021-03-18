@@ -4,7 +4,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, calc_all_bipartite_matches, community_to_matches, calc_neuron_using_voronoi
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name, calc_bipartite_matches
 
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 import copy
@@ -360,10 +360,11 @@ def register_all_reference_frames(ref_frames,
                  'add_gp_to_candidates':add_gp_to_candidates}
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
-    for frame0 in tqdm(ref_frames, total=len(ref_frames)):
-        for frame1 in ref_frames:
+    for i0, frame0 in tqdm(ref_frames.items(), total=len(ref_frames)):
+        for i1, frame1 in ref_frames.items():
             # Note: frame_ind does not necessarily start at 0
-            key = (frame0.frame_ind, frame1.frame_ind)
+            # key = (frame0.frame_ind, frame1.frame_ind)
+            key = (i0, i1)
             if key[1]==key[0] and key not in pairwise_matches_dict:
                 continue
             out = calc_2frame_matches_using_class(frame0, frame1,**match_opt)
@@ -407,7 +408,7 @@ def register_all_reference_frames(ref_frames,
         )
 
     # Update the global indices of the individual reference frames
-    for f in ref_frames:
+    for f in ref_frames.values():
         f.neuron_ids = []
     for local_ind, global_ind in local2global.items():
         frame_ind, local_neuron = local_ind
@@ -436,13 +437,13 @@ def match_to_reference_frames(this_frame, reference_set):
     # Build a map from this frame's indices to the global neuron frame
     all_global_matches = []
     all_conf = []
-    for ref in reference_set.reference_frames:
+    for frame_ind, ref in reference_set.reference_frames.items():
         # Get matches (coordinates are local to this reference frame)
         # TODO: only attempt to check the subset of reference neurons
         local_matches, conf, _, _ = calc_2frame_matches_using_class(this_frame, ref)
         # Convert to global coordinates
         global_matches = []
-        frame_ind = ref.frame_ind
+        # frame_ind = ref.frame_ind
         l2g = reference_set.local2global
         for m in local_matches:
             ref_neuron_ind = m[1]
@@ -453,27 +454,41 @@ def match_to_reference_frames(this_frame, reference_set):
         all_global_matches.append(global_matches)
         all_conf.append(conf)
 
-    # Compact the matches of each reference frame ID into a single list
-    per_neuron_matches = defaultdict(list)
+    # Different approach: bipartite matching between reference set and each frame
+    edges_dict = defaultdict(int)
     for frame_match in all_global_matches:
         for neuron_matches in frame_match:
-            per_neuron_matches[neuron_matches[0]].append(neuron_matches[1])
+            key = (neuron_matches[0], neuron_matches[1])
+            # TODO: add conf
+            edges_dict[key] += 1
+    edges = [[k[0],k[1],v] for k, v in edges_dict.items()]
+    all_bp_matches = calc_bipartite_matches(edges)
 
-    # Then, use the matches to vote for the best neuron
-    # TODO: use graph connected components
-    final_matches = []
-    final_conf = []
-    min_features_needed = len(reference_set.reference_frames)/2.0
-    for this_local_ind, these_matches in per_neuron_matches.items():
-        final_matches, final_conf, _ = add_neuron_match(
-            final_matches,
-            final_conf,
-            this_local_ind,
-            min_features_needed,
-            these_matches
-        )
+    return all_bp_matches, [], []
 
-    return final_matches, final_conf, per_neuron_matches
+    # # Compact the matches of each reference frame ID into a single list
+    # per_neuron_matches = defaultdict(list)
+    # for frame_match in all_global_matches:
+    #     for neuron_matches in frame_match:
+    #         per_neuron_matches[neuron_matches[0]].append(neuron_matches[1])
+    #
+    # # Then, use the matches to vote for the best neuron
+    # # TODO: use graph connected components
+    # final_matches = []
+    # final_conf = []
+    # min_features_needed = len(reference_set.reference_frames)/2.0
+    # for this_local_ind, these_matches in per_neuron_matches.items():
+    #     final_matches, final_conf, _ = add_neuron_match(
+    #         final_matches,
+    #         final_conf,
+    #         this_local_ind,
+    #         min_features_needed,
+    #         these_matches
+    #     )
+    #
+    # error
+    #
+    # return final_matches, final_conf, per_neuron_matches
 
 
 def match_all_to_reference_frames(reference_set,
@@ -650,7 +665,8 @@ def track_via_reference_frames(vid_fname,
     video_opt = {'num_slices':num_slices,
                  'alpha':1.0,
                  'dtype':preprocessing_settings.initial_dtype}
-    metadata = ref_frames[0].get_metadata()
+    i_tmp = list(ref_frames.keys())[0]
+    metadata = ref_frames[i_tmp].get_metadata()
     all_matches, all_other_frames = match_all_to_reference_frames(
         reference_set,
         vid_fname,
