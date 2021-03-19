@@ -1,8 +1,8 @@
-from DLC_for_WBFM.utils.feature_detection.utils_features import *
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
-from DLC_for_WBFM.utils.feature_detection.utils_detection import *
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import *
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, match_centroids_using_tree
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
+from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import build_reference_frame, add_all_good_components, is_ordered_subset, calc_2frame_matches_using_class
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import PreprocessingSettings, RegisteredReferenceFrames
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, calc_all_bipartite_matches, community_to_matches, calc_neuron_using_voronoi
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name, calc_bipartite_matches
 
@@ -770,13 +770,6 @@ def track_neurons_full_video_window(vid_fname,
                 pairwise_candidates_dict[key] = candidates
 
     return pairwise_matches_dict, pairwise_conf_dict, all_frame_dict, pairwise_candidates_dict
-
-
-
-
-
-
-
 
 
 
