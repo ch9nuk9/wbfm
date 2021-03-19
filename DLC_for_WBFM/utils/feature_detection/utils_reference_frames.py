@@ -3,7 +3,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP, detect_neurons_from_file
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame, PreprocessingSettings
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name, is_one_neuron_per_frame
 import numpy as np
