@@ -5,7 +5,6 @@ from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import build_re
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import PreprocessingSettings, RegisteredReferenceFrames
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, calc_all_bipartite_matches, community_to_matches, calc_neuron_using_voronoi
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name, calc_bipartite_matches
-
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 import copy
 import numpy as np
@@ -64,62 +63,6 @@ def track_neurons_two_volumes(dat0,
                                                             all_f1,
                                                             **opt)
     return all_matches, all_conf, neurons0, neurons1
-
-
-def track_neurons_full_video_legacy(vid_fname,
-                             start_frame=0,
-                             num_frames=10,
-                             num_slices=33,
-                             alpha=0.15,
-                             use_mini_max_projection=False,
-                             verbose=0):
-    """
-    Detects and tracks neurons using opencv-based feature matching
-    """
-    start_time = time.time()
-
-    # Get initial volume; settings are same for all
-    import_opt = {'num_slices':num_slices, 'alpha':alpha}
-    dat0 = get_single_volume(vid_fname, start_frame, **import_opt)
-    if use_mini_max_projection:
-        dat0 = ndi.maximum_filter(dat0, size=(5,1,1))
-
-    # Loop through all pairs
-    all_matches = []
-    all_conf = []
-    all_neurons = []
-    previous_neurons = None
-    end_frame = start_frame+num_frames
-    frame_range = range(start_frame+1, end_frame)
-    for i_frame in tqdm(frame_range):
-        if verbose >= 1:
-            print("===========================================================")
-            print(f"Matching frames {i_frame-1} and {i_frame} (end at {end_frame})")
-        dat1 = get_single_volume(vid_fname, i_frame, **import_opt)
-        if use_mini_max_projection:
-            dat1 = ndi.maximum_filter(dat1, size=(5,1,1))
-
-        m, c, n0, n1 = track_neurons_two_volumes(dat0,
-                                                  dat1,
-                                                  num_slices=num_slices,
-                                                  verbose=verbose-1,
-                                                  neurons0=previous_neurons)
-        all_matches.append(m)
-        all_conf.append(c)
-        if len(all_neurons)==0:
-            # After the first time, n0 doesn't need to be saved
-            all_neurons.append(np.array([r for r in n0]))
-        all_neurons.append(np.array([r for r in n1]))
-        previous_neurons = n1
-
-        dat0 = copy.copy(dat1)
-        # dat0 = get_single_volume(vid_fname, i_frame, **import_opt)
-
-    if verbose >= 1:
-        total = time.time() - start_time
-        print(f"Finished {num_frames} frames in {total} seconds")
-
-    return all_matches, all_conf, all_neurons
 
 
 ##
@@ -468,30 +411,6 @@ def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
 
     # TODO: fix last return value zzz
     return all_bp_matches, all_conf, edges
-
-    # # Compact the matches of each reference frame ID into a single list
-    # per_neuron_matches = defaultdict(list)
-    # for frame_match in all_global_matches:
-    #     for neuron_matches in frame_match:
-    #         per_neuron_matches[neuron_matches[0]].append(neuron_matches[1])
-    #
-    # # Then, use the matches to vote for the best neuron
-    # # TODO: use graph connected components
-    # final_matches = []
-    # final_conf = []
-    # min_features_needed = len(reference_set.reference_frames)/2.0
-    # for this_local_ind, these_matches in per_neuron_matches.items():
-    #     final_matches, final_conf, _ = add_neuron_match(
-    #         final_matches,
-    #         final_conf,
-    #         this_local_ind,
-    #         min_features_needed,
-    #         these_matches
-    #     )
-    #
-    # error
-    #
-    # return final_matches, final_conf, per_neuron_matches
 
 
 def match_all_to_reference_frames(reference_set,
