@@ -359,17 +359,51 @@ def register_all_reference_frames(ref_frames,
 
     # Build a class to store all the information
     reference_set = RegisteredReferenceFrames(
-        global2local,
-        local2global,
         ref_frames,
         pairwise_matches_dict,
         pairwise_conf_dict,
         feature_matches_dict,
-        bp_matches_dict
+        bp_matches_dict,
+        neuron_cluster_mode,
+        global2local,
+        local2global
     )
 
     return reference_set
     #return global2local, local2global, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
+
+
+def create_dict_from_matches(self):
+    # TODO: Refactor to basic set
+    assert type(self)==RegisteredReferenceFrames
+
+    all_cluster_modes = ['k_clique', 'threshold', 'voronoi']
+    if self.neuron_cluster_mode == 'k_clique':
+        global2local, local2global = neuron_global_id_from_multiple_matches(
+            self.bipartite_matches,
+            total_size=len(self.reference_frames),
+            verbose=self.verbose
+        )
+    elif self.neuron_cluster_mode == 'threshold':
+        global2local, local2global = neuron_global_id_from_multiple_matches_thresholds(
+            self.pairwise_matches,
+            self.pairwise_conf,
+            len(self.reference_frames)
+        )
+    elif self.neuron_cluster_mode == 'voronoi':
+        global2local, local2global = neuron_global_id_from_multiple_matches_voronoi(
+            self.pairwise_matches,
+            self.pairwise_conf,
+            len(self.reference_frames)
+            verbose=self.verbose
+        )
+    else:
+        print("Unrecognized cluster mode; finishing without global neuron labels")
+        print(f"Allowed cluster modes are: {all_cluster_modes}")
+
+    self.global2local = global2local
+    self.local2global = local2global
+
 
 
 def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):

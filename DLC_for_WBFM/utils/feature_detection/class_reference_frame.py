@@ -114,10 +114,6 @@ class ReferenceFrame():
 class RegisteredReferenceFrames():
     """Data for matched reference frames"""
 
-    # Global neuron coordinate system
-    global2local : dict
-    local2global : dict
-
     # Intermediate products
     reference_frames : list = None
     pairwise_matches : dict = None
@@ -126,6 +122,13 @@ class RegisteredReferenceFrames():
     # More detailed intermediates and alternate matchings
     feature_matches : dict = None
     bipartite_matches : list = None
+
+    # Global neuron coordinate system
+    neuron_cluster_mode : str = None
+    global2local : dict = None
+    local2global : dict = None
+
+    verbose : int = 0
 
     def __str__(self):
         return f"RegisteredReferenceFrames with {len(self.reference_frames)} Frames \n"
