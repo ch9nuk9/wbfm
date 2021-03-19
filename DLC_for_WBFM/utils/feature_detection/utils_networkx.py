@@ -142,16 +142,16 @@ def calc_bipartite_from_distance(xyz0, xyz1, max_dist=None):
     return matches, conf, matches
 
 
-def is_one_neuron_per_frame(node_names, min_size=None, total_frames=10):
+def is_one_neuron_per_frame(node_names, min_size=None, total_frames=None):
     """
     Checks a connected component (list of nodes) to make sure each frame is only represented once
     """
-    if min_size is None:
-        min_size = total_frames / 2.0
 
     # Heuristic check
     sz = len(node_names)
-    if sz < min_size or sz > total_frames:
+    if total_frames is not None and sz > total_frames:
+        return False
+    if min_size is not None and sz < min_size:
         return False
 
     # Actual check for duplicates
