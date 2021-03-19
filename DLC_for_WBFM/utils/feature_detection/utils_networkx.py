@@ -59,11 +59,12 @@ def get_node_name(frame_ind, neuron_ind):
 
 def unpack_node_name(node_name):
     """Inverse of get_node_name"""
-    if type(node_name)==int:
+    if np.issubdtype(type(node_name), np.integer):
         return divmod(node_name, 10000)
     elif type(node_name)==tuple:
         return node_name
     else:
+        print("Must pass integer or, trivially, a tuple")
         raise ValueError
 
 
