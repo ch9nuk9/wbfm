@@ -1,11 +1,11 @@
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.feature_detection.utils_features import *
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, build_neuron_tree, build_f2n_map, add_neuron_match, match_known_features, extract_map1to2_from_matches
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack
-from DLC_for_WBFM.utils.feature_detection.utils_detection import *
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
+from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP, detect_neurons_from_file
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name, is_one_neuron_per_frame
 import numpy as np
 import networkx as nx
 import collections
@@ -175,28 +175,6 @@ def plot_degree_hist(DG):
 ##
 
 
-def is_one_neuron_per_frame(node_names, min_size=None, total_frames=10):
-    """
-    Checks a connected component (list of nodes) to make sure each frame is only represented once
-    """
-    if min_size is None:
-        min_size = total_frames / 2.0
-
-    # Heuristic check
-    sz = len(node_names)
-    if sz <= min_size or sz > total_frames:
-        return False
-
-    # Actual check
-    all_frames = []
-    for n in node_names:
-        all_frames.append(unpack_node_name(n)[0])
-
-    if len(all_frames) > len(set(all_frames)):
-        return False
-
-    return True
-
 
 def add_all_good_components(G,
                             thresh=0.0,
@@ -300,7 +278,7 @@ def calc_2frame_matches_using_class(frame0,
                                            frame1.keypoints,
                                            frame0.vol_shape[1:],
                                            frame1.vol_shape[1:],
-                                           matches_to_keep=0.5)
+                                           matches_to_keep=0.2)
     if DEBUG:
         print("All feature matches: ")
         # Draw first 10 matches.

@@ -11,6 +11,9 @@ import networkx as nx
 def calc_bipartite_matches(all_candidate_matches, verbose=0):
     """
     Calculates the globally optimally matching from an overmatched array with weights
+
+    Uses nx.max_weight_matching()
+        i.e. assumes weight=good, for example confidence
     """
 
     G = nx.Graph()
@@ -22,6 +25,7 @@ def calc_bipartite_matches(all_candidate_matches, verbose=0):
         # Otherwise the sets are unordered
         G.add_node(candidate[0], bipartite=0)
         G.add_node(candidate[1], bipartite=1)
+        # Default weight
         if len(candidate)==2:
             candidate.append(1)
         G.add_weighted_edges_from([candidate])
@@ -55,7 +59,13 @@ def get_node_name(frame_ind, neuron_ind):
 
 def unpack_node_name(node_name):
     """Inverse of get_node_name"""
-    return divmod(node_name, 10000)
+    if type(node_name)==int:
+        return divmod(node_name, 10000)
+    elif type(node_name)==tuple:
+        return node_name
+    else:
+        raise ValueError
+
 
 
 def build_digraph_from_matches(pairwise_matches,
@@ -130,3 +140,23 @@ def calc_bipartite_from_distance(xyz0, xyz1, max_dist=None):
 
     # Return matches twice to fit old function signature
     return matches, conf, matches
+
+
+def is_one_neuron_per_frame(node_names, min_size=None, total_frames=None):
+    """
+    Checks a connected component (list of nodes) to make sure each frame is only represented once
+    """
+
+    # Heuristic check
+    sz = len(node_names)
+    if total_frames is not None and sz > total_frames:
+        return False
+    if min_size is not None and sz < min_size:
+        return False
+
+    # Actual check for duplicates
+    all_frames = [unpack_node_name(n)[0] for n in node_names]
+
+    if len(all_frames) > len(set(all_frames)):
+        return False
+    return True
