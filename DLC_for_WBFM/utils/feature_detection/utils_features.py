@@ -1,7 +1,6 @@
 # Use classical methods for building and matching features
 import os
 import numpy as np
-from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels, pixels_to_bcpd
 import cv2
 import open3d as o3d
 from scipy import stats
