@@ -28,7 +28,7 @@ def detect_features(im1, max_features,
         opt = {'hessianThreshold':0.1}
         detector = cv2.xfeatures2d.SURF_create(**opt)
     else:
-        detector = cv2.ORB_create(max_features)#, WTA_K=3)#zzz
+        detector = cv2.ORB_create(max_features)#, WTA_K=3)
         if setFastThreshold:
             detector.setFastThreshold(0)
     kp1, d1 = detector.detectAndCompute(im1Gray, None)
