@@ -394,7 +394,7 @@ def create_dict_from_matches(self):
         global2local, local2global = neuron_global_id_from_multiple_matches_voronoi(
             self.pairwise_matches,
             self.pairwise_conf,
-            len(self.reference_frames)
+            len(self.reference_frames),
             verbose=self.verbose
         )
     else:
