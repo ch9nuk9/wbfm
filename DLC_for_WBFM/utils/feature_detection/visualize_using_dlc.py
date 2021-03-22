@@ -298,3 +298,44 @@ def create_many_videos_from_annotations(config, df_fname,
 
     if verbose >= 1:
         print(f"Finished making videos for {neuron_ind-1} neurons")
+
+
+##
+## Secondary pipeline: create training data
+##
+
+def training_data_from_annotations(config, df_fname,
+                                   which_frames,
+                                   scorer=None,
+                                   total_num_frames=500,
+                                   coord_names=['x','y','likelihood'],
+                                   verbose=0):
+    """
+    Creates a set of training frames or volumes starting from a saved dataframe of tracklets
+
+    Takes frames in the list which_frames, taking neurons that are present in each
+    """
+
+    c = load_config(config)
+
+    # Load the dataframe name, and produce DLC-style annotations
+    with open(df_fname, 'rb') as f:
+        clust_df = pickle.load(f)
+    opt = {'min_length':min_track_length, 'num_frames':total_num_frames,
+           'coord_names':coord_names,
+           'verbose':verbose}
+    new_dlc_df = build_dlc_annotation_all(clust_df, **opt)
+    if new_dlc_df is None:
+        print("Found no tracks long enough; aborting")
+        return None
+
+    # Save annotations using DLC-style names, and update the config files
+    build_dlc_name = save_dlc_annotations(scorer, df_fname, c, new_dlc_df)[0]
+    synchronize_config_files(c, build_dlc_name, num_dims=len(coord_names)-1)
+
+    # Finally, make the video
+    dlc_config = c.tracking.DLC_config_fname
+    vid_fname = c.datafiles.red_avi_fname
+    make_labeled_video_custom_annotations(dlc_config, vid_fname, new_dlc_df)
+
+    return new_dlc_df
