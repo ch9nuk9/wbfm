@@ -18,6 +18,11 @@ def build_dlc_annotation_one_tracklet(row,
                                       min_length=5,
                                       neuron_ind=1,
                                       verbose=0):
+    """
+    Builds DLC-style dataframe and .h5 annotation from my tracklet dataframe
+
+    Can also be 3d if coord_names is passed as ['z', 'x', 'y', 'likelihood']
+    """
     # TODO: Check z
 
     # Variables to be written
@@ -31,18 +36,25 @@ def build_dlc_annotation_one_tracklet(row,
     if tracklet_length < min_length:
         return None
 
+    # Relies on ZXY format for this_xyz column in the original dataframe
+    coord_mapping = {'z':0, 'x':1, 'y':2}
+
     # Build a dataframe for one neuron across all frames
     # Will be zeros if not detected in a given frame
     coords = np.zeros((num_frames,len(coord_names),))
     for this_slice, this_xyz, this_prob in zip(row['slice_ind'], row['all_xyz'], row['all_prob']):
         # TODO: only works for xy; this_xyz is format ZXY
-        coords[this_slice,0] = this_xyz[1]
-        coords[this_slice,1] = this_xyz[2]
-        try:
-            coords[this_slice,-1] = this_prob
-        except:
-            coords[this_slice,-1] = 0.0
-            pass
+        for i, coord_name in enumerate(coord_names):
+            if coord_name in coord_mapping:
+                # is spatial
+                coords[this_slice,i] = this_xyz[coord_mapping[coord_name]]
+            else:
+                # is non-spatial, i.e. likelihood
+                try:
+                    coords[this_slice,-1] = this_prob
+                except:
+                    coords[this_slice,-1] = 0.0
+                    pass
 
     index = pd.MultiIndex.from_product([[scorer], [f'neuron{neuron_ind}'],
                                         coord_names],
@@ -52,26 +64,26 @@ def build_dlc_annotation_one_tracklet(row,
     return frame
 
 
-def build_dlc_annotation_all(clust_df, min_length, num_frames=1000, verbose=1):
+def build_dlc_annotation_all(clust_df, min_length, num_frames=1000,
+                             coord_names=['x','y','likelihood'], verbose=1):
     new_dlc_df = None
     all_bodyparts = np.asarray(clust_df['clust_ind'])
 
     neuron_ind = 1
+    opt = {'min_length':min_length, 'verbose':verbose-1,
+           'num_frames':num_frames,
+           'coord_names':coord_names}
     for i, row in tqdm(clust_df.iterrows(), total=clust_df.shape[0]):
-        opt = {'min_length':min_length, 'verbose':verbose-1,
-               'neuron_ind':neuron_ind,
-               'num_frames':num_frames}
+        opt['neuron_ind'] = neuron_ind
         frame = build_dlc_annotation_one_tracklet(row, all_bodyparts, **opt)
         if frame is not None:
             new_dlc_df = pd.concat([new_dlc_df, frame],axis=1)
             neuron_ind = neuron_ind + 1
-
 #         if verbose >= 1:
 #             print("============================")
 #             print(f"Row {i}/{len(all_bodyparts)}")
-
     if verbose >= 1 and new_dlc_df is not None:
-        print(f"Found {len(new_dlc_df.columns)/3} tracks of length >{min_length}")
+        print(f"Found {len(new_dlc_df.columns)/len(coord_names)} tracks of length >{min_length}")
 
     return new_dlc_df
 
@@ -167,7 +179,7 @@ def save_dlc_annotations(scorer, df_fname, c, new_dlc_df):
     return build_dlc_name, all_fnames
 
 
-def synchronize_config_files(c, build_dlc_name):
+def synchronize_config_files(c, build_dlc_name, num_dims=2):
     """Synchronizes my config file and the DLC config file"""
 
     project_folder = c.get_dirname()
@@ -187,7 +199,7 @@ def synchronize_config_files(c, build_dlc_name):
     # Synchronize the DLC config file
     # Assumes the DLC project is already made
     csv_annotations = c.tracking.annotation_fname.replace('h5', 'csv')
-    csv_annotations2config_names(dlc_config, csv_annotations)
+    csv_annotations2config_names(dlc_config, csv_annotations, num_dims=num_dims)
 
 ##
 ## Full pipeline: from dataframe to video
@@ -196,7 +208,9 @@ def synchronize_config_files(c, build_dlc_name):
 def create_video_from_annotations(config, df_fname,
                                   scorer=None,
                                   min_track_length=50,
-                                  total_num_frames=500):
+                                  total_num_frames=500,
+                                  coord_names=['x','y','likelihood'],
+                                  verbose=0):
     """
     Creates a video starting from a saved dataframe of tracklets
     """
@@ -206,7 +220,9 @@ def create_video_from_annotations(config, df_fname,
     # Load the dataframe name, and produce DLC-style annotations
     with open(df_fname, 'rb') as f:
         clust_df = pickle.load(f)
-    opt = {'min_length':min_track_length, 'num_frames':total_num_frames, 'verbose':1}
+    opt = {'min_length':min_track_length, 'num_frames':total_num_frames,
+           'coord_names':coord_names,
+           'verbose':verbose}
     new_dlc_df = build_dlc_annotation_all(clust_df, **opt)
     if new_dlc_df is None:
         print("Found no tracks long enough; aborting")
@@ -214,7 +230,7 @@ def create_video_from_annotations(config, df_fname,
 
     # Save annotations using DLC-style names, and update the config files
     build_dlc_name = save_dlc_annotations(scorer, df_fname, c, new_dlc_df)[0]
-    synchronize_config_files(c, build_dlc_name)
+    synchronize_config_files(c, build_dlc_name, num_dims=len(coord_names)-1)
 
     # Finally, make the video
     dlc_config = c.tracking.DLC_config_fname
