@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import copy
 import pandas as pd
 import cv2
+from collections import defaultdict
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
@@ -317,3 +318,52 @@ def hist_of_tracklet_lens(df,
     plt.title(f"Lengths of individual tracks (minimum={min_len})")
 
     return all_len
+
+
+def plot_tracklets_of_min_len(clust_df, min_len=20):
+    all_num_tracks = defaultdict(int)
+
+    for row in clust_df['slice_ind']:
+        if len(row) < min_len:
+            continue
+        for ind in row:
+            all_num_tracks[ind] += 1
+
+    # all_num = np.zeros(num_frames)
+    x = list(all_num_tracks.keys())
+    y = list(all_num_tracks.values())
+    # for k, val in all_num_tracks.items():
+    #     all_num[k] = val
+
+    plt.plot(x, y)
+    plt.title(f"Number of tracks on each frame of min length {min_len}")
+    plt.show()
+
+    return x, y
+
+
+def plot_tracklet_covering(clust_df, window_len=20):
+    """
+    Plots the number of tracklets that cover a frame AND a length afterwards
+        i.e. frame n and n+window_len
+    """
+    all_num_tracks = defaultdict(int)
+    for row in clust_df['slice_ind']:
+        if len(row) < window_len:
+            continue
+        for ind in row:
+            # Doesn't count the end of the track
+            if ind == (row[-1]-window_len):
+                break
+            all_num_tracks[ind] += 1
+
+    x = list(all_num_tracks.keys())
+    y = list(all_num_tracks.values())
+
+    plt.plot(x, y)
+    plt.xlabel("Start of the window")
+    plt.ylabel("Number of covering tracks")
+    plt.title(f"Number of tracks covering a full window (length={window_len})")
+    plt.show()
+
+    return x, y
