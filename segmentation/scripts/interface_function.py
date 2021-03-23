@@ -16,6 +16,7 @@ import pickle
 import numpy as np
 import os
 import tifffile as tiff
+import argh
 
 
 def segment_full_video(video_path,
@@ -239,3 +240,11 @@ def segment_full_video_3d(video_path,
     print(f'Done with segmentation pipeline! Data saved at {output_folder}')
 
     return output_fname, metadata
+
+
+# dispatching the argh parser, so that the functions can be run on CLI
+parser = argh.ArghParser()
+parser.add_commands([segment_full_video, segment_full_video_3d])
+
+if __name__ == '__main__':
+    parser.dispatch()
