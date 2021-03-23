@@ -1,17 +1,10 @@
 import numpy as np
 import unittest
-from overlap import *
+from segmentation.util.overlap import *
 
 # when testing, one should assert summarizing results, such as number of outputs or lengths, instead of precise results
 
-# some tests need datasets. Since I code offline/locally, we will need to chagne the path to the datasets when porting!
-
-# TODO look for a datset to use, e.g. GT_3d or sd results
-data_folder = r'C:\Bitbucket\segmentation-git\segmentation\dat\unit_test_data'
-raw_volume_path = r'/segmentation/dat/unit_test_data/one_volume.tif'
-prealigned_volume_path = r''
-stardist_testdata = r'C:\Bitbucket\segmentation-git\segmentation\dat\unit_test_data\versatile_fluo_3d.npy'
-stardist_prealigned = r'C:\Bitbucket\segmentation-git\segmentation\dat\unit_test_data\prealigned_versatile_fluo_3d.npy'
+# some test need datasets. Since I code offline/locally, we will need to chagne the path to the datasets when porting!
 
 
 class TestOverlaps(unittest.TestCase):
@@ -67,7 +60,6 @@ class TestOverlaps(unittest.TestCase):
         pass
 
     def test_calc_brightness(self):
-        example_data = tiff.imread(raw_volume_path)
         pass
 
     def test_calc_means_via_brightness(self):
