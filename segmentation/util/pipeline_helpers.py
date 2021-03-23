@@ -82,7 +82,7 @@ def get_stardist_model(model_name, folder=None):
 
     """
     # all self-trained StarDist models reside in that folder. 'nt' for windows, when working locally
-    if not folder:
+    if folder is None:
         if os.name == 'nt':
             folder = Path(r'C:\Segmentation_working_area\stardist_models')
         else:
@@ -90,6 +90,9 @@ def get_stardist_model(model_name, folder=None):
 
     # available models' aliases
     sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d']
+    sd_names = ['2D_versatile_fluo', 'stardistNiklas', 'starDistCharlie', 'Charlie100-3d']
+    # TODO create a dictionary with key = 'alias', value = name
+    # but it makes no sense, if we have 3 exceptions for 4 models
 
     # create aliases for each model_name
     if model_name == 'versatile':
@@ -107,7 +110,7 @@ def get_stardist_model(model_name, folder=None):
 
 
 def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remove_border_flag=True,
-                               upper_length_threshold=12, lower_length_threshold=3,):
+                               upper_length_threshold=12, lower_length_threshold=3):
     """
     Performs some post-processing steps including: Splitting long neurons, removing short neurons and
     removing too large areas
@@ -138,9 +141,6 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
     stitched_masks, df_with_centroids = ol.bipartite_stitching(masks)
     neuron_lengths = ol.get_neuron_lengths_dict(stitched_masks)
 
-    if remove_border_flag:
-        stitched_masks = remove_border(stitched_masks, border=remove_border_width)
-
     # calculate brightnesses and their global Z-plane
     brightnesses, neuron_planes = ol.calc_brightness(img_volume, stitched_masks, neuron_lengths)
     # split too long neurons
@@ -159,10 +159,13 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
                                 split_brightnesses,
                                 split_neuron_planes)
 
+    if remove_border_flag is True:
+        final_masks = remove_border(final_masks, remove_border_width)
+
     return final_masks
 
 
-def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, remove_border_flag,
+def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, remove_border_flag=True,
                                upper_length_threshold=12, lower_length_threshold=3):
     """
     Performs post-processing of segmented masks. Includes: splitting long masks, removing large areas,
@@ -190,10 +193,6 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
     """
 
     stitched_masks = ol.remove_large_areas(stitched_masks)
-
-    if remove_border_flag:
-        stitched_masks = remove_border(stitched_masks, border=remove_border_width)
-
     neuron_lengths = ol.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
@@ -214,6 +213,9 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
                                 lower_length_threshold,
                                 split_brightnesses,
                                 split_neuron_planes)
+
+    if remove_border_flag is True:
+        final_masks = remove_border(final_masks, remove_border_width)
 
     return final_masks
 

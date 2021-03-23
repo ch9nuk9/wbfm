@@ -224,9 +224,3 @@ def remove_small_overlaps(matches, matches_volumes, array, threshold=20):
             matches[k] = [m for i, m in enumerate(matches[k]) if i in to_keep]
 
     return matches, matches_volumes
-
-# gt_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\gt_stitched.npy')
-# algo_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\stardist_fluo_stitched.npy')
-#
-# matches = create_match_dict(gt_3d, algo_3d)
-# seg_accuracy()

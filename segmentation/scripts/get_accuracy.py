@@ -46,7 +46,7 @@ for i, file in enumerate(files):
 print('.....Saving!')
 
 # save
-sv_dir = r'C:\Segmentation_working_area\data\lukas_model'
+sv_dir = r'C:\Segmentation_working_area\data\lukas_model\prealigned_no_filter'
 pkl_file = os.path.join(sv_dir, 'lukas_prealigned_volume_accuracy_results.pickle')
 with open(pkl_file, 'wb') as pkl:
     pickle.dump(acc_results, pkl)
