@@ -312,6 +312,65 @@ def get_indices_full_overlap(clust_df, which_frames):
     return clust_df['slice_ind'].apply(check_frames)
 
 
+def build_subset_df(clust_df, which_frames):
+
+    def check_frames(test_frames, which_frames=which_frames):
+        test_frames_set = set(test_frames)
+        local2global_ind = {}
+        for f in which_frames:
+            if f in test_frames_set:
+                local2global_ind[test_frames.index(f)] = f
+            else:
+                # Must all be present
+                return None
+        return local2global_ind
+
+    def keep_subset(this_ind_dict, old_ind):
+        new_ind = []
+        for i in this_ind_dict:
+            try:
+                new_ind.append(old_ind[i])
+            except:
+                continue
+        return new_ind
+
+    def rename_slices(this_ind_dict):
+        return list(this_ind_dict.keys())
+
+    sub_df = clust_df.copy()
+    # Get only the covering neurons
+    which_neurons = sub_df['slice_ind'].apply(check_frames)
+    which_neurons_dict = which_neurons.to_dict()
+    to_keep = [(v is not None) for k,v in which_neurons_dict.items()]
+    for i, val in enumerate(to_keep):
+        if not val:
+            del which_neurons_dict[i]
+    which_neurons_df = sub_df[to_keep]
+
+    # Get only the indices of those neurons corresponding to these frames
+    names = {'all_xyz':'all_xyz_old',
+            'all_ind_local':'all_ind_local_old',
+            'all_prob':'all_prob_old',
+            'slice_ind':'slice_ind_old'}
+    out_df = which_neurons_df.rename(columns=names)
+
+    # All 4 fields that were renamed
+    f0 = lambda df : keep_subset(which_neurons_dict[df['clust_ind']], df['all_ind_local_old'])
+    out_df['all_ind_local'] = out_df.apply(f0, axis=1)
+
+    f1 = lambda df : keep_subset(which_neurons_dict[df['clust_ind']], df['all_xyz_old'])
+    out_df['all_xyz'] = out_df.apply(f1, axis=1)
+
+    f2 = lambda df : keep_subset(which_neurons_dict[df['clust_ind']], df['all_prob_old'])
+    out_df['all_prob'] = out_df.apply(f2, axis=1)
+
+    # Final one is slightly different
+    f3 = lambda df : rename_slices(which_neurons_dict[df['clust_ind']])
+    out_df['slice_ind'] = out_df.apply(f3, axis=1)
+
+    return out_df
+
+
 def training_data_from_annotations(config, df_fname,
                                    which_frames,
                                    scorer=None,
@@ -329,10 +388,14 @@ def training_data_from_annotations(config, df_fname,
     # Load the dataframe name, and produce DLC-style annotations
     with open(df_fname, 'rb') as f:
         clust_df = pickle.load(f)
-    opt = {'min_length':min_track_length, 'num_frames':total_num_frames,
+
+    # Build a sub-df with only the relevant neurons and slices
+    subset_df = build_subset_df(clust_df, which_frames)
+
+    opt = {'min_length':0, 'num_frames':total_num_frames,
            'coord_names':coord_names,
            'verbose':verbose}
-    new_dlc_df = build_dlc_annotation_all(clust_df, **opt)
+    new_dlc_df = build_dlc_annotation_all(subset_df, **opt)
     if new_dlc_df is None:
         print("Found no tracks long enough; aborting")
         return None
@@ -341,7 +404,9 @@ def training_data_from_annotations(config, df_fname,
     build_dlc_name = save_dlc_annotations(scorer, df_fname, c, new_dlc_df)[0]
     synchronize_config_files(c, build_dlc_name, num_dims=len(coord_names)-1)
 
-    # Finally, make the video
+    # Finally, save the individual tif files
+
+    # # Finally, make the video
     dlc_config = c.tracking.DLC_config_fname
     vid_fname = c.datafiles.red_avi_fname
     make_labeled_video_custom_annotations(dlc_config, vid_fname, new_dlc_df)

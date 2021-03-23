@@ -379,6 +379,7 @@ def plot_full_tracklet_covering(clust_df, window_len=20, num_frames=500):
     for i in x:
         which_frames = list(range(i,i+window_len+1))
         def check_frames(vals, which_frames=which_frames):
+            vals = set(vals)
             return all([f in vals for f in which_frames])
 
         tmp = clust_df['slice_ind'].apply(check_frames)
