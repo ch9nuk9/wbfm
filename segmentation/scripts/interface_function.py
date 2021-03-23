@@ -74,7 +74,7 @@ def segment_full_video(video_path,
 
     # initialization of variables
     output_folder = os.path.split(video_path)[0]
-    output_fname = os.path.join(output_folder, 'segmented_masks.tif')
+    output_fname = os.path.join(output_folder, 'segmented_masks.btf')
     metadata = dict()
 
     # get stardist model object
@@ -185,7 +185,7 @@ def segment_full_video_3d(video_path,
 
     # initialization of variables
     output_folder = os.path.split(video_path)[0]
-    output_fname = os.path.join(output_folder, 'segmented_masks.tif')
+    output_fname = os.path.join(output_folder, 'segmented_masks.btf')
     metadata = dict()
 
     # get stardist model object
