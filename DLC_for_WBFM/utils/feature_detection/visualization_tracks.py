@@ -202,7 +202,7 @@ def plot_match_example(all_frames,
     this_match = np.array(neuron_matches[which_frame_pair])
     neuron1 = this_match[this_match[:,0]==neuron0, 1]
     # Get keypoints and feature, then the subsets
-    kp_ind0 = frame0.get_features_of_neuron(neuron0)
+    kp_ind0 = set(frame0.get_features_of_neuron(neuron0))
     kp0, kp1 = frame0.keypoints, frame1.keypoints
 
     these_features = []

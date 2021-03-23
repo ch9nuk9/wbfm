@@ -24,7 +24,7 @@ def separate_keypoints_and_tracklets(clust_df, start_ind, window_length,
 
     is_keypoint = []
     is_tracklet = []
-    this_window = list(range(start_ind, start_ind + window_length))
+    this_window = set(range(start_ind, start_ind + window_length))
     for i, row in enumerate(clust_df['slice_ind']):
         overlap_ind = np.array([i in this_window for i in row])
         num_overlap = np.count_nonzero(overlap_ind)
@@ -88,8 +88,9 @@ def calc_all_tracklet_features(kp_df, tracklet_df, start_ind, window_length, onl
         print("Calculating features for all tracklets")
     for _, tracklet in tqdm(tracklet_df.iterrows(), total=len(tracklet_df)):
         this_tracklet_features = []
+        slice_set = set(tracklet['slice_ind'])
         for global_ind in this_window:
-            if global_ind in tracklet['slice_ind']:
+            if global_ind in slice_set:
                 tracklet_ind = tracklet['slice_ind'].index(global_ind)
                 this_neuron = tracklet['all_xyz'][tracklet_ind]
             else:

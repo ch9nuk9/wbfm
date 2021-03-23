@@ -344,7 +344,7 @@ def consolidate_tracklets(df_raw, tracklet_matches, verbose=0):
     Note: assumes that the indices in tracklet_matches correspond to the clust_ind column
     """
     base_of_dropped_rows = {}
-    rows_to_drop = []
+    rows_to_drop = set()
     df = copy.deepcopy(df_raw)
     for row0_ind, row1_ind in tracklet_matches:
         # If we have two matches: (0,1) and later (1,10), add directly to track 0
@@ -367,7 +367,7 @@ def consolidate_tracklets(df_raw, tracklet_matches, verbose=0):
                              row_to_add['all_prob'][:],
                              append_or_extend=list.extend)
         base_of_dropped_rows[row1_ind] = row0_ind
-        rows_to_drop.append(row1_ind)
+        rows_to_drop.add(row1_ind)
 
     if verbose >= 1:
         print(f"Extended and dropped {len(rows_to_drop)}/{df.shape[0]} rows")

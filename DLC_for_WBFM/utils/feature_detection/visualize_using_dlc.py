@@ -109,9 +109,9 @@ def make_labeled_video_custom_annotations(dlc_config,
     cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
 
     displayedbodyparts="all"
-    bodyparts = deeplabcut.auxiliaryfunctions.IntersectionofBodyPartsandOnesGivenbyUser(
+    bodyparts = set(deeplabcut.auxiliaryfunctions.IntersectionofBodyPartsandOnesGivenbyUser(
             cfg, displayedbodyparts
-        )
+        ))
     labeled_bpts = [
         bp
         for bp in df.columns.get_level_values("bodyparts").unique()
