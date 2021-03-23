@@ -90,8 +90,9 @@ def get_stardist_model(model_name, folder=None):
 
     # available models' aliases
     sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d']
-    sd_names = ['2D_versatile_fluo', 'stardistNiklas',,]
+    sd_names = ['2D_versatile_fluo', 'stardistNiklas', 'starDistCharlie', 'Charlie100-3d']
     # TODO create a dictionary with key = 'alias', value = name
+    # but it makes no sense, if we have 3 exceptions for 4 models
 
     # create aliases for each model_name
     if model_name == 'versatile':
@@ -161,6 +162,9 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
                                 split_brightnesses,
                                 split_neuron_planes)
 
+    if remove_border_flag is True:
+        final_masks = remove_border(final_masks, remove_border_width)
+
     return final_masks
 
 
@@ -216,6 +220,9 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
                                 lower_length_threshold,
                                 split_brightnesses,
                                 split_neuron_planes)
+
+    if remove_border_flag is True:
+        final_masks = remove_border(final_masks, remove_border_width)
 
     return final_masks
 
