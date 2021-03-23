@@ -623,7 +623,6 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
         print(f'Error in brightness: Means = {means} length of brightness list = {len(brightnesses)}')
         return []
 
-
     # you can plot each gaussian separately using
     pg1 = np.zeros_like(p0)
     pg1[0:3] = coeff[0:3]

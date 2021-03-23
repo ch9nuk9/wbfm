@@ -8,7 +8,7 @@ from overlap import *
 
 # TODO look for a datset to use, e.g. GT_3d or sd results
 data_folder = r'C:\Bitbucket\segmentation-git\segmentation\dat\unit_test_data'
-raw_volume_path = r'C:\Bitbucket\segmentation-git\segmentation\dat\unit_test_data\one_volume.tif'
+raw_volume_path = r'/segmentation/dat/unit_test_data/one_volume.tif'
 prealigned_volume_path = r''
 stardist_testdata = r'C:\Bitbucket\segmentation-git\segmentation\dat\unit_test_data\versatile_fluo_3d.npy'
 stardist_prealigned = r'C:\Bitbucket\segmentation-git\segmentation\dat\unit_test_data\prealigned_versatile_fluo_3d.npy'
