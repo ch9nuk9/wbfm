@@ -1,5 +1,5 @@
 '''
- This script tests cellpose parameters (pixels) with a given input by a shell script.
+ This script test cellpose parameters (pixels) with a given input by a shell script.
  Cellpose will run in 3D mode and only the masks are being saved (to save time; seq-file ~ 300mb/slice)
  It will use the test volume in /groups/zimmer/shared_projects/wbfm/cellpose_test_data/one_volume.tif
 

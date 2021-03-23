@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import get_node_name
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import unpack_node_name
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import calc_bipartite_matches
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches
 
 
 def create_2d_masks_gt():

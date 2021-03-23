@@ -41,10 +41,10 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
 
     gt_to_algo, gt_to_algo_volumes = create_3d_match_dict(gt_3d, algo_3d)
     gt_to_algo, gt_to_algo_volumes = remove_small_overlaps(gt_to_algo, gt_to_algo_volumes, gt_3d)
-    
+
     algo_to_gt, algo_to_gt_volumes = create_3d_match_dict(algo_3d, gt_3d)
     algo_to_gt, algo_to_gt_volumes = remove_small_overlaps(algo_to_gt, algo_to_gt_volumes, algo_3d)
-    
+
     # false negatives = if neuron was not found by algorithm, i.e. [] in gt_to_algo
     # count empty in gt_to_algo
     fn_count = 0
@@ -103,11 +103,12 @@ def seg_accuracy(ground_truth_path=None, algorithm_path=None):
                         'tp_p': tp_p,
                         'os': overseg,
                         'us': underseg,
+                        'algorithm_neurons': np.count_nonzero(np.unique(algo_3d)),
+                        'gt_neurons': np.count_nonzero(np.unique(gt_3d)),
                         'gt_to_algo_dict': gt_to_algo,
                         'algo_to_gt_dict': algo_to_gt,
                         'vol_gt': gt_to_algo_volumes,
                         'vol_algo': algo_to_gt_volumes,
-                        'total_neurons_segmented': np.count_nonzero(np.unique(algo_3d))
                         }
 
     # TODO create a histogram for each neuron (and direction (algo to gt)). find a cutoff
@@ -160,7 +161,6 @@ def create_3d_match_dict(dataset1, dataset2):
         # match_mask = this_mask * dataset2
         match_mask = dataset2[this_mask]
 
-
         # create list of IDs of overlapping neurons
         overlap_ids = np.unique(match_mask)
         overlap_ids = list(overlap_ids[overlap_ids > 0])
@@ -174,8 +174,8 @@ def create_3d_match_dict(dataset1, dataset2):
             this_overlap_sum = np.count_nonzero(this_overlap_mask)
 
             # if there is a match, non-zero values should
-            interim_match.append(id.astype(int))       # add IDs
-            interim_volume.append(this_overlap_sum)   # add matched area size
+            interim_match.append(id.astype(int))  # add IDs
+            interim_volume.append(this_overlap_sum)  # add matched area size
 
         # add ids and areas to dicts
         matches_dict[neuron] = interim_match
@@ -189,18 +189,18 @@ def create_3d_match_dict(dataset1, dataset2):
 
 
 def remove_small_overlaps(matches, matches_volumes, array, threshold=20):
-    '''
+    """
     Removes entries in input-dictionaries, if the overlapping volume of 2 neuron masks (volume is in 'matches_volumes')
     is greater than the threshold; threshold = % of volume of neuron to, which matches were matched.
     I.e.: if 5 neurons of dataset 2 were matched to "neuron 1" of dataset 1, then it will remove matches, if
     the matched volumes are smaller than 20% of the volume of 'neuron 1' in dataset 1
-    
+
     Parameters
     ----------
     matches : dict
-        {neuron # : list(IDs of matching neurons)}
+        {neuron# : list(IDs of matching neurons)}
     matches_volumes : dict
-        {neuron # : list(volumes of matching neurons)}
+        {neuron# : list(volumes of matching neurons)}
     array : 3d array
         array of 'dataset 1', i.e. array to which a second dataset has been matched
     threshold : int
@@ -212,22 +212,15 @@ def remove_small_overlaps(matches, matches_volumes, array, threshold=20):
     matches_volumes : dict
     In both dictionaries, entries were removed, if overlapping volume < threshold
 
-    '''
-    
+    """
+
     counter = 0
     for k, v in matches_volumes.items():
         if len(v) > 1:
             vol_k = np.count_nonzero(array == int(k))
-            to_keep = [i for i, x in enumerate(v) if ((x/vol_k) * 100) > threshold]
-            new_vals = [x for x in v if ((x/vol_k) * 100) > threshold]
+            to_keep = [i for i, x in enumerate(v) if ((x / vol_k) * 100) > threshold]
+            new_vals = [x for x in v if ((x / vol_k) * 100) > threshold]
             matches_volumes[k] = new_vals
             matches[k] = [m for i, m in enumerate(matches[k]) if i in to_keep]
 
-
     return matches, matches_volumes
-
-# gt_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\gt_stitched.npy')
-# algo_3d = np.load(r'C:\Segmentation_working_area\stitched_3d_data\stardist_fluo_stitched.npy')
-#
-# matches = create_match_dict(gt_3d, algo_3d)
-# seg_accuracy()
