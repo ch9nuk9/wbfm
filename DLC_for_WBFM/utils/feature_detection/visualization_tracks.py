@@ -367,3 +367,27 @@ def plot_tracklet_covering(clust_df, window_len=20):
     plt.show()
 
     return x, y
+
+
+def plot_full_tracklet_covering(clust_df, window_len=20, num_frames=500):
+    """
+    Similar to plot_tracklet_covering but checks each frame individually
+        Slower, but works for tracklets that may skip frames
+    """
+    x = list(range(num_frames-window_len))
+    y = np.zeros_like(x)
+    for i in x:
+        which_frames = list(range(i,i+window_len+1))
+        def check_frames(vals, which_frames=which_frames):
+            return all([f in vals for f in which_frames])
+
+        tmp = clust_df['slice_ind'].apply(check_frames)
+        y[i] = tmp.sum(axis=0)
+
+    plt.plot(x, y)
+    plt.xlabel("Start of the window")
+    plt.ylabel("Number of covering tracks")
+    plt.title(f"Number of tracks covering a full window (length={window_len})")
+    plt.show()
+
+    return x, y
