@@ -304,6 +304,14 @@ def create_many_videos_from_annotations(config, df_fname,
 ## Secondary pipeline: create training data
 ##
 
+
+def get_indices_full_overlap(clust_df, which_frames):
+    def check_frames(vals, which_frames=which_frames):
+        return all([f in vals for f in which_frames])
+
+    return clust_df['slice_ind'].apply(check_frames)
+
+
 def training_data_from_annotations(config, df_fname,
                                    which_frames,
                                    scorer=None,
