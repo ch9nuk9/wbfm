@@ -193,7 +193,6 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
     """
 
     stitched_masks = ol.remove_large_areas(stitched_masks)
-
     neuron_lengths = ol.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
