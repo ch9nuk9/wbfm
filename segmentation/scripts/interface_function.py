@@ -118,11 +118,13 @@ def segment_full_video(video_path,
         # metadata_dict = {(Vol #, Neuron #) = [Total brightness, neuron volume, centroids]}
         meta_df = get_metadata_dictionary(final_masks, volume)
         metadata[i] = meta_df
-        metadata_filename = os.path.join(output_folder, 'metadata.pickle')
-        with open(metadata_filename, 'wb') as meta_save:
-            pickle.dump(metadata, meta_save)
 
-        print(f'Done with segmentation pipeline! Data saved at {output_folder}')
+    # saving metadata
+    metadata_filename = os.path.join(output_folder, 'metadata.pickle')
+    with open(metadata_filename, 'wb') as meta_save:
+        pickle.dump(metadata, meta_save)
+
+    print(f'Done with segmentation pipeline! Data saved at {output_folder}')
 
     return output_fname, metadata
 
@@ -228,10 +230,12 @@ def segment_full_video_3d(video_path,
         # metadata_dict = {(Vol #, Neuron #) = [Total brightness, neuron volume, centroids]}
         meta_df = get_metadata_dictionary(masks, volume)
         metadata[i] = meta_df
-        metadata_filename = os.path.join(output_folder, 'metadata.pickle')
-        with open(metadata_filename, 'wb') as meta_save:
-            pickle.dump(metadata, meta_save)
 
-        print(f'Done with segmentation pipeline! Data saved at {output_folder}')
+    # saving metadata
+    metadata_filename = os.path.join(output_folder, 'metadata.pickle')
+    with open(metadata_filename, 'wb') as meta_save:
+        pickle.dump(metadata, meta_save)
+
+    print(f'Done with segmentation pipeline! Data saved at {output_folder}')
 
     return output_fname, metadata
