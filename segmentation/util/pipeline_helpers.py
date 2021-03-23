@@ -110,7 +110,7 @@ def get_stardist_model(model_name, folder=None):
 
 
 def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remove_border_flag=True,
-                               upper_length_threshold=12, lower_length_threshold=3,):
+                               upper_length_threshold=12, lower_length_threshold=3):
     """
     Performs some post-processing steps including: Splitting long neurons, removing short neurons and
     removing too large areas
@@ -140,9 +140,6 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
     masks = ol.remove_large_areas(mask_array)
     stitched_masks, df_with_centroids = ol.bipartite_stitching(masks)
     neuron_lengths = ol.get_neuron_lengths_dict(stitched_masks)
-
-    if remove_border_flag:
-        stitched_masks = remove_border(stitched_masks, border=remove_border_width)
 
     # calculate brightnesses and their global Z-plane
     brightnesses, neuron_planes = ol.calc_brightness(img_volume, stitched_masks, neuron_lengths)
@@ -196,9 +193,6 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
     """
 
     stitched_masks = ol.remove_large_areas(stitched_masks)
-
-    if remove_border_flag:
-        stitched_masks = remove_border(stitched_masks, border=remove_border_width)
 
     neuron_lengths = ol.get_neuron_lengths_dict(stitched_masks)
 
