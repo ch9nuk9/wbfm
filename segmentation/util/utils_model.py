@@ -28,9 +28,9 @@ def get_stardist_model(model_name, folder=None):
     # all self-trained StarDist models reside in that folder. 'nt' for windows, when working locally
     if folder is None:
         if os.name == 'nt':
-            folder = Path(r'C:\Segmentation_working_area\stardist_models')
+            folder = Path(r'/groups/zimmer/shaed_projects/wbfm/TrainedStardist')
         else:
-            folder = Path(r'C:\Segmentation_working_area\stardist_models')
+            folder = Path(r'/groups/zimmer/shaed_projects/wbfm/TrainedStardist')
 
     # available models' aliases
     sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d']
