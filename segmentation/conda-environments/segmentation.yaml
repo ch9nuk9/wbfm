@@ -28,4 +28,3 @@ dependencies:
     - tensorflow
     - argh
     - stardist
-    - cv2
