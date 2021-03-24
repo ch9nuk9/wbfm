@@ -220,9 +220,10 @@ def synchronize_config_files(c, build_dlc_name, num_dims=2):
 
     # Synchronize the DLC config file
     # Assumes the DLC project is already made
-    csv_annotations = c.tracking.annotation_fname.replace('h5', 'csv')
-    csv_annotations2config_names(dlc_config, csv_annotations, num_dims=num_dims)
-    
+    # csv_annotations = c.tracking.annotation_fname.replace('h5', 'csv')
+    h5_annotations = c.tracking.annotation_fname
+    csv_annotations2config_names(dlc_config, h5_annotations, num_dims=num_dims)
+
 
 ##
 ## Full pipeline: from dataframe to video
