@@ -44,7 +44,7 @@ def segment_full_video(video_path,
     num_frames : int
         number of volumes to be analyzed
     stardist_model_name : str
-        Name/alias of the StarDist model to be used for segmentation. I.e. 'lukas', 'charlie', 'versatile'
+        Name/alias of the StarDist model to be used for segmentation. I.e. 'lukas', 'charlie', 'versatile', 'Charlie100-3d'
         see also: get_stardist_model()
     preprocessing : PreprocessingSettings() object
         Object containing preprocessing options
@@ -141,8 +141,8 @@ def segment_full_video(video_path,
 
 
 def segment_full_video_3d(video_path,
-                          start_volume,
-                          num_frames,
+                          start_volume=0,
+                          num_frames=1,
                           stardist_model_name='lukas',
                           preprocessing=PreprocessingSettings(do_filtering=False, do_rigid_alignment=True, alpha=1.0),
                           num_slices=33,
@@ -162,7 +162,7 @@ def segment_full_video_3d(video_path,
     num_frames : int
         number of volumes to be analyzed
     stardist_model_name : str
-        Name/alias of the StarDist model to be used for segmentation. I.e. 'lukas', 'charlie', 'versatile'
+        Name/alias of the StarDist model to be used for segmentation. I.e. 'lukas', 'charlie', 'versatile', 'Charlie-3d'
         see also: get_stardist_model()
     preprocessing : PreprocessingSettings() object
         Object containing preprocessing options
