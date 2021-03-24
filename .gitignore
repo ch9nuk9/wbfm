@@ -1,0 +1,5 @@
+*.pyc
+segmentation.egg-info/
+segmentation/notebooks/.ipynb_checkpoints/
+.idea/
+segmentation/dat/

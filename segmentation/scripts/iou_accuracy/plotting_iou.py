@@ -12,7 +12,7 @@ import os
 
 # TODO: cycle over all subfolders
 
-dirs = [d.name for d in os.scandir('.') if d.is_dir()]      # list of subdirectories
+dirs = [d.name for d in os.scandir('../..') if d.is_dir()]      # list of subdirectories
 
 # Parent folder. Maybe change all of thsi script into a function and then use arg1 as parent!
 # for now: get current working directory
