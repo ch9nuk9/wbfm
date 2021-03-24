@@ -1,22 +1,25 @@
 """
-Maybe
+The top level functions for segemnting a full (WBFM) recording.
 """
-import segmentation.util.overlap as ol
-import segmentation.util.stardist_seg as sd
-from segmentation.util.pipeline_helpers import get_metadata_dictionary
-from segmentation.util.pipeline_helpers import get_stardist_model
-from segmentation.util.pipeline_helpers import perform_post_processing_2d
-from segmentation.util.pipeline_helpers import perform_post_processing_3d
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import PreprocessingSettings
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import perform_preprocessing
-from segmentation.util.prealignment_test import rigid_prealignment_pipeline
+
 from tqdm import tqdm
 import pickle
-import numpy as np
 import os
 import tifffile as tiff
 import argh
+# preprocessing
+from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import PreprocessingSettings
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import perform_preprocessing
+# segmentation
+from segmentation.util.utils_model import get_stardist_model
+from segmentation.util.utils_model import segment_with_stardist_2d
+from segmentation.util.utils_model import segment_with_stardist_3d
+# postproc
+from segmentation.util.utils_pipeline import perform_post_processing_2d
+from segmentation.util.utils_pipeline import perform_post_processing_3d
+# metadata
+from segmentation.util.utils_metadata import get_metadata_dictionary
 
 
 def segment_full_video(video_path,
@@ -27,7 +30,8 @@ def segment_full_video(video_path,
                                                            alpha=1.0, final_dtype='uint16'),
                        num_slices=33,
                        to_remove_border=True,
-                       options={}):
+                       options={},
+                       verbose=0):
     """
     Function to segment, stitch and curate a recording on a volume-to-volume basis.
 
@@ -90,19 +94,24 @@ def segment_full_video(video_path,
         volume = perform_preprocessing(volume, preprocessing)
 
         # segment the volume using Stardist
-        print('--- Segmentation ---')
-        segmented_masks = sd.segment_with_stardist_2d(volume, sd_model)
+        if verbose >= 2:
+            print('--- Segmentation ---')
+        segmented_masks = segment_with_stardist_2d(volume, sd_model)
 
         # process masks: remove large areas, stitch, split long neurons, remove short neurons
-        print('---- Post-processing ----')
+        if verbose >= 2:
+            print('---- Post-processing ----')
         final_masks = perform_post_processing_2d(segmented_masks,
                                                  volume,
                                                  border_width_to_be_removed,
                                                  to_remove_border,
                                                  length_upper_cutoff,
-                                                 length_lower_cutoff)
+                                                 length_lower_cutoff,
+                                                 verbose=verbose-1)
 
-        print('----- Saving TIF -----')
+        if verbose >= 2:
+            print('----- Saving TIF -----')
+
         # concatenate masks to tiff file and save
         if i == start_volume:
             tiff.imwrite(output_fname,
@@ -125,7 +134,8 @@ def segment_full_video(video_path,
     with open(metadata_filename, 'wb') as meta_save:
         pickle.dump(metadata, meta_save)
 
-    print(f'Done with segmentation pipeline! Data saved at {output_folder}')
+    if verbose >= 2:
+        print(f'Done with segmentation pipeline! Data saved at {output_folder}')
 
     return output_fname, metadata
 
@@ -203,7 +213,7 @@ def segment_full_video_3d(video_path,
         volume = perform_preprocessing(volume, preprocessing)
 
         # segment the volume using Stardist
-        masks = sd.segment_with_stardist_3d(volume, sd_model)
+        masks = segment_with_stardist_3d(volume, sd_model)
 
         if do_post_processing:
             print('--- Post processing Start ---')
@@ -242,7 +252,7 @@ def segment_full_video_3d(video_path,
     return output_fname, metadata
 
 
-# dispatching the argh parser, so that the functions can be run on CLI
+# dispatching the argh parser, so that select functions can be run with arguments on CLI
 parser = argh.ArghParser()
 parser.add_commands([segment_full_video, segment_full_video_3d])
 
