@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import tifffile
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
+from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from datetime import datetime as dt
 import pickle
 import os
@@ -137,6 +138,23 @@ class DLCForWBFMConfig:
 
     config_filename: str = None
     verbose: int = 1
+
+    def get_single_volume(self, which_vol,
+                          offset_start_frame=True,
+                          red_not_green=True):
+        """Gets volume and automatically applies saved preprocessing settings
+        TODO: properly mirror
+        TODO: save dtype as a field
+        """
+        if red_not_green:
+            fname = self.datafiles.red_bigtiff_fname
+        else:
+            fname = self.datafiles.green_bigtiff_fname
+        opt = {'alpha':self.preprocessing.alpha,
+               'num_slices':self.preprocessing.num_total_slices}
+        if offset_start_frame:
+            which_vol = which_vol + self.preprocessing.start_volume
+        return get_single_volume(fname, which_vol, **opt)
 
     def get_dirname(self):
         return os.path.dirname(self.config_filename)
