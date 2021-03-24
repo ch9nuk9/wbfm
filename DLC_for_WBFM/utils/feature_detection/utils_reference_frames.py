@@ -1,16 +1,15 @@
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, build_neuron_tree, build_f2n_map, add_neuron_match, match_known_features, extract_map1to2_from_matches
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
-from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP, detect_neurons_from_file
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame, PreprocessingSettings
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name, is_one_neuron_per_frame
 import numpy as np
 import networkx as nx
 import collections
 from dataclasses import dataclass
-import scipy.ndimage as ndi
 from collections import defaultdict
 
 
@@ -64,29 +63,6 @@ def build_reference_frame(dat_raw,
                        preprocessing_settings=preprocessing_settings)
     return f
 
-
-def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings):
-    """
-    Performs all preprocessing as set by the fields of preprocessing_settings
-
-    See PreprocessingSettings for options
-    """
-
-    s = preprocessing_settings
-
-    if s.do_filtering:
-        dat_raw = filter_stack(dat_raw, s.filter_opt)
-
-    if s.do_rigid_alignment:
-        dat_raw = align_stack(dat_raw)
-
-    if s.do_mini_max_projection:
-        mini_max_size = s.mini_max_size
-        dat_raw = ndi.maximum_filter(dat_raw, size=(mini_max_size,1,1))
-
-    dat_raw = (dat_raw*s.alpha).astype(s.final_dtype)
-
-    return dat_raw
 
 
 ##

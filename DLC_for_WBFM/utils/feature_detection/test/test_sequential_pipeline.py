@@ -7,6 +7,7 @@ import os
 import copy
 import open3d as o3d
 import pandas as pd
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 
 from DLC_for_WBFM.utils.feature_detection.utils_features import *
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import *
