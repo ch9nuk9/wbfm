@@ -51,7 +51,7 @@ do
     mkdir -p $DIR
     cd $DIR
     # options taken out: -J $(printf cp-param-test-%s ${DIR})
-    sbatch --mem-per-cpu=48G --qos=medium --wrap="conda activate cellpose; python /users/niklas.khoss/segmentation-git/segmentation/cp_param_test_3D_pixels_only.py $px"
+    sbatch --mem-per-cpu=48G --qos=medium --time=08:00:00 --wrap="conda activate cellpose; python /users/niklas.khoss/segmentation-git/segmentation/cp_param_test_3D_pixels_only.py $px"
     cd ..
         
 done

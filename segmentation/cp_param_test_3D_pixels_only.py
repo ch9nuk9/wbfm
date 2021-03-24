@@ -1,5 +1,5 @@
 '''
- This script tests cellpose parameters (pixels and flow_threshold) with a given input by a shell script.
+ This script tests cellpose parameters (pixels) with a given input by a shell script.
  Cellpose will run in 3D mode and only the masks are being saved (to save time; seq-file ~ 300mb/slice)
  It will use the test volume in /groups/zimmer/shared_projects/wbfm/cellpose_test_data/one_volume.tif
  
@@ -7,9 +7,8 @@
      cp_param_test_3D.py arg1 arg2
      
      arg1 = diameter in pixels; can be float(.1) or integer from 1-xx
-     arg2 = flow_threshold; float(.2) from 0-1
      
-     e.g. cp_param_test_3D.py 8 0.5
+     e.g. cp_param_test_3D.py 8 
      
 '''
 
@@ -32,16 +31,13 @@ logging.basicConfig(filename=log_name, level=logging.DEBUG)
 logging.info("START of python script")
 print("START of python script")
 
-# handling system arguments (=diameter and flow_threshold input)
-# Args: (0 = script path)    1 = diameter in pixels     2 = flow_threshold 
+# handling system arguments (=diameter)
+# Args: (0 = script path)    1 = diameter in pixels     
 if len(sys.argv) == 2:
     diam = round(float(sys.argv[1]), 1)
-    logging.info('INPUTS: diameter = %.2f, flow threshold = %.2f' % (float(diam), float(flow_thr)))
+    logging.info('INPUTS: diameter = %.2f' % (float(diam)))
 else:
     logging.debug('INPUT ERROR! The inputs are %s' % (str(sys.argv)))
-    
-
-
 
 # saving base name
 sv_base = "diam-" + str(arg1)
@@ -50,7 +46,7 @@ sv_base = "diam-" + str(arg1)
 # will use a test set in my home folder to not overwrite Charlie's results
 
 vol_path = '/users/niklas.khoss/stardist_test/preprocessed_volume.tif'
-#'/users/niklas.khoss/cp_test/one_volume/one_volume.tif'
+#vol_path = '/users/niklas.khoss/stardist_test/one_volume.tif'
 
 
 # run cellpose (3D) on a tif volume 
@@ -63,8 +59,11 @@ channels = [0,0]
 # load the volume and iterate over it calling cellpose on each slice separately
 with tiff.TiffFile(vol_path) as vol:
     
-    logging.info('Volume shape: %s', str(np.shape(vol.asarray())))
-    img = vol.asarray()
+    if np.shape(vol.asarray())[0] == 33:
+        img = vol.asarray()[1:]
+    else:
+        img = vol.asarray()
+    logging.info('Volume shape: %s', str(img.shape))
 
     # running cellpose
     masks, flows, styles, diams = model.eval(img, diameter=diam,
