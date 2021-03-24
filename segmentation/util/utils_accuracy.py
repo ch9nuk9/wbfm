@@ -1,9 +1,5 @@
 import numpy as np
-import os
 import pickle
-from segmentation.util.overlap import calc_all_overlaps, calc_best_overlap
-from natsort import natsorted
-import matplotlib.pyplot as plt
 
 
 def seg_accuracy(ground_truth_path=None, algorithm_path=None):

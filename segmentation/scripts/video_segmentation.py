@@ -1,5 +1,5 @@
 """
-The top level functions for segemnting a full (WBFM) recording.
+The top level functions for segmenting a full (WBFM) recording.
 """
 
 from tqdm import tqdm

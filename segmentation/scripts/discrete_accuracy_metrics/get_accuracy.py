@@ -8,7 +8,7 @@ Plots the accuracy results from all algorithm results
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import segmentation.util.segmentation_accuracy as acc
+import segmentation.util.utils_accuracy as acc
 import pandas as pd
 import pickle
 from collections import defaultdict

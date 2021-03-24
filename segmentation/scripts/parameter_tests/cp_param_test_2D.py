@@ -4,7 +4,7 @@
 
 
 # import section
-import os,sys,timeit
+import os, sys, timeit
 import numpy as np
 import time, os, sys
 import tifffile as tiff
@@ -30,9 +30,6 @@ if len(sys.argv) == 3:
     logging.info('INPUTS: diameter = %.2f, flow threshold = %.2f' % (float(diam), float(flow_thr)))
 else:
     logging.debug('INPUT ERROR! The inputs are %s' % (str(sys.argv)))
-    
-
-
 
 # saving base name
 sv_base = "diam-" + str(arg1) + "_flow-" + str(arg2)
@@ -41,7 +38,7 @@ sv_base = "diam-" + str(arg1) + "_flow-" + str(arg2)
 # will use a test set in my home folder to not overwrite Charlie's results
 
 vol_path = '/groups/zimmer/shared_projects/wbfm/cellpose_test_data/one_volume.tif'
-#'/users/niklas.khoss/cp_test/one_volume/one_volume.tif'
+# '/users/niklas.khoss/cp_test/one_volume/one_volume.tif'
 
 
 # run cellpose (2D) on single planes of a tif volume 
@@ -50,32 +47,31 @@ vol_path = '/groups/zimmer/shared_projects/wbfm/cellpose_test_data/one_volume.ti
 
 # initializing cellpose model
 model = models.Cellpose(gpu=False, model_type='nuclei')
-channels = [0,0]
+channels = [0, 0]
 
 # load the volume and iterate over it calling cellpose on each slice separately
 with tiff.TiffFile(vol_path) as vol:
     for count, page in enumerate(vol.pages):
-        
         img = page.asarray()
         print('... page ' + str(count))
-        
+
         # running cellpose
-        masks, flows, styles, diams = model.eval(img, diameter=diam, 
-                                         flow_threshold=flow_thr,
-                                         channels=channels, 
-                                         net_avg=True)
-        
+        masks, flows, styles, diams = model.eval(img, diameter=diam,
+                                                 flow_threshold=flow_thr,
+                                                 channels=channels,
+                                                 net_avg=True)
+
         # saving output
         print('-> saving output')
         png_sv_name = os.path.join(os.getcwd(),
-                                   "masks_" + str(count) + '_' + sv_base  )
+                                   "masks_" + str(count) + '_' + sv_base)
         io.save_to_png(img, masks, flows, png_sv_name)
 
         # pickling the mask output
         sv_name = "masks_arrays_" + str(count) + '_' + sv_base + ".pickle"
-        pickle.dump( masks, open( sv_name, "wb" ))
-        
+        pickle.dump(masks, open(sv_name, "wb"))
+
         np_sv = "np_masks_" + str(count) + "_" + sv_base
-        np.save( np_sv, masks )
-        
+        np.save(np_sv, masks)
+
 logging.info("--- Done! ---")

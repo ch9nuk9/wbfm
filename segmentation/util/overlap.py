@@ -18,10 +18,8 @@ import os
 from collections import defaultdict
 from scipy.optimize import curve_fit
 import pickle
-import pandas as pd
-import segmentation.util.prealignment_test as prealign
-import segmentation.util.stardist_seg as sd
 
+import segmentation.util.utils_model as sd
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
 from tqdm import tqdm
@@ -799,8 +797,6 @@ def create_3d_array_from_tiff(img_path: str, flyback_flag=0):
     return img_3d_array
 
 
-# TODO: write a new main function, which can discern between 2d & 3d (i.e. use 'array_dispatcher' function
-#  data and call overlaps
 def main_overlap(img_data_path, algo_data_path):
 
     # F1: load/create 3d array of algorithm results and original imaging data
@@ -863,7 +859,6 @@ def level2_overlap(img_array, algo_array, max_neuron_length=12, min_neuron_lengt
     return final_mask_array, final_neuron_lengths, split_brightness, brightness_planes, df # result should be the corrected masks in 3D
 
 
-# TODO work on dispatcher! n
 def array_dispatcher(vol_path, align=False, remove_flyback=True):
     """
     Checks, whether the data is .tif or .npy and creates a 3D array accordingly.

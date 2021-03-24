@@ -1,10 +1,10 @@
 """
-Testing area for all 'segmentation_accuracy.py' related functions.
+Testing area for all 'utils_accuracy.py' related functions.
 
 """
 import unittest
 import numpy as np
-from segmentation.util.segmentation_accuracy import *
+from segmentation.util.utils_accuracy import *
 
 
 class TestAccuracy(unittest.TestCase):

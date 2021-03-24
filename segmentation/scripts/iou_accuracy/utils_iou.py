@@ -2,12 +2,8 @@
 
 """
 
-import sys
-import os
 import numpy as np
-import cv2
-import matplotlib.pyplot as plt
-import logging
+
 import pickle
 from contextlib import redirect_stdout
 
