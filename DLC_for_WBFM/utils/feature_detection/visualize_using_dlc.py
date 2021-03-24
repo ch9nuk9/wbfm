@@ -1,8 +1,12 @@
 import deeplabcut
 from deeplabcut.utils.make_labeled_video import CreateVideo
 from deeplabcut.utils.video_processor import VideoProcessorCV as vp
-from DLC_for_WBFM.bin.configuration_definition import *
+from deeplabcut.utils import auxiliaryfunctions
+from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTracking, save_config
+import os
+import tifffile
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
+# from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -12,22 +16,30 @@ from tqdm import tqdm
 ##
 
 def build_dlc_annotation_one_tracklet(row,
-                                      all_bodyparts,
+                                      bodypart,
                                       num_frames=1000,
-                                      coord_names=['x','y','likelihood'],
+                                      coord_names=None,
+                                      which_frame_subset=None,
                                       min_length=5,
                                       neuron_ind=1,
+                                      relative_imagenames=None,
                                       verbose=0):
     """
     Builds DLC-style dataframe and .h5 annotation from my tracklet dataframe
 
     Can also be 3d if coord_names is passed as ['z', 'x', 'y', 'likelihood']
     """
+    if coord_names is None:
+        coord_names = ['x','y','likelihood']
     # TODO: Check z
 
     # Variables to be written
     scorer = 'feature_tracker'
-    all_frames = list(range(num_frames))
+    if relative_imagenames is None:
+        # Just frame number
+        index = list(range(num_frames))
+    else:
+        index = relative_imagenames
 
     tracklet_length = len(row['all_xyz'])
 
@@ -47,7 +59,7 @@ def build_dlc_annotation_one_tracklet(row,
         for i, coord_name in enumerate(coord_names):
             if coord_name in coord_mapping:
                 # is spatial
-                coords[this_slice,i] = this_xyz[coord_mapping[coord_name]]
+                coords[this_slice,i] = int(this_xyz[coord_mapping[coord_name]])
             else:
                 # is non-spatial, i.e. likelihood
                 try:
@@ -55,27 +67,37 @@ def build_dlc_annotation_one_tracklet(row,
                 except:
                     coords[this_slice,-1] = 0.0
                     pass
+    if which_frame_subset is not None:
+        # error
+        coords = coords[which_frame_subset,:]
 
-    index = pd.MultiIndex.from_product([[scorer], [f'neuron{neuron_ind}'],
+    m_index = pd.MultiIndex.from_product([[scorer], [bodypart],
                                         coord_names],
                                         names=['scorer', 'bodyparts', 'coords'])
-    frame = pd.DataFrame(coords, columns = index, index = all_frames)
+    frame = pd.DataFrame(coords, columns = m_index, index = index)
 
     return frame
 
 
 def build_dlc_annotation_all(clust_df, min_length, num_frames=1000,
-                             coord_names=['x','y','likelihood'], verbose=1):
+                             coord_names=['x','y','likelihood'],
+                             relative_imagenames=None,
+                             which_frame_subset=None,
+                             verbose=1):
     new_dlc_df = None
-    all_bodyparts = np.asarray(clust_df['clust_ind'])
+    # all_bodyparts = np.asarray(clust_df['clust_ind'])
 
     neuron_ind = 1
     opt = {'min_length':min_length, 'verbose':verbose-1,
            'num_frames':num_frames,
-           'coord_names':coord_names}
+           'coord_names':coord_names,
+           'relative_imagenames':relative_imagenames,
+           'which_frame_subset':which_frame_subset}
     for i, row in tqdm(clust_df.iterrows(), total=clust_df.shape[0]):
         opt['neuron_ind'] = neuron_ind
-        frame = build_dlc_annotation_one_tracklet(row, all_bodyparts, **opt)
+        ind = row['clust_ind']
+        bodypart = f'neuron{ind}'
+        frame = build_dlc_annotation_one_tracklet(row, bodypart, **opt)
         if frame is not None:
             new_dlc_df = pd.concat([new_dlc_df, frame],axis=1)
             neuron_ind = neuron_ind + 1
@@ -200,6 +222,7 @@ def synchronize_config_files(c, build_dlc_name, num_dims=2):
     # Assumes the DLC project is already made
     csv_annotations = c.tracking.annotation_fname.replace('h5', 'csv')
     csv_annotations2config_names(dlc_config, csv_annotations, num_dims=num_dims)
+    
 
 ##
 ## Full pipeline: from dataframe to video
@@ -218,8 +241,9 @@ def create_video_from_annotations(config, df_fname,
     c = load_config(config)
 
     # Load the dataframe name, and produce DLC-style annotations
-    with open(df_fname, 'rb') as f:
-        clust_df = pickle.load(f)
+    clust_df = pd.read_pickle(df_fname)
+    # with open(df_fname, 'rb') as f:
+        # clust_df = pickle.load(f)
     opt = {'min_length':min_track_length, 'num_frames':total_num_frames,
            'coord_names':coord_names,
            'verbose':verbose}
@@ -256,8 +280,9 @@ def create_many_videos_from_annotations(config, df_fname,
     project_folder = c.get_dirname()
 
     # Load the dataframe name, and produce DLC-style annotations
-    with open(df_fname, 'rb') as f:
-        clust_df = pickle.load(f)
+    clust_df = pd.read_pickle(df_fname)
+    # with open(df_fname, 'rb') as f:
+        # clust_df = pickle.load(f)
     opt = {'min_length':min_track_length, 'num_frames':total_num_frames, 'verbose':0}
     # Loop through tracklets, and make a video for each
     all_bodyparts = np.asarray(clust_df['clust_ind'])
@@ -336,6 +361,7 @@ def build_subset_df(clust_df, which_frames):
 
     def rename_slices(this_ind_dict):
         return list(this_ind_dict.keys())
+        # return which_frames
 
     sub_df = clust_df.copy()
     # Get only the covering neurons
@@ -365,10 +391,56 @@ def build_subset_df(clust_df, which_frames):
     out_df['all_prob'] = out_df.apply(f2, axis=1)
 
     # Final one is slightly different
-    f3 = lambda df : rename_slices(which_neurons_dict[df['clust_ind']])
+    # f3 = lambda df : rename_slices(which_neurons_dict[df['clust_ind']])
+    f3 = lambda df : which_frames
     out_df['slice_ind'] = out_df.apply(f3, axis=1)
 
     return out_df
+
+
+def build_relative_imagenames(c, png_fnames=None, num_frames=None):
+
+    if png_fnames is None and num_frames is None:
+        print("Error: one of png_fnames or num_frames must be passed")
+        raise ValueError
+    if png_fnames is None:
+        png_fnames = [f'img{i}.tif' for i in range(num_frames)]
+    raw_video_fname = c.datafiles.red_bigtiff_fname
+
+    relative_imagenames = []
+    folder_name = os.path.join('labeled-data',os.path.basename(raw_video_fname)[:8])
+    for f in png_fnames:
+        relative_imagenames.append(os.path.join(folder_name, f))
+    return relative_imagenames, folder_name
+
+
+def build_tif_training_data(c, which_frames, verbose=0):
+
+    # Get the file names
+    dlc_config = auxiliaryfunctions.read_config(c.tracking.DLC_config_fname)
+    project_folder = dlc_config['project_path']
+    out = build_relative_imagenames(c, num_frames=len(which_frames))
+    relative_imagenames, subfolder_name = out
+
+    video_fname = c.datafiles.red_bigtiff_fname
+    num_z = c.preprocessing.num_total_slices
+
+    # Initilize the training data subfolder
+    full_subfolder_name = os.path.join(project_folder, subfolder_name)
+    if not os.path.isdir(full_subfolder_name):
+        os.mkdir(full_subfolder_name)
+
+    # Write the tif files
+    print('Writing tif files...')
+    for i, rel_fname in tqdm(zip(which_frames, relative_imagenames), total=len(which_frames)):
+        dat = c.get_single_volume(i)
+        fname = os.path.join(project_folder, rel_fname)
+        tifffile.imwrite(fname, dat)
+
+    if verbose >= 0:
+        print(f"{len(which_frames)} tif files written in project {full_subfolder_name}")
+
+    return relative_imagenames
 
 
 def training_data_from_annotations(config, df_fname,
@@ -386,15 +458,24 @@ def training_data_from_annotations(config, df_fname,
     c = load_config(config)
 
     # Load the dataframe name, and produce DLC-style annotations
-    with open(df_fname, 'rb') as f:
-        clust_df = pickle.load(f)
+    # with open(df_fname, 'rb') as f:
+    #     clust_df = pickle.load(f)
+    clust_df = pd.read_pickle(df_fname)
 
     # Build a sub-df with only the relevant neurons and slices
     subset_df = build_subset_df(clust_df, which_frames)
 
+    # Save the individual tif files
+    relative_imagenames = build_tif_training_data(c, which_frames)
+    # out = build_relative_imagenames(c, num_frames=len(which_frames))
+    # relative_imagenames, tif_fnames = out
+
+    # Cast the dataframe in DLC format
     opt = {'min_length':0, 'num_frames':total_num_frames,
            'coord_names':coord_names,
-           'verbose':verbose}
+           'verbose':verbose,
+           'relative_imagenames':relative_imagenames,
+           'which_frame_subset':which_frames}
     new_dlc_df = build_dlc_annotation_all(subset_df, **opt)
     if new_dlc_df is None:
         print("Found no tracks long enough; aborting")
@@ -404,11 +485,11 @@ def training_data_from_annotations(config, df_fname,
     build_dlc_name = save_dlc_annotations(scorer, df_fname, c, new_dlc_df)[0]
     synchronize_config_files(c, build_dlc_name, num_dims=len(coord_names)-1)
 
-    # Finally, save the individual tif files
+    # Finally,
 
     # # Finally, make the video
-    dlc_config = c.tracking.DLC_config_fname
-    vid_fname = c.datafiles.red_avi_fname
-    make_labeled_video_custom_annotations(dlc_config, vid_fname, new_dlc_df)
+    # dlc_config = c.tracking.DLC_config_fname
+    # vid_fname = c.datafiles.red_avi_fname
+    # make_labeled_video_custom_annotations(dlc_config, vid_fname, new_dlc_df)
 
     return new_dlc_df
