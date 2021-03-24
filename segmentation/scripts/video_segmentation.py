@@ -9,8 +9,8 @@ import tifffile as tiff
 import argh
 # preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import PreprocessingSettings
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import perform_preprocessing
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
+from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
 # segmentation
 from segmentation.util.utils_model import get_stardist_model
 from segmentation.util.utils_model import segment_with_stardist_2d
