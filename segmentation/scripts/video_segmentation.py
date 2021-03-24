@@ -23,8 +23,8 @@ from segmentation.util.utils_metadata import get_metadata_dictionary
 
 
 def segment_full_video(video_path,
-                       start_volume,
-                       num_frames,
+                       start_volume: int,
+                       num_frames: int,
                        stardist_model_name='lukas',
                        preprocessing=PreprocessingSettings(do_filtering=False, do_rigid_alignment=True,
                                                            alpha=1.0, final_dtype='uint16'),
