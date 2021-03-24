@@ -34,7 +34,7 @@ def get_stardist_model(model_name, folder=None):
 
     # available models' aliases
     sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d']
-    sd_names = ['2D_versatile_fluo', 'stardistNiklas', 'starDistCharlie', 'Charlie100-3d']
+    sd_names = ['2D_versatile_fluo', 'stardistNiklas', 'starDistCharlie', 'charlie100-3d']
 
     # create aliases for each model_name
     if model_name == 'versatile':
