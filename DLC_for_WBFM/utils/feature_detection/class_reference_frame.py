@@ -1,5 +1,5 @@
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.feature_detection.utils_features import get_keypoints_from_3dseg
+from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from dataclasses import dataclass
 from typing import List
 from dataclasses import field

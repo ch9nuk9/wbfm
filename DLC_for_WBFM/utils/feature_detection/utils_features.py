@@ -6,6 +6,7 @@ import open3d as o3d
 from scipy import stats
 import tifffile
 import copy
+from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 
 ##
 ## First, extract features and match
@@ -543,33 +544,3 @@ def build_features_and_match_2volumes(dat0, dat1,
         all_locs1.extend(locs_3d)
 
     return np.array(all_locs0), np.array(all_locs1), keypoints0, keypoints1, matches
-
-
-def get_keypoints_from_3dseg(kp0, i=None, sz=31.0, neuron_height=None):
-    """Translate numpy array to cv2.Keypoints, based off one slice
-
-    Parameters
-    ----------
-    kp0 : array-like
-        Original 3d positions
-    i : int
-        current slice
-        if None (default), adds all keypoints
-    sz : float
-        Size for cv2 keypoints... not sure if this matters
-    neuron_height : float
-        Radius around original annotations to add the keypoint to
-        if None (default), adds all keypoints
-
-    Returns
-    -------
-    type
-        Description of returned object.
-
-    """
-    kp_cv2 = []
-    for z,x,y in kp0:
-        if i is None or abs(z-i) < neuron_height:
-            kp_cv2.append(cv2.KeyPoint(y,x,sz))
-
-    return kp_cv2
