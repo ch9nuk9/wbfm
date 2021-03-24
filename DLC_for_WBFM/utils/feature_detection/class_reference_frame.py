@@ -2,7 +2,6 @@ from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import g
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from dataclasses import dataclass
-from typing import List
 import numpy as np
 
 
