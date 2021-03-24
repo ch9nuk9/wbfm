@@ -1,6 +1,8 @@
 from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack
 import scipy.ndimage as ndi
 import numpy as np
+from dataclasses import dataclass
+from dataclasses import field
 
 
 ##

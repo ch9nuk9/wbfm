@@ -3,7 +3,6 @@ from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from dataclasses import dataclass
 from typing import List
-from dataclasses import field
 import numpy as np
 
 
