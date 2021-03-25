@@ -136,8 +136,10 @@ def csv_annotations2config_names(path_config_file, annotations_fname=None, num_d
     cfg = auxiliaryfunctions.read_config(path_config_file)
     names = list(df.columns.get_level_values(1))
     # Remove repetitions
-    cfg["bodyparts"] = [names[i] for i in range(0,len(names),num_dims)]
-    auxiliaryfunctions.write_config(path_config_file, cfg)
+    # cfg["bodyparts"] = [names[i] for i in range(0,len(names),num_dims)]
+    updates = {"bodyparts":[names[i] for i in range(0,len(names),num_dims)]}
+    # auxiliaryfunctions.write_config(path_config_file, cfg)
+    auxiliaryfunctions.edit_config(path_config_file, updates)
 
     # Read in entire config file into a list
     # config_rows = []
