@@ -155,7 +155,12 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
     criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations,  termination_eps)
 
     # Run the ECC algorithm. The results are stored in warp_matrix.
-    (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'),im2_gray.astype('float32'),warp_matrix, warp_mode, criteria, None)
+    # Depends on version of cv2
+    try:
+        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'),im2_gray.astype('float32'),warp_matrix, warp_mode, criteria, None)
+    except TypeError:
+        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'),im2_gray.astype('float32'),warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1)
+
 
     # example to execute the transformation
     #if warp_mode == cv2.MOTION_HOMOGRAPHY :
