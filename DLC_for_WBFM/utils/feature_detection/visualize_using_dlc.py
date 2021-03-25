@@ -6,10 +6,11 @@ from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTra
 import os
 import tifffile
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
-# from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
+from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from collections import OrderedDict
 
 ##
 ## Helper functions for converting annotations
@@ -175,9 +176,10 @@ def make_labeled_video_custom_annotations(dlc_config,
 ## Utilities for saving intermediate DLC products
 ##
 
-def save_dlc_annotations(scorer, df_fname, c, new_dlc_df):
+def save_dlc_annotations(scorer, df_fname, c, new_dlc_df, project_folder=None):
 
-    project_folder = c.get_dirname()
+    if project_folder is None:
+        project_folder = c.get_dirname()
 
     # Save using DLC-style names
     if scorer is None:
@@ -201,7 +203,10 @@ def save_dlc_annotations(scorer, df_fname, c, new_dlc_df):
     return build_dlc_name, all_fnames
 
 
-def synchronize_config_files(c, build_dlc_name, num_dims=2):
+def synchronize_config_files(c, build_dlc_name,
+                             dummy_subfolder=None,
+                             scorer=None,
+                             num_dims=2):
     """Synchronizes my config file and the DLC config file"""
 
     project_folder = c.get_dirname()
@@ -219,10 +224,31 @@ def synchronize_config_files(c, build_dlc_name, num_dims=2):
     save_config(c)
 
     # Synchronize the DLC config file
-    # Assumes the DLC project is already made
-    # csv_annotations = c.tracking.annotation_fname.replace('h5', 'csv')
+
+    # First add the annotated body parts
     h5_annotations = c.tracking.annotation_fname
-    csv_annotations2config_names(dlc_config, h5_annotations, num_dims=num_dims)
+    csv_annotations2config_names(dlc_config, h5_annotations, num_dims=num_dims+1)
+
+    # Next add the video or shortened video folder name
+    cfg = auxiliaryfunctions.read_config(dlc_config)
+    nocrop = {"crop": "0, 0, 0, 0"}
+    vid_dict = {}
+    if dummy_subfolder is None:
+        vid_dict[vid_fname] = nocrop
+    else:
+        # Note: do NOT want a filesep here
+        dummy_fname = dummy_subfolder+".tif"
+        vid_dict[dummy_fname] = nocrop
+
+    cfg["video_sets"] = vid_dict
+
+    # Make sure we are in 3d mode
+    cfg["using_z_slices"] = True
+
+    if scorer is not None:
+        cfg["scorer"] = scorer
+
+    auxiliaryfunctions.write_config(dlc_config, cfg)
 
 
 ##
@@ -415,7 +441,7 @@ def build_relative_imagenames(c, png_fnames=None, num_frames=None):
     return relative_imagenames, folder_name
 
 
-def build_tif_training_data(c, which_frames, verbose=0):
+def build_tif_training_data(c, which_frames, preprocessing_settings=None, verbose=0):
 
     # Get the file names
     dlc_config = auxiliaryfunctions.read_config(c.tracking.DLC_config_fname)
@@ -435,20 +461,24 @@ def build_tif_training_data(c, which_frames, verbose=0):
     print('Writing tif files...')
     for i, rel_fname in tqdm(zip(which_frames, relative_imagenames), total=len(which_frames)):
         dat = c.get_single_volume(i)
+        if preprocessing_settings is not None:
+            dat = perform_preprocessing(dat, preprocessing_settings)
         fname = os.path.join(project_folder, rel_fname)
         tifffile.imwrite(fname, dat)
 
     if verbose >= 0:
         print(f"{len(which_frames)} tif files written in project {full_subfolder_name}")
 
-    return relative_imagenames
+    return relative_imagenames, full_subfolder_name
 
 
-def training_data_from_annotations(config, df_fname,
+def training_data_from_annotations(config,
+                                   df_fname,
                                    which_frames,
                                    scorer=None,
                                    total_num_frames=500,
                                    coord_names=['x','y','likelihood'],
+                                   preprocessing_settings=None,
                                    verbose=0):
     """
     Creates a set of training frames or volumes starting from a saved dataframe of tracklets
@@ -459,17 +489,14 @@ def training_data_from_annotations(config, df_fname,
     c = load_config(config)
 
     # Load the dataframe name, and produce DLC-style annotations
-    # with open(df_fname, 'rb') as f:
-    #     clust_df = pickle.load(f)
     clust_df = pd.read_pickle(df_fname)
 
     # Build a sub-df with only the relevant neurons and slices
     subset_df = build_subset_df(clust_df, which_frames)
 
     # Save the individual tif files
-    relative_imagenames = build_tif_training_data(c, which_frames)
-    # out = build_relative_imagenames(c, num_frames=len(which_frames))
-    # relative_imagenames, tif_fnames = out
+    out = build_tif_training_data(c, which_frames, preprocessing_settings=preprocessing_settings)
+    relative_imagenames, full_subfolder_name = out
 
     # Cast the dataframe in DLC format
     opt = {'min_length':0, 'num_frames':total_num_frames,
@@ -483,8 +510,13 @@ def training_data_from_annotations(config, df_fname,
         return None
 
     # Save annotations using DLC-style names, and update the config files
-    build_dlc_name = save_dlc_annotations(scorer, df_fname, c, new_dlc_df)[0]
-    synchronize_config_files(c, build_dlc_name, num_dims=len(coord_names)-1)
+    opt = {'project_folder':full_subfolder_name}
+    out = save_dlc_annotations(scorer, df_fname, c, new_dlc_df, **opt)[0]
+    build_dlc_name = out
+    synchronize_config_files(c, build_dlc_name,
+                             dummy_subfolder=full_subfolder_name,
+                             scorer=scorer,
+                             num_dims=len(coord_names)-1)
 
     # Finally,
 
