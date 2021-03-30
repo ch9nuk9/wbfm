@@ -7,7 +7,7 @@ import os
 from csbdeep.utils import Path, normalize
 
 
-def get_stardist_model(model_name, folder=None):
+def get_stardist_model(model_name, folder=None, verbose=0):
     """
     Fetches the wanted StarDist model for segmenting images.
     Add new StarDist models as an alias below (incl. sd_options)
@@ -18,6 +18,8 @@ def get_stardist_model(model_name, folder=None):
         Name of the wanted model. See
     folder : str
         Path in which the stardist models are saved
+    verbose : int
+        flag for print statements. Increasing by 1, increase depth by 1
 
     Returns
     -------
@@ -25,6 +27,9 @@ def get_stardist_model(model_name, folder=None):
         model object of the StarDist model. Can be directly used for segmenting
 
     """
+
+    if verbose >= 1:
+        print(f'Getting Stardist model: {model_name}')
     # all self-trained StarDist models reside in that folder. 'nt' for windows, when working locally
     if folder is None:
         if os.name == 'nt':
@@ -46,12 +51,13 @@ def get_stardist_model(model_name, folder=None):
     elif model_name == 'charlie_3d':
         model = StarDist3D(None, name='Charlie100-3d', basedir=folder)
     else:
-        print(f'No StarDist model found using {model_name}! Current models are {sd_options}')
+        if verbose >=1:
+            print(f'No StarDist model found using {model_name}! Current models are {sd_options}')
 
     return model
 
 
-def segment_with_stardist_2d(vol, model=StarDist2D.from_pretrained('2D_versatile_fluo')):
+def segment_with_stardist_2d(vol, model=StarDist2D.from_pretrained('2D_versatile_fluo'), verbose=0):
     """
     Segments slices of a 3D numpy array (input) and outputs their masks.
     Best model (so far) is Lukas' self-trained 2D model
@@ -61,12 +67,18 @@ def segment_with_stardist_2d(vol, model=StarDist2D.from_pretrained('2D_versatile
         Original image array
     model : StarDist2D model object
         Object of a Stardist model, which will be used for prediction
+    verbose : int
+        flag for print statements. Increasing by 1, increase depth by 1
+
     Returns
     -------
     segmented_masks : 3D numpy array
         2D segmentations of slices concatenated to a 3D array. Each slice has unique values within
         a slice, but will be duplicated across slices (needs to be stitched in next step)!
     """
+
+    if verbose >=1:
+        print(f'Start of 2D segmentation.')
 
     # initialize output dimensions and other variables
     z = len(vol)
@@ -91,7 +103,7 @@ def segment_with_stardist_2d(vol, model=StarDist2D.from_pretrained('2D_versatile
     return segmented_masks
 
 
-def segment_with_stardist_3d(vol, model):
+def segment_with_stardist_3d(vol, model=get_stardist_model('charlie_3d'), verbose=0):
     """
     Segments a 3D volume using stardists 3D-segmentation.
     For now, only one self-trained 3D model is available.
@@ -101,13 +113,18 @@ def segment_with_stardist_3d(vol, model):
     vol : 3D numpy array
         3D array of volume to segment
     model : StarDist3D object
-        StarDist3D model to be used for segmentation
+        StarDist3D model to be used for segmentation; default = Charlies first trained 3D model
+    verbose : int
+        flag for print statements. Increasing by 1, increase depth by 1
 
     Returns
     -------
     labels : 3D numpy array
         3D array with segmented masks. Each mask should have a unique ID/value.
     """
+    
+    if verbose >= 1:
+        print(f'Start of 3D segmentation')
 
     # initialize variables
     axis_norm = (0, 1, 2)

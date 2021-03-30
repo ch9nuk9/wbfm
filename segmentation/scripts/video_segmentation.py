@@ -56,6 +56,8 @@ def segment_full_video(video_path,
         Flag for using Stardists' 3D segmentation
     options : object
         contains further necessary options for running
+    verbose : int
+        flag for print statements. Increasing by 1, increase depth by 1
 
     Returns
     -------
@@ -83,7 +85,7 @@ def segment_full_video(video_path,
     metadata = dict()
 
     # get stardist model object
-    sd_model = get_stardist_model(stardist_model_name)
+    sd_model = get_stardist_model(stardist_model_name, verbose=verbose-1)
 
     for i in tqdm(list(range(start_volume, start_volume + num_frames))):
         # use get single volume function from charlie
@@ -94,12 +96,12 @@ def segment_full_video(video_path,
         volume = perform_preprocessing(volume, preprocessing)
 
         # segment the volume using Stardist
-        if verbose >= 2:
+        if verbose >= 1:
             print('--- Segmentation ---')
-        segmented_masks = segment_with_stardist_2d(volume, sd_model)
+        segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose-1)
 
         # process masks: remove large areas, stitch, split long neurons, remove short neurons
-        if verbose >= 2:
+        if verbose >= 1:
             print('---- Post-processing ----')
         final_masks = perform_post_processing_2d(segmented_masks,
                                                  volume,
@@ -110,7 +112,7 @@ def segment_full_video(video_path,
                                                  verbose=verbose-1)
 
         if verbose >= 2:
-            print('----- Saving TIF -----')
+            print('----- Saving to BIG-TIF -----')
 
         # concatenate masks to tiff file and save
         if i == start_volume:
@@ -148,7 +150,8 @@ def segment_full_video_3d(video_path,
                           num_slices=33,
                           to_remove_border=True,
                           do_post_processing=False,
-                          options={}):
+                          options={},
+                          verbose=0):
     """
     Function to segment (& stitch and curate) a recording on a volume-to-volume basis.
     Segments a 3D volume with a self-trained network.
@@ -176,6 +179,8 @@ def segment_full_video_3d(video_path,
         Flag for post-processing, i.e. splitting long neurons, removing short neurons.
     options : object
         contains further necessary options for running
+    verbose : int
+        flag for print statements. Increasing by 1, increases depth by 1
 
     Returns
     -------
@@ -216,14 +221,16 @@ def segment_full_video_3d(video_path,
         masks = segment_with_stardist_3d(volume, sd_model)
 
         if do_post_processing:
-            print('--- Post processing Start ---')
+            if verbose >= 1:
+                print('--- Post processing Start ---')
             # process masks: remove large areas, stitch, split long neurons, remove short neurons
             masks, neuron_lengths, brightness = perform_post_processing_3d(masks,
                                                                            volume,
                                                                            border_width_to_be_removed,
                                                                            to_remove_border,
                                                                            length_upper_cutoff,
-                                                                           length_lower_cutoff)
+                                                                           length_lower_cutoff,
+                                                                           verbose=verbose-1)
 
         # concatenate masks to tiff file and save
         if i == start_volume:

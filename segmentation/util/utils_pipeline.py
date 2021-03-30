@@ -21,6 +21,8 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
         masks longer than this will be (tried to) split
     lower_length_threshold : int
         masks shorter than this will be removed
+    verbose : int
+        flag for print statements. Increasing by 1, increase depth by 1
 
     Returns
     -------
@@ -28,9 +30,8 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
         3D array of masks after post-processing
 
     """
-
-    masks = post.remove_large_areas(mask_array)
-    stitched_masks, df_with_centroids = post.bipartite_stitching(masks)
+    masks = post.remove_large_areas(mask_array, verbose)
+    stitched_masks, df_with_centroids = post.bipartite_stitching(masks, verbose=verbose-1)
     neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
@@ -42,7 +43,8 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
                                 brightnesses,
                                 len(neuron_lengths),
                                 upper_length_threshold,
-                                neuron_planes)
+                                neuron_planes,
+                                verbose-1)
 
     final_masks, final_neuron_lengths, final_brightness, final_neuron_planes, removed_neurons_list = \
         post.remove_short_neurons(split_masks,
@@ -58,7 +60,7 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
 
 
 def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, remove_border_flag=True,
-                               upper_length_threshold=12, lower_length_threshold=3):
+                               upper_length_threshold=12, lower_length_threshold=3, verbose=0):
     """
     Performs post-processing of segmented masks. Includes: splitting long masks, removing large areas,
     removing short masks as well as removing artefacts close to the border
@@ -77,6 +79,8 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
         masks longer than this will be (tried to) split
     lower_length_threshold : int
         masks shorter than this will be removed
+    verbose : int
+        flag for print statements. Increasing by 1, increases depth by 1
 
     Returns
     -------
@@ -88,7 +92,7 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
     neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
-    brightnesses, neuron_planes = post.calc_brightness(img_volume, stitched_masks, neuron_lengths)
+    brightnesses, neuron_planes = post.calc_brightness(img_volume, stitched_masks, neuron_lengths, verbose=verbose-1)
     # split too long neurons
     split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
         post.split_long_neurons(stitched_masks,
@@ -96,7 +100,8 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
                                 brightnesses,
                                 len(neuron_lengths),
                                 upper_length_threshold,
-                                neuron_planes)
+                                neuron_planes,
+                                verbose=verbose-1)
 
     # remove short neurons
     final_masks, final_neuron_lengths, final_brightness, final_neuron_planes, removed_neurons_list = \

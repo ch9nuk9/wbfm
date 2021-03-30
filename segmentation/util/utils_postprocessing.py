@@ -10,7 +10,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_m
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
 
 
-def remove_large_areas(arr, threshold=1000):
+def remove_large_areas(arr, threshold=1000, verbose=0):
     """
     Iterates overs planes of array and removes areas, which are larger than 'threshold'.
     May take in a 2D or 3D array.
@@ -22,12 +22,16 @@ def remove_large_areas(arr, threshold=1000):
     threshold : int
         Threshold for maximum size of a patch in a plane.
         Default was eyeballed by looking at the distribution of areas within mis-segmented planes.
+    verbose : int
+        flag for print statements. Increasing by 1, increases depth by 1
 
     Returns
     -------
     arr : 2D or 3D numpy array
         array with removed areas. Same shape as input
     """
+    if verbose >= 1:
+        print('Removing large areas in planes')
 
     if len(arr.shape) > 2:
         for i, plane in enumerate(arr):
@@ -60,7 +64,7 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
     num_slices : int
         Number of slices per volume (here: array_3d)
     verbose : int
-        Flag for printing extra information
+        flag for print statements. Increasing by 1, increase depth by 1
 
     Returns
     -------
@@ -73,9 +77,9 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
     all_matches : list of lists
         contains all tentative matches found by the bipartite matching algorithm
     """
+    if verbose >= 1:
+        print(f'Bipartite stitching. Input array shape: {array_3d.shape}')
 
-    print(f'Starting with stitching. Array shape: {array_3d.shape}')
-    # TODO get num_slices from an argument!
     num_slices = len(array_3d)
 
     # Initialize output matrix
@@ -171,7 +175,7 @@ def create_matches_list(slice_1, slice_2, verbose=0):
     return bip_list
 
 
-def renaming_stitched_array(arr, df):
+def renaming_stitched_array(arr, df, verbose=0):
     """
     Takes an array and changes the values of masks, so that it starts at 1 on slice 1 and
     increases consistently/consecutively across planes with an unique value for each mask.
@@ -183,6 +187,8 @@ def renaming_stitched_array(arr, df):
         3D array of masks with recurring valuesacross planes
     df : pandas dataframe
         dataframe containing extra information for each mask match across Z
+    verbose : int
+        flag for print statements. Increasing by 1, increases depth by 1
 
     Returns
     -------
@@ -236,7 +242,7 @@ def get_neuron_lengths_dict(arr):
     return lengths
 
 
-def calc_brightness(original_array, stitched_masks, neuron_lengths):
+def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
     """
     Calculates the average brightness of each mask per plane in an array given the original image
     and the mask lengths.
@@ -253,6 +259,8 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths):
         neuron_lengths[1] == [12, 13, 14]
         neuron_ID = 1
         neuron_lengths[neuron_ID] # [12, 13, 14]
+    verbose : int
+        flag for print statements. Increasing by 1, increases depth by 1
 
     Returns
     -------
@@ -264,8 +272,8 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths):
         {neuron #: [global Z planes]}
 
     """
-
-    print('Start with brightness calculations')
+    if verbose>= 1:
+        print('Start with brightness calculations')
     # add default dict
     brightness_dict = defaultdict(list)
     brightness_planes = defaultdict(list)
@@ -288,7 +296,8 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths):
                     current_list.append(current_brightness)
                     planes_list.append(i_slice)
                 else:
-                    print(f'NaN in neuron {neuron} slice {i_slice}')
+                    if verbose >= 1:
+                        print(f'NaN in neuron {neuron} slice {i_slice}')
 
                 # TODO can be optimized by breaking the loop after not finding anything
                 #  (but beginning slice needs to be figured out)
@@ -296,14 +305,33 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths):
         # add list of brightnesses to dict
         brightness_dict[neuron].extend(current_list)
         brightness_planes[neuron].extend(planes_list)
+    if verbose >= 1:
+        print(f'Done with  calculating brightnesses')
 
-    print(f'Brightness: {len(brightness_dict)}    Masks: {len(neuron_lengths)}')
-    print(f'Done with brightness')
     return brightness_dict, brightness_planes
 
 
-def calc_means_via_brightnesses(brightnesses, plots=0):
-    # calculate the means of 2 underlying neuron brightness distributions
+def calc_means_via_brightnesses(brightnesses, plots=0, verbose=0):
+    """
+    calculates the means of 2 gaussians underlying the neuron brightness distributions.
+    It tries to match exactly 2 gaussians onto the brightness distribution of a tentative neuron.
+
+    Parameters
+    ----------
+    brightnesses : list
+        List containing average brightness values of a tentative neuron
+    plots :
+        flag for plotting
+    verbose : int
+        flag for print statements. Increasing by 1, increases depth by 1
+
+    Returns
+    -------
+    means : list
+        list of means of 2 underlying gaussians, IF they could be fitted
+    g1, g2 : list
+        list containing the values of the 2 gaussians, IF the y could be fitted
+    """
 
     y_data = np.array(brightnesses)
     x_data = np.array(np.arange(len(y_data)))
@@ -319,19 +347,21 @@ def calc_means_via_brightnesses(brightnesses, plots=0):
     # p0 is the initial guess for the fitting coefficients
     # initialize them differently so the optimization algorithm works better
     height = len(y_data)/4
-    p0 = [np.mean(y_data), height , height, np.mean(y_data), height * 3, height]
+    p0 = [np.mean(y_data), height, height, np.mean(y_data), height * 3, height]
 
     try:
         # optimize and in the end you will have 6 coeff (3 for each gaussian)
         coeff, var_matrix = curve_fit(gauss2, x_data, y_data, p0=p0)
     except RuntimeError:
-        print('Oh oh, could not fit')
+        if verbose >= 1:
+            print('Oh oh, could not fit')
         return []
 
     means = [round(coeff[1]), round(coeff[4])]
 
     if any([x < 0 or x > len(brightnesses) for x in means]):
-        print(f'Error in brightness: Means = {means} length of brightness list = {len(brightnesses)}')
+        if verbose >= 1:
+            print(f'Error in brightness: Means = {means} length of brightness list = {len(brightnesses)}')
         return []
 
     # you can plot each gaussian separately using
@@ -370,7 +400,8 @@ def split_long_neurons(array,
                        neuron_brightnesses: dict,
                        global_current_neuron,
                        maximum_length,
-                       neuron_z_planes: dict):
+                       neuron_z_planes: dict,
+                       verbose=0):
     """
     Splits neuron, which are too long (to our understanding) into 2 parts. The split-point is the midpoint between
     2 gaussians, that have been fit onto a plot of the average brightness (per slice) of that neuron. The second half
@@ -396,6 +427,8 @@ def split_long_neurons(array,
         Contains the Z-planes corresponding to the brightness values of each neuron
         neuron_ID = 1
         neuron_z_planes[neuron_ID] == [12, 13, 14]
+    verbose : int
+        flag for print statements. Increasing by 1, increases depth by 1
 
     For Tests:
     ----------
@@ -425,10 +458,12 @@ def split_long_neurons(array,
         if neuron_lengths[i] > maximum_length:
 
             try:
-                x_means, _, _ = calc_means_via_brightnesses(neuron_brightnesses[i])
+                x_means, _, _ = calc_means_via_brightnesses(neuron_brightnesses[i], verbose-1)
             except ValueError:
-                print(f'! ValueError while splitting neuron {i}. Probably could not fit 2 Gaussians! Will continue.')
+                if verbose >= 1:
+                    print(f'! ValueError while splitting neuron {i}. Probably could not fit 2 Gaussians! Will continue.')
                 continue
+
             # if neuron can be split
             if x_means:
                 x_split = round(sum(x_means) / 2)
@@ -455,7 +490,8 @@ def split_long_neurons(array,
                 neuron_z_planes[i] = neuron_z_planes[i][:x_split]
 
             else:
-                print(f'Could not split neuron {i}, although it is longer than {maximum_length}')
+                if verbose >= 1:
+                    print(f'Could not split neuron {i}, although it is longer than {maximum_length}')
 
     return array, neuron_lengths, neuron_brightnesses, global_current_neuron, neuron_z_planes
 
@@ -499,7 +535,6 @@ def remove_short_neurons(array, neuron_lengths, length_cutoff, brightness, neuro
     """
 
     # remove all neurons, which are too short (e.g. < 3)
-    # TODO: remove short neurons from brightness dict too!
     rm_list = list()
     for key, value in neuron_lengths.items():
         if value < length_cutoff:
