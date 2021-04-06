@@ -31,7 +31,8 @@ def segment_full_video(video_path,
                        num_slices=33,
                        to_remove_border=True,
                        options={},
-                       verbose=0):
+                       verbose=0,
+                       DEBUG=False):
     """
     Function to segment, stitch and curate a recording on a volume-to-volume basis.
 
@@ -58,6 +59,8 @@ def segment_full_video(video_path,
         contains further necessary options for running
     verbose : int
         flag for print statements. Increasing by 1, increase depth by 1
+    DEBUG : bool
+        flag for a 10 second run; segments one volume and writes small versions of all files
 
     Returns
     -------
@@ -130,6 +133,9 @@ def segment_full_video(video_path,
         # metadata_dict = {(Vol #, Neuron #) = [Total brightness, neuron volume, centroids]}
         meta_df = get_metadata_dictionary(final_masks, volume)
         metadata[i] = meta_df
+        
+        if DEBUG:
+            break
 
     # saving metadata
     metadata_filename = os.path.join(output_folder, 'metadata.pickle')
@@ -151,7 +157,8 @@ def segment_full_video_3d(video_path,
                           to_remove_border=True,
                           do_post_processing=False,
                           options={},
-                          verbose=0):
+                          verbose=0,
+                          DEBUG=False):
     """
     Function to segment (& stitch and curate) a recording on a volume-to-volume basis.
     Segments a 3D volume with a self-trained network.
@@ -181,6 +188,8 @@ def segment_full_video_3d(video_path,
         contains further necessary options for running
     verbose : int
         flag for print statements. Increasing by 1, increases depth by 1
+    DEBUG : bool
+        flag for a 10 second run; segments one volume and writes small versions of all files
 
     Returns
     -------
@@ -248,6 +257,9 @@ def segment_full_video_3d(video_path,
         # metadata_dict = {(Vol #, Neuron #) = [Total brightness, neuron volume, centroids]}
         meta_df = get_metadata_dictionary(masks, volume)
         metadata[i] = meta_df
+        
+        if DEBUG:
+            break
 
     # saving metadata
     metadata_filename = os.path.join(output_folder, 'metadata.pickle')
