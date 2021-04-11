@@ -28,3 +28,4 @@ dependencies:
     - tensorflow
     - argh
     - stardist
+    - sacred
