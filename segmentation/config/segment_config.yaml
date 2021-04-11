@@ -1,4 +1,5 @@
 # Project definitions
+video_path: null
 segmentation_type: 2d
 
 # Preprocessing
