@@ -18,8 +18,8 @@ segmentation_params:
 
 # Postprocessing
 postprocessing_params:
-  length_upper_cutoff: 12
-  length_lower_cutoff: 3
+  upper_length_threshold: 12
+  lower_length_threshold: 3
   to_remove_border: true
   border_width_to_be_removed: 100
 

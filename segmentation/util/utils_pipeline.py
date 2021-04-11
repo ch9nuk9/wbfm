@@ -1,7 +1,7 @@
 import segmentation.util.utils_postprocessing as post
 
 
-def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remove_border_flag=True,
+def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, to_remove_border=True,
                                upper_length_threshold=12, lower_length_threshold=3, verbose=0):
     """
     Performs some post-processing steps including: Splitting long neurons, removing short neurons and
@@ -13,7 +13,7 @@ def perform_post_processing_2d(mask_array, img_volume, remove_border_width, remo
         array of segmented masks
     img_volume : 3D numpy array
         array of original image with brightness values
-    remove_border_width : int
+    border_width_to_remove : int
         within that distance to border, artefacts/masks will be removed
     remove_border_flag : boolean
         if true, a certain width
