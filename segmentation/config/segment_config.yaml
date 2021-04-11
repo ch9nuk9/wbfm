@@ -25,3 +25,6 @@ postprocessing_params:
 # Output
 output_params:
   output_folder: null
+
+# Printing
+verbose: 1
