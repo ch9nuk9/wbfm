@@ -7,3 +7,4 @@ segmentation/dat/
 *.h5
 *.json
 *.tif
+segmentation/runs/
