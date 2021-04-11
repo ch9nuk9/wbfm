@@ -1,0 +1,26 @@
+# Project definitions
+segmentation_type: 2d
+
+# Preprocessing
+preprocessing_config: config\preprocessing_config.yaml
+
+# Data
+dataset_params:
+  start_volume: 0
+  num_frames: 1
+  num_slices: 33
+
+# Segmentation
+segmentation_params:
+  stardist_model_name: lukas
+
+# Postprocessing
+postprocessing_params:
+  length_upper_cutoff: 12
+  length_lower_cutoff: 3
+  to_remove_border: true
+  border_width_to_be_removed: 100
+
+# Output
+output_params:
+  output_folder: null
