@@ -15,7 +15,7 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         array of original image with brightness values
     border_width_to_remove : int
         within that distance to border, artefacts/masks will be removed
-    remove_border_flag : boolean
+    to_remove_border : boolean
         if true, a certain width
     upper_length_threshold : int
         masks longer than this will be (tried to) split
@@ -53,13 +53,13 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
                                   split_brightnesses,
                                   split_neuron_planes)
 
-    if remove_border_flag is True:
-        final_masks = post.remove_border(final_masks, remove_border_width)
+    if to_remove_border is True:
+        final_masks = post.remove_border(final_masks, border_width_to_remove)
 
     return final_masks
 
 
-def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, remove_border_flag=True,
+def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remove, to_remove_border=True,
                                upper_length_threshold=12, lower_length_threshold=3, verbose=0):
     """
     Performs post-processing of segmented masks. Includes: splitting long masks, removing large areas,
@@ -71,9 +71,9 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
         array of segmented masks
     img_volume : 3D numpy array
         array of original image with brightness values
-    remove_border_width : int
+    border_width_to_remove : int
         within that distance to border, artefacts/masks will be removed
-    remove_border_flag : boolean
+    to_remove_border : boolean
         if true, a certain width
     upper_length_threshold : int
         masks longer than this will be (tried to) split
@@ -111,7 +111,7 @@ def perform_post_processing_3d(stitched_masks, img_volume, remove_border_width, 
                                   split_brightnesses,
                                   split_neuron_planes)
 
-    if remove_border_flag is True:
-        final_masks = post.remove_border(final_masks, remove_border_width)
+    if to_remove_border is True:
+        final_masks = post.remove_border(final_masks, border_width_to_remove)
 
     return final_masks
