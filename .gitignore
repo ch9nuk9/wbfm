@@ -3,3 +3,7 @@ segmentation.egg-info/
 segmentation/notebooks/.ipynb_checkpoints/
 .idea/
 segmentation/dat/
+*.v2
+*.h5
+*.json
+*.tif
