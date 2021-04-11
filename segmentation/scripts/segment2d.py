@@ -24,18 +24,12 @@ ex = Experiment()
 ex.add_config(r'config\segment_config.yaml')
 
 @ex.config
-def cfg(video_path, preprocessing_config, segmentation_type, verbose):
-
-    DEBUG = True
+def cfg(video_path):
 
     # Check paths
     if video_path is None:
         print("Must path a valid video path!")
     assert os.path.exists(video_path)
-
-    # Check preprocessing settings
-    assert os.path.exists(preprocessing_config)
-    preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_config)
 
 
 @ex.automain
@@ -83,23 +77,35 @@ def segment2d(_config, _run):
 
     sacred.commands.print_config(_run)
 
+    # Initializing variables
+    start_volume, num_frames, num_slices = _config['dataset_params'].values()
+    video_path = _config['video_path']
+    mask_fname, metadata_fname = get_output_fnames(video_path, _config)
+    verbose = _config['verbose']
+    metadata = dict()
+    preprocessing_settings = PreprocessingSettings.load_from_yaml(
+        _config['preprocessing_config']
+    )
+    if verbose >= 1:
+        print("Loaded preprocessing_settings:")
+        print(preprocessing_settings)
+
     # get stardist model object
     from segmentation.util.utils_model import get_stardist_model
     from segmentation.util.utils_model import segment_with_stardist_2d
     stardist_model_name = _config['segmentation_params']['stardist_model_name']
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose-1)
 
-    # Initializing variables
-    start_volume, num_frames, num_slices = _config['dataset_params']
-    mask_fname, metadata_fname = get_output_fnames(video_path, _config)
-    metadata = dict()
 
     if verbose >= 1:
-        print('--- Starting loop trhough volumes ---')
+        print('--- Starting loop through volumes ---')
     for i in tqdm(list(range(start_volume, start_volume + num_frames))):
         # use get single volume function from charlie
         import_opt = {'which_vol': i, 'num_slices': num_slices, 'alpha': 1.0, 'dtype': 'uint16'}
         volume = get_single_volume(video_path, **import_opt)
+
+        if _config['DEBUG']:
+            break
 
         # preprocess
         volume = perform_preprocessing(volume, preprocessing_settings)
@@ -112,7 +118,7 @@ def segment2d(_config, _run):
         # process masks: remove large areas, stitch, split long neurons, remove short neurons
         if verbose >= 2:
             print('---- Post-processing ----')
-        opt = config['postprocessing_params']
+        opt = _config['postprocessing_params']
         final_masks = perform_post_processing_2d(segmented_masks,
                                                  volume,
                                                  **opt,
@@ -137,9 +143,6 @@ def segment2d(_config, _run):
         # metadata_dict = {(Vol #, Neuron #) = [Total brightness, neuron volume, centroids]}
         meta_df = get_metadata_dictionary(final_masks, volume)
         metadata[i] = meta_df
-
-        if DEBUG:
-            break
 
     # saving metadata
     with open(metadata_fname, 'wb') as meta_save:
