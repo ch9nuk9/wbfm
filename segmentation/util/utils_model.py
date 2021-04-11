@@ -33,9 +33,9 @@ def get_stardist_model(model_name, folder=None, verbose=0):
     # all self-trained StarDist models reside in that folder. 'nt' for windows, when working locally
     if folder is None:
         if os.name == 'nt':
-            folder = Path(r'/groups/zimmer/shared_projects/wbfm/TrainedStardist')
+            folder = Path(r'Y:\shared_projects\wbfm\TrainedStardist')
         else:
-            folder = Path(r'/groups/zimmer/shared_projects/wbfm/TrainedStardist')
+            folder = Path('/groups/zimmer/shared_projects/wbfm/TrainedStardist')
 
     # available models' aliases
     sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d']
@@ -122,7 +122,7 @@ def segment_with_stardist_3d(vol, model=get_stardist_model('charlie_3d'), verbos
     labels : 3D numpy array
         3D array with segmented masks. Each mask should have a unique ID/value.
     """
-    
+
     if verbose >= 1:
         print(f'Start of 3D segmentation')
 
