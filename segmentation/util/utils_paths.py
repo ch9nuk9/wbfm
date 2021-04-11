@@ -22,7 +22,7 @@ def get_output_fnames(video_path, _config):
     mask_fname = osp.join(subfolder, fname)
 
     # Metadata
-    fname = f'metadata_{num_frames}.btf'
+    fname = f'metadata_{num_frames}.pickle'
     metadata_fname = osp.join(subfolder, fname)
 
     return mask_fname, metadata_fname
