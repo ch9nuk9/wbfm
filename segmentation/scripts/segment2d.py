@@ -16,16 +16,18 @@ from segmentation.util.utils_pipeline import perform_post_processing_2d
 from segmentation.util.utils_metadata import get_metadata_dictionary
 from segmentation.util.utils_paths import get_output_fnames
 # Experiment tracking
-from sacred import Experiment
 import sacred
+from sacred import Experiment
+from sacred.observers import FileStorageObserver
 
 # Initialize sacred experiment
 ex = Experiment()
 ex.add_config(r'config\segment_config.yaml')
+ex.observers.append(FileStorageObserver('runs'))
+
 
 @ex.config
 def cfg(video_path):
-
     # Check paths
     if video_path is None:
         print("Must path a valid video path!")
@@ -74,7 +76,6 @@ def segment2d(_config, _run):
 
         Use the column name to index directly into the dataframe to get all e.g. centroid values
     """
-
     sacred.commands.print_config(_run)
 
     # Initializing variables
@@ -95,7 +96,6 @@ def segment2d(_config, _run):
     from segmentation.util.utils_model import segment_with_stardist_2d
     stardist_model_name = _config['segmentation_params']['stardist_model_name']
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose-1)
-
 
     if verbose >= 1:
         print('--- Starting loop through volumes ---')
