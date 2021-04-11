@@ -4,6 +4,7 @@ import numpy as np
 from dataclasses import dataclass
 from dataclasses import field
 from typing import List
+import yaml
 
 
 ##
@@ -31,6 +32,12 @@ class PreprocessingSettings():
     initial_dtype : str = 'uint16' # Filtering etc. will act on this
     final_dtype : str = 'uint8'
     alpha : float = 0.15
+
+    @staticmethod
+    def load_from_yaml(fname):
+        with open(fname, 'r') as f:
+            cfg = yaml.safe_load(f)
+        return PreprocessingSettings(**cfg)
 
 
 def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings):
