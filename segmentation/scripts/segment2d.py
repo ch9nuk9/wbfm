@@ -10,27 +10,27 @@ import tifffile as tiff
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
-# segmentation
-from segmentation.util.utils_model import get_stardist_model
-from segmentation.util.utils_model import segment_with_stardist_2d
-from segmentation.util.utils_model import segment_with_stardist_3d
 # postproc
 from segmentation.util.utils_pipeline import perform_post_processing_2d
-from segmentation.util.utils_pipeline import perform_post_processing_3d
 # metadata
 from segmentation.util.utils_metadata import get_metadata_dictionary
 from segmentation.util.utils_paths import get_output_fnames
 # Experiment tracking
 from sacred import Experiment
+import sacred
+
+# Initialize sacred experiment
 ex = Experiment()
+ex.add_config(r'config\segment_config.yaml')
 
 @ex.config
-def cfg(video_path, preprocessing_config):
+def cfg(video_path, preprocessing_config, segmentation_type, verbose):
 
-    verbose = 0
     DEBUG = True
 
     # Check paths
+    if video_path is None:
+        print("Must path a valid video path!")
     assert os.path.exists(video_path)
 
     # Check preprocessing settings
@@ -38,8 +38,8 @@ def cfg(video_path, preprocessing_config):
     preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_config)
 
 
-@ex.automain()
-def segment2d(_config):
+@ex.automain
+def segment2d(_config, _run):
     """
     Function to segment, stitch and curate a recording on a volume-to-volume basis.
 
@@ -81,8 +81,11 @@ def segment2d(_config):
         Use the column name to index directly into the dataframe to get all e.g. centroid values
     """
 
+    sacred.commands.print_config(_run)
 
     # get stardist model object
+    from segmentation.util.utils_model import get_stardist_model
+    from segmentation.util.utils_model import segment_with_stardist_2d
     stardist_model_name = _config['segmentation_params']['stardist_model_name']
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose-1)
 
@@ -91,6 +94,8 @@ def segment2d(_config):
     mask_fname, metadata_fname = get_output_fnames(video_path, _config)
     metadata = dict()
 
+    if verbose >= 1:
+        print('--- Starting loop trhough volumes ---')
     for i in tqdm(list(range(start_volume, start_volume + num_frames))):
         # use get single volume function from charlie
         import_opt = {'which_vol': i, 'num_slices': num_slices, 'alpha': 1.0, 'dtype': 'uint16'}
