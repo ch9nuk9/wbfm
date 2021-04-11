@@ -57,7 +57,7 @@ def get_stardist_model(model_name, folder=None, verbose=0):
     return model
 
 
-def segment_with_stardist_2d(vol, model=StarDist2D.from_pretrained('2D_versatile_fluo'), verbose=0):
+def segment_with_stardist_2d(vol, model=None, verbose=0):
     """
     Segments slices of a 3D numpy array (input) and outputs their masks.
     Best model (so far) is Lukas' self-trained 2D model
@@ -76,6 +76,9 @@ def segment_with_stardist_2d(vol, model=StarDist2D.from_pretrained('2D_versatile
         2D segmentations of slices concatenated to a 3D array. Each slice has unique values within
         a slice, but will be duplicated across slices (needs to be stitched in next step)!
     """
+
+    if model is None:
+        model = StarDist2D.from_pretrained('2D_versatile_fluo')
 
     if verbose >=1:
         print(f'Start of 2D segmentation.')
@@ -100,10 +103,13 @@ def segment_with_stardist_2d(vol, model=StarDist2D.from_pretrained('2D_versatile
         # save labels in 3D array for output
         segmented_masks[idx] = labels
 
+        if verbose >= 2:
+            print(f"Found {len(np.unique(labels))} neurons on slice {idx}/{z}")
+
     return segmented_masks
 
 
-def segment_with_stardist_3d(vol, model=get_stardist_model('charlie_3d'), verbose=0):
+def segment_with_stardist_3d(vol, model=None, verbose=0):
     """
     Segments a 3D volume using stardists 3D-segmentation.
     For now, only one self-trained 3D model is available.
@@ -122,6 +128,9 @@ def segment_with_stardist_3d(vol, model=get_stardist_model('charlie_3d'), verbos
     labels : 3D numpy array
         3D array with segmented masks. Each mask should have a unique ID/value.
     """
+
+    if model is None:
+        model = get_stardist_model('charlie_3d')
 
     if verbose >= 1:
         print(f'Start of 3D segmentation')
