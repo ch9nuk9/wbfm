@@ -6,6 +6,7 @@ from tqdm import tqdm
 import pickle
 import os
 import tifffile as tiff
+import numpy as np
 # preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
@@ -79,7 +80,9 @@ def segment2d(_config, _run):
     sacred.commands.print_config(_run)
 
     # Initializing variables
-    start_volume, num_frames, num_slices = _config['dataset_params'].values()
+    start_volume = _config['dataset_params']['start_volume']
+    num_frames = _config['dataset_params']['num_frames']
+    num_slices = _config['dataset_params']['num_slices']
     video_path = _config['video_path']
     mask_fname, metadata_fname = get_output_fnames(video_path, _config)
     verbose = _config['verbose']
@@ -98,7 +101,7 @@ def segment2d(_config, _run):
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose-1)
 
     if verbose >= 1:
-        print('--- Starting loop through volumes ---')
+        print(f"Starting loop over {num_frames} frames")
     for i in tqdm(list(range(start_volume, start_volume + num_frames))):
         # use get single volume function from charlie
         import_opt = {'which_vol': i, 'num_slices': num_slices, 'alpha': 1.0, 'dtype': 'uint16'}
@@ -108,6 +111,8 @@ def segment2d(_config, _run):
             break
 
         # preprocess
+        if verbose >= 2:
+            print(f'--- Volume {i}/{num_frames} ---')
         volume = perform_preprocessing(volume, preprocessing_settings)
 
         # segment the volume using Stardist
@@ -125,6 +130,7 @@ def segment2d(_config, _run):
                                                  verbose=verbose-1)
 
         if verbose >= 2:
+            print(f"Found {len(np.unique(final_masks))} masks")
             print('----- Saving to BIG-TIF -----')
 
         # concatenate masks to tiff file and save
@@ -140,7 +146,6 @@ def segment2d(_config, _run):
                          bigtiff=True)
 
         # metadata dictionary
-        # metadata_dict = {(Vol #, Neuron #) = [Total brightness, neuron volume, centroids]}
         meta_df = get_metadata_dictionary(final_masks, volume)
         metadata[i] = meta_df
 
