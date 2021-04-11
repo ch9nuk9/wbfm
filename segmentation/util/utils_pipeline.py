@@ -1,4 +1,6 @@
 import segmentation.util.utils_postprocessing as post
+import numpy as np
+
 
 
 def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, to_remove_border=True,
@@ -30,8 +32,15 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         3D array of masks after post-processing
 
     """
-    masks = post.remove_large_areas(mask_array, verbose)
-    stitched_masks, df_with_centroids = post.bipartite_stitching(masks, verbose=verbose-1)
+    if verbose >= 1:
+        print(f"Starting preprocessing with {len(np.unique(mask_array))-1} neurons")
+        print("Note: not yet stitched in z")
+    masks = post.remove_large_areas(mask_array, verbose=verbose)
+    if verbose >= 1:
+        print(f"After large area removal: {len(np.unique(masks))-1}")
+    stitched_masks, df_with_centroids = post.bipartite_stitching(masks, verbose=verbose)
+    if verbose >= 1:
+        print(f"After stitching: {len(np.unique(stitched_masks))-1}")
     neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
@@ -45,6 +54,8 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
                                 upper_length_threshold,
                                 neuron_planes,
                                 verbose-1)
+    if verbose >= 1:
+        print(f"After splitting: {len(np.unique(split_masks))-1}")
 
     final_masks, final_neuron_lengths, final_brightness, final_neuron_planes, removed_neurons_list = \
         post.remove_short_neurons(split_masks,
@@ -52,9 +63,15 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
                                   lower_length_threshold,
                                   split_brightnesses,
                                   split_neuron_planes)
+    if verbose >= 1:
+        print(f"After short neuron removal: {len(np.unique(final_masks))-1}")
 
     if to_remove_border is True:
         final_masks = post.remove_border(final_masks, border_width_to_remove)
+
+    if verbose >= 1:
+        print(f"After border removal: {len(np.unique(final_masks))}")
+        print("Postprocessing finished")
 
     return final_masks
 
