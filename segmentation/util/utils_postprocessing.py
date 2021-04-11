@@ -31,23 +31,27 @@ def remove_large_areas(arr, threshold=1000, verbose=0):
         array with removed areas. Same shape as input
     """
     if verbose >= 1:
-        print('Removing large areas in planes')
+        print('Removing large areas in all planes')
 
     if len(arr.shape) > 2:
+        new_arr = arr.copy()
         for i, plane in enumerate(arr):
-            uniq = np.unique(plane)
-
-            for u in uniq:
-                if np.count_nonzero(plane == u) >= threshold:
-                    plane = np.where(plane == u, 0, plane)
-
-            arr[i] = plane
+            for u in np.unique(plane):
+                if u==0:
+                    # Background
+                    continue
+                mask = plane==u
+                if np.count_nonzero(mask) >= threshold:
+                    plane[mask] = 0
+                # if np.count_nonzero(plane == u) >= threshold:
+                #     plane = np.where(plane == u, 0, plane)
+            new_arr[i] = plane
     else:
         uniq = np.unique(arr)
         for u in uniq:
             if np.count_nonzero(arr == u) >= threshold:
-                arr = np.where(arr == u, 0, arr)
-    return arr
+                new_arr = np.where(arr == u, 0, arr)
+    return new_arr
 
 
 def bipartite_stitching(array_3d, num_slices=0, verbose=0):
