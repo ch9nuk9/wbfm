@@ -1,0 +1,40 @@
+# Default parameters for creating a new project
+# Do not edit!
+
+
+#########################
+# Separate package output
+#########################
+
+segmentation_output:
+  mask_fname: null
+  metadata_fname: null
+
+#########################
+# Tracking settings
+#########################
+
+# TODO
+
+#########################
+# Producing training data
+#########################
+dataset_params:
+  # In time
+  start_volume: 0
+  num_frames: 1
+  fps: 5.0
+
+  # In z
+  num_total_slices: 33
+
+  # As of April 2021
+  red_and_green_mirrored: bool = True
+
+# Which frames have enough tracklets to be used for DLC later
+training_data_3d:
+  num_training_frames: 30
+
+  # To be calculated
+  annotation_fname: null
+  start_volume: null

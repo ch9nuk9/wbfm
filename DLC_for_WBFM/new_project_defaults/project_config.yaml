@@ -1,0 +1,35 @@
+# Default parameters for creating a new project
+# Do not edit!
+
+# Path to this project
+project_path: null # Will be set when new project is created
+
+#########################
+# Initialization
+#########################
+raw_data:
+  red_bigtiff_fname: None
+  green_bigtiff_fname: None
+
+# Will be updated to be specific to a project
+# By default, are copies of the following files
+
+# For now: Preprocessing is a separate file (shared between packages)
+preprocessing_config: new_project_defaults\preprocessing_config.yaml
+# Copy from external package
+segment_config: new_project_defaults\segmentation\segment_config.yaml
+# Outputs of this package
+training_data_config: new_project_defaults\training_data\training_data_config.yaml
+tracking_config: new_project_defaults\tracking\tracking_config.yaml
+traces_config: new_project_defaults\traces\traces_config.yaml
+
+
+#########################
+# Project status
+#########################
+status:
+  segmentation: false
+  training_data_3d: false
+  training_data_2d: false
+  dlc_networks: false
+  traces: false

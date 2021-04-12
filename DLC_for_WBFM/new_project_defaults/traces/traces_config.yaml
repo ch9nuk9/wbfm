@@ -1,0 +1,12 @@
+# Default parameters for creating a new project
+# Do not edit!
+
+# TODO
+
+#########################
+# Separate package output
+#########################
+
+segmentation_output:
+  mask_fname: null
+  metadata_fname: null
