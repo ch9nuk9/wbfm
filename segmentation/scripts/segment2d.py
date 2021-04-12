@@ -24,7 +24,7 @@ from sacred.observers import FileStorageObserver
 # Initialize sacred experiment
 ex = Experiment()
 ex.add_config(r'config\segment_config.yaml')
-ex.observers.append(FileStorageObserver('runs'))
+ex.observers.append(FileStorageObserver('runs')) # TODO: smarter location
 
 
 @ex.config
