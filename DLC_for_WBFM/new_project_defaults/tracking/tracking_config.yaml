@@ -1,0 +1,16 @@
+# Default parameters for creating a new project
+# Do not edit!
+
+#########################
+# Stacked DeepLabCut
+#########################
+
+# Translating between 3d annotations and stack of 2d
+training_data_2d:
+  num_crop_slices: 5 # z-width of each mini-max project
+  all_center_slices: [5, 10, 15, 20, 25]
+
+  annotation_fnames: null # list of all produced files
+
+dlc_projects:
+  all_configs: null # List of strings of created subprojects
