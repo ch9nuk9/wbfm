@@ -58,7 +58,6 @@ class DLCForWBFMPreprocessing:
                                 (1,1,self.num_crop_slices) )[-1] )
 
 
-
 @dataclass
 class DLCForWBFMTracking:
     """
@@ -175,7 +174,6 @@ def load_config(fname_or_config, always_reload=True):
         raise TypeError#, "Must be file path or DLCForWBFMConfig"
 
     return config
-
 
 
 def save_config(config):

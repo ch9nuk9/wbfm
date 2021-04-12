@@ -25,3 +25,5 @@ dependencies:
     - tifffile
     - open3d
     - networkx
+    - sacred
+    - ruamel.yaml
