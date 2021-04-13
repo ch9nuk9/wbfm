@@ -79,12 +79,9 @@ def get_sequential_filename(fname):
 def edit_config(config_fname, edits, DEBUG=False):
     """Generic overwriting, based on DLC"""
 
-    assert osp.exists(config_fname), f"{config_fname} not found!"
-
     if DEBUG:
         print(f"Editing config file at: {config_fname}")
-    with open(config_fname, 'r') as f:
-        cfg = YAML().load(f)
+    cfg = load_config(config_fname)
     if DEBUG:
         print(f"Initial config: {cfg} {type(cfg)}")
         print(f"Edits: {edits}")
@@ -94,5 +91,14 @@ def edit_config(config_fname, edits, DEBUG=False):
 
     with open(config_fname, "w") as f:
         YAML().dump(cfg, f)
+
+    return cfg
+
+
+def load_config(config_fname):
+    assert osp.exists(config_fname), f"{config_fname} not found!"
+
+    with open(config_fname, 'r') as f:
+        cfg = YAML().load(f)
 
     return cfg

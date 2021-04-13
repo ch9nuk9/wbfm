@@ -5,7 +5,8 @@
 task_name: test
 experimenter: Charlie
 
-project_dir: null
+project_dir: null # For new project
+project_path: null # For reference afterwards
 ###################
 # Initialization
 ###################
