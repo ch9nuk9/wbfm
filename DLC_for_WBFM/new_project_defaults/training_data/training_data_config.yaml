@@ -29,7 +29,7 @@ dataset_params:
   num_total_slices: 33
 
   # As of April 2021
-  red_and_green_mirrored: bool = True
+  red_and_green_mirrored: True
 
 # Which frames have enough tracklets to be used for DLC later
 training_data_3d:

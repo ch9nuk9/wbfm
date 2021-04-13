@@ -4,7 +4,7 @@ video_path: null
 segmentation_type: 2d
 
 # Preprocessing
-preprocessing_config: config\preprocessing_config.yaml
+preprocessing_config: preprocessing_config.yaml
 
 # Data
 dataset_params:

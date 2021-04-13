@@ -10,15 +10,15 @@ red_bigtiff_fname: null
 green_bigtiff_fname: null
 
 # For now: Preprocessing is a separate file (shared between packages)
-preprocessing_config: new_project_defaults\preprocessing_config.yaml
+preprocessing_config: new_project_defaults/preprocessing_config.yaml
 
 subfolder_configs:
   # Copy from external package
-  segmentation: new_project_defaults\segmentation\segment_config.yaml
+  segmentation: new_project_defaults/segmentation/segment_config.yaml
   # Outputs of this package
-  training_data: new_project_defaults\training_data\training_data_config.yaml
-  tracking: new_project_defaults\tracking\tracking_config.yaml
-  traces: new_project_defaults\traces\traces_config.yaml
+  training_data: new_project_defaults/training_data/training_data_config.yaml
+  tracking: new_project_defaults/tracking/tracking_config.yaml
+  traces: new_project_defaults/traces/traces_config.yaml
 
 ###################
 # Project status
