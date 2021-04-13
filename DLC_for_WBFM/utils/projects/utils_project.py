@@ -9,7 +9,7 @@ def build_project_structure(_config):
 
     # parent_folder = Path(_config['project_dir']).resolve()
     parent_folder = _config['project_dir']
-    rel_dir_name = get_project_name()
+    rel_dir_name = get_project_name(_config)
 
     # Build blank folder structure
     abs_dir_name = osp.join(parent_folder, rel_dir_name)
@@ -54,9 +54,12 @@ def build_project_structure(_config):
     edit_config(project_fname, _config)
 
 
-def get_project_name():
+def get_project_name(_config):
     # Use current time
-    project_name = datetime.now().strftime("proj_%Y_%m_%d-%I_%M")
+    project_name = datetime.now().strftime("%Y_%m_%d")
+    exp = _config['experimenter']
+    task = _config['task_name']
+    project_name = f"{exp}-{task}-" + project_name
     return project_name
 
 

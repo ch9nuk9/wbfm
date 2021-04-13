@@ -2,6 +2,9 @@
 # Do not edit!
 # NOTE: these comments will be deleted when moving to a new project!
 
+task_name: test
+experimenter: Charlie
+
 project_dir: null
 ###################
 # Initialization
