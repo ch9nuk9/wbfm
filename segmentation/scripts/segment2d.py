@@ -13,6 +13,7 @@ from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
 # postproc
 from segmentation.util.utils_pipeline import perform_post_processing_2d
+from segmentation.util.utils_pipeline import segment_video_using_config_2d
 # metadata
 from segmentation.util.utils_metadata import get_metadata_dictionary
 from segmentation.util.utils_paths import get_output_fnames
@@ -24,7 +25,7 @@ from sacred.observers import FileStorageObserver
 # Initialize sacred experiment
 ex = Experiment()
 ex.add_config(r'config\segment_config.yaml')
-ex.observers.append(FileStorageObserver('runs'))
+ex.observers.append(FileStorageObserver('runs')) # TODO: smarter location
 
 
 @ex.config
@@ -79,79 +80,4 @@ def segment2d(_config, _run):
     """
     sacred.commands.print_config(_run)
 
-    # Initializing variables
-    start_volume = _config['dataset_params']['start_volume']
-    num_frames = _config['dataset_params']['num_frames']
-    num_slices = _config['dataset_params']['num_slices']
-    video_path = _config['video_path']
-    mask_fname, metadata_fname = get_output_fnames(video_path, _config)
-    verbose = _config['verbose']
-    metadata = dict()
-    preprocessing_settings = PreprocessingSettings.load_from_yaml(
-        _config['preprocessing_config']
-    )
-    if verbose >= 1:
-        print("Loaded preprocessing_settings:")
-        print(preprocessing_settings)
-
-    # get stardist model object
-    from segmentation.util.utils_model import get_stardist_model
-    from segmentation.util.utils_model import segment_with_stardist_2d
-    stardist_model_name = _config['segmentation_params']['stardist_model_name']
-    sd_model = get_stardist_model(stardist_model_name, verbose=verbose-1)
-
-    if verbose >= 1:
-        print(f"Starting loop over {num_frames} frames")
-    for i in tqdm(list(range(start_volume, start_volume + num_frames))):
-        # use get single volume function from charlie
-        import_opt = {'which_vol': i, 'num_slices': num_slices, 'alpha': 1.0, 'dtype': 'uint16'}
-        volume = get_single_volume(video_path, **import_opt)
-
-        if _config['DEBUG']:
-            break
-
-        # preprocess
-        if verbose >= 2:
-            print(f'--- Volume {i}/{num_frames} ---')
-        volume = perform_preprocessing(volume, preprocessing_settings)
-
-        # segment the volume using Stardist
-        if verbose >= 2:
-            print('--- Segmentation ---')
-        segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose-1)
-
-        # process masks: remove large areas, stitch, split long neurons, remove short neurons
-        if verbose >= 2:
-            print('---- Post-processing ----')
-        opt = _config['postprocessing_params']
-        final_masks = perform_post_processing_2d(segmented_masks,
-                                                 volume,
-                                                 **opt,
-                                                 verbose=verbose-1)
-
-        if verbose >= 2:
-            print(f"Found {len(np.unique(final_masks))} masks")
-            print('----- Saving to BIG-TIF -----')
-
-        # concatenate masks to tiff file and save
-        if i == start_volume:
-            tiff.imwrite(mask_fname,
-                         final_masks,
-                         append=False,
-                         bigtiff=True)
-        else:
-            tiff.imwrite(mask_fname,
-                         final_masks,
-                         append=True,
-                         bigtiff=True)
-
-        # metadata dictionary
-        meta_df = get_metadata_dictionary(final_masks, volume)
-        metadata[i] = meta_df
-
-    # saving metadata
-    with open(metadata_fname, 'wb') as meta_save:
-        pickle.dump(metadata, meta_save)
-
-    if verbose >= 1:
-        print(f'Done with segmentation pipeline! Data saved at {mask_fname}')
+    segment_video_using_config_2d(_config)

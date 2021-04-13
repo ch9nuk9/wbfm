@@ -25,7 +25,7 @@ postprocessing_params:
 
 # Output
 output_params:
-  output_folder: null
+  output_folder: null # Default creates a folder within the data folder
 
 # Printing
 verbose: 1
