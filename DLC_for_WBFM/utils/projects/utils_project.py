@@ -13,6 +13,7 @@ def build_project_structure(_config):
 
     # Build blank folder structure
     abs_dir_name = osp.join(parent_folder, rel_dir_name)
+    abs_dir_name = get_sequential_filename(abs_dir_name)
     print(f"Building new project at: {abs_dir_name}")
     Path(abs_dir_name).mkdir(parents=True)
 
@@ -61,6 +62,18 @@ def get_project_name(_config):
     task = _config['task_name']
     project_name = f"{exp}-{task}-" + project_name
     return project_name
+
+
+def get_sequential_filename(fname):
+    """Check if the file or dir exists, and if so, append an integer"""
+    i = 1
+    if Path(fname).exists():
+        print(f"Original fname {fname} exists, so will be suffixed")
+        fname = fname + f"-{i}"
+        while Path(fname).exists():
+            i += 1
+            fname = fname[:-2] + f"-{i}"
+    return fname
 
 
 def edit_config(config_fname, edits, DEBUG=False):
