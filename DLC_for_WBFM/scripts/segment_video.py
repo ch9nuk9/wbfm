@@ -13,17 +13,11 @@ from segmentation.util.utils_pipeline import segment_video_using_config_2d
 # Experiment tracking
 import sacred
 from sacred import Experiment
-from sacred.observers import FileStorageObserver
-
-# Add sub-config file as found in main project config
-# TODO: put in function?
-# tmp_cfg = load_config('project_config.yaml')
-# segment_cfg = load_config(tmp_cfg['subfolder_configs']['segmentation'])
 
 # Initialize sacred experiment
 ex = Experiment()
 # TODO: script must be run from project folder for now
-# ex.add_config('project_config.yaml')
+# Add single variable so that the cfg() function works
 ex.add_config(project_path=None)
 
 
