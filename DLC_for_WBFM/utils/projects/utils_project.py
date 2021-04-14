@@ -28,18 +28,18 @@ def build_project_structure(_config):
     project_fname = Path(project_fname).resolve()
     edit_config(str(project_fname), _config)
 
-    # Update certain subconfigs to have absolute paths
-    subfolder = Path(abs_dir_name).joinpath('segmentation')
-    to_edit = subfolder.joinpath('segment_config.yaml')
-    new_abs_path = subfolder.joinpath('preprocessing_config.yaml')
-    updates = {'preprocessing_config': str(new_abs_path)}
-    edit_config(str(to_edit), updates, DEBUG=True)
-
-    subfolder = Path(abs_dir_name).joinpath('training_data')
-    to_edit = subfolder.joinpath('training_data_config.yaml')
-    new_abs_path = subfolder.joinpath('preprocessing_config.yaml')
-    updates = {'preprocessing_config': str(new_abs_path)}
-    edit_config(str(to_edit), updates)
+    # # Update certain subconfigs to have absolute paths
+    # subfolder = Path(abs_dir_name).joinpath('segmentation')
+    # to_edit = subfolder.joinpath('segment_config.yaml')
+    # new_abs_path = subfolder.joinpath('preprocessing_config.yaml')
+    # updates = {'preprocessing_config': str(new_abs_path)}
+    # edit_config(str(to_edit), updates, DEBUG=True)
+    #
+    # subfolder = Path(abs_dir_name).joinpath('training_data')
+    # to_edit = subfolder.joinpath('training_data_config.yaml')
+    # new_abs_path = subfolder.joinpath('preprocessing_config.yaml')
+    # updates = {'preprocessing_config': str(new_abs_path)}
+    # edit_config(str(to_edit), updates)
 
 
 #####################
