@@ -14,7 +14,7 @@ def build_project_structure(_config):
     parent_folder = _config['project_dir']
     rel_dir_name = get_project_name(_config)
 
-    # Build blank folder structure
+    # Build copied folder structure
     abs_dir_name = osp.join(parent_folder, rel_dir_name)
     abs_dir_name = get_sequential_filename(abs_dir_name)
     print(f"Building new project at: {abs_dir_name}")
@@ -22,11 +22,24 @@ def build_project_structure(_config):
     src = 'new_project_defaults'
     copytree(src, abs_dir_name)
 
-    # Finally, update the copied project config with the new dest folder
+    # Update the copied project config with the new dest folder
     dest_fname = 'project_config.yaml'
     project_fname = osp.join(abs_dir_name, dest_fname)
-    project_fname = str(Path(project_fname).resolve())
-    edit_config(project_fname, _config)
+    project_fname = Path(project_fname).resolve()
+    edit_config(str(project_fname), _config)
+
+    # Update certain subconfigs to have absolute paths
+    subfolder = Path(abs_dir_name).joinpath('segmentation')
+    to_edit = subfolder.joinpath('segment_config.yaml')
+    new_abs_path = subfolder.joinpath('preprocessing_config.yaml')
+    updates = {'preprocessing_config': str(new_abs_path)}
+    edit_config(str(to_edit), updates, DEBUG=True)
+
+    subfolder = Path(abs_dir_name).joinpath('training_data')
+    to_edit = subfolder.joinpath('training_data_config.yaml')
+    new_abs_path = subfolder.joinpath('preprocessing_config.yaml')
+    updates = {'preprocessing_config': str(new_abs_path)}
+    edit_config(str(to_edit), updates)
 
 
 #####################
@@ -109,8 +122,6 @@ def synchronize_segment_config(project_path, segment_cfg):
     # For now, does NOT overwrite anything on disk
     project_cfg = load_config(project_path)
 
-    rel_fname = project_cfg['preprocessing_config']
-    preprocessing_config = get_absname(project_path, rel_fname)
     updates = {'video_path': project_cfg['red_bigtiff_fname']}
     segment_cfg.update(updates)
 
