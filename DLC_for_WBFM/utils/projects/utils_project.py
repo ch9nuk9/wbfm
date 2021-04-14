@@ -3,6 +3,9 @@ from datetime import datetime
 from pathlib import Path
 from shutil import copyfile, copytree
 from ruamel.yaml import YAML
+from contextlib import contextmanager
+import os
+
 
 
 def build_project_structure(_config):
@@ -57,6 +60,16 @@ def get_absname(project_path, fname):
     fname = Path(project_dir).joinpath(fname)
     return str(fname)
 
+
+@contextmanager
+def safe_cd(newdir):
+    prevdir = os.getcwd()
+    os.chdir(os.path.expanduser(newdir))
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)
+
 #####################
 # config utils
 #####################
@@ -68,7 +81,7 @@ def edit_config(config_fname, edits, DEBUG=False):
         print(f"Editing config file at: {config_fname}")
     cfg = load_config(config_fname)
     if DEBUG:
-        print(f"Initial config: {cfg} {type(cfg)}")
+        print(f"Initial config: {cfg}")
         print(f"Edits: {edits}")
 
     for k, v in edits.items():
