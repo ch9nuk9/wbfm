@@ -8,7 +8,7 @@ To be used with Niklas' Stardist-based segmentation package
 import os
 from pathlib import Path
 # main function
-from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, synchronize_segment_config
+from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, synchronize_segment_config, safe_cd
 from segmentation.util.utils_pipeline import segment_video_using_config_2d
 # Experiment tracking
 import sacred
@@ -40,4 +40,5 @@ def cfg(project_path):
 def segment2d(_config, _run):
     sacred.commands.print_config(_run)
 
-    segment_video_using_config_2d(_config['segment_cfg'])
+    with safe_cd(project_dir):
+        segment_video_using_config_2d(_config['segment_cfg'])
