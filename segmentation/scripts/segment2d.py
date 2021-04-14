@@ -2,21 +2,8 @@
 The top level functions for segmenting a full (WBFM) recording.
 """
 
-from tqdm import tqdm
-import pickle
-import os
-import tifffile as tiff
-import numpy as np
-# preprocessing
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
-# postproc
-from segmentation.util.utils_pipeline import perform_post_processing_2d
 from segmentation.util.utils_pipeline import segment_video_using_config_2d
-# metadata
-from segmentation.util.utils_metadata import get_metadata_dictionary
-from segmentation.util.utils_paths import get_output_fnames
+import os
 # Experiment tracking
 import sacred
 from sacred import Experiment
