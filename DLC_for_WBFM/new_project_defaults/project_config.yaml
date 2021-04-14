@@ -14,7 +14,7 @@ red_bigtiff_fname: null
 green_bigtiff_fname: null
 
 # For now: Preprocessing is a separate file (shared between packages)
-preprocessing_config: new_project_defaults/preprocessing_config.yaml
+# preprocessing_config: new_project_defaults/preprocessing_config.yaml
 
 subfolder_configs:
   # Copy from external package
