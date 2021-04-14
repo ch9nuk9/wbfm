@@ -1,7 +1,7 @@
 import os.path as osp
 from datetime import datetime
 from pathlib import Path
-from shutil import copyfile
+from shutil import copyfile, copytree
 from ruamel.yaml import YAML
 
 
@@ -15,44 +15,16 @@ def build_project_structure(_config):
     abs_dir_name = osp.join(parent_folder, rel_dir_name)
     abs_dir_name = get_sequential_filename(abs_dir_name)
     print(f"Building new project at: {abs_dir_name}")
-    Path(abs_dir_name).mkdir(parents=True)
 
-    subfolders = list(_config['subfolder_configs'])
-    for sub in subfolders:
-        Path(osp.join(abs_dir_name, sub)).mkdir(parents=True)
-
-    # Copy config files and readmes over
-    tmp = list(_config['subfolder_configs'].items())
-    for subfolder, src in tmp:
-        # Config file
-        dest_fname = osp.basename(src)
-        dest = osp.join(abs_dir_name, subfolder, dest_fname)
-        copyfile(src, dest)
-        # Also update in the config file itself
-        _config['subfolder_configs'][subfolder] = osp.join(subfolder, dest_fname)
-        # README
-        dest_fname = 'README.md'
-        dest = osp.join(abs_dir_name, subfolder, dest_fname)
-        src_readme = osp.join(osp.dirname(src), 'README.md')
-        copyfile(src_readme, dest)
-
-    # Also copy those outside the subfolders
-    src = _config['preprocessing_config']
-    dest_fname = 'preprocessing_config.yaml'
-    dest = osp.join(abs_dir_name, dest_fname)
-    copyfile(src, dest)
-    _config['preprocessing_config'] = dest_fname
-
-    # the current project_config file itself
-    # TODO: hardcoded
-    dest_fname = 'project_config.yaml'
-    src = osp.join('new_project_defaults', dest_fname)
-    project_fname = osp.join(abs_dir_name, dest_fname)
-    copyfile(src, project_fname)
+    src = 'new_project_defaults'
+    copytree(src, abs_dir_name)
 
     # Finally, update the copied project config with the new dest folder
+    dest_fname = 'project_config.yaml'
+    project_fname = osp.join(abs_dir_name, dest_fname)
     project_fname = str(Path(project_fname).resolve())
     edit_config(project_fname, _config)
+
 
 #####################
 # Filename utils

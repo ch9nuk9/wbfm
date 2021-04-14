@@ -18,11 +18,11 @@ green_bigtiff_fname: null
 
 subfolder_configs:
   # Copy from external package
-  segmentation: new_project_defaults/segmentation/segment_config.yaml
+  segmentation: segmentation/segment_config.yaml
   # Outputs of this package
-  training_data: new_project_defaults/training_data/training_data_config.yaml
-  tracking: new_project_defaults/tracking/tracking_config.yaml
-  traces: new_project_defaults/traces/traces_config.yaml
+  training_data: training_data/training_data_config.yaml
+  tracking: tracking/tracking_config.yaml
+  traces: traces/traces_config.yaml
 
 ###################
 # Project status
