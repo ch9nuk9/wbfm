@@ -40,6 +40,9 @@ def cfg(project_path):
 def segment2d(_config, _run):
     sacred.commands.print_config(_run)
 
+    # For windows workstation
+    os.environ['NUMEXPR_MAX_THREADS'] = '56'
+
     # project_dir = Path(project_path).parent
     with safe_cd(_config['project_dir']):
         segment_video_using_config_2d(_config['segment_cfg'])
