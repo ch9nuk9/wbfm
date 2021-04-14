@@ -76,6 +76,7 @@ def get_absname(project_path, fname):
 
 @contextmanager
 def safe_cd(newdir):
+    # https://stackoverflow.com/questions/431684/equivalent-of-shell-cd-command-to-change-the-working-directory/24176022#24176022
     prevdir = os.getcwd()
     os.chdir(os.path.expanduser(newdir))
     try:
