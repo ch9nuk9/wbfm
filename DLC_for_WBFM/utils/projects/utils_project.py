@@ -98,8 +98,7 @@ def synchronize_segment_config(project_path, segment_cfg):
 
     rel_fname = project_cfg['preprocessing_config']
     preprocessing_config = get_absname(project_path, rel_fname)
-    updates = {'video_path': project_cfg['red_bigtiff_fname'],
-               'preprocessing_config': preprocessing_config}
+    updates = {'video_path': project_cfg['red_bigtiff_fname']}
     segment_cfg.update(updates)
 
     segment_folder = get_absname(project_path, 'segmentation')
