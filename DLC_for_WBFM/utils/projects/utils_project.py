@@ -125,8 +125,8 @@ def synchronize_segment_config(project_path, segment_cfg):
     updates = {'video_path': project_cfg['red_bigtiff_fname']}
     segment_cfg.update(updates)
 
-    segment_folder = get_absname(project_path, 'segmentation')
-    updates = {'output_folder': segment_folder}
-    segment_cfg['output_params'].update(updates)
+    # segment_folder = get_absname(project_path, 'segmentation')
+    # updates = {'output_folder': segment_folder}
+    # segment_cfg['output_params'].update(updates)
 
     return segment_cfg

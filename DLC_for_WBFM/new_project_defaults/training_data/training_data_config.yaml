@@ -15,7 +15,7 @@ segmentation_output:
 #########################
 
 # TODO
-preprocessing_config: preprocessing_config.yaml
+preprocessing_config: training_data/preprocessing_config.yaml
 
 
 #########################
