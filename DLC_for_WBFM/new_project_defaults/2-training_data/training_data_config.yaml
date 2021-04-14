@@ -1,38 +1,33 @@
 # Default parameters for creating a new project
 # Do not edit!
 
-
-#########################
-# Separate package output
-#########################
-
-segmentation_output:
-  mask_fname: null
-  metadata_fname: null
-
 #########################
 # Tracking settings
 #########################
 
-# TODO
 preprocessing_config: 2-training_data/preprocessing_config.yaml
 
-
-#########################
-# Producing training data
-#########################
 dataset_params:
   # In time
   start_volume: 0
   num_frames: 1
   fps: 5.0
-
   # In z
-  num_total_slices: 33
-
+  num_slices: 33
   # As of April 2021
   red_and_green_mirrored: True
 
+tracker_params: # TODO: OPTIMIZE
+  neuron_feature_radius: 5.0
+  use_affine_matching: false
+  add_affine_to_candidates: true
+  add_gp_to_candidates: true
+  save_candidate_matches: true
+  external_detections: null # Will be synchronized with segmentation
+
+#########################
+# Producing training data
+#########################
 # Which frames have enough tracklets to be used for DLC later
 training_data_3d:
   num_training_frames: 30
