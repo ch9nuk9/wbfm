@@ -54,6 +54,9 @@ def build_project_structure(_config):
     project_fname = str(Path(project_fname).resolve())
     edit_config(project_fname, _config)
 
+#####################
+# Filename utils
+#####################
 
 def get_project_name(_config):
     # Use current time
@@ -75,6 +78,16 @@ def get_sequential_filename(fname):
             fname = fname[:-2] + f"-{i}"
     return fname
 
+
+def get_absname(project_path, fname):
+    # Builds the absolute filepath using a project config filepath
+    project_dir = Path(project_path).parent
+    fname = Path(project_dir).joinpath(fname)
+    return str(fname)
+
+#####################
+# config utils
+#####################
 
 def edit_config(config_fname, edits, DEBUG=False):
     """Generic overwriting, based on DLC"""
@@ -102,3 +115,23 @@ def load_config(config_fname):
         cfg = YAML().load(f)
 
     return cfg
+
+#####################
+# Synchronizing config files
+#####################
+
+def synchronize_segment_config(project_path, segment_cfg):
+    # For now, does NOT overwrite anything on disk
+    project_cfg = load_config(project_path)
+
+    rel_fname = project_cfg['preprocessing_config']
+    preprocessing_config = get_absname(project_path, rel_fname)
+    updates = {'video_path': project_cfg['red_bigtiff_fname'],
+               'preprocessing_config': preprocessing_config}
+    segment_cfg.update(updates)
+
+    segment_folder = get_absname(project_path, 'segmentation')
+    updates = {'output_folder': segment_folder}
+    segment_cfg['output_params'].update(updates)
+
+    return segment_cfg
