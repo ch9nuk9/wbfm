@@ -1,6 +1,7 @@
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import fix_candidates_without_confidences
+from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import fix_candidates_without_confidences, calc_all_bipartite_matches
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_classes
 
 import os
 import os.path as osp
