@@ -7,7 +7,7 @@ import os
 import os.path as osp
 
 
-def partial_track_video_using_config(vid_fname, _config, scorer=None):
+def partial_track_video_using_config(vid_fname, _config):
     """
     Produce training data via partial tracking using 3d feature-based method
 
