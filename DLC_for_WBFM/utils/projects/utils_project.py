@@ -155,5 +155,4 @@ def synchronize_train_config(project_path, train_cfg):
     updates = segment_cfg['dataset_params']
     train_cfg['dataset_params'].update(updates)
 
-
     return segment_cfg

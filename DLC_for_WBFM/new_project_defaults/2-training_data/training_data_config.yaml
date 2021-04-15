@@ -1,6 +1,8 @@
 # Default parameters for creating a new project
 # Do not edit!
 
+self_path: 2-training_data/training_data_config.yaml # for programmatic updating
+
 #########################
 # Tracking settings
 #########################
@@ -34,4 +36,4 @@ training_data_3d:
 
   # To be calculated
   annotation_fname: null
-  start_volume: null
+  which_frames: null

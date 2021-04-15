@@ -39,7 +39,7 @@ def partial_track_video_using_config(vid_fname, _config, scorer=None):
     b_matches, b_conf, b_frames, b_candidates = out
     new_candidates = fix_candidates_without_confidences(b_candidates)
     bp_matches = calc_all_bipartite_matches(new_candidates)
-    df_b = build_tracklets_from_classes(b_frames, bp_matches)
+    df = build_tracklets_from_classes(b_frames, bp_matches)
 
     ########################
     # Save matches to disk
@@ -49,7 +49,7 @@ def partial_track_video_using_config(vid_fname, _config, scorer=None):
 
     fname = osp.join(subfolder, 'clust_df_dat.pickle')
     with open(fname, 'wb') as f:
-        pickle.dump(df_b,f)
+        pickle.dump(df,f)
     fname = osp.join(subfolder, 'match_dat.pickle')
     with open(fname, 'wb') as f:
         pickle.dump(b_matches, f)
@@ -67,7 +67,17 @@ def partial_track_video_using_config(vid_fname, _config, scorer=None):
     opt['scorer'] = scorer
     opt['total_num_frames'] = _config['dataset_params']['num_frames']
     opt['coord_names'] = ['x','y','likelihood']
-    # TODO
-    opt['which_frames'] = get_good_frames_for_tracklets()
+    # Choose a subset of frames with enough tracklets
+    num_frames_needed = _config['training_data_3d']['num_training_frames']
+    tracklet_opt = {'num_frames_needed': num_frames_needed,
+                    'num_frames': _config['dataset_params']['num_frames'],
+                    'verbose':1}
+    which_frames = good_best_tracklet_covering(df, **tracklet_opt)
+    opt['which_frames'] = which_frames
+    # Also save these chosen frames
+    updates = {'which_frames': which_frames}
+    _config['training_data_3d'].update(updates)
+    edit_config(_config['self_path'], _config)
+
     # TODO: refactor away from old-style config
     new_dlc_df = training_data_from_annotations(config, **opt)
