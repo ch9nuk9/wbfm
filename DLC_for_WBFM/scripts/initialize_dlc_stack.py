@@ -40,6 +40,7 @@ def produce_training_data(_config, _run):
 
     opt = {}
     opt['scorer'] = _config['project_cfg']['experimenter']
+    opt['task_name'] = _config['project_cfg']['experimenter']
 
     with safe_cd(_config['project_dir']):
         create_dlc_training_from_tracklets(vid_fname, this_config, **opt)

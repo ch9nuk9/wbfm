@@ -224,9 +224,16 @@ def write_minimax_projection_from_btf(config_file):
 
 
 
-def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtype='uint16', which_slices=None,
-                                                start_volume=None, num_frames=None,
-                                                fps=10, frame_width=608, frame_height=610, num_slices=33,
+def write_video_projection_from_ome_file_subset(video_fname,
+                                                out_fname,
+                                                out_dtype='uint16',
+                                                which_slices=None,
+                                                start_volume=None,
+                                                num_frames=None,
+                                                fps=10,
+                                                frame_width=608,
+                                                frame_height=610,
+                                                num_slices=33,
                                                 alpha=1.0,
                                                 flip_x=False,
                                                 verbose=0):
@@ -258,7 +265,7 @@ def write_video_projection_from_ome_file_subset(video_fname, out_fname, out_dtyp
 
     # Set up the counting indices
     start_of_each_frame = which_slices[0]
-    if start_of_each_frame < 5:
+    if verbose >= 1 and start_of_each_frame < 5:
         warnings.warn("As of 14.10.2020, the first several frames are very bad! Do you really mean to use these?")
     end_of_each_frame = which_slices[-1]
     # alpha *= 1.0 / len(which_slices) # Also takes a mean
