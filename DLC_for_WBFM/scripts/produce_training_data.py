@@ -35,9 +35,10 @@ def cfg(project_path):
 def produce_training_data(_config, _run):
     sacred.commands.print_config(_run)
 
-    vid_fname = _config['red_bigtiff_fname']
-    this_config = _config['train_cfg']
-    this_config['dataset_params'] = _config['project_cfg']['dataset_params']
+    DEBUG = _config['DEBUG']
+    vid_fname = _config['project_cfg']['red_bigtiff_fname']
+    this_config = _config['train_cfg'].copy()
+    this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     with safe_cd(_config['project_dir']):
         partial_track_video_using_config(vid_fname, this_config, DEBUG=DEBUG)

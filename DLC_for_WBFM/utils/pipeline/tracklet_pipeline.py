@@ -34,7 +34,7 @@ def partial_track_video_using_config(vid_fname, _config, DEBUG=False):
     # Make tracklets
     ########################
     # Get options
-    opt = _config['tracker_params']
+    opt = _config['tracker_params'].copy()
     opt['num_frames'] = _config['dataset_params']['num_frames']
     if DEBUG:
         opt['num_frames'] = 2
