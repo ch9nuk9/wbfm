@@ -2,15 +2,22 @@
 # Do not edit!
 
 #########################
-# Stacked DeepLabCut
+# Producing training data
 #########################
+# Which frames have enough tracklets to be used for DLC later
+training_data_3d:
+  num_training_frames: 30
+  # To be calculated
+  annotation_fname: 2-training_data/raw/clust_df_dat.pickle
+  which_frames: null
 
 # Translating between 3d annotations and stack of 2d
 training_data_2d:
-  num_crop_slices: 5 # z-width of each mini-max project
+  num_crop_slices: 5 # z-depth of each mini-max project
   all_center_slices: [5, 10, 15, 20, 25]
 
-  annotation_fnames: null # list of all produced files
-
+#########################
+# Stacked DeepLabCut
+#########################
 dlc_projects:
   all_configs: null # List of strings of created subprojects

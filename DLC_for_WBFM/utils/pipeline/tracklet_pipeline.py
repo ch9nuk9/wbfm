@@ -7,6 +7,10 @@ import os
 import os.path as osp
 
 
+###
+### For use with produces tracklets (step 2 of pipeline)
+###
+
 def partial_track_video_using_config(vid_fname, _config):
     """
     Produce training data via partial tracking using 3d feature-based method
@@ -59,14 +63,18 @@ def partial_track_video_using_config(vid_fname, _config):
         pickle.dump(b_frames, f)
 
 
-def create_dlc_training_from_tracklets():
+###
+### For use with training a stack of DLC (step 3 of pipeline)
+###
+
+def create_dlc_training_from_tracklets(_config):
 
     ########################
     # Prepare for dlc-style training data
     ########################
 
     opt = {}
-    opt['df_fname'] = osp.join(subfolder, 'clust_df_dat.pickle')
+    opt['df_fname'] = _config['3d_training_data']['annotation_fname']
     opt['scorer'] = scorer
     opt['total_num_frames'] = _config['dataset_params']['num_frames']
     opt['coord_names'] = ['x','y','likelihood']

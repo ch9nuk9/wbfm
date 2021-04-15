@@ -26,14 +26,3 @@ tracker_params: # TODO: OPTIMIZE
   add_gp_to_candidates: true
   save_candidate_matches: true
   external_detections: null # Will be synchronized with segmentation
-
-#########################
-# Producing training data
-#########################
-# Which frames have enough tracklets to be used for DLC later
-training_data_3d:
-  num_training_frames: 30
-
-  # To be calculated
-  annotation_fname: null
-  which_frames: null
