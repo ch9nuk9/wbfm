@@ -16,7 +16,7 @@ import tifffile
 ### For use with produces tracklets (step 2 of pipeline)
 ###
 
-def partial_track_video_using_config(vid_fname, _config):
+def partial_track_video_using_config(vid_fname, _config, DEBUG=False):
     """
     Produce training data via partial tracking using 3d feature-based method
 
@@ -36,6 +36,8 @@ def partial_track_video_using_config(vid_fname, _config):
     # Get options
     opt = _config['tracker_params']
     opt['num_frames'] = _config['dataset_params']['num_frames']
+    if DEBUG:
+        opt['num_frames'] = 2
     opt['start_frame'] = _config['dataset_params']['start_volume']
     opt['num_slices'] = _config['dataset_params']['num_slices']
 
@@ -153,7 +155,7 @@ def create_dlc_training_from_tracklets(vid_fname, _config,
     ########################
     # Actually produce the training data
     ########################
-    
+
     opt = {}
     opt['df_fname'] = df_fname
     opt['scorer'] = scorer

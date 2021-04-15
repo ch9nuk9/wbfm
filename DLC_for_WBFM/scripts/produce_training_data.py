@@ -14,7 +14,7 @@ from sacred import Experiment
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None)
+ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
@@ -39,4 +39,4 @@ def produce_training_data(_config, _run):
     this_config['dataset_params'] = _config['project_cfg']['dataset_params']
 
     with safe_cd(_config['project_dir']):
-        partial_track_video_using_config(vid_fname, this_config)
+        partial_track_video_using_config(vid_fname, this_config, DEBUG=DEBUG)
