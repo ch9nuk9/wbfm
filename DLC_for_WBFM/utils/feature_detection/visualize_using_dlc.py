@@ -472,7 +472,7 @@ def build_tif_training_data(c, which_frames, preprocessing_settings=None, verbos
     return relative_imagenames, full_subfolder_name
 
 
-def training_data_from_annotations(config,
+def training_data_3d_from_annotations(config,
                                    df_fname,
                                    which_frames,
                                    scorer=None,
