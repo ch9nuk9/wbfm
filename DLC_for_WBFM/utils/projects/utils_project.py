@@ -136,10 +136,10 @@ def synchronize_segment_config(project_path, segment_cfg):
 def synchronize_train_config(project_path, train_cfg):
     # For now, does NOT overwrite anything on disk
     project_cfg = load_config(project_path)
-    segment_cfg = load_config(project_cfg['subfolder_configs']['segmentation'])
+    train_cfg = load_config(project_cfg['subfolder_configs']['training_data'])
 
     # Add external detections
-    external_detections = segment_cfg['output_params']['output_folder']
+    external_detections = train_cfg['output_params']['output_folder']
     # Assume the detections are named normally, i.e. starting with 'metadata'
     for file in os.listdir(external_detections):
         if fnmatch.fnmatch(file, 'metadata*'):
@@ -152,7 +152,7 @@ def synchronize_train_config(project_path, train_cfg):
     train_cfg['tracker_params'].update(updates)
 
     # Sync dataset parameters
-    updates = segment_cfg['dataset_params']
-    train_cfg['dataset_params'].update(updates)
+    # updates = train_cfg['dataset_params']
+    # train_cfg['dataset_params'].update(updates)
 
-    return segment_cfg
+    return train_cfg
