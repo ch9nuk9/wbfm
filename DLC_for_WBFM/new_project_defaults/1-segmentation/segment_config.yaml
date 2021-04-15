@@ -6,12 +6,6 @@ segmentation_type: 2d
 # Preprocessing
 preprocessing_config: 1-segmentation/preprocessing_config.yaml
 
-# Data
-dataset_params:
-  start_volume: 0
-  num_frames: 1
-  num_slices: 33
-
 # Segmentation
 segmentation_params:
   stardist_model_name: lukas

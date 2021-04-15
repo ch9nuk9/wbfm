@@ -9,16 +9,6 @@ self_path: 2-training_data/training_data_config.yaml # for programmatic updating
 
 preprocessing_config: 2-training_data/preprocessing_config.yaml
 
-dataset_params:
-  # In time
-  start_volume: 0
-  num_frames: 1
-  fps: 5.0
-  # In z
-  num_slices: 33
-  # As of April 2021
-  red_and_green_mirrored: True
-
 tracker_params: # TODO: OPTIMIZE
   neuron_feature_radius: 5.0
   use_affine_matching: false

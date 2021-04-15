@@ -7,14 +7,26 @@ experimenter: Charlie
 
 project_dir: null # For new project
 project_path: null # For reference afterwards
+
 ###################
-# Initialization
+# Data
 ###################
 red_bigtiff_fname: null
 green_bigtiff_fname: null
 
-# For now: Preprocessing is a separate file (shared between packages)
-# preprocessing_config: new_project_defaults/preprocessing_config.yaml
+dataset_params:
+  # In time
+  start_volume: 0
+  num_frames: 1
+  fps: 5.0
+  # In z
+  num_slices: 33
+  # As of April 2021
+  red_and_green_mirrored: True
+
+###################
+# Project status and steps
+###################
 
 subfolder_configs:
   # Copy from external package
@@ -24,9 +36,6 @@ subfolder_configs:
   tracking: 3-tracking/tracking_config.yaml
   traces: 4-traces/traces_config.yaml
 
-###################
-# Project status
-###################
 current_status:
   segmentation: false
   training_data_3d: false
