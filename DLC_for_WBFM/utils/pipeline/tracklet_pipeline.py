@@ -58,8 +58,11 @@ def partial_track_video_using_config(vid_fname, _config, scorer=None):
     with open(fname, 'wb') as f:
         pickle.dump(b_frames, f)
 
+
+def create_dlc_training_from_tracklets():
+
     ########################
-    # Make dlc-style training data
+    # Prepare for dlc-style training data
     ########################
 
     opt = {}
