@@ -38,5 +38,8 @@ def produce_training_data(_config, _run):
     this_config = _config['tracking_cfg']
     this_config['dataset_params'] = _config['project_cfg']['dataset_params']
 
+    opt = {}
+    opt['scorer'] = _config['project_cfg']['experimenter']
+
     with safe_cd(_config['project_dir']):
-        create_dlc_training_from_tracklets(vid_fname, this_config)
+        create_dlc_training_from_tracklets(vid_fname, this_config, **opt)

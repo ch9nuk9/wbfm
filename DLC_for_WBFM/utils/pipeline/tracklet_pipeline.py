@@ -5,6 +5,9 @@ from DLC_for_WBFM.utils.feature_detection.utils_tif import PreprocessingSettings
 
 import os
 import os.path as osp
+import numpy as np
+import pandas as pd
+import pickle
 
 
 ###
@@ -67,28 +70,44 @@ def partial_track_video_using_config(vid_fname, _config):
 ### For use with training a stack of DLC (step 3 of pipeline)
 ###
 
-def create_dlc_training_from_tracklets(_config):
+def create_dlc_training_from_tracklets(vid_fname, _config, scorer=None):
+
+    ########################
+    # Load annotations
+    ########################
+    df_fname = _config['3d_training_data']['annotation_fname']
+    df = pd.load_from_pickle(df_fname)
+
 
     ########################
     # Prepare for dlc-style training data
     ########################
 
-    opt = {}
-    opt['df_fname'] = _config['3d_training_data']['annotation_fname']
-    opt['scorer'] = scorer
-    opt['total_num_frames'] = _config['dataset_params']['num_frames']
-    opt['coord_names'] = ['x','y','likelihood']
     # Choose a subset of frames with enough tracklets
     num_frames_needed = _config['training_data_3d']['num_training_frames']
     tracklet_opt = {'num_frames_needed': num_frames_needed,
                     'num_frames': _config['dataset_params']['num_frames'],
                     'verbose':1}
-    which_frames = good_best_tracklet_covering(df, **tracklet_opt)
-    opt['which_frames'] = which_frames
+    which_frames = best_tracklet_covering(df, **tracklet_opt)
     # Also save these chosen frames
     updates = {'which_frames': which_frames}
     _config['training_data_3d'].update(updates)
     edit_config(_config['self_path'], _config)
 
-    # TODO: refactor away from old-style config
-    new_dlc_df = training_data_from_annotations(config, **opt)
+    ########################
+    # Initialize the DLC projects
+    ########################
+    
+
+
+    ########################
+    # Actually produce the training data
+    ########################
+    opt = {}
+    opt['df_fname'] = df_fname
+    opt['scorer'] = scorer
+    opt['total_num_frames'] = _config['dataset_params']['num_frames']
+    opt['coord_names'] = ['x','y','likelihood']
+    opt['which_frames'] = which_frames
+    # TODO
+    new_dlc_df = training_data_from_annotations(**opt)

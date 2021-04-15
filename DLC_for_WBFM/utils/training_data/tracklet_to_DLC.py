@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 
 
-def good_best_tracklet_covering(df, num_frames_needed, num_frames,
-                                verbose=0):
+def best_tracklet_covering(df, num_frames_needed, num_frames,
+                           verbose=0):
     """
     Given a partially tracked video, choose a series of frames with enough
     tracklets, to be saved in DLC format
