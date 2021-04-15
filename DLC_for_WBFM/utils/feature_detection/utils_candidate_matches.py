@@ -158,3 +158,22 @@ def community_to_matches(all_communities):
     clique_matches = convert_labels_to_matches(community_dict, offset=50, max_frames=500)
 
     return clique_matches
+
+
+def fix_candidates_without_confidences(candidates):
+    """
+    All candidate matches should be 3d, i.e. (node0, node1, confidence)
+    However, the gaussian process formatting currently doesn't output a confidence
+    Also: sometimes the node indices are cast as floats, when they should be ints
+    """
+    new_candidates = {}
+    for k, these_matches in candidates.items():
+        new_matches = []
+        for m in these_matches:
+            if len(m)==3:
+                m = (int(m[0]), int(m[1]), m[2])
+            else:
+                m = (int(m[0]), int(m[1]), 1.0)
+            new_matches.append(m)
+        new_candidates[k] = new_matches
+    return new_candidates

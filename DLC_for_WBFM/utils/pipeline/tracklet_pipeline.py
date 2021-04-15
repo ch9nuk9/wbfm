@@ -37,18 +37,7 @@ def partial_track_video_using_config(vid_fname, _config, scorer=None):
     # Postprocess matches
     ########################
     b_matches, b_conf, b_frames, b_candidates = out
-    # align gaussian process formatting
-    new_candidates = {}
-    for k, these_matches in b_candidates.items():
-        new_matches = []
-        for m in these_matches:
-            if len(m)==3:
-                m = (int(m[0]), int(m[1]), m[2])
-            else:
-                m = (int(m[0]), int(m[1]), 1.0)
-            new_matches.append(m)
-        new_candidates[k] = new_matches
-
+    new_candidates = fix_candidates_without_confidences(b_candidates)
     bp_matches = calc_all_bipartite_matches(new_candidates)
     df_b = build_tracklets_from_classes(b_frames, bp_matches)
 
