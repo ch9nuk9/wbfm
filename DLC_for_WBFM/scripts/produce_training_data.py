@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd, synchronize_train_config
-from DLC_for_WBFM.utils.projects.tracklet_pipeline import partial_track_video_using_config
+from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 # Experiment tracking
 import sacred
 from sacred import Experiment
@@ -21,13 +21,14 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path):
     # Manually load yaml files
     project_cfg = load_config(project_path)
-    train_fname = Path(project_cfg['subfolder_configs']['training_data'])
     project_dir = Path(project_path).parent
-    train_fname = Path(project_dir).joinpath(train_fname)
-    train_cfg = dict(load_config(train_fname))
 
-    train_cfg = synchronize_train_config(project_path, train_cfg)
-    edit_config(train_fname, train_cfg)
+    with safe_cd(project_dir):
+        train_fname = Path(project_cfg['subfolder_configs']['training_data'])
+        train_cfg = dict(load_config(train_fname))
+
+        train_cfg = synchronize_train_config(Path(project_path).name, train_cfg)
+        edit_config(train_fname, train_cfg)
 
 
 @ex.automain

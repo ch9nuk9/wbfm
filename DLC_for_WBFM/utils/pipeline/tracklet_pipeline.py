@@ -1,7 +1,7 @@
-from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import training_data_from_annotations
-from DLC_for_WBFM.utils.feature_detection.utils_pipeline import track_neurons_full_video
+# from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import training_data_from_annotations
+from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import create_dlc_project
-from DLC_for_WBFM.utils.feature_detection.utils_tif import PreprocessingSettings
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_video_projection_from_ome_file_subset
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
 
@@ -163,4 +163,4 @@ def create_dlc_training_from_tracklets(vid_fname, _config,
     opt['coord_names'] = ['x','y','likelihood']
     opt['which_frames'] = _config['training_data_3d']['which_frames']
     # TODO
-    new_dlc_df = training_data_from_annotations(**opt)
+    # new_dlc_df = training_data_from_annotations(**opt)
