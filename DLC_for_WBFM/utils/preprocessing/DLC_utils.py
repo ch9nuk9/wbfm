@@ -4,6 +4,7 @@ from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import 
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
 from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_tif_training_data, build_dlc_annotation_all
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 import pandas as pd
 import numpy as np
 import tifffile
@@ -213,7 +214,8 @@ def training_data_from_annotations(vid_fname,
 ### For use with training a stack of DLC (step 3 of pipeline)
 ###
 
-def create_dlc_training_from_tracklets(vid_fname, _config,
+def create_dlc_training_from_tracklets(vid_fname,
+                                       _config,
                                        scorer=None,
                                        task_name=None,
                                        DEBUG=False):
@@ -221,8 +223,8 @@ def create_dlc_training_from_tracklets(vid_fname, _config,
     ########################
     # Load annotations
     ########################
-    df_fname = _config['3d_training_data']['annotation_fname']
-    df = pd.load_from_pickle(df_fname)
+    df_fname = _config['training_data_3d']['annotation_fname']
+    df = pd.read_pickle(df_fname)
 
     ########################
     # Prepare for dlc-style training data

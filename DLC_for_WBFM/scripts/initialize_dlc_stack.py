@@ -32,9 +32,9 @@ def cfg(project_path):
 def initialize_dlc_stack(_config, _run):
     sacred.commands.print_config(_run)
 
-    vid_fname = _config['red_bigtiff_fname']
-    this_config = _config['tracking_cfg']
-    this_config['dataset_params'] = _config['project_cfg']['dataset_params']
+    vid_fname = _config['project_cfg']['red_bigtiff_fname']
+    this_config = _config['tracking_cfg'].copy()
+    this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     opt = {}
     opt['scorer'] = _config['project_cfg']['experimenter']
