@@ -14,7 +14,7 @@ import pickle
 ### For use with produces tracklets (step 2 of pipeline)
 ###
 
-def partial_track_video_using_config(vid_fname, _config, DEBUG=False):
+def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     """
     Produce training data via partial tracking using 3d feature-based method
 
@@ -25,19 +25,19 @@ def partial_track_video_using_config(vid_fname, _config, DEBUG=False):
     """
 
     # Load preprocessing settings
-    p_fname = _config['preprocessing_config']
+    p_fname = config['preprocessing_config']
     p = PreprocessingSettings.load_from_yaml(p_fname)
 
     ########################
     # Make tracklets
     ########################
     # Get options
-    opt = _config['tracker_params'].copy()
-    opt['num_frames'] = _config['dataset_params']['num_frames']
+    opt = config['tracker_params'].copy()
+    opt['num_frames'] = config['dataset_params']['num_frames']
     if DEBUG:
         opt['num_frames'] = 5
-    opt['start_frame'] = _config['dataset_params']['start_volume']
-    opt['num_slices'] = _config['dataset_params']['num_slices']
+    opt['start_frame'] = config['dataset_params']['start_volume']
+    opt['num_slices'] = config['dataset_params']['num_slices']
 
     out = track_neurons_full_video(vid_fname,
                                    preprocessing_settings=p,

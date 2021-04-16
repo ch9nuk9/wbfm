@@ -215,7 +215,7 @@ def training_data_from_annotations(vid_fname,
 ###
 
 def create_dlc_training_from_tracklets(vid_fname,
-                                       _config,
+                                       config,
                                        scorer=None,
                                        task_name=None,
                                        DEBUG=False):
@@ -223,7 +223,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     ########################
     # Load annotations
     ########################
-    df_fname = _config['training_data_3d']['annotation_fname']
+    df_fname = config['training_data_3d']['annotation_fname']
     df = pd.read_pickle(df_fname)
 
     ########################
@@ -231,24 +231,24 @@ def create_dlc_training_from_tracklets(vid_fname,
     ########################
 
     # Choose a subset of frames with enough tracklets
-    num_frames_needed = _config['training_data_3d']['num_training_frames']
+    num_frames_needed = config['training_data_3d']['num_training_frames']
     tracklet_opt = {'num_frames_needed': num_frames_needed,
-                    'num_frames': _config['dataset_params']['num_frames'],
+                    'num_frames': config['dataset_params']['num_frames'],
                     'verbose':1}
     if DEBUG:
         tracklet_opt['num_frames_needed'] = 2
     which_frames = best_tracklet_covering(df, **tracklet_opt)
     # Also save these chosen frames
     updates = {'which_frames': which_frames}
-    _config['training_data_3d'].update(updates)
-    edit_config(_config['self_path'], _config)
+    config['training_data_3d'].update(updates)
+    edit_config(config['self_path'], config)
 
     ########################
     # Initialize the DLC projects
     ########################
 
-    num_crop_slices = _config['training_data_2d']['num_crop_slices']
-    all_center_slices = _config['training_data_2d']['all_center_slices']
+    num_crop_slices = config['training_data_2d']['num_crop_slices']
+    all_center_slices = config['training_data_2d']['all_center_slices']
     if DEBUG:
         all_center_slices = [all_center_slices[0]]
 
@@ -263,7 +263,7 @@ def create_dlc_training_from_tracklets(vid_fname,
                'out_dtype': 'uint16',
                'flip_x': False,
                'video_fname': vid_fname}
-    vid_opt.update(_config['dataset_params'])
+    vid_opt.update(config['dataset_params'])
     del vid_opt['red_and_green_mirrored'] # Extra unneeded parameter
 
     def get_which_slices(center_slice, num_crop_slices):
@@ -278,10 +278,10 @@ def create_dlc_training_from_tracklets(vid_fname,
     png_opt = {}
     png_opt['df_fname'] = df
     png_opt['scorer'] = scorer
-    png_opt['total_num_frames'] = _config['dataset_params']['num_frames']
+    png_opt['total_num_frames'] = config['dataset_params']['num_frames']
     png_opt['coord_names'] = ['x','y','likelihood']
-    png_opt['which_frames'] = _config['training_data_3d']['which_frames']
-    png_opt['max_z_dist_for_traces'] = _config['training_data_2d']['max_z_dist_for_traces']
+    png_opt['which_frames'] = config['training_data_3d']['which_frames']
+    png_opt['max_z_dist_for_traces'] = config['training_data_2d']['max_z_dist_for_traces']
     # Actually make projects
     all_avi_fnames = []
     all_dlc_configs = []
@@ -306,5 +306,5 @@ def create_dlc_training_from_tracklets(vid_fname,
     # TODO
 
     # Save list of dlc config names
-    _config['dlc_projects']['all_configs'] = all_dlc_configs
-    edit_config(_config['self_path'], _config)
+    config['dlc_projects']['all_configs'] = all_dlc_configs
+    edit_config(config['self_path'], config)
