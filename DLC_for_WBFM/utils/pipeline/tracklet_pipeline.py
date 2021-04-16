@@ -34,7 +34,7 @@ def partial_track_video_using_config(vid_fname, _config, DEBUG=False):
     opt = _config['tracker_params'].copy()
     opt['num_frames'] = _config['dataset_params']['num_frames']
     if DEBUG:
-        opt['num_frames'] = 2
+        opt['num_frames'] = 5
     opt['start_frame'] = _config['dataset_params']['start_volume']
     opt['num_slices'] = _config['dataset_params']['num_slices']
 
