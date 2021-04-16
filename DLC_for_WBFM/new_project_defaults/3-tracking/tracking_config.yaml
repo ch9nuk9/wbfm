@@ -16,6 +16,7 @@ training_data_3d:
 training_data_2d:
   num_crop_slices: 5 # z-depth of each mini-max project
   all_center_slices: [5, 10, 15, 20, 25]
+  max_z_dist_for_traces: 1 # z-dist for neuron centroids
 
 #########################
 # Stacked DeepLabCut

@@ -364,9 +364,44 @@ def get_indices_full_overlap(clust_df, which_frames):
     return clust_df['slice_ind'].apply(check_frames)
 
 
-def build_subset_df(clust_df, which_frames):
+def build_subset_df(clust_df, which_frames,
+                    which_z=None,
+                    max_z_dist=1):
+    """
+    Build a dataframe that is a subset of a larger dataframe
+
+    Only keep the tracklets that pass the time and z requirements:
+        - Cover each frame in which_frames
+        - Not too far from which_z
+    """
+
+    ####################
+    # Helper functions
+    ####################
+
+    def check_z(test_zxy, which_z=which_z, max_z_dist=max_z_dist):
+        """
+        Start: the centroids in all tracklets and the target z
+        Return: boolean list of whether to keep or not, per tracklet
+            Note that this uses the MEAN centroid, not the min or max
+        """
+        to_keep = []
+        for this_zyx in test_zxy:
+            this_z = np.mean(np.array(this_zyx)[:,0])
+            too_high = this_z >= (which_z+max_z_dist)
+            too_low = this_z <= (which_z-max_z_dist)
+            if too_high or too_low:
+                to_keep.append(False)
+            else:
+                to_keep.append(True)
+        return to_keep
 
     def check_frames(test_frames, which_frames=which_frames):
+        """
+        Start: the frames in all tracklets and the target frames
+        Return: local indices within the test_frame to keep
+            Note that this is per-tracklet
+        """
         test_frames_set = set(test_frames)
         local2global_ind = {}
         for f in which_frames:
@@ -388,13 +423,23 @@ def build_subset_df(clust_df, which_frames):
 
     def rename_slices(this_ind_dict):
         return list(this_ind_dict.keys())
-        # return which_frames
 
+
+    ####################
+    # Get indices of tracklets to keep
+    ####################
     sub_df = clust_df.copy()
-    # Get only the covering neurons
+    # Get only the covering neurons (time)
     which_neurons = sub_df['slice_ind'].apply(check_frames)
     which_neurons_dict = which_neurons.to_dict()
-    to_keep = [(v is not None) for k,v in which_neurons_dict.items()]
+    to_keep_t = [(v is not None) for k,v in which_neurons_dict.items()]
+    # Get close neurons (z)
+    if which_z is not None:
+        to_keep_z = sub_df['all_xyz'].apply(check_z)
+        to_keep = [t and z for (t,z) in zip(to_keep_t, to_keep_z)]
+    else:
+        to_keep = to_keep_t
+
     for i, val in enumerate(to_keep):
         if not val:
             del which_neurons_dict[i]
@@ -407,6 +452,9 @@ def build_subset_df(clust_df, which_frames):
             'slice_ind':'slice_ind_old'}
     out_df = which_neurons_df.rename(columns=names)
 
+    ####################
+    # Build the subset
+    ####################
     # All 4 fields that were renamed
     f0 = lambda df : keep_subset(which_neurons_dict[df['clust_ind']], df['all_ind_local_old'])
     out_df['all_ind_local'] = out_df.apply(f0, axis=1)
