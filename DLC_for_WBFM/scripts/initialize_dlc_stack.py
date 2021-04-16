@@ -21,13 +21,11 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path):
     # Manually load yaml files
     project_cfg = load_config(project_path)
-    train_fname = Path(project_cfg['subfolder_configs']['tracking'])
     project_dir = Path(project_path).parent
-    tracking_fname = Path(project_dir).joinpath(tracking_fname)
-    tracking_cfg = dict(load_config(tracking_fname))
 
-    # train_cfg = synchronize_train_config(project_path, train_cfg)
-    # edit_config(train_fname, train_cfg)
+    with safe_cd(project_dir):
+        train_fname = Path(project_cfg['subfolder_configs']['tracking'])
+        tracking_cfg = dict(load_config(tracking_fname))
 
 
 @ex.automain
