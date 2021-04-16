@@ -10,6 +10,8 @@ from DLC_for_WBFM.utils.preprocessing.DLC_utils import create_dlc_training_from_
 # Experiment tracking
 import sacred
 from sacred import Experiment
+from sacred import SETTINGS
+SETTINGS.CONFIG.READ_ONLY_CONFIG=False
 
 # Initialize sacred experiment
 ex = Experiment()

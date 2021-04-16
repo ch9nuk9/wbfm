@@ -385,15 +385,19 @@ def build_subset_df(clust_df, which_frames,
         Return: boolean list of whether to keep or not, per tracklet
             Note that this uses the MEAN centroid, not the min or max
         """
-        to_keep = []
-        for this_zyx in test_zxy:
-            this_z = np.mean(np.array(this_zyx)[:,0])
-            too_high = this_z >= (which_z+max_z_dist)
-            too_low = this_z <= (which_z-max_z_dist)
-            if too_high or too_low:
-                to_keep.append(False)
-            else:
-                to_keep.append(True)
+        # to_keep = []
+        # print(test_zxy)
+        # for this_zyx in test_zxy:
+            # print(this_zyx.shape)
+        this_z = np.mean(np.atleast_2d(np.array(test_zxy))[:,0])
+        too_high = this_z >= (which_z+max_z_dist)
+        too_low = this_z <= (which_z-max_z_dist)
+        if too_high or too_low:
+            # to_keep.append(False)
+            to_keep = False
+        else:
+            # to_keep.append(True)
+            to_keep = True
         return to_keep
 
     def check_frames(test_frames, which_frames=which_frames):

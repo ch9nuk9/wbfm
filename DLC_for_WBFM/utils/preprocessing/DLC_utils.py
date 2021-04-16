@@ -1,8 +1,9 @@
 import deeplabcut
+from deeplabcut.utils import auxiliaryfunctions
 from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTracking, save_config
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_video_projection_from_ome_file_subset
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
-from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_tif_training_data, build_dlc_annotation_all
+from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, build_relative_imagenames
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 import pandas as pd
@@ -12,6 +13,8 @@ from pathlib import Path
 import pims
 # import PIL
 import skimage.io as skio
+import os
+from tqdm import tqdm
 
 
 ##
@@ -29,7 +32,7 @@ def create_dlc_project_from_config(config, label='',copy_videos=True):
 
     # Force shorter name
     dlc_opt = {'project':c.task_name[0] + label,
-               'experimenter':c.experimenter[0],
+               'experimenter':c.experimenter[:4],
                'videos':[c.datafiles.red_avi_fname],
                'copy_videos':copy_videos,
                'working_directory':c.get_dirname()}
@@ -59,8 +62,6 @@ def create_dlc_project(task_name,
         i.e. expanded interace
     """
 
-    c = load_config(config)
-
     # Force shorter name
     dlc_opt = {'project':task_name[0] + label,
                'experimenter':experimenter[0],
@@ -70,13 +71,17 @@ def create_dlc_project(task_name,
 
     dlc_config_fname = deeplabcut.create_new_project(**dlc_opt)
 
+    if dlc_config_fname is None:
+        print("Did not create dlc project... maybe it already exists?")
+        print("If so, try deleting the project")
+        raise ValueError
+
     return dlc_config_fname
 
 
 def build_png_training_data(dlc_config,
                             video_fname,
                             which_frames,
-                            num_total_slices,
                             verbose=0):
     """
     Extracts a series of pngs from a full video (.avi)
@@ -90,11 +95,11 @@ def build_png_training_data(dlc_config,
     relative_imagenames, subfolder_name = out
 
     # Initilize the training data subfolder
+    dlc_config = auxiliaryfunctions.read_config(dlc_config)
     project_folder = dlc_config['project_path']
     full_subfolder_name = os.path.join(project_folder, subfolder_name)
     if not os.path.isdir(full_subfolder_name):
         os.mkdir(full_subfolder_name)
-
 
     # Write the png files
     video_reader = pims.PyAVVideoReader(video_fname)
@@ -176,12 +181,15 @@ def training_data_from_annotations(vid_fname,
 
     # Build a sub-df with only the relevant neurons and slices
     subset_opt = {'which_z': which_z,
-                  'max_z_dist_for_traces': max_z_dist_for_traces}
+                  'max_z_dist': max_z_dist_for_traces}
     subset_df = build_subset_df(clust_df, which_frames, **subset_opt)
 
     # TODO: Save the individual png files
-    # out = build_tif_training_data(c, which_frames)
-    # relative_imagenames, full_subfolder_name = out
+    png_opt = {'dlc_config': dlc_config_fname,
+               'video_fname': vid_fname,
+               'which_frames': which_frames}
+    out = build_png_training_data(**png_opt)
+    relative_imagenames, full_subfolder_name = out
 
     # Cast the dataframe in DLC format
     opt = {'min_length':0,
@@ -196,7 +204,8 @@ def training_data_from_annotations(vid_fname,
         return None
 
     # Save annotations using DLC-style names
-    img_subfolder_name = Path(dlc_config_fname).parent.join_path()
+    proj_dir = Path(dlc_config_fname).parent
+    img_subfolder_name = proj_dir.joinpath('labeled-data').joinpath(vid_fname)
     opt = {'project_folder':str(img_subfolder_name)}
     # TODO: do not use just config
     out = save_dlc_annotations(scorer, df_fname, new_dlc_df, **opt)[0]
@@ -289,21 +298,24 @@ def create_dlc_training_from_tracklets(vid_fname,
         # Make minimax video from btf
         which_z_slices = get_which_slices(center, num_crop_slices)
         vid_opt['which_slices'] = which_z_slices
-        this_avi_fname = write_video_projection_from_ome_file_subset(**vid_opt)
+        this_avi_fname = f"slices{which_z_slices[0]}_{which_z_slices[-1]}.avi"
+        vid_opt['out_fname'] = this_avi_fname
+        write_video_projection_from_ome_file_subset(**vid_opt)
         # Make dlc project
         dlc_opt['label'] = f"-c{center}"
         dlc_opt['video_path'] = this_avi_fname
-        this_dlc_config = create_dlc_project(dlc_opt)
+        this_dlc_config = create_dlc_project(**dlc_opt)
         # Training frames
         png_opt['which_z'] = center
         png_opt['dlc_config_fname'] = this_dlc_config
+        png_opt['vid_fname'] = this_avi_fname
         training_data_from_annotations(**png_opt)
         # Save to list
         all_avi_fnames.append(this_avi_fname)
         all_dlc_configs.append(this_dlc_config)
 
     # Then delete the created avis because they are copied into the DLC folder
-    # TODO
+    [os.remove(f) for f in all_avi_fnames]
 
     # Save list of dlc config names
     config['dlc_projects']['all_configs'] = all_dlc_configs
