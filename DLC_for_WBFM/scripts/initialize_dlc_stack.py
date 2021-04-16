@@ -14,7 +14,7 @@ from sacred import Experiment
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None)
+ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
@@ -31,7 +31,7 @@ def cfg(project_path):
 
 
 @ex.automain
-def produce_training_data(_config, _run):
+def initialize_dlc_stack(_config, _run):
     sacred.commands.print_config(_run)
 
     vid_fname = _config['red_bigtiff_fname']
@@ -41,6 +41,7 @@ def produce_training_data(_config, _run):
     opt = {}
     opt['scorer'] = _config['project_cfg']['experimenter']
     opt['task_name'] = _config['project_cfg']['experimenter']
+    opt['DEBUG'] = _config['DEBUG']
 
     with safe_cd(_config['project_dir']):
         create_dlc_training_from_tracklets(vid_fname, this_config, **opt)

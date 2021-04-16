@@ -74,7 +74,8 @@ def create_dlc_project(task_name,
 
 def create_dlc_training_from_tracklets(vid_fname, _config,
                                        scorer=None,
-                                       task_name=None):
+                                       task_name=None,
+                                       DEBUG=False):
 
     ########################
     # Load annotations
@@ -91,6 +92,8 @@ def create_dlc_training_from_tracklets(vid_fname, _config,
     tracklet_opt = {'num_frames_needed': num_frames_needed,
                     'num_frames': _config['dataset_params']['num_frames'],
                     'verbose':1}
+    if DEBUG:
+        tracklet_opt['num_frames_needed'] = 2
     which_frames = best_tracklet_covering(df, **tracklet_opt)
     # Also save these chosen frames
     updates = {'which_frames': which_frames}
@@ -101,8 +104,10 @@ def create_dlc_training_from_tracklets(vid_fname, _config,
     # Initialize the DLC projects
     ########################
 
-    num_crop_slices: _config['training_data_2d']['num_crop_slices']
+    num_crop_slices = _config['training_data_2d']['num_crop_slices']
     all_center_slices = _config['training_data_2d']['all_center_slices']
+    if DEBUG:
+        all_center_slices = [all_center_slices[0]]
 
     # First create the videos, Then, create the project structure
     # TODO: optimize this
@@ -116,12 +121,11 @@ def create_dlc_training_from_tracklets(vid_fname, _config,
                'flip_x': False,
                'video_fname': vid_fname}
     vid_opt.update(_config['dataset_params'])
-    del vid_opt['red_and_green_mirrored']
+    del vid_opt['red_and_green_mirrored'] # Extra unneeded parameter
 
     def get_which_slices(center_slice, num_crop_slices):
         return list( get_crop_coords3d((0,0,center_slice),
                                 (1,1,num_crop_slices) )[-1] )
-
     # Get dlc project and naming options
     dlc_opt = {'task_name': task_name,
                'experimenter': scorer,
@@ -131,7 +135,7 @@ def create_dlc_training_from_tracklets(vid_fname, _config,
     all_avi_fnames = []
     all_dlc_configs = []
     for center in all_center_slices:
-        # Make videos
+        # Make minimax video from btf
         which_slices = get_which_slices(center, num_crop_slices)
         vid_opt['which_slices'] = which_slices
         this_avi_fname = write_video_projection_from_ome_file_subset(**vid_opt)
@@ -139,11 +143,11 @@ def create_dlc_training_from_tracklets(vid_fname, _config,
         dlc_opt['label'] = f"-c{center}"
         dlc_opt['video_path'] = this_avi_fname
         this_dlc_config = create_dlc_project(dlc_opt)
-        # Save
+        # Save to list
         all_avi_fnames.append(this_avi_fname)
         all_dlc_configs.append(this_dlc_config)
 
-    # Then delete the created avis... they are copied into the DLC folder
+    # Then delete the created avis because they are copied into the DLC folder
     # TODO
 
     # Save list of dlc config names
