@@ -24,7 +24,7 @@ def cfg(project_path):
     project_dir = Path(project_path).parent
 
     with safe_cd(project_dir):
-        train_fname = Path(project_cfg['subfolder_configs']['tracking'])
+        tracking_fname = Path(project_cfg['subfolder_configs']['tracking'])
         tracking_cfg = dict(load_config(tracking_fname))
 
 
