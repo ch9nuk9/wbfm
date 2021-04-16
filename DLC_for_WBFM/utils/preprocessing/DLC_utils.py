@@ -7,6 +7,10 @@ from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config
 import pandas as pd
 import numpy as np
 import tifffile
+from pathlib import Path
+import pims
+# import PIL
+import skimage.io as skio
 
 
 ##
@@ -68,6 +72,49 @@ def create_dlc_project(task_name,
     return dlc_config_fname
 
 
+def build_png_training_data(dlc_config,
+                            video_fname,
+                            which_frames,
+                            num_total_slices,
+                            verbose=0):
+    """
+    Extracts a series of pngs from a full video (.avi)
+
+
+    See also: build_tif_training_data
+    """
+
+    # Get the file names
+    out = build_relative_imagenames(video_fname, num_frames=len(which_frames))
+    relative_imagenames, subfolder_name = out
+
+    # Initilize the training data subfolder
+    project_folder = dlc_config['project_path']
+    full_subfolder_name = os.path.join(project_folder, subfolder_name)
+    if not os.path.isdir(full_subfolder_name):
+        os.mkdir(full_subfolder_name)
+
+
+    # Write the png files
+    video_reader = pims.PyAVVideoReader(video_fname)
+
+    if verbose >= 1:
+        print('Writing png files...')
+    for i, rel_fname in tqdm(zip(which_frames, relative_imagenames), total=len(which_frames)):
+        # zzz dat = c.get_single_volume(i)
+        dat = video_reader[i]
+        fname = os.path.join(project_folder, rel_fname)
+        skio.imsave(fname, dat)
+        # frame = PIL.Frame(dat)
+        # frame.write(fname)
+        # zzz tifffile.imwrite(fname, dat)
+
+    if verbose >= 1:
+        print(f"{len(which_frames)} tif files written in project {full_subfolder_name}")
+
+    return relative_imagenames, full_subfolder_name
+
+
 def training_data_from_annotations(vid_fname,
                                    df_fname,
                                    which_frames,
@@ -127,12 +174,13 @@ def training_data_from_annotations(vid_fname,
         clust_df = df_fname
 
     # Build a sub-df with only the relevant neurons and slices
-    # TODO: z frame constraint
-    subset_df = build_subset_df(clust_df, which_frames)
+    subset_opt = {'which_z': which_z,
+                  'max_z_dist_for_traces': max_z_dist_for_traces}
+    subset_df = build_subset_df(clust_df, which_frames, **subset_opt)
 
     # TODO: Save the individual png files
-    # out = build_tif_training_data(c, which_frames, preprocessing_settings=preprocessing_settings)
-    relative_imagenames, full_subfolder_name = out
+    # out = build_tif_training_data(c, which_frames)
+    # relative_imagenames, full_subfolder_name = out
 
     # Cast the dataframe in DLC format
     opt = {'min_length':0,
@@ -146,10 +194,13 @@ def training_data_from_annotations(vid_fname,
         print("Found no tracks long enough; aborting")
         return None
 
-    # Save annotations using DLC-style names, and update the config files
-    opt = {'project_folder':full_subfolder_name}
-    out = save_dlc_annotations(scorer, df_fname, c, new_dlc_df, **opt)[0]
+    # Save annotations using DLC-style names
+    img_subfolder_name = Path(dlc_config_fname).parent.join_path()
+    opt = {'project_folder':str(img_subfolder_name)}
+    # TODO: do not use just config
+    out = save_dlc_annotations(scorer, df_fname, new_dlc_df, **opt)[0]
     build_dlc_name = out
+
     # synchronize_config_files(c, build_dlc_name,
     #                          dummy_subfolder=full_subfolder_name,
     #                          scorer=scorer,

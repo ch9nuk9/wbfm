@@ -473,14 +473,13 @@ def build_subset_df(clust_df, which_frames,
     return out_df
 
 
-def build_relative_imagenames(c, png_fnames=None, num_frames=None):
+def build_relative_imagenames(raw_video_fname, png_fnames=None, num_frames=None):
 
     if png_fnames is None and num_frames is None:
         print("Error: one of png_fnames or num_frames must be passed")
         raise ValueError
     if png_fnames is None:
         png_fnames = [f'img{i}.tif' for i in range(num_frames)]
-    raw_video_fname = c.datafiles.red_bigtiff_fname
 
     relative_imagenames = []
     folder_name = os.path.join('labeled-data',os.path.basename(raw_video_fname)[:8])
@@ -491,14 +490,13 @@ def build_relative_imagenames(c, png_fnames=None, num_frames=None):
 
 def build_tif_training_data(c, which_frames, preprocessing_settings=None, verbose=0):
 
+    video_fname = c.datafiles.red_bigtiff_fname
+    num_z = c.preprocessing.num_total_slices
     # Get the file names
     dlc_config = auxiliaryfunctions.read_config(c.tracking.DLC_config_fname)
     project_folder = dlc_config['project_path']
-    out = build_relative_imagenames(c, num_frames=len(which_frames))
+    out = build_relative_imagenames(video_fname, num_frames=len(which_frames))
     relative_imagenames, subfolder_name = out
-
-    video_fname = c.datafiles.red_bigtiff_fname
-    num_z = c.preprocessing.num_total_slices
 
     # Initilize the training data subfolder
     full_subfolder_name = os.path.join(project_folder, subfolder_name)

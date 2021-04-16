@@ -21,6 +21,8 @@ dependencies:
   - tensorflow==1.13.1
   - lxml
   - tqdm
+  - pims
+  - pillow
   - pip:
     - tifffile
     - open3d
