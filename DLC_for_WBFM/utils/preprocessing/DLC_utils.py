@@ -306,7 +306,3 @@ def create_dlc_training_from_tracklets(vid_fname, _config,
     # Save list of dlc config names
     _config['dlc_projects']['all_configs'] = all_dlc_configs
     edit_config(_config['self_path'], _config)
-
-    ########################
-    # Actually produce the training data
-    ########################

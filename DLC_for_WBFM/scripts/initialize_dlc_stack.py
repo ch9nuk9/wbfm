@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd
-from DLC_for_WBFM.utils.projects.tracklet_pipeline import partial_track_video_using_config
+from DLC_for_WBFM.utils.preprocessing.DLC_utils import create_dlc_training_from_tracklets
 # Experiment tracking
 import sacred
 from sacred import Experiment
