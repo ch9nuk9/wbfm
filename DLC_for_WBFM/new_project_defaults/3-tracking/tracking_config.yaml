@@ -18,6 +18,8 @@ training_data_2d:
   all_center_slices: [5, 10, 15, 20, 25]
   max_z_dist_for_traces: 1 # z-dist for neuron centroids
 
+preprocessing_config: 2-training_data/preprocessing_config.yaml # Reuse from 3d tracking
+
 #########################
 # Stacked DeepLabCut
 #########################

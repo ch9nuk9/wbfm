@@ -2,12 +2,14 @@ import deeplabcut
 from deeplabcut.utils import auxiliaryfunctions
 # from deeplabcut.generate_training_dataset.frame_extraction import extract_frames
 
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTracking, save_config
-from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_video_projection_from_ome_file_subset
+from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
 from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, build_relative_imagenames, save_dlc_annotations
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
+from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 import pandas as pd
 import numpy as np
 import tifffile
@@ -312,39 +314,57 @@ def create_dlc_training_from_tracklets(vid_fname,
     edit_config(config['self_path'], config)
 
     ########################
-    # Initialize the DLC projects
+    # Get the video
     ########################
-
-    num_crop_slices = config['training_data_2d']['num_crop_slices']
-    all_center_slices = config['training_data_2d']['all_center_slices']
-    if DEBUG:
-        all_center_slices = [all_center_slices[0]]
-
-    # First create the videos, Then, create the project structure
-    # TODO: optimize this
+    # TODO: for now, requires re-preprocessing
 
     # Get the video options
     with tifffile.TiffFile(vid_fname) as tif:
-        frame_height, frame_width = tif.pages[0].shape
-    vid_opt = {'frame_height': frame_height,
-               'frame_width': frame_width,
-               'out_dtype': 'uint16',
-               'flip_x': False,
-               'video_fname': vid_fname}
-    # Do not take the start volume, becuase we want to write the full video
-    vid_opt['num_slices'] = config['dataset_params']['num_slices']
-    vid_opt['fps'] = config['dataset_params']['fps']
-    vid_opt['start_volume'] = 0
-    vid_opt['verbose'] = 1
+        sz = tif.pages[0].shape
+    p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
+    num_frames = config['dataset_params']['start_volume'] + config['dataset_params']['num_frames']
+    num_slices = config['dataset_params']['num_slices']
     if DEBUG:
         # Make a much shorter video
-        vid_opt['num_frames'] = which_frames[-1] + 1
+        num_frames = which_frames[-1] + 1
+    preprocessed_dat = np.zeros((num_frames,num_slices) + sz)
+
+    # Load data and preprocess
+    for i in tqdm(list(range(num_frames))):
+        dat_raw = get_single_volume(vid_fname, i, num_slices)
+        preprocessed_dat[i,...] = perform_preprocessing(dat_raw, p)
+
+    vid_opt = {'fps':config['dataset_params']['fps']}
+
+    # num_crop_slices = config['training_data_2d']['num_crop_slices']
+    # all_center_slices = config['training_data_2d']['all_center_slices']
+    # if DEBUG:
+    #     all_center_slices = [all_center_slices[0]]
+
+    # vid_opt = {'frame_height': frame_height,
+    #            'frame_width': frame_width,
+    #            'out_dtype': 'uint8',
+    #            'flip_x': False,
+    #            'video_fname': vid_fname}
+    # # Do not take the start volume, becuase we want to write the full video
+    # vid_opt['num_slices'] = config['dataset_params']['num_slices']
+    # vid_opt['fps'] = config['dataset_params']['fps']
+    # # vid_opt['alpha'] = config['dataset_params']['fps']
+    # vid_opt['start_volume'] = 0
+    # vid_opt['verbose'] = 1
+    # if DEBUG:
+    #     # Make a much shorter video
+    #     vid_opt['num_frames'] = which_frames[-1] + 1
     # vid_opt.update(config['dataset_params'])
     # del vid_opt['red_and_green_mirrored'] # Extra unneeded parameter
+    #
+    # def get_which_slices(center_slice, num_crop_slices):
+    #     return list( get_crop_coords3d((0,0,center_slice),
+    #                             (1,1,num_crop_slices) )[-1] )
 
-    def get_which_slices(center_slice, num_crop_slices):
-        return list( get_crop_coords3d((0,0,center_slice),
-                                (1,1,num_crop_slices) )[-1] )
+    ########################
+    # Initialize the DLC projects
+    ########################
     # Get dlc project and naming options
     dlc_opt = {'task_name': task_name,
                'experimenter': scorer,
@@ -363,14 +383,15 @@ def create_dlc_training_from_tracklets(vid_fname,
     all_dlc_configs = []
     for center in all_center_slices:
         # Make minimax video from btf
-        which_z_slices = get_which_slices(center, num_crop_slices)
-        vid_opt['which_slices'] = which_z_slices
+        # which_z_slices = get_which_slices(center, num_crop_slices)
+        # vid_opt['which_slices'] = which_z_slices
         this_avi_fname = f"s{which_z_slices[0]}_{which_z_slices[-1]}.avi"
         vid_opt['out_fname'] = this_avi_fname
         if os.path.exists(this_avi_fname):
             print(f"Using video at: {this_avi_fname}")
         else:
-            write_video_projection_from_ome_file_subset(**vid_opt)
+            write_numpy_as_avi(preprocessed_dat[:,center,...], **vid_opt)
+            # write_video_projection_from_ome_file_subset(**vid_opt)
         # Make dlc project
         dlc_opt['label'] = f"-c{center}"
         dlc_opt['video_path'] = this_avi_fname
