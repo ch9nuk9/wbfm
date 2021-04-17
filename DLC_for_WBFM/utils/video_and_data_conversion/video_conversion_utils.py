@@ -317,6 +317,8 @@ def write_video_projection_from_ome_file_subset(video_fname,
 def write_numpy_as_avi(data,
                        out_fname="output.avi",
                        fps=10,
+                       frame_width=608,
+                       frame_height=610,
                        is_color=False,
                        verbose=0):
     """
@@ -335,10 +337,11 @@ def write_numpy_as_avi(data,
     if verbose >= 1:
         print("Writing to {}".format(out_fname))
 
-    sz = data.shape
+    # sz = data.shape
     # Set up the video writer
     # writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=isColor)
-    opt = {'fourcc':0, 'fps':fps, 'isColor':is_color, 'frameSize':(sz[2],sz[1])}
+    opt = {'fourcc':0, 'fps':fps, 'isColor':is_color,
+           'frameSize':(frame_width,frame_height)}
     try:
         writer = cv2.VideoWriter(out_fname, **opt)
         for i_frame in range(sz[0]):

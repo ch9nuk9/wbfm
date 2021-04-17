@@ -280,6 +280,31 @@ def training_data_from_annotations(vid_fname,
     return new_dlc_df
 
 
+#
+def update_pose_config(dlc_config_fname, updates):
+    # Copied from: https://github.com/DeepLabCut/DeepLabCut/blob/master/examples/testscript.py
+    cfg = auxiliaryfunctions.read_config(dlc_config_fname)
+
+    posefile = os.path.join(
+        cfg["project_path"],
+        "dlc-models/iteration-"
+        + str(cfg["iteration"])
+        + "/"
+        + cfg["Task"]
+        + cfg["date"]
+        + "-trainset"
+        + str(int(cfg["TrainingFraction"][0] * 100))
+        + "shuffle"
+        + str(1),
+        "train/pose_cfg.yaml",
+    )
+
+    pose_config = auxiliaryfunctions.read_plainconfig(posefile)
+    pose_config.update(updates)
+
+    auxiliaryfunctions.write_plainconfig(posefile, pose_config)
+
+
 ###
 ### For use with training a stack of DLC (step 3 of pipeline)
 ###
@@ -342,8 +367,9 @@ def create_dlc_training_from_tracklets(vid_fname,
         else:
             preprocessed_dat[i,...] = dat_raw
 
-
-    vid_opt = {'fps':config['dataset_params']['fps']}
+    vid_opt = {'fps':config['dataset_params']['fps'],
+               'frame_height': sz[0],
+               'frame_width': sz[1]}
 
     # num_crop_slices = config['training_data_2d']['num_crop_slices']
     all_center_slices = config['training_data_2d']['all_center_slices']
@@ -390,6 +416,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     # Connecting these frames to a network architecture
     net_opt = {'net_type': "resnet_50", #'mobilenet_v2_0.35' #'resnet_50'
                'augmenter_type': "default"}  # = imgaug
+    pose_opt = {} #TODO
     # Actually make projects
     all_avi_fnames = []
     all_dlc_configs = []
@@ -415,6 +442,7 @@ def create_dlc_training_from_tracklets(vid_fname,
         training_data_from_annotations(**png_opt)
         # Format the training data
         deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
+        update_pose_config(this_dlc_config, pose_opt)
         # Save to list
         all_avi_fnames.append(this_avi_fname)
         all_dlc_configs.append(this_dlc_config)
