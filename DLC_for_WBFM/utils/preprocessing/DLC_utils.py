@@ -3,7 +3,7 @@ from deeplabcut.utils import auxiliaryfunctions
 from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTracking, save_config
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_video_projection_from_ome_file_subset
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
-from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, build_relative_imagenames
+from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, build_relative_imagenames, save_dlc_annotations
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 import pandas as pd
@@ -91,7 +91,8 @@ def build_png_training_data(dlc_config,
     """
 
     # Get the file names
-    out = build_relative_imagenames(video_fname, num_frames=len(which_frames))
+    name_opt = {'file_ext': 'avi', 'num_frames': len(which_frames)}
+    out = build_relative_imagenames(video_fname, **name_opt)
     relative_imagenames, subfolder_name = out
 
     # Initilize the training data subfolder
@@ -102,18 +103,13 @@ def build_png_training_data(dlc_config,
         os.mkdir(full_subfolder_name)
 
     # Write the png files
-    video_reader = pims.PyAVVideoReader(video_fname)
-
-    if verbose >= 1:
-        print('Writing png files...')
-    for i, rel_fname in tqdm(zip(which_frames, relative_imagenames), total=len(which_frames)):
-        # zzz dat = c.get_single_volume(i)
-        dat = video_reader[i]
-        fname = os.path.join(project_folder, rel_fname)
-        skio.imsave(fname, dat)
-        # frame = PIL.Frame(dat)
-        # frame.write(fname)
-        # zzz tifffile.imwrite(fname, dat)
+    with pims.PyAVVideoReader(video_fname) as video_reader:
+        if verbose >= 1:
+            print('Writing png files...')
+        for i, rel_fname in tqdm(zip(which_frames, relative_imagenames), total=len(which_frames)):
+            dat = video_reader[i]
+            fname = os.path.join(project_folder, rel_fname)
+            skio.imsave(fname, dat)
 
     if verbose >= 1:
         print(f"{len(which_frames)} tif files written in project {full_subfolder_name}")
@@ -204,12 +200,12 @@ def training_data_from_annotations(vid_fname,
         return None
 
     # Save annotations using DLC-style names
-    proj_dir = Path(dlc_config_fname).parent
-    img_subfolder_name = proj_dir.joinpath('labeled-data').joinpath(vid_fname)
+    data_dir = Path(dlc_config_fname).parent.joinpath('labeled-data')
+    img_subfolder_name = data_dir.joinpath(Path(vid_fname).stem)
     opt = {'project_folder':str(img_subfolder_name)}
     # TODO: do not use just config
-    out = save_dlc_annotations(scorer, df_fname, new_dlc_df, **opt)[0]
-    build_dlc_name = out
+    save_dlc_annotations(scorer, df_fname, new_dlc_df, **opt)[0]
+    # build_dlc_name = out
 
     # synchronize_config_files(c, build_dlc_name,
     #                          dummy_subfolder=full_subfolder_name,
@@ -298,7 +294,7 @@ def create_dlc_training_from_tracklets(vid_fname,
         # Make minimax video from btf
         which_z_slices = get_which_slices(center, num_crop_slices)
         vid_opt['which_slices'] = which_z_slices
-        this_avi_fname = f"slices{which_z_slices[0]}_{which_z_slices[-1]}.avi"
+        this_avi_fname = f"s{which_z_slices[0]}_{which_z_slices[-1]}.avi"
         vid_opt['out_fname'] = this_avi_fname
         write_video_projection_from_ome_file_subset(**vid_opt)
         # Make dlc project
@@ -315,7 +311,7 @@ def create_dlc_training_from_tracklets(vid_fname,
         all_dlc_configs.append(this_dlc_config)
 
     # Then delete the created avis because they are copied into the DLC folder
-    [os.remove(f) for f in all_avi_fnames]
+    # [os.remove(f) for f in all_avi_fnames]
 
     # Save list of dlc config names
     config['dlc_projects']['all_configs'] = all_dlc_configs

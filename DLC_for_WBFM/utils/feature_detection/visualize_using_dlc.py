@@ -176,7 +176,7 @@ def make_labeled_video_custom_annotations(dlc_config,
 ## Utilities for saving intermediate DLC products
 ##
 
-def save_dlc_annotations(scorer, df_fname, c, new_dlc_df, project_folder=None):
+def save_dlc_annotations(scorer, df_fname, new_dlc_df, project_folder=None, c=None):
 
     if project_folder is None:
         project_folder = c.get_dirname()
@@ -280,7 +280,7 @@ def create_video_from_annotations(config, df_fname,
         return None
 
     # Save annotations using DLC-style names, and update the config files
-    build_dlc_name = save_dlc_annotations(scorer, df_fname, c, new_dlc_df)[0]
+    build_dlc_name = save_dlc_annotations(scorer, df_fname, new_dlc_df, c=c)[0]
     synchronize_config_files(c, build_dlc_name, num_dims=len(coord_names)-1)
 
     # Finally, make the video
@@ -477,13 +477,16 @@ def build_subset_df(clust_df, which_frames,
     return out_df
 
 
-def build_relative_imagenames(raw_video_fname, png_fnames=None, num_frames=None):
+def build_relative_imagenames(raw_video_fname,
+                              png_fnames=None,
+                              num_frames=None,
+                              file_ext='tif'):
 
     if png_fnames is None and num_frames is None:
         print("Error: one of png_fnames or num_frames must be passed")
         raise ValueError
     if png_fnames is None:
-        png_fnames = [f'img{i}.tif' for i in range(num_frames)]
+        png_fnames = [f'img{i}.{file_ext}' for i in range(num_frames)]
 
     relative_imagenames = []
     folder_name = os.path.join('labeled-data',os.path.basename(raw_video_fname)[:8])
