@@ -41,7 +41,7 @@ def initialize_dlc_stack(_config, _run):
     opt = {}
     opt['scorer'] = _config['project_cfg']['experimenter']
     opt['task_name'] = _config['project_cfg']['experimenter']
-    opt['verbose'] = _config['project_cfg']['verbose']
+    opt['verbose'] = _config['project_cfg']['other']['verbose']
     opt['DEBUG'] = _config['DEBUG']
 
     with safe_cd(_config['project_dir']):

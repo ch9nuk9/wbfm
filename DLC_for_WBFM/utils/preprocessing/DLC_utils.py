@@ -328,7 +328,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     num_slices = config['dataset_params']['num_slices']
     if DEBUG:
         # Make a much shorter video
-        num_frames = which_frames[-1] + 1
+        num_total_frames = which_frames[-1] + 1
     preprocessed_dat = np.zeros((num_frames,num_slices) + sz)
 
     # Load data and preprocess
