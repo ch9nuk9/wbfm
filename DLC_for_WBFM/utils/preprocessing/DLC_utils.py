@@ -320,8 +320,6 @@ def create_dlc_training_from_tracklets(vid_fname,
     # TODO: for now, requires re-preprocessing
 
     # Get the video options
-    with tifffile.TiffFile(vid_fname) as tif:
-        sz = tif.pages[0].shape
     p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
     start_volume = config['dataset_params']['start_volume']
     num_total_frames = start_volume + config['dataset_params']['num_frames']
@@ -329,7 +327,9 @@ def create_dlc_training_from_tracklets(vid_fname,
     if DEBUG:
         # Make a much shorter video
         num_total_frames = which_frames[-1] + 1
-    preprocessed_dat = np.zeros((num_frames,num_slices) + sz)
+    with tifffile.TiffFile(vid_fname) as tif:
+        sz = tif.pages[0].shape
+    preprocessed_dat = np.zeros((num_total_frames,num_slices) + sz)
 
     # Load data and preprocess
     if verbose >= 1:
@@ -387,6 +387,9 @@ def create_dlc_training_from_tracklets(vid_fname,
     png_opt['coord_names'] = ['x','y']
     png_opt['which_frames'] = config['training_data_3d']['which_frames']
     png_opt['max_z_dist_for_traces'] = config['training_data_2d']['max_z_dist_for_traces']
+    # Connecting these frames to a network architecture
+    net_opt = {'net_type': "resnet_50", #'mobilenet_v2_0.35' #'resnet_50'
+               'augmenter_type': "default"}  # = imgaug
     # Actually make projects
     all_avi_fnames = []
     all_dlc_configs = []
@@ -394,7 +397,7 @@ def create_dlc_training_from_tracklets(vid_fname,
         # Make minimax video from btf
         # which_z_slices = get_which_slices(center, num_crop_slices)
         # vid_opt['which_slices'] = which_z_slices
-        this_avi_fname = f"s{which_z_slices[0]}_{which_z_slices[-1]}.avi"
+        this_avi_fname = f"center{center}.avi" # SHOULD NOT BE >8 CHAR (without .avi)
         vid_opt['out_fname'] = this_avi_fname
         if os.path.exists(this_avi_fname):
             print(f"Using video at: {this_avi_fname}")
@@ -410,12 +413,15 @@ def create_dlc_training_from_tracklets(vid_fname,
         png_opt['dlc_config_fname'] = this_dlc_config
         png_opt['vid_fname'] = this_avi_fname
         training_data_from_annotations(**png_opt)
+        # Format the training data
+        deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
         # Save to list
         all_avi_fnames.append(this_avi_fname)
         all_dlc_configs.append(this_dlc_config)
 
     # Then delete the created avis because they are copied into the DLC folder
     # [os.remove(f) for f in all_avi_fnames]
+
 
     # Save list of dlc config names
     config['dlc_projects']['all_configs'] = all_dlc_configs
