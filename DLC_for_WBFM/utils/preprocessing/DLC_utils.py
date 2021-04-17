@@ -1,5 +1,8 @@
 import deeplabcut
 from deeplabcut.utils import auxiliaryfunctions
+# from deeplabcut.utils.auxfun_videos import VideoReader
+from deeplabcut.generate_training_dataset.frame_extraction import extract_frames
+
 from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTracking, save_config
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_video_projection_from_ome_file_subset
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
@@ -79,7 +82,41 @@ def create_dlc_project(task_name,
     return dlc_config_fname
 
 
-def build_png_training_data(dlc_config,
+def build_png_training_data(dlc_config, which_frames, verbose=0):
+    """
+    build_png_training_data_custom, but just uses the deeplabcut function directly
+
+    see extract_frames() in deeplabcut
+    """
+
+    # Make sure that the config file is synchronized with "which_frames" arg
+    updates = {'numframes2pick': len(which_frames),
+               'start': which_frames[0],
+               'stop': which_frames[-1]+1} # CHECK
+    auxiliaryfunctions.edit_config(dlc_config, updates)
+
+    # Actually extract
+    extract_opt = dict(algo="uniform",
+                       userfeedback=False)
+    extract_frames(dlc_config, **extract_opt)
+
+    # Get the filenames to match with old api
+    dlc_folder = Path(dlc_config).parent
+    full_subfolder_name = list(dlc_folder.iterdir())
+    assert len(full_subfolder_name)==1, "Found more than one subfolder..."
+    full_subfolder_name = full_subfolder_name[0]
+    relative_imagenames = list(relative_imagenames.iterdir())
+    assert len(relative_imagenames)==len(which_frames)
+    full_subfolder_name = str(full_subfolder_name)
+    relative_imagenames = [str(im) for im in relative_imagenames]
+    if verbose >= 1:
+        print(f"Extracted images in subfolder {full_subfolder_name}:")
+        print(f"{relative_imagenames}")
+
+    return relative_imagenames, full_subfolder_name
+
+
+def build_png_training_data_custom(dlc_config,
                             video_fname,
                             which_frames,
                             verbose=0):
@@ -112,7 +149,7 @@ def build_png_training_data(dlc_config,
             skio.imsave(fname, dat)
 
     if verbose >= 1:
-        print(f"{len(which_frames)} tif files written in project {full_subfolder_name}")
+        print(f"{len(which_frames)} png files written in project {full_subfolder_name}")
 
     return relative_imagenames, full_subfolder_name
 
@@ -181,9 +218,11 @@ def training_data_from_annotations(vid_fname,
     subset_df = build_subset_df(clust_df, which_frames, **subset_opt)
 
     # TODO: Save the individual png files
+    # png_opt = {'dlc_config': dlc_config_fname,
+    #            'video_fname': vid_fname,
+    #            'which_frames': which_frames}
     png_opt = {'dlc_config': dlc_config_fname,
-               'video_fname': vid_fname,
-               'which_frames': which_frames}
+              'which_frames': which_frames}
     out = build_png_training_data(**png_opt)
     relative_imagenames, full_subfolder_name = out
 
@@ -301,7 +340,7 @@ def create_dlc_training_from_tracklets(vid_fname,
         dlc_opt['label'] = f"-c{center}"
         dlc_opt['video_path'] = this_avi_fname
         this_dlc_config = create_dlc_project(**dlc_opt)
-        # Training frames
+        # Training frame extraction
         png_opt['which_z'] = center
         png_opt['dlc_config_fname'] = this_dlc_config
         png_opt['vid_fname'] = this_avi_fname
