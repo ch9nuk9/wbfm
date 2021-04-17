@@ -352,7 +352,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     png_opt['df_fname'] = df
     png_opt['scorer'] = scorer
     png_opt['total_num_frames'] = config['dataset_params']['num_frames']
-    png_opt['coord_names'] = ['x','y','likelihood']
+    png_opt['coord_names'] = ['x','y']
     png_opt['which_frames'] = config['training_data_3d']['which_frames']
     png_opt['max_z_dist_for_traces'] = config['training_data_2d']['max_z_dist_for_traces']
     # Actually make projects
@@ -364,8 +364,10 @@ def create_dlc_training_from_tracklets(vid_fname,
         vid_opt['which_slices'] = which_z_slices
         this_avi_fname = f"s{which_z_slices[0]}_{which_z_slices[-1]}.avi"
         vid_opt['out_fname'] = this_avi_fname
-        # TODO: Write whole video?
-        write_video_projection_from_ome_file_subset(**vid_opt)
+        if os.path.exists(this_avi_fname):
+            print(f"Using video at: {this_avi_fname}")
+        else:
+            write_video_projection_from_ome_file_subset(**vid_opt)
         # Make dlc project
         dlc_opt['label'] = f"-c{center}"
         dlc_opt['video_path'] = this_avi_fname
