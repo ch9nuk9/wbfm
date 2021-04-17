@@ -298,6 +298,8 @@ def write_video_projection_from_ome_file_subset(video_fname,
                 i_frame_count += 1
 
             if num_frames is not None and i_frame_count > num_frames: break
+    if verbose >= 1:
+        print(f"Finished writing {i_frame_count} frames to {video_fname}")
     video_out.release()
 
 
