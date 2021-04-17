@@ -290,7 +290,7 @@ def write_video_projection_from_ome_file_subset(video_fname,
 
             if i_slice_raw == end_of_each_frame:
                 # Take a mini-max projection
-                final_img = np.max((alpha*img_tmp), axis=0).astype('uint8')
+                final_img = np.max((alpha*img_tmp), axis=0).astype(out_dtype)
                 if flip_x:
                     # gcamp and mcherry are mirrored in the WBFM setup
                     final_img = np.flip(final_img, axis=1)
