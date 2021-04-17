@@ -317,7 +317,8 @@ def write_video_projection_from_ome_file_subset(video_fname,
 def write_numpy_as_avi(data,
                        out_fname="output.avi",
                        fps=10,
-                       is_color=False):
+                       is_color=False,
+                       verbose=0):
     """
     Assumes shape TXYC
 
@@ -338,13 +339,16 @@ def write_numpy_as_avi(data,
     # Set up the video writer
     # writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=isColor)
     opt = {'fourcc':0, 'fps':fps, 'isColor':is_color, 'frameSize':(sz[2],sz[1])}
-    with cv2.VideoWriter(out_fname, **opt) as writer:
+    try:
+        writer = cv2.VideoWriter(out_fname, **opt)
         for i_frame in range(sz[0]):
             f = data[i_frame,...].astype('uint8')
             writer.write(f)
             # if verbose >= 2:
             #     if i_frame%10 == 0:
             #         print("Writing frame {}/{}".format(i_frame, sz[0]))
+    finally:
+        writer.release()
 
     if verbose >= 1:
         print("Finished")
