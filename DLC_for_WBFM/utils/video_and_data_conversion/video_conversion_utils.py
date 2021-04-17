@@ -234,7 +234,7 @@ def write_video_projection_from_ome_file_subset(video_fname,
                                                 frame_width=608,
                                                 frame_height=610,
                                                 num_slices=33,
-                                                alpha=1.0,
+                                                alpha=None,
                                                 flip_x=False,
                                                 verbose=0):
     """
@@ -281,7 +281,7 @@ def write_video_projection_from_ome_file_subset(video_fname,
             i_slice_raw = i_page % num_slices
             i_slice_tmp = i_slice_raw - start_of_each_frame
             # Skip some frames
-            if i_page < start_volume or i_slice_raw not in which_slices:
+            if (i_page < start_volume) or (i_slice_raw not in which_slices):
                 continue
             if verbose >= 2:
                 print(f'Page {i_page}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {i_slice_tmp}')
@@ -290,7 +290,11 @@ def write_video_projection_from_ome_file_subset(video_fname,
 
             if i_slice_raw == end_of_each_frame:
                 # Take a mini-max projection
-                final_img = np.max((alpha*img_tmp), axis=0).astype(out_dtype)
+                if alpha is not None:
+                    img_tmp *= alpha
+                final_img = np.max(img_tmp, axis=0).astype('uint8')
+                # final_img = np.max(img_tmp, axis=0).astype(out_dtype)
+                # final_img = np.max((alpha*img_tmp), axis=0).astype(out_dtype)
                 if flip_x:
                     # gcamp and mcherry are mirrored in the WBFM setup
                     final_img = np.flip(final_img, axis=1)
@@ -299,7 +303,7 @@ def write_video_projection_from_ome_file_subset(video_fname,
 
             if num_frames is not None and i_frame_count > num_frames: break
     if verbose >= 1:
-        print(f"Finished writing {i_frame_count} frames to {video_fname}")
+        print(f"Finished writing {i_frame_count} frames to {out_fname}")
     video_out.release()
 
 

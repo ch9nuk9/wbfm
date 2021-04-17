@@ -336,6 +336,9 @@ def create_dlc_training_from_tracklets(vid_fname,
     vid_opt['fps'] = config['dataset_params']['fps']
     vid_opt['start_volume'] = 0
     vid_opt['verbose'] = 1
+    if DEBUG:
+        # Make a much shorter video
+        vid_opt['num_frames'] = which_frames[-1] + 1
     # vid_opt.update(config['dataset_params'])
     # del vid_opt['red_and_green_mirrored'] # Extra unneeded parameter
 
