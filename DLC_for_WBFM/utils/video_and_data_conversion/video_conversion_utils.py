@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import platform
 import cv2
-from DLC_for_WBFM.bin.configuration_definition import *
+from DLC_for_WBFM.bin.configuration_definition import load_config, build_avi_fnames
 from tqdm import tqdm
 
 import warnings
@@ -314,42 +314,37 @@ def write_video_projection_from_ome_file_subset(video_fname,
 # Following:
 #  https://stackoverflow.com/questions/29317262/opencv-video-saving-in-python/45868817
 # Note: I'm not using the main answer, as that's for a captured video stream, not just an array
-def write_numpy_as_avi(data, fname="output.avi", fps=10, dtype='uint16', alpha=None, isColor=False):
+def write_numpy_as_avi(data,
+                       out_fname="output.avi",
+                       fps=10,
+                       is_color=False):
     """
-    Must have a numpy array (or hdf5 file?) named 'data'
-    Frames should be stored in the first axis of 'data'
+    Assumes shape TXYC
 
-    Note: converts from uint16, if needed, by dividing by:
-        alpha = np.max(data) / 255
-        unless alpha is passed
+    Can only write uint8 for now
+
+    Assumes all preprocessing is already done
 
     Assumes color is the last dimension; checks for this
 
     Input-Output:
         np.array() -> .avi
     """
-    if ".avi" not in fname:
-        fname = fname + ".avi"
 
-    # Make sure the whole range is used
-    if alpha is None:
-        alpha = np.max(data)/255.0 # Conversion from uint16 to uint8
-    data = data*alpha
+    if verbose >= 1:
+        print("Writing to {}".format(out_fname))
 
-    print("Writing to {}".format(fname))
     sz = data.shape
-    writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=isColor)
+    # Set up the video writer
+    # writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=isColor)
+    opt = {'fourcc':0, 'fps':fps, 'isColor':is_color, 'frameSize':(sz[2],sz[1])}
+    with cv2.VideoWriter(out_fname, **opt) as writer:
+        for i_frame in range(sz[0]):
+            f = data[i_frame,...].astype('uint8')
+            writer.write(f)
+            # if verbose >= 2:
+            #     if i_frame%10 == 0:
+            #         print("Writing frame {}/{}".format(i_frame, sz[0]))
 
-    for i_frame in range(sz[0]):
-        f = data[i_frame,...].astype('uint8')
-#         f = cv2.cvtColor(data[i_frame,...].astype(dtype),cv2.COLOR_GRAY2BGR)
-#         f = ((f-np.min(f))/np.max(f)*255.0).astype('uint8')
-#         if dtype is 'uint16':
-#             f = (f/255.0).astype('uint8')
-        writer.write(f)
-#         writer.write(cv2.convertScaleAbs(f))
-        if i_frame%10 == 0:
-            print("Writing frame {}/{}".format(i_frame, sz[0]))
-
-    writer.release()
-    print("Finished")
+    if verbose >= 1:
+        print("Finished")
