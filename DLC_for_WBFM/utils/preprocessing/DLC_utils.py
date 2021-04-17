@@ -288,6 +288,7 @@ def create_dlc_training_from_tracklets(vid_fname,
                                        config,
                                        scorer=None,
                                        task_name=None,
+                                       verbose=0,
                                        DEBUG=False):
 
     ########################
@@ -322,7 +323,8 @@ def create_dlc_training_from_tracklets(vid_fname,
     with tifffile.TiffFile(vid_fname) as tif:
         sz = tif.pages[0].shape
     p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
-    num_frames = config['dataset_params']['start_volume'] + config['dataset_params']['num_frames']
+    start_volume = config['dataset_params']['start_volume']
+    num_total_frames = start_volume + config['dataset_params']['num_frames']
     num_slices = config['dataset_params']['num_slices']
     if DEBUG:
         # Make a much shorter video
@@ -330,16 +332,23 @@ def create_dlc_training_from_tracklets(vid_fname,
     preprocessed_dat = np.zeros((num_frames,num_slices) + sz)
 
     # Load data and preprocess
-    for i in tqdm(list(range(num_frames))):
+    if verbose >= 1:
+        print("Preprocessing data, this could take a while...")
+    for i in tqdm(list(range(num_total_frames))):
         dat_raw = get_single_volume(vid_fname, i, num_slices)
-        preprocessed_dat[i,...] = perform_preprocessing(dat_raw, p)
+        # Don't preprocess data that we didn't even segment!
+        if i >= start_volume:
+            preprocessed_dat[i,...] = perform_preprocessing(dat_raw, p)
+        else:
+            preprocessed_dat[i,...] = dat_raw
+
 
     vid_opt = {'fps':config['dataset_params']['fps']}
 
     # num_crop_slices = config['training_data_2d']['num_crop_slices']
-    # all_center_slices = config['training_data_2d']['all_center_slices']
-    # if DEBUG:
-    #     all_center_slices = [all_center_slices[0]]
+    all_center_slices = config['training_data_2d']['all_center_slices']
+    if DEBUG:
+        all_center_slices = [all_center_slices[0]]
 
     # vid_opt = {'frame_height': frame_height,
     #            'frame_width': frame_width,
