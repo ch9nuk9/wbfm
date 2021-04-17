@@ -106,7 +106,9 @@ def build_png_training_data(dlc_config, which_frames, verbose=0):
 
     # Now, extracting images
     output_path = Path(dlc_config).parents[0] / "labeled-data" / fname.stem
-    relative_imagenames = imsave_all_frames(cap, output_path, which_frames)
+    full_imagenames = imsave_all_frames(cap, output_path, which_frames)
+    dlc_dir = Path(dlc_config).parent
+    relative_imagenames = [str(im.relative_to(dlc_dir)) for im in full_imagenames]
 
     # Get the filenames to match with old api
     # dlc_folder = Path(dlc_config).parent
