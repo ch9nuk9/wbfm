@@ -1,7 +1,6 @@
 import deeplabcut
 from deeplabcut.utils import auxiliaryfunctions
-# from deeplabcut.utils.auxfun_videos import VideoReader
-from deeplabcut.generate_training_dataset.frame_extraction import extract_frames
+# from deeplabcut.generate_training_dataset.frame_extraction import extract_frames
 
 from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTracking, save_config
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_video_projection_from_ome_file_subset
@@ -13,9 +12,10 @@ import pandas as pd
 import numpy as np
 import tifffile
 from pathlib import Path
-import pims
+# import pims
 # import PIL
-import skimage.io as skio
+from skimage import io
+from skimage.util import img_as_ubyte
 import os
 from tqdm import tqdm
 
@@ -84,37 +84,63 @@ def create_dlc_project(task_name,
 
 def build_png_training_data(dlc_config, which_frames, verbose=0):
     """
-    build_png_training_data_custom, but just uses the deeplabcut function directly
+    build_png_training_data_custom, but similar to the deeplabcut function
 
     see extract_frames() in deeplabcut
     """
 
-    # Make sure that the config file is synchronized with "which_frames" arg
-    updates = {'numframes2pick': len(which_frames),
-               'start': which_frames[0],
-               'stop': which_frames[-1]+1} # CHECK
-    auxiliaryfunctions.edit_config(dlc_config, updates)
+    # Open video
+    cfg = auxiliaryfunctions.read_config(dlc_config)
+    videos = cfg.get("video_sets_original") or cfg["video_sets"]
+    assert len(videos)==1, "Only supports a single video"
+    video = list(videos.keys())[0]
 
-    # Actually extract
-    extract_opt = dict(algo="uniform",
-                       userfeedback=False)
-    extract_frames(dlc_config, **extract_opt)
+    # For some reason this import fails at the top of the script...
+    from deeplabcut.utils.auxfun_videos import VideoReader
+    cap = VideoReader(video)
+    fname = Path(video)
+
+    if not len(cap):
+        print("Video could not be opened. Aborting...")
+        raise FileNotFoundError
+
+    # Now, extracting images
+    output_path = Path(dlc_config).parents[0] / "labeled-data" / fname.stem
+    relative_imagenames = imsave_all_frames(cap, output_path, which_frames)
 
     # Get the filenames to match with old api
-    dlc_folder = Path(dlc_config).parent
-    full_subfolder_name = list(dlc_folder.iterdir())
-    assert len(full_subfolder_name)==1, "Found more than one subfolder..."
-    full_subfolder_name = full_subfolder_name[0]
-    relative_imagenames = list(relative_imagenames.iterdir())
-    assert len(relative_imagenames)==len(which_frames)
-    full_subfolder_name = str(full_subfolder_name)
-    relative_imagenames = [str(im) for im in relative_imagenames]
+    # dlc_folder = Path(dlc_config).parent
+    # full_subfolder_name = list(dlc_folder.iterdir())
+    # assert len(full_subfolder_name)==1, "Found more than one subfolder..."
+    # full_subfolder_name = full_subfolder_name[0]
+    # relative_imagenames = list(relative_imagenames.iterdir())
+    # assert len(relative_imagenames)==len(which_frames)
+    # full_subfolder_name = str(full_subfolder_name)
+    # relative_imagenames = [str(im) for im in relative_imagenames]
     if verbose >= 1:
         print(f"Extracted images in subfolder {full_subfolder_name}:")
         print(f"{relative_imagenames}")
 
-    return relative_imagenames, full_subfolder_name
+    return relative_imagenames, output_path
 
+
+def imsave_all_frames(cap, output_path, which_frames):
+    all_img_names = []
+    for i, index in enumerate(which_frames):
+        cap.set_to_frame(index)  # extract a particular frame
+        frame = cap.read_frame()
+        if frame is not None:
+            image = img_as_ubyte(frame)
+            img_name = output_path.joinpath(f"img{i}.png")
+            all_img_names.append(img_name)
+            # img_name = (
+            #     str(output_path)
+            #     + "/img"
+            #     + str(index).zfill(indexlength)
+            #     + ".png"
+            # )
+            io.imsave(img_name, image)
+    return all_img_names
 
 def build_png_training_data_custom(dlc_config,
                             video_fname,
