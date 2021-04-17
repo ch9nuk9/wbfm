@@ -190,7 +190,6 @@ def training_data_from_annotations(vid_fname,
                                    which_z,
                                    dlc_config_fname,
                                    max_z_dist_for_traces=2,
-                                   scorer=None,
                                    total_num_frames=500,
                                    coord_names=None,
                                    preprocessing_settings=None,
@@ -257,12 +256,14 @@ def training_data_from_annotations(vid_fname,
     relative_imagenames, full_subfolder_name = out
 
     # Cast the dataframe in DLC format
+    cfg = auxiliaryfunctions.read_config(dlc_config_fname)
     opt = {'min_length':0,
            'num_frames':total_num_frames,
            'coord_names':coord_names,
            'verbose':verbose,
            'relative_imagenames':relative_imagenames,
-           'which_frame_subset':which_frames}
+           'which_frame_subset':which_frames,
+           'scorer': cfg['scorer']}
     new_dlc_df = build_dlc_annotation_all(subset_df, **opt)
     if new_dlc_df is None:
         print("Found no tracks long enough; aborting")
@@ -272,7 +273,7 @@ def training_data_from_annotations(vid_fname,
     data_dir = Path(dlc_config_fname).parent.joinpath('labeled-data')
     img_subfolder_name = data_dir.joinpath(Path(vid_fname).stem)
     opt = {'project_folder':str(img_subfolder_name)}
-    save_dlc_annotations(scorer[0], df_fname, new_dlc_df, **opt)
+    save_dlc_annotations(cfg['scorer'], df_fname, new_dlc_df, **opt)
 
     # Optional: plot the annotations on top of the frames
     deeplabcut.check_labels(dlc_config_fname)
@@ -360,7 +361,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     if verbose >= 1:
         print("Preprocessing data, this could take a while...")
     for i in tqdm(list(range(num_total_frames))):
-        dat_raw = get_single_volume(vid_fname, i, num_slices)
+        dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
         # Don't preprocess data that we didn't even segment!
         if i >= start_volume:
             preprocessed_dat[i,...] = perform_preprocessing(dat_raw, p)
@@ -386,7 +387,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     # Get a few frames as training data
     png_opt = {}
     png_opt['df_fname'] = df
-    png_opt['scorer'] = scorer
+    # png_opt['scorer'] = scorer
     png_opt['total_num_frames'] = config['dataset_params']['num_frames']
     png_opt['coord_names'] = ['x','y']
     png_opt['which_frames'] = config['training_data_3d']['which_frames']

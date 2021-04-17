@@ -21,6 +21,7 @@ def build_dlc_annotation_one_tracklet(row,
                                       num_frames=1000,
                                       coord_names=None,
                                       which_frame_subset=None,
+                                      scorer=None,
                                       min_length=5,
                                       neuron_ind=1,
                                       relative_imagenames=None,
@@ -35,7 +36,8 @@ def build_dlc_annotation_one_tracklet(row,
     # TODO: Check z
 
     # Variables to be written
-    scorer = 'feature_tracker'
+    if scorer is None:
+        scorer = 'feature_tracker'
     if relative_imagenames is None:
         # Just frame number
         index = list(range(num_frames))
@@ -81,11 +83,14 @@ def build_dlc_annotation_one_tracklet(row,
 
 
 def build_dlc_annotation_all(clust_df, min_length, num_frames=1000,
-                             coord_names=['x','y','likelihood'],
+                             coord_names=None,
+                             scorer=None,
                              relative_imagenames=None,
                              which_frame_subset=None,
                              verbose=1):
     new_dlc_df = None
+    if coord_names is None:
+        coord_names = ['x','y','likelihood']
     # all_bodyparts = np.asarray(clust_df['clust_ind'])
 
     neuron_ind = 1
@@ -93,7 +98,8 @@ def build_dlc_annotation_all(clust_df, min_length, num_frames=1000,
            'num_frames':num_frames,
            'coord_names':coord_names,
            'relative_imagenames':relative_imagenames,
-           'which_frame_subset':which_frame_subset}
+           'which_frame_subset':which_frame_subset,
+           'scorer':scorer}
     for i, row in tqdm(clust_df.iterrows(), total=clust_df.shape[0]):
         opt['neuron_ind'] = neuron_ind
         ind = row['clust_ind']
