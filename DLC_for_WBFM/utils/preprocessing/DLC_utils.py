@@ -268,14 +268,10 @@ def training_data_from_annotations(vid_fname,
     data_dir = Path(dlc_config_fname).parent.joinpath('labeled-data')
     img_subfolder_name = data_dir.joinpath(Path(vid_fname).stem)
     opt = {'project_folder':str(img_subfolder_name)}
-    # TODO: do not use just config
-    save_dlc_annotations(scorer, df_fname, new_dlc_df, **opt)[0]
-    # build_dlc_name = out
+    save_dlc_annotations(scorer[0], df_fname, new_dlc_df, **opt)
 
-    # synchronize_config_files(c, build_dlc_name,
-    #                          dummy_subfolder=full_subfolder_name,
-    #                          scorer=scorer,
-    #                          num_dims=len(coord_names)-1)
+    # Optional: plot the annotations on top of the frames
+    deeplabcut.check_labels(dlc_config_fname)
 
     return new_dlc_df
 
@@ -333,8 +329,13 @@ def create_dlc_training_from_tracklets(vid_fname,
                'out_dtype': 'uint16',
                'flip_x': False,
                'video_fname': vid_fname}
-    vid_opt.update(config['dataset_params'])
-    del vid_opt['red_and_green_mirrored'] # Extra unneeded parameter
+    # Do not take the start volume, becuase we want to write the full video
+    vid_opt['num_slices'] = config['dataset_params']['num_slices']
+    vid_opt['fps'] = config['dataset_params']['fps']
+    vid_opt['start_volume'] = 0
+    vid_opt['verbose'] = 1
+    # vid_opt.update(config['dataset_params'])
+    # del vid_opt['red_and_green_mirrored'] # Extra unneeded parameter
 
     def get_which_slices(center_slice, num_crop_slices):
         return list( get_crop_coords3d((0,0,center_slice),
@@ -361,6 +362,7 @@ def create_dlc_training_from_tracklets(vid_fname,
         vid_opt['which_slices'] = which_z_slices
         this_avi_fname = f"s{which_z_slices[0]}_{which_z_slices[-1]}.avi"
         vid_opt['out_fname'] = this_avi_fname
+        # TODO: Write whole video?
         write_video_projection_from_ome_file_subset(**vid_opt)
         # Make dlc project
         dlc_opt['label'] = f"-c{center}"
