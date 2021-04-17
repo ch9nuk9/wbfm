@@ -371,31 +371,9 @@ def create_dlc_training_from_tracklets(vid_fname,
                'frame_height': sz[0],
                'frame_width': sz[1]}
 
-    # num_crop_slices = config['training_data_2d']['num_crop_slices']
     all_center_slices = config['training_data_2d']['all_center_slices']
     if DEBUG:
         all_center_slices = [all_center_slices[0]]
-
-    # vid_opt = {'frame_height': frame_height,
-    #            'frame_width': frame_width,
-    #            'out_dtype': 'uint8',
-    #            'flip_x': False,
-    #            'video_fname': vid_fname}
-    # # Do not take the start volume, becuase we want to write the full video
-    # vid_opt['num_slices'] = config['dataset_params']['num_slices']
-    # vid_opt['fps'] = config['dataset_params']['fps']
-    # # vid_opt['alpha'] = config['dataset_params']['fps']
-    # vid_opt['start_volume'] = 0
-    # vid_opt['verbose'] = 1
-    # if DEBUG:
-    #     # Make a much shorter video
-    #     vid_opt['num_frames'] = which_frames[-1] + 1
-    # vid_opt.update(config['dataset_params'])
-    # del vid_opt['red_and_green_mirrored'] # Extra unneeded parameter
-    #
-    # def get_which_slices(center_slice, num_crop_slices):
-    #     return list( get_crop_coords3d((0,0,center_slice),
-    #                             (1,1,num_crop_slices) )[-1] )
 
     ########################
     # Initialize the DLC projects
@@ -449,7 +427,6 @@ def create_dlc_training_from_tracklets(vid_fname,
 
     # Then delete the created avis because they are copied into the DLC folder
     # [os.remove(f) for f in all_avi_fnames]
-
 
     # Save list of dlc config names
     config['dlc_projects']['all_configs'] = all_dlc_configs
