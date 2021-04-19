@@ -282,7 +282,7 @@ def training_data_from_annotations(vid_fname,
 
 
 #
-def update_pose_config(dlc_config_fname):
+def update_pose_config(dlc_config_fname, DEBUG=False):
     # Copied from: https://github.com/DeepLabCut/DeepLabCut/blob/master/examples/testscript.py
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
 
@@ -314,10 +314,14 @@ def update_pose_config(dlc_config_fname):
     pose_config['optimizer'] = "adam"
     pose_config['dataset_type'] = 'imgaug'
     # My changes and additions
-    pose_config['multi_step'] = [[0.005, 7500], [5e-4, 20000], [1e-4, 50000]]
-    pose_config['pos_dist_thresh'] = 7  # We have very small objects
+    if DEBUG:
+        pose_config['multi_step'] = [[0.005, 1000]]
+        pose_config['save_iters'] = 900
+    else:
+        pose_config['multi_step'] = [[0.005, 7500], [5e-4, 2e4], [1e-4, 5e4]]
+        pose_config['save_iters'] = 10000
+    pose_config['pos_dist_thresh'] = 15  # We have very small objects
     pose_config['pairwise_predict'] = False  # Our objects are consistent
-    pose_config['save_iters'] = 10000
 
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
 
