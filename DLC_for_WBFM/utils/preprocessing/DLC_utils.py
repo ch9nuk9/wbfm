@@ -122,7 +122,7 @@ def build_png_training_data(dlc_config, which_frames, verbose=0):
     # full_subfolder_name = str(full_subfolder_name)
     # relative_imagenames = [str(im) for im in relative_imagenames]
     if verbose >= 1:
-        print(f"Extracted images in subfolder {full_subfolder_name}:")
+        # print(f"Extracted images in subfolder {full_subfolder_name}:")
         print(f"{relative_imagenames}")
 
     return relative_imagenames, output_path
@@ -146,42 +146,42 @@ def imsave_all_frames(cap, output_path, which_frames):
             io.imsave(img_name, image)
     return all_img_names
 
-def build_png_training_data_custom(dlc_config,
-                            video_fname,
-                            which_frames,
-                            verbose=0):
-    """
-    Extracts a series of pngs from a full video (.avi)
-
-
-    See also: build_tif_training_data
-    """
-
-    # Get the file names
-    name_opt = {'file_ext': 'avi', 'num_frames': len(which_frames)}
-    out = build_relative_imagenames(video_fname, **name_opt)
-    relative_imagenames, subfolder_name = out
-
-    # Initilize the training data subfolder
-    dlc_config = auxiliaryfunctions.read_config(dlc_config)
-    project_folder = dlc_config['project_path']
-    full_subfolder_name = os.path.join(project_folder, subfolder_name)
-    if not os.path.isdir(full_subfolder_name):
-        os.mkdir(full_subfolder_name)
-
-    # Write the png files
-    with pims.PyAVVideoReader(video_fname) as video_reader:
-        if verbose >= 1:
-            print('Writing png files...')
-        for i, rel_fname in tqdm(zip(which_frames, relative_imagenames), total=len(which_frames)):
-            dat = video_reader[i]
-            fname = os.path.join(project_folder, rel_fname)
-            skio.imsave(fname, dat)
-
-    if verbose >= 1:
-        print(f"{len(which_frames)} png files written in project {full_subfolder_name}")
-
-    return relative_imagenames, full_subfolder_name
+# def build_png_training_data_custom(dlc_config,
+#                             video_fname,
+#                             which_frames,
+#                             verbose=0):
+#     """
+#     Extracts a series of pngs from a full video (.avi)
+#
+#
+#     See also: build_tif_training_data
+#     """
+#
+#     # Get the file names
+#     name_opt = {'file_ext': 'avi', 'num_frames': len(which_frames)}
+#     out = build_relative_imagenames(video_fname, **name_opt)
+#     relative_imagenames, subfolder_name = out
+#
+#     # Initilize the training data subfolder
+#     dlc_config = auxiliaryfunctions.read_config(dlc_config)
+#     project_folder = dlc_config['project_path']
+#     full_subfolder_name = os.path.join(project_folder, subfolder_name)
+#     if not os.path.isdir(full_subfolder_name):
+#         os.mkdir(full_subfolder_name)
+#
+#     # Write the png files
+#     with pims.PyAVVideoReader(video_fname) as video_reader:
+#         if verbose >= 1:
+#             print('Writing png files...')
+#         for i, rel_fname in tqdm(zip(which_frames, relative_imagenames), total=len(which_frames)):
+#             dat = video_reader[i]
+#             fname = os.path.join(project_folder, rel_fname)
+#             skio.imsave(fname, dat)
+#
+#     if verbose >= 1:
+#         print(f"{len(which_frames)} png files written in project {full_subfolder_name}")
+#
+#     return relative_imagenames, full_subfolder_name
 
 
 def training_data_from_annotations(vid_fname,
@@ -432,3 +432,16 @@ def create_dlc_training_from_tracklets(vid_fname,
     # Save list of dlc config names
     config['dlc_projects']['all_configs'] = all_dlc_configs
     edit_config(config['self_path'], config)
+
+
+
+def train_all_dlc_from_config(config):
+    """
+    Simple multi-network wrapper around:
+    deeplabcut.train_network()
+    """
+
+    all_dlc_configs = config['dlc_projects']['all_configs']
+
+    for dlc_config in all_dlc_configs:
+        deeplabcut.train_network(dlc_config)
