@@ -10,7 +10,6 @@ from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from collections import OrderedDict
 
 ##
 ## Helper functions for converting annotations
@@ -32,7 +31,7 @@ def build_dlc_annotation_one_tracklet(row,
     Can also be 3d if coord_names is passed as ['z', 'x', 'y', 'likelihood']
     """
     if coord_names is None:
-        coord_names = ['x','y','likelihood']
+        coord_names = ['x', 'y', 'likelihood']
     # TODO: Check z
 
     # Variables to be written
@@ -52,11 +51,11 @@ def build_dlc_annotation_one_tracklet(row,
         return None
 
     # Relies on ZXY format for this_xyz column in the original dataframe
-    coord_mapping = {'z':0, 'x':1, 'y':2}
+    coord_mapping = {'z': 0, 'x': 1, 'y': 2}
 
     # Build a dataframe for one neuron across all frames
     # Will be zeros if not detected in a given frame
-    coords = np.zeros((num_frames,len(coord_names),))
+    coords = np.zeros((num_frames, len(coord_names), ))
     for this_slice, this_xyz, this_prob in zip(row['slice_ind'], row['all_xyz'], row['all_prob']):
         # TODO: only works for xy; this_xyz is format ZXY
         for i, coord_name in enumerate(coord_names):
@@ -66,13 +65,13 @@ def build_dlc_annotation_one_tracklet(row,
             else:
                 # is non-spatial, i.e. likelihood
                 try:
-                    coords[this_slice,-1] = this_prob
+                    coords[this_slice, -1] = this_prob
                 except:
-                    coords[this_slice,-1] = 0.0
+                    coords[this_slice, -1] = 0.0
                     pass
     if which_frame_subset is not None:
         # error
-        coords = coords[which_frame_subset,:]
+        coords = coords[which_frame_subset, :]
 
     m_index = pd.MultiIndex.from_product([[scorer], [bodypart],
                                         coord_names],
@@ -196,7 +195,7 @@ def save_dlc_annotations(scorer, df_fname, new_dlc_df, project_folder=None, c=No
 
     # Build the filenames that will be written
     def build_dlc_name(ext):
-        return os.path.join(project_folder,"CollectedData_" + scorer + ext)
+        return os.path.join(project_folder, "CollectedData_" + scorer + ext)
     all_ext = [".csv", ".h5", ".pickle"]
     all_fnames = [build_dlc_name(ext) for ext in all_ext]
 
