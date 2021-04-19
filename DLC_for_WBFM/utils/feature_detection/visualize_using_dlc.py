@@ -369,9 +369,11 @@ def get_indices_full_overlap(clust_df, which_frames):
     return clust_df['slice_ind'].apply(check_frames)
 
 
-def build_subset_df(clust_df, which_frames,
+def build_subset_df(clust_df,
+                    which_frames,
                     which_z=None,
-                    max_z_dist=1):
+                    max_z_dist=1,
+                    verbose=0):
     """
     Build a dataframe that is a subset of a larger dataframe
 
@@ -441,11 +443,15 @@ def build_subset_df(clust_df, which_frames,
     # Get only the covering neurons (time)
     which_neurons = sub_df['slice_ind'].apply(check_frames)
     which_neurons_dict = which_neurons.to_dict()
-    to_keep_t = [(v is not None) for k,v in which_neurons_dict.items()]
+    to_keep_t = [(v is not None) for k, v in which_neurons_dict.items()]
+    if verbose >= 1:
+        print(f"{np.nonzero(to_keep_t)} tracklets overlap in time")
     # Get close neurons (z)
     if which_z is not None:
         to_keep_z = sub_df['all_xyz'].apply(check_z)
-        to_keep = [t and z for (t,z) in zip(to_keep_t, to_keep_z)]
+        to_keep = [t and z for (t, z) in zip(to_keep_t, to_keep_z)]
+        if verbose >= 1:
+            print(f"{np.nonzero(to_keep_z)} tracklets overlap in z")
     else:
         to_keep = to_keep_t
 
@@ -453,12 +459,14 @@ def build_subset_df(clust_df, which_frames,
         if not val:
             del which_neurons_dict[i]
     which_neurons_df = sub_df[to_keep]
+    if verbose >= 1:
+        print(f"Keeping {len(which_neurons_df)}/{len(clust_df)} tracklets")
 
     # Get only the indices of those neurons corresponding to these frames
-    names = {'all_xyz':'all_xyz_old',
-            'all_ind_local':'all_ind_local_old',
-            'all_prob':'all_prob_old',
-            'slice_ind':'slice_ind_old'}
+    names = {'all_xyz': 'all_xyz_old',
+             'all_ind_local': 'all_ind_local_old',
+             'all_prob': 'all_prob_old',
+             'slice_ind': 'slice_ind_old'}
     out_df = which_neurons_df.rename(columns=names)
 
     ####################
@@ -476,7 +484,7 @@ def build_subset_df(clust_df, which_frames,
 
     # Final one is slightly different
     # f3 = lambda df : rename_slices(which_neurons_dict[df['clust_ind']])
-    f3 = lambda df : which_frames
+    f3 = lambda df: which_frames
     out_df['slice_ind'] = out_df.apply(f3, axis=1)
 
     return out_df
