@@ -244,13 +244,11 @@ def training_data_from_annotations(vid_fname,
 
     # Build a sub-df with only the relevant neurons and slices
     subset_opt = {'which_z': which_z,
-                  'max_z_dist': max_z_dist_for_traces}
+                  'max_z_dist': max_z_dist_for_traces,
+                  'verbose': 1}
     subset_df = build_subset_df(clust_df, which_frames, **subset_opt)
 
     # TODO: Save the individual png files
-    # png_opt = {'dlc_config': dlc_config_fname,
-    #            'video_fname': vid_fname,
-    #            'which_frames': which_frames}
     png_opt = {'dlc_config': dlc_config_fname,
                'which_frames': which_frames}
     out = build_png_training_data(**png_opt)
@@ -284,7 +282,7 @@ def training_data_from_annotations(vid_fname,
 
 
 #
-def update_pose_config(dlc_config_fname, updates):
+def update_pose_config(dlc_config_fname):
     # Copied from: https://github.com/DeepLabCut/DeepLabCut/blob/master/examples/testscript.py
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
 
@@ -303,7 +301,23 @@ def update_pose_config(dlc_config_fname, updates):
     )
 
     pose_config = auxiliaryfunctions.read_plainconfig(posefile)
-    pose_config.update(updates)
+    # These are mostly from the official recommendations:
+    # https://forum.image.sc/t/recommended-settings-for-tracking-fine-parts/36184/7
+    pose_config['scale_jitter_lo'] = 0.5
+    pose_config['scale_jitter_up'] = 1.5
+    pose_config['augmentationprobability'] = 0.5
+    # pose_config['batch_size']=8 #pick that as large as your GPU can handle it
+    pose_config['elastic_transform'] = True
+    pose_config['rotation'] = 180
+    pose_config['covering'] = True
+    pose_config['motion_blur'] = True
+    pose_config['optimizer'] = "adam"
+    pose_config['dataset_type'] = 'imgaug'
+    # My changes and additions
+    pose_config['multi_step'] = [[0.005, 7500], [5e-4, 20000], [1e-4, 50000]]
+    pose_config['pos_dist_thresh'] = 7  # We have very small objects
+    pose_config['pairwise_predict'] = False  # Our objects are consistent
+    pose_config['save_iters'] = 10000
 
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
 
@@ -397,7 +411,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     # Connecting these frames to a network architecture
     net_opt = {'net_type': "resnet_50",  # 'mobilenet_v2_0.35' #'resnet_50
                'augmenter_type': "default"}  # = imgaug
-    pose_opt = {}  # TODO
+    # pose_opt = {}  # TODO
     # Actually make projects
     all_avi_fnames = []
     all_dlc_configs = []
@@ -423,7 +437,7 @@ def create_dlc_training_from_tracklets(vid_fname,
         csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2)
         # Format the training data
         deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
-        update_pose_config(this_dlc_config, pose_opt)
+        update_pose_config(this_dlc_config)
         # Save to list
         all_avi_fnames.append(this_avi_fname)
         all_dlc_configs.append(this_dlc_config)
@@ -434,7 +448,6 @@ def create_dlc_training_from_tracklets(vid_fname,
     # Save list of dlc config names
     config['dlc_projects']['all_configs'] = all_dlc_configs
     edit_config(config['self_path'], config)
-
 
 
 def train_all_dlc_from_config(config):
