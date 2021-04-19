@@ -2,6 +2,7 @@ import deeplabcut
 from deeplabcut.utils import auxiliaryfunctions
 # from deeplabcut.generate_training_dataset.frame_extraction import extract_frames
 
+from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTracking, save_config
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
@@ -94,7 +95,7 @@ def build_png_training_data(dlc_config, which_frames, verbose=0):
     # Open video
     cfg = auxiliaryfunctions.read_config(dlc_config)
     videos = cfg.get("video_sets_original") or cfg["video_sets"]
-    assert len(videos)==1, "Only supports a single video"
+    assert len(videos) == 1, "Only supports a single video"
     video = list(videos.keys())[0]
 
     # For some reason this import fails at the top of the script...
@@ -235,10 +236,10 @@ def training_data_from_annotations(vid_fname,
         coord_names = ['x', 'y', 'likelihood']
 
     # Load the dataframe name, and produce DLC-style annotations
-    if type(df_fname)==str:
+    if type(df_fname) == str:
         clust_df = pd.read_pickle(df_fname)
     else:
-        assert type(df_fname)==pd.DataFrame, "Must pass dataframe or filename of dataframe"
+        assert type(df_fname) == pd.DataFrame, "Must pass dataframe or filename of dataframe"
         clust_df = df_fname
 
     # Build a sub-df with only the relevant neurons and slices
@@ -251,18 +252,18 @@ def training_data_from_annotations(vid_fname,
     #            'video_fname': vid_fname,
     #            'which_frames': which_frames}
     png_opt = {'dlc_config': dlc_config_fname,
-              'which_frames': which_frames}
+               'which_frames': which_frames}
     out = build_png_training_data(**png_opt)
     relative_imagenames, full_subfolder_name = out
 
     # Cast the dataframe in DLC format
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
-    opt = {'min_length':0,
-           'num_frames':total_num_frames,
-           'coord_names':coord_names,
-           'verbose':verbose,
-           'relative_imagenames':relative_imagenames,
-           'which_frame_subset':which_frames,
+    opt = {'min_length': 0,
+           'num_frames': total_num_frames,
+           'coord_names': coord_names,
+           'verbose': verbose,
+           'relative_imagenames': relative_imagenames,
+           'which_frame_subset': which_frames,
            'scorer': cfg['scorer']}
     new_dlc_df = build_dlc_annotation_all(subset_df, **opt)
     if new_dlc_df is None:
@@ -272,13 +273,14 @@ def training_data_from_annotations(vid_fname,
     # Save annotations using DLC-style names
     data_dir = Path(dlc_config_fname).parent.joinpath('labeled-data')
     img_subfolder_name = data_dir.joinpath(Path(vid_fname).stem)
-    opt = {'project_folder':str(img_subfolder_name)}
-    save_dlc_annotations(cfg['scorer'], df_fname, new_dlc_df, **opt)
+    opt = {'project_folder': str(img_subfolder_name)}
+    out = save_dlc_annotations(cfg['scorer'], df_fname, new_dlc_df, **opt)
+    annotation_fname = out[1][1]
 
     # Optional: plot the annotations on top of the frames
     deeplabcut.check_labels(dlc_config_fname)
 
-    return new_dlc_df
+    return new_dlc_df, annotation_fname
 
 
 #
@@ -355,7 +357,7 @@ def create_dlc_training_from_tracklets(vid_fname,
         num_total_frames = which_frames[-1] + 1
     with tifffile.TiffFile(vid_fname) as tif:
         sz = tif.pages[0].shape
-    preprocessed_dat = np.zeros((num_total_frames,num_slices) + sz)
+    preprocessed_dat = np.zeros((num_total_frames, num_slices) + sz)
 
     # Load data and preprocess
     if verbose >= 1:
@@ -364,11 +366,11 @@ def create_dlc_training_from_tracklets(vid_fname,
         dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
         # Don't preprocess data that we didn't even segment!
         if i >= start_volume:
-            preprocessed_dat[i,...] = perform_preprocessing(dat_raw, p)
+            preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
         else:
-            preprocessed_dat[i,...] = dat_raw
+            preprocessed_dat[i, ...] = dat_raw
 
-    vid_opt = {'fps':config['dataset_params']['fps'],
+    vid_opt = {'fps': config['dataset_params']['fps'],
                'frame_height': sz[0],
                'frame_width': sz[1]}
 
@@ -383,27 +385,25 @@ def create_dlc_training_from_tracklets(vid_fname,
     dlc_opt = {'task_name': task_name,
                'experimenter': scorer,
                'working_directory': '3-tracking',
-               'copy_videos':True}
+               'copy_videos': True}
     # Get a few frames as training data
     png_opt = {}
     png_opt['df_fname'] = df
     # png_opt['scorer'] = scorer
     png_opt['total_num_frames'] = config['dataset_params']['num_frames']
-    png_opt['coord_names'] = ['x','y']
+    png_opt['coord_names'] = ['x', 'y']
     png_opt['which_frames'] = config['training_data_3d']['which_frames']
     png_opt['max_z_dist_for_traces'] = config['training_data_2d']['max_z_dist_for_traces']
     # Connecting these frames to a network architecture
-    net_opt = {'net_type': "resnet_50", #'mobilenet_v2_0.35' #'resnet_50'
+    net_opt = {'net_type': "resnet_50",  # 'mobilenet_v2_0.35' #'resnet_50
                'augmenter_type': "default"}  # = imgaug
-    pose_opt = {} #TODO
+    pose_opt = {}  # TODO
     # Actually make projects
     all_avi_fnames = []
     all_dlc_configs = []
     for center in all_center_slices:
         # Make minimax video from btf
-        # which_z_slices = get_which_slices(center, num_crop_slices)
-        # vid_opt['which_slices'] = which_z_slices
-        this_avi_fname = f"center{center}.avi" # SHOULD NOT BE >8 CHAR (without .avi)
+        this_avi_fname = f"center{center}.avi"  # NOT >8 CHAR (without .avi)
         vid_opt['out_fname'] = this_avi_fname
         if os.path.exists(this_avi_fname):
             print(f"Using video at: {this_avi_fname}")
@@ -418,7 +418,9 @@ def create_dlc_training_from_tracklets(vid_fname,
         png_opt['which_z'] = center
         png_opt['dlc_config_fname'] = this_dlc_config
         png_opt['vid_fname'] = this_avi_fname
-        training_data_from_annotations(**png_opt)
+        ann_fname = training_data_from_annotations(**png_opt)[1]
+        # Syncronize the dlc_config with the annotations
+        csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2)
         # Format the training data
         deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
         update_pose_config(this_dlc_config, pose_opt)
