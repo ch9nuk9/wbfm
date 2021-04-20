@@ -2,7 +2,6 @@
 The top level function for producing training data via feature-based tracking
 """
 
-import os
 from pathlib import Path
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd, synchronize_train_config
