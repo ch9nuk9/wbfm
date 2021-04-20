@@ -392,18 +392,12 @@ def build_subset_df(clust_df,
         Return: boolean list of whether to keep or not, per tracklet
             Note that this uses the MEAN centroid, not the min or max
         """
-        # to_keep = []
-        # print(test_zxy)
-        # for this_zyx in test_zxy:
-            # print(this_zyx.shape)
-        this_z = np.mean(np.atleast_2d(np.array(test_zxy))[:,0])
+        this_z = np.mean(np.atleast_2d(np.array(test_zxy))[:, 0])
         too_high = this_z >= (which_z+max_z_dist)
         too_low = this_z <= (which_z-max_z_dist)
         if too_high or too_low:
-            # to_keep.append(False)
             to_keep = False
         else:
-            # to_keep.append(True)
             to_keep = True
         return to_keep
 
@@ -445,13 +439,18 @@ def build_subset_df(clust_df,
     which_neurons_dict = which_neurons.to_dict()
     to_keep_t = [(v is not None) for k, v in which_neurons_dict.items()]
     if verbose >= 1:
-        print(f"{np.nonzero(to_keep_t)} tracklets overlap in time")
+        print(f"{np.count_nonzero(to_keep_t)} tracklets overlap in time")
+        if verbose >= 2:
+            print(to_keep_t)
     # Get close neurons (z)
     if which_z is not None:
         to_keep_z = sub_df['all_xyz'].apply(check_z)
+        to_keep_z = [v for v in to_keep_z.to_dict().values()]
         to_keep = [t and z for (t, z) in zip(to_keep_t, to_keep_z)]
         if verbose >= 1:
-            print(f"{np.nonzero(to_keep_z)} tracklets overlap in z")
+            print(f"{np.count_nonzero(to_keep_z)} tracklets overlap in z")
+            if verbose >= 2:
+                print(to_keep_z)
     else:
         to_keep = to_keep_t
 
