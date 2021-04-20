@@ -351,7 +351,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     num_frames_needed = config['training_data_3d']['num_training_frames']
     tracklet_opt = {'num_frames_needed': num_frames_needed,
                     'num_frames': config['dataset_params']['num_frames'],
-                    'verbose':1}
+                    'verbose': 1}
     if DEBUG:
         tracklet_opt['num_frames_needed'] = 2
     which_frames = best_tracklet_covering(df, **tracklet_opt)
@@ -360,41 +360,67 @@ def create_dlc_training_from_tracklets(vid_fname,
     config['training_data_3d'].update(updates)
     edit_config(config['self_path'], config)
 
-    ########################
-    # Get the video
-    ########################
-    # TODO: for now, requires re-preprocessing
-
-    # Get the video options
-    p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
-    start_volume = config['dataset_params']['start_volume']
-    num_total_frames = start_volume + config['dataset_params']['num_frames']
-    num_slices = config['dataset_params']['num_slices']
-    if DEBUG:
-        # Make a much shorter video
-        num_total_frames = which_frames[-1] + 1
-    with tifffile.TiffFile(vid_fname) as tif:
-        sz = tif.pages[0].shape
-    preprocessed_dat = np.zeros((num_total_frames, num_slices) + sz)
-
-    # Load data and preprocess
-    if verbose >= 1:
-        print("Preprocessing data, this could take a while...")
-    for i in tqdm(list(range(num_total_frames))):
-        dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
-        # Don't preprocess data that we didn't even segment!
-        if i >= start_volume:
-            preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
-        else:
-            preprocessed_dat[i, ...] = dat_raw
-
-    vid_opt = {'fps': config['dataset_params']['fps'],
-               'frame_height': sz[0],
-               'frame_width': sz[1]}
-
     all_center_slices = config['training_data_2d']['all_center_slices']
     if DEBUG:
         all_center_slices = [all_center_slices[0]]
+
+    ########################
+    # Get or make the video
+    ########################
+    # TODO: for now, requires re-preprocessing
+
+    def make_avi_name(center):
+        fname = f"center{center}.avi"  # NOT >8 CHAR (without .avi)
+        if len(fname) > 12:
+            # TODO: fix this bug
+            # Another function clips labeled-data/folder-name at 8 chars
+            # But, that name must be the same as the video
+            raise ValueError(f"Bug if this is too long {fname}")
+        return fname
+    # FIRST: check if we actually need to rewrite the videos
+    video_exists = []
+    all_avi_fnames = []
+    for center in all_center_slices:
+        # Make minimax video from btf
+        this_avi_fname = make_avi_name(center)
+        all_avi_fnames.append(this_avi_fname)
+        if os.path.exists(this_avi_fname):
+            print(f"Using video at: {this_avi_fname}")
+            video_exists.append(True)
+        else:
+            video_exists.append(False)
+            # write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
+            # write_video_projection_from_ome_file_subset(**vid_opt)
+
+    # IF videos are required, then prep the data
+    if all(video_exists):
+        print("All required videos exist; no preprocessing necessary")
+        preprocessed_dat = []
+    else:
+        with tifffile.TiffFile(vid_fname) as tif:
+            sz = tif.pages[0].shape
+        vid_opt = {'fps': config['dataset_params']['fps'],
+                   'frame_height': sz[0],
+                   'frame_width': sz[1]}
+        if verbose >= 1:
+            print("Preprocessing data, this could take a while...")
+        p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
+        start_volume = config['dataset_params']['start_volume']
+        num_total_frames = start_volume + config['dataset_params']['num_frames']
+        num_slices = config['dataset_params']['num_slices']
+        if DEBUG:
+            # Make a much shorter video
+            num_total_frames = which_frames[-1] + 1
+        preprocessed_dat = np.zeros((num_total_frames, num_slices) + sz)
+
+        # Load data and preprocess
+        for i in tqdm(list(range(num_total_frames))):
+            dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
+            # Don't preprocess data that we didn't even segment!
+            if i >= start_volume:
+                preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
+            else:
+                preprocessed_dat[i, ...] = dat_raw
 
     ########################
     # Initialize the DLC projects
@@ -417,17 +443,13 @@ def create_dlc_training_from_tracklets(vid_fname,
                'augmenter_type': "default"}  # = imgaug
     # pose_opt = {}  # TODO
     # Actually make projects
-    all_avi_fnames = []
     all_dlc_configs = []
-    for center in all_center_slices:
-        # Make minimax video from btf
-        this_avi_fname = f"center{center}.avi"  # NOT >8 CHAR (without .avi)
-        vid_opt['out_fname'] = this_avi_fname
-        if os.path.exists(this_avi_fname):
-            print(f"Using video at: {this_avi_fname}")
-        else:
-            write_numpy_as_avi(preprocessed_dat[:,center,...], **vid_opt)
-            # write_video_projection_from_ome_file_subset(**vid_opt)
+    for i, center in enumerate(all_center_slices):
+        # Make or get video
+        this_avi_fname = all_avi_fnames[i]
+        if not video_exists[i]:
+            vid_opt['out_fname'] = this_avi_fname
+            write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
         # Make dlc project
         dlc_opt['label'] = f"-c{center}"
         dlc_opt['video_path'] = this_avi_fname
@@ -443,7 +465,6 @@ def create_dlc_training_from_tracklets(vid_fname,
         deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
         update_pose_config(this_dlc_config)
         # Save to list
-        all_avi_fnames.append(this_avi_fname)
         all_dlc_configs.append(this_dlc_config)
 
     # Then delete the created avis because they are copied into the DLC folder
