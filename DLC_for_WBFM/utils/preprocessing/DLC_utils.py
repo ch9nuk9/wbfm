@@ -303,8 +303,8 @@ def update_pose_config(dlc_config_fname, DEBUG=False):
     pose_config = auxiliaryfunctions.read_plainconfig(posefile)
     # These are mostly from the official recommendations:
     # https://forum.image.sc/t/recommended-settings-for-tracking-fine-parts/36184/7
-    pose_config['scale_jitter_lo'] = 0.5
-    pose_config['scale_jitter_up'] = 1.5
+    pose_config['scale_jitter_lo'] = 0.75
+    pose_config['scale_jitter_up'] = 1.25
     pose_config['augmentationprobability'] = 0.5
     # pose_config['batch_size']=8 #pick that as large as your GPU can handle it
     pose_config['elastic_transform'] = True
@@ -318,9 +318,10 @@ def update_pose_config(dlc_config_fname, DEBUG=False):
         pose_config['multi_step'] = [[0.005, 1000]]
         pose_config['save_iters'] = 900
     else:
-        pose_config['multi_step'] = [[0.005, 7500], [5e-4, 2e4], [1e-4, 5e4]]
+        pose_config['multi_step'] = [[5e-4, 5e3], [1e-4, 1e4], [5e-5, 5e4]]
+        # pose_config['multi_step'] = [[0.005, 7500], [5e-4, 2e4], [1e-4, 5e4]]
         pose_config['save_iters'] = 10000
-    pose_config['pos_dist_thresh'] = 15  # We have very small objects
+    pose_config['pos_dist_thresh'] = 17  # 15  # We have very small objects
     pose_config['pairwise_predict'] = False  # Our objects are consistent
 
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
@@ -440,7 +441,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     png_opt['max_z_dist_for_traces'] = config['training_data_2d']['max_z_dist_for_traces']
     # Connecting these frames to a network architecture
     net_opt = {'net_type': "resnet_50",  # 'mobilenet_v2_0.35' #'resnet_50
-               'augmenter_type': "default"}  # = imgaug
+               'augmenter_type': "imgaug"}
     # pose_opt = {}  # TODO
     # Actually make projects
     all_dlc_configs = []
@@ -471,6 +472,9 @@ def create_dlc_training_from_tracklets(vid_fname,
     # [os.remove(f) for f in all_avi_fnames]
 
     # Save list of dlc config names
+    # Make names relative to project folder
+    # prj = Path(config['project_path']).parent
+    # all_dlc_configs = [str(Path(cfg).relative_to(prj)) for cfg in all_dlc_configs]
     config['dlc_projects']['all_configs'] = all_dlc_configs
     edit_config(config['self_path'], config)
 
@@ -480,8 +484,13 @@ def train_all_dlc_from_config(config):
     Simple multi-network wrapper around:
     deeplabcut.train_network()
     """
+    from tensorflow.errors import CancelledError
 
     all_dlc_configs = config['dlc_projects']['all_configs']
 
     for dlc_config in all_dlc_configs:
-        deeplabcut.train_network(dlc_config)
+        try:
+            deeplabcut.train_network(dlc_config)
+        except CancelledError:
+            # This means it finished the planned number of steps
+            pass
