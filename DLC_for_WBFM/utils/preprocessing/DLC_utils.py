@@ -507,3 +507,64 @@ def train_all_dlc_from_config(config):
         except CancelledError:
             # This means it finished the planned number of steps
             pass
+
+
+def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
+    """
+    Applies trained DLC networks to full video and collects into 3d track
+    """
+
+    all_dlc_configs = track_cfg['dlc_projects']['all_configs']
+    all_z_coord = track_cfg['training_data_2d']['all_center_slices']
+
+    # Apply networks
+    all_analyzed_data = []
+    for dlc_config in all_dlc_configs:
+        # CheckifNotAnalyzed()
+        dlc_cfg = auxiliaryfunctions.load_config(dlc_config)
+        video_list = list(dlc_cfg['video_sets'].keys())
+        vname = video_list[0]
+        destfolder = str(Path(vname).parent)
+        scorer = dlc_cfg['scorer']
+        # Apply if not already done
+        already_analyzed, _, _ = CheckifNotAnalyzed(destfolder, vname, scorer)
+        if not already_analyzed:
+            deeplabcut.analyze_videos(dlc_config, video_list)
+        # Get data for later use
+        # See also: https://github.com/DeepLabCut/DeepLabCut/blob/a9fdb5f401893dc2dc4c16a8818371215cda1ac0/deeplabcut/post_processing/filtering.py
+        df, _, _, _ = auxiliaryfunctions.load_analyzed_data(
+                    destfolder, vname, scorer
+                )
+        all_analyzed_data.append(df)
+
+    # Collect 2d data
+    # i.e. just add the z coordinate to it
+    final_df = pd.DataFrame()
+    for z, df in zip(all_z_coords, all_analyzed_data):
+        # Initial format is: x, y, likelihood
+        # Final format is: z, x, y, likelihood
+        # TODO
+        z_col = z*np.ones(len(df))
+        for i in range(0,len(df.columns),3):
+            df.insert(z_col, 'z', i)
+        final_df.append(df, ignore_index=True)
+
+    # Save data
+    dest_folder = '3-tracking'
+    fname = os.path.join(dest_folder, 'full_3d_tracks.h5')
+    final_df.to_hdf(fname)
+
+    # Save in yaml
+    udpates = {'dlc_projects': {'final_3d_tracks': fname}}
+    edit_config(track_cfg['self_path'], udpates)
+
+    return final_df
+
+
+def get_traces_from_3d_tracks(segment_cfg, track_cfg, traces_cfg):
+    """
+    Connect the 3d traces to previously segmented masks
+
+    Get both red and green traces for each neuron
+    """
+    pass
