@@ -515,7 +515,6 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     """
 
     all_dlc_configs = track_cfg['dlc_projects']['all_configs']
-    all_z_coord = track_cfg['training_data_2d']['all_center_slices']
 
     # Apply networks
     all_analyzed_data = []
@@ -653,15 +652,17 @@ def get_traces_from_3d_tracks(segment_cfg,
 
 
 def get_z_from_dlc_name(name):
-    regex = r"c[\d]*"
-    return re.finditer(regex, name, re.MULTILINE)
+    regex = r"c[\d]+"
+    results = re.findall(regex, name, re.MULTILINE)
+    return [int(s[1:]) for s in results][0]
 
 
 def get_annotations_from_dlc_config(dlc_config):
-    fnames = os.listdir(Path(dlc_config).with_name('videos'))
+    video_dir = Path(dlc_config).with_name('videos')
+    fnames = os.listdir(video_dir)
     annotation_names = [f for f in fnames if '.h5' in f]
     if len(annotation_names) > 1:
         print(f"Found more than one annotation for {dlc_config}")
     annotation_names = annotation_names[0]
     print(f"Using found annotations: {annotation_names}")
-    return annotation_names
+    return Path(video_dir).joinpath(annotation_names)
