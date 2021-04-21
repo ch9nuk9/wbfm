@@ -143,14 +143,17 @@ def synchronize_train_config(project_path, train_cfg):
     train_cfg = load_config(project_cfg['subfolder_configs']['training_data'])
 
     # Add external detections
-    external_detections = segment_cfg['output_params']['output_folder']
-    # Assume the detections are named normally, i.e. starting with 'metadata'
-    for file in os.listdir(external_detections):
-        if fnmatch.fnmatch(file, 'metadata*'):
-            external_detections = osp.join(external_detections, file)
-            break
-    else:
+    external_detections = segment_cfg['output']['metadata']
+    if not os.exists(external_detections):
         raise FileNotFoundError("Could not find external annotations")
+    # external_detections = segment_cfg['output_params']['output_folder']
+    # Assume the detections are named normally, i.e. starting with 'metadata'
+    # for file in os.listdir(external_detections):
+    #     if fnmatch.fnmatch(file, 'metadata*'):
+    #         external_detections = osp.join(external_detections, file)
+    #         break
+    # else:
+    #     raise FileNotFoundError("Could not find external annotations")
 
     updates = {'external_detections': external_detections}
     train_cfg['tracker_params'].update(updates)

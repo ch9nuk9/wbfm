@@ -18,8 +18,10 @@ postprocessing_params:
   border_width_to_remove: 100
 
 # Output
-output_params:
-  output_folder: 1-segmentation
+output:
+  folder: 1-segmentation
+  masks: 1-segmentation/masks.pickle
+  metadata: 1-segmentation/metadata.pickle
 
 # Printing
 verbose: 1
