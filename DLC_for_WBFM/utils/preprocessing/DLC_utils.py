@@ -587,7 +587,6 @@ def get_traces_from_3d_tracks(segment_cfg,
     max_dist = track_cfg['final_3d_tracks']['max_dist']
     start_volume = dataset_params['start_volume']
     num_frames = dataset_params['num_frames']
-    frame_list = list(range(start_volume, num_frames))
     # Get previous annotations
     segmentation_fname = segment_cfg['output']['metadata']
     with open(segmentation_fname, 'rb') as f:
@@ -595,23 +594,62 @@ def get_traces_from_3d_tracks(segment_cfg,
     dlc_fname = track_cfg['final_3d_tracks']['df_fname']
     dlc_tracks = pd.read_hdf(dlc_fname)
 
+    # Convert DLC dataframe to array
+    all_neuron_names = list(dlc_tracks.columns.levels[0])
+    def get_dlc_zxy(i_volume, dlc_tracks=dlc_tracks):
+        all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
+        coords = ['z', 'x', 'y']
+        for i, name in enumerate(all_neuron_names):
+            all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords])
+        return all_dlc_zxy
+
     # Main loop: Match segmentations to tracks
     # Also: get connected red brightness and mask
-    red_traces = {}  # Indexed first by neuron, then time
-    all_matches = {}  # Indexed first by time, then 3-element list
-    for i_volume in tqdm(frame_list):
-        # Get segmentation point cloud
-        zxy0 = segmentation_metadata[zzz]
-        # Get DLC point cloud
-        this_dlc_row = dlc_tracks.iloc(i_volume) # This dataframe starts at 0, not start_volume
 
-        zxy1 = this_dlc_row
+    # Initialize multi-index dataframe for data
+    frame_list = list(range(start_volume, num_frames))
+    # red_brightness = {}  # key = neuron id (int); val = list
+    # red_
+    save_names = ['brightness', 'volume', 'z', 'x', 'y']
+    m_index = pd.MultiIndex.from_product([all_neuron_names,
+                                        save_names],
+                                        names=['neurons', 'data'])
+    red_dat = pd.DataFrame(np.zeros((len(all_neuron_names), 5)),
+                           columns = m_index,
+                           index = frame_list)
+
+    all_matches = {}  # key = i_vol; val = 3xN-element list
+    for i_volume in tqdm(frame_list):
+        # Get DLC point cloud
+        # NOTE: This dataframe starts at 0, not start_volume
+        zxy0 = get_dlc_zxy(i_volume)
+        # REVIEW: Get segmentation point cloud
+        seg_zxy = segmentation_metadata[i_volume]['centroids']
+        seg_zxy = [np.asarray(row) for row in seg_zxy]
+        zxy1 = np.array(seg_zxy)
         # Get matches
         out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
         # Use metadata to get red traces
+        # OPTIMIZE: minimum confidence?
+        this_mdat = segmentation_metadata[i_volume]
+        all_seg_names = list(this_mdat['centroid'].keys())
+        # TODO: is this actually setting?
+        for i_dlc, i_seg in matches:
+            dlc_name = all_neuron_names[i_dlc]  # output name
+            seg_name = all_seg_names[i_seg]
+            # See saved_names above
+            red_traces[(name, 'brightness')].loc[i_volume] = this_mdat['total_brightness'][seg_name]
+            red_traces[(name, 'volume')].loc[i_volume] = this_mdat['neuron_volume'][seg_name]
+            red_traces[(name, 'z')].loc[i_volume] = this_mdat['centroid'][seg_name][0]
+            red_traces[(name, 'x')].loc[i_volume] = this_mdat['centroid'][seg_name][1]
+            red_traces[(name, 'y')].loc[i_volume] = this_mdat['centroid'][seg_name][2]
 
         # Save
         all_matches[i_volume] = list(zip(matches, conf))
 
-    # Get full green traces using masks
+    # TODO: Get full green traces using masks
+
+    # Save traces (red and green) and matches
+    save_folder = Path('4-traces')
+    red_traces.to_hdf(save_folder.joinpath('red_traces.h5'))
