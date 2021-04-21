@@ -15,6 +15,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_f
 import pandas as pd
 import numpy as np
 import tifffile
+import pickle
 from pathlib import Path
 # import pims
 # import PIL
@@ -377,7 +378,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     def make_avi_name(center):
         fname = f"center{center}.avi"  # NOT >8 CHAR (without .avi)
         if len(fname) > 12:
-            # BUG: fix this bug
+            # BUG: fix required short filenames
             # Another function clips labeled-data/folder-name at 8 chars
             # But, that name must be the same as the video
             raise ValueError(f"Bug if this is too long {fname}")
@@ -519,6 +520,7 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
 
     # Apply networks
     all_analyzed_data = []
+    i_neuron = 0
     for dlc_config in all_dlc_configs:
         # CheckifNotAnalyzed()
         dlc_cfg = auxiliaryfunctions.load_config(dlc_config)
@@ -527,7 +529,8 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
         destfolder = str(Path(vname).parent)
         scorer = dlc_cfg['scorer']
         # Apply if not already done
-        already_analyzed, _, _ = CheckifNotAnalyzed(destfolder, vname, scorer)
+        out = auxiliaryfunctions.CheckifNotAnalyzed(destfolder, vname, scorer)
+        already_analyzed = out[0]
         if not already_analyzed:
             deeplabcut.analyze_videos(dlc_config, video_list)
         # Get data for later use
@@ -535,21 +538,31 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
         df, _, _, _ = auxiliaryfunctions.load_analyzed_data(
                     destfolder, vname, scorer
                 )
+        # Remove scorer and rename neurons
+        df_scorer = df.columns.values[0][0]
+        df = df[df_scorer]
+        i_neuron_new = i_neuron + len(df.columns)
+        neuron_range = range(i_neuron, i_neuron_new)
+        i_neuron = i_neuron_new
+        new_names = [f'neuron{i}' for i in neuron_range]
+        df.columns.set_levels(new_names, level=0, inplace=True)
         all_analyzed_data.append(df)
 
     # Collect 2d data
     # i.e. just add the z coordinate to it
     final_df = pd.DataFrame()
-    for z, df in zip(all_z_coords, all_analyzed_data):
+    z_col = z*np.ones(len(df)) # All dfs should be same length
+    for z, df in zip(all_z_coord, all_analyzed_data):
         # Initial format is: x, y, likelihood
-        # Final format is: z, x, y, likelihood
-        # REVIEW
-        z_col = z*np.ones(len(df))
-        for i in range(0,len(df.columns),3):
-            df.insert(z_col, 'z', i)
+        # Final format is: x, y, z, likelihood
+        # NOTE: many of the other pure numpy arrays are zxy
+        these_neuron_names = list(df.columns.levels[0])
+        for name in these_neuron_names:
+            df[name, 'z'] = z_col
+        df.sort_index(inplace=True)
         final_df.append(df, ignore_index=True)
 
-    # Save data
+    # Save dataframe
     dest_folder = '3-tracking'
     fname = os.path.join(dest_folder, 'full_3d_tracks.h5')
     final_df.to_hdf(fname)
@@ -592,7 +605,7 @@ def get_traces_from_3d_tracks(segment_cfg,
         # Get DLC point cloud
         this_dlc_row = dlc_tracks.iloc(i_volume) # This dataframe starts at 0, not start_volume
 
-        zxy0 = this_dlc_row
+        zxy1 = this_dlc_row
         # Get matches
         out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
