@@ -11,6 +11,7 @@ from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subse
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
 import pandas as pd
 import numpy as np
 import tifffile
@@ -555,16 +556,50 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     final_df.to_hdf(fname)
 
     # Save in yaml
-    udpates = {'dlc_projects': {'final_3d_tracks': fname}}
+    udpates = {'final_3d_tracks': {'df_fname': fname}}
     edit_config(track_cfg['self_path'], udpates)
 
     return final_df
 
 
-def get_traces_from_3d_tracks(segment_cfg, track_cfg, traces_cfg):
+def get_traces_from_3d_tracks(segment_cfg,
+                              track_cfg,
+                              traces_cfg,
+                              dataset_params):
     """
     Connect the 3d traces to previously segmented masks
 
     Get both red and green traces for each neuron
     """
-    pass
+    # Settings
+    max_dist = track_cfg['final_3d_tracks']['max_dist']
+    start_volume = dataset_params['start_volume']
+    num_frames = dataset_params['num_frames']
+    frame_list = list(range(start_volume, num_frames))
+    # Get previous annotations
+    segmentation_fname = segment_cfg['output']['metadata']
+    with open(segmentation_fname, 'rb') as f:
+        segmentation_metadata = pickle.load(f)
+    dlc_fname = track_cfg['final_3d_tracks']['df_fname']
+    dlc_tracks = pd.read_hdf(dlc_fname)
+
+    # Main loop: Match segmentations to tracks
+    # Also: get connected red brightness and mask
+    red_traces = {}  # Indexed first by neuron, then time
+    all_matches = {}  # Indexed first by time, then 3-element list
+    for i_volume in tqdm(frame_list):
+        # Get segmentation point cloud
+        zxy0 = segmentation_metadata[zzz]
+        # Get DLC point cloud
+        this_dlc_row = dlc_tracks.iloc(i_volume) # This dataframe starts at 0, not start_volume
+        
+        zxy0 = this_dlc_row
+        # Get matches
+        out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
+        matches, conf, _ = out
+        # Use metadata to get red traces
+
+        # Save
+        all_matches[i_volume] = list(zip(matches, conf))
+
+    # Get full green traces using masks
