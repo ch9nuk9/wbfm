@@ -5,7 +5,7 @@ The top level function for producing training data via feature-based tracking
 from pathlib import Path
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.utils.pipeline.DLC_utils import make_3d_tracks_from_stack
+from DLC_for_WBFM.utils.preprocessing.DLC_utils import make_3d_tracks_from_stack
 # Experiment tracking
 import sacred
 from sacred import Experiment
