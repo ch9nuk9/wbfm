@@ -41,11 +41,11 @@ def icy_xml_to_dlc(dlc_annotation_fname,
             z = df[this_neuron]['z'][this_file]
             x, y, z = str(x), str(y), str(z)
             ET.SubElement(t, "detection",
-                          classname="plugins.nchenouard.spot.Detection", #TODO
+                          classname="plugins.nchenouard.spot.Detection",
                           color=str(i),
                           t=str(i_t),
                           type="1",
-                          x=y, y=x, z=z) # TODO: switch x and y
+                          x=y, y=x, z=z) # WARNING: switch x and y
 
     # SAVE
     tree = ET.ElementTree(xm)

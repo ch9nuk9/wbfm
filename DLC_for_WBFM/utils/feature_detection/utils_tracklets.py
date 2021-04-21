@@ -254,7 +254,7 @@ def build_tracklets_from_classes(all_frames,
     #   1. List of all pairwise matches
     #   2. List of all neuron 3d locations
     # if type(all_frames)==dict:
-        # TODO: make the below loops work for dict
+        # BUG: make the below loops work for dict
         # all_frames = list(all_frames.values())
         # print("If this is a dict, then the indices are probably off.")
         # raise ValueError
@@ -348,7 +348,7 @@ def consolidate_tracklets(df_raw, tracklet_matches, verbose=0):
     df = copy.deepcopy(df_raw)
     for row0_ind, row1_ind in tracklet_matches:
         # If we have two matches: (0,1) and later (1,10), add directly to track 0
-        # TODO: what if the matches are out of order?
+        # BUG: what if the matches are out of order?
         if row0_ind in rows_to_drop:
             row0_ind = base_of_dropped_rows[row0_ind]
         base_row = df.loc[row0_ind].copy(deep=True)

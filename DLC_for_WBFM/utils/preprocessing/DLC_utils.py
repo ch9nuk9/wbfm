@@ -249,7 +249,7 @@ def training_data_from_annotations(vid_fname,
                   'verbose': 1}
     subset_df = build_subset_df(clust_df, which_frames, **subset_opt)
 
-    # TODO: Save the individual png files
+    # Save the individual png files
     png_opt = {'dlc_config': dlc_config_fname,
                'which_frames': which_frames}
     out = build_png_training_data(**png_opt)
@@ -372,12 +372,12 @@ def create_dlc_training_from_tracklets(vid_fname,
     ########################
     # Get or make the video
     ########################
-    # TODO: for now, requires re-preprocessing
+    # OPTIMIZE: for now, requires re-preprocessing
 
     def make_avi_name(center):
         fname = f"center{center}.avi"  # NOT >8 CHAR (without .avi)
         if len(fname) > 12:
-            # TODO: fix this bug
+            # BUG: fix this bug
             # Another function clips labeled-data/folder-name at 8 chars
             # But, that name must be the same as the video
             raise ValueError(f"Bug if this is too long {fname}")
@@ -446,7 +446,6 @@ def create_dlc_training_from_tracklets(vid_fname,
     # Connecting these frames to a network architecture
     net_opt = {'net_type': "resnet_50",  # 'mobilenet_v2_0.35' #'resnet_50
                'augmenter_type': "imgaug"}
-    # pose_opt = {}  # TODO
     # Actually make projects
     all_dlc_configs = []
     for i, center in enumerate(all_center_slices):
@@ -544,7 +543,7 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     for z, df in zip(all_z_coords, all_analyzed_data):
         # Initial format is: x, y, likelihood
         # Final format is: z, x, y, likelihood
-        # TODO
+        # REVIEW
         z_col = z*np.ones(len(df))
         for i in range(0,len(df.columns),3):
             df.insert(z_col, 'z', i)
@@ -592,7 +591,7 @@ def get_traces_from_3d_tracks(segment_cfg,
         zxy0 = segmentation_metadata[zzz]
         # Get DLC point cloud
         this_dlc_row = dlc_tracks.iloc(i_volume) # This dataframe starts at 0, not start_volume
-        
+
         zxy0 = this_dlc_row
         # Get matches
         out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)

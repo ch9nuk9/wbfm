@@ -64,7 +64,7 @@ def _extract_all_traces(config_file,
         num_frames = c.preprocessing.num_frames
 
     # Save configuration
-    # TODO: overwrite old
+    # WARNING: overwrite old
     traces_config = DLCForWBFMTraces(is_3d,
                                         crop_sz,
                                         trace_fname,
@@ -188,7 +188,7 @@ def extract_all_traces(annotation_fname,
                                   crop_sz=crop_sz,
                                   params=params,
                                   is_3d=is_3d,
-                                  flip_x=True, # TODO: needed as of 09.11.2020
+                                  flip_x=True, # OPTIMIZE: needed as of 09.11.2020
                                   z_params=z_params)
         print('Finished extracting GCaMP')
         all_traces.append({'mcherry':mcherry_dat,

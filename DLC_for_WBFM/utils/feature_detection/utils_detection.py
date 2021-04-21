@@ -130,7 +130,7 @@ def detect_neurons_using_ICP(dat,
     """
 
     # Build point clouds for each plane
-    # TODO: Remove alpha from this function
+    # ENHANCE: Remove alpha from this function
     all_keypoints_pcs = build_point_clouds_for_volume(dat,
                                                   num_slices,
                                                   alpha,

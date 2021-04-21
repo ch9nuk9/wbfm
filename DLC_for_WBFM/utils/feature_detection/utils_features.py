@@ -102,7 +102,7 @@ def match_using_known_keypoints(im1, kp1, im2, kp2, max_features=1000, use_flann
 
     Match using previously detected points, e.g. neurons
 
-    # TODO: combine with match_known_keypoints()
+    # OPTIMIZE: combine with match_known_keypoints()
 
     Parameters
     ----------
@@ -172,7 +172,7 @@ def extract_map1to2_from_matches(matches):
     matches_dict = {}
     for i, m in enumerate(matches):
         # Maybe, queryIdx: https://stackoverflow.com/questions/22082598/how-to-get-matches-drawn-by-drawmatches-in-an-array-for-example-in-a-dmatch-s/24183734
-        # TODO: may overwrite if not 1-to-1
+        # BUG: may overwrite if not 1-to-1
         matches_dict[m.queryIdx] = m.trainIdx
 
     return matches_dict

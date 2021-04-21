@@ -32,7 +32,6 @@ def build_dlc_annotation_one_tracklet(row,
     """
     if coord_names is None:
         coord_names = ['x', 'y', 'likelihood']
-    # TODO: Check z
 
     # Variables to be written
     if scorer is None:
@@ -57,7 +56,7 @@ def build_dlc_annotation_one_tracklet(row,
     # Will be zeros if not detected in a given frame
     coords = np.zeros((num_frames, len(coord_names), ))
     for this_slice, this_xyz, this_prob in zip(row['slice_ind'], row['all_xyz'], row['all_prob']):
-        # TODO: only works for xy; this_xyz is format ZXY
+        # this_xyz is format ZXY
         for i, coord_name in enumerate(coord_names):
             if coord_name in coord_mapping:
                 # is spatial

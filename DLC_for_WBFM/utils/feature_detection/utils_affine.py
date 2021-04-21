@@ -176,7 +176,7 @@ def calc_matches_using_2nn(all_propagated, n1_locs, max_dist=5.0):
         all_matches.append([i, i_match])
         all_conf.append(conf_func(dist))
 
-        # TODO: clean this up
+        # todo: clean this up
         all_m = [(i, n, conf_func(dist)) for n, dist in zip(two_neighbors, two_dist)]
         all_candidate_matches.extend(all_m)
 

@@ -180,7 +180,7 @@ def neuron_global_id_from_multiple_matches(matches,
             k_values = k_values[:4]
 
     # Pre-process matches pairwise by finding best bipartite match
-    # TODO: remove hardcoded confidence
+    # OPTIMIZE: remove hardcoded confidence
     bp_matches = calc_all_bipartite_matches(matches, min_edge_weight=0.2)
 
     # Get a list of the neuron names that belong to each community
@@ -245,7 +245,7 @@ def align_dictionaries(ref_set, global2local, local2global):
     Align global and local neuron indices:
         Overwrite keys of 'global2local' and replace with corresponding keys from ref_set
 
-    TODO: for now doesn't allow new neurons to be created
+    WARNING: for now doesn't allow new neurons to be created
     """
 
     g2l_out = {}
@@ -343,7 +343,7 @@ def register_all_reference_frames(ref_frames,
         print("Unrecognized cluster mode; finishing without global neuron labels")
         print(f"Allowed cluster modes are: {all_cluster_modes}")
 
-    # TODO: align to previous global match, if it exists
+    # ENHANCE: align to previous global match, if it exists
     if previous_ref_set is not None:
         global2local, local2global = align_dictionaries(
             previous_ref_set,
@@ -375,7 +375,6 @@ def register_all_reference_frames(ref_frames,
 
 
 def create_dict_from_matches(self):
-    # TODO: Refactor to basic set
     assert type(self)==RegisteredReferenceFrames
 
     all_cluster_modes = ['k_clique', 'threshold', 'voronoi']
@@ -417,7 +416,7 @@ def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
     all_conf = []
     for ref_frame_ind, ref in reference_set.reference_frames.items():
         # Get matches (coordinates are local to this reference frame)
-        # TODO: only attempt to check the subset of reference neurons
+        # OPTMIZE: only attempt to check the subset of reference neurons
         local_matches, conf, _, _ = calc_2frame_matches_using_class(this_frame, ref)
         # Convert to global coordinates
         global_matches = []
@@ -439,7 +438,7 @@ def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
     for frame_match, frame_conf in zip(all_global_matches, all_conf):
         for neuron_matches, neuron_conf in zip(frame_match, frame_conf):
             key = (neuron_matches[0], neuron_matches[1])
-            # TODO: add conf
+            # COMBAK: add conf
             edges_dict[key] += neuron_conf
     edges = [[k[0],k[1],v] for k, v in edges_dict.items()]
     all_bp_matches = calc_bipartite_matches(edges)
@@ -869,7 +868,7 @@ def stitch_tracklets(clust_df,
                 tracklet_matches.append(t_key)
                 tracklet_conf.append(this_conf)
                 is_available.at[i_start_track] = False
-                # TODO: just take the first match
+                # OPTIMIZE: just take the first match
                 break
 
     df = consolidate_tracklets(clust_df.copy(), tracklet_matches, verbose)

@@ -54,7 +54,7 @@ def icy_xml_to_dlc(path_config_file,
     icy_annotation_fname = os.path.join(xml_folder, xml_filename)
 
     # Import XML
-    # TODO: detect from the config file?
+    # todo: detect from the config file?
     et_icy = ET.parse(icy_annotation_fname)
     et2 = et_icy.getroot()
     num_trackgroups = len(et2) - 2
@@ -116,7 +116,7 @@ def add_detection_to_df(this_detections,
         except:
             print("Track not long enough; skipping: ", bodypart)
             return
-        # TODO: Check whether the annotation is too far off the tracking slice
+        # COMBAK: Check whether the annotation is too far off the tracking slice
         # this_z = int(float(this_track.get('z')))
         # if include_which_z_slices is not None and this_z not in include_which_z_slices:
         #     continue
@@ -173,9 +173,9 @@ def find_xml_in_project(path_config_file):
 #
 #     # Get number of neurons from annotations
 #     home = os.path.dirname(path_config_file)
-#     # TODO: must have XML in the folder to find it
+#     # COMBAK: must have XML in the folder to find it
 #     annotations_fname = get_annotations_converted_from_xml(path_config_file)
-#     # TODO: hardcoded folder
+#     # COMBAK: hardcoded folder
 #     # annotations_fname = os.path.join(home,'labeled-data', 'test_100frames.ome','CollectedData_Charlie.csv')
 #     df = pd.read_csv(annotations_fname)
 #     num_neurons = int(df.shape[1] / num_dims)

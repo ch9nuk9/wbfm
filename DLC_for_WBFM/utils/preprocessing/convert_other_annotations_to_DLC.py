@@ -11,7 +11,7 @@ def bpcd_tracker2config_names(path_config_file):
 
     # Get number of neurons from annotations
     home = os.path.dirname(path_config_file)
-    # TODO: hardcoded folder
+    # COMBAK: hardcoded folder
     annotations_fname = os.path.join(home,'labeled-data', 'test_100frames.ome','CollectedData_Charlie.csv')
     df = pd.read_csv(annotations_fname)
     num_neurons = int(df.shape[1] / 3)

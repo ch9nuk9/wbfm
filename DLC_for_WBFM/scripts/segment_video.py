@@ -16,7 +16,6 @@ from sacred import Experiment
 
 # Initialize sacred experiment
 ex = Experiment()
-# TODO: script must be run from project folder for now
 # Add single variable so that the cfg() function works
 ex.add_config(project_path=None)
 

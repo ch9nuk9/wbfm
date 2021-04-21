@@ -5,7 +5,7 @@
 from DLC_for_WBFM.bin.configuration_definition import *
 from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_from_ometiff_virtual, _get_crop_from_avi
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
-# from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import 
+# from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import
 from cellpose import models
 from cellpose import utils as cellutils
 from scipy.ndimage import center_of_mass
@@ -40,7 +40,7 @@ def extract_all_traces_cp(config_file,
     is_3d : bool
         Whether the input data is 3d or 2d
     params : dict
-        Dictionary of parameters for cellpose function... TODO
+        Dictionary of parameters for cellpose function... OPTIMIZE
     trace_fname : str
         Name to save the final traces as
     """
@@ -57,7 +57,6 @@ def extract_all_traces_cp(config_file,
         trace_fname = c.traces.traces_fname
     else:
         # Traces will be saved in overall config file folder
-        # TODO
         trace_fname = os.path.join(c.get_dirname(), trace_fname)
 
         # Save configuration
@@ -69,7 +68,7 @@ def extract_all_traces_cp(config_file,
         save_config(c)
 
     # Actually calculate
-    # TODO: Cellpose options
+    # OPTIMIZE: Cellpose options
     start = time.time()
     all_traces = []
     all_masks = []
@@ -144,7 +143,7 @@ def extract_single_trace_cp(config_filename,
             print(f"Segmenting Volume: {i}/{num_frames}")
         all_masks.append(m)
 
-    # TODO: better saving
+    # OPTIMIZE: better saving
     # fname = f'test_masks_neuron_{which_neuron}'
     # pickle.dump(all_masks, open(fname, 'wb'))
 
@@ -161,7 +160,7 @@ def extract_single_trace_cp(config_filename,
     for i, m in enumerate(this_neuron_masks):
         this_vol_red = np.squeeze(cropped_dat_red[i,...])
         this_vol_green = np.squeeze(cropped_dat_green[i,...])
-        # TODO: Assume there is only one neuron detected
+        # WARNING: Assume there is only one neuron detected
         trace_red[i] = brightness_from_roi(this_vol_red, m, 1)
         trace_green[i] = brightness_from_roi(this_vol_green, m, 1)
         num_pixels[i] = np.count_nonzero(m)
@@ -177,7 +176,7 @@ def brightness_from_roi(img, all_masks, which_neuron):
     """
     Just averages the pixels given a 3d mask
 
-    TODO: better determination of brightness
+    OPTIMIZE: better determination of brightness
     """
     mask = all_masks==which_neuron
     return np.mean(img[mask])
@@ -305,7 +304,7 @@ def attempt_to_refind_neuron(prev_mask, masks_v1, verbose=1):
     else:
         this_mask = masks_v1==closest_neuron
 
-    # TODO: Confirm if it is a similar size
+    # OPTIMIZE: Confirm if it is a similar size
     sz0 = np.count_nonzero(prev_mask)
     sz1 = np.count_nonzero(this_mask)
     if (sz0 < 2*sz1) and (sz0 > sz1/2):

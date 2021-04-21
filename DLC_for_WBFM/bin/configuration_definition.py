@@ -142,8 +142,8 @@ class DLCForWBFMConfig:
                           offset_start_frame=True,
                           red_not_green=True):
         """Gets volume and automatically applies saved preprocessing settings
-        TODO: properly mirror
-        TODO: save dtype as a field
+        ENHANCE: properly mirror
+        ENHANCE: save dtype as a field
         """
         if red_not_green:
             fname = self.datafiles.red_bigtiff_fname

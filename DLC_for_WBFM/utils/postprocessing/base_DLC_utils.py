@@ -21,7 +21,7 @@ def xy_from_dlc_dat(fname, which_neuron=0, num_frames=100):
             this_prob.extend([this_frame[1][prob_ind] for this_frame in dlc_table[which_frames]])
     except:
         dlc_table = pd.read_hdf(fname)
-        scorer = 'feature_tracker' #TODO: SHOULDN'T BE HARD CODED
+        scorer = 'feature_tracker' # WARNING: SHOULDN'T BE HARD CODED
         neuron_names = dlc_table[scorer].columns.levels[0]
         name = neuron_names[which_neuron]
 

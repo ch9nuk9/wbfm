@@ -117,7 +117,7 @@ def calc_bipartite_from_distance(xyz0, xyz1, max_dist=None):
         Distance over which to remove matches
 
     """
-    # TODO: use sparse distance matrix: https://stackoverflow.com/questions/52366421/how-to-do-n-d-distance-and-nearest-neighbor-calculations-on-numpy-arrays
+    # ENHANCE: use sparse distance matrix: https://stackoverflow.com/questions/52366421/how-to-do-n-d-distance-and-nearest-neighbor-calculations-on-numpy-arrays
     cost_matrix = cdist(np.array(xyz0), np.array(xyz1), 'euclidean')
     matches = linear_sum_assignment(cost_matrix)
     matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]

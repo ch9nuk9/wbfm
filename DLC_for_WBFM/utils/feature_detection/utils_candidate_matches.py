@@ -84,7 +84,7 @@ def calc_neuron_using_voronoi(all_matches,
 
             # Heuristic
             # If the cells have a unique node in each frame, then take it as true
-            # TODO: removal of outliers
+            # ENHANCE: removal of outliers
             for k, v in cells.items():
                 if is_one_neuron_per_frame(v, min_size=target_size, total_frames=total_frames):
                     global2local[global_current_ind] = v

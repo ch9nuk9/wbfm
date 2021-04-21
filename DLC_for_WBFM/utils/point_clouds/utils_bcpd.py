@@ -216,7 +216,7 @@ def save_indices_DLC(indices,
             centroid_dfs.append(pd.read_csv(fname))
         else:
             # names = ['X', 'Y', 'Z']
-            names = ['Z', 'X', 'Y'] # TODO: update this
+            names = ['Z', 'X', 'Y']
             centroid_dfs.append(pd.read_csv(fname, sep=' ', names=names))
 
     dataFrame = None
@@ -241,8 +241,8 @@ def save_indices_DLC(indices,
     # Note: only works for single-digit indexed images
 
     # Define output for DLC on cluster
-    subfoldername = 'test_100frames.ome'# TODO
-    # TODO: hardcode linux filesep
+    subfoldername = 'test_100frames.ome'# COMBAK
+    # WARNING: hardcode linux filesep
     # Use the numbers from the centroid files
     print(centroid_nums)
     relativeimagenames=['/'.join(('labeled-data',subfoldername,'img{}.tif'.format(i))) for i in centroid_nums]
