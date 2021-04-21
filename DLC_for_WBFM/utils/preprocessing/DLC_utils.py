@@ -491,15 +491,17 @@ def train_all_dlc_from_config(config):
 
     all_dlc_configs = config['dlc_projects']['all_configs']
 
+    print(f"Found {len(all_dlc_configs)} networks; beginning training")
     for dlc_config in all_dlc_configs:
         # Check to see if already trained
         try:
             deeplabcut.evaluate_network(dlc_config)
             print(f"Network for config {dlc_config} already trained; skipping")
             continue
-        except:
-            # Not yet trained
+        except FileNotFoundError:
+            # Not yet trained, so train it!
             pass
+        # deeplabcut.train_network(dlc_config)
         try:
             deeplabcut.train_network(dlc_config)
         except CancelledError:
