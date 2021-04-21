@@ -555,7 +555,7 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     # Save dataframe
     dest_folder = '3-tracking'
     fname = os.path.join(dest_folder, 'full_3d_tracks.h5')
-    final_df.to_hdf(fname)
+    final_df.to_hdf(fname, "df_with_missing")
 
     # Save in yaml
     udpates = {'final_3d_tracks': {'df_fname': fname}}
@@ -623,18 +623,19 @@ def get_traces_from_3d_tracks(segment_cfg,
         matches, conf, _ = out
         # Use metadata to get red traces
         # OPTIMIZE: minimum confidence?
-        this_mdat = segmentation_metadata[i_volume]
-        all_seg_names = list(this_mdat['centroid'].keys())
+        mdat = segmentation_metadata[i_volume]
+        all_seg_names = list(mdat['centroid'].keys())
         # TODO: is this actually setting?
         for i_dlc, i_seg in matches:
-            dlc_name = all_neuron_names[i_dlc]  # output name
-            seg_name = all_seg_names[i_seg]
+            d_name = all_neuron_names[i_dlc]  # output name
+            s_name = all_seg_names[i_seg]
             # See saved_names above
-            red_traces[(name, 'brightness')].loc[i_volume] = this_mdat['total_brightness'][seg_name]
-            red_traces[(name, 'volume')].loc[i_volume] = this_mdat['neuron_volume'][seg_name]
-            red_traces[(name, 'z')].loc[i_volume] = this_mdat['centroid'][seg_name][0]
-            red_traces[(name, 'x')].loc[i_volume] = this_mdat['centroid'][seg_name][1]
-            red_traces[(name, 'y')].loc[i_volume] = this_mdat['centroid'][seg_name][2]
+            i = i_volume
+            red_dat[(d_name, 'brightness')].loc[i] = mdat['total_brightness'][s_name]
+            red_dat[(d_name, 'volume')].loc[i] = mdat['neuron_volume'][s_name]
+            red_dat[(d_name, 'z')].loc[i] = mdat['centroid'][s_name][0]
+            red_dat[(d_name, 'x')].loc[i] = mdat['centroid'][s_name][1]
+            red_dat[(d_name, 'y')].loc[i] = mdat['centroid'][s_name][2]
 
         # Save
         all_matches[i_volume] = list(zip(matches, conf))
@@ -642,8 +643,8 @@ def get_traces_from_3d_tracks(segment_cfg,
     # TODO: Get full green traces using masks
 
     # Save traces (red and green) and matches
-    save_folder = Path('4-traces')
-    red_traces.to_hdf(save_folder.joinpath('red_traces.h5'))
+    fname = Path('4-traces').joinpath('red_traces.h5')
+    red_dat.to_hdf(fname, "df_with_missing")
 
 
 ##
