@@ -17,8 +17,7 @@ import numpy as np
 import tifffile
 import pickle
 from pathlib import Path
-# import pims
-# import PIL
+import re
 from skimage import io
 from skimage.util import img_as_ubyte
 import os
@@ -522,23 +521,14 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     all_analyzed_data = []
     i_neuron = 0
     for dlc_config in all_dlc_configs:
-        # CheckifNotAnalyzed()
-        dlc_cfg = auxiliaryfunctions.load_config(dlc_config)
+        dlc_cfg = auxiliaryfunctions.read_config(dlc_config)
         video_list = list(dlc_cfg['video_sets'].keys())
-        vname = video_list[0]
-        destfolder = str(Path(vname).parent)
-        scorer = dlc_cfg['scorer']
-        # Apply if not already done
-        out = auxiliaryfunctions.CheckifNotAnalyzed(destfolder, vname, scorer)
-        already_analyzed = out[0]
-        if not already_analyzed:
-            deeplabcut.analyze_videos(dlc_config, video_list)
+        # Works even if already analyzed
+        deeplabcut.analyze_videos(dlc_config, video_list)
         # Get data for later use
-        # See also: https://github.com/DeepLabCut/DeepLabCut/blob/a9fdb5f401893dc2dc4c16a8818371215cda1ac0/deeplabcut/post_processing/filtering.py
-        df, _, _, _ = auxiliaryfunctions.load_analyzed_data(
-                    destfolder, vname, scorer
-                )
+        df_fname = get_annotations_from_dlc_config(dlc_config)
         # Remove scorer and rename neurons
+        df = pd.read_hdf(df_fname)
         df_scorer = df.columns.values[0][0]
         df = df[df_scorer]
         i_neuron_new = i_neuron + len(df.columns)
@@ -551,8 +541,9 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     # Collect 2d data
     # i.e. just add the z coordinate to it
     final_df = pd.DataFrame()
-    z_col = z*np.ones(len(df)) # All dfs should be same length
-    for z, df in zip(all_z_coord, all_analyzed_data):
+    for dlc_config, df in zip(all_dlc_configs, all_analyzed_data):
+        z = get_z_from_dlc_name(dlc_config)
+        z_col = z*np.ones(len(df))
         # Initial format is: x, y, likelihood
         # Final format is: x, y, z, likelihood
         # NOTE: many of the other pure numpy arrays are zxy
@@ -596,6 +587,7 @@ def get_traces_from_3d_tracks(segment_cfg,
 
     # Convert DLC dataframe to array
     all_neuron_names = list(dlc_tracks.columns.levels[0])
+
     def get_dlc_zxy(i_volume, dlc_tracks=dlc_tracks):
         all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
         coords = ['z', 'x', 'y']
@@ -653,3 +645,23 @@ def get_traces_from_3d_tracks(segment_cfg,
     # Save traces (red and green) and matches
     save_folder = Path('4-traces')
     red_traces.to_hdf(save_folder.joinpath('red_traces.h5'))
+
+
+##
+## Helper functions
+##
+
+
+def get_z_from_dlc_name(name):
+    regex = r"c[\d]*"
+    return re.finditer(regex, name, re.MULTILINE)
+
+
+def get_annotations_from_dlc_config(dlc_config):
+    fnames = os.listdir(Path(dlc_config).with_name('videos'))
+    annotation_names = [f for f in fnames if '.h5' in f]
+    if len(annotation_names) > 1:
+        print(f"Found more than one annotation for {dlc_config}")
+    annotation_names = annotation_names[0]
+    print(f"Using found annotations: {annotation_names}")
+    return annotation_names
