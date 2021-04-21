@@ -318,11 +318,14 @@ def update_pose_config(dlc_config_fname, DEBUG=False):
         pose_config['multi_step'] = [[0.005, 1000]]
         pose_config['save_iters'] = 900
     else:
-        pose_config['multi_step'] = [[5e-4, 5e3], [1e-4, 1e4], [5e-5, 5e4]]
+        pose_config['multi_step'] = [[5e-4, 5e3],
+                                     [1e-4, 1e4],
+                                     [5e-5, 3e4],
+                                     [1e-5, 5e4]]
         # pose_config['multi_step'] = [[0.005, 7500], [5e-4, 2e4], [1e-4, 5e4]]
         pose_config['save_iters'] = 10000
-    pose_config['pos_dist_thresh'] = 17  # 15  # We have very small objects
-    pose_config['pairwise_predict'] = False  # Our objects are consistent
+    pose_config['pos_dist_thresh'] = 13  # 15  # We have very small objects
+    pose_config['pairwise_predict'] = False  # Broken?
 
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
 
@@ -489,6 +492,14 @@ def train_all_dlc_from_config(config):
     all_dlc_configs = config['dlc_projects']['all_configs']
 
     for dlc_config in all_dlc_configs:
+        # Check to see if already trained
+        try:
+            deeplabcut.evaluate_network(dlc_config)
+            print(f"Network for config {dlc_config} already trained; skipping")
+            continue
+        except:
+            # Not yet trained
+            pass
         try:
             deeplabcut.train_network(dlc_config)
         except CancelledError:
