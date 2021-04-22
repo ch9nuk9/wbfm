@@ -22,7 +22,7 @@ postprocessing_params:
 # Output
 output:
   folder: 1-segmentation # Only used for initial writing
-  masks: 1-segmentation/masks.pickle
+  masks: 1-segmentation/masks.btf
   metadata: 1-segmentation/metadata.pickle
 
 # Printing

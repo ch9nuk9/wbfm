@@ -11,6 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import argparse
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.gui.utils_gui import array2qt
 import pandas as pd
 import sys
 from pathlib import Path
@@ -18,6 +19,10 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
+import numpy as np
+
+def get_cropped_frame(fname, t, zxy):
+    return np.random.rand(200,500,1)
 
 
 class MplCanvas(FigureCanvasQTAgg):
@@ -35,9 +40,37 @@ class Ui_MainWindow(object):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1084, 754)
 
+        ########################
+        # Load Configs
+        ########################
         self.cfg = cfg
         traces_cfg = load_config(cfg['subfolder_configs']['traces'])
         self.traces_cfg = traces_cfg
+        segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
+        self.segment_cfg = segment_cfg
+        ########################
+        # Load Data
+        ########################
+        # For matplotlib
+        # COMBAK: not just red
+        traces_fname = traces_cfg['traces']['red']
+        if not DEBUG:
+            self.df_traces = pd.read_hdf(traces_fname)
+        # For video panels
+        # TODO: make get_cropped_frame
+        red_fname = cfg['red_bigtiff_fname']
+        f0 = get_cropped_frame
+        f1 = lambda t, zxy : array2qt(f0(red_fname, t, zxy))
+        self.red_frame_factory = f1
+
+        green_fname = cfg['green_bigtiff_fname']
+        f1 = lambda t, zxy : array2qt(f0(green_fname, t, zxy))
+        self.green_frame_factory = f1
+
+        seg_fname = segment_cfg['output']['masks']
+        f1 = lambda t, zxy : array2qt(f0(seg_fname, t, zxy))
+        self.seg_frame_factory = f1
+
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -50,14 +83,18 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5 = QtWidgets.QVBoxLayout()
         self.verticalLayout_5.setObjectName("verticalLayout_5")
-        # TODO: connect to matplotlib
+        ########################
+        # Neuron selector
+        ########################
         self.neuronSelector = QtWidgets.QComboBox(self.centralwidget)
         self.neuronSelector.setObjectName("neuronSelector")
         neuron_names = traces_cfg['traces']['neuron_names']
         [self.neuronSelector.addItem(name) for name in neuron_names]
         self.verticalLayout_5.addWidget(self.neuronSelector)
-        self.neuronSelector.currentIndexChanged.connect(self.update_traces)
-        # TODO: connect to matplotlib
+        self.neuronSelector.currentIndexChanged.connect(self.update_all_panels)
+        ########################
+        # Frame (time) selector
+        ########################
         self.timeSelector = QtWidgets.QSpinBox(self.centralwidget)
         start = cfg['dataset_params']['start_volume']
         self.timeSelector.setMinimum(start)
@@ -65,56 +102,70 @@ class Ui_MainWindow(object):
         self.timeSelector.setMaximum(end)
         self.timeSelector.setObjectName("timeSelector")
         self.verticalLayout_5.addWidget(self.timeSelector)
-        self.timeSelector.valueChanged.connect(self.update_traces)
-        # TODO: plot traces
-        df_fname = traces_cfg['traces']['red']
-        if not DEBUG:
-            df_red = pd.read_hdf(df_fname)
+        self.timeSelector.valueChanged.connect(self.update_all_panels)
         self.horizontalLayout_4.addLayout(self.verticalLayout_5)
-        # self.tracesPlt = QtWidgets.QLabel(self.centralwidget)
-        # self.tracesPlt.setObjectName("tracesPlt")
         sc = MplCanvas(self, width=5, height=4, dpi=100)
         sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
         self.tracesPlt = sc
         self.horizontalLayout_4.addWidget(self.tracesPlt)
         self.verticalLayout_4.addLayout(self.horizontalLayout_4)
-        self.update_traces()
 
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
+
+        ########################
+        # Segmentation
+        ########################
         self.segmentationImg = QtWidgets.QLabel(self.centralwidget)
         self.segmentationImg.setObjectName("segmentationImg")
         self.horizontalLayout_6.addWidget(self.segmentationImg)
+
+        ########################
+        # Red channel
+        ########################
         self.redChannelImg = QtWidgets.QLabel(self.centralwidget)
         self.redChannelImg.setObjectName("redChannelImg")
         self.horizontalLayout_6.addWidget(self.redChannelImg)
+
+        ########################
+        # Green channel
+        ########################
         self.greenChannelImg = QtWidgets.QLabel(self.centralwidget)
         self.greenChannelImg.setObjectName("greenChannelImg")
         self.horizontalLayout_6.addWidget(self.greenChannelImg)
+
         self.horizontalLayout_5.addLayout(self.horizontalLayout_6)
         self.verticalLayout_4.addLayout(self.horizontalLayout_5)
         MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1084, 22))
-        self.menubar.setObjectName("menubar")
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
-        self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
+        # self.menubar = QtWidgets.QMenuBar(MainWindow)
+        # self.menubar.setGeometry(QtCore.QRect(0, 0, 1084, 22))
+        # self.menubar.setObjectName("menubar")
+        # MainWindow.setMenuBar(self.menubar)
+        # self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        # self.statusbar.setObjectName("statusbar")
+        # MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+        self.update_all_panels()
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.neuronSelector.setItemText(0, _translate("MainWindow", "Neuron0"))
         # self.tracesPlt.setText(_translate("MainWindow", "This is the very very large matplotlib \'label\' of the traces over time"))
-        self.segmentationImg.setText(_translate("MainWindow", "TextLabel"))
-        self.redChannelImg.setText(_translate("MainWindow", "TextLabel"))
-        self.greenChannelImg.setText(_translate("MainWindow", "TextLabel"))
+        # self.segmentationImg.setText(_translate("MainWindow", "TextLabel"))
+        # self.redChannelImg.setText(_translate("MainWindow", "TextLabel"))
+        # self.greenChannelImg.setText(_translate("MainWindow", "TextLabel"))
+
+    def update_all_panels(self):
+        self.update_traces()
+        self.update_segmentation()
+        self.update_red()
+        self.update_green()
 
     def update_traces(self):
         current_neuron = self.neuronSelector.currentText()
@@ -123,6 +174,31 @@ class Ui_MainWindow(object):
         self.tracesPlt.axes.set_title(title)
         self.tracesPlt.fig.canvas.draw_idle()
 
+    def get_current_centroid(self):
+        current_neuron = self.neuronSelector.currentText()
+        current_t = self.timeSelector.value()
+
+        # TODO
+        return (0,0,0)
+
+    def update_segmentation(self):
+        t = self.timeSelector.value()
+        zxy = self.get_current_centroid()
+        frame = self.seg_frame_factory(t, zxy)
+        self.segmentationImg.setPixmap(frame)
+        # frame.show()
+
+    def update_red(self):
+        t = self.timeSelector.value()
+        zxy = self.get_current_centroid()
+        frame = self.red_frame_factory(t, zxy)
+        self.redChannelImg.setPixmap(frame)
+
+    def update_green(self):
+        t = self.timeSelector.value()
+        zxy = self.get_current_centroid()
+        frame = self.green_frame_factory(t, zxy)
+        self.greenChannelImg.setPixmap(frame)
 
 
 
