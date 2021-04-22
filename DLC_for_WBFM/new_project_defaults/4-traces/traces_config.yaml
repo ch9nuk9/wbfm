@@ -1,11 +1,12 @@
 # Default parameters for creating a new project
 # Do not edit!
 
+self_path: 4-traces/traces_config.yaml
 
 #########################
-# Separate package output
+# Data files
 #########################
 
-segmentation_output:
-  mask_fname: null
-  metadata_fname: null
+traces:
+  red: null
+  green: null

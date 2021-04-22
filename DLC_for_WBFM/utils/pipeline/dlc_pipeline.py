@@ -334,3 +334,7 @@ def get_traces_from_3d_tracks(segment_cfg,
     # Save traces (red and green) and matches
     fname = Path('4-traces').joinpath('red_traces.h5')
     red_dat.to_hdf(fname, "df_with_missing")
+    traces_cfg['traces']['red'] = str(fname)
+
+    # Save the output filenames
+    edit_config(traces_cfg['self_path'], traces_cfg)
