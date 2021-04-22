@@ -5,7 +5,7 @@ The top level function for initializing a stack of DLC projects
 from pathlib import Path
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.utils.preprocessing.DLC_utils import train_all_dlc_from_config
+from DLC_for_WBFM.utils.pipeline.dlc_pipeline import train_all_dlc_from_config
 # Experiment tracking
 import sacred
 from sacred import Experiment
