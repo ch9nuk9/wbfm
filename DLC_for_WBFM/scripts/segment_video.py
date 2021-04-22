@@ -42,8 +42,8 @@ def segment2d(_config, _run):
     # For windows workstation
     os.environ['NUMEXPR_MAX_THREADS'] = '56'
 
-    this_config = _config['segment_cfg']
-    this_config['dataset_params'] = _config['project_cfg']['dataset_params']
+    this_config = _config['segment_cfg'].copy()
+    this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     # project_dir = Path(project_path).parent
     with safe_cd(_config['project_dir']):
