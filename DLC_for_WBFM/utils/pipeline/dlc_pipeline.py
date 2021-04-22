@@ -277,23 +277,26 @@ def get_traces_from_3d_tracks(segment_cfg,
 
     def get_dlc_zxy(i_volume, dlc_tracks=dlc_tracks):
         all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
-        coords = ['z', 'x', 'y']
+        coords = ('z', 'x', 'y')
         for i, name in enumerate(all_neuron_names):
-            all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords])
+            all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name,coords])
         return all_dlc_zxy
 
     # Main loop: Match segmentations to tracks
     # Also: get connected red brightness and mask
 
     # Initialize multi-index dataframe for data
-    frame_list = list(range(start_volume, num_frames))
+    frame_list = list(range(start_volume, num_frames + start_volume))
     # red_brightness = {}  # key = neuron id (int); val = list
     # red_
-    save_names = ['brightness', 'volume', 'z', 'x', 'y']
+    save_names = ['brightness', 'volume', 'centroid_ind', 'z', 'x', 'y']
     m_index = pd.MultiIndex.from_product([all_neuron_names,
                                          save_names],
                                          names=['neurons', 'data'])
-    red_dat = pd.DataFrame(np.zeros((len(all_neuron_names), 5)),
+    sz = (len(m_index), len(save_names))
+    empty_dat = np.empty(sz)
+    empty_dat[:] = np.nan
+    red_dat = pd.DataFrame(empty_dat,
                            columns = m_index,
                            index = frame_list)
 
