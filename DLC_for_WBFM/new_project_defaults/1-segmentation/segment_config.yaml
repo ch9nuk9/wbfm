@@ -1,4 +1,6 @@
----
+
+self_path: 1-training_data/segment_config.yaml # for programmatic updating
+
 # Project definitions
 video_path: null
 segmentation_type: 2d
@@ -15,11 +17,11 @@ postprocessing_params:
   upper_length_threshold: 12
   lower_length_threshold: 3
   to_remove_border: true
-  border_width_to_remove: 100
+  border_width_to_remove: 50
 
 # Output
 output:
-  folder: 1-segmentation
+  folder: 1-segmentation # Only used for initial writing
   masks: 1-segmentation/masks.pickle
   metadata: 1-segmentation/metadata.pickle
 
