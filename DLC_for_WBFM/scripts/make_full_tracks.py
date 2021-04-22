@@ -1,5 +1,5 @@
 """
-The top level function for producing training data via feature-based tracking
+The top level function for producing dlc tracks in 3d
 """
 
 from pathlib import Path

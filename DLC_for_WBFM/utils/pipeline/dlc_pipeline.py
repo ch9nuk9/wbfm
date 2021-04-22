@@ -255,7 +255,8 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
 def get_traces_from_3d_tracks(segment_cfg,
                               track_cfg,
                               traces_cfg,
-                              dataset_params):
+                              dataset_params,
+                              DEBUG=False):
     """
     Connect the 3d traces to previously segmented masks
 
