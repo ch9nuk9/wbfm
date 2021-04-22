@@ -236,24 +236,8 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     for name, z in neuron2z_dict.items():
         final_df[name, 'z'] = z
     final_df.sort_values('bodyparts', axis=1, inplace=True)
-    # for dlc_config, df in zip(all_dlc_configs, all_dfs):
-    #     z = get_z_from_dlc_name(dlc_config)
-    #     # z_col = z*np.ones(len(df))
-    #     # Initial format is: x, y, likelihood
-    #     # Final format is: x, y, z, likelihood
-    #     # NOTE: many of the other pure numpy arrays are zxy
-    #     these_neuron_names = list(df.columns.levels[0])
-    #     if DEBUG:
-    #         print(f"Analyzing dlc project: {dlc_config}")
-    #         print(f"Found {len(these_neuron_names)} neurons at z={z}")
-    #     for name in these_neuron_names:
-    #         df[name, 'z'] = z
-    #     # df.sort_index(inplace=True)
-    #     df.sort_values('bodyparts', axis=1, inplace=True)
-    # final_df = pd.concat(all_dfs, axis=1, ignore_index=True)
     if DEBUG:
         print(final_df)
-        # eror
 
     # Save dataframe
     dest_folder = '3-tracking'
@@ -278,7 +262,7 @@ def get_traces_from_3d_tracks(segment_cfg,
     Get both red and green traces for each neuron
     """
     # Settings
-    max_dist = track_cfg['final_3d_tracks']['max_dist']
+    max_dist = track_cfg['final_3d_tracks']['max_dist_to_segmentation']
     start_volume = dataset_params['start_volume']
     num_frames = dataset_params['num_frames']
     # Get previous annotations
@@ -307,8 +291,8 @@ def get_traces_from_3d_tracks(segment_cfg,
     # red_
     save_names = ['brightness', 'volume', 'z', 'x', 'y']
     m_index = pd.MultiIndex.from_product([all_neuron_names,
-                                        save_names],
-                                        names=['neurons', 'data'])
+                                         save_names],
+                                         names=['neurons', 'data'])
     red_dat = pd.DataFrame(np.zeros((len(all_neuron_names), 5)),
                            columns = m_index,
                            index = frame_list)
