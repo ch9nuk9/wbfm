@@ -275,11 +275,11 @@ def get_traces_from_3d_tracks(segment_cfg,
     # Convert DLC dataframe to array
     all_neuron_names = list(dlc_tracks.columns.levels[0])
 
-    def get_dlc_zxy(i_volume, dlc_tracks=dlc_tracks):
+    def get_dlc_zxy(t, dlc_tracks=dlc_tracks):
         all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
-        coords = ('z', 'x', 'y')
+        coords = ['z', 'x', 'y']
         for i, name in enumerate(all_neuron_names):
-            all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name,coords])
+            all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
         return all_dlc_zxy
 
     # Main loop: Match segmentations to tracks
@@ -293,12 +293,12 @@ def get_traces_from_3d_tracks(segment_cfg,
     m_index = pd.MultiIndex.from_product([all_neuron_names,
                                          save_names],
                                          names=['neurons', 'data'])
-    sz = (len(m_index), len(save_names))
+    sz = (len(frame_list), len(m_index))
     empty_dat = np.empty(sz)
     empty_dat[:] = np.nan
     red_dat = pd.DataFrame(empty_dat,
-                           columns = m_index,
-                           index = frame_list)
+                           columns=m_index,
+                           index=frame_list)
 
     all_matches = {}  # key = i_vol; val = 3xN-element list
     for i_volume in tqdm(frame_list):
@@ -315,7 +315,7 @@ def get_traces_from_3d_tracks(segment_cfg,
         # Use metadata to get red traces
         # OPTIMIZE: minimum confidence?
         mdat = segmentation_metadata[i_volume]
-        all_seg_names = list(mdat['centroid'].keys())
+        all_seg_names = list(mdat['centroids'].keys())
         # TODO: is this actually setting?
         for i_dlc, i_seg in matches:
             d_name = all_neuron_names[i_dlc]  # output name
@@ -324,9 +324,9 @@ def get_traces_from_3d_tracks(segment_cfg,
             i = i_volume
             red_dat[(d_name, 'brightness')].loc[i] = mdat['total_brightness'][s_name]
             red_dat[(d_name, 'volume')].loc[i] = mdat['neuron_volume'][s_name]
-            red_dat[(d_name, 'z')].loc[i] = mdat['centroid'][s_name][0]
-            red_dat[(d_name, 'x')].loc[i] = mdat['centroid'][s_name][1]
-            red_dat[(d_name, 'y')].loc[i] = mdat['centroid'][s_name][2]
+            red_dat[(d_name, 'z')].loc[i] = mdat['centroids'][s_name][0]
+            red_dat[(d_name, 'x')].loc[i] = mdat['centroids'][s_name][1]
+            red_dat[(d_name, 'y')].loc[i] = mdat['centroids'][s_name][2]
 
         # Save
         all_matches[i_volume] = list(zip(matches, conf))
