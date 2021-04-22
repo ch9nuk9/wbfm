@@ -10,3 +10,6 @@ self_path: 4-traces/traces_config.yaml
 traces:
   red: null
   green: null
+  neuron_names:
+    - dummy0
+    - dummy1

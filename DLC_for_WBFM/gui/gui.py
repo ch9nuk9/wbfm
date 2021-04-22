@@ -9,34 +9,77 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import argparse
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+import pandas as pd
+import sys
+from pathlib import Path
+import matplotlib
+matplotlib.use('Qt5Agg')
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+
+
+class MplCanvas(FigureCanvasQTAgg):
+    # See: https://www.learnpyqt.com/tutorials/plotting-matplotlib/
+    def __init__(self, parent=None, width=15, height=10, dpi=100):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = self.fig.add_subplot(111)
+        super(MplCanvas, self).__init__(self.fig)
 
 
 class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
+# class Ui_MainWindow(QtWidgets.QMainWindow):
+    def setupUi(self, MainWindow, cfg, DEBUG):
+        # super(MainWindow, self).__init__()
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1084, 754)
+
+        self.cfg = cfg
+        traces_cfg = load_config(cfg['subfolder_configs']['traces'])
+        self.traces_cfg = traces_cfg
+
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
+
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
+
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+
         self.verticalLayout_5 = QtWidgets.QVBoxLayout()
         self.verticalLayout_5.setObjectName("verticalLayout_5")
+        # TODO: connect to matplotlib
         self.neuronSelector = QtWidgets.QComboBox(self.centralwidget)
         self.neuronSelector.setObjectName("neuronSelector")
-        self.neuronSelector.addItem("")
+        neuron_names = traces_cfg['traces']['neuron_names']
+        [self.neuronSelector.addItem(name) for name in neuron_names]
         self.verticalLayout_5.addWidget(self.neuronSelector)
+        self.neuronSelector.currentIndexChanged.connect(self.update_traces)
+        # TODO: connect to matplotlib
         self.timeSelector = QtWidgets.QSpinBox(self.centralwidget)
-        self.timeSelector.setMinimum(100)
-        self.timeSelector.setMaximum(600)
+        start = cfg['dataset_params']['start_volume']
+        self.timeSelector.setMinimum(start)
+        end = start + cfg['dataset_params']['num_frames']
+        self.timeSelector.setMaximum(end)
         self.timeSelector.setObjectName("timeSelector")
         self.verticalLayout_5.addWidget(self.timeSelector)
+        self.timeSelector.valueChanged.connect(self.update_traces)
+        # TODO: plot traces
+        df_fname = traces_cfg['traces']['red']
+        if not DEBUG:
+            df_red = pd.read_hdf(df_fname)
         self.horizontalLayout_4.addLayout(self.verticalLayout_5)
-        self.tracesPlt = QtWidgets.QLabel(self.centralwidget)
-        self.tracesPlt.setObjectName("tracesPlt")
+        # self.tracesPlt = QtWidgets.QLabel(self.centralwidget)
+        # self.tracesPlt.setObjectName("tracesPlt")
+        sc = MplCanvas(self, width=5, height=4, dpi=100)
+        sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
+        self.tracesPlt = sc
         self.horizontalLayout_4.addWidget(self.tracesPlt)
         self.verticalLayout_4.addLayout(self.horizontalLayout_4)
+        self.update_traces()
+
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
@@ -68,17 +111,40 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.neuronSelector.setItemText(0, _translate("MainWindow", "Neuron0"))
-        self.tracesPlt.setText(_translate("MainWindow", "This is the very very large matplotlib \'label\' of the traces over time"))
+        # self.tracesPlt.setText(_translate("MainWindow", "This is the very very large matplotlib \'label\' of the traces over time"))
         self.segmentationImg.setText(_translate("MainWindow", "TextLabel"))
         self.redChannelImg.setText(_translate("MainWindow", "TextLabel"))
         self.greenChannelImg.setText(_translate("MainWindow", "TextLabel"))
 
+    def update_traces(self):
+        current_neuron = self.neuronSelector.currentText()
+        current_t = self.timeSelector.value()
+        title = f"Frame {current_t} for neuron {current_neuron}"
+        self.tracesPlt.axes.set_title(title)
+        self.tracesPlt.fig.canvas.draw_idle()
+
+
+
+
+parser = argparse.ArgumentParser(description='Build GUI with a project')
+parser.add_argument('project_config',
+                    help='path to config file')
+parser.add_argument('DEBUG', default=False,
+                    help='path to config file')
+
+args = parser.parse_args()
 
 if __name__ == "__main__":
+    # Basic setup
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
+    # Get project settings
+    project_config = args.project_config
+    cfg = load_config(project_config)
+    # Actually build window
+    with safe_cd(Path(project_config).parent):
+        ui.setupUi(MainWindow, cfg, args.DEBUG)
+        MainWindow.show()
     sys.exit(app.exec_())
