@@ -1,5 +1,5 @@
----
 # Project definitions
+self_path: null # for programmatic updating
 video_path: null
 segmentation_type: 2d
 

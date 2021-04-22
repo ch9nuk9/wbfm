@@ -8,6 +8,7 @@ import tifffile as tiff
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
+from DLC_for_WBFM.utils.projects.utils_project import edit_config
 # metadata
 from segmentation.util.utils_metadata import get_metadata_dictionary
 from segmentation.util.utils_paths import get_output_fnames
@@ -26,6 +27,8 @@ def segment_video_using_config_2d(_config):
     num_slices = _config['dataset_params']['num_slices']
     video_path = _config['video_path']
     mask_fname, metadata_fname = get_output_fnames(video_path, _config)
+    _config['output']['masks'] = mask_fname
+    _config['output']['metadata'] = metadata_fname
     verbose = _config['verbose']
     metadata = dict()
     preprocessing_settings = PreprocessingSettings.load_from_yaml(
@@ -93,6 +96,9 @@ def segment_video_using_config_2d(_config):
     # saving metadata
     with open(metadata_fname, 'wb') as meta_save:
         pickle.dump(metadata, meta_save)
+
+    if _config['self_path'] is not None:
+        edit_config(_config['self_path'], _config)
 
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Data saved at {mask_fname}')
