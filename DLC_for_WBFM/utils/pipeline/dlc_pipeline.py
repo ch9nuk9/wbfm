@@ -1,21 +1,20 @@
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
-from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, build_relative_imagenames, save_dlc_annotations
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
+# from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, build_relative_imagenames, save_dlc_annotations
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
-from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, update_pose_config, training_data_from_annotations, build_png_training_data, build_png_training_data
+from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, update_pose_config, training_data_from_annotations, build_png_training_data, create_dlc_project
 import pandas as pd
 import numpy as np
 import tifffile
 import pickle
 from pathlib import Path
-import re
 import os
 from tqdm import tqdm
-
+import deeplabcut
 
 
 ###
@@ -205,40 +204,56 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     all_dlc_configs = track_cfg['dlc_projects']['all_configs']
 
     # Apply networks
-    all_analyzed_data = []
+    all_dfs = []
+    neuron2z_dict = {}
     i_neuron = 0
     for dlc_config in all_dlc_configs:
-        dlc_cfg = auxiliaryfunctions.read_config(dlc_config)
+        dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
         video_list = list(dlc_cfg['video_sets'].keys())
         # Works even if already analyzed
         deeplabcut.analyze_videos(dlc_config, video_list)
         # Get data for later use
         df_fname = get_annotations_from_dlc_config(dlc_config)
+        if DEBUG:
+            print(f"Using 2d annotations: {df_fname}")
         # Remove scorer and rename neurons
         df = pd.read_hdf(df_fname)
         df_scorer = df.columns.values[0][0]
         df = df[df_scorer]
-        i_neuron_new = i_neuron + len(df.columns)
+        i_neuron_new = i_neuron + len(df.columns.levels[0])
         neuron_range = range(i_neuron, i_neuron_new)
         i_neuron = i_neuron_new
         new_names = [f'neuron{i}' for i in neuron_range]
+        z = get_z_from_dlc_name(dlc_config)
+        neuron2z_dict.update({n: z for n in new_names})
         df.columns.set_levels(new_names, level=0, inplace=True)
-        all_analyzed_data.append(df)
+        all_dfs.append(df)
 
+    final_df = pd.concat(all_dfs, axis=1)
     # Collect 2d data
     # i.e. just add the z coordinate to it
-    final_df = pd.DataFrame()
-    for dlc_config, df in zip(all_dlc_configs, all_analyzed_data):
-        z = get_z_from_dlc_name(dlc_config)
-        z_col = z*np.ones(len(df))
-        # Initial format is: x, y, likelihood
-        # Final format is: x, y, z, likelihood
-        # NOTE: many of the other pure numpy arrays are zxy
-        these_neuron_names = list(df.columns.levels[0])
-        for name in these_neuron_names:
-            df[name, 'z'] = z_col
-        df.sort_index(inplace=True)
-        final_df.append(df, ignore_index=True)
+    # For some reason, the concat after adding z was broken :(
+    for name, z in neuron2z_dict.items():
+        final_df[name, 'z'] = z
+    final_df.sort_values('bodyparts', axis=1, inplace=True)
+    # for dlc_config, df in zip(all_dlc_configs, all_dfs):
+    #     z = get_z_from_dlc_name(dlc_config)
+    #     # z_col = z*np.ones(len(df))
+    #     # Initial format is: x, y, likelihood
+    #     # Final format is: x, y, z, likelihood
+    #     # NOTE: many of the other pure numpy arrays are zxy
+    #     these_neuron_names = list(df.columns.levels[0])
+    #     if DEBUG:
+    #         print(f"Analyzing dlc project: {dlc_config}")
+    #         print(f"Found {len(these_neuron_names)} neurons at z={z}")
+    #     for name in these_neuron_names:
+    #         df[name, 'z'] = z
+    #     # df.sort_index(inplace=True)
+    #     df.sort_values('bodyparts', axis=1, inplace=True)
+    # final_df = pd.concat(all_dfs, axis=1, ignore_index=True)
+    if DEBUG:
+        print(final_df)
+        # eror
 
     # Save dataframe
     dest_folder = '3-tracking'

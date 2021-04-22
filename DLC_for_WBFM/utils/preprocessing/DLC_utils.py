@@ -3,16 +3,12 @@ from deeplabcut.utils import auxiliaryfunctions
 from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTracking, save_config
 from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, save_dlc_annotations
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
 import pandas as pd
-import numpy as np
-import pickle
 from pathlib import Path
 import re
 from skimage import io
 from skimage.util import img_as_ubyte
 import os
-from tqdm import tqdm
 
 
 ##
