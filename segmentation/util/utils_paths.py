@@ -4,14 +4,14 @@ from pathlib import Path
 
 
 def get_output_fnames(video_path, _config):
-    if _config['output_params']['output_folder'] is None:
+    if _config['output']['folder'] is None:
         output_folder = osp.split(video_path)[0]
         # Make a subfolder
         subfolder = datetime.now().strftime("%Y_%m_%d-%I_%M_%p")
         output_folder = osp.join(output_folder, subfolder)
         Path(output_folder).mkdir(parents=True, exist_ok=True)
     else:
-        output_folder = _config['output_params']['output_folder']
+        output_folder = _config['output']['folder']
 
     # Make a suffix
     num_frames = _config['dataset_params']['num_frames']
