@@ -45,6 +45,5 @@ def segment2d(_config, _run):
     this_config = _config['segment_cfg']
     this_config['dataset_params'] = _config['project_cfg']['dataset_params']
 
-    # project_dir = Path(project_path).parent
     with safe_cd(_config['project_dir']):
         segment_video_using_config_2d(this_config)

@@ -88,6 +88,7 @@ def safe_cd(newdir):
 # config utils
 #####################
 
+
 def edit_config(config_fname, edits, DEBUG=False):
     """Generic overwriting, based on DLC"""
 
@@ -118,6 +119,7 @@ def load_config(config_fname):
 #####################
 # Synchronizing config files
 #####################
+
 
 def synchronize_segment_config(project_path, segment_cfg):
     # For now, does NOT overwrite anything on disk
