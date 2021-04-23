@@ -394,7 +394,6 @@ def get_traces_from_3d_tracks(segment_cfg,
             green_dat[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
 
             if DEBUG:
-                err
                 print("Single pass-through sucessful; did not write any files")
                 return
 
@@ -404,7 +403,7 @@ def get_traces_from_3d_tracks(segment_cfg,
     traces_cfg['traces']['red'] = str(fname)
 
     fname = Path('4-traces').joinpath('green_traces.h5')
-    red_dat.to_hdf(fname, "df_with_missing")
+    green_dat.to_hdf(fname, "df_with_missing")
     traces_cfg['traces']['green'] = str(fname)
 
     traces_cfg['traces']['neuron_names'] = all_neuron_names

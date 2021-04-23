@@ -98,13 +98,21 @@ class Ui_MainWindow(object):
         self.timeSelector.setObjectName("timeSelector")
         self.verticalLayout_5.addWidget(self.timeSelector)
         self.timeSelector.valueChanged.connect(self.update_all_panels)
+        # Background selector
+        self.backgroundSelector = QtWidgets.QSpinBox(self.centralwidget)
+        self.backgroundSelector.setMinimum(0)
+        self.backgroundSelector.setValue(15)
+        self.backgroundSelector.setMaximum(100)
+        self.backgroundSelector.setObjectName("backgroundSelector")
+        self.verticalLayout_5.addWidget(self.backgroundSelector)
+        self.backgroundSelector.valueChanged.connect(self.update_only_traces)
         # Trace (mode) selector
         self.modeSelector = QtWidgets.QComboBox(self.centralwidget)
         self.modeSelector.setObjectName("modeSelector")
         possible_modes = ['green', 'red']
-        [self.neuronSelector.addItem(m) for m in possible_modes]
+        [self.modeSelector.addItem(m) for m in possible_modes]
         self.verticalLayout_5.addWidget(self.modeSelector)
-        self.timeSelector.valueChanged.connect(self.update_all_panels)
+        self.modeSelector.currentIndexChanged.connect(self.update_only_traces)
         # Crop selectors
         self.cropXSelector = QtWidgets.QSpinBox(self.centralwidget)
         self.cropXSelector.setMinimum(10)
@@ -196,12 +204,16 @@ class Ui_MainWindow(object):
         with safe_cd(self.project_dir):
             self.update_current_centroid()
             self.update_crop()
-            self.update_current_traces()
-            self.update_traces_plot()
+            self.update_only_traces()
             if not self.tracking_lost:
                 self.update_segmentation()
                 self.update_red()
                 self.update_green()
+
+    def update_only_traces(self):
+        with safe_cd(self.project_dir):
+            self.update_current_traces()
+            self.update_traces_plot()
 
     def update_current_traces(self):
         mode = self.modeSelector.currentText()
@@ -214,9 +226,18 @@ class Ui_MainWindow(object):
             y_raw = self.red_traces[current_neuron]['brightness']
             y = y_raw / self.red_traces[current_neuron]['volume']
             self.current_traces = y
+        elif mode == 'ratio':
+            red = self.red_traces[current_neuron]['brightness']
+            green = self.green_traces[current_neuron]['brightness']
+            back = self.background
+            y = (red - back) / (green - back)
+            self.current_traces = y
+        else:
+            print(f"Unknown mode ({mode})")
+            raise NotImplementedError
 
     def update_traces_plot(self):
-        # Actual trace
+        mode = self.modeSelector.currentText()
         current_neuron = self.neuronSelector.currentText()
         y = self.current_traces
         # Vertical line for time
@@ -228,7 +249,7 @@ class Ui_MainWindow(object):
         canvas.axes.plot(self.x, y, 'k')
         if not self.tracking_lost:
             z, x, y = self.current_centroid
-            title = f"Neuron {current_neuron} at ({z:.1f}, {x:.0f}, {y:.0f})"
+            title = f"{current_neuron}: {mode} trace at ({z:.1f}, {x:.0f}, {y:.0f})"
             line_color = 'b'
         else:
             title = "Tracking lost!"
@@ -245,8 +266,8 @@ class Ui_MainWindow(object):
         x = self.red_traces[current_neuron]['x_dlc'].loc[t]
         y = self.red_traces[current_neuron]['y_dlc'].loc[t]
         if any([pd.isna(val) for val in [z, x, y]]):
-            # print(f"Tracking lost at t={t}")
             self.tracking_lost = True
+            # Keep last centroid
         else:
             self.current_centroid = (z, x, y)
             self.tracking_lost = False
