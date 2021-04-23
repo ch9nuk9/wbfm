@@ -61,12 +61,13 @@ class Ui_MainWindow(object):
         ########################
         # For matplotlib
         # COMBAK: not just red
-        traces_fname = traces_cfg['traces']['red']
+        red_traces_fname = traces_cfg['traces']['red']
+        green_traces_fname = traces_cfg['traces']['green']
         if not DEBUG:
-            print(f"Read traces from {traces_fname}")
-            self.df_traces = pd.read_hdf(traces_fname)
+            # print(f"Read traces from {traces_fname}")
+            self.red_traces = pd.read_hdf(red_traces_fname)
+            self.green_traces = pd.read_hdf(green_traces_fname)
 
-        # For video panels
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
@@ -96,6 +97,13 @@ class Ui_MainWindow(object):
         self.timeSelector.setMaximum(end)
         self.timeSelector.setObjectName("timeSelector")
         self.verticalLayout_5.addWidget(self.timeSelector)
+        self.timeSelector.valueChanged.connect(self.update_all_panels)
+        # Trace (mode) selector
+        self.modeSelector = QtWidgets.QComboBox(self.centralwidget)
+        self.modeSelector.setObjectName("modeSelector")
+        possible_modes = ['green', 'red']
+        [self.neuronSelector.addItem(m) for m in possible_modes]
+        self.verticalLayout_5.addWidget(self.modeSelector)
         self.timeSelector.valueChanged.connect(self.update_all_panels)
         # Crop selectors
         self.cropXSelector = QtWidgets.QSpinBox(self.centralwidget)
@@ -188,17 +196,29 @@ class Ui_MainWindow(object):
         with safe_cd(self.project_dir):
             self.update_current_centroid()
             self.update_crop()
-            self.update_traces()
+            self.update_current_traces()
+            self.update_traces_plot()
             if not self.tracking_lost:
                 self.update_segmentation()
                 self.update_red()
                 self.update_green()
 
-    def update_traces(self):
+    def update_current_traces(self):
+        mode = self.modeSelector.currentText()
+        current_neuron = self.neuronSelector.currentText()
+        if mode == 'green':
+            y_raw = self.green_traces[current_neuron]['brightness']
+            y = y_raw / self.green_traces[current_neuron]['volume']
+            self.current_traces = y
+        elif mode == 'red':
+            y_raw = self.red_traces[current_neuron]['brightness']
+            y = y_raw / self.red_traces[current_neuron]['volume']
+            self.current_traces = y
+
+    def update_traces_plot(self):
         # Actual trace
         current_neuron = self.neuronSelector.currentText()
-        y_raw = self.df_traces[current_neuron]['brightness']
-        y = y_raw / self.df_traces[current_neuron]['volume']
+        y = self.current_traces
         # Vertical line for time
         t = self.timeSelector.value()
         ymin, ymax = np.min(y), np.max(y)
@@ -221,9 +241,9 @@ class Ui_MainWindow(object):
         current_neuron = self.neuronSelector.currentText()
         t = self.timeSelector.value()
         # TODO: fix x-y switch
-        z = self.df_traces[current_neuron]['z_dlc'].loc[t]
-        x = self.df_traces[current_neuron]['x_dlc'].loc[t]
-        y = self.df_traces[current_neuron]['y_dlc'].loc[t]
+        z = self.red_traces[current_neuron]['z_dlc'].loc[t]
+        x = self.red_traces[current_neuron]['x_dlc'].loc[t]
+        y = self.red_traces[current_neuron]['y_dlc'].loc[t]
         if any([pd.isna(val) for val in [z, x, y]]):
             # print(f"Tracking lost at t={t}")
             self.tracking_lost = True
