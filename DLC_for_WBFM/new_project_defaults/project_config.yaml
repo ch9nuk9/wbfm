@@ -21,6 +21,7 @@ dataset_params:
   fps: 5.0
   # In z
   num_slices: 33
+  z_to_xy_ratio: 3.0
   # As of April 2021
   red_and_green_mirrored: True
 

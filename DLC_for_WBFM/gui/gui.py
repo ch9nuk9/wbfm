@@ -202,7 +202,8 @@ class Ui_MainWindow(object):
         canvas.axes.plot(self.x, y, 'r')
         # Trigger the canvas to update and redraw.
         if not self.tracking_lost:
-            title = f"Frame {current_t} for neuron {current_neuron}"
+            z, x, y = self.current_centroid
+            title = f"Neuron {current_neuron} at ({z:.1f}, {x:.0f}, {y:.0f})"
         else:
             title = "Tracking lost!"
         self.tracesPlt.axes.set_title(title)
@@ -211,10 +212,10 @@ class Ui_MainWindow(object):
     def update_current_centroid(self):
         current_neuron = self.neuronSelector.currentText()
         t = self.timeSelector.value()
-
-        z = self.df_traces[current_neuron]['z'].loc[t]
-        x = self.df_traces[current_neuron]['x'].loc[t]
-        y = self.df_traces[current_neuron]['y'].loc[t]
+        # TODO: fix x-y switch
+        z = self.df_traces[current_neuron]['z_dlc'].loc[t]
+        x = self.df_traces[current_neuron]['x_dlc'].loc[t]
+        y = self.df_traces[current_neuron]['y_dlc'].loc[t]
         if any([pd.isna(val) for val in [z, x, y]]):
             # print(f"Tracking lost at t={t}")
             self.tracking_lost = True

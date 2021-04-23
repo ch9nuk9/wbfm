@@ -290,7 +290,9 @@ def get_traces_from_3d_tracks(segment_cfg,
     frame_list = list(range(start_volume, num_frames + start_volume))
     # red_brightness = {}  # key = neuron id (int); val = list
     # red_
-    save_names = ['brightness', 'volume', 'centroid_ind', 'z', 'x', 'y']
+    save_names = ['brightness', 'volume', 'centroid_ind',
+                  'z_seg', 'x_seg', 'y_seg',
+                  'z_dlc', 'x_dlc', 'y_dlc']
     m_index = pd.MultiIndex.from_product([all_neuron_names,
                                          save_names],
                                          names=['neurons', 'data'])
@@ -307,10 +309,12 @@ def get_traces_from_3d_tracks(segment_cfg,
         # Get DLC point cloud
         # NOTE: This dataframe starts at 0, not start_volume
         zxy0 = get_dlc_zxy(i_volume)
+        zxy0[:, 0] *= dataset_params['z_to_xy_ratio']
         # REVIEW: Get segmentation point cloud
         seg_zxy = segmentation_metadata[i_volume]['centroids']
         seg_zxy = [np.asarray(row) for row in seg_zxy]
         zxy1 = np.array(seg_zxy)
+        zxy1[:, 0] *= dataset_params['z_to_xy_ratio']
         # Get matches
         out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
@@ -320,6 +324,7 @@ def get_traces_from_3d_tracks(segment_cfg,
         # OPTIMIZE: minimum confidence?
         mdat = segmentation_metadata[i_volume]
         all_seg_names = list(mdat['centroids'].keys())
+        zxy0[:, 0] /= dataset_params['z_to_xy_ratio'] # Return to original
         # TODO: is this actually setting?
         for i_dlc, i_seg in matches:
             d_name = all_neuron_names[i_dlc]  # output name
@@ -328,9 +333,15 @@ def get_traces_from_3d_tracks(segment_cfg,
             i = i_volume
             red_dat[(d_name, 'brightness')].loc[i] = mdat['total_brightness'][s_name]
             red_dat[(d_name, 'volume')].loc[i] = mdat['neuron_volume'][s_name]
-            red_dat[(d_name, 'z')].loc[i] = mdat['centroids'][s_name][0]
-            red_dat[(d_name, 'x')].loc[i] = mdat['centroids'][s_name][1]
-            red_dat[(d_name, 'y')].loc[i] = mdat['centroids'][s_name][2]
+            red_dat[(d_name, 'centroid_ind')].loc[i] = s_name
+            zxy_seg = mdat['centroids'][s_name]  # BUG?
+            red_dat[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
+            red_dat[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
+            red_dat[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
+            zxy_dlc = zxy0[i_dlc]
+            red_dat[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
+            red_dat[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
+            red_dat[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
             # print(red_dat[d_name, :])
 
         # Save
