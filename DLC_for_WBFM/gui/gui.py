@@ -125,23 +125,21 @@ class Ui_MainWindow(object):
         ########################
         sc = MplCanvas(self, width=5, height=4, dpi=100)
         self.segPlt = sc
-        # self.segmentationImg = QtWidgets.QLabel(self.centralwidget)
-        # self.segmentationImg.setObjectName("segmentationImg")
         self.horizontalLayout_6.addWidget(self.segPlt)
 
         ########################
         # Red channel
         ########################
-        self.redChannelImg = QtWidgets.QLabel(self.centralwidget)
-        self.redChannelImg.setObjectName("redChannelImg")
-        self.horizontalLayout_6.addWidget(self.redChannelImg)
+        sc = MplCanvas(self, width=5, height=4, dpi=100)
+        self.redPlt = sc
+        self.horizontalLayout_6.addWidget(self.redPlt)
 
         ########################
         # Green channel
         ########################
-        self.greenChannelImg = QtWidgets.QLabel(self.centralwidget)
-        self.greenChannelImg.setObjectName("greenChannelImg")
-        self.horizontalLayout_6.addWidget(self.greenChannelImg)
+        sc = MplCanvas(self, width=5, height=4, dpi=100)
+        self.greenPlt = sc
+        self.horizontalLayout_6.addWidget(self.greenPlt)
 
         self.horizontalLayout_5.addLayout(self.horizontalLayout_6)
         self.verticalLayout_4.addLayout(self.horizontalLayout_5)
@@ -174,8 +172,8 @@ class Ui_MainWindow(object):
             self.update_traces()
             if not self.tracking_lost:
                 self.update_segmentation()
-                # self.update_red()
-                # self.update_green()
+                self.update_red()
+                self.update_green()
 
     def update_traces(self):
         current_neuron = self.neuronSelector.currentText()
@@ -211,43 +209,46 @@ class Ui_MainWindow(object):
         t = self.timeSelector.value()
         frame = self.seg_frame_factory(t, self.current_centroid)
         ax = self.segPlt.fig.canvas.axes
-        # canvas.axes.cla()  # Clear the canvas.
         ax.imshow(frame)
-        # Trigger the canvas to update and redraw.
         title = "Segmentatation"  # at centroid {self.current_centroid}"
         ax.set_title(title)
         self.segPlt.fig.canvas.draw()
 
-        # self.segmentationImg.setPixmap(frame)
-
     def update_red(self):
         t = self.timeSelector.value()
         frame = self.red_frame_factory(t, self.current_centroid)
-        self.redChannelImg.setPixmap(frame)
+        ax = self.redPlt.fig.canvas.axes
+        ax.imshow(frame)
+        title = "Red Channel"
+        ax.set_title(title)
+        self.redPlt.fig.canvas.draw()
 
     def update_green(self):
         t = self.timeSelector.value()
         frame = self.green_frame_factory(t, self.current_centroid)
-        self.greenChannelImg.setPixmap(frame)
+        ax = self.greenPlt.fig.canvas.axes
+        ax.imshow(frame)
+        title = "Green Channel"
+        ax.set_title(title)
+        self.greenPlt.fig.canvas.draw()
 
     def red_frame_factory(self, t, zxy):
         fname = self.cfg['red_bigtiff_fname']
         num_slices = self.cfg['dataset_params']['num_slices']
         crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
-        return array2qt(crop_frame)
+        return crop_frame
 
     def green_frame_factory(self, t, zxy):
         fname = self.cfg['green_bigtiff_fname']
         num_slices = self.cfg['dataset_params']['num_slices']
         crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
-        return array2qt(crop_frame)
+        return crop_frame
 
     def seg_frame_factory(self, t, zxy):
         fname = self.segment_cfg['output']['masks']
         num_slices = self.cfg['dataset_params']['num_slices']
         crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
         return crop_frame
-        # return array2qt(crop_frame)
 
 
 parser = argparse.ArgumentParser(description='Build GUI with a project')
