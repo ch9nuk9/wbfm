@@ -20,7 +20,11 @@ def get_cropped_frame(fname, t, num_slices, zxy, crop_sz, to_flip=False):
 
     # Final output should be XYC
     if len(dat_crop.shape) == 3:
-        dat_crop = dat_crop[15]  # Remove z
+        if crop_sz is None:
+            # Just visualize center of worm
+            dat_crop = dat_crop[15]  # Remove z
+        else:
+            dat_crop = dat_crop[0]
     # dat_crop = np.expand_dims(dat_crop, axis=-1)  # Add color channel
     return dat_crop
     # return np.random.rand(200, 500, 1)

@@ -50,9 +50,9 @@ class Ui_MainWindow(object):
         segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
         self.segment_cfg = segment_cfg
         # COMBAK: make user setting
-        # self.crop_sz = (1, 48, 48)
-        self.crop_sz = None
-        self.current_centroid = (1, 100, 100)
+        self.crop_sz = (1, 48, 48)
+        # self.crop_sz = None
+        # self.current_centroid = (1, 100, 100)
         start = cfg['dataset_params']['start_volume']
         end = start + cfg['dataset_params']['num_frames']
         self.x = list(range(start, end))
@@ -227,8 +227,6 @@ class Ui_MainWindow(object):
     def update_green(self):
         t = self.timeSelector.value()
         zxy = self.current_centroid
-        if self.cfg['dataset_params']['red_and_green_mirrored']:
-            zxy = (zxy[0], zxy[2], zxy[1])
         frame = self.green_frame_factory(t, zxy)
         ax = self.greenPlt.fig.canvas.axes
         ax.imshow(frame)
@@ -245,12 +243,14 @@ class Ui_MainWindow(object):
     def green_frame_factory(self, t, zxy):
         fname = self.cfg['green_bigtiff_fname']
         num_slices = self.cfg['dataset_params']['num_slices']
-        crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz, to_flip=True)
-        return crop_frame
+        sz = self.crop_sz
+        to_flip = self.cfg['dataset_params']['red_and_green_mirrored']
+        return get_cropped_frame(fname, t, num_slices, zxy, sz, to_flip)
 
     def seg_frame_factory(self, t, zxy):
         fname = self.segment_cfg['output']['masks']
         num_slices = self.cfg['dataset_params']['num_slices']
+        t -= self.cfg['dataset_params']['start_volume']
         crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
         return crop_frame
 
