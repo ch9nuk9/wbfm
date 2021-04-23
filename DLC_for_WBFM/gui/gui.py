@@ -11,18 +11,17 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import argparse
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.gui.utils_gui import array2qt
+from DLC_for_WBFM.gui.utils_gui import array2qt, get_cropped_frame
 import pandas as pd
 import sys
 from pathlib import Path
 import matplotlib
-matplotlib.use('Qt5Agg')
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 import numpy as np
+matplotlib.use('Qt5Agg')
 
-def get_cropped_frame(fname, t, zxy):
-    return np.random.rand(200,500,1)
 
 
 class MplCanvas(FigureCanvasQTAgg):
@@ -48,6 +47,11 @@ class Ui_MainWindow(object):
         self.traces_cfg = traces_cfg
         segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
         self.segment_cfg = segment_cfg
+        # COMBAK: make user setting
+        self.crop_sz = (28, 28)
+        start = cfg['dataset_params']['start_volume']
+        end = start + cfg['dataset_params']['num_frames']
+        self.x = list(range(start, end))
         ########################
         # Load Data
         ########################
@@ -55,23 +59,10 @@ class Ui_MainWindow(object):
         # COMBAK: not just red
         traces_fname = traces_cfg['traces']['red']
         if not DEBUG:
+            print(f"Read traces from {traces_fname}")
             self.df_traces = pd.read_hdf(traces_fname)
+
         # For video panels
-        # TODO: make get_cropped_frame
-        red_fname = cfg['red_bigtiff_fname']
-        f0 = get_cropped_frame
-        f1 = lambda t, zxy : array2qt(f0(red_fname, t, zxy))
-        self.red_frame_factory = f1
-
-        green_fname = cfg['green_bigtiff_fname']
-        f1 = lambda t, zxy : array2qt(f0(green_fname, t, zxy))
-        self.green_frame_factory = f1
-
-        seg_fname = segment_cfg['output']['masks']
-        f1 = lambda t, zxy : array2qt(f0(seg_fname, t, zxy))
-        self.seg_frame_factory = f1
-
-
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
@@ -105,8 +96,15 @@ class Ui_MainWindow(object):
         self.timeSelector.valueChanged.connect(self.update_all_panels)
         self.horizontalLayout_4.addLayout(self.verticalLayout_5)
         sc = MplCanvas(self, width=5, height=4, dpi=100)
-        sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
         self.tracesPlt = sc
+        sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
+        # ENHANCE: add a toolbar
+        # toolbar = NavigationToolbar(sc, self)
+        # self.verticalLayout_plot = QtWidgets.QVBoxLayout()
+        # self.verticalLayout_plot.addWidget(toolbar)
+        # self.verticalLayout_plot.addWidget(sc)
+        # self.horizontalLayout_4.addLayout(self.verticalLayout_plot)
+        #
         self.horizontalLayout_4.addWidget(self.tracesPlt)
         self.verticalLayout_4.addLayout(self.horizontalLayout_4)
 
@@ -155,7 +153,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.neuronSelector.setItemText(0, _translate("MainWindow", "Neuron0"))
+        self.neuronSelector.setItemText(0, _translate("MainWindow", "neuron0"))
         # self.tracesPlt.setText(_translate("MainWindow", "This is the very very large matplotlib \'label\' of the traces over time"))
         # self.segmentationImg.setText(_translate("MainWindow", "TextLabel"))
         # self.redChannelImg.setText(_translate("MainWindow", "TextLabel"))
@@ -170,9 +168,21 @@ class Ui_MainWindow(object):
     def update_traces(self):
         current_neuron = self.neuronSelector.currentText()
         current_t = self.timeSelector.value()
-        title = f"Frame {current_t} for neuron {current_neuron}"
-        self.tracesPlt.axes.set_title(title)
-        self.tracesPlt.fig.canvas.draw_idle()
+        y_raw = self.df_traces[current_neuron]['brightness']
+        y = y_raw / self.df_traces[current_neuron]['volume']
+        # self.tracesPlt.axes.plot(self.x, y, 'r')
+        canvas = self.tracesPlt.fig.canvas
+        canvas.axes.cla()  # Clear the canvas.
+        canvas.axes.plot(self.x, y, 'r')
+        # Trigger the canvas to update and redraw.
+        canvas.draw()
+        # self.tracesPlt.fig.canvas.axes.plot(self.x, y, 'r')
+        # title = f"Frame {current_t} for neuron {current_neuron}"
+        # self.tracesPlt.axes.set_title(title)
+        # self.tracesPlt.fig.canvas.draw_idle()
+        # Trigger the canvas to update and redraw.
+        # self.tracesPlt.draw()
+        # self.tracesPlt.fig.canvas.show()
 
     def get_current_centroid(self):
         current_neuron = self.neuronSelector.currentText()
@@ -200,19 +210,32 @@ class Ui_MainWindow(object):
         frame = self.green_frame_factory(t, zxy)
         self.greenChannelImg.setPixmap(frame)
 
+    def red_frame_factory(self, t, zxy):
+        fname = self.cfg['red_bigtiff_fname']
+        crop_frame = get_cropped_frame(fname, t, zxy, self.crop_sz)
+        return array2qt(crop_frame)
+
+    def green_frame_factory(self, t, zxy):
+        fname = self.cfg['green_bigtiff_fname']
+        crop_frame = get_cropped_frame(fname, t, zxy, self.crop_sz)
+        return array2qt(crop_frame)
+
+    def seg_frame_factory(self, t, zxy):
+        fname = self.segment_cfg['output']['masks']
+        crop_frame = get_cropped_frame(fname, t, zxy, self.crop_sz)
+        return array2qt(crop_frame)
 
 
 parser = argparse.ArgumentParser(description='Build GUI with a project')
 parser.add_argument('project_config',
                     help='path to config file')
-parser.add_argument('DEBUG', default=False,
+parser.add_argument('--DEBUG', default=False,
                     help='path to config file')
 
 args = parser.parse_args()
 
 if __name__ == "__main__":
     # Basic setup
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
