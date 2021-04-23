@@ -109,7 +109,7 @@ class Ui_MainWindow(object):
         # Trace (mode) selector
         self.modeSelector = QtWidgets.QComboBox(self.centralwidget)
         self.modeSelector.setObjectName("modeSelector")
-        possible_modes = ['green', 'red']
+        possible_modes = ['green', 'red', 'ratio']
         [self.modeSelector.addItem(m) for m in possible_modes]
         self.verticalLayout_5.addWidget(self.modeSelector)
         self.modeSelector.currentIndexChanged.connect(self.update_only_traces)
@@ -229,8 +229,9 @@ class Ui_MainWindow(object):
         elif mode == 'ratio':
             red = self.red_traces[current_neuron]['brightness']
             green = self.green_traces[current_neuron]['brightness']
-            back = self.background
-            y = (red - back) / (green - back)
+            vol = self.red_traces[current_neuron]['volume']
+            back = self.backgroundSelector.value()
+            y = (red - back * vol) / (green - back * vol)
             self.current_traces = y
         else:
             print(f"Unknown mode ({mode})")
