@@ -79,17 +79,16 @@ class Ui_MainWindow(object):
         self.verticalLayout_5 = QtWidgets.QVBoxLayout()
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         ########################
-        # Neuron selector
+        # Various selectors
         ########################
+        # Neuron selector
         self.neuronSelector = QtWidgets.QComboBox(self.centralwidget)
         self.neuronSelector.setObjectName("neuronSelector")
         neuron_names = traces_cfg['traces']['neuron_names']
         [self.neuronSelector.addItem(name) for name in neuron_names]
         self.verticalLayout_5.addWidget(self.neuronSelector)
         self.neuronSelector.currentIndexChanged.connect(self.update_all_panels)
-        ########################
         # Frame (time) selector
-        ########################
         self.timeSelector = QtWidgets.QSpinBox(self.centralwidget)
         start = cfg['dataset_params']['start_volume']
         self.timeSelector.setMinimum(start)
@@ -98,6 +97,22 @@ class Ui_MainWindow(object):
         self.timeSelector.setObjectName("timeSelector")
         self.verticalLayout_5.addWidget(self.timeSelector)
         self.timeSelector.valueChanged.connect(self.update_all_panels)
+        # Crop selectors
+        self.cropXSelector = QtWidgets.QSpinBox(self.centralwidget)
+        self.cropXSelector.setMinimum(10)
+        self.cropXSelector.setValue(30)
+        self.cropXSelector.setMaximum(100)
+        self.cropXSelector.setObjectName("cropXSelector")
+        self.verticalLayout_5.addWidget(self.cropXSelector)
+        self.cropXSelector.valueChanged.connect(self.update_all_panels)
+
+        self.cropYSelector = QtWidgets.QSpinBox(self.centralwidget)
+        self.cropYSelector.setMinimum(10)
+        self.cropYSelector.setValue(30)
+        self.cropYSelector.setMaximum(100)
+        self.cropYSelector.setObjectName("cropYSelector")
+        self.verticalLayout_5.addWidget(self.cropYSelector)
+        self.cropYSelector.valueChanged.connect(self.update_all_panels)
 
         self.horizontalLayout_4.addLayout(self.verticalLayout_5)
         ########################
@@ -170,6 +185,7 @@ class Ui_MainWindow(object):
     def update_all_panels(self):
         with safe_cd(self.project_dir):
             self.update_current_centroid()
+            self.update_crop()
             self.update_traces()
             if not self.tracking_lost:
                 self.update_segmentation()
@@ -205,6 +221,11 @@ class Ui_MainWindow(object):
         else:
             self.current_centroid = (z, x, y)
             self.tracking_lost = False
+
+    def update_crop(self):
+        x = self.cropXSelector.value()
+        y = self.cropYSelector.value()
+        self.crop_sz = (1, x, y)
 
     def update_segmentation(self):
         t = self.timeSelector.value()
