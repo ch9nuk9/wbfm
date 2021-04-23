@@ -100,7 +100,8 @@ class Ui_MainWindow(object):
         # Crop selectors
         self.cropXSelector = QtWidgets.QSpinBox(self.centralwidget)
         self.cropXSelector.setMinimum(10)
-        self.cropXSelector.setValue(30)
+        self.cropXSelector.setValue(32)
+        self.cropXSelector.setSingleStep(8)
         self.cropXSelector.setMaximum(100)
         self.cropXSelector.setObjectName("cropXSelector")
         self.verticalLayout_5.addWidget(self.cropXSelector)
@@ -108,7 +109,8 @@ class Ui_MainWindow(object):
 
         self.cropYSelector = QtWidgets.QSpinBox(self.centralwidget)
         self.cropYSelector.setMinimum(10)
-        self.cropYSelector.setValue(30)
+        self.cropYSelector.setValue(32)
+        self.cropYSelector.setSingleStep(8)
         self.cropYSelector.setMaximum(100)
         self.cropYSelector.setObjectName("cropYSelector")
         self.verticalLayout_5.addWidget(self.cropYSelector)
