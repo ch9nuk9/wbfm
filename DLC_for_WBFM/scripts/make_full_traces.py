@@ -39,11 +39,11 @@ def make_full_tracks(_config, _run):
     seg_cfg = _config['seg_cfg'].copy()
     track_cfg = _config['track_cfg'].copy()
     trace_cfg = _config['trace_cfg'].copy()
-    dataset_params = _config['project_cfg']['dataset_params'].copy()
+    project_cfg = _config['project_cfg'].copy()
 
     with safe_cd(_config['project_dir']):
         get_traces_from_3d_tracks(seg_cfg,
                                   track_cfg,
                                   trace_cfg,
-                                  dataset_params,
+                                  project_cfg,
                                   DEBUG=DEBUG)

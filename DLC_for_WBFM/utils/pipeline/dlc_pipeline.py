@@ -255,7 +255,7 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
 def get_traces_from_3d_tracks(segment_cfg,
                               track_cfg,
                               traces_cfg,
-                              dataset_params,
+                              project_cfg,
                               DEBUG=False):
     """
     Connect the 3d traces to previously segmented masks
@@ -264,8 +264,8 @@ def get_traces_from_3d_tracks(segment_cfg,
     """
     # Settings
     max_dist = track_cfg['final_3d_tracks']['max_dist_to_segmentation']
-    start_volume = dataset_params['start_volume']
-    num_frames = dataset_params['num_frames']
+    start_volume = project_cfg['dataset_params']['start_volume']
+    num_frames = project_cfg['dataset_params']['num_frames']
     # Get previous annotations
     segmentation_fname = segment_cfg['output']['metadata']
     with open(segmentation_fname, 'rb') as f:
@@ -288,9 +288,8 @@ def get_traces_from_3d_tracks(segment_cfg,
 
     # Initialize multi-index dataframe for data
     frame_list = list(range(start_volume, num_frames + start_volume))
-    # red_brightness = {}  # key = neuron id (int); val = list
-    # red_
-    save_names = ['brightness', 'volume', 'centroid_ind',
+    save_names = ['brightness', 'volume',
+                  'centroid_ind',
                   'z_seg', 'x_seg', 'y_seg',
                   'z_dlc', 'x_dlc', 'y_dlc']
     m_index = pd.MultiIndex.from_product([all_neuron_names,
@@ -302,19 +301,20 @@ def get_traces_from_3d_tracks(segment_cfg,
     red_dat = pd.DataFrame(empty_dat,
                            columns=m_index,
                            index=frame_list)
+    green_dat = red_dat.copy()
 
     all_matches = {}  # key = i_vol; val = 3xN-element list
-    print("Looping through frames:")
+    print("Matching segmentation and DLC tracking...")
     for i_volume in tqdm(frame_list):
         # Get DLC point cloud
         # NOTE: This dataframe starts at 0, not start_volume
         zxy0 = get_dlc_zxy(i_volume)
-        zxy0[:, 0] *= dataset_params['z_to_xy_ratio']
+        zxy0[:, 0] *= project_cfg['dataset_params']['z_to_xy_ratio']
         # REVIEW: Get segmentation point cloud
         seg_zxy = segmentation_metadata[i_volume]['centroids']
         seg_zxy = [np.asarray(row) for row in seg_zxy]
         zxy1 = np.array(seg_zxy)
-        zxy1[:, 0] *= dataset_params['z_to_xy_ratio']
+        zxy1[:, 0] *= project_cfg['dataset_params']['z_to_xy_ratio']
         # Get matches
         out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
@@ -324,17 +324,17 @@ def get_traces_from_3d_tracks(segment_cfg,
         # OPTIMIZE: minimum confidence?
         mdat = segmentation_metadata[i_volume]
         all_seg_names = list(mdat['centroids'].keys())
-        zxy0[:, 0] /= dataset_params['z_to_xy_ratio'] # Return to original
+        zxy0[:, 0] /= project_cfg['dataset_params']['z_to_xy_ratio']  # Return to original
         # TODO: is this actually setting?
         for i_dlc, i_seg in matches:
             d_name = all_neuron_names[i_dlc]  # output name
-            s_name = all_seg_names[i_seg]
+            s_name = int(all_seg_names[i_seg])
             # See saved_names above
             i = i_volume
             red_dat[(d_name, 'brightness')].loc[i] = mdat['total_brightness'][s_name]
             red_dat[(d_name, 'volume')].loc[i] = mdat['neuron_volume'][s_name]
             red_dat[(d_name, 'centroid_ind')].loc[i] = s_name
-            zxy_seg = mdat['centroids'][s_name]  # BUG?
+            zxy_seg = mdat['centroids'][s_name]
             red_dat[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
             red_dat[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
             red_dat[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
@@ -342,17 +342,70 @@ def get_traces_from_3d_tracks(segment_cfg,
             red_dat[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
             red_dat[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
             red_dat[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
-            # print(red_dat[d_name, :])
+            if DEBUG:
+                break
 
         # Save
-        all_matches[i_volume] = list(zip(matches, conf))
+        all_matches[i_volume] = np.hstack([matches, conf])
+        if DEBUG:
+            break
 
     # TODO: Get full green traces using masks
+    print("Extracting green traces...")
+    green_fname = project_cfg['green_bigtiff_fname']
+    num_slices = project_cfg['dataset_params']['num_slices']
+    mask_fname = segment_cfg['output']['masks']
+    vol_opt = {'num_slices': num_slices, 'dtype': 'uint16'}
+    for i_volume in tqdm(frame_list):
+        # Prepare matches and locations
+        matches = all_matches[i_volume]
+        mdat = segmentation_metadata[i_volume]
+        all_seg_names = list(mdat['centroids'].keys())
+        all_zxy_dlc = get_dlc_zxy(i_volume)
+        # Prepare mask (segmentation)
+        i_mask = i_volume - project_cfg['dataset_params']['start_volume']
+        this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt)
+        this_green_volume = get_single_volume(green_fname, i_volume, **vol_opt)
+        for i_dlc, i_seg, _ in matches:
+            # For conversion between lists
+            i_dlc, i_seg = int(i_dlc), int(i_seg)
+            d_name = all_neuron_names[i_dlc]  # output name
+            s_name = int(all_seg_names[i_seg])
+            i = i_volume
+            # Get brightness from green volume and mask
+            this_mask_neuron = (this_mask_volume == s_name)
+            if project_cfg['dataset_params']['red_and_green_mirrored']:
+                this_mask_neuron = np.flip(this_mask_neuron, axis=2)
+            volume = np.count_nonzero(this_mask_neuron)
+            brightness = np.sum(this_green_volume[this_mask_neuron])
+            # Save in dataframe
+            green_dat[(d_name, 'brightness')].loc[i] = brightness
+            green_dat[(d_name, 'volume')].loc[i] = volume
+            green_dat[(d_name, 'centroid_ind')].loc[i] = s_name
+
+            zxy_seg = mdat['centroids'][s_name]
+            green_dat[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
+            green_dat[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
+            green_dat[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
+
+            zxy_dlc = all_zxy_dlc[i_dlc]
+            green_dat[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
+            green_dat[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
+            green_dat[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
+
+            if DEBUG:
+                err
+                print("Single pass-through sucessful; did not write any files")
+                return
 
     # Save traces (red and green) and neuron names
     fname = Path('4-traces').joinpath('red_traces.h5')
     red_dat.to_hdf(fname, "df_with_missing")
     traces_cfg['traces']['red'] = str(fname)
+
+    fname = Path('4-traces').joinpath('green_traces.h5')
+    red_dat.to_hdf(fname, "df_with_missing")
+    traces_cfg['traces']['green'] = str(fname)
 
     traces_cfg['traces']['neuron_names'] = all_neuron_names
 
