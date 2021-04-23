@@ -52,6 +52,15 @@ def get_single_volume(fname, which_vol, num_slices, alpha=1.0, dtype='uint8'):
     return dat
 
 
+def get_single_volume_specific_slices(fname, which_vol, num_slices,
+                                      start_slice, end_slice):
+    """Made to be faster than get_single_volume"""
+    start_ind = num_slices*which_vol
+    key = range(start_ind+start_slice, start_ind+end_slice)
+    dat = tifffile.imread(fname, key=key)
+
+    return dat
+
 def get_adjacent_volumes(fname, first_vol, num_slices):
     dat0 = get_single_volume(fname, first_vol, num_slices)
     dat1 = get_single_volume(fname, first_vol+1, num_slices)
