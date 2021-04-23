@@ -8,6 +8,7 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_cover
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, update_pose_config, training_data_from_annotations, build_png_training_data, create_dlc_project
 import pandas as pd
+from DLC_for_WBFM.utils.feature_detection.visualization_tracks import visualize_tracks
 import numpy as np
 import tifffile
 import pickle
@@ -277,7 +278,7 @@ def get_traces_from_3d_tracks(segment_cfg,
 
     def get_dlc_zxy(t, dlc_tracks=dlc_tracks):
         all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
-        coords = ['z', 'x', 'y']
+        coords = ['z', 'y', 'x']
         for i, name in enumerate(all_neuron_names):
             all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
         return all_dlc_zxy
@@ -301,6 +302,7 @@ def get_traces_from_3d_tracks(segment_cfg,
                            index=frame_list)
 
     all_matches = {}  # key = i_vol; val = 3xN-element list
+    print("Looping through frames:")
     for i_volume in tqdm(frame_list):
         # Get DLC point cloud
         # NOTE: This dataframe starts at 0, not start_volume
@@ -312,6 +314,8 @@ def get_traces_from_3d_tracks(segment_cfg,
         # Get matches
         out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
+        if DEBUG:
+            visualize_tracks(zxy0, zxy1, matches)
         # Use metadata to get red traces
         # OPTIMIZE: minimum confidence?
         mdat = segmentation_metadata[i_volume]
@@ -327,16 +331,26 @@ def get_traces_from_3d_tracks(segment_cfg,
             red_dat[(d_name, 'z')].loc[i] = mdat['centroids'][s_name][0]
             red_dat[(d_name, 'x')].loc[i] = mdat['centroids'][s_name][1]
             red_dat[(d_name, 'y')].loc[i] = mdat['centroids'][s_name][2]
+            # print(red_dat[d_name, :])
 
         # Save
         all_matches[i_volume] = list(zip(matches, conf))
 
     # TODO: Get full green traces using masks
 
-    # Save traces (red and green) and matches
+    # Save traces (red and green) and neuron names
     fname = Path('4-traces').joinpath('red_traces.h5')
     red_dat.to_hdf(fname, "df_with_missing")
     traces_cfg['traces']['red'] = str(fname)
+
+    traces_cfg['traces']['neuron_names'] = all_neuron_names
+
+    # Also save matches as a separate file
+    # ENHANCE: save as part of the dataframes?
+    fname = Path('4-traces').joinpath('all_matches.pickle')
+    with open(fname, 'wb') as f:
+        pickle.dump(all_matches, f)
+    traces_cfg['all_matches'] = str(fname)
 
     # Save the output filenames
     edit_config(traces_cfg['self_path'], traces_cfg)
