@@ -32,8 +32,8 @@ class MplCanvas(FigureCanvasQTAgg):
         super(MplCanvas, self).__init__(self.fig)
 
 
-class Ui_MainWindow(object):
 # class Ui_MainWindow(QtWidgets.QMainWindow):
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow, cfg, DEBUG):
         # super(MainWindow, self).__init__()
         MainWindow.setObjectName("MainWindow")
@@ -42,13 +42,16 @@ class Ui_MainWindow(object):
         ########################
         # Load Configs
         ########################
+        cfg = load_config(project_config)
+        self.project_dir = Path(project_config).parent
         self.cfg = cfg
         traces_cfg = load_config(cfg['subfolder_configs']['traces'])
         self.traces_cfg = traces_cfg
         segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
         self.segment_cfg = segment_cfg
         # COMBAK: make user setting
-        self.crop_sz = (28, 28)
+        self.crop_sz = (1, 28, 28)
+        self.current_centroid = (1, 100, 100)
         start = cfg['dataset_params']['start_volume']
         end = start + cfg['dataset_params']['num_frames']
         self.x = list(range(start, end))
@@ -94,10 +97,14 @@ class Ui_MainWindow(object):
         self.timeSelector.setObjectName("timeSelector")
         self.verticalLayout_5.addWidget(self.timeSelector)
         self.timeSelector.valueChanged.connect(self.update_all_panels)
+
         self.horizontalLayout_4.addLayout(self.verticalLayout_5)
-        sc = MplCanvas(self, width=5, height=4, dpi=100)
+        ########################
+        # Traces (matplotlib)
+        ########################
+        sc = MplCanvas(self, width=15, height=4, dpi=100)
         self.tracesPlt = sc
-        sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
+        # sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
         # ENHANCE: add a toolbar
         # toolbar = NavigationToolbar(sc, self)
         # self.verticalLayout_plot = QtWidgets.QVBoxLayout()
@@ -116,9 +123,11 @@ class Ui_MainWindow(object):
         ########################
         # Segmentation
         ########################
-        self.segmentationImg = QtWidgets.QLabel(self.centralwidget)
-        self.segmentationImg.setObjectName("segmentationImg")
-        self.horizontalLayout_6.addWidget(self.segmentationImg)
+        sc = MplCanvas(self, width=5, height=4, dpi=100)
+        self.segPlt = sc
+        # self.segmentationImg = QtWidgets.QLabel(self.centralwidget)
+        # self.segmentationImg.setObjectName("segmentationImg")
+        self.horizontalLayout_6.addWidget(self.segPlt)
 
         ########################
         # Red channel
@@ -160,70 +169,85 @@ class Ui_MainWindow(object):
         # self.greenChannelImg.setText(_translate("MainWindow", "TextLabel"))
 
     def update_all_panels(self):
-        self.update_traces()
-        self.update_segmentation()
-        self.update_red()
-        self.update_green()
+        with safe_cd(self.project_dir):
+            self.update_current_centroid()
+            self.update_traces()
+            if not self.tracking_lost:
+                self.update_segmentation()
+                # self.update_red()
+                # self.update_green()
 
     def update_traces(self):
         current_neuron = self.neuronSelector.currentText()
         current_t = self.timeSelector.value()
         y_raw = self.df_traces[current_neuron]['brightness']
         y = y_raw / self.df_traces[current_neuron]['volume']
-        # self.tracesPlt.axes.plot(self.x, y, 'r')
         canvas = self.tracesPlt.fig.canvas
         canvas.axes.cla()  # Clear the canvas.
         canvas.axes.plot(self.x, y, 'r')
         # Trigger the canvas to update and redraw.
+        if not self.tracking_lost:
+            title = f"Frame {current_t} for neuron {current_neuron}"
+        else:
+            title = "Tracking lost!"
+        self.tracesPlt.axes.set_title(title)
         canvas.draw()
-        # self.tracesPlt.fig.canvas.axes.plot(self.x, y, 'r')
-        # title = f"Frame {current_t} for neuron {current_neuron}"
-        # self.tracesPlt.axes.set_title(title)
-        # self.tracesPlt.fig.canvas.draw_idle()
-        # Trigger the canvas to update and redraw.
-        # self.tracesPlt.draw()
-        # self.tracesPlt.fig.canvas.show()
 
-    def get_current_centroid(self):
+    def update_current_centroid(self):
         current_neuron = self.neuronSelector.currentText()
-        current_t = self.timeSelector.value()
+        t = self.timeSelector.value()
 
-        # TODO
-        return (0,0,0)
+        z = self.df_traces[current_neuron]['z'].loc[t]
+        x = self.df_traces[current_neuron]['x'].loc[t]
+        y = self.df_traces[current_neuron]['y'].loc[t]
+        if any([pd.isna(val) for val in [z, x, y]]):
+            # print(f"Tracking lost at t={t}")
+            self.tracking_lost = True
+        else:
+            self.current_centroid = (z, x, y)
+            self.tracking_lost = False
 
     def update_segmentation(self):
         t = self.timeSelector.value()
-        zxy = self.get_current_centroid()
-        frame = self.seg_frame_factory(t, zxy)
-        self.segmentationImg.setPixmap(frame)
-        # frame.show()
+        frame = self.seg_frame_factory(t, self.current_centroid)
+        ax = self.segPlt.fig.canvas.axes
+        # canvas.axes.cla()  # Clear the canvas.
+        ax.imshow(frame)
+        # Trigger the canvas to update and redraw.
+        title = "Segmentatation"  # at centroid {self.current_centroid}"
+        ax.set_title(title)
+        self.segPlt.fig.canvas.draw()
+
+        # self.segmentationImg.setPixmap(frame)
 
     def update_red(self):
         t = self.timeSelector.value()
-        zxy = self.get_current_centroid()
-        frame = self.red_frame_factory(t, zxy)
+        frame = self.red_frame_factory(t, self.current_centroid)
         self.redChannelImg.setPixmap(frame)
 
     def update_green(self):
         t = self.timeSelector.value()
-        zxy = self.get_current_centroid()
-        frame = self.green_frame_factory(t, zxy)
+        frame = self.green_frame_factory(t, self.current_centroid)
         self.greenChannelImg.setPixmap(frame)
 
     def red_frame_factory(self, t, zxy):
         fname = self.cfg['red_bigtiff_fname']
-        crop_frame = get_cropped_frame(fname, t, zxy, self.crop_sz)
+        num_slices = self.cfg['dataset_params']['num_slices']
+        crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
         return array2qt(crop_frame)
 
     def green_frame_factory(self, t, zxy):
         fname = self.cfg['green_bigtiff_fname']
-        crop_frame = get_cropped_frame(fname, t, zxy, self.crop_sz)
+        num_slices = self.cfg['dataset_params']['num_slices']
+        crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
         return array2qt(crop_frame)
 
     def seg_frame_factory(self, t, zxy):
         fname = self.segment_cfg['output']['masks']
-        crop_frame = get_cropped_frame(fname, t, zxy, self.crop_sz)
-        return array2qt(crop_frame)
+        num_slices = self.cfg['dataset_params']['num_slices']
+        crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
+        return crop_frame
+        # return array2qt(crop_frame)
 
 
 parser = argparse.ArgumentParser(description='Build GUI with a project')
@@ -241,9 +265,8 @@ if __name__ == "__main__":
     ui = Ui_MainWindow()
     # Get project settings
     project_config = args.project_config
-    cfg = load_config(project_config)
     # Actually build window
     with safe_cd(Path(project_config).parent):
-        ui.setupUi(MainWindow, cfg, args.DEBUG)
+        ui.setupUi(MainWindow, project_config, args.DEBUG)
         MainWindow.show()
     sys.exit(app.exec_())
