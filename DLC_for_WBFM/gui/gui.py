@@ -50,7 +50,8 @@ class Ui_MainWindow(object):
         segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
         self.segment_cfg = segment_cfg
         # COMBAK: make user setting
-        self.crop_sz = (1, 28, 28)
+        # self.crop_sz = (1, 48, 48)
+        self.crop_sz = None
         self.current_centroid = (1, 100, 100)
         start = cfg['dataset_params']['start_volume']
         end = start + cfg['dataset_params']['num_frames']
@@ -225,7 +226,10 @@ class Ui_MainWindow(object):
 
     def update_green(self):
         t = self.timeSelector.value()
-        frame = self.green_frame_factory(t, self.current_centroid)
+        zxy = self.current_centroid
+        if self.cfg['dataset_params']['red_and_green_mirrored']:
+            zxy = (zxy[0], zxy[2], zxy[1])
+        frame = self.green_frame_factory(t, zxy)
         ax = self.greenPlt.fig.canvas.axes
         ax.imshow(frame)
         title = "Green Channel"
@@ -241,7 +245,7 @@ class Ui_MainWindow(object):
     def green_frame_factory(self, t, zxy):
         fname = self.cfg['green_bigtiff_fname']
         num_slices = self.cfg['dataset_params']['num_slices']
-        crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
+        crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz, to_flip=True)
         return crop_frame
 
     def seg_frame_factory(self, t, zxy):
