@@ -29,3 +29,4 @@ dlc_projects:
 final_3d_tracks:
   df_fname: null # See make_full_tracks.py
   max_dist: 5.0
+  max_dist_to_segmentation: 20.0
