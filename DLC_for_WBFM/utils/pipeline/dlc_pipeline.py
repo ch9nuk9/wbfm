@@ -398,22 +398,20 @@ def get_traces_from_3d_tracks(segment_cfg,
                 return
 
     # Save traces (red and green) and neuron names
-    fname = Path('4-traces').joinpath('red_traces.h5')
-    red_dat.to_hdf(fname, "df_with_missing")
-    traces_cfg['traces']['red'] = str(fname)
-
-    fname = Path('4-traces').joinpath('green_traces.h5')
-    green_dat.to_hdf(fname, "df_with_missing")
-    traces_cfg['traces']['green'] = str(fname)
-
-    traces_cfg['traces']['neuron_names'] = all_neuron_names
+    red_fname = Path('4-traces').joinpath('red_traces.h5')
+    red_dat.to_hdf(red_fname, "df_with_missing")
+    green_fname = Path('4-traces').joinpath('green_traces.h5')
+    green_dat.to_hdf(green_fname, "df_with_missing")
 
     # Also save matches as a separate file
     # ENHANCE: save as part of the dataframes?
-    fname = Path('4-traces').joinpath('all_matches.pickle')
-    with open(fname, 'wb') as f:
+    matches_fname = Path('4-traces').joinpath('all_matches.pickle')
+    with open(matches_fname, 'wb') as f:
         pickle.dump(all_matches, f)
-    traces_cfg['all_matches'] = str(fname)
 
     # Save the output filenames
+    traces_cfg['all_matches'] = str(matches_fname)
+    traces_cfg['traces']['green'] = str(green_fname)
+    traces_cfg['traces']['red'] = str(red_fname)
+    traces_cfg['traces']['neuron_names'] = all_neuron_names
     edit_config(traces_cfg['self_path'], traces_cfg)
