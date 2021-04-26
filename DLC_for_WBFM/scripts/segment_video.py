@@ -14,6 +14,8 @@ from segmentation.util.utils_pipeline import segment_video_using_config_2d
 import sacred
 from sacred import Experiment
 
+from sacred import SETTINGS
+SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works

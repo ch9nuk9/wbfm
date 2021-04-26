@@ -1,5 +1,5 @@
 
-self_path: 1-training_data/segment_config.yaml # for programmatic updating
+self_path: 1-segmentation/segment_config.yaml # for programmatic updating
 
 # Project definitions
 video_path: null
