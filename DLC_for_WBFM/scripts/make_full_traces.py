@@ -9,6 +9,8 @@ from DLC_for_WBFM.utils.pipeline.dlc_pipeline import get_traces_from_3d_tracks
 # Experiment tracking
 import sacred
 from sacred import Experiment
+from sacred import SETTINGS
+SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 ex = Experiment()
@@ -28,7 +30,7 @@ def cfg(project_path):
         track_fname = Path(project_cfg['subfolder_configs']['tracking'])
         track_cfg = dict(load_config(track_fname))
         seg_fname = Path(project_cfg['subfolder_configs']['segmentation'])
-        seg_cfg = dict(load_config(track_fname))
+        seg_cfg = dict(load_config(seg_fname))
 
 
 @ex.automain
