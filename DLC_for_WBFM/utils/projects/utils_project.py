@@ -146,7 +146,7 @@ def synchronize_train_config(project_path, train_cfg):
 
     # Add external detections
     external_detections = segment_cfg['output']['metadata']
-    if not os.exists(external_detections):
+    if not os.path.exists(external_detections):
         raise FileNotFoundError("Could not find external annotations")
     # external_detections = segment_cfg['output_params']['output_folder']
     # Assume the detections are named normally, i.e. starting with 'metadata'
