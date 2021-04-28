@@ -12,6 +12,7 @@ from DLC_for_WBFM.utils.projects.utils_project import edit_config
 # metadata
 from segmentation.util.utils_metadata import get_metadata_dictionary
 from segmentation.util.utils_paths import get_output_fnames
+import zarr
 
 
 def segment_video_using_config_2d(_config):
@@ -27,8 +28,17 @@ def segment_video_using_config_2d(_config):
     num_slices = _config['dataset_params']['num_slices']
     video_path = _config['video_path']
     mask_fname, metadata_fname = get_output_fnames(video_path, _config)
+    # Initialize zarr output file (format: TZXY)
+    vol = get_single_volume(video_path, 0, num_slices)
+    x_sz, y_sz, _ = vol.shape
+    sz = (num_frames, num_slices, x_sz, y_sz)
+    chunks = (1, num_slices, x_sz, y_sz)
+    masks_zarr = zarr.open(mask_fname, mode='w-',
+                           shape=sz, chunks=chunks, dtype=np.uint16)
+    # Save settings
     _config['output']['masks'] = mask_fname
     _config['output']['metadata'] = metadata_fname
+
     verbose = _config['verbose']
     metadata = dict()
     preprocessing_settings = PreprocessingSettings.load_from_yaml(
@@ -77,17 +87,18 @@ def segment_video_using_config_2d(_config):
             print(f"Found {len(np.unique(final_masks))} masks")
             print('----- Saving to BIG-TIF -----')
 
-        # concatenate masks to tiff file and save
-        if i == start_volume:
-            tiff.imwrite(mask_fname,
-                         final_masks,
-                         append=False,
-                         bigtiff=True)
-        else:
-            tiff.imwrite(mask_fname,
-                         final_masks,
-                         append=True,
-                         bigtiff=True)
+        # Add masks to zarr file; automatically saves
+        masks_zarr[i, :, :, :] = final_masks
+        # if i == start_volume:
+        #     tiff.imwrite(mask_fname,
+        #                  final_masks,
+        #                  append=False,
+        #                  bigtiff=True)
+        # else:
+        #     tiff.imwrite(mask_fname,
+        #                  final_masks,
+        #                  append=True,
+        #                  bigtiff=True)
 
         # metadata dictionary
         meta_df = get_metadata_dictionary(final_masks, volume)

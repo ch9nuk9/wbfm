@@ -4,7 +4,7 @@ video_path: null
 segmentation_type: 2d
 
 # Preprocessing
-preprocessing_config: config\preprocessing_config.yaml
+preprocessing_config: config/preprocessing_config.yaml
 
 # Data
 dataset_params:
@@ -26,6 +26,8 @@ postprocessing_params:
 # Output
 output:
   folder: null # Default creates a folder within the data folder
+  masks: masks.zarr
+  metadata: metadata.pickle
 
 # Printing
 verbose: 1
