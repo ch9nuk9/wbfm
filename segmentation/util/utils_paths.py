@@ -17,7 +17,7 @@ def get_output_fnames(video_path, _config):
     num_frames = _config['dataset_params']['num_frames']
 
     # Actual masks
-    fname = f'masks_{num_frames}.btf'
+    fname = f'masks_{num_frames}.zarr'
     mask_fname = osp.join(output_folder, fname)
 
     # Metadata
