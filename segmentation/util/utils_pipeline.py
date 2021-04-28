@@ -29,12 +29,8 @@ def segment_video_using_config_2d(_config):
     video_path = _config['video_path']
     mask_fname, metadata_fname = get_output_fnames(video_path, _config)
     # Initialize zarr output file (format: TZXY)
-    vol = get_single_volume(video_path, 0, num_slices)
-    x_sz, y_sz, _ = vol.shape
-    sz = (num_frames, num_slices, x_sz, y_sz)
-    chunks = (1, num_slices, x_sz, y_sz)
-    masks_zarr = zarr.open(mask_fname, mode='w-',
-                           shape=sz, chunks=chunks, dtype=np.uint16)
+    # vol = get_single_volume(video_path, 0, num_slices)
+    # _, x_sz, y_sz = vol.shape
     # Save settings
     _config['output']['masks'] = mask_fname
     _config['output']['metadata'] = metadata_fname
@@ -88,6 +84,12 @@ def segment_video_using_config_2d(_config):
             print('----- Saving to BIG-TIF -----')
 
         # Add masks to zarr file; automatically saves
+        if i == start_volume:
+            _, x_sz, y_sz = final_masks.shape
+            sz = (num_frames, num_slices, x_sz, y_sz)
+            chunks = (1, num_slices, x_sz, y_sz)
+            masks_zarr = zarr.open(mask_fname, mode='w-',
+                                   shape=sz, chunks=chunks, dtype=np.uint16)
         masks_zarr[i, :, :, :] = final_masks
         # if i == start_volume:
         #     tiff.imwrite(mask_fname,
