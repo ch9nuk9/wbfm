@@ -26,6 +26,7 @@ def segment_video_using_config_2d(_config):
     start_volume = _config['dataset_params']['start_volume']
     num_frames = _config['dataset_params']['num_frames']
     num_slices = _config['dataset_params']['num_slices']
+    frame_list = list(range(start_volume, start_volume + num_frames))
     video_path = _config['video_path']
     mask_fname, metadata_fname = get_output_fnames(video_path, _config)
     # Initialize zarr output file (format: TZXY)
@@ -36,7 +37,7 @@ def segment_video_using_config_2d(_config):
     _config['output']['metadata'] = metadata_fname
 
     verbose = _config['verbose']
-    metadata = dict()
+    metadata = dict.fromkeys(set(frame_list))
     preprocessing_settings = PreprocessingSettings.load_from_yaml(
         _config['preprocessing_config']
     )
@@ -52,7 +53,7 @@ def segment_video_using_config_2d(_config):
 
     if verbose >= 1:
         print(f"Starting loop over {num_frames} frames")
-    for i in tqdm(list(range(start_volume, start_volume + num_frames))):
+    for i in tqdm(frame_list):
         # use get single volume function from charlie
         import_opt = {'which_vol': i, 'num_slices': num_slices, 'alpha': 1.0, 'dtype': 'uint16'}
         volume = get_single_volume(video_path, **import_opt)
