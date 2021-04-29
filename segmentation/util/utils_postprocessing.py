@@ -199,8 +199,8 @@ def renaming_stitched_array(arr, df, verbose=0):
     sorted array : 3D numpy array
         3D array of masks with unique values across Z
     """
-
-    print(f'Starting to rename stitched array using Charlies dataframe')
+    if verbose >= 1:
+        print(f'Starting to rename stitched array using Charlies dataframe')
     renamed_array = np.zeros_like(arr)
 
     # now, change ALL local indices on slice_ind to clust_ind + 1 to create a new neuron
