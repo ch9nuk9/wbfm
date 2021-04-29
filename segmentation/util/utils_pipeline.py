@@ -14,6 +14,8 @@ import zarr
 from segmentation.util.utils_model import segment_with_stardist_2d
 from segmentation.util.utils_model import get_stardist_model
 import concurrent.futures
+from types import SimpleNamespace
+from multiprocessing import Manager
 
 
 def segment_video_using_config_2d(_config):
@@ -38,10 +40,13 @@ def segment_video_using_config_2d(_config):
     _config['output']['metadata'] = metadata_fname
 
     verbose = _config['verbose']
-    metadata = dict.fromkeys(set(frame_list))
+    # metadata = dict.fromkeys(set(frame_list))
     preprocessing_settings = PreprocessingSettings.load_from_yaml(
         _config['preprocessing_config']
     )
+    # Data for multiprocessing
+    manager = Manager()
+    metadata = manager.dict()
 
     # get stardist model object
     stardist_model_name = _config['segmentation_params']['stardist_model_name']
@@ -60,15 +65,26 @@ def segment_video_using_config_2d(_config):
                            shape=sz, chunks=chunks, dtype=np.uint16)
     save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
 
-    # Full loop
-    # with concurrent.futures.ThreadPoolExecutor() as executor:
-    #     metadata = executor.map(func, frame_list)
-    for i, i_volume in tqdm(enumerate(frame_list[1:])):
-        final_masks, volume = segment_single_volume(i_volume, num_slices, opt_postprocessing, preprocessing_settings,
-                                                    sd_model,
-                                                    verbose, video_path)
-
-        save_masks_and_metadata(final_masks, i+1, i_volume, masks_zarr, metadata, volume)
+    # Parallelized main function
+    kwargs = SimpleNamespace(i_volume=i_volume,
+                             masks_zarr=masks_zarr,
+                             metadata=metadata,
+                             num_slices=num_slices,
+                             opt_postprocessing=opt_postprocessing,
+                             preprocessing_settings=preprocessing_settings,
+                             sd_model=sd_model,
+                             verbose=verbose,
+                             video_path=video_path)
+    with tqdm(total=num_frames-1) as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            # metadata = executor.map(segment_and_save, frame_list)
+            futures = {executor.submit(segment_and_save, i, *kwargs): i for i in frame_list[1:]}
+            # results = {}
+            for future in concurrent.futures.as_completed(futures):
+                future.result() # TODO: does this update in place?
+                # arg = futures[future]
+                # results[arg] = future.result()
+                pbar.update(1)
 
     # saving metadata and settings
     with open(metadata_fname, 'wb') as meta_save:
@@ -81,10 +97,18 @@ def segment_video_using_config_2d(_config):
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
 
+def segment_and_save(i, i_volume, masks_zarr, metadata, num_slices, opt_postprocessing, preprocessing_settings,
+                     sd_model, verbose, video_path):
+    final_masks, volume = segment_single_volume(i_volume, num_slices, opt_postprocessing, preprocessing_settings,
+                                                sd_model,
+                                                verbose, video_path)
+    save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
+
+
 def save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume):
     # Add masks to zarr file; automatically saves
     masks_zarr[i, :, :, :] = final_masks
-    # metadata dictionary
+    # metadata dictionary; also modified by reference
     meta_df = get_metadata_dictionary(final_masks, volume)
     metadata[i_volume] = meta_df
 
