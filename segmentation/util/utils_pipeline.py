@@ -40,17 +40,17 @@ def segment_video_using_config_2d(_config):
     _config['output']['metadata'] = metadata_fname
 
     verbose = _config['verbose']
-    # metadata = dict.fromkeys(set(frame_list))
+    metadata = dict.fromkeys(set(frame_list)) # todo: does a regular dict work here?
     preprocessing_settings = PreprocessingSettings.load_from_yaml(
         _config['preprocessing_config']
     )
     # Data for multiprocessing
-    manager = Manager()
-    metadata = manager.dict()
+    # manager = Manager()
+    # metadata = manager.dict()
 
     # get stardist model object
     stardist_model_name = _config['segmentation_params']['stardist_model_name']
-    sd_model = get_stardist_model(stardist_model_name, verbose=verbose-1)
+    sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
 
     # Do first loop to initialize the zarr data
     i = 0
@@ -62,26 +62,26 @@ def segment_video_using_config_2d(_config):
     sz = (num_frames, num_slices, x_sz, y_sz)
     chunks = (1, num_slices, x_sz, y_sz)
     masks_zarr = zarr.open(mask_fname, mode='w-',
-                           shape=sz, chunks=chunks, dtype=np.uint16)
+                           shape=sz, chunks=chunks, dtype=np.uint16,
+                           synchronizer=zarr.ThreadSynchronizer())
     save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
 
     # Parallelized main function
-    kwargs = SimpleNamespace(i_volume=i_volume,
-                             masks_zarr=masks_zarr,
-                             metadata=metadata,
-                             num_slices=num_slices,
-                             opt_postprocessing=opt_postprocessing,
-                             preprocessing_settings=preprocessing_settings,
-                             sd_model=sd_model,
-                             verbose=verbose,
-                             video_path=video_path)
-    with tqdm(total=num_frames-1) as pbar:
+    opt = {'masks_zarr': masks_zarr, 'metadata': metadata, 'num_slices': num_slices,
+           'opt_postprocessing': opt_postprocessing, 'preprocessing_settings': preprocessing_settings,
+           'sd_model': sd_model, 'verbose': verbose, 'video_path': video_path}
+
+    def parallel_func(i_both):
+        i_out, i_vol = i_both
+        segment_and_save(i_out+1, i_vol, **opt)
+
+    with tqdm(total=num_frames - 1) as pbar:
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             # metadata = executor.map(segment_and_save, frame_list)
-            futures = {executor.submit(segment_and_save, i, *kwargs): i for i in frame_list[1:]}
+            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
             # results = {}
             for future in concurrent.futures.as_completed(futures):
-                future.result() # TODO: does this update in place?
+                future.result()  # TODO: does this update in place?
                 # arg = futures[future]
                 # results[arg] = future.result()
                 pbar.update(1)
@@ -157,14 +157,14 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
 
     """
     if verbose >= 1:
-        print(f"Starting preprocessing with {len(np.unique(mask_array))-1} neurons")
+        print(f"Starting preprocessing with {len(np.unique(mask_array)) - 1} neurons")
         print("Note: not yet stitched in z")
     masks = post.remove_large_areas(mask_array, verbose=verbose)
     if verbose >= 1:
-        print(f"After large area removal: {len(np.unique(masks))-1}")
+        print(f"After large area removal: {len(np.unique(masks)) - 1}")
     stitched_masks, df_with_centroids = post.bipartite_stitching(masks, verbose=verbose)
     if verbose >= 1:
-        print(f"After stitching: {len(np.unique(stitched_masks))-1}")
+        print(f"After stitching: {len(np.unique(stitched_masks)) - 1}")
     neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
@@ -177,9 +177,9 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
                                 len(neuron_lengths),
                                 upper_length_threshold,
                                 neuron_planes,
-                                verbose-1)
+                                verbose - 1)
     if verbose >= 1:
-        print(f"After splitting: {len(np.unique(split_masks))-1}")
+        print(f"After splitting: {len(np.unique(split_masks)) - 1}")
 
     final_masks, final_neuron_lengths, final_brightness, final_neuron_planes, removed_neurons_list = \
         post.remove_short_neurons(split_masks,
@@ -188,7 +188,7 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
                                   split_brightnesses,
                                   split_neuron_planes)
     if verbose >= 1:
-        print(f"After short neuron removal: {len(np.unique(final_masks))-1}")
+        print(f"After short neuron removal: {len(np.unique(final_masks)) - 1}")
 
     if to_remove_border is True:
         final_masks = post.remove_border(final_masks, border_width_to_remove)
@@ -233,7 +233,7 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
     neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
-    brightnesses, neuron_planes = post.calc_brightness(img_volume, stitched_masks, neuron_lengths, verbose=verbose-1)
+    brightnesses, neuron_planes = post.calc_brightness(img_volume, stitched_masks, neuron_lengths, verbose=verbose - 1)
     # split too long neurons
     split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
         post.split_long_neurons(stitched_masks,
@@ -242,7 +242,7 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
                                 len(neuron_lengths),
                                 upper_length_threshold,
                                 neuron_planes,
-                                verbose=verbose-1)
+                                verbose=verbose - 1)
 
     # remove short neurons
     final_masks, final_neuron_lengths, final_brightness, final_neuron_planes, removed_neurons_list = \
