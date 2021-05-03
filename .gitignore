@@ -28,3 +28,4 @@ DLC_for_WBFM/utils/feature_detection/probreg_examples/filterreg_deformable.py
 example-feature-workflow/feature_alignment/CollectedData_feature_tracker.csv
 example-feature-workflow/feature_alignment/CollectedData_feature_tracker.h5
 example-feature-workflow/feature_alignment/embedding.emb
+.idea/
