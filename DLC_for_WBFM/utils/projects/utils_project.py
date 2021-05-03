@@ -1,11 +1,11 @@
 import os.path as osp
 from datetime import datetime
 from pathlib import Path
-from shutil import copyfile, copytree
+from shutil import copytree
 from ruamel.yaml import YAML
 from contextlib import contextmanager
 import os
-import fnmatch
+# import concurrent.futures
 
 
 def build_project_structure(_config):

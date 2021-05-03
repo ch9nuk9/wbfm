@@ -89,30 +89,7 @@ def create_dlc_training_from_tracklets(vid_fname,
         print("All required videos exist; no preprocessing necessary")
         preprocessed_dat = []
     else:
-        with tifffile.TiffFile(vid_fname) as tif:
-            sz = tif.pages[0].shape
-        vid_opt = {'fps': config['dataset_params']['fps'],
-                   'frame_height': sz[0],
-                   'frame_width': sz[1]}
-        if verbose >= 1:
-            print("Preprocessing data, this could take a while...")
-        p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
-        start_volume = config['dataset_params']['start_volume']
-        num_total_frames = start_volume + config['dataset_params']['num_frames']
-        num_slices = config['dataset_params']['num_slices']
-        if DEBUG:
-            # Make a much shorter video
-            num_total_frames = which_frames[-1] + 1
-        preprocessed_dat = np.zeros((num_total_frames, num_slices) + sz)
-
-        # Load data and preprocess
-        for i in tqdm(list(range(num_total_frames))):
-            dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
-            # Don't preprocess data that we didn't even segment!
-            if i >= start_volume:
-                preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
-            else:
-                preprocessed_dat[i, ...] = dat_raw
+        preprocessed_dat, vid_opt = do_preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames)
 
     ########################
     # Initialize the DLC projects
@@ -168,6 +145,32 @@ def create_dlc_training_from_tracklets(vid_fname,
     config['dlc_projects']['all_configs'] = all_dlc_configs
     edit_config(config['self_path'], config)
 
+
+def do_preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames):
+    with tifffile.TiffFile(vid_fname) as tif:
+        sz = tif.pages[0].shape
+    vid_opt = {'fps': config['dataset_params']['fps'],
+               'frame_height': sz[0],
+               'frame_width': sz[1]}
+    if verbose >= 1:
+        print("Preprocessing data, this could take a while...")
+    p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
+    start_volume = config['dataset_params']['start_volume']
+    num_total_frames = start_volume + config['dataset_params']['num_frames']
+    num_slices = config['dataset_params']['num_slices']
+    if DEBUG:
+        # Make a much shorter video
+        num_total_frames = which_frames[-1] + 1
+    preprocessed_dat = np.zeros((num_total_frames, num_slices) + sz)
+    # Load data and preprocess
+    for i in tqdm(list(range(num_total_frames))):
+        dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
+        # Don't preprocess data that we didn't even segment!
+        if i >= start_volume:
+            preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
+        else:
+            preprocessed_dat[i, ...] = dat_raw
+    return preprocessed_dat, vid_opt
 
 
 def train_all_dlc_from_config(config):
@@ -325,7 +328,6 @@ def get_traces_from_3d_tracks(segment_cfg,
         mdat = segmentation_metadata[i_volume]
         all_seg_names = list(mdat['centroids'].keys())
         zxy0[:, 0] /= project_cfg['dataset_params']['z_to_xy_ratio']  # Return to original
-        # TODO: is this actually setting?
         for i_dlc, i_seg in matches:
             d_name = all_neuron_names[i_dlc]  # output name
             s_name = int(all_seg_names[i_seg])
@@ -350,7 +352,6 @@ def get_traces_from_3d_tracks(segment_cfg,
         if DEBUG:
             break
 
-    # TODO: Get full green traces using masks
     print("Extracting green traces...")
     green_fname = project_cfg['green_bigtiff_fname']
     num_slices = project_cfg['dataset_params']['num_slices']
@@ -364,34 +365,12 @@ def get_traces_from_3d_tracks(segment_cfg,
         all_zxy_dlc = get_dlc_zxy(i_volume)
         # Prepare mask (segmentation)
         i_mask = i_volume - project_cfg['dataset_params']['start_volume']
-        this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt)
+        this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt) # TODO: can this read zarr directly?
         this_green_volume = get_single_volume(green_fname, i_volume, **vol_opt)
+        is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
         for i_dlc, i_seg, _ in matches:
-            # For conversion between lists
-            i_dlc, i_seg = int(i_dlc), int(i_seg)
-            d_name = all_neuron_names[i_dlc]  # output name
-            s_name = int(all_seg_names[i_seg])
-            i = i_volume
-            # Get brightness from green volume and mask
-            this_mask_neuron = (this_mask_volume == s_name)
-            if project_cfg['dataset_params']['red_and_green_mirrored']:
-                this_mask_neuron = np.flip(this_mask_neuron, axis=2)
-            volume = np.count_nonzero(this_mask_neuron)
-            brightness = np.sum(this_green_volume[this_mask_neuron])
-            # Save in dataframe
-            green_dat[(d_name, 'brightness')].loc[i] = brightness
-            green_dat[(d_name, 'volume')].loc[i] = volume
-            green_dat[(d_name, 'centroid_ind')].loc[i] = s_name
-
-            zxy_seg = mdat['centroids'][s_name]
-            green_dat[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
-            green_dat[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
-            green_dat[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
-
-            zxy_dlc = all_zxy_dlc[i_dlc]
-            green_dat[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
-            green_dat[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
-            green_dat[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
+            _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg, i_volume,
+                                      is_mirrored, mdat, this_green_volume, this_mask_volume)
 
             if DEBUG:
                 print("Single pass-through sucessful; did not write any files")
@@ -415,3 +394,30 @@ def get_traces_from_3d_tracks(segment_cfg,
     traces_cfg['traces']['red'] = str(red_fname)
     traces_cfg['traces']['neuron_names'] = all_neuron_names
     edit_config(traces_cfg['self_path'], traces_cfg)
+
+
+def _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg, i_volume,
+                              is_mirrored, mdat, this_green_volume, this_mask_volume):
+    # For conversion between lists
+    i_dlc, i_seg = int(i_dlc), int(i_seg)
+    d_name = all_neuron_names[i_dlc]  # output name
+    s_name = int(all_seg_names[i_seg])
+    i = i_volume
+    # Get brightness from green volume and mask
+    this_mask_neuron = (this_mask_volume == s_name)
+    if is_mirrored:
+        this_mask_neuron = np.flip(this_mask_neuron, axis=2)
+    volume = np.count_nonzero(this_mask_neuron)
+    brightness = np.sum(this_green_volume[this_mask_neuron])
+    # Save in dataframe
+    green_dat[(d_name, 'brightness')].loc[i] = brightness
+    green_dat[(d_name, 'volume')].loc[i] = volume
+    green_dat[(d_name, 'centroid_ind')].loc[i] = s_name
+    zxy_seg = mdat['centroids'][s_name]
+    green_dat[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
+    green_dat[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
+    green_dat[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
+    zxy_dlc = all_zxy_dlc[i_dlc]
+    green_dat[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
+    green_dat[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
+    green_dat[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
