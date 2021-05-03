@@ -51,6 +51,10 @@ def segment_video_using_config_2d(_config):
     # get stardist model object
     stardist_model_name = _config['segmentation_params']['stardist_model_name']
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
+    # Not fully working for multithreaded scenario
+    # Discussion about finalizing: https://stackoverflow.com/questions/40850089/is-keras-thread-safe/43393252#43393252
+    # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
+    sd_model.keras_model.make_predict_function()
 
     # Do first loop to initialize the zarr data
     i = 0
