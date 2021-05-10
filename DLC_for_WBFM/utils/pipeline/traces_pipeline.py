@@ -35,7 +35,7 @@ def get_traces_from_3d_tracks(segment_cfg,
     # Convert DLC dataframe to array
     all_neuron_names = list(dlc_tracks.columns.levels[0])
 
-    def get_dlc_zxy(t, dlc_tracks=dlc_tracks):
+    def _get_dlc_zxy(t, dlc_tracks=dlc_tracks):
         all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
         coords = ['z', 'y', 'x']
         for i, name in enumerate(all_neuron_names):
@@ -47,27 +47,14 @@ def get_traces_from_3d_tracks(segment_cfg,
 
     # Initialize multi-index dataframe for data
     frame_list = list(range(start_volume, num_frames + start_volume))
-    save_names = ['brightness', 'volume',
-                  'centroid_ind',
-                  'z_seg', 'x_seg', 'y_seg',
-                  'z_dlc', 'x_dlc', 'y_dlc']
-    m_index = pd.MultiIndex.from_product([all_neuron_names,
-                                         save_names],
-                                         names=['neurons', 'data'])
-    sz = (len(frame_list), len(m_index))
-    empty_dat = np.empty(sz)
-    empty_dat[:] = np.nan
-    red_dat = pd.DataFrame(empty_dat,
-                           columns=m_index,
-                           index=frame_list)
-    green_dat = red_dat.copy()
+    green_dat, red_dat = _initialize_dataframes(all_neuron_names, frame_list)
 
     all_matches = {}  # key = i_vol; val = 3xN-element list
     print("Matching segmentation and DLC tracking...")
     for i_volume in tqdm(frame_list):
         # Get DLC point cloud
         # NOTE: This dataframe starts at 0, not start_volume
-        zxy0 = get_dlc_zxy(i_volume)
+        zxy0 = _get_dlc_zxy(i_volume)
         zxy0[:, 0] *= project_cfg['dataset_params']['z_to_xy_ratio']
         # REVIEW: Get segmentation point cloud
         seg_zxy = segmentation_metadata[i_volume]['centroids']
@@ -93,13 +80,8 @@ def get_traces_from_3d_tracks(segment_cfg,
             red_dat[(d_name, 'volume')].loc[i] = mdat['neuron_volume'][s_name]
             red_dat[(d_name, 'centroid_ind')].loc[i] = s_name
             zxy_seg = mdat['centroids'][s_name]
-            red_dat[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
-            red_dat[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
-            red_dat[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
             zxy_dlc = zxy0[i_dlc]
-            red_dat[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
-            red_dat[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
-            red_dat[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
+            _save_locations_in_df(d_name, red_dat, i, zxy_dlc, zxy_seg)
             if DEBUG:
                 break
 
@@ -118,7 +100,7 @@ def get_traces_from_3d_tracks(segment_cfg,
         matches = all_matches[i_volume]
         mdat = segmentation_metadata[i_volume]
         all_seg_names = list(mdat['centroids'].keys())
-        all_zxy_dlc = get_dlc_zxy(i_volume)
+        all_zxy_dlc = _get_dlc_zxy(i_volume)
         # Prepare mask (segmentation)
         i_mask = i_volume - project_cfg['dataset_params']['start_volume']
         this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt) # TODO: can this read zarr directly?
@@ -152,6 +134,24 @@ def get_traces_from_3d_tracks(segment_cfg,
     edit_config(traces_cfg['self_path'], traces_cfg)
 
 
+def _initialize_dataframes(all_neuron_names, frame_list):
+    save_names = ['brightness', 'volume',
+                  'centroid_ind',
+                  'z_seg', 'x_seg', 'y_seg',
+                  'z_dlc', 'x_dlc', 'y_dlc']
+    m_index = pd.MultiIndex.from_product([all_neuron_names,
+                                          save_names],
+                                         names=['neurons', 'data'])
+    sz = (len(frame_list), len(m_index))
+    empty_dat = np.empty(sz)
+    empty_dat[:] = np.nan
+    red_dat = pd.DataFrame(empty_dat,
+                           columns=m_index,
+                           index=frame_list)
+    green_dat = red_dat.copy()
+    return green_dat, red_dat
+
+
 def _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg, i_volume,
                               is_mirrored, mdat, this_green_volume, this_mask_volume):
     # For conversion between lists
@@ -170,10 +170,14 @@ def _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, gree
     green_dat[(d_name, 'volume')].loc[i] = volume
     green_dat[(d_name, 'centroid_ind')].loc[i] = s_name
     zxy_seg = mdat['centroids'][s_name]
-    green_dat[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
-    green_dat[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
-    green_dat[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
     zxy_dlc = all_zxy_dlc[i_dlc]
-    green_dat[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
-    green_dat[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
-    green_dat[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
+    _save_locations_in_df(d_name, green_dat, i, zxy_dlc, zxy_seg)
+
+
+def _save_locations_in_df(d_name, df, i, zxy_dlc, zxy_seg):
+    df[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
+    df[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
+    df[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
+    df[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
+    df[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
+    df[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
