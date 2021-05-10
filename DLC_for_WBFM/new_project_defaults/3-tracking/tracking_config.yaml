@@ -24,9 +24,9 @@ preprocessing_config: 2-training_data/preprocessing_config.yaml # Reuse from 3d 
 # Stacked DeepLabCut
 #########################
 dlc_projects:
-  all_configs: null # See initialize_dlc_stack.py
+  all_configs: null # See 3a-initialize_dlc_stack.py
 
 final_3d_tracks:
-  df_fname: null # See make_full_tracks.py
+  df_fname: null # See 3b-make_full_tracks.py
   max_dist: 5.0
   max_dist_to_segmentation: 20.0
