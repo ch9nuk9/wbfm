@@ -14,8 +14,6 @@ import zarr
 from segmentation.util.utils_model import segment_with_stardist_2d
 from segmentation.util.utils_model import get_stardist_model
 import concurrent.futures
-from types import SimpleNamespace
-from multiprocessing import Manager
 
 
 def segment_video_using_config_2d(_config):
@@ -80,7 +78,7 @@ def segment_video_using_config_2d(_config):
         segment_and_save(i_out+1, i_vol, **opt)
 
     with tqdm(total=num_frames - 1) as pbar:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=128) as executor:
             # metadata = executor.map(segment_and_save, frame_list)
             futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
             # results = {}
