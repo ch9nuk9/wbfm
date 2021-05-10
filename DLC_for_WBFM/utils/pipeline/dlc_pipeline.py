@@ -177,7 +177,6 @@ def train_all_dlc_from_config(config):
     deeplabcut.train_network()
     """
     from tensorflow.errors import CancelledError
-
     all_dlc_configs = config['dlc_projects']['all_configs']
 
     print(f"Found {len(all_dlc_configs)} networks; beginning training")
@@ -190,7 +189,6 @@ def train_all_dlc_from_config(config):
         except FileNotFoundError:
             # Not yet trained, so train it!
             pass
-        # deeplabcut.train_network(dlc_config)
         try:
             deeplabcut.train_network(dlc_config)
         except CancelledError:
@@ -210,26 +208,7 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     neuron2z_dict = {}
     i_neuron = 0
     for dlc_config in all_dlc_configs:
-        dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
-        video_list = list(dlc_cfg['video_sets'].keys())
-        # Works even if already analyzed
-        deeplabcut.analyze_videos(dlc_config, video_list)
-        # Get data for later use
-        df_fname = get_annotations_from_dlc_config(dlc_config)
-        if DEBUG:
-            print(f"Using 2d annotations: {df_fname}")
-        # Remove scorer and rename neurons
-        df = pd.read_hdf(df_fname)
-        df_scorer = df.columns.values[0][0]
-        df = df[df_scorer]
-        i_neuron_new = i_neuron + len(df.columns.levels[0])
-        neuron_range = range(i_neuron, i_neuron_new)
-        i_neuron = i_neuron_new
-        new_names = [f'neuron{i}' for i in neuron_range]
-        z = get_z_from_dlc_name(dlc_config)
-        neuron2z_dict.update({n: z for n in new_names})
-        df.columns.set_levels(new_names, level=0, inplace=True)
-        all_dfs.append(df)
+        _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict)
 
     final_df = pd.concat(all_dfs, axis=1)
     # Collect 2d data
@@ -251,5 +230,28 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     edit_config(track_cfg['self_path'], udpates)
 
     return final_df
+
+
+def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict):
+    dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
+    video_list = list(dlc_cfg['video_sets'].keys())
+    # Works even if already analyzed
+    deeplabcut.analyze_videos(dlc_config, video_list)
+    # Get data for later use
+    df_fname = get_annotations_from_dlc_config(dlc_config)
+    if DEBUG:
+        print(f"Using 2d annotations: {df_fname}")
+    # Remove scorer and rename neurons
+    df = pd.read_hdf(df_fname)
+    df_scorer = df.columns.values[0][0]
+    df = df[df_scorer]
+    i_neuron_new = i_neuron + len(df.columns.levels[0])
+    neuron_range = range(i_neuron, i_neuron_new)
+    i_neuron = i_neuron_new
+    new_names = [f'neuron{i}' for i in neuron_range]
+    z = get_z_from_dlc_name(dlc_config)
+    neuron2z_dict.update({n: z for n in new_names})
+    df.columns.set_levels(new_names, level=0, inplace=True)
+    all_dfs.append(df)
 
 
