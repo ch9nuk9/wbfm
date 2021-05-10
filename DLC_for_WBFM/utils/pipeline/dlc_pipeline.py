@@ -69,7 +69,7 @@ def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, w
         print("All required videos exist; no preprocessing necessary")
         preprocessed_dat = []
     else:
-        preprocessed_dat, vid_opt = do_preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames)
+        preprocessed_dat, vid_opt = _preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames)
     return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
 
 
@@ -144,7 +144,7 @@ def _make_avi_name(center):
     return fname
 
 
-def do_preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames):
+def _preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames):
     with tifffile.TiffFile(vid_fname) as tif:
         sz = tif.pages[0].shape
     vid_opt = {'fps': config['dataset_params']['fps'],
@@ -161,14 +161,19 @@ def do_preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which
         num_total_frames = which_frames[-1] + 1
     preprocessed_dat = np.zeros((num_total_frames, num_slices) + sz)
     # Load data and preprocess
-    for i in tqdm(list(range(num_total_frames))):
-        dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
-        # Don't preprocess data that we didn't even segment!
-        if i >= start_volume:
-            preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
-        else:
-            preprocessed_dat[i, ...] = dat_raw
+    frame_list = list(range(num_total_frames))
+    for i in tqdm(frame_list):
+        _get_and_preprocess(i, num_slices, p, preprocessed_dat, start_volume, vid_fname)
     return preprocessed_dat, vid_opt
+
+
+def _get_and_preprocess(i, num_slices, p, preprocessed_dat, start_volume, vid_fname):
+    dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
+    # Don't preprocess data that we didn't even segment!
+    if i >= start_volume:
+        preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
+    else:
+        preprocessed_dat[i, ...] = dat_raw
 
 
 def train_all_dlc_from_config(config):
