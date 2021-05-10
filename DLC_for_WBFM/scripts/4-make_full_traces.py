@@ -5,7 +5,7 @@ The top level function for getting final traces from 3d tracks and neuron masks
 from pathlib import Path
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import get_traces_from_3d_tracks
+from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks
 # Experiment tracking
 import sacred
 from sacred import Experiment
