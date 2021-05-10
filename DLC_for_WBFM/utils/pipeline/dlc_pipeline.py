@@ -26,16 +26,96 @@ def create_dlc_training_from_tracklets(vid_fname,
                                        verbose=0,
                                        DEBUG=False):
 
-    ########################
-    # Load annotations
-    ########################
     df_fname = config['training_data_3d']['annotation_fname']
     df = pd.read_pickle(df_fname)
 
-    ########################
-    # Prepare for dlc-style training data
-    ########################
+    all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, config, df)
 
+    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(DEBUG, all_center_slices, config,
+                                                                                   verbose, vid_fname, which_frames)
+
+    dlc_opt, net_opt, png_opt = _define_project_options(config, df, scorer, task_name)
+    # Actually make projects
+    all_dlc_configs = []
+    for i, center in enumerate(all_center_slices):
+        _initialize_project_from_btf(all_avi_fnames, all_dlc_configs, center, dlc_opt, i, net_opt, png_opt,
+                                     preprocessed_dat, vid_opt, video_exists)
+
+    # Then delete the created avis because they are copied into the DLC folder
+    # [os.remove(f) for f in all_avi_fnames]
+
+    # Save list of dlc config names
+    config['dlc_projects']['all_configs'] = all_dlc_configs
+    edit_config(config['self_path'], config)
+
+
+def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, which_frames):
+    # OPTIMIZE: for now, requires re-preprocessing
+    video_exists = []
+    all_avi_fnames = []
+    for center in all_center_slices:
+        # Make minimax video from btf
+        this_avi_fname = _make_avi_name(center)
+        all_avi_fnames.append(this_avi_fname)
+        if os.path.exists(this_avi_fname):
+            print(f"Using video at: {this_avi_fname}")
+            video_exists.append(True)
+        else:
+            video_exists.append(False)
+            # write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
+            # write_video_projection_from_ome_file_subset(**vid_opt)
+    # IF videos are required, then prep the data
+    if all(video_exists):
+        print("All required videos exist; no preprocessing necessary")
+        preprocessed_dat = []
+    else:
+        preprocessed_dat, vid_opt = do_preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames)
+    return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
+
+
+def _define_project_options(config, df, scorer, task_name):
+    # Get dlc project and naming options
+    dlc_opt = {'task_name': task_name,
+               'experimenter': scorer,
+               'working_directory': '3-tracking',
+               'copy_videos': True}
+    # Get a few frames as training data
+    png_opt = {'df_fname': df, 'total_num_frames': config['dataset_params']['num_frames'], 'coord_names': ['x', 'y'],
+               'which_frames': config['training_data_3d']['which_frames'],
+               'max_z_dist_for_traces': config['training_data_2d']['max_z_dist_for_traces']}
+    # png_opt['scorer'] = scorer
+    # Connecting these frames to a network architecture
+    net_opt = {'net_type': "resnet_50",  # 'mobilenet_v2_0.35' #'resnet_50
+               'augmenter_type': "imgaug"}
+    return dlc_opt, net_opt, png_opt
+
+
+def _initialize_project_from_btf(all_avi_fnames, all_dlc_configs, center, dlc_opt, i, net_opt, png_opt,
+                                 preprocessed_dat, vid_opt, video_exists):
+    # Make or get video
+    this_avi_fname = all_avi_fnames[i]
+    if not video_exists[i]:
+        vid_opt['out_fname'] = this_avi_fname
+        write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
+    # Make dlc project
+    dlc_opt['label'] = f"-c{center}"
+    dlc_opt['video_path'] = this_avi_fname
+    this_dlc_config = create_dlc_project(**dlc_opt)
+    # Training frame extraction
+    png_opt['which_z'] = center
+    png_opt['dlc_config_fname'] = this_dlc_config
+    png_opt['vid_fname'] = this_avi_fname
+    ann_fname = training_data_from_annotations(**png_opt)[1]
+    # Syncronize the dlc_config with the annotations
+    csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2)
+    # Format the training data
+    deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
+    update_pose_config(this_dlc_config)
+    # Save to list
+    all_dlc_configs.append(this_dlc_config)
+
+
+def _get_frames_for_dlc_training(DEBUG, config, df):
     # Choose a subset of frames with enough tracklets
     num_frames_needed = config['training_data_3d']['num_training_frames']
     tracklet_opt = {'num_frames_needed': num_frames_needed,
@@ -48,99 +128,20 @@ def create_dlc_training_from_tracklets(vid_fname,
     updates = {'which_frames': which_frames}
     config['training_data_3d'].update(updates)
     edit_config(config['self_path'], config)
-
     all_center_slices = config['training_data_2d']['all_center_slices']
     if DEBUG:
         all_center_slices = [all_center_slices[0]]
+    return all_center_slices, which_frames
 
-    ########################
-    # Get or make the video
-    ########################
-    # OPTIMIZE: for now, requires re-preprocessing
 
-    def make_avi_name(center):
-        fname = f"center{center}.avi"  # NOT >8 CHAR (without .avi)
-        if len(fname) > 12:
-            # BUG: fix required short filenames
-            # Another function clips labeled-data/folder-name at 8 chars
-            # But, that name must be the same as the video
-            raise ValueError(f"Bug if this is too long {fname}")
-        return fname
-    # FIRST: check if we actually need to rewrite the videos
-    video_exists = []
-    all_avi_fnames = []
-    for center in all_center_slices:
-        # Make minimax video from btf
-        this_avi_fname = make_avi_name(center)
-        all_avi_fnames.append(this_avi_fname)
-        if os.path.exists(this_avi_fname):
-            print(f"Using video at: {this_avi_fname}")
-            video_exists.append(True)
-        else:
-            video_exists.append(False)
-            # write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
-            # write_video_projection_from_ome_file_subset(**vid_opt)
-
-    # IF videos are required, then prep the data
-    if all(video_exists):
-        print("All required videos exist; no preprocessing necessary")
-        preprocessed_dat = []
-    else:
-        preprocessed_dat, vid_opt = do_preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames)
-
-    ########################
-    # Initialize the DLC projects
-    ########################
-    # Get dlc project and naming options
-    dlc_opt = {'task_name': task_name,
-               'experimenter': scorer,
-               'working_directory': '3-tracking',
-               'copy_videos': True}
-    # Get a few frames as training data
-    png_opt = {}
-    png_opt['df_fname'] = df
-    # png_opt['scorer'] = scorer
-    png_opt['total_num_frames'] = config['dataset_params']['num_frames']
-    png_opt['coord_names'] = ['x', 'y']
-    png_opt['which_frames'] = config['training_data_3d']['which_frames']
-    png_opt['max_z_dist_for_traces'] = config['training_data_2d']['max_z_dist_for_traces']
-    # Connecting these frames to a network architecture
-    net_opt = {'net_type': "resnet_50",  # 'mobilenet_v2_0.35' #'resnet_50
-               'augmenter_type': "imgaug"}
-    # Actually make projects
-    all_dlc_configs = []
-    for i, center in enumerate(all_center_slices):
-        # Make or get video
-        this_avi_fname = all_avi_fnames[i]
-        if not video_exists[i]:
-            vid_opt['out_fname'] = this_avi_fname
-            write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
-        # Make dlc project
-        dlc_opt['label'] = f"-c{center}"
-        dlc_opt['video_path'] = this_avi_fname
-        this_dlc_config = create_dlc_project(**dlc_opt)
-        # Training frame extraction
-        png_opt['which_z'] = center
-        png_opt['dlc_config_fname'] = this_dlc_config
-        png_opt['vid_fname'] = this_avi_fname
-        ann_fname = training_data_from_annotations(**png_opt)[1]
-        # Syncronize the dlc_config with the annotations
-        csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2)
-        # Format the training data
-        deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
-        update_pose_config(this_dlc_config)
-        # Save to list
-        all_dlc_configs.append(this_dlc_config)
-
-    # Then delete the created avis because they are copied into the DLC folder
-    # [os.remove(f) for f in all_avi_fnames]
-
-    # Save list of dlc config names
-    # Make names relative to project folder
-    # prj = Path(config['project_path']).parent
-    # all_dlc_configs = [str(Path(cfg).relative_to(prj)) for cfg in all_dlc_configs]
-    config['dlc_projects']['all_configs'] = all_dlc_configs
-    edit_config(config['self_path'], config)
+def _make_avi_name(center):
+    fname = f"center{center}.avi"  # NOT >8 CHAR (without .avi)
+    if len(fname) > 12:
+        # BUG: fix required short filenames
+        # Another function clips labeled-data/folder-name at 8 chars
+        # But, that name must be the same as the video
+        raise ValueError(f"Bug if this is too long {fname}")
+    return fname
 
 
 def do_preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames):
