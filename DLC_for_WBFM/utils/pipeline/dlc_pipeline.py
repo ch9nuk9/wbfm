@@ -1,7 +1,6 @@
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
-# from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, build_relative_imagenames, save_dlc_annotations
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
@@ -69,7 +68,7 @@ def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, w
         print("All required videos exist; no preprocessing necessary")
         preprocessed_dat = []
     else:
-        preprocessed_dat, vid_opt = _preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames)
+        preprocessed_dat, vid_opt = _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames)
     return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
 
 
@@ -144,7 +143,7 @@ def _make_avi_name(center):
     return fname
 
 
-def _preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_frames):
+def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames):
     with tifffile.TiffFile(vid_fname) as tif:
         sz = tif.pages[0].shape
     vid_opt = {'fps': config['dataset_params']['fps'],
@@ -159,7 +158,7 @@ def _preprocessing_for_dlc_avi_videos(DEBUG, config, verbose, vid_fname, which_f
     if DEBUG:
         # Make a much shorter video
         num_total_frames = which_frames[-1] + 1
-    preprocessed_dat = np.zeros((num_total_frames, num_slices) + sz)
+    preprocessed_dat = np.zeros((num_total_frames, num_slices) + sz, dtype='uint16')
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
     for i in tqdm(frame_list):
