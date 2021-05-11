@@ -52,7 +52,7 @@ def remove_large_areas(arr, threshold=1000, verbose=0):
     return new_arr
 
 
-def remove_dim_slices(masks, img_volume, thresh_factor=1.1):
+def remove_dim_slices(masks, img_volume, thresh_factor=1.1, verbose=0):
     threshold = thresh_factor * np.mean(img_volume)
 
     for vol_slice, mask_slice in zip(img_volume, masks):
