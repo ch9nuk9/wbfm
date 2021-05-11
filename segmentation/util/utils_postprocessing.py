@@ -43,8 +43,6 @@ def remove_large_areas(arr, threshold=1000, verbose=0):
                 mask = plane==u
                 if np.count_nonzero(mask) >= threshold:
                     plane[mask] = 0
-                # if np.count_nonzero(plane == u) >= threshold:
-                #     plane = np.where(plane == u, 0, plane)
             new_arr[i] = plane
     else:
         uniq = np.unique(arr)
@@ -52,6 +50,22 @@ def remove_large_areas(arr, threshold=1000, verbose=0):
             if np.count_nonzero(arr == u) >= threshold:
                 new_arr = np.where(arr == u, 0, arr)
     return new_arr
+
+
+def remove_dim_slices(masks, img_volume, thresh_factor=1.1):
+    threshold = thresh_factor * np.mean(img_volume)
+
+    for vol_slice, mask_slice in zip(img_volume, masks):
+        all_neurons = np.unique(mask_slice)
+        for neuron in all_neurons:
+            if neuron == 0:
+                continue
+            mask = mask_slice == neuron
+            brightness = np.mean(vol_slice[mask])
+            if brightness < threshold:
+                mask_slice[mask] = 0
+
+    return masks
 
 
 def bipartite_stitching(array_3d, num_slices=0, verbose=0):

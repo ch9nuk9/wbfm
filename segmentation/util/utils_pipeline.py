@@ -130,7 +130,9 @@ def segment_single_volume(i, num_slices, opt_postprocessing, preprocessing_setti
 
 
 def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, to_remove_border=True,
-                               upper_length_threshold=12, lower_length_threshold=3, verbose=0):
+                               upper_length_threshold=12, lower_length_threshold=3,
+                               to_remove_dim_slices=False,
+                               verbose=0):
     """
     Performs some post-processing steps including: Splitting long neurons, removing short neurons and
     removing too large areas
@@ -149,6 +151,8 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         masks longer than this will be (tried to) split
     lower_length_threshold : int
         masks shorter than this will be removed
+    to_remove_dim_slices : bool
+        Before stitching, removes stardist segments that are too dim
     verbose : int
         flag for print statements. Increasing by 1, increase depth by 1
 
@@ -162,6 +166,8 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         print(f"Starting preprocessing with {len(np.unique(mask_array)) - 1} neurons")
         print("Note: not yet stitched in z")
     masks = post.remove_large_areas(mask_array, verbose=verbose)
+    if to_remove_dim_slices:
+        masks = post.remove_dim_slices(masks, img_volume, verbose=verbose)
     if verbose >= 1:
         print(f"After large area removal: {len(np.unique(masks)) - 1}")
     stitched_masks, df_with_centroids = post.bipartite_stitching(masks, verbose=verbose)
