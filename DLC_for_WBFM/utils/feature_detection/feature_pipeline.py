@@ -499,7 +499,6 @@ def track_neurons_full_video(vid_fname,
                              use_affine_matching=False,
                              add_affine_to_candidates=False,
                              add_gp_to_candidates=False,
-                             save_candidate_matches=False,
                              external_detections=None,
                              verbose=0):
     """
@@ -513,7 +512,7 @@ def track_neurons_full_video(vid_fname,
     import_opt = {'num_slices': num_slices,
                   'alpha': 1.0,
                   'dtype': preprocessing_settings.initial_dtype}
-    ref_opt = {'neuron_feature_radius':neuron_feature_radius}
+    ref_opt = {'neuron_feature_radius': neuron_feature_radius}
 
     def local_build_frame(frame_ind):
         dat = get_single_volume(vid_fname, frame_ind, **import_opt)
@@ -542,14 +541,12 @@ def track_neurons_full_video(vid_fname,
                  'add_gp_to_candidates': add_gp_to_candidates}
     for i_frame in tqdm(frame_range):
         frame1 = local_build_frame(i_frame)
-
         this_pair = calc_2frame_matches_using_class(frame0, frame1, **match_opt)
-        # raise ValueError("Needs refactor with FramePair")
-        # Save to dictionaries
+        # Save in output objects
         key = (i_frame-1, i_frame)
         all_frame_pairs[key] = this_pair
-        # Save frame to list
         all_frame_dict[i_frame] = frame1
+
         frame0 = frame1
 
     return all_frame_pairs, all_frame_dict
@@ -560,7 +557,6 @@ def track_via_reference_frames(vid_fname,
                                num_frames=10,
                                num_slices=33,
                                neuron_feature_radius=5.0,
-                               start_slice=2,
                                verbose=0,
                                num_reference_frames=5,
                                add_gp_to_candidates=False,
@@ -577,12 +573,12 @@ def track_via_reference_frames(vid_fname,
     # First, analyze the reference frames
     if verbose >= 1:
         print("Loading reference frames...")
-    video_opt = {'vid_fname':vid_fname,
-                 'start_frame':start_frame,
-                 'num_frames':num_frames,
-                 'num_slices':num_slices,
-                 'neuron_feature_radius':neuron_feature_radius,
-                 'verbose':verbose-1}
+    video_opt = {'vid_fname': vid_fname,
+                 'start_frame': start_frame,
+                 'num_frames': num_frames,
+                 'num_slices': num_slices,
+                 'neuron_feature_radius': neuron_feature_radius,
+                 'verbose': verbose-1}
     if reference_set is None:
         ref_dat, ref_frames, other_ind = build_all_reference_frames(
             num_reference_frames,
@@ -603,19 +599,19 @@ def track_via_reference_frames(vid_fname,
 
     if verbose >= 1:
         print("Analyzing reference frames...")
-    match_opt = {'use_affine_matching':use_affine_matching,
-                 'add_affine_to_candidates':add_affine_to_candidates,
-                 'add_gp_to_candidates':add_gp_to_candidates,
-                 'neuron_cluster_mode':neuron_cluster_mode,
-                 'verbose':verbose-1}
+    match_opt = {'use_affine_matching': use_affine_matching,
+                 'add_affine_to_candidates': add_affine_to_candidates,
+                 'add_gp_to_candidates': add_gp_to_candidates,
+                 'neuron_cluster_mode': neuron_cluster_mode,
+                 'verbose': verbose-1}
     if reference_set is None:
         reference_set = register_all_reference_frames(ref_frames, **match_opt)
 
     if verbose >= 1:
         print("Matching other frames to reference...")
-    video_opt = {'num_slices':num_slices,
-                 'alpha':1.0,
-                 'dtype':preprocessing_settings.initial_dtype}
+    video_opt = {'num_slices': num_slices,
+                 'alpha': 1.0,
+                 'dtype': preprocessing_settings.initial_dtype}
     i_tmp = list(ref_frames.keys())[0]
     metadata = ref_frames[i_tmp].get_metadata()
     all_matches, all_other_frames = match_all_to_reference_frames(

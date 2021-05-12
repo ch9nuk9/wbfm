@@ -25,3 +25,6 @@ class FramePair:
 
     def calc_all_bipartite_matches(self):
         return calc_all_bipartite_matches(self.all_candidate_matches)
+
+    def calc_final_matches_using_bipartite_matching(self):
+        self.final_matches = self.calc_all_bipartite_matches()

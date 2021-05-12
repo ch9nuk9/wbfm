@@ -14,6 +14,7 @@ import pickle
 ### For use with produces tracklets (step 2 of pipeline)
 ###
 
+
 def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     """
     Produce training data via partial tracking using 3d feature-based method
@@ -28,9 +29,7 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     p_fname = config['preprocessing_config']
     p = PreprocessingSettings.load_from_yaml(p_fname)
 
-    ########################
     # Make tracklets
-    ########################
     # Get options
     opt = config['tracker_params'].copy()
     opt['num_frames'] = config['dataset_params']['num_frames']
@@ -39,35 +38,29 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     opt['start_frame'] = config['dataset_params']['start_volume']
     opt['num_slices'] = config['dataset_params']['num_slices']
 
-    out = track_neurons_full_video(vid_fname,
-                                   preprocessing_settings=p,
-                                   **opt)
-    raise ValueError("Needs refactor with FramePair")
-    ########################
+    all_frame_pairs, all_frame_dict = track_neurons_full_video(vid_fname,
+                                                               preprocessing_settings=p,
+                                                               **opt)
     # Postprocess matches
-    ########################
-    b_matches, b_conf, b_frames, b_candidates = out
+    # b_matches, b_conf, b_frames, b_candidates = out
     # new_candidates = fix_candidates_without_confidences(b_candidates)
-    bp_matches = calc_all_bipartite_matches(b_candidates)
-    df = build_tracklets_from_classes(b_frames, bp_matches)
+    all_frame_pairs.calc_final_matches_using_bipartite_matching()
+    df = build_tracklets_from_classes(all_frame_dict, all_frame_pairs.final_matches)
 
-    ########################
-    # Save matches to disk
-    ########################
+    _save_matches_and_frames(all_frame_dict, all_frame_pairs, df)
+
+
+def _save_matches_and_frames(all_frame_dict, all_frame_pairs, df):
     subfolder = osp.join('2-training_data', 'raw')
     subfolder = get_sequential_filename(subfolder)
     os.mkdir(subfolder)
-
     fname = osp.join(subfolder, 'clust_df_dat.pickle')
     with open(fname, 'wb') as f:
-        pickle.dump(df,f)
+        pickle.dump(df, f)
     fname = osp.join(subfolder, 'match_dat.pickle')
     with open(fname, 'wb') as f:
-        pickle.dump(b_matches, f)
-    fname = osp.join(subfolder, 'candidate_matches_dat.pickle')
-    with open(fname, 'wb') as f:
-        pickle.dump(b_candidates, f)
+        pickle.dump(all_frame_pairs, f)
     fname = osp.join(subfolder, 'frame_dat.pickle')
-    [frame.prep_for_pickle() for frame in b_frames.values()]
+    [frame.prep_for_pickle() for frame in all_frame_dict.values()]
     with open(fname, 'wb') as f:
-        pickle.dump(b_frames, f)
+        pickle.dump(all_frame_dict, f)
