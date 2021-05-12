@@ -269,11 +269,10 @@ def calc_2frame_matches_using_class(frame0,
     if not use_affine_matching:
         f = calc_matches_using_feature_voting
         feature_matches_dict = extract_map1to2_from_matches(feature_matches)
-        opt = {'feature_matches_dict':feature_matches_dict}
+        opt = {'feature_matches_dict': feature_matches_dict}
     else:
-        zzz
         f = calc_matches_using_affine_propagation
-        opt = {'all_feature_matches':feature_matches}
+        opt = {'all_feature_matches': feature_matches}
     matches_with_conf, all_candidate_matches, _ = f(
                                           frame0, frame1,
                                           **opt)
@@ -289,11 +288,9 @@ def calc_2frame_matches_using_class(frame0,
     if add_affine_to_candidates:
         f = calc_matches_using_affine_propagation
         opt = {'all_feature_matches': feature_matches}
-        affine_matches, affine_conf, _ = f(frame0, frame1, **opt)
-        matches_with_conf = [(m[0], m[1], c) for m, c in zip(affine_matches, affine_conf)]
-        # matches_with_conf = np.hstack([affine_matches, affine_conf])
-        # all_candidate_matches.extend(matches_with_conf)
+        matches_with_conf, _, affine_pushed = f(frame0, frame1, **opt)
         frame_pair.affine_matches = matches_with_conf
+        frame_pair.affine_pushed_locations = affine_pushed
 
     if add_gp_to_candidates:
         n0 = frame0.neuron_locs.copy()
@@ -303,10 +300,11 @@ def calc_2frame_matches_using_class(frame0,
         n0[:, 0] *= 3
         n1[:, 0] *= 3
         # Actually match
-        opt = {'this_match': all_neuron_matches, 'this_conf': all_confidences}
-        matches_with_conf, _, pc_pushed = calc_matches_using_gaussian_process(n0, n1, **opt)
-        # all_candidate_matches.extend(matches_with_conf)
+        opt = {'matches_with_conf': matches_with_conf}
+        matches_with_conf, _, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **opt)
         frame_pair.gp_matches = matches_with_conf
-        frame_pair.gp_pushed_locations = np.array(pc_pushed.points)
+        frame_pair.gp_pushed_locations = gp_pushed
 
-    return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches
+    return frame_pair
+
+    # return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches

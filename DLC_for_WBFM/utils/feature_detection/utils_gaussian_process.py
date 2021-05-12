@@ -8,8 +8,7 @@ import open3d as o3d
 
 
 def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
-                                        this_match,
-                                        this_conf,
+                                        matches_with_conf,
                                         max_dist=30.0):
     """
     Using noisy matches between 3d point clouds (format: zxy) does the following:
@@ -23,15 +22,15 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     """
 
     # Build regression vectors and z-score
-    xyz = np.zeros((len(this_match), 3), dtype=np.float32) # Start point
-    dat = np.zeros((len(this_match), 3), dtype=np.float32) # Difference vector
-    noise = np.zeros(len(this_match), dtype=np.float32) # Heuristic noise
-    for m, (match, conf) in enumerate(zip(this_match, this_conf)):
-        v0 = n0_unmatched[match[0]]
-        v1 = n1_unmatched[match[1]]
+    xyz = np.zeros((len(matches_with_conf), 3), dtype=np.float32) # Start point
+    dat = np.zeros((len(matches_with_conf), 3), dtype=np.float32) # Difference vector
+    noise = np.zeros(len(matches_with_conf), dtype=np.float32) # Heuristic noise
+    for m, (match_and_conf) in enumerate(matches_with_conf):
+        v0 = n0_unmatched[match_and_conf[0]]
+        v1 = n1_unmatched[match_and_conf[1]]
         xyz[m, :] = v0
         dat[m, :] = v1 - v0
-        noise[m] = np.exp((1-conf)/1e-1) + 1e-10 # Maximum confidence should be 1.0
+        noise[m] = np.exp((1-match_and_conf[2])/1e-1) + 1e-10 # Maximum confidence should be 1.0
     noise /= 1e4*np.max(noise)
 
     scaler = preprocessing.StandardScaler().fit(xyz)
@@ -62,12 +61,11 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     zxy_predict = np.vstack([z_predict,x_predict,y_predict]).T
     zxy_predict = scaler2.inverse_transform(zxy_predict)
 
-    # # Point cloud for the pushed and target neurons
+    # Point cloud for the pushed and target neurons
     pc_pushed = build_neuron_tree(n0_unmatched+zxy_predict, False)[1]
     pc_target = build_neuron_tree(n1_unmatched, False)[1]
 
     # New: get matches using bipartite matching on distances
-    # xyz0, xyz1 = n0_unmatched+zxy_predict, n1_unmatched
     xyz0, xyz1 = pc_pushed.points, pc_target.points
     out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=max_dist)
     matches, conf, _ = out
@@ -75,4 +73,4 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     # matches_with_conf = np.hstack([matches, conf])
     matches_with_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
 
-    return matches_with_conf, [], pc_pushed
+    return matches_with_conf, [], xyz0

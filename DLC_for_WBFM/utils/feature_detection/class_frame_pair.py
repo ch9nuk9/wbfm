@@ -9,14 +9,14 @@ class FramePair:
     final_matches: list
 
     # Intermediate products, with confidences
-    feature_matches: list
-    affine_matches: list
-    affine_pushed_locations: list
-    gp_matches: list
-    gp_pushed_locations: list
+    feature_matches: list = None
+    affine_matches: list = None
+    affine_pushed_locations: list = None
+    gp_matches: list = None
+    gp_pushed_locations: list = None
 
     # Original keypoints
-    keypoint_matches: list
+    keypoint_matches: list = None
 
     @property
     def all_candidate_matches(self):
