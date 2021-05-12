@@ -14,5 +14,4 @@ tracker_params: # OPTIMIZE
   use_affine_matching: false
   add_affine_to_candidates: true
   add_gp_to_candidates: true
-  save_candidate_matches: true
   external_detections: null # Will be synchronized with segmentation
