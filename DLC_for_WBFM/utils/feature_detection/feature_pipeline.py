@@ -312,6 +312,7 @@ def register_all_reference_frames(ref_frames,
             if key[1]==key[0] and key not in pairwise_matches_dict:
                 continue
             out = calc_2frame_matches_using_class(frame0, frame1,**match_opt)
+            raise ValueError("Needs refactor with FramePair")
             match, conf, feature_matches, candidate_matches = out
             pairwise_matches_dict[key] = match
             pairwise_conf_dict[key] = conf
@@ -539,7 +540,6 @@ def track_neurons_full_video(vid_fname,
     pairwise_matches_dict = {}
     pairwise_candidates_dict = {}
     pairwise_conf_dict = {}
-    # all_frames = [frame0]
     all_frame_dict = {start_frame: frame0}
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
@@ -550,7 +550,7 @@ def track_neurons_full_video(vid_fname,
         frame1 = local_build_frame(i_frame)
 
         out = calc_2frame_matches_using_class(frame0, frame1, **match_opt)
-                                              # TODO: refactor for class
+        raise ValueError("Needs refactor with FramePair")
         match, conf, fm, candidates = out
         # Save to dictionaries
         key = (i_frame-1, i_frame)
@@ -715,6 +715,7 @@ def track_neurons_full_video_window(vid_fname,
                 all_frame_dict[i_next_frame] = next_frame
 
             out = calc_2frame_matches_using_class(base_frame, next_frame,**match_opt)
+            raise ValueError("Needs refactor with FramePair")
             match, conf, fm, candidates = out
             # Save to dictionaries
             key = (i_base_frame, i_next_frame)
@@ -850,6 +851,7 @@ def stitch_tracklets(clust_df,
                 if verbose >= 3:
                     print(f"Calculating new matches between frames {key}")
                 out = calc_2frame_matches_using_class(frame0, frame1)
+                raise ValueError("Needs refactor with FramePair")
                 matches, conf = out[0], out[1]
                 # Save for future
                 distant_matches_dict[key] = matches
