@@ -68,6 +68,7 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=max_dist)
     matches, conf, _ = out
 
-    matches_with_conf = np.hstack([matches, conf])
+    # matches_with_conf = np.hstack([matches, conf])
+    matches_with_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
 
     return matches_with_conf, pc_pushed, pc_target

@@ -550,6 +550,7 @@ def track_neurons_full_video(vid_fname,
         frame1 = local_build_frame(i_frame)
 
         out = calc_2frame_matches_using_class(frame0, frame1, **match_opt)
+                                              # TODO: refactor for class
         match, conf, fm, candidates = out
         # Save to dictionaries
         key = (i_frame-1, i_frame)

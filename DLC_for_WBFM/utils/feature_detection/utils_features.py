@@ -351,10 +351,10 @@ def add_neuron_match(all_best_matches,
         all_confidences.append(conf)
         if all_candidate_matches is not None:
             vals, counts = np.unique(this_n1, return_counts=True)
-            new_candidates = [(i, v, get_conf(c)) for v,c in zip(vals, counts)]
+            new_candidates = [(i, v, get_conf(c)) for v, c in zip(vals, counts)]
             all_candidate_matches.extend(new_candidates)
-        if verbose >= 1:
-            print(f"Matched neuron {i} to {this_match} based on {len(this_n1)} matches")
+        # if verbose >= 1:
+        #     print(f"Matched neuron {i} to {this_match} based on {len(this_n1)} matches")
     else:
         #all_matches.append([i, np.nan])
         #all_confidences.append(0)

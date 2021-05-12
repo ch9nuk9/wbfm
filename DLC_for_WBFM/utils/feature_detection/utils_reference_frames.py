@@ -1,3 +1,4 @@
+from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, build_neuron_tree, build_f2n_map, add_neuron_match, match_known_features, extract_map1to2_from_matches
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
@@ -255,17 +256,6 @@ def calc_2frame_matches_using_class(frame0,
                                            frame0.vol_shape[1:],
                                            frame1.vol_shape[1:],
                                            matches_to_keep=0.2)
-    if DEBUG:
-        print("All feature matches: ")
-        # Draw first 10 matches.
-        img1 = frame0.get_data()[15,...]
-        img2 = frame1.get_data()[15,...]
-        kp1, kp2 = frame0.keypoints, frame1.keypoints
-        img3 = cv2.drawMatches(img1,kp1,img2,kp2,feature_matches[:100],None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-        #plt.figure(figsize=(25,45))
-        #plt.imshow(img3),plt.show()
-        #[print(f) for f in feature_matches]
-        #return img3
 
     # Second, get neuron matches
     if not use_affine_matching:
@@ -279,12 +269,22 @@ def calc_2frame_matches_using_class(frame0,
                                           frame0, frame1,
                                           **opt)
 
+    # Create convenience object to store matches
+    frame_pair = FramePair(all_neuron_matches, all_confidences)
+    if not use_affine_matching:
+        frame_pair.feature_matches = all_candidate_matches
+    else:
+        frame_pair.affine_matches = all_candidate_matches
+
+    # Add additional candidates, if used
     if add_affine_to_candidates:
         f = calc_matches_using_affine_propagation
         opt = {'all_feature_matches': feature_matches}
         affine_matches, affine_conf, _ = f(frame0, frame1, **opt)
-        matches_with_conf = np.hstack([affine_matches, affine_conf])
-        all_candidate_matches.extend(matches_with_conf)
+        matches_with_conf = [(m[0], m[1], c) for m, c in zip(affine_matches, affine_conf)]
+        # matches_with_conf = np.hstack([affine_matches, affine_conf])
+        # all_candidate_matches.extend(matches_with_conf)
+        frame_pair.affine_matches = matches_with_conf
 
     if add_gp_to_candidates:
         n0 = frame0.neuron_locs.copy()
@@ -296,6 +296,7 @@ def calc_2frame_matches_using_class(frame0,
         # Actually match
         opt = {'this_match': all_neuron_matches, 'this_conf': all_confidences}
         matches_with_conf, _, _ = calc_matches_using_gaussian_process(n0, n1, **opt)
-        all_candidate_matches.extend(matches_with_conf)
+        # all_candidate_matches.extend(matches_with_conf)
+        frame_pair.affine_matches = matches_with_conf
 
     return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches
