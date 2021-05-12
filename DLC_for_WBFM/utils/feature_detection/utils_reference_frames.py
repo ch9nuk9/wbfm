@@ -199,6 +199,12 @@ def calc_matches_using_feature_voting(frame0, frame1,
                                       verbose=0,
                                       min_features_needed=2,
                                       DEBUG=False):
+    """Basic matching using opencv features
+
+    See also:
+        calc_matches_using_gaussian_process
+        calc_matches_using_affine_propagation
+    """
 
     all_neuron_matches = []
     all_confidences = []
@@ -231,7 +237,9 @@ def calc_matches_using_feature_voting(frame0, frame1,
             verbose=verbose-1,
             all_candidate_matches=all_candidate_matches
         )
-    return all_neuron_matches, all_confidences, all_candidate_matches
+    matches_with_conf = [(m[0], m[1], c) for m, c in zip(all_neuron_matches, all_confidences)]
+    # Empty list to match other signatures
+    return matches_with_conf, all_candidate_matches, []
 
 
 def calc_2frame_matches_using_class(frame0,
@@ -263,14 +271,15 @@ def calc_2frame_matches_using_class(frame0,
         feature_matches_dict = extract_map1to2_from_matches(feature_matches)
         opt = {'feature_matches_dict':feature_matches_dict}
     else:
+        zzz
         f = calc_matches_using_affine_propagation
         opt = {'all_feature_matches':feature_matches}
-    all_neuron_matches, all_confidences, all_candidate_matches = f(
+    matches_with_conf, all_candidate_matches, _ = f(
                                           frame0, frame1,
                                           **opt)
 
     # Create convenience object to store matches
-    frame_pair = FramePair(all_neuron_matches, all_confidences)
+    frame_pair = FramePair(matches_with_conf)
     if not use_affine_matching:
         frame_pair.feature_matches = all_candidate_matches
     else:
@@ -295,8 +304,9 @@ def calc_2frame_matches_using_class(frame0,
         n1[:, 0] *= 3
         # Actually match
         opt = {'this_match': all_neuron_matches, 'this_conf': all_confidences}
-        matches_with_conf, _, _ = calc_matches_using_gaussian_process(n0, n1, **opt)
+        matches_with_conf, _, pc_pushed = calc_matches_using_gaussian_process(n0, n1, **opt)
         # all_candidate_matches.extend(matches_with_conf)
-        frame_pair.affine_matches = matches_with_conf
+        frame_pair.gp_matches = matches_with_conf
+        frame_pair.gp_pushed_locations = np.array(pc_pushed.points)
 
     return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches

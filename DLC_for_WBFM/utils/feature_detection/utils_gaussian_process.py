@@ -15,7 +15,11 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     Using noisy matches between 3d point clouds (format: zxy) does the following:
         1. Interpolate the vector field using Gaussian Processes
         2. Push all points in point cloud n0
-        3. Find the closest matches using ICP
+        3. Find the closest matches using bipartite matching
+
+    See also:
+        calc_matches_using_feature_voting
+        calc_matches_using_affine_propagation
     """
 
     # Build regression vectors and z-score
@@ -71,4 +75,4 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     # matches_with_conf = np.hstack([matches, conf])
     matches_with_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
 
-    return matches_with_conf, pc_pushed, pc_target
+    return matches_with_conf, [], pc_pushed

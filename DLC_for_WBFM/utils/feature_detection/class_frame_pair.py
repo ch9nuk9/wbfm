@@ -5,14 +5,15 @@ from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_al
 class FramePair:
     """Information connecting neurons in two ReferenceFrame objects"""
 
-    # Final output
+    # Final output, with confidences
     final_matches: list
-    final_conf: list
 
     # Intermediate products, with confidences
     feature_matches: list
     affine_matches: list
+    affine_pushed_locations: list
     gp_matches: list
+    gp_pushed_locations: list
 
     # Original keypoints
     keypoint_matches: list
