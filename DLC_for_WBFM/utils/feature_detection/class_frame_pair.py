@@ -20,8 +20,10 @@ class FramePair:
 
     @property
     def all_candidate_matches(self):
-        tmp = self.feature_matches.copy()
-        return tmp.extend(self.affine_matches).extend(self.gp_matches)
+        all_matches = self.feature_matches.copy()
+        all_matches.extend(self.affine_matches)
+        all_matches.extend(self.gp_matches)
+        return all_matches
 
     def calc_final_matches_using_bipartite_matching(self):
         self.final_matches = calc_all_bipartite_matches(self.all_candidate_matches)
