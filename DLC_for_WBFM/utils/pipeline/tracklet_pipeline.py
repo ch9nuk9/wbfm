@@ -63,6 +63,9 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     fname = osp.join(subfolder, 'match_dat.pickle')
     with open(fname, 'wb') as f:
         pickle.dump(b_matches, f)
+    fname = osp.join(subfolder, 'candidate_matches_dat.pickle')
+    with open(fname, 'wb') as f:
+        pickle.dump(new_candidates, f)
     fname = osp.join(subfolder, 'frame_dat.pickle')
     [frame.prep_for_pickle() for frame in b_frames.values()]
     with open(fname, 'wb') as f:

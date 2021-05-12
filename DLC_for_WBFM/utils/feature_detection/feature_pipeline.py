@@ -509,19 +509,20 @@ def track_neurons_full_video(vid_fname,
     New: uses and returns my class of features
     """
     # Get initial volume; settings are same for all
-    import_opt = {'num_slices':num_slices,
-                 'alpha':1.0,
-                 'dtype':preprocessing_settings.initial_dtype}
+    import_opt = {'num_slices': num_slices,
+                 'alpha': 1.0,
+                 'dtype': preprocessing_settings.initial_dtype}
     ref_opt = {'neuron_feature_radius':neuron_feature_radius}
+
     def local_build_frame(frame_ind,
                           vid_fname=vid_fname,
                           import_opt=import_opt,
                           ref_opt=ref_opt,
                           external_detections=external_detections):
         dat = get_single_volume(vid_fname, frame_ind, **import_opt)
-        metadata = {'frame_ind':frame_ind,
-                    'vol_shape':dat.shape,
-                    'video_fname':vid_fname}
+        metadata = {'frame_ind': frame_ind,
+                    'vol_shape': dat.shape,
+                    'video_fname': vid_fname}
         f = build_reference_frame(dat,
                                   num_slices=import_opt['num_slices'],
                                   **ref_opt,
@@ -539,7 +540,7 @@ def track_neurons_full_video(vid_fname,
     pairwise_candidates_dict = {}
     pairwise_conf_dict = {}
     # all_frames = [frame0]
-    all_frame_dict = {start_frame:frame0}
+    all_frame_dict = {start_frame: frame0}
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
     match_opt = {'use_affine_matching':use_affine_matching,
@@ -548,7 +549,7 @@ def track_neurons_full_video(vid_fname,
     for i_frame in tqdm(frame_range):
         frame1 = local_build_frame(i_frame)
 
-        out = calc_2frame_matches_using_class(frame0, frame1,**match_opt)
+        out = calc_2frame_matches_using_class(frame0, frame1, **match_opt)
         match, conf, fm, candidates = out
         # Save to dictionaries
         key = (i_frame-1, i_frame)
@@ -557,7 +558,6 @@ def track_neurons_full_video(vid_fname,
         if save_candidate_matches:
             pairwise_candidates_dict[key] = candidates
         # Save frame to list
-        # all_frames.append(frame1)
         all_frame_dict[i_frame] = frame1
         frame0 = frame1
 
