@@ -10,7 +10,7 @@ import numpy as np
 ##
 
 @dataclass
-class ReferenceFrame():
+class ReferenceFrame:
     """ Information for registered reference frames"""
 
     # Data for registration
