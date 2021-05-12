@@ -42,6 +42,7 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     out = track_neurons_full_video(vid_fname,
                                    preprocessing_settings=p,
                                    **opt)
+    raise ValueError("Needs refactor with FramePair")
     ########################
     # Postprocess matches
     ########################

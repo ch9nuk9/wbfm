@@ -511,15 +511,11 @@ def track_neurons_full_video(vid_fname,
     """
     # Get initial volume; settings are same for all
     import_opt = {'num_slices': num_slices,
-                 'alpha': 1.0,
-                 'dtype': preprocessing_settings.initial_dtype}
+                  'alpha': 1.0,
+                  'dtype': preprocessing_settings.initial_dtype}
     ref_opt = {'neuron_feature_radius':neuron_feature_radius}
 
-    def local_build_frame(frame_ind,
-                          vid_fname=vid_fname,
-                          import_opt=import_opt,
-                          ref_opt=ref_opt,
-                          external_detections=external_detections):
+    def local_build_frame(frame_ind):
         dat = get_single_volume(vid_fname, frame_ind, **import_opt)
         metadata = {'frame_ind': frame_ind,
                     'vol_shape': dat.shape,
@@ -537,9 +533,7 @@ def track_neurons_full_video(vid_fname,
     frame0 = local_build_frame(start_frame)
 
     # Loop through all pairs
-    pairwise_matches_dict = {}
-    pairwise_candidates_dict = {}
-    pairwise_conf_dict = {}
+    all_frame_pairs = {}
     all_frame_dict = {start_frame: frame0}
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
@@ -549,20 +543,16 @@ def track_neurons_full_video(vid_fname,
     for i_frame in tqdm(frame_range):
         frame1 = local_build_frame(i_frame)
 
-        out = calc_2frame_matches_using_class(frame0, frame1, **match_opt)
-        raise ValueError("Needs refactor with FramePair")
-        match, conf, fm, candidates = out
+        this_pair = calc_2frame_matches_using_class(frame0, frame1, **match_opt)
+        # raise ValueError("Needs refactor with FramePair")
         # Save to dictionaries
         key = (i_frame-1, i_frame)
-        pairwise_matches_dict[key] = match
-        pairwise_conf_dict[key] = conf
-        if save_candidate_matches:
-            pairwise_candidates_dict[key] = candidates
+        all_frame_pairs[key] = this_pair
         # Save frame to list
         all_frame_dict[i_frame] = frame1
         frame0 = frame1
 
-    return pairwise_matches_dict, pairwise_conf_dict, all_frame_dict, pairwise_candidates_dict
+    return all_frame_pairs, all_frame_dict
 
 
 def track_via_reference_frames(vid_fname,

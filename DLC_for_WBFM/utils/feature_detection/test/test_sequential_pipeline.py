@@ -50,3 +50,4 @@ class TestSequentialPipeline(unittest.TestCase):
                              num_slices=self.num_slices,
                              preprocessing_settings=self.preprocessing_settings,
                              verbose=0)
+        raise ValueError("Needs refactor with FramePair")
