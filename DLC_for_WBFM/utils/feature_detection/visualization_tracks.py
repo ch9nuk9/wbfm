@@ -284,20 +284,20 @@ def match2quiver(all_frames, all_matches, which_pair, actually_draw=True):
 
     # Align the keypoints via matches
     xyz = np.zeros((len(matches), 3), dtype=np.float32) # Start point
-    dat = np.zeros((len(matches), 3), dtype=np.float32) # Difference vector
+    diff_vec = np.zeros((len(matches), 3), dtype=np.float32) # Difference vector
 
     for m, match in enumerate(matches):
         v0 = n0_unmatched[match[0]]
         v1 = n1_unmatched[match[1]]
         xyz[m, :] = v0
-        dat[m, :] = v1 - v0
+        diff_vec[m, :] = v1 - v0
 
 
     # C = dat[:,2] / np.max(dat[:,1])
     if actually_draw:
-        plt.quiver(xyz[:,1], xyz[:,2], dat[:,1], dat[:,2])
+        plt.quiver(xyz[:,1], xyz[:,2], diff_vec[:,1], diff_vec[:,2])
     # plt.title('Neuron matches based on features (has mistakes)')
-    return xyz, dat
+    return xyz, diff_vec
 
 
 ##

@@ -61,6 +61,7 @@ def get_single_volume_specific_slices(fname, which_vol, num_slices,
 
     return dat
 
+
 def get_adjacent_volumes(fname, first_vol, num_slices):
     dat0 = get_single_volume(fname, first_vol, num_slices)
     dat1 = get_single_volume(fname, first_vol+1, num_slices)
