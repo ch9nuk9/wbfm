@@ -281,20 +281,21 @@ def calc_2frame_matches_using_class(frame0,
 
     if add_affine_to_candidates:
         f = calc_matches_using_affine_propagation
-        opt = {'all_feature_matches':feature_matches}
-        _, _, new_candidate_matches = f(frame0, frame1, **opt)
-        all_candidate_matches.extend(new_candidate_matches)
+        opt = {'all_feature_matches': feature_matches}
+        affine_matches, affine_conf, _ = f(frame0, frame1, **opt)
+        matches_with_conf = np.hstack([affine_matches, affine_conf])
+        all_candidate_matches.extend(matches_with_conf)
 
     if add_gp_to_candidates:
         n0 = frame0.neuron_locs.copy()
         n1 = frame1.neuron_locs.copy()
 
-        # TODO: Increase z distances
-        n0[:,0] *= 3
-        n1[:,0] *= 3
+        # TODO: Increase z distances correctly
+        n0[:, 0] *= 3
+        n1[:, 0] *= 3
         # Actually match
-        opt = {'this_match':all_neuron_matches, 'this_conf':all_confidences}
-        matches, _, _ = calc_matches_using_gaussian_process(n0, n1, **opt)
-        all_candidate_matches.extend(matches)
+        opt = {'this_match': all_neuron_matches, 'this_conf': all_confidences}
+        matches_with_conf, _, _ = calc_matches_using_gaussian_process(n0, n1, **opt)
+        all_candidate_matches.extend(matches_with_conf)
 
     return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches

@@ -543,9 +543,9 @@ def track_neurons_full_video(vid_fname,
     all_frame_dict = {start_frame: frame0}
     end_frame = start_frame+num_frames
     frame_range = range(start_frame+1, end_frame)
-    match_opt = {'use_affine_matching':use_affine_matching,
-                 'add_affine_to_candidates':add_affine_to_candidates,
-                 'add_gp_to_candidates':add_gp_to_candidates}
+    match_opt = {'use_affine_matching': use_affine_matching,
+                 'add_affine_to_candidates': add_affine_to_candidates,
+                 'add_gp_to_candidates': add_gp_to_candidates}
     for i_frame in tqdm(frame_range):
         frame1 = local_build_frame(i_frame)
 

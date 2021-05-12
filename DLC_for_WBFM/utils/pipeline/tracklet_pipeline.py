@@ -46,8 +46,8 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     # Postprocess matches
     ########################
     b_matches, b_conf, b_frames, b_candidates = out
-    new_candidates = fix_candidates_without_confidences(b_candidates)
-    bp_matches = calc_all_bipartite_matches(new_candidates)
+    # new_candidates = fix_candidates_without_confidences(b_candidates)
+    bp_matches = calc_all_bipartite_matches(b_candidates)
     df = build_tracklets_from_classes(b_frames, bp_matches)
 
     ########################
