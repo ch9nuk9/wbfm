@@ -44,8 +44,10 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     # Postprocess matches
     # b_matches, b_conf, b_frames, b_candidates = out
     # new_candidates = fix_candidates_without_confidences(b_candidates)
-    all_frame_pairs.calc_final_matches_using_bipartite_matching()
-    df = build_tracklets_from_classes(all_frame_dict, all_frame_pairs.final_matches)
+    
+    # Also updates the matches of the object
+    all_matches = {k: pair.calc_final_matches_using_bipartite_matching() for k, pair in all_frame_pairs.items()}
+    df = build_tracklets_from_classes(all_frame_dict, all_matches)
 
     _save_matches_and_frames(all_frame_dict, all_frame_pairs, df)
 
