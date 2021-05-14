@@ -58,6 +58,7 @@ class ReferenceFrame:
         self.keypoints = []
 
 
+
     def rebuild_keypoints(self):
         """
         Rebuilds keypoints from keypoint_locs

@@ -299,10 +299,9 @@ def calc_2frame_matches_using_class(frame0,
         n1[:, 0] *= 3
         # Actually match
         opt = {'matches_with_conf': matches_with_conf}
-        matches_with_conf, _, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **opt)
+        matches_with_conf, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **opt)
         frame_pair.gp_matches = matches_with_conf
+        frame_pair.all_gps = all_gps
         frame_pair.gp_pushed_locations = gp_pushed
 
     return frame_pair
-
-    # return all_neuron_matches, all_confidences, feature_matches, all_candidate_matches

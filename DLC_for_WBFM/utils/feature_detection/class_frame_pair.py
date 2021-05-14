@@ -16,6 +16,8 @@ class FramePair:
     gp_matches: list = None
     gp_pushed_locations: list = None
 
+    all_gps: list = None  # The actual gaussian processes
+
     # Original keypoints
     keypoint_matches: list = None
 
