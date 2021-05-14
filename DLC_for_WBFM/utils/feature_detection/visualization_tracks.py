@@ -278,8 +278,8 @@ def match2quiver(all_frames, all_matches, which_pair, actually_draw=True):
     Plots matches as a quiver plot
     """
 
-    n0_unmatched = all_frames[which_pair[0]].keypoint_locs
-    n1_unmatched = all_frames[which_pair[1]].keypoint_locs
+    n0_unmatched = all_frames[which_pair[0]].neuron_locs
+    n1_unmatched = all_frames[which_pair[1]].neuron_locs
     matches = all_matches[which_pair]
 
     # Align the keypoints via matches
