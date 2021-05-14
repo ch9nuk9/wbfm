@@ -71,6 +71,6 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     matches, conf, _ = out
 
     # matches_with_conf = np.hstack([matches, conf])
-    matches_with_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
+    matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(matches, conf)]
 
     return matches_with_conf, [], np.array(xyz0)
