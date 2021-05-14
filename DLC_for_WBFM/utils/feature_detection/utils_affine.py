@@ -26,16 +26,15 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
     this_neuron = f0.neuron_locs[which_neuron]
 
     num_features, pc0, tree_features0 = build_feature_tree(f0.keypoint_locs)
-    pc0.paint_uniform_color([0.9,0.9,0.9])
+    pc0.paint_uniform_color([0.9, 0.9, 0.9])
 
     # See also calc_2frame_matches
     # Iteratively increases the radius if not enough matches are found
     for i in range(5):
-        nn_opt = {'radius':radius, 'max_nn':5000}
+        nn_opt = {'radius': radius, 'max_nn': 5000}
         [_, close_features, _] = tree_features0.search_hybrid_vector_3d(np.asarray(this_neuron), **nn_opt)
 
         ## Get the next-frame-matches of the features in this cloud
-
         # Get just these points, and align two lists
         pts0, pts1 = [], []
         for match in all_feature_matches:
@@ -58,8 +57,8 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
     else:
         neuron0_trans = None
     success = False
-    if (len(pts0)>2) & (len(pts1)>2):
-        val, h, inliers = cv2.estimateAffine3D(pts0,pts1, confidence=0.999)
+    if (len(pts0) > 2) & (len(pts1) > 2):
+        val, h, inliers = cv2.estimateAffine3D(pts0, pts1, confidence=0.999)
         if verbose >= 2:
             print(f"Found {len(pts0)} matches from {len(close_features)} features")
 

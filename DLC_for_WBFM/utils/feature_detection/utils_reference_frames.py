@@ -257,7 +257,7 @@ def calc_2frame_matches_using_class(frame0,
     """
 
     # First, get feature matches
-    feature_matches = match_known_features(frame0.all_features,
+    keypoint_matches = match_known_features(frame0.all_features,
                                            frame1.all_features,
                                            frame0.keypoints,
                                            frame1.keypoints,
@@ -268,17 +268,18 @@ def calc_2frame_matches_using_class(frame0,
     # Second, get neuron matches
     if not use_affine_matching:
         f = calc_matches_using_feature_voting
-        feature_matches_dict = extract_map1to2_from_matches(feature_matches)
+        feature_matches_dict = extract_map1to2_from_matches(keypoint_matches)
         opt = {'feature_matches_dict': feature_matches_dict}
     else:
         f = calc_matches_using_affine_propagation
-        opt = {'all_feature_matches': feature_matches}
+        opt = {'all_feature_matches': keypoint_matches}
     matches_with_conf, all_candidate_matches, _ = f(
                                           frame0, frame1,
                                           **opt)
 
     # Create convenience object to store matches
     frame_pair = FramePair(matches_with_conf)
+    frame_pair.keypoint_matches = keypoint_matches
     if not use_affine_matching:
         frame_pair.feature_matches = all_candidate_matches
     else:
@@ -286,9 +287,8 @@ def calc_2frame_matches_using_class(frame0,
 
     # Add additional candidates, if used
     if add_affine_to_candidates:
-        f = calc_matches_using_affine_propagation
-        opt = {'all_feature_matches': feature_matches}
-        matches_with_conf, _, affine_pushed = f(frame0, frame1, **opt)
+        opt = {'all_feature_matches': keypoint_matches}
+        matches_with_conf, _, affine_pushed = calc_matches_using_affine_propagation(frame0, frame1, **opt)
         frame_pair.affine_matches = matches_with_conf
         frame_pair.affine_pushed_locations = affine_pushed
 

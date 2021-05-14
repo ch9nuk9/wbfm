@@ -11,14 +11,14 @@ from collections import defaultdict
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
     n0, pc_n0, tree_neurons0 = build_neuron_tree(neurons0, to_mirror=False)
     n1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror=False)
-    pc_n0.paint_uniform_color([0.5,0.5,0.5])
-    pc_n1.paint_uniform_color([0,0,0])
+    pc_n0.paint_uniform_color([0.5, 0.5, 0.5])
+    pc_n1.paint_uniform_color([0, 0, 0])
 
     # Plot lines from initial neuron to target
-    points = np.vstack((pc_n0.points,pc_n1.points))
+    points = np.vstack((pc_n0.points, pc_n1.points))
 
     combined_matches = []
-    for i,match in enumerate(matches):
+    for i, match in enumerate(matches):
         combined_matches.append([match[0], n0 + match[1]])
 
     successful_lines = []
@@ -51,8 +51,8 @@ def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
 
 
 def visualize_tracks_simple(pc0, pc1, matches):
-    pc0.paint_uniform_color([1,0,0])
-    pc1.paint_uniform_color([0,1,0])
+    pc0.paint_uniform_color([1, 0, 0])
+    pc1.paint_uniform_color([0, 1, 0])
 
     # Plot lines from initial neuron to target
     line_set = build_line_set_from_matches(pc0, pc1, matches)
@@ -72,39 +72,39 @@ def visualize_tracks_multiple_matches(all_pc, all_matches):
     all_lines = []
     for i, match in enumerate(all_matches):
         pc0 = all_pc[i]
-        pc0.paint_uniform_color([0.5,0.5,0.5])
-        pc1 = all_pc[i+1]
+        pc0.paint_uniform_color([0.5, 0.5, 0.5])
+        pc1 = all_pc[i + 1]
 
         new_lines = build_line_set_from_matches(pc0, pc1, match)
 
         if new_lines.has_lines():
             all_lines.append(new_lines)
 
-    pc1.paint_uniform_color([0,0,0]) # Last one
-
+    pc1.paint_uniform_color([0, 0, 0])  # Last one
 
     pc_and_lines = copy.copy(all_pc)
     pc_and_lines.extend(all_lines)
     o3d.visualization.draw_geometries(pc_and_lines)
 
 
-def build_line_set_from_matches(pc0, pc1, matches=None,
-                                color=[0, 0, 1]):
+def build_line_set_from_matches(pc0, pc1, matches=None, color=None):
+    if color is None:
+        color = [0, 0, 1]
     try:
         # If point clouds are passed
-        points = np.vstack((pc0.points,pc1.points))
+        points = np.vstack((pc0.points, pc1.points))
         n0 = len(pc0.points)
     except:
         # If numpy arrays are passed
-        points = np.vstack((pc0,pc1))
+        points = np.vstack((pc0, pc1))
         n0 = pc0.shape[0]
 
     # Convert matches to the coordinates of the combine point cloud
     if matches is None:
-        matches = [[i,i] for i in range(n0)]
+        matches = [[i, i] for i in range(n0)]
     # I've been having problems with overwriting the original list
     combined_matches = list([list(m) for m in matches])
-    for i,match in enumerate(matches):
+    for i, match in enumerate(matches):
         combined_matches[i][1] = (n0 + match[1])
 
     # If the passed match data also has a weight, just take the first 2
@@ -121,7 +121,6 @@ def build_line_set_from_matches(pc0, pc1, matches=None,
 
 
 def visualize_cluster_labels(labels, pc):
-
     max_label = labels.max()
     print(f"point cloud has {max_label + 1} clusters")
     colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
@@ -130,8 +129,10 @@ def visualize_cluster_labels(labels, pc):
     o3d.visualization.draw_geometries([pc])
 
 
-def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0, smallest_cluster=3, default_color=[0,0,0]):
+def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0, smallest_cluster=3, default_color=None):
     # Assign colors to the data frame based on cluster id
+    if default_color is None:
+        default_color = [0, 0, 0]
     max_label = clust_df['clust_ind'].max()
     clust_df['colors'] = list(plt.get_cmap("tab20")(pd.to_numeric(clust_df.clust_ind, downcast='float') / max_label))
 
@@ -148,7 +149,7 @@ def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0, smallest_clu
             print(f"Color {this_color[:3]} for neurons {these_ind}")
 
         all_colors = np.vstack([this_color[:3] for i in these_ind])
-        final_colors[these_ind,:] = all_colors
+        final_colors[these_ind, :] = all_colors
 
     full_pc.colors = o3d.utility.Vector3dVector(final_colors)
 
@@ -158,11 +159,10 @@ def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0, smallest_clu
 
 
 def build_full_pc_from_list(all_keypoints_pcs):
-
     full_pc = o3d.geometry.PointCloud()
     for pc in all_keypoints_pcs:
         full_pc = full_pc + pc
-    full_pc.paint_uniform_color([0.5,0.5,0.5])
+    full_pc.paint_uniform_color([0.5, 0.5, 0.5])
 
     return full_pc
 
@@ -196,11 +196,11 @@ def plot_match_example(all_frames,
     # Get frame objects and data
     frame0 = all_frames[which_frame_pair[0]]
     frame1 = all_frames[which_frame_pair[1]]
-    img0 = frame0.get_data()[which_slice,...]
-    img1 = frame1.get_data()[which_slice,...]
+    img0 = frame0.get_data()[which_slice, ...]
+    img1 = frame1.get_data()[which_slice, ...]
     # Get the matching neuron in frame1, and the relevant indices
     this_match = np.array(neuron_matches[which_frame_pair])
-    neuron1 = this_match[this_match[:,0]==neuron0, 1]
+    neuron1 = this_match[this_match[:, 0] == neuron0, 1]
     # Get keypoints and feature, then the subsets
     kp_ind0 = set(frame0.get_features_of_neuron(neuron0))
     kp0, kp1 = frame0.keypoints, frame1.keypoints
@@ -213,8 +213,9 @@ def plot_match_example(all_frames,
 
     print(f"Displaying {len(these_features)}/{len(tmp)} matches")
     print(f"of a total of {len(frame0.features_to_neurons)} features")
-    img3 = cv2.drawMatches(img0,kp0,img1,kp1,these_features,None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-    plt.figure(figsize=(25,45))
+    img3 = cv2.drawMatches(img0, kp0, img1, kp1, these_features, None,
+                           flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+    plt.figure(figsize=(25, 45))
     plt.imshow(img3)
     plt.title(f"Feature matches for neuron {neuron0} to {neuron1} in frames {which_frame_pair}")
     plt.show()
@@ -223,20 +224,22 @@ def plot_match_example(all_frames,
 def plot_matched_point_clouds(all_frames,
                               neuron_matches,
                               which_pair,
-                              color=[0,0,1],
+                              color=None,
                               actually_draw=True):
     """
     Plots the matched neurons between two frames
     """
+    if color is None:
+        color = [0, 0, 1]
     frame0 = all_frames[which_pair[0]]
     frame1 = all_frames[which_pair[1]]
     match = neuron_matches[which_pair]
 
     # Build point clouds and match lines
     pc0 = build_neuron_tree(frame0.neuron_locs, False)[1]
-    pc0.paint_uniform_color([0.5,0.5,0.5])
+    pc0.paint_uniform_color([0.5, 0.5, 0.5])
     pc1 = build_neuron_tree(frame1.neuron_locs, False)[1]
-    pc1.paint_uniform_color([0,0,0])
+    pc1.paint_uniform_color([0, 0, 0])
     match_lines = build_line_set_from_matches(pc0, pc1, matches=match, color=color)
 
     to_draw = [pc0, pc1, match_lines]
@@ -246,20 +249,20 @@ def plot_matched_point_clouds(all_frames,
     return to_draw
 
 
-def plot_three_point_clouds(all_frames, neuron_matches, ind=(0,1,2)):
+def plot_three_point_clouds(all_frames, neuron_matches, ind=(0, 1, 2)):
     """See also plot_matched_point_clouds"""
-    opt = {'all_frames':all_frames,
-           'neuron_matches':neuron_matches,
-           'actually_draw':False}
-    if type(ind)==int:
-        ind = (ind, ind+1, ind+2)
+    opt = {'all_frames': all_frames,
+           'neuron_matches': neuron_matches,
+           'actually_draw': False}
+    if type(ind) == int:
+        ind = (ind, ind + 1, ind + 2)
 
     k = (ind[0], ind[1])
-    lines01 = plot_matched_point_clouds(which_pair=k,color=[1,0,0],**opt)
+    lines01 = plot_matched_point_clouds(which_pair=k, color=[1, 0, 0], **opt)
     k = (ind[0], ind[2])
-    lines02 = plot_matched_point_clouds(which_pair=k,color=[0,1,0],**opt)
+    lines02 = plot_matched_point_clouds(which_pair=k, color=[0, 1, 0], **opt)
     k = (ind[1], ind[2])
-    lines12 = plot_matched_point_clouds(which_pair=k,color=[0,0,1],**opt)
+    lines12 = plot_matched_point_clouds(which_pair=k, color=[0, 0, 1], **opt)
 
     to_draw = list(lines01)
     to_draw.extend(lines02)
@@ -275,16 +278,16 @@ def plot_three_point_clouds(all_frames, neuron_matches, ind=(0,1,2)):
 
 def match2quiver(all_frames, all_matches, which_pair, actually_draw=True):
     """
-    Plots matches as a quiver plot
+    Plots neuron matches as a quiver plot
     """
 
     n0_unmatched = all_frames[which_pair[0]].neuron_locs
     n1_unmatched = all_frames[which_pair[1]].neuron_locs
     matches = all_matches[which_pair]
 
-    # Align the keypoints via matches
-    xyz = np.zeros((len(matches), 3), dtype=np.float32) # Start point
-    diff_vec = np.zeros((len(matches), 3), dtype=np.float32) # Difference vector
+    # Align the neuron locations via matches
+    xyz = np.zeros((len(matches), 3), dtype=np.float32)  # Start point
+    diff_vec = np.zeros((len(matches), 3), dtype=np.float32)  # Difference vector
 
     for m, match in enumerate(matches):
         v0 = n0_unmatched[match[0]]
@@ -292,10 +295,9 @@ def match2quiver(all_frames, all_matches, which_pair, actually_draw=True):
         xyz[m, :] = v0
         diff_vec[m, :] = v1 - v0
 
-
     # C = dat[:,2] / np.max(dat[:,1])
     if actually_draw:
-        plt.quiver(xyz[:,1], xyz[:,2], diff_vec[:,1], diff_vec[:,2])
+        plt.quiver(xyz[:, 1], xyz[:, 2], diff_vec[:, 1], diff_vec[:, 2])
     # plt.title('Neuron matches based on features (has mistakes)')
     return xyz, diff_vec
 
@@ -305,16 +307,16 @@ def match2quiver(all_frames, all_matches, which_pair, actually_draw=True):
 ##
 
 def hist_of_tracklet_lens(df,
-                          min_len = 50,
-                          bin_width = 50,
-                          num_frames = 500,
-                          ylim = 100):
+                          min_len=50,
+                          bin_width=50,
+                          num_frames=500,
+                          ylim=100):
     """Histogram of the lengths of tracklets"""
 
     all_len = df['slice_ind'].apply(len)
-    bins = int((num_frames-min_len) / bin_width)
-    plt.hist(all_len[all_len>min_len], bins=bins)
-    plt.ylim([0,ylim])
+    bins = int((num_frames - min_len) / bin_width)
+    plt.hist(all_len[all_len > min_len], bins=bins)
+    plt.ylim([0, ylim])
     plt.title(f"Lengths of individual tracks (minimum={min_len})")
 
     return all_len
@@ -353,7 +355,7 @@ def plot_tracklet_covering(clust_df, window_len=20):
             continue
         for ind in row:
             # Doesn't count the end of the track
-            if ind == (row[-1]-window_len):
+            if ind == (row[-1] - window_len):
                 break
             all_num_tracks[ind] += 1
 
@@ -374,10 +376,11 @@ def plot_full_tracklet_covering(clust_df, window_len=20, num_frames=500):
     Similar to plot_tracklet_covering but checks each frame individually
         Slower, but works for tracklets that may skip frames
     """
-    x = list(range(num_frames-window_len))
+    x = list(range(num_frames - window_len))
     y = np.zeros_like(x)
     for i in x:
-        which_frames = list(range(i,i+window_len+1))
+        which_frames = list(range(i, i + window_len + 1))
+
         def check_frames(vals, which_frames=which_frames):
             vals = set(vals)
             return all([f in vals for f in which_frames])
