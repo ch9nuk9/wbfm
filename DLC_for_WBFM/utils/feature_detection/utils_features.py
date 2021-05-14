@@ -55,11 +55,11 @@ def match_known_features(descriptors1, descriptors2,
         matches = matcher.match(descriptors1, descriptors2)
 
     if use_GMS:
-        opt = {'keypoints1':keypoints1,
-               'keypoints2':keypoints2,
-               'matches1to2':matches,
-               'withRotation':False,
-               'thresholdFactor':6.0}
+        opt = {'keypoints1': keypoints1,
+               'keypoints2': keypoints2,
+               'matches1to2': matches,
+               'withRotation': False,
+               'thresholdFactor': 6.0}
         matches = cv2.xfeatures2d.matchGMS(im1_shape, im2_shape, **opt)
 
     # Sort matches by score

@@ -1,6 +1,7 @@
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, build_neuron_tree, build_f2n_map, add_neuron_match, match_known_features, extract_map1to2_from_matches
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, \
+    build_neuron_tree, build_f2n_map, add_neuron_match, match_known_features, extract_map1to2_from_matches
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP, detect_neurons_from_file
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
@@ -32,38 +33,37 @@ def build_reference_frame(dat_raw,
     # Get neurons and features, and a map between them
     if external_detections is None:
         neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
-                                                         num_slices=num_slices,
-                                                         alpha=1.0,
-                                                         min_detections=3,
-                                                         start_slice=start_slice,
-                                                         verbose=0)
+                                                        num_slices=num_slices,
+                                                        alpha=1.0,
+                                                        min_detections=3,
+                                                        start_slice=start_slice,
+                                                        verbose=0)
         neuron_locs = np.array([n for n in neuron_locs])
     else:
         i = metadata['frame_ind']
         neuron_locs = detect_neurons_from_file(external_detections, i)
 
-    if len(neuron_locs)==0:
+    if len(neuron_locs) == 0:
         print("No neurons detected... check data settings")
         raise ValueError
-    feature_opt = {'num_features_per_plane':1000, 'start_plane':5}
+    feature_opt = {'num_features_per_plane': 1000, 'start_plane': 5}
     kps, kp_3d_locs, features = build_features_1volume(dat, **feature_opt)
 
     # The map requires some open3d subfunctions
     num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
     _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
     f2n_map = build_f2n_map(kp_3d_locs,
-                           num_f,
-                           pc_f,
-                           neuron_feature_radius,
-                           tree_neurons,
-                           verbose=verbose-1)
+                            num_f,
+                            pc_f,
+                            neuron_feature_radius,
+                            tree_neurons,
+                            verbose=verbose - 1)
 
     # Finally, my summary class
     f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map,
                        **metadata,
                        preprocessing_settings=preprocessing_settings)
     return f
-
 
 
 ##
@@ -81,18 +81,18 @@ def remove_first_frame(reference_set):
         g2l[key].pop()
     # Offset keys by one
     l2g = {}
-    for key,val in reference_set.local2global.items():
+    for key, val in reference_set.local2global.items():
         if key[0] == 0:
             continue
-        new_key = (key[0]-1,key[1])
+        new_key = (key[0] - 1, key[1])
         l2g[new_key] = val
 
     # Offset keys by one (both indices)
     pm, pc, fm = {}, {}, {}
     for key in reference_set.pairwise_matches:
-        if key[0]==0 or key[1]==0:
+        if key[0] == 0 or key[1] == 0:
             continue
-        new_key = (key[0]-1, key[1]-1)
+        new_key = (key[0] - 1, key[1] - 1)
         pm[new_key] = reference_set.pairwise_matches[key]
         pc[new_key] = reference_set.pairwise_conf[key]
         fm[new_key] = reference_set.feature_matches[key]
@@ -110,14 +110,15 @@ def remove_first_frame(reference_set):
 
     return reference_set_minus1
 
+
 ##
 ## Related helper and visualization functions
 ##
 
 def get_subgraph_with_strong_weights(DG, min_weight):
-    #G = nx.from_numpy_matrix(DG, parallel_edges=False)
+    # G = nx.from_numpy_matrix(DG, parallel_edges=False)
     G = DG.copy()
-    edge_weights = nx.get_edge_attributes(G,'weight')
+    edge_weights = nx.get_edge_attributes(G, 'weight')
     G.remove_edges_from((e for e, w in edge_weights.items() if w < min_weight))
     return G
 
@@ -128,10 +129,10 @@ def calc_connected_components(DG, only_strong_components=True):
     else:
         all_neurons = list(nx.weakly_connected_components(DG))
     all_len = [len(c) for c in all_neurons]
-    #print(all_len)
+    # print(all_len)
     big_comp = np.argmax(all_len)
     print("Largest connected component size: ", max(all_len))
-    #print(big_comp)
+    # print(big_comp)
     big_DG = DG.subgraph(all_neurons[big_comp])
 
     return big_DG, all_len, all_neurons
@@ -146,11 +147,9 @@ def plot_degree_hist(DG):
     plt.bar(deg, cnt, width=0.80, color="b")
 
 
-
 ##
 ## For determining the full reference set
 ##
-
 
 
 def add_all_good_components(G,
@@ -234,7 +233,7 @@ def calc_matches_using_feature_voting(frame0, frame1,
             neuron0_ind,
             min_features_needed,
             this_n1,
-            verbose=verbose-1,
+            verbose=verbose - 1,
             all_candidate_matches=all_candidate_matches
         )
     matches_with_conf = [(m[0], m[1], c) for m, c in zip(all_neuron_matches, all_confidences)]
@@ -258,12 +257,12 @@ def calc_2frame_matches_using_class(frame0,
 
     # First, get feature matches
     keypoint_matches = match_known_features(frame0.all_features,
-                                           frame1.all_features,
-                                           frame0.keypoints,
-                                           frame1.keypoints,
-                                           frame0.vol_shape[1:],
-                                           frame1.vol_shape[1:],
-                                           matches_to_keep=0.2)
+                                            frame1.all_features,
+                                            frame0.keypoints,
+                                            frame1.keypoints,
+                                            frame0.vol_shape[1:],
+                                            frame1.vol_shape[1:],
+                                            matches_to_keep=0.2)
 
     # Second, get neuron matches
     if not use_affine_matching:
@@ -274,8 +273,8 @@ def calc_2frame_matches_using_class(frame0,
         f = calc_matches_using_affine_propagation
         opt = {'all_feature_matches': keypoint_matches}
     matches_with_conf, all_candidate_matches, _ = f(
-                                          frame0, frame1,
-                                          **opt)
+        frame0, frame1,
+        **opt)
 
     # Create convenience object to store matches
     frame_pair = FramePair(matches_with_conf)
