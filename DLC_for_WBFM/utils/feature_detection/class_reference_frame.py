@@ -42,8 +42,7 @@ class ReferenceFrame:
 
     def get_features_of_neuron(self, which_neuron):
         iter_tmp = self.features_to_neurons.items()
-        return [key for key,val in iter_tmp if val == which_neuron]
-        #return np.argwhere(self.features_to_neurons == which_neuron)
+        return [key for key, val in iter_tmp if val == which_neuron]
 
     def num_neurons(self):
         return self.neuron_locs.shape[0]

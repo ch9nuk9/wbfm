@@ -262,19 +262,19 @@ def calc_2frame_matches_using_class(frame0,
                                             frame1.keypoints,
                                             frame0.vol_shape[1:],
                                             frame1.vol_shape[1:],
-                                            matches_to_keep=0.2)
+                                            matches_to_keep=1.0)
 
     # Second, get neuron matches
+    # TODO: weight matches by cv2 distance
     if not use_affine_matching:
         f = calc_matches_using_feature_voting
+        keypoint_matches = keep_top_matches_per_neuron(keypoint_matches, frame0, matches_to_keep=0.5)
         feature_matches_dict = extract_map1to2_from_matches(keypoint_matches)
         opt = {'feature_matches_dict': feature_matches_dict}
     else:
         f = calc_matches_using_affine_propagation
         opt = {'all_feature_matches': keypoint_matches}
-    matches_with_conf, all_candidate_matches, _ = f(
-        frame0, frame1,
-        **opt)
+    matches_with_conf, all_candidate_matches, _ = f(frame0, frame1, **opt)
 
     # Create convenience object to store matches
     frame_pair = FramePair(matches_with_conf)

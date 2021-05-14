@@ -4,8 +4,6 @@ import numpy as np
 import cv2
 import open3d as o3d
 from scipy import stats
-import tifffile
-import copy
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 
 ##
@@ -45,6 +43,7 @@ def match_known_features(descriptors1, descriptors2,
                          matches_to_keep=0.3,
                          use_GMS=True,
                          use_sift=False):
+    # MAIN USE FUNCTION
 
     # Match features.
     if use_sift:
@@ -176,6 +175,28 @@ def extract_map1to2_from_matches(matches):
         matches_dict[m.queryIdx] = m.trainIdx
 
     return matches_dict
+
+
+def keep_top_matches_per_neuron(keypoint_matches, frame, matches_to_keep=0.5):
+    """
+    Postprocesses matches to remove a percentage locally, not globally
+
+    If any neurons start with a match, they will retain at least one
+    """
+
+    sz = len(frame.neuron_locs)
+    to_keep = []
+    # OPTIMIZE: this requires sz loops over all keypoints
+    for neuron in range(sz):
+        global_ind_and_dist = [(i, kp.distance) for i, kp in enumerate(keypoint_matches) if kp.queryIdx == neuron]
+        local_sort_idx = np.argsort(np.array(global_ind_and_dist)[:, 1])
+        num_to_keep = max(int(len(local_sort_idx) * matches_to_keep), 1)
+        good_local_idx = local_sort_idx[:num_to_keep]
+        good_global_idx = np.array(global_ind_and_dist)[good_local_idx, 0].astype(int)
+        to_keep.extend(list(good_global_idx))
+
+    return keypoint_matches[to_keep]
+
 
 def extract_location_of_matches(matches, keypoints1, keypoints2):
     """Gets location from cv2 objects
