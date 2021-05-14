@@ -8,11 +8,10 @@ from DLC_for_WBFM.utils.feature_detection.class_reference_frame import Reference
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name, is_one_neuron_per_frame
+from DLC_for_WBFM.utils.feature_detection.utils_features import keep_top_matches_per_neuron
 import numpy as np
 import networkx as nx
 import collections
-from dataclasses import dataclass
-from collections import defaultdict
 
 
 ##
