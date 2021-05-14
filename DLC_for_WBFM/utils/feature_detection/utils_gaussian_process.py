@@ -42,23 +42,23 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
 
     # Fit 3 GPs for x, y, and z
     # Do each coordinate independently
-    kernel = DotProduct(sigma_0=1.0, sigma_0_bounds=(1e-3,100)) + \
+    kernel = DotProduct(sigma_0=1.0, sigma_0_bounds=(1e-3, 100)) + \
         RBF(length_scale=0.5, length_scale_bounds=(1e-08, 10.0))
 
-    opt = {'n_restarts_optimizer':10, 'alpha':noise}
-    gpx = GaussianProcessRegressor(kernel=kernel,**opt)
-    gpx.fit(xyz_scaled[:,1:], dat_scaled[:,1])
-    gpy = GaussianProcessRegressor(kernel=kernel,**opt)
-    gpy.fit(xyz_scaled[:,1:], dat_scaled[:,2])
-    gpz = GaussianProcessRegressor(kernel=kernel,**opt)
-    gpz.fit(xyz_scaled[:,1:], dat_scaled[:,0])
+    opt = {'n_restarts_optimizer': 10, 'alpha': noise}
+    gpx = GaussianProcessRegressor(kernel=kernel, **opt)
+    gpx.fit(xyz_scaled[:, 1:], dat_scaled[:, 1])
+    gpy = GaussianProcessRegressor(kernel=kernel, **opt)
+    gpy.fit(xyz_scaled[:, 1:], dat_scaled[:, 2])
+    gpz = GaussianProcessRegressor(kernel=kernel, **opt)
+    gpz.fit(xyz_scaled[:, 1:], dat_scaled[:, 0])
 
-    x_predict = gpx.predict(xyz_unmatched_scaled[:,1:])
-    y_predict = gpy.predict(xyz_unmatched_scaled[:,1:])
-    z_predict = gpz.predict(xyz_unmatched_scaled[:,1:])
+    x_predict = gpx.predict(xyz_unmatched_scaled[:, 1:])
+    y_predict = gpy.predict(xyz_unmatched_scaled[:, 1:])
+    z_predict = gpz.predict(xyz_unmatched_scaled[:, 1:])
 
     # Get back to original space
-    zxy_predict = np.vstack([z_predict,x_predict,y_predict]).T
+    zxy_predict = np.vstack([z_predict, x_predict, y_predict]).T
     zxy_predict = scaler2.inverse_transform(zxy_predict)
 
     # Point cloud for the pushed and target neurons
@@ -73,4 +73,4 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     # matches_with_conf = np.hstack([matches, conf])
     matches_with_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
 
-    return matches_with_conf, [], xyz0
+    return matches_with_conf, [], np.array(xyz0)
