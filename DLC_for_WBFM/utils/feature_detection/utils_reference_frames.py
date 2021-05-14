@@ -279,7 +279,7 @@ def calc_2frame_matches_using_class(frame0,
 
     # Create convenience object to store matches
     frame_pair = FramePair(matches_with_conf)
-    frame_pair.keypoint_matches = keypoint_matches
+    frame_pair.keypoint_matches = [[m.queryIdx, m.trainIdx] for m in keypoint_matches]
     if not use_affine_matching:
         frame_pair.feature_matches = all_candidate_matches
     else:
