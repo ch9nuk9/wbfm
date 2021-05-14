@@ -12,7 +12,7 @@ do_mini_max_projection : true
 mini_max_size: 3
 
 # Rigid alignment (slices to each other, within a volume)
-do_rigid_alignment: true
+do_rigid_alignment: true # CHANGE ME; not needed for immobilized projects
 
 # Datatypes and scaling
 initial_dtype: 'uint16' # Filtering etc. will act on this
