@@ -8,7 +8,14 @@ import numpy as np
 ## Convinience function
 ##
 
+
 def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):
+    """
+    Multi-pair wrapper around calc_bipartite_matches
+
+    Assumes 'candidates' is a dictionary of all 3-element candidates for each pairing
+        Last element is the weight (confidence)
+    """
     bp_match_dict = {}
     for key in candidates:
         these_candidates = [c for c in candidates[key] if c[-1]>min_edge_weight]
