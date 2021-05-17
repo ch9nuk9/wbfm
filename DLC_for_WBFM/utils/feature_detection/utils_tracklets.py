@@ -409,8 +409,8 @@ def build_tracklets_dfs(pairwise_matches_dict, xyz_per_neuron_per_frame, slice_o
     # Make everything a dictionary
     dict_of_match_dicts = {k: dict(m) for k, m in pairwise_matches_dict.items()}
 
-    min_pair = min([k[0] for k in pairwise_matches_dict.values()])
-    max_pair = max([k[0] for k in pairwise_matches_dict.values()])
+    min_pair = min([k[0] for k in pairwise_matches_dict.keys()])
+    max_pair = max([k[0] for k in pairwise_matches_dict.keys()])
     pair_range = list(range(min_pair, max_pair))
 
     def get_start_match(match_dicts):
