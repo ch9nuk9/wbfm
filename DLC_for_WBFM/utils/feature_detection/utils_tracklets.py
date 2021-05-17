@@ -399,23 +399,31 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
 ## Massive simplification / refactor
 ##
 
-def build_tracklets_dfs(pairwise_matches_list, xyz_per_neuron_per_frame, slice_offset=0):
+def build_tracklets_dfs(pairwise_matches_dict, xyz_per_neuron_per_frame, slice_offset=0):
     """
     Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
 
-    Expects LIST for all_matches
+    Expects DICT for all_matches
     """
 
     # Make everything a dictionary
-    list_of_match_dicts = [dict(m) for m in pairwise_matches_list]
+    dict_of_match_dicts = {k: dict(m) for k, m in pairwise_matches_dict.items()}
+
+    min_pair = min([k[0] for k in pairwise_matches_dict.values()])
+    max_pair = max([k[0] for k in pairwise_matches_dict.values()])
+    pair_range = list(range(min_pair, max_pair))
 
     def get_start_match(match_dicts):
         # Note: _all_matches will progressively have entries deleted
-        for i, match_dict in enumerate(match_dicts):
+        for i in pair_range:
+            # Make sure order is respected
+            match_key = (i, i+1)
+            match_dict = match_dicts[match_key]
             if len(match_dict) == 0:
                 continue
             for k, v in match_dict.items():
-                return i, k, v
+                # Order doesn't matter
+                return match_key, k, v
         return None, None, None
 
     # Main storage, with fewer columns
@@ -427,10 +435,10 @@ def build_tracklets_dfs(pairwise_matches_list, xyz_per_neuron_per_frame, slice_o
     clust_ind = 0
     while True:
         # Choose a starting point, and initialize lists
-        match_ind, i0, i1 = get_start_match(list_of_match_dicts)
-        if match_ind is None:
+        match_key, i0, i1 = get_start_match(dict_of_match_dicts)
+        if match_key is None:
             break
-        i_frame0, i_frame1 = match_ind, match_ind + 1
+        i_frame0, i_frame1 = match_key
 
         all_ind_local = [i0, i1]
         all_xyz = [xyz_per_neuron_per_frame[i_frame0][i0], xyz_per_neuron_per_frame[i_frame1][i1]]
@@ -438,20 +446,22 @@ def build_tracklets_dfs(pairwise_matches_list, xyz_per_neuron_per_frame, slice_o
         all_prob = []
 
         # Remove match
-        del list_of_match_dicts[match_ind][i0]
+        del dict_of_match_dicts[match_key][i0]
 
         # DFS for this starting point
-        for next_match_ind in range(match_ind + 1, len(list_of_match_dicts)):
-            next_match_dict = list_of_match_dicts[next_match_ind]
+        remaining_pairs = range(match_key[1], pair_range[-1])
+        for i_pair in remaining_pairs:
+            next_match_key = (i_pair, i_pair+1)
+            next_match_dict = dict_of_match_dicts[next_match_key]
             if i1 in next_match_dict:
                 i0, i1 = i1, next_match_dict[i1]
-                i_frame = next_match_ind + 1
+                i_frame = next_match_key[1]
 
                 all_ind_local.append(i1)
                 all_xyz.append(xyz_per_neuron_per_frame[i_frame][i1])
                 slice_ind.append(i_frame)
 
-                del list_of_match_dicts[next_match_ind][i0]
+                del dict_of_match_dicts[next_match_key][i0]
 
             else:
                 break
