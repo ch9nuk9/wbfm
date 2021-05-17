@@ -1,8 +1,11 @@
-from DLC_for_WBFM.utils.external.utils_cv2 import encode_all_neurons, match_object_to_array
+import cv2
+
+from DLC_for_WBFM.utils.external.utils_cv2 import match_object_to_array
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, \
-    build_neuron_tree, build_f2n_map, add_neuron_match, match_known_features, extract_map1to2_from_matches
+    build_neuron_tree, build_f2n_map, add_neuron_match, match_known_features, extract_map1to2_from_matches, \
+    convert_to_grayscale
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP, detect_neurons_from_file
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
@@ -97,6 +100,40 @@ def build_reference_frame_encoding(dat_raw,
                        preprocessing_settings=preprocessing_settings)
 
     return f
+
+
+def encode_all_neurons(locs_zxy, im_3d, z_depth):
+    """
+    Builds a feature vector for each neuron (zxy location) in a 3d volume
+    Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
+
+    """
+    im_3d_gray = [convert_to_grayscale(xy) for xy in im_3d]
+    all_embeddings = []
+    all_keypoints = []
+    encoder = cv2.xfeatures2d.VGG_create()
+
+    # Loop per neuron
+    for loc in locs_zxy:
+        z, x, y = loc
+        kp = cv2.KeyPoint(x, y, 31.0)
+
+        z = int(z)
+        all_slices = np.arange(z - z_depth, z + z_depth + 1)
+        all_slices = np.clip(all_slices, 0, len(im_3d_gray))
+        # Generate features on neighboring z slices as well
+        # Repeat slices if near the edge
+        ds = []
+        for i in all_slices:
+            im_2d = im_3d_gray[int(i)]
+            _, this_ds = encoder.compute(im_2d, kp)
+            ds.append(this_ds)
+
+        ds = np.hstack(ds)
+        all_embeddings.extend(ds)
+        all_keypoints.append(kp)
+
+    return all_embeddings, all_keypoints
 
 
 ##
