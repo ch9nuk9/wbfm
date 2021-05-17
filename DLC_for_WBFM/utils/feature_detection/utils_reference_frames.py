@@ -126,7 +126,7 @@ def encode_all_neurons(locs_zxy, im_3d, z_depth):
         ds = []
         for i in all_slices:
             im_2d = im_3d_gray[int(i)]
-            _, this_ds = encoder.compute(im_2d, kp)
+            _, this_ds = encoder.compute(im_2d, [kp])
             ds.append(this_ds)
 
         ds = np.hstack(ds)
