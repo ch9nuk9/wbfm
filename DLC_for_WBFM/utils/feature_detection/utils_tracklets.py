@@ -394,3 +394,87 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
     all_neurons.append(tmp_neurons[-1].neuron_locs)
 
     return all_matches, all_conf, all_neurons
+
+
+##
+## Massive simplification / refactor
+##
+
+def build_tracklets_dfs(all_matches, all_xyz):
+    """
+    Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
+    """
+
+    # Make everything a dictionary
+    all_matches_dicts = [dict(m) for m in all_matches]
+    def get_start_match(_all_matches):
+        # Note: _all_matches will progressively have entries deleted
+        for i, match in enumerate(_all_matches):
+            if len(match) == 0:
+                continue
+            for k, v in match:
+                return i, k, v
+        return None, None, None
+
+
+    # Main storage, with fewer columns
+    columns = ['clust_ind', 'all_ind_local', 'all_xyz',
+               'all_prob', 'slice_ind']
+    clust_df = pd.DataFrame(columns=columns)
+
+    # Individual tracks
+    clust_ind = 0
+    while True:
+        # Choose a starting point, and initialize lists
+        match_ind, i0, i1 = get_start_match(all_matches_dicts)
+        if match_ind is None:
+            break
+        i_frame0, i_frame1 = match_ind, match_ind + 1
+
+        all_ind_local = [i0, i1]
+        all_xyz = [all_xyz[i_frame0][i0], all_xyz[i_frame1][i1]]
+        slice_ind = [i_frame0, i_frame1]
+        all_prob = []
+
+        # DFS for this starting point
+        for next_match_ind in range(match_ind + 1, len(all_matches_dicts)):
+            next_match_dict = all_matches_dicts[next_match_ind]
+            if i1 in next_match_dict:
+                i0, i1 = i1, next_match_dict[i1]
+                i_frame = next_match_ind + 1
+
+                all_ind_local.append(i1)
+                all_xyz.append(all_xyz[i_frame][i1])
+                slice_ind.append(i_frame)
+            else:
+                break
+
+        # Save these lists in the dataframe
+        # TODO: Debug
+        df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_xyz],
+                               all_prob=[all_prob], slice_ind=[slice_ind]))
+
+        clust_df.append(df, ignore_index=True)
+        clust_ind += 1
+        break
+
+    return clust_df
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
