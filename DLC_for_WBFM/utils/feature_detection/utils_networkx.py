@@ -103,6 +103,7 @@ def build_digraph_from_matches(pairwise_matches,
 ## Alternate, non-networkx way to get bipartite matches
 ##
 
+
 def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, verbose=0):
     """
     Sparse version of calc_bipartite_from_distance
@@ -113,8 +114,8 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, verbose=0):
     Note: does not use scipy.sparse.csgraph.min_weight_full_bipartite_matching for version compatibility
     """
 
-    unique_neurons = np.unique([m[0] for m in all_candidate_matches])
-    sz = (len(unique_neurons), len(unique_neurons))
+    largest_neuron_ind = np.max([max([m[0], m[1]]) for m in all_candidate_matches]) + 1
+    sz = (largest_neuron_ind, largest_neuron_ind)
     conf_matrix = np.zeros(sz)
     for i0, i1, conf in all_candidate_matches:
         conf_matrix[i0, i1] += conf

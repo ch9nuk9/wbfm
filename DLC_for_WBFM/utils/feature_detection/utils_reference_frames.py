@@ -133,7 +133,7 @@ def encode_all_neurons(locs_zxy, im_3d, z_depth):
         all_embeddings.extend(ds)
         all_keypoints.append(kp)
 
-    return all_embeddings, all_keypoints
+    return np.array(all_embeddings), all_keypoints
 
 
 ##
