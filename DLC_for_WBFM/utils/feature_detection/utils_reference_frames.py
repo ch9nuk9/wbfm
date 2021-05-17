@@ -295,7 +295,8 @@ def calc_2frame_matches_using_class(frame0,
                                             frame1.keypoints,
                                             frame0.vol_shape[1:],
                                             frame1.vol_shape[1:],
-                                            matches_to_keep=1.0)
+                                            matches_to_keep=1.0,
+                                            use_GMS=False)
 
     # With neuron embeddings, the keypoints are the neurons
     matches_with_conf = match_object_to_array(keypoint_matches, gamma = 100.0)
