@@ -434,7 +434,7 @@ def build_tracklets_dfs(pairwise_matches_list, xyz_per_neuron_per_frame):
         i_frame0, i_frame1 = match_ind, match_ind + 1
 
         all_ind_local = [i0, i1]
-        xyz_per_neuron_per_frame = [xyz_per_neuron_per_frame[i_frame0][i0], xyz_per_neuron_per_frame[i_frame1][i1]]
+        all_xyz = [xyz_per_neuron_per_frame[i_frame0][i0], xyz_per_neuron_per_frame[i_frame1][i1]]
         slice_ind = [i_frame0, i_frame1]
         all_prob = []
 
@@ -449,7 +449,7 @@ def build_tracklets_dfs(pairwise_matches_list, xyz_per_neuron_per_frame):
                 i_frame = next_match_ind + 1
 
                 all_ind_local.append(i1)
-                xyz_per_neuron_per_frame.append(xyz_per_neuron_per_frame[i_frame][i1])
+                all_xyz.append(xyz_per_neuron_per_frame[i_frame][i1])
                 slice_ind.append(i_frame)
 
                 del list_of_match_dicts[next_match_ind][i0]
@@ -459,7 +459,7 @@ def build_tracklets_dfs(pairwise_matches_list, xyz_per_neuron_per_frame):
 
         # Save these lists in the dataframe
         # TODO: Debug
-        df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[xyz_per_neuron_per_frame],
+        df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_xyz],
                                all_prob=[all_prob], slice_ind=[slice_ind]))
 
         clust_df.append(df, ignore_index=True)
