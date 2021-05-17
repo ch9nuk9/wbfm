@@ -403,6 +403,8 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
 def build_tracklets_dfs(all_matches, all_xyz):
     """
     Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
+
+    Expects LIST for all_matches
     """
 
     # Make everything a dictionary
@@ -436,6 +438,9 @@ def build_tracklets_dfs(all_matches, all_xyz):
         slice_ind = [i_frame0, i_frame1]
         all_prob = []
 
+        # Remove match
+        del all_matches_dicts[match_ind][i0]
+
         # DFS for this starting point
         for next_match_ind in range(match_ind + 1, len(all_matches_dicts)):
             next_match_dict = all_matches_dicts[next_match_ind]
@@ -446,6 +451,9 @@ def build_tracklets_dfs(all_matches, all_xyz):
                 all_ind_local.append(i1)
                 all_xyz.append(all_xyz[i_frame][i1])
                 slice_ind.append(i_frame)
+
+                del all_matches_dicts[next_match_ind][i0]
+
             else:
                 break
 
