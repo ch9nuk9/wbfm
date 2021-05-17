@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
 
 
 @dataclass
@@ -29,5 +29,5 @@ class FramePair:
         return all_matches
 
     def calc_final_matches_using_bipartite_matching(self):
-        self.final_matches = calc_bipartite_matches(self.all_candidate_matches)
+        self.final_matches = calc_bipartite_from_candidates(self.all_candidate_matches)
         return self.final_matches

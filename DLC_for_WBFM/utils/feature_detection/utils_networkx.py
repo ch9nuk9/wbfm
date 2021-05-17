@@ -103,6 +103,31 @@ def build_digraph_from_matches(pairwise_matches,
 ## Alternate, non-networkx way to get bipartite matches
 ##
 
+def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, verbose=0):
+    """
+    Sparse version of calc_bipartite_from_distance
+
+    starts from a list of matches (may repeat, but are not full) with confidences
+
+    Uses scipy linear_sum_assignment
+    Note: does not use scipy.sparse.csgraph.min_weight_full_bipartite_matching for version compatibility
+    """
+
+    unique_neurons = np.unique([m[0] for m in all_candidate_matches])
+    sz = (len(unique_neurons), len(unique_neurons))
+    conf_matrix = np.zeros(sz)
+    for i0, i1, conf in all_candidate_matches:
+        conf_matrix[i0, i1] += conf
+
+    matches = linear_sum_assignment(conf_matrix, maximize=True)
+    matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
+    # Apply sigmoid to summed confidence
+    matches = np.array(matches)
+    conf = np.array([expit(conf_matrix[i0, i1]) for i0, i1 in matches])
+
+    return matches, conf, matches
+
+
 def calc_bipartite_from_distance(xyz0, xyz1, max_dist=None):
     """
     Uses scipy implementation of linear_sum_assignment to calculate best matches

@@ -61,10 +61,9 @@ def match_known_features(descriptors1, descriptors2,
                'thresholdFactor': 6.0}
         matches = cv2.xfeatures2d.matchGMS(im1_shape, im2_shape, **opt)
 
-    # Sort matches by score
-    matches.sort(key=lambda x: x.distance, reverse=False)
-
     if matches_to_keep < 1.0:
+        # Sort matches by score
+        matches.sort(key=lambda x: x.distance, reverse=False)
         numGoodMatches = int(len(matches) * matches_to_keep)
         matches = matches[:numGoodMatches]
 
