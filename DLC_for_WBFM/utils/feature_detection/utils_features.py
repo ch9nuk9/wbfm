@@ -40,17 +40,17 @@ def match_known_features(descriptors1, descriptors2,
                          keypoints2=None,
                          im1_shape=None,
                          im2_shape=None,
-                         matches_to_keep=0.3,
+                         matches_to_keep=1.0,
                          use_GMS=True,
-                         use_sift=False):
+                         use_orb=False):
     # MAIN USE FUNCTION
 
     # Match features.
-    if use_sift:
-        matcher = cv2.BFMatcher(crossCheck=True)
-        matches = matcher.match(descriptors1,descriptors2)
-    else:
+    if use_orb:
         matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        matches = matcher.match(descriptors1, descriptors2)
+    else:
+        matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
         matches = matcher.match(descriptors1, descriptors2)
 
     if use_GMS:
@@ -64,9 +64,9 @@ def match_known_features(descriptors1, descriptors2,
     # Sort matches by score
     matches.sort(key=lambda x: x.distance, reverse=False)
 
-    # Remove not so good matches
-    numGoodMatches = int(len(matches) * matches_to_keep)
-    matches = matches[:numGoodMatches]
+    if matches_to_keep < 1.0:
+        numGoodMatches = int(len(matches) * matches_to_keep)
+        matches = matches[:numGoodMatches]
 
     return matches
 

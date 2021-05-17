@@ -1,3 +1,4 @@
+from DLC_for_WBFM.utils.external.utils_cv2 import encode_all_neurons, match_object_to_array
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, \
@@ -26,21 +27,11 @@ def build_reference_frame(dat_raw,
                           metadata={},
                           external_detections=None,
                           verbose=0):
-    """Main convinience constructor for ReferenceFrame class"""
+    """Main convenience constructor for ReferenceFrame class"""
     dat = perform_preprocessing(dat_raw, preprocessing_settings)
 
     # Get neurons and features, and a map between them
-    if external_detections is None:
-        neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
-                                                        num_slices=num_slices,
-                                                        alpha=1.0,
-                                                        min_detections=3,
-                                                        start_slice=start_slice,
-                                                        verbose=0)
-        neuron_locs = np.array([n for n in neuron_locs])
-    else:
-        i = metadata['frame_ind']
-        neuron_locs = detect_neurons_from_file(external_detections, i)
+    neuron_locs = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
 
     if len(neuron_locs) == 0:
         print("No neurons detected... check data settings")
@@ -62,6 +53,49 @@ def build_reference_frame(dat_raw,
     f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map,
                        **metadata,
                        preprocessing_settings=preprocessing_settings)
+    return f
+
+
+def _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice):
+    if external_detections is None:
+        neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
+                                                        num_slices=num_slices,
+                                                        alpha=1.0,
+                                                        min_detections=3,
+                                                        start_slice=start_slice,
+                                                        verbose=0)
+        neuron_locs = np.array([n for n in neuron_locs])
+    else:
+        i = metadata['frame_ind']
+        neuron_locs = detect_neurons_from_file(external_detections, i)
+    return neuron_locs
+
+
+def build_reference_frame_encoding(dat_raw,
+                                   num_slices,
+                                   z_depth,
+                                   preprocessing_settings=PreprocessingSettings(),
+                                   start_slice=None,
+                                   metadata={},
+                                   external_detections=None,
+                                   verbose=0):
+    """
+    New pipeline that directly builds an embedding for each neuron, instead of detecting keypoints
+
+    See: build_reference_frame
+    """
+
+    dat = perform_preprocessing(dat_raw, preprocessing_settings)
+    neuron_zxy = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
+
+    embeddings, keypoints = encode_all_neurons(neuron_zxy, dat, z_depth)
+
+    # This is now just a trivial mapping
+    f2n_map = {i: i for i in range(len(neuron_zxy))}
+    f = ReferenceFrame(neuron_zxy, keypoints, neuron_zxy, embeddings, f2n_map,
+                       **metadata,
+                       preprocessing_settings=preprocessing_settings)
+
     return f
 
 
@@ -243,7 +277,7 @@ def calc_matches_using_feature_voting(frame0, frame1,
 def calc_2frame_matches_using_class(frame0,
                                     frame1,
                                     verbose=1,
-                                    use_affine_matching=False,
+                                    use_affine_matching=False, # DEPRECATED
                                     add_affine_to_candidates=False,
                                     add_gp_to_candidates=False,
                                     DEBUG=False):
@@ -263,25 +297,26 @@ def calc_2frame_matches_using_class(frame0,
                                             frame1.vol_shape[1:],
                                             matches_to_keep=1.0)
 
-    # Second, get neuron matches
-    # TODO: weight matches by cv2 distance
-    if not use_affine_matching:
-        f = calc_matches_using_feature_voting
-        keypoint_matches = keep_top_matches_per_neuron(keypoint_matches, frame0, matches_to_keep=0.5)
-        feature_matches_dict = extract_map1to2_from_matches(keypoint_matches)
-        opt = {'feature_matches_dict': feature_matches_dict}
-    else:
-        f = calc_matches_using_affine_propagation
-        opt = {'all_feature_matches': keypoint_matches}
-    matches_with_conf, all_candidate_matches, _ = f(frame0, frame1, **opt)
+    # With neuron embeddings, the keypoints are the neurons
+    matches_with_conf = match_object_to_array(keypoint_matches)
+
+    # if not use_affine_matching:
+    #     f = calc_matches_using_feature_voting
+    #     keypoint_matches = keep_top_matches_per_neuron(keypoint_matches, frame0, matches_to_keep=0.5)
+    #     feature_matches_dict = extract_map1to2_from_matches(keypoint_matches)
+    #     opt = {'feature_matches_dict': feature_matches_dict}
+    # else:
+    #     f = calc_matches_using_affine_propagation
+    #     opt = {'all_feature_matches': keypoint_matches}
+    # matches_with_conf, all_candidate_matches, _ = f(frame0, frame1, **opt)
 
     # Create convenience object to store matches
-    frame_pair = FramePair(matches_with_conf)
-    frame_pair.keypoint_matches = [[m.queryIdx, m.trainIdx] for m in keypoint_matches]
-    if not use_affine_matching:
-        frame_pair.feature_matches = all_candidate_matches
-    else:
-        frame_pair.affine_matches = all_candidate_matches
+    frame_pair = FramePair(matches_with_conf, matches_with_conf)
+    frame_pair.keypoint_matches = matches_with_conf
+    # if not use_affine_matching:
+    #     frame_pair.feature_matches = all_candidate_matches
+    # else:
+    #     frame_pair.affine_matches = all_candidate_matches
 
     # Add additional candidates, if used
     if add_affine_to_candidates:
