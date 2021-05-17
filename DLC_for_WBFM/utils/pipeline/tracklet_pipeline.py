@@ -1,7 +1,7 @@
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import fix_candidates_without_confidences, calc_all_bipartite_matches
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_classes
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_classes, build_tracklets_dfs
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename
 
 import os
@@ -46,8 +46,12 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     # new_candidates = fix_candidates_without_confidences(b_candidates)
 
     # Also updates the matches of the object
-    all_matches = {k: pair.calc_final_matches_using_bipartite_matching() for k, pair in all_frame_pairs.items()}
-    df = build_tracklets_from_classes(all_frame_dict, all_matches)
+    # all_matches = {k: pair.calc_final_matches_using_bipartite_matching() for k, pair in all_frame_pairs.items()}
+    # df = build_tracklets_from_classes(all_frame_dict, all_matches)
+
+    all_matches = [m.calc_final_matches_using_bipartite_matching() for m in all_frame_pairs.values()]
+    all_xyz = [f.neuron_locs for f in all_frame_dict.values()]
+    df = build_tracklets_dfs(all_matches, all_xyz)
 
     _save_matches_and_frames(all_frame_dict, all_frame_pairs, df)
 

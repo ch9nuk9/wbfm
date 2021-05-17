@@ -5,29 +5,29 @@ from DLC_for_WBFM.utils.feature_detection.class_reference_frame import Reference
 import copy
 from collections import defaultdict
 
+
 ##
 ## Helper functions for tracks
 ##
 
 def create_new_track(i0, i1,
-                    i0_xyz,
-                    i1_xyz,
-                    i1_prob,
-                    next_clust_ind,
-                    this_point_cloud_offset,
-                    next_point_cloud_offset,
-                    which_slice,
-                    i1_global,
-                    verbose=0):
-
-    new_track = pd.DataFrame({'clust_ind':next_clust_ind,
-                              'all_ind_local':[[i0,i1]],
-                              'all_ind_global':[[this_point_cloud_offset+i0, i1_global]],
-                              'all_xyz':[[i0_xyz,i1_xyz]],
-                              'all_prob':[[i1_prob]],
-                              'slice_ind':[[which_slice, which_slice+1]],
-                              'extended_this_slice':True,
-                              'not_finished':True})
+                     i0_xyz,
+                     i1_xyz,
+                     i1_prob,
+                     next_clust_ind,
+                     this_point_cloud_offset,
+                     next_point_cloud_offset,
+                     which_slice,
+                     i1_global,
+                     verbose=0):
+    new_track = pd.DataFrame({'clust_ind': next_clust_ind,
+                              'all_ind_local': [[i0, i1]],
+                              'all_ind_global': [[this_point_cloud_offset + i0, i1_global]],
+                              'all_xyz': [[i0_xyz, i1_xyz]],
+                              'all_prob': [[i1_prob]],
+                              'slice_ind': [[which_slice, which_slice + 1]],
+                              'extended_this_slice': True,
+                              'not_finished': True})
 
     if verbose >= 1:
         print(f"Creating new track {next_clust_ind}")
@@ -37,9 +37,9 @@ def create_new_track(i0, i1,
 
 
 def append_to_track(row, i, clust_df, which_slice, i1, i1_global,
-                 i1_xyz, i1_prob,
-                 append_or_extend=list.append,
-                 verbose=0):
+                    i1_xyz, i1_prob,
+                    append_or_extend=list.append,
+                    verbose=0):
     """
     Parameters
     ===============
@@ -69,33 +69,33 @@ def append_to_track(row, i, clust_df, which_slice, i1, i1_global,
     """
     r = row['all_ind_local'][:]
     append_or_extend(r, i1)
-    clust_df.at[i,'all_ind_local'] = r
+    clust_df.at[i, 'all_ind_local'] = r
 
     r = row['all_ind_global'][:]
     append_or_extend(r, i1_global)
-    clust_df.at[i,'all_ind_global'] = r
+    clust_df.at[i, 'all_ind_global'] = r
 
     r = row['all_xyz'][:]
     if type(i1_xyz) is np.ndarray:
         # row['all_xyz'] = np.vstack([row['all_xyz'], i1_xyz])
-        clust_df.at[i,'all_xyz'] = np.vstack([r, i1_xyz])
+        clust_df.at[i, 'all_xyz'] = np.vstack([r, i1_xyz])
     else:
         append_or_extend(r, i1_xyz)
-        clust_df.at[i,'all_xyz'] = r
+        clust_df.at[i, 'all_xyz'] = r
     append_or_extend(row['all_prob'], i1_prob)
 
     r = row['all_prob'][:]
-    clust_df.at[i,'all_prob'] = r
+    clust_df.at[i, 'all_prob'] = r
 
     r = row['slice_ind'][:]
     if type(which_slice) is int:
-        append_or_extend(r, which_slice+1)
+        append_or_extend(r, which_slice + 1)
     else:
         # Assume they are already the to-be-matched indices
         append_or_extend(r, which_slice)
-    clust_df.at[i,'slice_ind'] = r
+    clust_df.at[i, 'slice_ind'] = r
 
-    clust_df.at[i,'extended_this_slice'] = True
+    clust_df.at[i, 'extended_this_slice'] = True
 
     if verbose >= 1:
         clust_ind = row['clust_ind']
@@ -138,16 +138,16 @@ def build_tracklets_from_matches(all_neurons,
         all_likelihoods = [np.ones(len(m)) for m in all_matches]
 
     # Use registration results to build a combined and colored pointcloud
-    columns=['clust_ind', 'all_ind_local', 'all_ind_global', 'all_xyz',
-             'all_prob',
-             'slice_ind','extended_this_slice', 'not_finished']
+    columns = ['clust_ind', 'all_ind_local', 'all_ind_global', 'all_xyz',
+               'all_prob',
+               'slice_ind', 'extended_this_slice', 'not_finished']
     clust_df = pd.DataFrame(columns=columns)
 
     next_clust_ind = 0
     this_point_cloud_offset = 0
     next_point_cloud_offset = 0
 
-    #for i_match, match in tqdm(enumerate(all_matches), total=len(all_matches)):
+    # for i_match, match in tqdm(enumerate(all_matches), total=len(all_matches)):
     for i_match, match in enumerate(all_matches):
         if verbose >= 2:
             print("==============================================================")
@@ -156,7 +156,7 @@ def build_tracklets_from_matches(all_neurons,
         # Get transform to global coordinates
         these_neurons = all_neurons[i_match]
         this_xyz = np.asarray(these_neurons)
-        next_neurons = all_neurons[i_match+1]
+        next_neurons = all_neurons[i_match + 1]
         next_xyz = np.asarray(next_neurons)
         next_point_cloud_offset = next_point_cloud_offset + len(these_neurons)
 
@@ -166,9 +166,9 @@ def build_tracklets_from_matches(all_neurons,
         # next_prob = all_likelihoods[i_match+1]
         # next_prob = np.asarray(next_prob)
 
-        offsets = {'next_point_cloud_offset':next_point_cloud_offset,
-                   'this_point_cloud_offset':this_point_cloud_offset,
-                   'which_slice':i_match}
+        offsets = {'next_point_cloud_offset': next_point_cloud_offset,
+                   'this_point_cloud_offset': this_point_cloud_offset,
+                   'which_slice': i_match}
 
         pairs = np.asarray(match)
         # Initialize ALL as to-be-finished
@@ -176,19 +176,19 @@ def build_tracklets_from_matches(all_neurons,
 
         all_new_tracks = []
         for i_pair, (i0, i1) in enumerate(pairs):
-            next_point = {'i1':i1,
-                          'i1_xyz':next_xyz[i1,:],
-                          'i1_prob':this_prob[i_pair], # Probability is attached to the pair
-                          'i1_global':next_point_cloud_offset+i1}
-            current_point = {'i0':i0,
-                             'i0_xyz':this_xyz[i0,:],
-                             'next_clust_ind':next_clust_ind}
+            next_point = {'i1': i1,
+                          'i1_xyz': next_xyz[i1, :],
+                          'i1_prob': this_prob[i_pair],  # Probability is attached to the pair
+                          'i1_global': next_point_cloud_offset + i1}
+            current_point = {'i0': i0,
+                             'i0_xyz': this_xyz[i0, :],
+                             'next_clust_ind': next_clust_ind}
             # If no tracks, initialize
             ind_to_check = clust_df['not_finished'] & ~clust_df['extended_this_slice']
 
             if verbose >= 2:
                 print(f"Clusters available to check: {np.where(ind_to_check)}")
-            if len(ind_to_check)==0:
+            if len(ind_to_check) == 0:
                 next_clust_ind, new_track = create_new_track(**current_point, **next_point, **offsets)
                 all_new_tracks.append(new_track)
                 continue
@@ -212,11 +212,11 @@ def build_tracklets_from_matches(all_neurons,
         to_finish = ~clust_df['extended_this_slice'].astype(bool)
         if len(np.where(to_finish)[0]) > 0 and verbose >= 1:
             print(f"Finished tracks {np.where(to_finish)[0]}")
-        clust_df.loc[to_finish,'not_finished'] = False
+        clust_df.loc[to_finish, 'not_finished'] = False
 
         if verbose >= 3 and len(pairs) > 0:
             print("WIP")
-            #visualize_tracks_simple(this_pc, next_pc, pairs)
+            # visualize_tracks_simple(this_pc, next_pc, pairs)
 
         this_point_cloud_offset = next_point_cloud_offset
 
@@ -254,10 +254,10 @@ def build_tracklets_from_classes(all_frames,
     #   1. List of all pairwise matches
     #   2. List of all neuron 3d locations
     # if type(all_frames)==dict:
-        # BUG: make the below loops work for dict
-        # all_frames = list(all_frames.values())
-        # print("If this is a dict, then the indices are probably off.")
-        # raise ValueError
+    # BUG: make the below loops work for dict
+    # all_frames = list(all_frames.values())
+    # print("If this is a dict, then the indices are probably off.")
+    # raise ValueError
     try:
         all_neurons = [all_frames[0].neuron_locs]
         final_frame_ind = len(all_frames)
@@ -278,9 +278,9 @@ def build_tracklets_from_classes(all_frames,
     nonzero_matches = 0
     for i in range(1, final_frame_ind):
         # Pad the initials with empties if this is a dict
-    # for key, i in zip(all_matches_dict, all_frames):
+        # for key, i in zip(all_matches_dict, all_frames):
         # Get matches and conf
-        key = (i-1,i)
+        key = (i - 1, i)
         if key in all_matches_dict:
             all_matches.append(all_matches_dict[key])
             nonzero_matches += 1
@@ -296,7 +296,7 @@ def build_tracklets_from_classes(all_frames,
         # all_neurons.append(frame.neuron_locs)
     if verbose > 1:
         print(f"Found {nonzero_matches} nonzero matches")
-    if nonzero_matches==0:
+    if nonzero_matches == 0:
         print("Found no matches; is the dictionary in the proper format?")
         return None
 
@@ -307,7 +307,6 @@ def build_tracklets_from_classes(all_frames,
                                         all_matches,
                                         all_likelihoods,
                                         verbose=verbose)
-
 
 
 def build_tracklets_simple(all_matches, verbose=0):
@@ -324,7 +323,7 @@ def build_tracklets_simple(all_matches, verbose=0):
         num_neurons = max(num_neurons, max_neuron)
 
     def dummy_xyz_factory(num_neurons=num_neurons):
-        return np.zeros((num_neurons,3))
+        return np.zeros((num_neurons, 3))
 
     all_neurons = defaultdict(dummy_xyz_factory)
 
@@ -333,6 +332,7 @@ def build_tracklets_simple(all_matches, verbose=0):
                                         all_matches,
                                         None,
                                         verbose=verbose)
+
 
 ##
 ## Postprocessing: stitching tracklets together
@@ -355,7 +355,6 @@ def consolidate_tracklets(df_raw, tracklet_matches, verbose=0):
         row_to_add = df.loc[row1_ind].copy(deep=True)
         if verbose >= 2:
             print(f"Adding track {row1_ind} to track {row0_ind}")
-
 
         df = append_to_track(base_row,
                              row0_ind,
@@ -383,9 +382,9 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
     # Convert from dict and Frame objects to just lists
     all_matches, all_conf = [], []
     all_neurons = []
-    for i in range(len(tmp_matches)-1):
+    for i in range(len(tmp_matches) - 1):
         # Assume keys describe pairwise matches
-        k = (i, i+1)
+        k = (i, i + 1)
         all_matches.append(tmp_matches[k])
         all_conf.append(tmp_conf[k])
         # This is a ReferenceFrame object
@@ -400,7 +399,7 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
 ## Massive simplification / refactor
 ##
 
-def build_tracklets_dfs(pairwise_matches_list, xyz_per_neuron_per_frame):
+def build_tracklets_dfs(pairwise_matches_list, xyz_per_neuron_per_frame, slice_offset=0):
     """
     Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
 
@@ -458,31 +457,11 @@ def build_tracklets_dfs(pairwise_matches_list, xyz_per_neuron_per_frame):
                 break
 
         # Save these lists in the dataframe
-        # TODO: Debug
+        slice_ind = [s + slice_offset for s in slice_ind]
         df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_xyz],
                                all_prob=[all_prob], slice_ind=[slice_ind]))
 
-        clust_df.append(df, ignore_index=True)
+        clust_df = clust_df.append(df, ignore_index=True)
         clust_ind += 1
-        break
 
     return clust_df
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
