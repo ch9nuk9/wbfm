@@ -114,6 +114,8 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
             match_key = (i_slice, i_slice + 1)
 
             this_slice_candidates = create_matches_list(this_slice, next_slice)
+            if len(this_slice_candidates) == 0:
+                continue
 
             # Bipartite matching after creating overlap list for all neurons on slice
             # bp_matches = sorted(calc_bipartite_matches(this_slice_candidates))

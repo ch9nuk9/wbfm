@@ -1,3 +1,5 @@
+import threading
+
 import tifffile
 
 import segmentation.util.utils_postprocessing as post
@@ -56,9 +58,9 @@ def segment_video_using_config_2d(_config):
     # Do first loop to initialize the zarr data
     i = 0
     i_volume = frame_list[i]
-    final_masks, volume = segment_single_volume(i_volume, num_slices, opt_postprocessing, preprocessing_settings,
-                                                sd_model,
-                                                verbose, video_path)
+    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path)
+    final_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
+
     _, x_sz, y_sz = final_masks.shape
     sz = (num_frames, num_slices, x_sz, y_sz)
     chunks = (1, num_slices, x_sz, y_sz)
@@ -67,25 +69,30 @@ def segment_video_using_config_2d(_config):
                            synchronizer=zarr.ThreadSynchronizer())
     save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
 
-    # ain function
+    # Main function
     opt = {'masks_zarr': masks_zarr, 'metadata': metadata, 'num_slices': num_slices,
            'opt_postprocessing': opt_postprocessing, 'preprocessing_settings': preprocessing_settings,
            'sd_model': sd_model, 'verbose': verbose}
 
-    with tifffile.TiffFile(video_path) as video_stream:
-        for i_rel, i_abs in tqdm(enumerate(frame_list[1:])):
-            segment_and_save(i_rel + 1, i_abs, **opt, video_path=video_stream)
+    # Sequential version
+    # with tifffile.TiffFile(video_path) as video_stream:
+    #     for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list)-1):
+    #         segment_and_save(i_rel + 1, i_abs, **opt, video_path=video_stream)
 
-    # def parallel_func(i_both):
-    #     i_out, i_vol = i_both
-    #     segment_and_save(i_out+1, i_vol, **opt)
-    #
-    # with tqdm(total=num_frames - 1) as pbar:
-    #     with concurrent.futures.ThreadPoolExecutor(max_workers=128) as executor:
-    #         futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
-    #         for future in concurrent.futures.as_completed(futures):
-    #             future.result()  # TODO: does this update in place?
-    #             pbar.update(1)
+    # Parallel version: threading
+    global_lock = threading.Lock()
+    opt['lock'] = global_lock
+
+    with tqdm(total=num_frames - 1) as pbar:
+        # with tifffile.TiffFile(video_path) as video_stream:
+        def parallel_func(i_both):
+            i_out, i_vol = i_both
+            segment_and_save(i_out+1, i_vol, video_path=video_path, **opt)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+                pbar.update(1)
 
     # saving metadata and settings
     with open(metadata_fname, 'wb') as meta_save:
@@ -99,11 +106,24 @@ def segment_video_using_config_2d(_config):
 
 
 def segment_and_save(i, i_volume, masks_zarr, metadata, num_slices, opt_postprocessing, preprocessing_settings,
-                     sd_model, verbose, video_path):
-    final_masks, volume = segment_single_volume(i_volume, num_slices, opt_postprocessing, preprocessing_settings,
-                                                sd_model,
-                                                verbose, video_path)
+                     sd_model, verbose, video_path, lock):
+    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path)
+    with lock: # Keras is not thread-safe in the end
+        segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
+    # process masks: remove large areas, stitch, split long neurons, remove short neurons
+    final_masks = perform_post_processing_2d(segmented_masks,
+                                             volume,
+                                             **opt_postprocessing,
+                                             verbose=verbose - 1)
     save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
+
+
+def _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path):
+    # use get single volume function from charlie
+    import_opt = {'which_vol': i, 'num_slices': num_slices, 'alpha': 1.0, 'dtype': 'uint16'}
+    volume = get_single_volume(video_path, **import_opt)
+    volume = perform_preprocessing(volume, preprocessing_settings)
+    return volume
 
 
 def save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume):
@@ -112,20 +132,6 @@ def save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volu
     # metadata dictionary; also modified by reference
     meta_df = get_metadata_dictionary(final_masks, volume)
     metadata[i_volume] = meta_df
-
-
-def segment_single_volume(i, num_slices, opt_postprocessing, preprocessing_settings, sd_model, verbose, video_path):
-    # use get single volume function from charlie
-    import_opt = {'which_vol': i, 'num_slices': num_slices, 'alpha': 1.0, 'dtype': 'uint16'}
-    volume = get_single_volume(video_path, **import_opt)
-    volume = perform_preprocessing(volume, preprocessing_settings)
-    segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
-    # process masks: remove large areas, stitch, split long neurons, remove short neurons
-    final_masks = perform_post_processing_2d(segmented_masks,
-                                             volume,
-                                             **opt_postprocessing,
-                                             verbose=verbose - 1)
-    return final_masks, volume
 
 
 def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, to_remove_border=True,
