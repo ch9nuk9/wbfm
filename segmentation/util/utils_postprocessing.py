@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches, build_tracklets_dfs
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
 
 
 def remove_large_areas(arr, threshold=1000, verbose=0):
