@@ -6,8 +6,8 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches, build_tracklets_dfs
 
 
 def remove_large_areas(arr, threshold=1000, verbose=0):
@@ -101,25 +101,24 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
     num_slices = len(array_3d)
 
     # Initialize output matrix
-    all_matches = []
-    all_centroids = []
+    all_matches = {}  # Indexed by which pair of z slices
+    all_centroids = {}  # Indexed by single slice
 
     # loop over slices
     for i_slice in range(num_slices):
 
         this_slice = array_3d[i_slice]
-        bp_matches = []
 
         if i_slice < num_slices - 1:
             next_slice = array_3d[i_slice + 1]
-            this_slice_candidates = list()
+            match_key = (i_slice, next_slice)
+
             this_slice_candidates = create_matches_list(this_slice, next_slice)
 
             # Bipartite matching after creating overlap list for all neurons on slice
-            bp_matches = list()
-            bp_matches = sorted(calc_bipartite_matches(this_slice_candidates))
-
-            all_matches.append(bp_matches)
+            # bp_matches = sorted(calc_bipartite_matches(this_slice_candidates))
+            bp_matches = calc_bipartite_from_candidates(this_slice_candidates)
+            all_matches[match_key] = bp_matches
 
         # get centroid coordinates for all found neurons/masks
         these_centroids = []
@@ -132,9 +131,10 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
             else:
                 these_centroids.append([i_slice, round(np.mean(this_x)), round(np.mean(this_y))])
 
-        all_centroids.append(these_centroids)
+        all_centroids[i_slice] = these_centroids
 
-    clust_df = build_tracklets_from_matches(all_centroids, all_matches)
+    # clust_df = build_tracklets_from_matches(all_centroids, all_matches)
+    clust_df = build_tracklets_dfs(all_matches, all_centroids)
 
     # renaming all found neurons in array; in a sorted manner
     sorted_stitched_array = renaming_stitched_array(array_3d, clust_df)
