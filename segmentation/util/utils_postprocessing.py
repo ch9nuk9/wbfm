@@ -471,6 +471,7 @@ def split_long_neurons(array,
     # iterate over neuron lengths dict, and if z >= 12, try to split it
     # TODO iterate over the dictionary itself
     # for i in range(1, len(neuron_lengths) + 1):
+    new_neuron_lengths = {}
     for neuron_id, neuron_len in neuron_lengths.items():
         if neuron_len > maximum_length:
 
@@ -486,10 +487,10 @@ def split_long_neurons(array,
                 x_split = round(sum(x_means) / 2)
                 # create new entry
                 global_current_neuron += 1
-                neuron_lengths[global_current_neuron] = neuron_lengths[neuron_id] - x_split - 1
+                new_neuron_lengths[global_current_neuron] = neuron_lengths[neuron_id] - x_split - 1
 
                 # update neuron lengths and brightnesses entries; 0-x_split = neuron 1
-                neuron_lengths[neuron_id] = x_split + 1
+                new_neuron_lengths[neuron_id] = x_split + 1
 
                 # update mask array with new mask IDs
                 for i_plane, plane in enumerate(array[x_split:]):
@@ -503,6 +504,8 @@ def split_long_neurons(array,
 
                 neuron_z_planes[global_current_neuron] = neuron_z_planes[neuron_id][x_split + 1:]
                 neuron_z_planes[neuron_id] = neuron_z_planes[neuron_id][:x_split]
+
+    neuron_lengths.update(new_neuron_lengths)
 
     return array, neuron_lengths, neuron_brightnesses, global_current_neuron, neuron_z_planes
 
