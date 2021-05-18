@@ -336,7 +336,7 @@ def calc_2frame_matches_using_class(frame0,
                                             use_GMS=False)
 
     # With neuron embeddings, the keypoints are the neurons
-    matches_with_conf = match_object_to_array(keypoint_matches, gamma = 100.0)
+    matches_with_conf = match_object_to_array(keypoint_matches, gamma=1.0)
 
     # if not use_affine_matching:
     #     f = calc_matches_using_feature_voting

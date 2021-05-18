@@ -59,5 +59,5 @@ def match_object_to_array(matches, gamma=1.0):
     confidence = sigma(gamma / match.distance)
     """
     def conf(dist):
-        return expit(gamma / (dist + 0.001*gamma))
+        return expit(gamma / (dist + 1e-9 * gamma))
     return [(m.queryIdx, m.trainIdx, conf(m.distance)) for m in matches]
