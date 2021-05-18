@@ -37,10 +37,10 @@ def remove_large_areas(arr, threshold=1000, verbose=0):
         new_arr = arr.copy()
         for i, plane in enumerate(arr):
             for u in np.unique(plane):
-                if u==0:
+                if u == 0:
                     # Background
                     continue
-                mask = plane==u
+                mask = plane == u
                 if np.count_nonzero(mask) >= threshold:
                     plane[mask] = 0
             new_arr[i] = plane
@@ -111,13 +111,13 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
 
         if i_slice < num_slices - 1:
             next_slice = array_3d[i_slice + 1]
-            match_key = (i_slice, next_slice)
+            match_key = (i_slice, i_slice + 1)
 
             this_slice_candidates = create_matches_list(this_slice, next_slice)
 
             # Bipartite matching after creating overlap list for all neurons on slice
             # bp_matches = sorted(calc_bipartite_matches(this_slice_candidates))
-            bp_matches = calc_bipartite_from_candidates(this_slice_candidates)
+            bp_matches = calc_bipartite_from_candidates(this_slice_candidates)[0]
             all_matches[match_key] = bp_matches
 
         # get centroid coordinates for all found neurons/masks
@@ -137,7 +137,7 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
     clust_df = build_tracklets_dfs(all_matches, all_centroids)
 
     # renaming all found neurons in array; in a sorted manner
-    sorted_stitched_array = renaming_stitched_array(array_3d, clust_df)
+    sorted_stitched_array = rename_stitched_array(array_3d, clust_df)
 
     return sorted_stitched_array, (clust_df, all_centroids, all_matches)
 
@@ -193,7 +193,7 @@ def create_matches_list(slice_1, slice_2, verbose=0):
     return bip_list
 
 
-def renaming_stitched_array(arr, df, verbose=0):
+def rename_stitched_array(arr, df, verbose=0):
     """
     Takes an array and changes the values of masks, so that it starts at 1 on slice 1 and
     increases consistently/consecutively across planes with an unique value for each mask.
@@ -255,7 +255,7 @@ def get_neuron_lengths_dict(arr):
             if neuron in arr[plane]:
                 z_count += 1
 
-        lengths[neuron] = z_count
+        lengths[int(neuron)] = z_count
 
     return lengths
 
@@ -373,26 +373,24 @@ def calc_means_via_brightnesses(brightnesses, plots=0, verbose=0):
     except RuntimeError:
         if verbose >= 1:
             print('Oh oh, could not fit')
-        return []
+        return None
 
     means = [round(coeff[1]), round(coeff[4])]
 
     if any([x < 0 or x > len(brightnesses) for x in means]):
         if verbose >= 1:
             print(f'Error in brightness: Means = {means} length of brightness list = {len(brightnesses)}')
-        return []
-
-    # you can plot each gaussian separately using
-    pg1 = np.zeros_like(p0)
-    pg1[0:3] = coeff[0:3]
-    pg2 =np.zeros_like(p0)
-    pg2[0:3] = coeff[3:]
-
-    g1 = gauss2(x_data, *pg1)
-    g2 = gauss2(x_data, *pg2)
+        return None
 
     if plots >= 1:
+        # you can plot each gaussian separately using
+        pg1 = np.zeros_like(p0)
+        pg1[0:3] = coeff[0:3]
+        pg2 = np.zeros_like(p0)
+        pg2[0:3] = coeff[3:]
 
+        g1 = gauss2(x_data, *pg1)
+        g2 = gauss2(x_data, *pg2)
         plt.figure()
         plt.plot(x_data, y_data, label='Data')
         plt.plot(x_data, g1, label='Fit1')
@@ -410,7 +408,7 @@ def calc_means_via_brightnesses(brightnesses, plots=0, verbose=0):
 
         return means, g1, g2
 
-    return means, g1, g2
+    return means
 
 
 def split_long_neurons(array,
@@ -472,44 +470,39 @@ def split_long_neurons(array,
 
     # iterate over neuron lengths dict, and if z >= 12, try to split it
     # TODO iterate over the dictionary itself
-    for i in range(1, len(neuron_lengths) + 1):
-        if neuron_lengths[i] > maximum_length:
+    # for i in range(1, len(neuron_lengths) + 1):
+    for neuron_id, neuron_len in neuron_lengths.items():
+        if neuron_len > maximum_length:
 
             try:
-                x_means, _, _ = calc_means_via_brightnesses(neuron_brightnesses[i], verbose-1)
+                x_means = calc_means_via_brightnesses(neuron_brightnesses[neuron_id], verbose-1)
             except ValueError:
                 if verbose >= 1:
-                    print(f'! ValueError while splitting neuron {i}. Probably could not fit 2 Gaussians! Will continue.')
+                    print(f'! ValueError while splitting neuron {neuron_id}. Could not fit 2 Gaussians! Will continue.')
                 continue
 
             # if neuron can be split
             if x_means:
                 x_split = round(sum(x_means) / 2)
-                # print(f'Splitting neuron {i} at {x_split}, new neuron {global_current_neuron + 1}')
-
                 # create new entry
                 global_current_neuron += 1
-                neuron_lengths[global_current_neuron] = neuron_lengths[i] - x_split - 1
+                neuron_lengths[global_current_neuron] = neuron_lengths[neuron_id] - x_split - 1
 
                 # update neuron lengths and brightnesses entries; 0-x_split = neuron 1
-                neuron_lengths[i] = x_split + 1
+                neuron_lengths[neuron_id] = x_split + 1
 
                 # update mask array with new mask IDs
                 for i_plane, plane in enumerate(array[x_split:]):
-                    if i in plane:
-                        inter_plane = plane == i
+                    if neuron_id in plane:
+                        inter_plane = plane == neuron_id
                         plane[inter_plane] = global_current_neuron
 
                 # update brightnesses and brightness-planes dicts
-                neuron_brightnesses[global_current_neuron] = neuron_brightnesses[i][x_split + 1:]
-                neuron_brightnesses[i] = neuron_brightnesses[i][:x_split]
+                neuron_brightnesses[global_current_neuron] = neuron_brightnesses[neuron_id][x_split + 1:]
+                neuron_brightnesses[neuron_id] = neuron_brightnesses[neuron_id][:x_split]
 
-                neuron_z_planes[global_current_neuron] = neuron_z_planes[i][x_split + 1:]
-                neuron_z_planes[i] = neuron_z_planes[i][:x_split]
-
-            else:
-                if verbose >= 1:
-                    print(f'Could not split neuron {i}, although it is longer than {maximum_length}')
+                neuron_z_planes[global_current_neuron] = neuron_z_planes[neuron_id][x_split + 1:]
+                neuron_z_planes[neuron_id] = neuron_z_planes[neuron_id][:x_split]
 
     return array, neuron_lengths, neuron_brightnesses, global_current_neuron, neuron_z_planes
 
@@ -552,18 +545,14 @@ def remove_short_neurons(array, neuron_lengths, length_cutoff, brightness, neuro
         list with indices of removed neurons
     """
 
-    # remove all neurons, which are too short (e.g. < 3)
     rm_list = list()
     for key, value in neuron_lengths.items():
         if value < length_cutoff:
-            # print(f'removed {key}')
-            # remove from 3d array
             cull = array == key
             array[cull] = 0
 
             rm_list.append(key)
 
-    # remove entry from dictionary
     for r in rm_list:
         del neuron_lengths[r]
         del brightness[r]
