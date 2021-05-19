@@ -42,7 +42,7 @@ def segment_video_using_config_2d(_config):
     _config['output']['metadata'] = metadata_fname
 
     verbose = _config['verbose']
-    metadata = dict.fromkeys(set(frame_list)) # todo: does a regular dict work here?
+    metadata = dict.fromkeys(set(frame_list))  # todo: does a regular dict work here?
     preprocessing_settings = PreprocessingSettings.load_from_yaml(
         _config['preprocessing_config']
     )
@@ -80,7 +80,8 @@ def segment_video_using_config_2d(_config):
         with tifffile.TiffFile(video_path) as video_stream:
             def parallel_func(i_both):
                 i_out, i_vol = i_both
-                segment_and_save(i_out+1, i_vol, video_path=video_stream, **opt)
+                segment_and_save(i_out + 1, i_vol, video_path=video_stream, **opt)
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
                 for future in concurrent.futures.as_completed(futures):
@@ -108,9 +109,9 @@ def _do_first_volume(frame_list, mask_fname, metadata, num_frames, num_slices, o
     _, x_sz, y_sz = final_masks.shape
     sz = (num_frames, num_slices, x_sz, y_sz)
     chunks = (1, num_slices, x_sz, y_sz)
-    masks_zarr = zarr.open(mask_fname, mode='w-',
-                           shape=sz, chunks=chunks, dtype=np.uint16,
-                           synchronizer=zarr.ThreadSynchronizer())
+    masks_zarr = zarr.zeros(mask_fname, mode='w-',
+                            shape=sz, chunks=chunks, dtype=np.uint16,
+                            synchronizer=zarr.ThreadSynchronizer())
     final_masks = perform_post_processing_2d(final_masks,
                                              volume,
                                              **opt_postprocessing,
