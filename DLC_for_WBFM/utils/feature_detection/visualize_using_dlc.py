@@ -459,6 +459,9 @@ def build_subset_df(clust_df,
     which_neurons_df = sub_df[to_keep]
     if verbose >= 1:
         print(f"Keeping {len(which_neurons_df)}/{len(clust_df)} tracklets")
+    if len(which_neurons_df) == 0:
+        # Preserve dataframe format
+        return which_neurons_df
 
     # Get only the indices of those neurons corresponding to these frames
     names = {'all_xyz': 'all_xyz_old',
@@ -471,13 +474,13 @@ def build_subset_df(clust_df,
     # Build the subset
     ####################
     # All 4 fields that were renamed
-    f0 = lambda df : keep_subset(which_neurons_dict[df['clust_ind']], df['all_ind_local_old'])
+    f0 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_ind_local_old'])
     out_df['all_ind_local'] = out_df.apply(f0, axis=1)
 
-    f1 = lambda df : keep_subset(which_neurons_dict[df['clust_ind']], df['all_xyz_old'])
+    f1 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_xyz_old'])
     out_df['all_xyz'] = out_df.apply(f1, axis=1)
 
-    f2 = lambda df : keep_subset(which_neurons_dict[df['clust_ind']], df['all_prob_old'])
+    f2 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_prob_old'])
     out_df['all_prob'] = out_df.apply(f2, axis=1)
 
     # Final one is slightly different
