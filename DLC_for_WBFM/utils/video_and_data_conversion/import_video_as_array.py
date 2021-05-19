@@ -46,11 +46,12 @@ def get_video_from_ome_file_subset(video_fname,
 def get_single_volume(fname, which_vol, num_slices, alpha=1.0, dtype='uint8'):
     # Convert to page coordinates
     start_ind = num_slices*which_vol
+    key = range(start_ind, start_ind+num_slices)
     if type(fname) == str:
-        key = range(start_ind, start_ind+num_slices)
         dat = (alpha*tifffile.imread(fname, key=key)).astype(dtype)
     elif type(fname) == tifffile.TiffFile:
-        dat = (alpha*fname.pages[start_ind:start_ind+num_slices]).astype(dtype)
+        dat = np.array([(alpha*(fname.pages[i].asarray())).astype(dtype) for i in key])
+        # dat = (alpha*np.array(fname.pages[start_ind:start_ind+num_slices])).astype(dtype)
     else:
         raise ValueError("Must pass open tifffile or file path")
 
