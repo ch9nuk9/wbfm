@@ -55,19 +55,10 @@ def segment_video_using_config_2d(_config):
     # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
     sd_model.keras_model.make_predict_function()
 
-    # Do first loop to initialize the zarr data
-    i = 0
-    i_volume = frame_list[i]
-    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path)
-    final_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
-
-    _, x_sz, y_sz = final_masks.shape
-    sz = (num_frames, num_slices, x_sz, y_sz)
-    chunks = (1, num_slices, x_sz, y_sz)
-    masks_zarr = zarr.open(mask_fname, mode='w-',
-                           shape=sz, chunks=chunks, dtype=np.uint16,
-                           synchronizer=zarr.ThreadSynchronizer())
-    save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
+    # Do first volume outside the parallelization loop to initialize keras and zarr
+    # Possibly unnecessary
+    masks_zarr = _do_first_volume(frame_list, mask_fname, metadata, num_frames, num_slices, opt_postprocessing,
+                                  preprocessing_settings, sd_model, verbose, video_path)
 
     # Main function
     opt = {'masks_zarr': masks_zarr, 'metadata': metadata, 'num_slices': num_slices,
@@ -105,6 +96,27 @@ def segment_video_using_config_2d(_config):
 
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
+
+
+def _do_first_volume(frame_list, mask_fname, metadata, num_frames, num_slices, opt_postprocessing,
+                     preprocessing_settings, sd_model, verbose, video_path):
+    # Do first loop to initialize the zarr data
+    i = 0
+    i_volume = frame_list[i]
+    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path)
+    final_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
+    _, x_sz, y_sz = final_masks.shape
+    sz = (num_frames, num_slices, x_sz, y_sz)
+    chunks = (1, num_slices, x_sz, y_sz)
+    masks_zarr = zarr.open(mask_fname, mode='w-',
+                           shape=sz, chunks=chunks, dtype=np.uint16,
+                           synchronizer=zarr.ThreadSynchronizer())
+    final_masks = perform_post_processing_2d(final_masks,
+                                             volume,
+                                             **opt_postprocessing,
+                                             verbose=verbose - 1)
+    save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
+    return masks_zarr
 
 
 def segment_and_save(i, i_volume, masks_zarr, metadata, num_slices, opt_postprocessing, preprocessing_settings,
