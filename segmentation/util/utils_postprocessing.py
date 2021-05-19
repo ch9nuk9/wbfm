@@ -30,6 +30,7 @@ def remove_large_areas(arr, threshold=1000, verbose=0):
     arr : 2D or 3D numpy array
         array with removed areas. Same shape as input
     """
+    global new_arr
     if verbose >= 1:
         print('Removing large areas in all planes')
 
@@ -479,7 +480,7 @@ def split_long_neurons(array,
 
             try:
                 x_means = calc_means_via_brightnesses(neuron_brightnesses[neuron_id], verbose-1)
-            except ValueError:
+            except (ValueError, TypeError):
                 if verbose >= 1:
                     print(f'! ValueError while splitting neuron {neuron_id}. Could not fit 2 Gaussians! Will continue.')
                 continue
