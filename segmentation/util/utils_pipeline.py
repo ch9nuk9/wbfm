@@ -195,7 +195,7 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         masks = post.remove_dim_slices(masks, img_volume, verbose=verbose)
     if verbose >= 1:
         print(f"After large area removal: {len(np.unique(masks)) - 1}")
-    stitched_masks, df_with_centroids = post.bipartite_stitching(masks, verbose=verbose)
+    stitched_masks, _ = post.bipartite_stitching(masks, verbose=verbose)
     if verbose >= 1:
         print(f"After stitching: {len(np.unique(stitched_masks)) - 1}")
     neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)

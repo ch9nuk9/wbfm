@@ -249,13 +249,15 @@ def get_neuron_lengths_dict(arr):
     neurons = np.unique(arr)
     lengths = defaultdict(int)
 
+    neurons_in_plane_all = (set(plane) for plane in arr)
+
     for neuron in neurons:
         if neuron == 0:
             continue
         z_count = 0
 
-        for plane in range(len(arr)):
-            if neuron in arr[plane]:
+        for set_of_neurons in neurons_in_plane_all:
+            if neuron in set_of_neurons:
                 z_count += 1
 
         lengths[int(neuron)] = z_count
