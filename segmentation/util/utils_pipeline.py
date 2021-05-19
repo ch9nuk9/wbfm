@@ -89,8 +89,8 @@ def segment_video_using_config_2d(_config):
         with tifffile.TiffFile(video_path) as video_stream:
             def parallel_func(i_both):
                 i_out, i_vol = i_both
-                segment_and_save(i_out+1, i_vol, video_path=video_path, **opt)
-            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+                segment_and_save(i_out+1, i_vol, video_path=video_stream, **opt)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
