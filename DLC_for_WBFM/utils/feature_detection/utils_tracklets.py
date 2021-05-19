@@ -414,15 +414,15 @@ def build_tracklets_dfs(pairwise_matches_dict, xyz_per_neuron_per_frame=None, sl
     pair_range = list(range(min_pair, max_pair))
 
     def get_start_match(match_dicts):
-        # Note: _all_matches will progressively have entries deleted
+        # Note: match_dicts will progressively have entries deleted
         for i in pair_range:
             # Make sure order is respected
             match_key = (i, i+1)
-            match_dict = match_dicts[match_key]
+            match_dict = match_dicts.get(match_key, [])
             if len(match_dict) == 0:
                 continue
             for k, v in match_dict.items():
-                # Order doesn't matter
+                # Order doesn't matter in this dict
                 return match_key, k, v
         return None, None, None
 
