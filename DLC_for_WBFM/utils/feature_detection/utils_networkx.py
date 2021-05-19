@@ -2,7 +2,6 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 import networkx as nx
-from scipy.special import expit
 
 
 ##
@@ -104,7 +103,7 @@ def build_digraph_from_matches(pairwise_matches,
 ##
 
 
-def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, verbose=0):
+def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e-3, verbose=0):
     """
     Sparse version of calc_bipartite_from_distance
 
@@ -126,7 +125,13 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, verbose=0):
     matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     # Apply sigmoid to summed confidence
     matches = np.array(matches)
-    conf = np.array([expit(conf_matrix[i0, i1]) for i0, i1 in matches])
+    conf = np.array([np.tanh(conf_matrix[i0, i1]) for i0, i1 in matches])
+
+    to_remove = [i for i, c in enumerate(conf) if c < min_conf]
+    to_remove.sort(reverse=True)
+    for i in to_remove:
+        conf.pop(i)
+        matches.pop(i)
 
     return matches, conf, matches
 
@@ -158,7 +163,7 @@ def calc_bipartite_from_distance(xyz0, xyz1, max_dist=None):
         to_remove.reverse()
         [matches.pop(i) for i in to_remove]
 
-    conf_func = lambda dist : expit(1.0 / dist)
+    conf_func = lambda dist : np.tanh(1.0 / dist)
 
     # Calculate confidences from distance
     matches = np.array(matches)
