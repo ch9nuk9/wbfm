@@ -103,13 +103,11 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
 
     # Initialize output matrix
     all_matches = {}  # Indexed by which pair of z slices
-    all_centroids = {}  # Indexed by single slice
+    # all_centroids = {}  # Indexed by single slice
 
-    # loop over slices
     for i_slice in range(num_slices):
 
         this_slice = array_3d[i_slice]
-
         if i_slice < num_slices - 1:
             next_slice = array_3d[i_slice + 1]
             match_key = (i_slice, i_slice + 1)
@@ -119,30 +117,29 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
                 continue
 
             # Bipartite matching after creating overlap list for all neurons on slice
-            # bp_matches = sorted(calc_bipartite_matches(this_slice_candidates))
             bp_matches = calc_bipartite_from_candidates(this_slice_candidates)[0]
             all_matches[match_key] = bp_matches
 
         # get centroid coordinates for all found neurons/masks
-        these_centroids = []
-        for this_neuron in range(int(np.amax(this_slice)) + 1):
-            this_x, this_y = np.where(this_slice == this_neuron)
-
-            if len(this_x) == 0:
-                # negative location values for unusable neurons
-                these_centroids.append([-15, -15, -15])
-            else:
-                these_centroids.append([i_slice, round(np.mean(this_x)), round(np.mean(this_y))])
-
-        all_centroids[i_slice] = these_centroids
+        # these_centroids = []
+        # for this_neuron in range(int(np.amax(this_slice)) + 1):
+        #     this_x, this_y = np.where(this_slice == this_neuron)
+        #
+        #     if len(this_x) == 0:
+        #         # negative location values for unusable neurons
+        #         these_centroids.append([-15, -15, -15])
+        #     else:
+        #         these_centroids.append([i_slice, round(np.mean(this_x)), round(np.mean(this_y))])
+        #
+        # all_centroids[i_slice] = these_centroids
 
     # clust_df = build_tracklets_from_matches(all_centroids, all_matches)
-    clust_df = build_tracklets_dfs(all_matches, all_centroids)
+    clust_df = build_tracklets_dfs(all_matches)
 
     # renaming all found neurons in array; in a sorted manner
     sorted_stitched_array = rename_stitched_array(array_3d, clust_df)
 
-    return sorted_stitched_array, (clust_df, all_centroids, all_matches)
+    return sorted_stitched_array, (clust_df, all_matches)
 
 
 def create_matches_list(slice_1, slice_2, verbose=0):
@@ -498,7 +495,7 @@ def split_long_neurons(array,
                 new_neuron_lengths[neuron_id] = x_split + 1
 
                 # update mask array with new mask IDs
-                for i_plane, plane in enumerate(array[x_split:]):
+                for plane in array[x_split:]:
                     if neuron_id in plane:
                         inter_plane = plane == neuron_id
                         plane[inter_plane] = global_current_neuron
@@ -587,9 +584,9 @@ def remove_border(masks, border=100):
     """
     _, x_sz, y_sz = masks.shape
 
-    masks[:, :border, :] = 0.0
-    masks[:, (x_sz - border):, :] = 0.0
-    masks[:, :, :border] = 0.0
-    masks[:, :, (y_sz - border):] = 0.0
+    masks[:, :border, :] = 0
+    masks[:, (x_sz - border):, :] = 0
+    masks[:, :, :border] = 0
+    masks[:, :, (y_sz - border):] = 0
 
     return masks

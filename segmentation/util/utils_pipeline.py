@@ -203,11 +203,12 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
     # calculate brightnesses and their global Z-plane
     brightnesses, neuron_planes = post.calc_brightness(img_volume, stitched_masks, neuron_lengths)
     # split too long neurons
+    current_global_neuron = len(neuron_lengths)
     split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
         post.split_long_neurons(stitched_masks,
                                 neuron_lengths,
                                 brightnesses,
-                                len(neuron_lengths),
+                                current_global_neuron,
                                 upper_length_threshold,
                                 neuron_planes,
                                 verbose - 1)
