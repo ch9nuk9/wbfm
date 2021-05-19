@@ -80,19 +80,21 @@ def segment_video_using_config_2d(_config):
     #         segment_and_save(i_rel + 1, i_abs, **opt, video_path=video_stream)
 
     # Parallel version: threading
-    global_lock = threading.Lock()
-    opt['lock'] = global_lock
+    keras_lock = threading.Lock()
+    read_lock = threading.Lock()
+    opt['keras_lock'] = keras_lock
+    opt['read_lock'] = read_lock
 
     with tqdm(total=num_frames - 1) as pbar:
-        # with tifffile.TiffFile(video_path) as video_stream:
-        def parallel_func(i_both):
-            i_out, i_vol = i_both
-            segment_and_save(i_out+1, i_vol, video_path=video_path, **opt)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=128) as executor:
-            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
-                pbar.update(1)
+        with tifffile.TiffFile(video_path) as video_stream:
+            def parallel_func(i_both):
+                i_out, i_vol = i_both
+                segment_and_save(i_out+1, i_vol, video_path=video_path, **opt)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+                futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+                    pbar.update(1)
 
     # saving metadata and settings
     with open(metadata_fname, 'wb') as meta_save:
@@ -106,9 +108,9 @@ def segment_video_using_config_2d(_config):
 
 
 def segment_and_save(i, i_volume, masks_zarr, metadata, num_slices, opt_postprocessing, preprocessing_settings,
-                     sd_model, verbose, video_path, lock):
-    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path)
-    with lock: # Keras is not thread-safe in the end
+                     sd_model, verbose, video_path, keras_lock, read_lock):
+    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
+    with keras_lock:  # Keras is not thread-safe in the end
         segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
     # process masks: remove large areas, stitch, split long neurons, remove short neurons
     final_masks = perform_post_processing_2d(segmented_masks,
@@ -118,10 +120,14 @@ def segment_and_save(i, i_volume, masks_zarr, metadata, num_slices, opt_postproc
     save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
 
 
-def _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path):
+def _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path, read_lock=None):
     # use get single volume function from charlie
     import_opt = {'which_vol': i, 'num_slices': num_slices, 'alpha': 1.0, 'dtype': 'uint16'}
-    volume = get_single_volume(video_path, **import_opt)
+    if read_lock is None:
+        volume = get_single_volume(video_path, **import_opt)
+    else:
+        with read_lock:
+            volume = get_single_volume(video_path, **import_opt)
     volume = perform_preprocessing(volume, preprocessing_settings)
     return volume
 
