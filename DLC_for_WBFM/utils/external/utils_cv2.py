@@ -1,5 +1,5 @@
 import cv2
-from scipy.special import expit
+import numpy as np
 
 
 def get_keypoints_from_3dseg(kp0, i=None, sz=31.0, neuron_height=None):
@@ -59,5 +59,5 @@ def match_object_to_array(matches, gamma=1.0):
     confidence = sigma(gamma / match.distance)
     """
     def conf(dist):
-        return expit(gamma / (dist + 1e-9 * gamma))
+        return np.tanh(gamma / (dist + 1e-9 * gamma))
     return [(m.queryIdx, m.trainIdx, conf(m.distance)) for m in matches]
