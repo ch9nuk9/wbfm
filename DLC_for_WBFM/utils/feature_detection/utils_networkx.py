@@ -112,6 +112,7 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e
     Uses scipy linear_sum_assignment
     Note: does not use scipy.sparse.csgraph.min_weight_full_bipartite_matching for version compatibility
     """
+    # OPTIMIZE: this produces a larger matrix than necessary
 
     m0 = np.max([m[0] for m in all_candidate_matches]) + 1
     m1 = np.max([m[1] for m in all_candidate_matches]) + 1
@@ -127,11 +128,9 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e
     matches = np.array(matches)
     conf = np.array([np.tanh(conf_matrix[i0, i1]) for i0, i1 in matches])
 
-    to_remove = [i for i, c in enumerate(conf) if c < min_conf]
-    to_remove.sort(reverse=True)
-    for i in to_remove:
-        conf.pop(i)
-        matches.pop(i)
+    to_keep = conf > min_conf
+    matches = matches[to_keep]
+    conf = conf[to_keep]
 
     return matches, conf, matches
 
