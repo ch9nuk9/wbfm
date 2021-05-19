@@ -399,7 +399,7 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
 ## Massive simplification / refactor
 ##
 
-def build_tracklets_dfs(pairwise_matches_dict, xyz_per_neuron_per_frame, slice_offset=0):
+def build_tracklets_dfs(pairwise_matches_dict, xyz_per_neuron_per_frame=None, slice_offset=0):
     """
     Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
 
@@ -441,7 +441,10 @@ def build_tracklets_dfs(pairwise_matches_dict, xyz_per_neuron_per_frame, slice_o
         i_frame0, i_frame1 = match_key
 
         all_ind_local = [i0, i1]
-        all_xyz = [xyz_per_neuron_per_frame[i_frame0][i0], xyz_per_neuron_per_frame[i_frame1][i1]]
+        if xyz_per_neuron_per_frame is not None:
+            all_xyz = [xyz_per_neuron_per_frame[i_frame0][i0], xyz_per_neuron_per_frame[i_frame1][i1]]
+        else:
+            all_xyz = [[], []]
         slice_ind = [i_frame0, i_frame1]
         all_prob = []
 
@@ -458,7 +461,10 @@ def build_tracklets_dfs(pairwise_matches_dict, xyz_per_neuron_per_frame, slice_o
                 i_frame = next_match_key[1]
 
                 all_ind_local.append(i1)
-                all_xyz.append(xyz_per_neuron_per_frame[i_frame][i1])
+                if xyz_per_neuron_per_frame is not None:
+                    all_xyz.append(xyz_per_neuron_per_frame[i_frame][i1])
+                else:
+                    all_xyz.append([])
                 slice_ind.append(i_frame)
 
                 del dict_of_match_dicts[next_match_key][i0]
