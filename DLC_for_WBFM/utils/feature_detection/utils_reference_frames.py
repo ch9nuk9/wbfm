@@ -120,7 +120,7 @@ def encode_all_neurons(locs_zxy, im_3d, z_depth):
 
         z = int(z)
         all_slices = np.arange(z - z_depth, z + z_depth + 1)
-        all_slices = np.clip(all_slices, 0, len(im_3d_gray))
+        all_slices = np.clip(all_slices, 0, len(im_3d_gray)-1)
         # Generate features on neighboring z slices as well
         # Repeat slices if near the edge
         ds = []
