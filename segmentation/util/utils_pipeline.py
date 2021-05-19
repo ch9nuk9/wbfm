@@ -109,9 +109,10 @@ def _do_first_volume(frame_list, mask_fname, metadata, num_frames, num_slices, o
     _, x_sz, y_sz = final_masks.shape
     sz = (num_frames, num_slices, x_sz, y_sz)
     chunks = (1, num_slices, x_sz, y_sz)
-    masks_zarr = zarr.zeros(mask_fname, mode='w-',
-                            shape=sz, chunks=chunks, dtype=np.uint16,
-                            synchronizer=zarr.ThreadSynchronizer())
+    masks_zarr = zarr.open(mask_fname, mode='w-',
+                           shape=sz, chunks=chunks, dtype=np.uint16,
+                           fill_value=0,
+                           synchronizer=zarr.ThreadSynchronizer())
     final_masks = perform_post_processing_2d(final_masks,
                                              volume,
                                              **opt_postprocessing,
