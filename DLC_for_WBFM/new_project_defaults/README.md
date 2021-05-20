@@ -1,14 +1,12 @@
-# Explanation of project organization
+# Running a project
 
-## Running a project
-
-### Preparation:
+## Preparation:
 
 1. Red channel (tracking) in a single bigtiff file
 2. Green channel (signal) in a single bigtiff file
 3. 2 conda environments (see main README for installation instructions)
 
-### All commands with approximate times
+## All commands with approximate times
 
 Currently, everything is designed to run on the command line.
 
@@ -18,7 +16,7 @@ DLC_for_WBFM/
 
 For simple reference, each command is in proper number order in DLC_for_WBFM/scripts
 
-#### Initializing
+### Initializing
 
 Perparation: see above
 
@@ -40,7 +38,7 @@ Speed: Fast
 
 Output: new project folder with the date, with 4 numbered subfolders
 
-#### Segmentation
+### Segmentation
 
 Preparation:
 0. Make sure the project was initialized successfully!
@@ -64,7 +62,7 @@ Output, in 1-segmentation:
 2. metadata_N.pickle
 ..* This is the centroids and brightnesses of the identified neurons
 
-#### Training data
+### Training data
 
 Preparation:
 1. Open 2-training_data/preprocessing_config.yaml and change the variables marked CHANGE ME
@@ -85,9 +83,9 @@ Output, in 2-training_data/raw:
 ..* This is mostly for debugging and visualizing, and is not used further
    
 
-#### DeepLabCut
+### DeepLabCut
 
-##### Part 1/3
+#### Part 1/3
 
 Preparation:
 1. Open 3-tracking/tracking_config.yaml and change the variables marked CHANGE ME
@@ -104,7 +102,7 @@ Output, in 3-tracking:
 ..* Within these folders, training data will be extracted as .pngs
 ..* In the labeled-data subfolder you can see the produced training data
    
-##### Part 2/3
+#### Part 2/3
 
 Command:
 ```bash
@@ -116,7 +114,7 @@ Speed: LONG, but depends on network convergence and number of stacks; 1-2 days
 Output, in each DLC project folder:
 1. A trained network
 
-##### Part 3/3
+#### Part 3/3
 
 Command:
 ```bash
@@ -129,7 +127,7 @@ Output, in 3-tracking:
 1. full_3d_tracks.h5, a dataframe of the tracks combined into 3d from each 2d network
 
 
-#### Traces
+### Traces
 
 Preparation: None, for now
 
@@ -144,3 +142,13 @@ Output, in 4-traces:
 1. all_matches.pickle, the matches between the DLC tracking and the original segmentation
 2. red_traces.h5 and green_traces.h5
 ..* This is the raw time series for all neurons in each channel
+   
+   
+## Visualization of results
+
+I made a gui for this purpose, with everything in the gui/ folder. Read the README in that folder for more detail
+
+Command:
+```bash
+python gui/gui.py PATH-TO-YOUR-PROJECT
+```
