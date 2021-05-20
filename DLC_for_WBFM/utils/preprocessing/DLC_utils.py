@@ -253,7 +253,7 @@ def training_data_from_annotations(vid_fname,
            'scorer': cfg['scorer']}
     new_dlc_df = build_dlc_annotation_all(subset_df, **opt)
     if new_dlc_df is None:
-        print("Found no tracks long enough; aborting")
+        print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
         return None
 
     # Save annotations using DLC-style names

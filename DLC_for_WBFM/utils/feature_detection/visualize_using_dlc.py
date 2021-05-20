@@ -55,7 +55,12 @@ def build_dlc_annotation_one_tracklet(row,
     # Build a dataframe for one neuron across all frames
     # Will be zeros if not detected in a given frame
     coords = np.zeros((num_frames, len(coord_names), ))
-    for this_slice, this_xyz, this_prob in zip(row['slice_ind'], row['all_xyz'], row['all_prob']):
+    # This should zip through all_xyz, but all_prob might be empty
+    slice_ind, all_xyz, all_prob = row['slice_ind'], row['all_xyz'], row['all_prob']
+    if len(all_prob) < len(all_xyz):
+        all_prob = [0.0 for _ in all_xyz]
+
+    for this_slice, this_xyz, this_prob in zip(slice_ind, all_xyz, all_prob):
         # this_xyz is format ZXY
         for i, coord_name in enumerate(coord_names):
             if coord_name in coord_mapping:
@@ -92,12 +97,13 @@ def build_dlc_annotation_all(clust_df, min_length, num_frames=1000,
     # all_bodyparts = np.asarray(clust_df['clust_ind'])
 
     neuron_ind = 1
-    opt = {'min_length':min_length, 'verbose':verbose-1,
+    opt = {'min_length':min_length,
            'num_frames':num_frames,
            'coord_names':coord_names,
            'relative_imagenames':relative_imagenames,
            'which_frame_subset':which_frame_subset,
-           'scorer':scorer}
+           'scorer':scorer,
+           'verbose':verbose-1}
     for i, row in tqdm(clust_df.iterrows(), total=clust_df.shape[0]):
         opt['neuron_ind'] = neuron_ind
         ind = row['clust_ind']
