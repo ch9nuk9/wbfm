@@ -19,15 +19,15 @@ def best_tracklet_covering(df, num_frames_needed, num_frames,
     y = np.zeros_like(x)
     for i in x:
         which_frames = make_window(i)
-        def check_frames(vals, which_frames=which_frames):
+        def check_for_full_covering(vals, which_frames=which_frames):
             vals = set(vals)
             return all([f in vals for f in which_frames])
 
-        tmp = df['slice_ind'].apply(check_frames)
-        y[i] = tmp.sum(axis=0)
+        tracklets_that_cover = df['slice_ind'].apply(check_for_full_covering)
+        y[i] = tracklets_that_cover.sum(axis=0)
 
     best_covering = np.argmax(y)
     if verbose >= 1:
         print(f"Best covering starts at volume {best_covering} with {np.max(y)} tracklets")
 
-    return make_window(best_covering)
+    return make_window(best_covering), y

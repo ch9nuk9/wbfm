@@ -61,8 +61,6 @@ def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, w
             video_exists.append(True)
         else:
             video_exists.append(False)
-            # write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
-            # write_video_projection_from_ome_file_subset(**vid_opt)
     # IF videos are required, then prep the data
     if all(video_exists):
         print("All required videos exist; no preprocessing necessary")
@@ -123,7 +121,7 @@ def _get_frames_for_dlc_training(DEBUG, config, df):
                     'verbose': 1}
     if DEBUG:
         tracklet_opt['num_frames_needed'] = 2
-    which_frames = best_tracklet_covering(df, **tracklet_opt)
+    which_frames, _ = best_tracklet_covering(df, **tracklet_opt)
     # Also save these chosen frames
     updates = {'which_frames': which_frames}
     config['training_data_3d'].update(updates)
