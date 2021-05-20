@@ -67,6 +67,7 @@ def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, w
     if all(video_exists):
         print("All required videos exist; no preprocessing necessary")
         preprocessed_dat = []
+        _, vid_opt = _get_video_options(config, vid_fname)
     else:
         preprocessed_dat, vid_opt = _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames)
     return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
@@ -144,11 +145,7 @@ def _make_avi_name(center):
 
 
 def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames):
-    with tifffile.TiffFile(vid_fname) as tif:
-        sz = tif.pages[0].shape
-    vid_opt = {'fps': config['dataset_params']['fps'],
-               'frame_height': sz[0],
-               'frame_width': sz[1]}
+    sz, vid_opt = _get_video_options(config, vid_fname)
     if verbose >= 1:
         print("Preprocessing data, this could take a while...")
     p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
@@ -164,6 +161,15 @@ def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames):
     for i in tqdm(frame_list):
         _get_and_preprocess(i, num_slices, p, preprocessed_dat, start_volume, vid_fname)
     return preprocessed_dat, vid_opt
+
+
+def _get_video_options(config, vid_fname):
+    with tifffile.TiffFile(vid_fname) as tif:
+        sz = tif.pages[0].shape
+    vid_opt = {'fps': config['dataset_params']['fps'],
+               'frame_height': sz[0],
+               'frame_width': sz[1]}
+    return sz, vid_opt
 
 
 def _get_and_preprocess(i, num_slices, p, preprocessed_dat, start_volume, vid_fname):
