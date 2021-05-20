@@ -239,8 +239,13 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
 def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict):
     dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
     video_list = list(dlc_cfg['video_sets'].keys())
-    # Works even if already analyzed
-    deeplabcut.analyze_videos(dlc_config, video_list)
+    # Works even if already analyzed; skips if empty
+    try:
+        deeplabcut.analyze_videos(dlc_config, video_list)
+    except IndexError:
+        # Doesn't append anything to all_dfs
+        print(f"No neurons found; skipping project {dlc_config}")
+        return
     # Get data for later use
     df_fname = get_annotations_from_dlc_config(dlc_config)
     if DEBUG:
