@@ -157,7 +157,7 @@ def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames):
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
     for i in tqdm(frame_list):
-        _get_and_preprocess(i, num_slices, p, preprocessed_dat, start_volume, vid_fname)
+        preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_fname)
     return preprocessed_dat, vid_opt
 
 
@@ -170,13 +170,15 @@ def _get_video_options(config, vid_fname):
     return sz, vid_opt
 
 
-def _get_and_preprocess(i, num_slices, p, preprocessed_dat, start_volume, vid_fname):
+def _get_and_preprocess(i, num_slices, p, start_volume, vid_fname):
     dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
-        preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
+        # preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
+        return perform_preprocessing(dat_raw, p)
     else:
-        preprocessed_dat[i, ...] = dat_raw
+        # preprocessed_dat[i, ...] = dat_raw
+        return dat_raw
 
 
 def train_all_dlc_from_config(config):
