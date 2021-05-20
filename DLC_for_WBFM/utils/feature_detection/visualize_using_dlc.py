@@ -58,7 +58,7 @@ def build_dlc_annotation_one_tracklet(row,
     # This should zip through all_xyz, but all_prob might be empty
     slice_ind, all_xyz, all_prob = row['slice_ind'], row['all_xyz'], row['all_prob']
     if len(all_prob) < len(all_xyz):
-        all_prob = [0.0 for _ in all_xyz]
+        all_prob = [1.0 for _ in all_xyz]
 
     for this_slice, this_xyz, this_prob in zip(slice_ind, all_xyz, all_prob):
         # this_xyz is format ZXY
