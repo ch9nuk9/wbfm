@@ -3,12 +3,11 @@
 # Form implementation generated from reading ui file 'gui_raw.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.2
-
-
+import zarr
 from PyQt5 import QtCore, QtWidgets
 import argparse
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.gui.utils_gui import get_cropped_frame
+from DLC_for_WBFM.gui.utils_gui import get_cropped_frame, get_crop_from_zarr
 import pandas as pd
 import sys
 from pathlib import Path
@@ -17,6 +16,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 import numpy as np
+import concurrent.futures
 matplotlib.use('Qt5Agg')
 
 
@@ -37,19 +37,7 @@ class Ui_MainWindow(object):
         ########################
         # Load Configs
         ########################
-        cfg = load_config(project_config)
-        self.project_dir = Path(project_config).parent
-        self.cfg = cfg
-        traces_cfg = load_config(cfg['subfolder_configs']['traces'])
-        self.traces_cfg = traces_cfg
-        segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
-        self.segment_cfg = segment_cfg
-        tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
-        self.tracking_cfg = tracking_cfg
-        self.crop_sz = (1, 48, 48)
-        start = cfg['dataset_params']['start_volume']
-        end = start + cfg['dataset_params']['num_frames']
-        self.x = list(range(start, end))
+        cfg, traces_cfg, tracking_cfg = self._load_config_files(cfg)
         ########################
         # Load Data
         ########################
@@ -62,17 +50,26 @@ class Ui_MainWindow(object):
             self.green_traces = pd.read_hdf(green_traces_fname)
             self.dlc_raw = pd.read_hdf(dlc_raw_fname)
 
+            seg_fname = self.segment_cfg['output']['masks']
+            if '.zarr' in seg_fname:
+                self.zarr_array = zarr.open(seg_fname, mode='r')
+            else:
+                self.zarr_array = None
+
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
 
-        self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.dialAndPlotLayout = QtWidgets.QHBoxLayout()
+        self.dialAndPlotLayout.setObjectName("dialAndPlotLayout")
 
-        self.verticalLayout_5 = QtWidgets.QVBoxLayout()
-        self.verticalLayout_5.setObjectName("verticalLayout_5")
+        self.dialsLayout = QtWidgets.QVBoxLayout()
+        self.dialsLayout.setObjectName("dialsLayout")
+
+        self.plotsLayout = QtWidgets.QVBoxLayout()
+        self.plotsLayout.setObjectName("plotsLayout")
         ########################
         # Various selectors
         ########################
@@ -81,7 +78,7 @@ class Ui_MainWindow(object):
         self.neuronSelector.setObjectName("neuronSelector")
         neuron_names = traces_cfg['traces']['neuron_names']
         [self.neuronSelector.addItem(name) for name in neuron_names]
-        self.verticalLayout_5.addWidget(self.neuronSelector)
+        self.dialsLayout.addWidget(self.neuronSelector)
         self.neuronSelector.currentIndexChanged.connect(self.update_all_panels)
         # Frame (time) selector
         self.timeSelector = QtWidgets.QSpinBox(self.centralwidget)
@@ -90,7 +87,7 @@ class Ui_MainWindow(object):
         end = start + cfg['dataset_params']['num_frames']
         self.timeSelector.setMaximum(end)
         self.timeSelector.setObjectName("timeSelector")
-        self.verticalLayout_5.addWidget(self.timeSelector)
+        self.dialsLayout.addWidget(self.timeSelector)
         self.timeSelector.valueChanged.connect(self.update_all_panels)
         # Background selector
         self.backgroundSelector = QtWidgets.QSpinBox(self.centralwidget)
@@ -98,7 +95,7 @@ class Ui_MainWindow(object):
         self.backgroundSelector.setValue(15)
         self.backgroundSelector.setMaximum(100)
         self.backgroundSelector.setObjectName("backgroundSelector")
-        self.verticalLayout_5.addWidget(self.backgroundSelector)
+        self.dialsLayout.addWidget(self.backgroundSelector)
         self.backgroundSelector.valueChanged.connect(self.update_only_traces)
         # DLC confidence
         self.confidenceSelector = QtWidgets.QDoubleSpinBox(self.centralwidget)
@@ -107,15 +104,23 @@ class Ui_MainWindow(object):
         self.confidenceSelector.setSingleStep(0.1)
         self.confidenceSelector.setMaximum(1)
         self.confidenceSelector.setObjectName("confidenceSelector")
-        self.verticalLayout_5.addWidget(self.confidenceSelector)
+        self.dialsLayout.addWidget(self.confidenceSelector)
         self.confidenceSelector.valueChanged.connect(self.update_only_traces)
-        # Trace (mode) selector
-        self.modeSelector = QtWidgets.QComboBox(self.centralwidget)
-        self.modeSelector.setObjectName("modeSelector")
+        # Trace (mode) selector (top and bottom)
+        self.modeSelectorTop = QtWidgets.QComboBox(self.centralwidget)
+        self.modeSelectorTop.setObjectName("modeSelector")
         possible_modes = ['green', 'red', 'ratio']
-        [self.modeSelector.addItem(m) for m in possible_modes]
-        self.verticalLayout_5.addWidget(self.modeSelector)
-        self.modeSelector.currentIndexChanged.connect(self.update_only_traces)
+        [self.modeSelectorTop.addItem(m) for m in possible_modes]
+        self.dialsLayout.addWidget(self.modeSelectorTop)
+        self.modeSelectorTop.currentIndexChanged.connect(self.update_only_traces)
+
+        self.modeSelectorBottom = QtWidgets.QComboBox(self.centralwidget)
+        self.modeSelectorBottom.setObjectName("modeSelector")
+        possible_modes = ['green', 'red', 'ratio']
+        [self.modeSelectorBottom.addItem(m) for m in possible_modes]
+        self.dialsLayout.addWidget(self.modeSelectorBottom)
+        self.modeSelectorBottom.currentIndexChanged.connect(self.update_only_traces)
+
         # Crop selectors
         self.cropXSelector = QtWidgets.QSpinBox(self.centralwidget)
         self.cropXSelector.setMinimum(10)
@@ -123,7 +128,7 @@ class Ui_MainWindow(object):
         self.cropXSelector.setSingleStep(32)
         self.cropXSelector.setMaximum(300)
         self.cropXSelector.setObjectName("cropXSelector")
-        self.verticalLayout_5.addWidget(self.cropXSelector)
+        self.dialsLayout.addWidget(self.cropXSelector)
         self.cropXSelector.valueChanged.connect(self.update_all_panels)
 
         self.cropYSelector = QtWidgets.QSpinBox(self.centralwidget)
@@ -132,15 +137,15 @@ class Ui_MainWindow(object):
         self.cropYSelector.setSingleStep(32)
         self.cropYSelector.setMaximum(300)
         self.cropYSelector.setObjectName("cropYSelector")
-        self.verticalLayout_5.addWidget(self.cropYSelector)
+        self.dialsLayout.addWidget(self.cropYSelector)
         self.cropYSelector.valueChanged.connect(self.update_all_panels)
 
-        self.horizontalLayout_4.addLayout(self.verticalLayout_5)
+        self.dialAndPlotLayout.addLayout(self.dialsLayout)
         ########################
         # Traces (matplotlib)
         ########################
-        sc = MplCanvas(self, width=15, height=4, dpi=100)
-        self.tracesPlt = sc
+        self.tracesPlotTop = MplCanvas(self, width=15, height=4, dpi=100)
+        self.tracesPlotBottom = MplCanvas(self, width=15, height=4, dpi=100)
         # sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
         # ENHANCE: add a toolbar
         # toolbar = NavigationToolbar(sc, self)
@@ -148,9 +153,12 @@ class Ui_MainWindow(object):
         # self.verticalLayout_plot.addWidget(toolbar)
         # self.verticalLayout_plot.addWidget(sc)
         # self.horizontalLayout_4.addLayout(self.verticalLayout_plot)
-        #
-        self.horizontalLayout_4.addWidget(self.tracesPlt)
-        self.verticalLayout_4.addLayout(self.horizontalLayout_4)
+
+        self.plotsLayout.addWidget(self.tracesPlotTop)
+        self.plotsLayout.addWidget(self.tracesPlotBottom)
+
+        self.dialAndPlotLayout.addLayout(self.plotsLayout)
+        self.verticalLayout_4.addLayout(self.dialAndPlotLayout)
 
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
@@ -194,6 +202,23 @@ class Ui_MainWindow(object):
 
         self.update_all_panels()
 
+    def _load_config_files(self, cfg):
+        cfg = load_config(project_config)
+        self.project_dir = Path(project_config).parent
+        self.cfg = cfg
+        traces_cfg = load_config(cfg['subfolder_configs']['traces'])
+        self.traces_cfg = traces_cfg
+        segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
+        self.segment_cfg = segment_cfg
+        tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
+        self.tracking_cfg = tracking_cfg
+        self.crop_sz = (1, 48, 48)
+        start = cfg['dataset_params']['start_volume']
+        end = start + cfg['dataset_params']['num_frames']
+        self.x = list(range(start, end))
+        return cfg, traces_cfg, tracking_cfg
+
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
@@ -207,11 +232,16 @@ class Ui_MainWindow(object):
         with safe_cd(self.project_dir):
             self.update_current_centroid()
             self.update_crop()
-            self.update_only_traces()
+
+            update_funcs = [self.update_only_traces]
+            # self.update_only_traces()
             if not self.tracking_lost:
-                self.update_segmentation()
-                self.update_red()
-                self.update_green()
+                update_funcs.extend([self.update_segmentation, self.update_red, self.update_green])
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                futures = executor.map(lambda f: f(), update_funcs)
+                # print([f.result() for f in futures])
+            # for func in update_funcs:
+            #     func()
 
     def update_only_traces(self):
         with safe_cd(self.project_dir):
@@ -219,44 +249,60 @@ class Ui_MainWindow(object):
             self.update_traces_plot()
 
     def update_current_traces(self):
-        mode = self.modeSelector.currentText()
+        mode_top = self.modeSelectorTop.currentText()
+        mode_bottom = self.modeSelectorBottom.currentText()
         current_neuron = self.neuronSelector.currentText()
+        self.current_traces_top = self._get_trace_from_mode(current_neuron, mode_top)
+        self.current_traces_bottom = self._get_trace_from_mode(current_neuron, mode_bottom)
+        self.remove_low_conf_values()
+
+    def _get_trace_from_mode(self, current_neuron, mode):
         if mode == 'green':
             y_raw = self.green_traces[current_neuron]['brightness']
             y = y_raw / self.green_traces[current_neuron]['volume']
-            self.current_traces = y
         elif mode == 'red':
             y_raw = self.red_traces[current_neuron]['brightness']
             y = y_raw / self.red_traces[current_neuron]['volume']
-            self.current_traces = y
         elif mode == 'ratio':
             red = self.red_traces[current_neuron]['brightness']
             green = self.green_traces[current_neuron]['brightness']
             vol = self.red_traces[current_neuron]['volume']
             back = self.backgroundSelector.value()
             y = (red - back * vol) / (green - back * vol)
-            self.current_traces = y
         else:
             print(f"Unknown mode ({mode})")
             raise NotImplementedError
-        self.remove_low_conf_values()
+        return y
 
     def remove_low_conf_values(self):
         current_neuron = self.neuronSelector.currentText()
         tracking_confidence = self.dlc_raw[current_neuron]['likelihood']
         threshold = self.confidenceSelector.value()
         ind = (tracking_confidence < threshold)
-        self.current_traces[ind] = np.nan
+        self.current_traces_top[ind] = np.nan
+        self.current_traces_bottom[ind] = np.nan
 
     def update_traces_plot(self):
-        mode = self.modeSelector.currentText()
+        mode = self.modeSelectorTop.currentText()
+        y = self.current_traces_top
+        canvas = self.tracesPlotTop.fig.canvas
+        title = self._update_canvas(canvas, mode, y)
+        self.tracesPlotTop.axes.set_title(title)
+        canvas.draw()
+
+        mode = self.modeSelectorBottom.currentText()
+        y = self.current_traces_bottom
+        canvas = self.tracesPlotBottom.fig.canvas
+        title = self._update_canvas(canvas, mode, y)
+        self.tracesPlotBottom.axes.set_title(title)
+        canvas.draw()
+
+    def _update_canvas(self, canvas, mode, y):
         current_neuron = self.neuronSelector.currentText()
-        y = self.current_traces
         # Vertical line for time
         t = self.timeSelector.value()
         ymin, ymax = np.min(y), np.max(y)
         # Actually plot
-        canvas = self.tracesPlt.fig.canvas
         canvas.axes.cla()  # Clear the canvas.
         canvas.axes.plot(self.x, y, 'k')
         if not self.tracking_lost:
@@ -267,8 +313,7 @@ class Ui_MainWindow(object):
             title = "Tracking lost!"
             line_color = 'r'
         canvas.axes.vlines(t, ymin, ymax, line_color)
-        self.tracesPlt.axes.set_title(title)
-        canvas.draw()
+        return title
 
     def update_current_centroid(self):
         current_neuron = self.neuronSelector.currentText()
@@ -334,7 +379,10 @@ class Ui_MainWindow(object):
         fname = self.segment_cfg['output']['masks']
         num_slices = self.cfg['dataset_params']['num_slices']
         t -= self.cfg['dataset_params']['start_volume']
-        crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
+        if '.zarr' not in fname:
+            crop_frame = get_cropped_frame(fname, t, num_slices, zxy, self.crop_sz)
+        else:
+            crop_frame = get_crop_from_zarr(self.zarr_array, t, zxy, self.crop_sz)
         # TODO: special color for matched neuron
         return crop_frame
 

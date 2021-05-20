@@ -36,6 +36,21 @@ def get_cropped_frame(fname, t, num_slices, zxy, crop_sz, to_flip=False):
     return dat_crop
 
 
+def get_crop_from_zarr(zarr_array, t, zxy, crop_sz):
+    if crop_sz is not None:
+        crop_coords = get_crop_coords3d(zxy, crop_sz)
+        z, x, y = crop_coords
+        if len(z) > 1:
+            start_slice, end_slice = z[0], z[-1]
+        else:
+            start_slice, end_slice = z[0], z[0] + 1
+        dat_crop = zarr_array[t, start_slice:end_slice, x[0]:x[-1], y[0]:y[-1]]
+    else:
+        dat_crop = zarr_array[t, :, :, :]
+
+    return np.array(dat_crop)
+
+
 def array2qt(img):
     # From: https://stackoverflow.com/questions/34232632/convert-python-opencv-image-numpy-array-to-pyqt-qpixmap-image
     h, w, channel = img.shape
