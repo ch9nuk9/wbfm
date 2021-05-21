@@ -1,3 +1,5 @@
+import concurrent.futures
+
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
@@ -35,10 +37,18 @@ def create_dlc_training_from_tracklets(vid_fname,
 
     dlc_opt, net_opt, png_opt = _define_project_options(config, df, scorer, task_name)
     # Actually make projects
-    all_dlc_configs = []
-    for i, center in enumerate(all_center_slices):
-        _initialize_project_from_btf(all_avi_fnames, all_dlc_configs, center, dlc_opt, i, net_opt, png_opt,
+    # all_dlc_configs = []
+    # for i, center in enumerate(all_center_slices):
+    #     this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
+    #                                  preprocessed_dat, vid_opt, video_exists)
+    #     all_dlc_configs.append(this_dlc_config)
+
+    def parallel_func(i, center):
+        _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
                                      preprocessed_dat, vid_opt, video_exists)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
+        futures = executor.map(parallel_func, enumerate(all_center_slices))
+        all_dlc_configs = [f.result() for f in futures]
 
     # Then delete the created avis because they are copied into the DLC folder
     # [os.remove(f) for f in all_avi_fnames]
@@ -89,7 +99,7 @@ def _define_project_options(config, df, scorer, task_name):
     return dlc_opt, net_opt, png_opt
 
 
-def _initialize_project_from_btf(all_avi_fnames, all_dlc_configs, center, dlc_opt, i, net_opt, png_opt,
+def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
                                  preprocessed_dat, vid_opt, video_exists):
     # Make or get video
     this_avi_fname = all_avi_fnames[i]
@@ -112,7 +122,9 @@ def _initialize_project_from_btf(all_avi_fnames, all_dlc_configs, center, dlc_op
         deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
         update_pose_config(this_dlc_config)
         # Save to list
-        all_dlc_configs.append(this_dlc_config)
+        return this_dlc_config
+    else:
+        return None
 
 
 def _get_frames_for_dlc_training(DEBUG, config, df):
