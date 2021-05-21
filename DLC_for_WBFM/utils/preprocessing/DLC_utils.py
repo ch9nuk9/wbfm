@@ -235,6 +235,9 @@ def training_data_from_annotations(vid_fname,
                   'max_z_dist': max_z_dist_for_traces,
                   'verbose': 1}
     subset_df = build_subset_df(clust_df, which_frames, **subset_opt)
+    if len(subset_df) == 0:
+        print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
+        return None, None
 
     # Save the individual png files
     png_opt = {'dlc_config': dlc_config_fname,
