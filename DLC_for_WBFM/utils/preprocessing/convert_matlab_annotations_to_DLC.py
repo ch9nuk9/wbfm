@@ -1,3 +1,5 @@
+import itertools
+
 import h5py
 import os
 import pandas as pd
@@ -118,7 +120,8 @@ def wb_tracker2config_names(path_config_file):
 
 def csv_annotations2config_names(path_config_file,
                                  annotations_fname=None,
-                                 num_dims=2):
+                                 num_dims=2,
+                                 to_add_skeleton=True):
     """
     Automatically updates the config file with the proper number of neurons, and deletes any other default bodyparts.
     Only affects the "bodyparts" field
@@ -134,5 +137,11 @@ def csv_annotations2config_names(path_config_file,
     # Remove repetitions
     updates = {"bodyparts": [names[i] for i in range(0, len(names), num_dims)]}
     auxiliaryfunctions.edit_config(path_config_file, updates)
+
+    # Add a skeleton (fully connected)
+    if to_add_skeleton:
+        edge_iter = itertools.combinations(names, 2)
+        updates = {"skeleton": [list(e) for e in edge_iter]}
+        auxiliaryfunctions.edit_config(path_config_file, updates)
 
     print("Finished! Check the config.yaml file to make sure the bodyparts are properly written")

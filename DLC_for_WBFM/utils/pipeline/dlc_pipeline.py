@@ -104,8 +104,8 @@ def _initialize_project_from_btf(all_avi_fnames, all_dlc_configs, center, dlc_op
     png_opt['dlc_config_fname'] = this_dlc_config
     png_opt['vid_fname'] = this_avi_fname
     ann_fname = training_data_from_annotations(**png_opt)[1]
-    # Syncronize the dlc_config with the annotations
-    csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2)
+    # Synchronize the dlc_config with the annotations
+    csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2, to_add_skeleton=True)
     # Format the training data
     deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
     update_pose_config(this_dlc_config)
