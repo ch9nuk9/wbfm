@@ -218,7 +218,7 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     neuron2z_dict = {}
     i_neuron = 0
     for dlc_config in all_dlc_configs:
-        _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict)
+        i_neuron = _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict)
 
     final_df = pd.concat(all_dfs, axis=1)
     # Collect 2d data
@@ -269,4 +269,5 @@ def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2
     df.columns.set_levels(new_names, level=0, inplace=True)
     all_dfs.append(df)
 
+    return i_neuron
 
