@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-
+import zarr
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
 from DLC_for_WBFM.utils.feature_detection.visualization_tracks import visualize_tracks
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
@@ -93,7 +93,7 @@ def get_traces_from_3d_tracks(segment_cfg,
     print("Extracting green traces...")
     green_fname = project_cfg['green_bigtiff_fname']
     num_slices = project_cfg['dataset_params']['num_slices']
-    mask_fname = segment_cfg['output']['masks']
+    mask_array = zarr.open(segment_cfg['output']['masks'])
     vol_opt = {'num_slices': num_slices, 'dtype': 'uint16'}
     for i_volume in tqdm(frame_list):
         # Prepare matches and locations
@@ -103,7 +103,8 @@ def get_traces_from_3d_tracks(segment_cfg,
         all_zxy_dlc = _get_dlc_zxy(i_volume)
         # Prepare mask (segmentation)
         i_mask = i_volume - project_cfg['dataset_params']['start_volume']
-        this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt) # TODO: can this read zarr directly?
+        # this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt) # TODO: can this read zarr directly?
+        this_mask_volume = mask_array[i_mask, ...]
         this_green_volume = get_single_volume(green_fname, i_volume, **vol_opt)
         is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
         for i_dlc, i_seg, _ in matches:
