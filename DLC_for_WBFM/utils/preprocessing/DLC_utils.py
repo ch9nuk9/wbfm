@@ -57,11 +57,11 @@ def create_dlc_project(task_name,
     """
 
     # Force shorter name
-    dlc_opt = {'project':task_name[0] + label,
-               'experimenter':experimenter[0],
-               'videos':[video_path],
-               'copy_videos':copy_videos,
-               'working_directory':working_directory}
+    dlc_opt = {'project': task_name[0] + label,
+               'experimenter': experimenter[0],
+               'videos': [video_path],
+               'copy_videos': copy_videos,
+               'working_directory': working_directory}
 
     dlc_config_fname = deeplabcut.create_new_project(**dlc_opt)
 
