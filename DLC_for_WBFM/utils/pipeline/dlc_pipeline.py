@@ -52,6 +52,7 @@ def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, w
     # OPTIMIZE: for now, requires re-preprocessing
     video_exists = []
     all_avi_fnames = []
+    print(f"Making videos for all centers: {all_center_slices}")
     for center in all_center_slices:
         # Make minimax video from btf
         this_avi_fname = _make_avi_name(center)
