@@ -3,6 +3,8 @@
 # Form implementation generated from reading ui file 'gui_raw.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.2
+import os
+
 import zarr
 from PyQt5 import QtCore, QtWidgets
 import argparse
@@ -52,7 +54,10 @@ class Ui_MainWindow(object):
 
             seg_fname = self.segment_cfg['output']['masks']
             if '.zarr' in seg_fname:
+                seg_fname = os.path.join(self.project_dir, seg_fname)
+                # print(f"Opening zarr segmentation at: {seg_fname}")
                 self.zarr_array = zarr.open(seg_fname, mode='r')
+                # print(f"Size: {self.zarr_array.shape}")
             else:
                 self.zarr_array = None
 
@@ -118,6 +123,7 @@ class Ui_MainWindow(object):
         self.modeSelectorBottom.setObjectName("modeSelector")
         possible_modes = ['green', 'red', 'ratio']
         [self.modeSelectorBottom.addItem(m) for m in possible_modes]
+        self.modeSelectorBottom.setCurrentText('ratio')
         self.dialsLayout.addWidget(self.modeSelectorBottom)
         self.modeSelectorBottom.currentIndexChanged.connect(self.update_only_traces)
 

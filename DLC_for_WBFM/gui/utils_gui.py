@@ -25,6 +25,10 @@ def get_cropped_frame(fname, t, num_slices, zxy, crop_sz, to_flip=False):
         if to_flip:
             dat_crop = np.flip(dat_crop, axis=2)
 
+    return _fix_dimension_for_plt(crop_sz, dat_crop)
+
+
+def _fix_dimension_for_plt(crop_sz, dat_crop):
     # Final output should be XYC
     if len(dat_crop.shape) == 3:
         if crop_sz is None:
@@ -32,8 +36,7 @@ def get_cropped_frame(fname, t, num_slices, zxy, crop_sz, to_flip=False):
             dat_crop = dat_crop[15]  # Remove z
         else:
             dat_crop = dat_crop[0]
-    # dat_crop = np.expand_dims(dat_crop, axis=-1)  # Add color channel
-    return dat_crop
+    return np.array(dat_crop)
 
 
 def get_crop_from_zarr(zarr_array, t, zxy, crop_sz):
@@ -44,11 +47,14 @@ def get_crop_from_zarr(zarr_array, t, zxy, crop_sz):
             start_slice, end_slice = z[0], z[-1]
         else:
             start_slice, end_slice = z[0], z[0] + 1
-        dat_crop = zarr_array[t, start_slice:end_slice, x[0]:x[-1], y[0]:y[-1]]
+        # print(f"Zarr size before crop: {zarr_array.shape}")
+        this_volume = np.array(zarr_array[t, ...])
+        dat_crop = this_volume[start_slice:end_slice, x[0]:x[-1], y[0]:y[-1]]
+        # print(f"Zarr size after crop: {dat_crop.shape}")
     else:
         dat_crop = zarr_array[t, :, :, :]
 
-    return np.array(dat_crop)
+    return _fix_dimension_for_plt(crop_sz, dat_crop)
 
 
 def array2qt(img):
