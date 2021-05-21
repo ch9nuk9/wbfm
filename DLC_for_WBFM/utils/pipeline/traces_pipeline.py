@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import tifffile
 from tqdm import tqdm
 import zarr
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
@@ -95,25 +96,25 @@ def get_traces_from_3d_tracks(segment_cfg,
     num_slices = project_cfg['dataset_params']['num_slices']
     mask_array = zarr.open(segment_cfg['output']['masks'])
     vol_opt = {'num_slices': num_slices, 'dtype': 'uint16'}
-    for i_volume in tqdm(frame_list):
-        # Prepare matches and locations
-        matches = all_matches[i_volume]
-        mdat = segmentation_metadata[i_volume]
-        all_seg_names = list(mdat['centroids'].keys())
-        all_zxy_dlc = _get_dlc_zxy(i_volume)
-        # Prepare mask (segmentation)
-        i_mask = i_volume - project_cfg['dataset_params']['start_volume']
-        # this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt) # TODO: can this read zarr directly?
-        this_mask_volume = mask_array[i_mask, ...]
-        this_green_volume = get_single_volume(green_fname, i_volume, **vol_opt)
-        is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
-        for i_dlc, i_seg, _ in matches:
-            _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg, i_volume,
-                                      is_mirrored, mdat, this_green_volume, this_mask_volume)
-
-            if DEBUG:
-                print("Single pass-through sucessful; did not write any files")
-                return
+    with tifffile.TiffFile(green_fname) as green_tifffile:
+        for i_volume in tqdm(frame_list):
+            # Prepare matches and locations
+            matches = all_matches[i_volume]
+            mdat = segmentation_metadata[i_volume]
+            all_seg_names = list(mdat['centroids'].keys())
+            all_zxy_dlc = _get_dlc_zxy(i_volume)
+            # Prepare mask (segmentation)
+            i_mask = i_volume - project_cfg['dataset_params']['start_volume']
+            # this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt) # TODO: can this read zarr directly?
+            this_mask_volume = mask_array[i_mask, ...]
+            this_green_volume = get_single_volume(green_tifffile, i_volume, **vol_opt)
+            is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
+            for i_dlc, i_seg, _ in matches:
+                _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg, i_volume,
+                                          is_mirrored, mdat, this_green_volume, this_mask_volume)
+                if DEBUG:
+                    print("Single pass-through sucessful; did not write any files")
+                    return
 
     # Save traces (red and green) and neuron names
     red_fname = Path('4-traces').joinpath('red_traces.h5')
