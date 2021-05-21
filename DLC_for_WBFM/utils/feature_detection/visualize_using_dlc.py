@@ -97,13 +97,13 @@ def build_dlc_annotation_all(clust_df, min_length, num_frames=1000,
     # all_bodyparts = np.asarray(clust_df['clust_ind'])
 
     neuron_ind = 1
-    opt = {'min_length':min_length,
-           'num_frames':num_frames,
-           'coord_names':coord_names,
-           'relative_imagenames':relative_imagenames,
-           'which_frame_subset':which_frame_subset,
-           'scorer':scorer,
-           'verbose':verbose-1}
+    opt = {'min_length': min_length,
+           'num_frames': num_frames,
+           'coord_names': coord_names,
+           'relative_imagenames': relative_imagenames,
+           'which_frame_subset': which_frame_subset,
+           'scorer': scorer,
+           'verbose': verbose-1}
     for i, row in tqdm(clust_df.iterrows(), total=clust_df.shape[0]):
         opt['neuron_ind'] = neuron_ind
         ind = row['clust_ind']

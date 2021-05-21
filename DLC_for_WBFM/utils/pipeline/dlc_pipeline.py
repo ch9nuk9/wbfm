@@ -105,13 +105,14 @@ def _initialize_project_from_btf(all_avi_fnames, all_dlc_configs, center, dlc_op
     png_opt['dlc_config_fname'] = this_dlc_config
     png_opt['vid_fname'] = this_avi_fname
     ann_fname = training_data_from_annotations(**png_opt)[1]
-    # Synchronize the dlc_config with the annotations
-    csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2, to_add_skeleton=True)
-    # Format the training data
-    deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
-    update_pose_config(this_dlc_config)
-    # Save to list
-    all_dlc_configs.append(this_dlc_config)
+    if ann_fname is not None:
+        # Synchronize the dlc_config with the annotations
+        csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2, to_add_skeleton=True)
+        # Format the training data
+        deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
+        update_pose_config(this_dlc_config)
+        # Save to list
+        all_dlc_configs.append(this_dlc_config)
 
 
 def _get_frames_for_dlc_training(DEBUG, config, df):
@@ -220,8 +221,8 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     i_neuron = 0
     for dlc_config in all_dlc_configs:
         i_neuron = _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict)
+    final_df = _process_duplicates_to_final_df(all_dfs)
 
-    final_df = pd.concat(all_dfs, axis=1)
     # Collect 2d data
     # i.e. just add the z coordinate to it
     # For some reason, the concat after adding z was broken :(
@@ -243,6 +244,12 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     return final_df
 
 
+def _process_duplicates_to_final_df(all_dfs):
+    # TODO: process repeats to create a final position
+    final_df = pd.concat(all_dfs, axis=1)
+    return final_df
+
+
 def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict):
     dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
     video_list = list(dlc_cfg['video_sets'].keys())
@@ -252,23 +259,24 @@ def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2
     except IndexError:
         # Doesn't append anything to all_dfs
         print(f"No neurons found; skipping project {dlc_config}")
-        return
+        return i_neuron
     # Get data for later use
     df_fname = get_annotations_from_dlc_config(dlc_config)
     if DEBUG:
         print(f"Using 2d annotations: {df_fname}")
-    # Remove scorer and rename neurons
     df = pd.read_hdf(df_fname)
     df_scorer = df.columns.values[0][0]
     df = df[df_scorer]
-    i_neuron_new = i_neuron + len(df.columns.levels[0])
-    neuron_range = range(i_neuron, i_neuron_new)
-    i_neuron = i_neuron_new
-    new_names = [f'neuron{i}' for i in neuron_range]
+    # TODO: combine neurons that are the same
+    new_names = df.columns.levels[0]  # Do NOT rename neurons
+    # i_neuron_new = i_neuron + len(df.columns.levels[0])
+    # neuron_range = range(i_neuron, i_neuron_new)
+    # i_neuron = i_neuron_new
+    # new_names = [f'neuron{i}' for i in neuron_range]
+    # df.columns.set_levels(new_names, level=0, inplace=True)
+    # Output (modified inplace)
     z = get_z_from_dlc_name(dlc_config)
     neuron2z_dict.update({n: z for n in new_names})
-    df.columns.set_levels(new_names, level=0, inplace=True)
     all_dfs.append(df)
-
     return i_neuron
 

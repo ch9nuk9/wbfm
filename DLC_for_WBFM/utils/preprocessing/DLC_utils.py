@@ -57,11 +57,11 @@ def create_dlc_project(task_name,
     """
 
     # Force shorter name
-    dlc_opt = {'project':task_name[0] + label,
-               'experimenter':experimenter[0],
-               'videos':[video_path],
-               'copy_videos':copy_videos,
-               'working_directory':working_directory}
+    dlc_opt = {'project': task_name[0] + label,
+               'experimenter': experimenter[0],
+               'videos': [video_path],
+               'copy_videos': copy_videos,
+               'working_directory': working_directory}
 
     dlc_config_fname = deeplabcut.create_new_project(**dlc_opt)
 
@@ -254,7 +254,7 @@ def training_data_from_annotations(vid_fname,
     new_dlc_df = build_dlc_annotation_all(subset_df, **opt)
     if new_dlc_df is None:
         print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
-        return None
+        return None, None
 
     # Save annotations using DLC-style names
     data_dir = Path(dlc_config_fname).parent.joinpath('labeled-data')
