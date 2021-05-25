@@ -73,23 +73,27 @@ def segment_video_using_config_3d(_config):
            'preprocessing_settings': preprocessing_settings,
            'sd_model': sd_model, 'verbose': verbose}
 
+    with tifffile.TiffFile(video_path) as video_stream:
+        for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list)-1):
+            segment_and_save3d(i_rel + 1, i_abs, **opt, video_path=video_stream)
+
     # Parallel version: threading
-    keras_lock = threading.Lock()
-    read_lock = threading.Lock()
-    opt['keras_lock'] = keras_lock
-    opt['read_lock'] = read_lock
-
-    with tqdm(total=num_frames - 1) as pbar:
-        with tifffile.TiffFile(video_path) as video_stream:
-            def parallel_func(i_both):
-                i_out, i_vol = i_both
-                segment_and_save3d(i_out + 1, i_vol, video_path=video_stream, **opt)
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-                futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
-                for future in concurrent.futures.as_completed(futures):
-                    future.result()
-                    pbar.update(1)
+    # keras_lock = threading.Lock()
+    # read_lock = threading.Lock()
+    # opt['keras_lock'] = keras_lock
+    # opt['read_lock'] = read_lock
+    #
+    # with tqdm(total=num_frames - 1) as pbar:
+    #     with tifffile.TiffFile(video_path) as video_stream:
+    #         def parallel_func(i_both):
+    #             i_out, i_vol = i_both
+    #             segment_and_save3d(i_out + 1, i_vol, video_path=video_stream, **opt)
+    #
+    #         with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+    #             futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
+    #             for future in concurrent.futures.as_completed(futures):
+    #                 future.result()
+    #                 pbar.update(1)
 
     # saving metadata and settings
     with open(metadata_fname, 'wb') as meta_save:
