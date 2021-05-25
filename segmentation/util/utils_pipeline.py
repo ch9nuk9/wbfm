@@ -239,10 +239,14 @@ def segment_and_save2d(i, i_volume, masks_zarr, metadata, num_slices, opt_postpr
 
 
 def segment_and_save3d(i, i_volume, masks_zarr, metadata, num_slices, preprocessing_settings,
-                       sd_model, verbose, video_path, keras_lock, read_lock):
+                       sd_model, verbose, video_path, keras_lock=None, read_lock=None):
     volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
-    with keras_lock:  # Keras is not thread-safe in the end
+    if keras_lock is None:
         final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+    else:
+        with keras_lock:  # Keras is not thread-safe in the end
+            final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+
     save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
 
 
