@@ -16,7 +16,7 @@
 
 # update:  conda env update -f DLC-preprocessing.yaml
 
-name: DLC-for-WBFM
+name: DLC-for-WBFM-cluster
 channels:
   - conda-forge
   - defaults
