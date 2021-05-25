@@ -15,4 +15,4 @@ GREEN_PATH="/groups/zimmer/shared_projects/wbfm/dat/immobilized_with_WBFM_hardwa
 
 # Actually run
 COMMAND="scripts/0-create_new_project.py"
-python $COMMAND with project_dir=$PROJECT_DIR red_bigtiff_fname=$RED_PATH green_bigtiff_fname=$GREEN_PATH experimenter=EXPERIMENTER
+python $COMMAND with project_dir=$PROJECT_DIR red_bigtiff_fname=$RED_PATH green_bigtiff_fname=$GREEN_PATH experimenter=$EXPERIMENTER
