@@ -41,3 +41,6 @@ dependencies:
     - tifffile
     - tensorflow-gpu==1.15.5
     - deeplabcut[gui]
+    - pyqt5
+    - pyqt5-tools
+    - napari[all]

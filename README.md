@@ -66,11 +66,11 @@ python $COMMAND with project_dir=./scratch red_bigtiff_fname=$RED_PATH green_big
 This is the most complicated step, and I recommend that you create a bash script.
 An example can be found at:
 
-/DLC_for_WBFM/scripts/0-create_new_project-EXAMPLE.sh
+/DLC_for_WBFM/scripts/0-create_new_project-windows-EXAMPLE.sh
 
 Speed: Fast
 
-Output: new project folder with the date, with 4 numbered subfolders
+Output: new project folder with project_config.yaml, and with 4 numbered subfolders
 
 ### Segmentation
 
