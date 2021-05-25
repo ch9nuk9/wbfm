@@ -129,9 +129,6 @@ def segment_with_stardist_3d(vol, model=None, verbose=0):
         3D array with segmented masks. Each mask should have a unique ID/value.
     """
 
-    if model is None:
-        model = get_stardist_model('charlie_3d')
-
     if verbose >= 1:
         print(f'Start of 3D segmentation')
 
