@@ -245,9 +245,6 @@ class Ui_MainWindow(object):
                 update_funcs.extend([self.update_segmentation, self.update_red, self.update_green])
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
                 futures = executor.map(lambda f: f(), update_funcs)
-                # print([f.result() for f in futures])
-            # for func in update_funcs:
-            #     func()
 
     def update_only_traces(self):
         with safe_cd(self.project_dir):
