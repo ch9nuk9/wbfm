@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import napari
+import zarr
 from PyQt5 import QtCore, QtGui, QtWidgets
 from DLC_for_WBFM.gui.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
@@ -34,7 +35,7 @@ class Ui_MainWindow(object):
         # Load project path
         self.is_loaded = False
         self.project_dir = None
-        self._project_file = project_config
+        self.project_file = project_config
 
         self.pushButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.pushButton.setObjectName("pushButton")
@@ -83,9 +84,11 @@ class Ui_MainWindow(object):
         self.tracesProgress.setProperty("value", 0)
         self.tracesProgress.setObjectName("tracesProgress")
         self.gridLayout.addWidget(self.tracesProgress, 4, 1, 1, 1)
-        self.pushButton_2 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton_2.setObjectName("pushButton_2")
-        self.gridLayout.addWidget(self.pushButton_2, 1, 2, 1, 1)
+
+        self.segVisButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.segVisButton.setObjectName("pushButton_2")
+        self.segVisButton.clicked.connect(self.napari_for_masks)
+        self.gridLayout.addWidget(self.segVisButton, 1, 2, 1, 1)
         self.pushButton_3 = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.pushButton_3.setObjectName("pushButton_3")
         self.gridLayout.addWidget(self.pushButton_3, 2, 2, 1, 1)
@@ -132,7 +135,7 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "Step"))
         self.label_2.setText(_translate("MainWindow", "Status"))
         self.label_8.setText(_translate("MainWindow", "4. Traces"))
-        self.pushButton_2.setText(_translate("MainWindow", "SegVis"))
+        self.segVisButton.setText(_translate("MainWindow", "SegVis"))
         self.pushButton_3.setText(_translate("MainWindow", "TrainingVis"))
         self.pushButton_4.setText(_translate("MainWindow", "TrackingVis"))
         self.pushButton_5.setText(_translate("MainWindow", "TracesVis"))
@@ -144,7 +147,7 @@ class Ui_MainWindow(object):
 
     def load_project_file(self):
         ex = FileDialog()
-        self._project_file = ex.fileName
+        self.project_file = ex.fileName
 
     @property
     def project_file(self):
@@ -159,32 +162,36 @@ class Ui_MainWindow(object):
         if is_valid:
             self.is_loaded = True
             self._project_file = value
-            self._load_config_files(value)
-            print(f"Loaded project: {self.project_file}")
+            print(f"Loading project: {self.project_file}")
+            self.project_dir = Path(value).parent
+            with safe_cd(self.project_dir):
+                self._load_config_files(value)
         else:
             print(f"Project {value} is not a valid project")
 
-    def check_valid_project(self):
+    def check_valid_project(self, value):
         return True  # TODO
 
     def napari_for_masks(self):
         with safe_cd(self.project_dir):
-            seg_path = self.segment_cfg['output']['masks']
-            napari.view_labels(seg_path)
+            # self.viewer = napari.Viewer()
+            self.viewer = napari.view_labels(self.segment_zarr, ndisplay=3)
+            self.viewer.show()
 
 
-    def _load_config_files(self, cfg):
+    def _load_config_files(self, project_config):
         cfg = load_config(project_config)
-        self.project_dir = Path(project_config).parent
         self.cfg = cfg
         self.traces_cfg = load_config(cfg['subfolder_configs']['traces'])
         self.segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
+        seg_path = self.segment_cfg['output']['masks']
+        self.segment_zarr = zarr.open(seg_path)
         self.tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
 
 
 
 parser = argparse.ArgumentParser(description='Build GUI with a project')
-parser.add_argument('project_config', default=None,
+parser.add_argument('--project_config', default=None,
                     help='path to config file')
 parser.add_argument('--DEBUG', default=False,
                     help='path to config file')
