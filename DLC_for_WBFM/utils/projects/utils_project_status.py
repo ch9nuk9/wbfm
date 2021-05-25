@@ -1,8 +1,7 @@
 import os.path as osp
 from pathlib import Path
 
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, get_subfolder, get_project_of_substep
 
 
 def _load_cfg(project_path):
@@ -17,14 +16,18 @@ def check_segmentation(project_path):
 
     try:
         with safe_cd(project_dir):
-            this_cfg = load_config(cfg['subfolder_configs']['segmentation'])
-            all_to_check = [
-                this_cfg['output']['masks'],
-                this_cfg['output']['metadata']
-            ]
-            all_exist = map(osp.exists, all_to_check)
+            segment_fname = cfg['subfolder_configs']['segmentation']
+            this_cfg = load_config(segment_fname)
+            # Segmentation subfolder may be from a different project
+            other_project = get_project_of_substep(segment_fname)
+            with safe_cd(other_project):
+                all_to_check = [
+                    this_cfg['output']['masks'],
+                    this_cfg['output']['metadata']
+                ]
+                all_exist = map(osp.exists, all_to_check)
 
-            return all(all_exist)
+                return all(all_exist)
     except AssertionError:
         return False
 

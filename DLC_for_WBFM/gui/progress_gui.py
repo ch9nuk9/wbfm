@@ -15,7 +15,7 @@ import napari
 import zarr
 from PyQt5 import QtCore, QtGui, QtWidgets
 from DLC_for_WBFM.gui.file_dialog_widget import FileDialog
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_subfolder, get_project_of_substep
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
 
@@ -217,11 +217,15 @@ class Ui_MainWindow(object):
     def _load_config_files(self, project_config):
         cfg = load_config(project_config)
         self.cfg = cfg
-        self.traces_cfg = load_config(cfg['subfolder_configs']['traces'])
-        self.segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
-        seg_path = self.segment_cfg['output']['masks']
-        self.segment_zarr = zarr.open(seg_path)
+        segment_fname = cfg['subfolder_configs']['segmentation']
+        self.segment_cfg = load_config(segment_fname)
+        # The segmentation path may be different from the overall folder
+        other_project = get_project_of_substep(segment_fname)
+        with safe_cd(other_project):
+            seg_path = self.segment_cfg['output']['masks']
+            self.segment_zarr = zarr.open(seg_path)
         self.tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
+        self.traces_cfg = load_config(cfg['subfolder_configs']['traces'])
 
 
     def napari_for_masks(self):

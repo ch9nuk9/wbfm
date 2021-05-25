@@ -28,19 +28,6 @@ def build_project_structure(_config):
     project_fname = Path(project_fname).resolve()
     edit_config(str(project_fname), _config)
 
-    # # Update certain subconfigs to have absolute paths
-    # subfolder = Path(abs_dir_name).joinpath('segmentation')
-    # to_edit = subfolder.joinpath('segment_config.yaml')
-    # new_abs_path = subfolder.joinpath('preprocessing_config.yaml')
-    # updates = {'preprocessing_config': str(new_abs_path)}
-    # edit_config(str(to_edit), updates, DEBUG=True)
-    #
-    # subfolder = Path(abs_dir_name).joinpath('training_data')
-    # to_edit = subfolder.joinpath('training_data_config.yaml')
-    # new_abs_path = subfolder.joinpath('preprocessing_config.yaml')
-    # updates = {'preprocessing_config': str(new_abs_path)}
-    # edit_config(str(to_edit), updates)
-
 
 #####################
 # Filename utils
@@ -161,3 +148,12 @@ def synchronize_train_config(project_path, train_cfg):
     train_cfg['tracker_params'].update(updates)
 
     return train_cfg
+
+
+def get_subfolder(project_path, subfolder):
+    project_cfg = load_config(project_path)
+    return Path(project_cfg['subfolder_configs'][subfolder]).parent
+
+
+def get_project_of_substep(subfolder_path):
+    return Path(Path(subfolder_path).parent).parent
