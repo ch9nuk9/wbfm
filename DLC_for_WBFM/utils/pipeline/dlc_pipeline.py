@@ -1,5 +1,7 @@
 import concurrent.futures
 
+import zarr
+
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
@@ -31,7 +33,8 @@ def create_only_videos(vid_fname, config, verbose=1, DEBUG=False):
     which_frames = None
     all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(DEBUG, all_center_slices, config,
                                                                                    verbose, vid_fname, which_frames)
-    def parallel_func(i, center):
+    def parallel_func(i_center):
+        i, center = i_center
         _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists)
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
         futures = executor.map(parallel_func, enumerate(all_center_slices))
@@ -192,11 +195,21 @@ def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames=None)
     if DEBUG:
         # Make a much shorter video
         num_total_frames = which_frames[-1] + 1
-    preprocessed_dat = np.zeros((num_total_frames, num_slices) + sz, dtype='uint16')
+    chunk_sz = (num_slices, ) + sz
+    total_sz = (num_total_frames, ) + chunk_sz
+    # preprocessed_dat = np.zeros(total_sz, dtype='uint16'
+    preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype='uint16',
+                                  synchronizer=zarr.ThreadSynchronizer())
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
-    for i in tqdm(frame_list):
-        preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_fname)
+    with tifffile.TiffFile(vid_fname, 'r') as vid_stream:
+        def parallel_func(i):
+            preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(frame_list)) as executor:
+            futures = executor.map(parallel_func, frame_list)
+            [f.result() for f in futures]
+        # for i in tqdm(frame_list):
+        #     preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream)
     return preprocessed_dat, vid_opt
 
 
