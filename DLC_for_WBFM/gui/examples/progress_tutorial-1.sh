@@ -1,5 +1,4 @@
 
-#PROJECT="Y:/shared_projects/wbfm/dlc_stacks/Charlie-immobilized-2021_05_11/project_config.yaml"
 PROJECT="Y:/shared_projects/wbfm/tutorial/Charlie-test-2021_05_25/project_config.yaml"
 COMMAND="gui/progress_gui.py"
 

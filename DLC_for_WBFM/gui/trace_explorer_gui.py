@@ -173,9 +173,9 @@ class Ui_MainWindow(object):
         ########################
         # Segmentation
         ########################
-        sc = MplCanvas(self, width=5, height=4, dpi=100)
-        self.segFocusPlt = sc
-        self.horizontalLayout_6.addWidget(self.segPlt)
+        # sc = MplCanvas(self, width=5, height=4, dpi=100)
+        # self.segFocusPlt = sc
+        # self.horizontalLayout_6.addWidget(self.segFocusPlt)
 
         sc = MplCanvas(self, width=5, height=4, dpi=100)
         self.segPlt = sc
@@ -350,11 +350,11 @@ class Ui_MainWindow(object):
         ax.set_title(title)
 
         # Also display only the current neuron
-        ax = self.segFocusPlt.fig.canvas.axes
-        ax.imshow(frame)
-        current_neuron = self.neuronSelector.currentText()
-        title = f"Neuron {current_neuron}"  # at centroid {self.current_centroid}"
-        ax.set_title(title)
+        # ax = self.segFocusPlt.fig.canvas.axes
+        # ax.imshow(frame)
+        # current_neuron = self.neuronSelector.currentText()
+        # title = f"Neuron {current_neuron}"  # at centroid {self.current_centroid}"
+        # ax.set_title(title)
 
         self.segPlt.fig.canvas.draw()
 
