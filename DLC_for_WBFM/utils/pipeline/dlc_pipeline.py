@@ -20,6 +20,26 @@ import deeplabcut
 ### For use with training a stack of DLC (step 3 of pipeline)
 ###
 
+def create_only_videos(vid_fname, config, verbose=1, DEBUG=False):
+    """
+    Shortened version of create_dlc_training_from_tracklets() that only creates the videos
+
+    Does not require that training data is present; intended to be used when reusing other networks
+    """
+
+    all_center_slices = config['training_data_2d']['all_center_slices']
+    which_frames = None
+    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(DEBUG, all_center_slices, config,
+                                                                                   verbose, vid_fname, which_frames)
+    def parallel_func(i, center):
+        _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
+        futures = executor.map(parallel_func, enumerate(all_center_slices))
+        all_avi_fnames = [f.result() for f in futures]
+
+    return all_avi_fnames
+
+
 def create_dlc_training_from_tracklets(vid_fname,
                                        config,
                                        scorer=None,
@@ -58,7 +78,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     edit_config(config['self_path'], config)
 
 
-def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, which_frames):
+def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, which_frames=None):
     # OPTIMIZE: for now, requires re-preprocessing
     video_exists = []
     all_avi_fnames = []
@@ -101,11 +121,7 @@ def _define_project_options(config, df, scorer, task_name):
 
 def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
                                  preprocessed_dat, vid_opt, video_exists):
-    # Make or get video
-    this_avi_fname = all_avi_fnames[i]
-    if not video_exists[i]:
-        vid_opt['out_fname'] = this_avi_fname
-        write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
+    this_avi_fname = _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists)
     # Make dlc project
     dlc_opt['label'] = f"-c{center}"
     dlc_opt['video_path'] = this_avi_fname
@@ -125,6 +141,15 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
         return this_dlc_config
     else:
         return None
+
+
+def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists):
+    # Make or get video
+    this_avi_fname = all_avi_fnames[i]
+    if not video_exists[i]:
+        vid_opt['out_fname'] = this_avi_fname
+        write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
+    return this_avi_fname
 
 
 def _get_frames_for_dlc_training(DEBUG, config, df):
@@ -156,7 +181,7 @@ def _make_avi_name(center):
     return fname
 
 
-def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames):
+def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames=None):
     sz, vid_opt = _get_video_options(config, vid_fname)
     if verbose >= 1:
         print("Preprocessing data, this could take a while...")
