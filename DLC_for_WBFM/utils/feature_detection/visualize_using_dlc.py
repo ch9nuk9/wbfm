@@ -2,7 +2,7 @@ import deeplabcut
 from deeplabcut.utils.make_labeled_video import CreateVideo
 from deeplabcut.utils.video_processor import VideoProcessorCV as vp
 from deeplabcut.utils import auxiliaryfunctions
-from DLC_for_WBFM.bin.configuration_definition import load_config, DLCForWBFMTracking, save_config
+from DLC_for_WBFM.config.class_configuration import load_config, DLCForWBFMTracking, save_config
 import os
 import tifffile
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names

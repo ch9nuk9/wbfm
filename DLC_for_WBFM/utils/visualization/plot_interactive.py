@@ -1,11 +1,8 @@
-from DLC_for_WBFM.utils.visualization.plot_traces import *
-from DLC_for_WBFM.utils.visualization.plot_context_utils import *
-from DLC_for_WBFM.utils.visualization.plot_context_utils import _plot_video_crop_trace
 import ipywidgets as widgets
-from ipywidgets import interact, interactive, fixed, interact_manual
+from ipywidgets import interact
 import matplotlib.pyplot as plt
 import numpy as np
-from DLC_for_WBFM.bin.configuration_definition import *
+from DLC_for_WBFM.config.class_configuration import *
 from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_from_ometiff_virtual
 
 

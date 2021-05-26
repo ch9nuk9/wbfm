@@ -1,11 +1,8 @@
 import numpy as np
 import tifffile
 import os
-from pathlib import Path
-import platform
 import cv2
-from DLC_for_WBFM.bin.configuration_definition import load_config, build_avi_fnames
-from tqdm import tqdm
+from DLC_for_WBFM.config.class_configuration import load_config, build_avi_fnames
 
 import warnings
 

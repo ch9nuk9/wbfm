@@ -1,14 +1,10 @@
-import numpy as np
-import pickle
-import os
-import time
 from dNMF.Demix.dNMF import dNMF
 import torch
 import h5py
 import pandas as pd
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
-from DLC_for_WBFM.bin.configuration_definition import *
+from DLC_for_WBFM.config.class_configuration import *
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 ##
