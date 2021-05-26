@@ -335,7 +335,7 @@ def get_z_from_dlc_name(name):
 def get_annotations_from_dlc_config(dlc_config):
     video_dir = Path(dlc_config).with_name('videos')
     fnames = os.listdir(video_dir)
-    annotation_names = [f for f in fnames if '.h5' in f]
+    annotation_names = [f for f in fnames if f.endswith('.h5')]
     if len(annotation_names) > 1:
         print(f"Found more than one annotation for {dlc_config}; taking first one")
     annotation_names = annotation_names[0]
@@ -343,11 +343,14 @@ def get_annotations_from_dlc_config(dlc_config):
     return Path(video_dir).joinpath(annotation_names)
 
 
-def get_annotations_matching_video_in_folder(video_dir, video_fname):
-    fnames = os.listdir(video_dir)
-    annotation_names = [f for f in fnames if video_fname in f]
+def get_annotations_matching_video_in_folder(annotation_dir, video_fname):
+    fnames = os.listdir(annotation_dir)
+    video_stem = Path(video_fname).stem # TODO: can cause errors if center1 and center10 both exist
+    annotation_names = [f for f in fnames if (f.startswith(video_stem) and f.endswith('.h5'))]
     if len(annotation_names) > 1:
         print(f"Found more than one annotation for {video_fname}; taking first one")
+    elif len(annotation_names) == 0:
+        raise FileNotFoundError(f"Found no annotations for video {video_fname}")
     annotation_names = annotation_names[0]
     print(f"Using found annotations: {annotation_names}")
-    return Path(video_dir).joinpath(annotation_names)
+    return Path(annotation_dir).joinpath(annotation_names)
