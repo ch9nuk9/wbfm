@@ -34,6 +34,7 @@ def create_only_videos(vid_fname, config, verbose=1, DEBUG=False):
     which_frames = None
     all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(DEBUG, all_center_slices, config,
                                                                                    verbose, vid_fname, which_frames)
+
     def parallel_func(i_center):
         i, center = i_center
         _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists)
@@ -201,17 +202,17 @@ def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames=None)
     # preprocessed_dat = np.zeros(total_sz, dtype='uint16'
     preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype='uint16',
                                   synchronizer=zarr.ThreadSynchronizer())
-    read_lock = threading.Lock()
+    # read_lock = threading.Lock()
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
     with tifffile.TiffFile(vid_fname) as vid_stream:
-        def parallel_func(i):
-            preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(frame_list)) as executor:
-            futures = executor.map(parallel_func, frame_list)
-            [f.result() for f in futures]
-        # for i in tqdm(frame_list):
-        #     preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream)
+        # def parallel_func(i):
+        #     preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=len(frame_list)) as executor:
+        #     futures = executor.map(parallel_func, frame_list)
+        #     [f.result() for f in futures]
+        for i in tqdm(frame_list):
+            preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream)
     return preprocessed_dat, vid_opt
 
 
