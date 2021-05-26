@@ -9,12 +9,11 @@ import zarr
 from PyQt5 import QtCore, QtWidgets
 import argparse
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.gui.utils_gui import get_cropped_frame, get_crop_from_zarr
+from DLC_for_WBFM.gui.utils.utils_gui import get_cropped_frame, get_crop_from_zarr
 import pandas as pd
 import sys
 from pathlib import Path
 import matplotlib
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 import numpy as np

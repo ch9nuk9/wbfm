@@ -13,9 +13,9 @@ from pathlib import Path
 
 import napari
 import zarr
-from PyQt5 import QtCore, QtGui, QtWidgets
-from DLC_for_WBFM.gui.file_dialog_widget import FileDialog
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_subfolder, get_project_of_substep
+from PyQt5 import QtCore, QtWidgets
+from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_project_of_substep
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
 from DLC_for_WBFM.gui import traces_gui
@@ -37,10 +37,15 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName("verticalLayout")
 
         # Top
-        self.pushButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(self.load_project_file)
-        self.verticalLayout.addWidget(self.pushButton)
+        self.createProjectButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.createProjectButton.setObjectName("createButton")
+        self.createProjectButton.clicked.connect(self.create_new_project)
+        self.verticalLayout.addWidget(self.createProjectButton)
+
+        self.loadProjectButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.loadProjectButton.setObjectName("loadButton")
+        self.loadProjectButton.clicked.connect(self.load_project_file)
+        self.verticalLayout.addWidget(self.loadProjectButton)
 
         self.checkButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.checkButton.setObjectName("checkButton")
@@ -142,7 +147,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.pushButton.setText(_translate("MainWindow", "Load Project"))
+        self.createProjectButton.setText(_translate("MainWindow", "Create Project"))
+        self.loadProjectButton.setText(_translate("MainWindow", "Load Project"))
         self.checkButton.setText(_translate("MainWindow", "Check Project Status"))
         self.label_4.setText(_translate("MainWindow", "Do"))
         self.label_7.setText(_translate("MainWindow", "3. Tracking"))
@@ -164,6 +170,11 @@ class Ui_MainWindow(object):
     def load_project_file(self):
         ex = FileDialog()
         self.project_file = ex.fileName
+
+    def create_new_project(self):
+        # Opens new GUI dialog box
+        ex = FileDialog()
+
 
     @property
     def project_file(self):
@@ -187,6 +198,7 @@ class Ui_MainWindow(object):
             print(f"Project {value} is not a valid project")
 
     def check_valid_project(self, value):
+        # TODO
         return os.path.exists(value)
 
     def check_project_status(self):

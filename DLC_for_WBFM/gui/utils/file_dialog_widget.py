@@ -8,8 +8,9 @@ from PyQt5.QtGui import QIcon
 
 class FileDialog(QWidget):
 
-    def __init__(self):
+    def __init__(self, file_not_folder=True):
         super().__init__()
+        self.file_not_folder = file_not_folder
         self.title = 'PyQt5 file dialogs - pythonspot.com'
         self.left = 10
         self.top = 10
@@ -21,9 +22,10 @@ class FileDialog(QWidget):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
-        self.openFileNameDialog()
-        # self.openFileNamesDialog()
-        # self.saveFileDialog()
+        if self.file_not_folder:
+            self.openFileNameDialog()
+        else:
+            self.openFolderDialog()
 
         self.show()
 
@@ -32,6 +34,11 @@ class FileDialog(QWidget):
         options |= QFileDialog.DontUseNativeDialog
         self.fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                        "All Files (*);;Python Files (*.py)", options=options)
+
+    def openFolderDialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        self.fileName = QFileDialog.getExistingDirectory(self, "Select Directory", "")
 
     # def openFileNamesDialog(self):
     #     options = QFileDialog.Options()
