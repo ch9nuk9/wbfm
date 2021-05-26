@@ -31,7 +31,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
 
 class Ui_MainWindow(object):
-    def setupUi(self, MainWindow, cfg, DEBUG):
+    def setupUi(self, MainWindow, project_config, DEBUG):
         # super(MainWindow, self).__init__()
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1084, 754)
@@ -39,7 +39,7 @@ class Ui_MainWindow(object):
         ########################
         # Load Configs
         ########################
-        cfg, traces_cfg, tracking_cfg = self._load_config_files(cfg)
+        cfg, traces_cfg, tracking_cfg = self._load_config_files(project_config)
         ########################
         # Load Data
         ########################
@@ -208,7 +208,7 @@ class Ui_MainWindow(object):
 
         self.update_all_panels()
 
-    def _load_config_files(self, cfg):
+    def _load_config_files(self, project_config):
         cfg = load_config(project_config)
         self.project_dir = Path(project_config).parent
         self.cfg = cfg
@@ -390,15 +390,15 @@ class Ui_MainWindow(object):
         return crop_frame
 
 
-parser = argparse.ArgumentParser(description='Build GUI with a project')
-parser.add_argument('project_config',
-                    help='path to config file')
-parser.add_argument('--DEBUG', default=False,
-                    help='path to config file')
-
-args = parser.parse_args()
-
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Build GUI with a project')
+    parser.add_argument('project_config',
+                        help='path to config file')
+    parser.add_argument('--DEBUG', default=False,
+                        help='path to config file')
+    args = parser.parse_args()
+
     # Basic setup
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()

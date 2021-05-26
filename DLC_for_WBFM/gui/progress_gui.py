@@ -18,6 +18,7 @@ from DLC_for_WBFM.gui.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_subfolder, get_project_of_substep
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
+from DLC_for_WBFM.gui import traces_gui
 
 
 class Ui_MainWindow(object):
@@ -101,9 +102,10 @@ class Ui_MainWindow(object):
         self.pushButton_4 = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.pushButton_4.setObjectName("pushButton_4")
         self.gridLayout.addWidget(self.pushButton_4, 3, 2, 1, 1)
-        self.pushButton_5 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton_5.setObjectName("pushButton_5")
-        self.gridLayout.addWidget(self.pushButton_5, 4, 2, 1, 1)
+        self.tracesVisButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.tracesVisButton.setObjectName("pushButton_5")
+        self.tracesVisButton.clicked.connect(self.open_traces_gui)
+        self.gridLayout.addWidget(self.tracesVisButton, 4, 2, 1, 1)
 
         # Do step buttons
         self.segmentationButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
@@ -118,7 +120,6 @@ class Ui_MainWindow(object):
         self.tracesButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.tracesButton.setObjectName("pushButton_9")
         self.gridLayout.addWidget(self.tracesButton, 4, 3, 1, 1)
-
 
         self.verticalLayout.addLayout(self.gridLayout)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -152,13 +153,13 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "Status"))
         self.label_8.setText(_translate("MainWindow", "4. Traces"))
         self.segVisButton.setText(_translate("MainWindow", "SegVis"))
-        self.pushButton_3.setText(_translate("MainWindow", "TrainingVis"))
-        self.pushButton_4.setText(_translate("MainWindow", "TrackingVis"))
-        self.pushButton_5.setText(_translate("MainWindow", "TracesVis"))
-        self.segmentationButton.setText(_translate("MainWindow", "Segment"))
-        self.trainingButton.setText(_translate("MainWindow", "Make Training"))
-        self.trackingButton.setText(_translate("MainWindow", "Track"))
-        self.tracesButton.setText(_translate("MainWindow", "Make Traces"))
+        self.pushButton_3.setText(_translate("MainWindow", "TODO-TrainingVis"))
+        self.pushButton_4.setText(_translate("MainWindow", "TODO-TrackingVis"))
+        self.tracesVisButton.setText(_translate("MainWindow", "TracesVis"))
+        self.segmentationButton.setText(_translate("MainWindow", "TODO-Segment"))
+        self.trainingButton.setText(_translate("MainWindow", "TODO-Make Training"))
+        self.trackingButton.setText(_translate("MainWindow", "TODO-Track"))
+        self.tracesButton.setText(_translate("MainWindow", "TODO-Make Traces"))
 
     def load_project_file(self):
         ex = FileDialog()
@@ -232,17 +233,27 @@ class Ui_MainWindow(object):
         self.viewer = napari.view_labels(self.segment_zarr, ndisplay=3)
         self.viewer.show()
 
+    def open_traces_gui(self):
 
+        self.traces_gui = QtWidgets.QMainWindow()
+        self.ui2 = traces_gui.Ui_MainWindow()
+        # Actually build window
+        # traces_config = self.cfg['subfolder_configs']['traces']
+        # other_project = get_project_of_substep(traces_config)
+        with safe_cd(self.project_dir):
+            self.ui2.setupUi(self.traces_gui, self.project_file, False)
+            self.traces_gui.show()
 
-parser = argparse.ArgumentParser(description='Build GUI with a project')
-parser.add_argument('--project_config', default=None,
-                    help='path to config file')
-parser.add_argument('--DEBUG', default=False,
-                    help='path to config file')
-
-args = parser.parse_args()
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Build GUI with a project')
+    parser.add_argument('--project_config', default=None,
+                        help='path to config file')
+    parser.add_argument('--DEBUG', default=False,
+                        help='path to config file')
+    args = parser.parse_args()
+
     # Basic setup
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
