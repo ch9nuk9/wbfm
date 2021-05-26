@@ -86,6 +86,18 @@ def create_dlc_training_from_tracklets(vid_fname,
 
 
 def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, which_frames=None):
+    all_avi_fnames, video_exists = _get_and_check_avi_filename(all_center_slices)
+    # IF videos are required, then prep the data
+    if all(video_exists):
+        print("All required videos exist; no preprocessing necessary")
+        preprocessed_dat = []
+        _, vid_opt = _get_video_options(config, vid_fname)
+    else:
+        preprocessed_dat, vid_opt = _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames)
+    return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
+
+
+def _get_and_check_avi_filename(all_center_slices):
     # OPTIMIZE: for now, requires re-preprocessing
     video_exists = []
     all_avi_fnames = []
@@ -99,14 +111,7 @@ def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, w
             video_exists.append(True)
         else:
             video_exists.append(False)
-    # IF videos are required, then prep the data
-    if all(video_exists):
-        print("All required videos exist; no preprocessing necessary")
-        preprocessed_dat = []
-        _, vid_opt = _get_video_options(config, vid_fname)
-    else:
-        preprocessed_dat, vid_opt = _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames)
-    return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
+    return all_avi_fnames, video_exists
 
 
 def _define_project_options(config, df, scorer, task_name):
@@ -267,9 +272,11 @@ def train_all_dlc_from_config(config):
             pass
 
 
-def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
+def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=False):
     """
-    Applies trained DLC networks to full video and collects into 3d track
+    Applies trained DLC networks to full 2d videos and collects into 3d track
+
+    Can be used with the videos from the DLC projects, or external ones
     """
 
     all_dlc_configs = track_cfg['dlc_projects']['all_configs']
@@ -278,8 +285,16 @@ def make_3d_tracks_from_stack(track_cfg, DEBUG=False):
     all_dfs = []
     neuron2z_dict = {}
     i_neuron = 0
-    for dlc_config in all_dlc_configs:
-        i_neuron = _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict)
+    if use_dlc_project_videos:
+        external_videos = [None for _ in all_dlc_configs]
+    else:
+        all_center_slices = track_cfg['training_data_2d']['all_center_slices']
+        external_videos, videos_exist = _get_and_check_avi_filename(all_center_slices)
+        if not all(videos_exist):
+            print(list(zip(external_videos, videos_exist)))
+            raise FileExistsError("All avi files must exist in the main project; see 3a-alternate-only_make_videos.py")
+    for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
+        i_neuron = _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict, ext_video)
     final_df = _process_duplicates_to_final_df(all_dfs)
 
     # Collect 2d data
@@ -309,9 +324,10 @@ def _process_duplicates_to_final_df(all_dfs):
     return final_df
 
 
-def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict):
+def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict, external_video=None):
     dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
-    video_list = list(dlc_cfg['video_sets'].keys())
+    if external_video is None:
+        video_list = list(dlc_cfg['video_sets'].keys())
     # Works even if already analyzed; skips if empty
     try:
         deeplabcut.analyze_videos(dlc_config, video_list)
