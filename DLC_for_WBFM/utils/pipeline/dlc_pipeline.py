@@ -38,11 +38,14 @@ def create_only_videos(vid_fname, config, verbose=1, DEBUG=False):
     def parallel_func(i_center):
         i, center = i_center
         _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
-        # futures = executor.map(parallel_func, enumerate(all_center_slices))
-        # all_avi_fnames = [f.result() for f in futures]
-        result_futures = list(map(lambda x: executor.submit(parallel_func, x), enumerate(all_center_slices)))
-        all_avi_fnames = [f.result() for f in concurrent.futures.as_completed(result_futures)]
+
+    for i_center in tqdm(enumerate(all_center_slices)):
+        parallel_func(i_center)
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
+    #     # futures = executor.map(parallel_func, enumerate(all_center_slices))
+    #     # all_avi_fnames = [f.result() for f in futures]
+    #     result_futures = list(map(lambda x: executor.submit(parallel_func, x), enumerate(all_center_slices)))
+    #     all_avi_fnames = [f.result() for f in concurrent.futures.as_completed(result_futures)]
 
     return all_avi_fnames
 
