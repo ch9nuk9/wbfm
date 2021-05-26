@@ -1,5 +1,6 @@
 import concurrent.futures
 import threading
+from pathlib import Path
 
 import zarr
 
@@ -297,7 +298,7 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
             print(list(zip(external_videos, videos_exist)))
             raise FileExistsError("All avi files must exist in the main project; see 3a-alternate-only_make_videos.py")
     for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
-        i_neuron = _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict, ext_video)
+        i_neuron = _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict, [ext_video])
     final_df = _process_duplicates_to_final_df(all_dfs)
 
     # Collect 2d data
@@ -331,6 +332,8 @@ def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2
     dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
     if external_video is None:
         video_list = list(dlc_cfg['video_sets'].keys())
+    else:
+        video_list = str(Path(external_video).resolve())
     # Works even if already analyzed; skips if empty
     try:
         deeplabcut.analyze_videos(dlc_config, video_list)
