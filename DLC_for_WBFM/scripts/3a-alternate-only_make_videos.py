@@ -38,8 +38,6 @@ def initialize_dlc_stack(_config, _run):
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     opt = {}
-    opt['scorer'] = _config['project_cfg']['experimenter']
-    opt['task_name'] = _config['project_cfg']['experimenter']
     opt['verbose'] = _config['project_cfg']['other']['verbose']
     opt['DEBUG'] = _config['DEBUG']
 
