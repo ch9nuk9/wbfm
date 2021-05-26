@@ -10,12 +10,29 @@ import subprocess
 import sys
 
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QDialog
 
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 
 
-class CreateProjectDialog(object):
+class CreateProjectDialog(QDialog):
+
+    def __init__(self, MainWindow=None):
+        super().__init__()
+        self.title = 'Create New Project'
+        self.left = 10
+        self.top = 10
+        self.width = 640
+        self.height = 480
+
+        # self.project_foldername = None
+        # self.green_filename = None
+        # self.red_filename = None
+
+        if MainWindow is None:
+            MainWindow = QtWidgets.QMainWindow()
+        self.setupUi(MainWindow)
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
@@ -35,14 +52,12 @@ class CreateProjectDialog(object):
         self.projectLocationLabel = QtWidgets.QLabel(self.formLayoutWidget)
         self.projectLocationLabel.setObjectName("label_5")
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.projectLocationLabel)
-        self.project_foldername = None
         self.projectButton = QtWidgets.QPushButton(self.formLayoutWidget)
         self.projectButton.setObjectName("projectButton")
         self.projectButton.setText("Set Project Folder")
         self.projectButton.clicked.connect(self.load_project_foldername)
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.projectButton)
 
-        self.green_filename = None
         self.greenButton = QtWidgets.QPushButton(self.formLayoutWidget)
         self.greenButton.setObjectName("redButton")
         self.greenButton.setText("Load Green Dataset")
@@ -52,7 +67,6 @@ class CreateProjectDialog(object):
         self.greenLabel.setObjectName("label_4")
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.greenLabel)
 
-        self.red_filename = None
         self.redButton = QtWidgets.QPushButton(self.formLayoutWidget)
         self.redButton.setObjectName("redButton")
         self.redButton.setText("Load Red Dataset")
@@ -136,8 +150,8 @@ if __name__ == '__main__':
     # Basic setup
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    ui = CreateProjectDialog()
+    ui = CreateProjectDialog(MainWindow)
     # Actually build window
-    ui.setupUi(MainWindow)
+    # ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())

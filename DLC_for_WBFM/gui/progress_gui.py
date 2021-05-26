@@ -14,11 +14,13 @@ from pathlib import Path
 import napari
 import zarr
 from PyQt5 import QtCore, QtWidgets
+
+from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_project_of_substep
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
-from DLC_for_WBFM.gui import traces_gui
+from DLC_for_WBFM.gui import trace_explorer_gui
 
 
 class Ui_MainWindow(object):
@@ -147,7 +149,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.createProjectButton.setText(_translate("MainWindow", "Create Project"))
+        self.createProjectButton.setText(_translate("MainWindow", "TODO - Create Project"))
         self.loadProjectButton.setText(_translate("MainWindow", "Load Project"))
         self.checkButton.setText(_translate("MainWindow", "Check Project Status"))
         self.label_4.setText(_translate("MainWindow", "Do"))
@@ -173,7 +175,11 @@ class Ui_MainWindow(object):
 
     def create_new_project(self):
         # Opens new GUI dialog box
-        ex = FileDialog()
+        self.ex = CreateProjectDialog()
+        # self.ex.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.ex.exec()
+
+        self.project_file = os.path.join(self.ex.project_foldername, "project_config.yaml")
 
 
     @property
@@ -248,7 +254,7 @@ class Ui_MainWindow(object):
     def open_traces_gui(self):
 
         self.traces_gui = QtWidgets.QMainWindow()
-        self.ui2 = traces_gui.Ui_MainWindow()
+        self.ui2 = trace_explorer_gui.Ui_MainWindow()
         # Actually build window
         # traces_config = self.cfg['subfolder_configs']['traces']
         # other_project = get_project_of_substep(traces_config)
