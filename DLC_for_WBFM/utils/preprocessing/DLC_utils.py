@@ -337,7 +337,17 @@ def get_annotations_from_dlc_config(dlc_config):
     fnames = os.listdir(video_dir)
     annotation_names = [f for f in fnames if '.h5' in f]
     if len(annotation_names) > 1:
-        print(f"Found more than one annotation for {dlc_config}")
+        print(f"Found more than one annotation for {dlc_config}; taking first one")
+    annotation_names = annotation_names[0]
+    print(f"Using found annotations: {annotation_names}")
+    return Path(video_dir).joinpath(annotation_names)
+
+
+def get_annotations_matching_video_in_folder(video_dir, video_fname):
+    fnames = os.listdir(video_dir)
+    annotation_names = [f for f in fnames if video_fname in f]
+    if len(annotation_names) > 1:
+        print(f"Found more than one annotation for {video_fname}; taking first one")
     annotation_names = annotation_names[0]
     print(f"Using found annotations: {annotation_names}")
     return Path(video_dir).joinpath(annotation_names)

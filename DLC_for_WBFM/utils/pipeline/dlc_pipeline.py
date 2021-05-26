@@ -10,8 +10,9 @@ from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import 
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, update_pose_config, training_data_from_annotations, \
-    create_dlc_project
+from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
+    update_pose_config, training_data_from_annotations, \
+    create_dlc_project, get_annotations_matching_video_in_folder
 import pandas as pd
 import numpy as np
 import tifffile
@@ -312,11 +313,14 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
 
     # Save dataframe
     dest_folder = '3-tracking'
-    fname = os.path.join(dest_folder, 'full_3d_tracks.h5')
-    final_df.to_hdf(fname, "df_with_missing")
+    df_fname = os.path.join(dest_folder, 'full_3d_tracks.h5')
+    final_df.to_hdf(df_fname, "df_with_missing")
+
+    fname = os.path.join(dest_folder, 'full_3d_tracks.csv')
+    final_df.to_csv(fname)
 
     # Save in yaml
-    udpates = {'final_3d_tracks': {'df_fname': fname}}
+    udpates = {'final_3d_tracks': {'df_fname': df_fname}}
     edit_config(track_cfg['self_path'], udpates)
 
     return final_df
@@ -332,17 +336,23 @@ def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2
     dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
     if external_video_list is None:
         video_list = list(dlc_cfg['video_sets'].keys())
+        destfolder = None  # Save with videos
     else:
         video_list = [str(Path(vid).resolve()) for vid in external_video_list]
+        destfolder = str(Path("3-tracking").resolve())  # Force a local save
     # Works even if already analyzed; skips if empty
     try:
-        deeplabcut.analyze_videos(dlc_config, video_list)
+        deeplabcut.analyze_videos(dlc_config, video_list, destfolder=destfolder)
     except IndexError:
         # Doesn't append anything to all_dfs
         print(f"No neurons found; skipping project {dlc_config}")
         return i_neuron
     # Get data for later use
-    df_fname = get_annotations_from_dlc_config(dlc_config)
+    if destfolder is None:
+        # i.e. it is saved where DLC expects it
+        df_fname = get_annotations_from_dlc_config(dlc_config)
+    else:
+        df_fname = get_annotations_matching_video_in_folder(destfolder, video_list[0])
     if DEBUG:
         print(f"Using 2d annotations: {df_fname}")
     df = pd.read_hdf(df_fname)
