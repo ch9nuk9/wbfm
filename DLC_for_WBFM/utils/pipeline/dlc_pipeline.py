@@ -1,4 +1,5 @@
 import concurrent.futures
+import threading
 
 import zarr
 
@@ -200,11 +201,12 @@ def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames=None)
     # preprocessed_dat = np.zeros(total_sz, dtype='uint16'
     preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype='uint16',
                                   synchronizer=zarr.ThreadSynchronizer())
+    read_lock = threading.Lock()
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
-    with tifffile.TiffFile(vid_fname, 'r') as vid_stream:
+    with tifffile.TiffFile(vid_fname) as vid_stream:
         def parallel_func(i):
-            preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream)
+            preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(frame_list)) as executor:
             futures = executor.map(parallel_func, frame_list)
             [f.result() for f in futures]
@@ -222,8 +224,12 @@ def _get_video_options(config, vid_fname):
     return sz, vid_opt
 
 
-def _get_and_preprocess(i, num_slices, p, start_volume, vid_fname):
-    dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
+def _get_and_preprocess(i, num_slices, p, start_volume, vid_fname, read_lock=None):
+    if read_lock is None:
+        dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
+    else:
+        with read_lock:
+            dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
         # preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
