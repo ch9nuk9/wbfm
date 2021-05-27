@@ -44,3 +44,4 @@ dependencies:
     - pyqt5
     - pyqt5-tools
     - napari[all]
+    - easydict
