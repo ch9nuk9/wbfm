@@ -396,4 +396,5 @@ def make_all_dlc_labeled_videos(track_cfg, use_dlc_project_videos=True, DEBUG=Fa
         else:
             video_list = [str(Path(vid).resolve()) for vid in ext_video]
 
-        deeplabcut.create_labeled_video(dlc_config, video_list)
+        if not DEBUG:
+            deeplabcut.create_labeled_video(dlc_config, video_list)

@@ -5,7 +5,7 @@ The top level function for producing dlc tracks in 3d
 from pathlib import Path
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import make_3d_tracks_from_stack
+from DLC_for_WBFM.utils.pipeline.dlc_pipeline import make_all_dlc_labeled_videos
 # Experiment tracking
 import sacred
 from sacred import Experiment
