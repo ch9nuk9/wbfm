@@ -335,7 +335,7 @@ def _process_duplicates_to_final_df(all_dfs):
 
 def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict, external_video_list=None):
     dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
-    if external_video_list is None:
+    if external_video_list[0] is None:
         video_list = list(dlc_cfg['video_sets'].keys())
         destfolder = None  # Save with videos
     else:
