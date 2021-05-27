@@ -26,6 +26,8 @@ def cfg(project_path):
         track_fname = Path(project_cfg['subfolder_configs']['tracking'])
         track_cfg = dict(load_config(track_fname))
 
+        is_abs = Path(track_fname).is_absolute()
+
 
 @ex.automain
 def make_dlc_labeled_videos(_config, _run):
@@ -34,5 +36,8 @@ def make_dlc_labeled_videos(_config, _run):
     DEBUG = _config['DEBUG']
     this_config = _config['track_cfg'].copy()
 
+    if _config['is_abs']:
+        use_dlc_project_videos = False
+
     with safe_cd(_config['project_dir']):
-        make_all_dlc_labeled_videos(this_config, DEBUG=DEBUG)
+        make_all_dlc_labeled_videos(this_config, use_dlc_project_videos=use_dlc_project_videos, DEBUG=DEBUG)

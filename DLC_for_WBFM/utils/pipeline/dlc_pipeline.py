@@ -395,8 +395,9 @@ def make_all_dlc_labeled_videos(track_cfg, use_dlc_project_videos=True, DEBUG=Fa
             video_list = list(dlc_cfg['video_sets'].keys())
             destfolder = None  # Save with videos
         else:
-            video_list = [str(Path(vid).resolve()) for vid in ext_video]
-            destfolder = str(Path("3-tracking").resolve())  # Force a local save
+            video_list = [str(Path(ext_video).resolve())]
+            destfolder = str(Path(".").resolve())  # Force a local save
+            print(f"Checking for videos in {destfolder}")
 
         if not DEBUG:
             deeplabcut.create_labeled_video(dlc_config, video_list, destfolder=destfolder)
