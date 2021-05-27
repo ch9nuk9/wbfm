@@ -102,14 +102,14 @@ def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, w
     return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
 
 
-def _get_and_check_avi_filename(all_center_slices):
+def _get_and_check_avi_filename(all_center_slices, subfolder="3-tracking"):
     # OPTIMIZE: for now, requires re-preprocessing
     video_exists = []
     all_avi_fnames = []
     print(f"Making videos for all centers: {all_center_slices}")
     for center in all_center_slices:
         # Make minimax video from btf
-        this_avi_fname = _make_avi_name(center)
+        this_avi_fname = os.path.join(subfolder, _make_avi_name(center))
         all_avi_fnames.append(this_avi_fname)
         if os.path.exists(this_avi_fname):
             print(f"Using video at: {this_avi_fname}")
@@ -162,7 +162,8 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
 
 def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists):
     # Make or get video
-    this_avi_fname = all_avi_fnames[i]
+    out_folder = "3-tracking"
+    this_avi_fname = os.path.join(out_folder, all_avi_fnames[i])
     if not video_exists[i]:
         vid_opt['out_fname'] = this_avi_fname
         write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
@@ -396,7 +397,7 @@ def make_all_dlc_labeled_videos(track_cfg, use_dlc_project_videos=True, DEBUG=Fa
             destfolder = None  # Save with videos
         else:
             video_list = [str(Path(ext_video).resolve())]
-            destfolder = str(Path(".").resolve())  # Force a local save
+            destfolder = str(Path("3-tracking").resolve())  # Force a local save
             print(f"Checking for videos in {destfolder}")
 
         if not DEBUG:
