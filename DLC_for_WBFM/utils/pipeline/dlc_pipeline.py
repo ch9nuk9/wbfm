@@ -371,3 +371,29 @@ def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2
     all_dfs.append(df)
     return i_neuron
 
+
+def make_all_dlc_labeled_videos(track_cfg, use_dlc_project_videos=True, DEBUG=False):
+    """
+    Applies DLC trained networks to the avi videos
+
+    For visualization only
+    """
+    all_dlc_configs = track_cfg['dlc_projects']['all_configs']
+
+    if use_dlc_project_videos:
+        external_videos = [None for _ in all_dlc_configs]
+    else:
+        all_center_slices = track_cfg['training_data_2d']['all_center_slices']
+        external_videos, videos_exist = _get_and_check_avi_filename(all_center_slices)
+        if not all(videos_exist):
+            print(list(zip(external_videos, videos_exist)))
+            raise FileExistsError("All avi files must exist in the main project; see 3a-alternate-only_make_videos.py")
+
+    for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
+        dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
+        if ext_video is None:
+            video_list = list(dlc_cfg['video_sets'].keys())
+        else:
+            video_list = [str(Path(vid).resolve()) for vid in ext_video]
+
+        deeplabcut.create_labeled_video(dlc_config, video_list)
