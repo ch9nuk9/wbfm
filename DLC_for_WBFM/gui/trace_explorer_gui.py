@@ -83,6 +83,7 @@ class Ui_MainWindow(object):
         neuron_names = traces_cfg['traces']['neuron_names']
         [self.neuronSelector.addItem(name) for name in neuron_names]
         self.dialsLayout.addWidget(self.neuronSelector)
+        self.neuronSelector.setItemText(0, neuron_names[0])
         self.neuronSelector.currentIndexChanged.connect(self.update_all_panels)
         # Frame (time) selector
         self.timeSelector = QtWidgets.QSpinBox(self.centralwidget)
@@ -231,7 +232,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.neuronSelector.setItemText(0, _translate("MainWindow", "neuron0"))
+        # self.neuronSelector.setItemText(0, _translate("MainWindow", "neuron0"))
         # self.tracesPlt.setText(_translate("MainWindow", "This is the very very large matplotlib \'label\' of the traces over time"))
         # self.segmentationImg.setText(_translate("MainWindow", "TextLabel"))
         # self.redChannelImg.setText(_translate("MainWindow", "TextLabel"))
