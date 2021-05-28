@@ -24,7 +24,7 @@ def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=
     DEBUG = False
 
     with safe_cd(project_dir):
-        preprocessed_dat, _ = _preprocess_all_frames(DEBUG, cfg, verbose, vid_fname, [])
+        preprocessed_dat, _ = _preprocess_all_frames(DEBUG, cfg, verbose, vid_fname, None)
 
     if not pad_to_align_with_original:
         start_volume = cfg['dataset_params']['start_volume']
