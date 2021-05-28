@@ -275,7 +275,7 @@ class Ui_MainWindow(object):
             green = self.green_traces[current_neuron]['brightness']
             vol = self.red_traces[current_neuron]['volume']
             back = self.backgroundSelector.value()
-            y = (red - back * vol) / (green - back * vol)
+            y = (green - back * vol) / (red - back * vol)
         else:
             print(f"Unknown mode ({mode})")
             raise NotImplementedError
