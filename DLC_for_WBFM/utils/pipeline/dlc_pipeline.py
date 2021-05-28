@@ -69,18 +69,21 @@ def create_dlc_training_from_tracklets(vid_fname,
 
     dlc_opt, net_opt, png_opt = _define_project_options(config, df, scorer, task_name)
     # Actually make projects
-    # all_dlc_configs = []
-    # for i, center in enumerate(all_center_slices):
-    #     this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
-    #                                  preprocessed_dat, vid_opt, video_exists, config)
-    #     all_dlc_configs.append(this_dlc_config)
-
-    def parallel_func(i, center):
-        _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
+    all_dlc_configs = []
+    for i, center in enumerate(all_center_slices):
+        this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
                                      preprocessed_dat, vid_opt, video_exists, config)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
-        futures = executor.map(parallel_func, enumerate(all_center_slices))
-        all_dlc_configs = [f.result() for f in futures]
+        all_dlc_configs.append(this_dlc_config)
+
+    # def parallel_func(i_center):
+    #     i, center = i_center
+    #     _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
+    #                                  preprocessed_dat, vid_opt, video_exists, config)
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
+    #     futures = {executor.submit(parallel_func, i): i for i in enumerate(all_center_slices)}
+    #     all_dlc_configs = [f.result() for f in concurrent.futures.as_completed(futures)]
+        # futures = executor.map(parallel_func, enumerate(all_center_slices))
+        # all_dlc_configs = [f.result() for f in futures]
 
     # Then delete the created avis because they are copied into the DLC folder
     # [os.remove(f) for f in all_avi_fnames]
@@ -91,7 +94,7 @@ def create_dlc_training_from_tracklets(vid_fname,
 
 
 def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, which_frames=None):
-    all_avi_fnames, video_exists = _get_and_check_avi_filename(all_center_slices)
+    all_avi_fnames, video_exists = _get_and_check_avi_filename(all_center_slices, subfolder="3-tracking")
     # IF videos are required, then prep the data
     if all(video_exists):
         print("All required videos exist; no preprocessing necessary")
@@ -103,6 +106,7 @@ def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, w
 
 
 def _get_and_check_avi_filename(all_center_slices, subfolder="3-tracking"):
+    """Returns relative path of avi file, not just name"""
     # OPTIMIZE: for now, requires re-preprocessing
     video_exists = []
     all_avi_fnames = []
@@ -161,9 +165,11 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
 
 
 def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists):
+    """
+    Note: all_avi_fnames should have the relative path, not just the name
+    """
     # Make or get video
-    out_folder = "3-tracking"
-    this_avi_fname = os.path.join(out_folder, all_avi_fnames[i])
+    this_avi_fname = all_avi_fnames[i]
     if not video_exists[i]:
         vid_opt['out_fname'] = this_avi_fname
         write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
