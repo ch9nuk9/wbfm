@@ -10,6 +10,7 @@ self_path: 2-training_data/training_data_config.yaml # for programmatic updating
 preprocessing_config: 2-training_data/preprocessing_config.yaml
 
 tracker_params: # OPTIMIZE
+  num_frames: 100
   neuron_feature_radius: 5.0
   use_affine_matching: false
   add_affine_to_candidates: true

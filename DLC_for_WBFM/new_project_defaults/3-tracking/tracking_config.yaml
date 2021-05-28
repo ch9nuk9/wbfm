@@ -15,8 +15,8 @@ training_data_3d:
 # Translating between 3d annotations and stack of 2d
 training_data_2d:
   num_crop_slices: 5 # CHANGE ME; z-depth of each mini-max project
-  all_center_slices: [5, 10, 15, 20, 25] # CHANGE ME
-  max_z_dist_for_traces: 1 # CHANGE ME z-dist for neuron centroids
+  all_center_slices: [10, 15, 20] # CHANGE ME
+  max_z_dist_for_traces: 2 # CHANGE ME z-dist for neuron centroids
 
 preprocessing_config: 2-training_data/preprocessing_config.yaml # Reuse from 3d tracking
 
@@ -30,3 +30,16 @@ final_3d_tracks:
   df_fname: null # See 3c-make_full_tracks.py
   max_dist: 5.0 # CHANGE ME
   max_dist_to_segmentation: 20.0 # CHANGE ME
+
+pose_config_updates:
+  rotation: 180
+  multi_step:
+    - - 0.0005
+      - 5000
+    - - 0.0001
+      - 10000
+    - - 0.00005
+      - 30000
+    - - 0.00001
+      - 50000
+  pos_dist_thresh: 13
