@@ -7,7 +7,7 @@ from pathlib import Path
 import zarr
 
 
-def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=True):
+def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=True, pad_to_align_with_original=False):
     """Takes the original giant .btf file from and writes the subset of the data"""
     cfg = load_config(project_config)
     project_dir = Path(project_config).parent
@@ -25,6 +25,10 @@ def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=
 
     with safe_cd(project_dir):
         preprocessed_dat, _ = _preprocess_all_frames(DEBUG, cfg, verbose, vid_fname, [])
+
+    if not pad_to_align_with_original:
+        start_volume = cfg['dataset_params']['start_volume']
+        preprocessed_dat = preprocessed_dat[start_volume, ...]
 
     if tiff_not_zarr:
         # Have to add a color channel to make format: TZCYX

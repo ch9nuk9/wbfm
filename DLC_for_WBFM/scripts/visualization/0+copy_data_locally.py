@@ -9,10 +9,10 @@ from sacred import Experiment
 
 # Initialize sacred experiment
 ex = Experiment()
-ex.add_config(project_path=None, out_fname=None, tiff_not_zarr=True)
+ex.add_config(project_path=None, out_fname=None, tiff_not_zarr=True, pad_to_align_with_original=False)
 
 @ex.automain
-def segment2d(_config, _run):
+def main(_config, _run):
     sacred.commands.print_config(_run)
 
     write_data_subset_from_config(_config['project_path'], _config['out_fname'])
