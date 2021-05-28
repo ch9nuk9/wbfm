@@ -15,4 +15,4 @@ ex.add_config(project_path=None, out_fname=None, tiff_not_zarr=True, pad_to_alig
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    write_data_subset_from_config(_config['project_path'], _config['out_fname'])
+    write_data_subset_from_config(_config['project_path'], _config['out_fname'], _config['tiff_not_zarr'], _config['pad_to_align_with_original'])

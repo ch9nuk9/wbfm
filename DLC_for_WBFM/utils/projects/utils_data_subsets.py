@@ -28,7 +28,9 @@ def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=
 
     if not pad_to_align_with_original:
         start_volume = cfg['dataset_params']['start_volume']
-        preprocessed_dat = preprocessed_dat[start_volume, ...]
+        preprocessed_dat = preprocessed_dat[start_volume:, ...]
+
+    print(f"Writing array of size: {preprocessed_dat.shape}")
 
     if tiff_not_zarr:
         # Have to add a color channel to make format: TZCYX
@@ -36,5 +38,6 @@ def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=
         out_dat = np.expand_dims(preprocessed_dat, 2).astype('uint16')
         tifffile.imwrite(out_fname, out_dat, imagej=True, metadata={'axes': 'TZCYX'})
     else:
-        chunk_sz = preprocessed_dat.shape[1:]
-        zarr.save_array(out_fname, preprocessed_dat, chunks=chunk_sz)
+        chunk_sz = (1, ) + preprocessed_dat.shape[1:]
+        print(f"Chunk size: {chunk_sz}")
+        zarr.save_array(out_fname, np.array(preprocessed_dat).astype('uint16'), chunks=chunk_sz)
