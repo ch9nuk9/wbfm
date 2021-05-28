@@ -22,18 +22,20 @@ def make_grid_plot_from_project(config, trace_mode=None):
     df = pd.read_hdf(fname)
 
     # Guess a good shape for subplots
-    num_neurons = len(df)
+    neuron_names = list(df.columns.get_level_values(1))
+
+    num_neurons = len(neuron_names)
     num_columns = 4
     subplt_sz = num_neurons % num_columns
 
     # Get axes
-    xlim = [0, max([len(df[i]['brightness']) for i in df.columns])]
-    ylim = [0, max([df[i]['brightness']/df[i]['volume'] for i in df.columns])]
+    xlim = [0, max([len(df[i]['brightness']) for i in neuron_names])]
+    ylim = [0, max([df[i]['brightness']/df[i]['volume'] for i in neuron_names])]
 
     # Loop through neurons and plot
     fig, axes = plt.subplots(subplt_sz)
 
-    for ax, i_neuron in zip(axes, df.columns):
+    for ax, i_neuron in zip(axes, neuron_names):
         y_raw = df[i_neuron]['brightness']
         y = y_raw / df[i_neuron]['volume']
         ax.plot(y)
