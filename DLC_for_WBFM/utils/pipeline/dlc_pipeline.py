@@ -72,12 +72,12 @@ def create_dlc_training_from_tracklets(vid_fname,
     # all_dlc_configs = []
     # for i, center in enumerate(all_center_slices):
     #     this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
-    #                                  preprocessed_dat, vid_opt, video_exists)
+    #                                  preprocessed_dat, vid_opt, video_exists, config)
     #     all_dlc_configs.append(this_dlc_config)
 
     def parallel_func(i, center):
         _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
-                                     preprocessed_dat, vid_opt, video_exists)
+                                     preprocessed_dat, vid_opt, video_exists, config)
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
         futures = executor.map(parallel_func, enumerate(all_center_slices))
         all_dlc_configs = [f.result() for f in futures]
@@ -137,7 +137,7 @@ def _define_project_options(config, df, scorer, task_name):
 
 
 def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
-                                 preprocessed_dat, vid_opt, video_exists):
+                                 preprocessed_dat, vid_opt, video_exists, project_config):
     this_avi_fname = _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists)
     # Make dlc project
     dlc_opt['label'] = f"-c{center}"
@@ -153,7 +153,7 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
         csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2, to_add_skeleton=True)
         # Format the training data
         deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
-        update_pose_config(this_dlc_config)
+        update_pose_config(this_dlc_config, project_config)
         # Save to list
         return this_dlc_config
     else:

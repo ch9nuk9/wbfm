@@ -273,7 +273,7 @@ def training_data_from_annotations(vid_fname,
 
 
 #
-def update_pose_config(dlc_config_fname, DEBUG=False):
+def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
     # Copied from: https://github.com/DeepLabCut/DeepLabCut/blob/master/examples/testscript.py
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
 
@@ -291,6 +291,8 @@ def update_pose_config(dlc_config_fname, DEBUG=False):
         "train/pose_cfg.yaml",
     )
 
+    updates_from_project = project_config['tracking_config']['pose_config_updates']
+
     pose_config = auxiliaryfunctions.read_plainconfig(posefile)
     # These are mostly from the official recommendations:
     # https://forum.image.sc/t/recommended-settings-for-tracking-fine-parts/36184/7
@@ -299,24 +301,25 @@ def update_pose_config(dlc_config_fname, DEBUG=False):
     pose_config['augmentationprobability'] = 0.5
     # pose_config['batch_size']=8 #pick that as large as your GPU can handle it
     pose_config['elastic_transform'] = True
-    pose_config['rotation'] = 180
+    pose_config['rotation'] = updates_from_project.get('rotation', 180)
     pose_config['covering'] = True
     pose_config['motion_blur'] = True
     pose_config['optimizer'] = "adam"
     pose_config['dataset_type'] = 'imgaug'
     # My changes and additions
+    pose_config['multi_step'] = updates_from_project.get('multi_step', None)
+    pose_config['save_iters'] = 10000
     if DEBUG:
         pose_config['multi_step'] = [[0.005, 1000]]
         pose_config['save_iters'] = 900
-    else:
+    elif pose_config['multi_step'] is None:
         pose_config['multi_step'] = [[5e-4, 5e3],
                                      [1e-4, 1e4],
                                      [5e-5, 3e4],
                                      [1e-5, 5e4]]
         # pose_config['multi_step'] = [[0.005, 7500], [5e-4, 2e4], [1e-4, 5e4]]
-        pose_config['save_iters'] = 10000
-    pose_config['pos_dist_thresh'] = 13  # 15  # We have very small objects
-    pose_config['pairwise_predict'] = False  # Broken?
+    pose_config['pos_dist_thresh'] = updates_from_project.get('pos_dist_thresh', 13)  # We have very small objects
+    # pose_config['pairwise_predict'] = False  # Broken?
 
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
 
