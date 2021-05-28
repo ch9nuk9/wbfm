@@ -206,6 +206,12 @@ def _make_avi_name(center):
 
 
 def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames=None):
+    """
+    Preproceses all frames that will be analyzed as per config
+
+    Loads but does not process frames before config['dataset_params']['start_volume']
+        (to keep the indices the same as the original dataset)
+    """
     sz, vid_opt = _get_video_options(config, vid_fname)
     if verbose >= 1:
         print("Preprocessing data, this could take a while...")

@@ -40,4 +40,6 @@ def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=
     else:
         chunk_sz = (1, ) + preprocessed_dat.shape[1:]
         print(f"Chunk size: {chunk_sz}")
-        zarr.save_array(out_fname, np.array(preprocessed_dat).astype('uint16'), chunks=chunk_sz)
+        # Imagej requires a flipped format, which is default here
+        out_dat = np.array(preprocessed_dat).astype('uint16')
+        zarr.save_array(out_fname, out_dat, chunks=chunk_sz)
