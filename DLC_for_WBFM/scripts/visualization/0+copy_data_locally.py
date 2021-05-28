@@ -9,7 +9,7 @@ from sacred import Experiment
 
 # Initialize sacred experiment
 ex = Experiment()
-ex.add_config(project_path=None, out_fname=None)
+ex.add_config(project_path=None, out_fname=None, tiff_not_zarr=True)
 
 @ex.automain
 def segment2d(_config, _run):

@@ -4,9 +4,10 @@ import tifffile
 import numpy as np
 import os
 from pathlib import Path
+import zarr
 
 
-def write_data_subset_from_config(project_config, out_fname=None):
+def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=True):
     """Takes the original giant .btf file from and writes the subset of the data"""
     cfg = load_config(project_config)
     project_dir = Path(project_config).parent
@@ -14,7 +15,10 @@ def write_data_subset_from_config(project_config, out_fname=None):
     cfg['preprocessing_config'] = fname
 
     if out_fname is None:
-        out_fname = os.path.join(project_dir, "data_subset.tiff")
+        if tiff_not_zarr:
+            out_fname = os.path.join(project_dir, "data_subset.tiff")
+        else:
+            out_fname = os.path.join(project_dir, "data_subset.zarr")
     vid_fname = cfg['red_bigtiff_fname']
     verbose = cfg['other']['verbose']
     DEBUG = False
@@ -22,6 +26,11 @@ def write_data_subset_from_config(project_config, out_fname=None):
     with safe_cd(project_dir):
         preprocessed_dat, _ = _preprocess_all_frames(DEBUG, cfg, verbose, vid_fname, [])
 
-    # Have to add a color channel to make format: TZCYX
-    out_dat = np.expand_dims(preprocessed_dat, 2).astype('uint16')
-    tifffile.imwrite(out_fname, out_dat, imagej=True, metadata={'axes': 'TZCYX'})
+    if tiff_not_zarr:
+        # Have to add a color channel to make format: TZCYX
+        # Imagej seems to expect this weird format
+        out_dat = np.expand_dims(preprocessed_dat, 2).astype('uint16')
+        tifffile.imwrite(out_fname, out_dat, imagej=True, metadata={'axes': 'TZCYX'})
+    else:
+        chunk_sz = preprocessed_dat.shape[1:]
+        zarr.save_array(out_fname, preprocessed_dat, chunks=chunk_sz)
