@@ -455,7 +455,8 @@ def build_tracklets_dfs(pairwise_matches_dict, xyz_per_neuron_per_frame=None, sl
         remaining_pairs = range(match_key[1], pair_range[-1])
         for i_pair in remaining_pairs:
             next_match_key = (i_pair, i_pair+1)
-            next_match_dict = dict_of_match_dicts[next_match_key]
+            next_match_dict = dict_of_match_dicts.get(next_match_key, {})
+            # next_match_dict = dict_of_match_dicts[next_match_key]
             if i1 in next_match_dict:
                 i0, i1 = i1, next_match_dict[i1]
                 i_frame = next_match_key[1]
