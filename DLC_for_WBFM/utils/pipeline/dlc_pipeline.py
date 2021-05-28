@@ -218,9 +218,9 @@ def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames=None)
         num_total_frames = which_frames[-1] + 1
     chunk_sz = (num_slices, ) + sz
     total_sz = (num_total_frames, ) + chunk_sz
-    # preprocessed_dat = np.zeros(total_sz, dtype='uint16'
-    preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype='uint16',
-                                  synchronizer=zarr.ThreadSynchronizer())
+    preprocessed_dat = np.zeros(total_sz, dtype='uint16')
+    # preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype='uint16',
+    #                               synchronizer=zarr.ThreadSynchronizer())
     # read_lock = threading.Lock()
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
