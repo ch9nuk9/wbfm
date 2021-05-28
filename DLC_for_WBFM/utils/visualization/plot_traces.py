@@ -1,9 +1,50 @@
+import os
 
 import matplotlib.pyplot as plt
+import pandas as pd
 from ipywidgets import interact
 from matplotlib.ticker import NullFormatter
 from matplotlib import transforms
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
+
+##
+## New functions for use with project_config files
+##
+
+def make_grid_plot_from_project(config, trace_mode=None):
+    """
+    Should be run within a project folder
+    """
+
+    assert (trace_mode in ['green', 'red']), f"Unknown trace mode {trace_mode}"
+
+    fname = os.path.join("4-traces", f"{trace_mode}_traces.h5")
+    df = pd.read_hdf(fname)
+
+    # Guess a good shape for subplots
+    num_neurons = len(df)
+    num_columns = 4
+    subplt_sz = num_neurons % num_columns
+
+    # Get axes
+    xlim = [0, max([len(df[i]['brightness']) for i in df.columns])]
+    ylim = [0, max([df[i]['brightness']/df[i]['volume'] for i in df.columns])]
+
+    # Loop through neurons and plot
+    fig, axes = plt.subplots(subplt_sz)
+
+    for ax, i_neuron in zip(axes, df.columns):
+        y_raw = df[i_neuron]['brightness']
+        y = y_raw / df[i_neuron]['volume']
+        ax.plot(y)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+
+    # Save final figure
+    out_fname = os.path.join("4-traces", f"{trace_mode}_grid_plot.png")
+    plt.savefig(out_fname)
+
+
 
 ##
 ## Functions for use with data from 'extract_all_traces'
@@ -229,18 +270,18 @@ def get_measurement_channel(t_dict):
         dat = t_dict['green']
     return dat
 
-def nan_tracking_failures(config,
-                          dat,
-                          which_neuron,
-                          threshold=0.9):
-    c = load_config(config)
-
-    _, this_prob = xy_from_dlc_dat(c.tracking.annotation_fname,
-                                   which_neuron,
-                                   c.preprocessing.num_frames)
-
-    bad_vals = np.array(this_prob) < threshold
-    dat[bad_vals] = np.nan
-    # print(np.count_nonzero(this_prob < threshold))
-
-    return dat
+# def nan_tracking_failures(config,
+#                           dat,
+#                           which_neuron,
+#                           threshold=0.9):
+#     c = load_config(config)
+#
+#     _, this_prob = xy_from_dlc_dat(c.tracking.annotation_fname,
+#                                    which_neuron,
+#                                    c.preprocessing.num_frames)
+#
+#     bad_vals = np.array(this_prob) < threshold
+#     dat[bad_vals] = np.nan
+#     # print(np.count_nonzero(this_prob < threshold))
+#
+#     return dat
