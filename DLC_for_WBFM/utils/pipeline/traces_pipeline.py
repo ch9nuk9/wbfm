@@ -50,7 +50,7 @@ def get_traces_from_3d_tracks(segment_cfg,
     frame_list = list(range(start_volume, num_frames + start_volume))
     green_dat, red_dat = _initialize_dataframes(all_neuron_names, frame_list)
 
-    all_matches = {}  # key = i_vol; val = 3xN-element list
+    all_matches = {}  # key = i_vol; val = Nx3-element list
     print("Matching segmentation and DLC tracking...")
     for i_volume in tqdm(frame_list):
         # Get DLC point cloud

@@ -14,8 +14,6 @@ def get_video_from_ome_file_subset(video_fname,
                                    alpha=1.0):
     """
     Imports to np.array() from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
-
-
     """
 
     # Data format: TZHW
@@ -38,7 +36,7 @@ def get_video_from_ome_file_subset(video_fname,
             i_z = i % num_slices
 
             # Finally, save
-            dat[i_t, i_z,...] = img
+            dat[i_t, i_z, ...] = img
 
     return dat
 
