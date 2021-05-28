@@ -291,7 +291,7 @@ def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
         "train/pose_cfg.yaml",
     )
 
-    updates_from_project = project_config['tracking_config']['pose_config_updates']
+    updates_from_project = project_config['pose_config_updates']
 
     pose_config = auxiliaryfunctions.read_plainconfig(posefile)
     # These are mostly from the official recommendations:
