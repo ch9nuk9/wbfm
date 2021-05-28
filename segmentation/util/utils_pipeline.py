@@ -190,7 +190,7 @@ def _do_first_volume2d(frame_list, mask_fname, metadata, num_frames, num_slices,
     # Do first loop to initialize the zarr data
     i = 0
     i_volume = frame_list[i]
-    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path)
+    volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path)
     final_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
     sz = (num_frames, num_slices, x_sz, y_sz)
@@ -212,7 +212,7 @@ def _do_first_volume3d(frame_list, mask_fname, metadata, num_frames, num_slices,
     # Do first loop to initialize the zarr data
     i = 0
     i_volume = frame_list[i]
-    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path)
+    volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path)
     final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
     sz = (num_frames, num_slices, x_sz, y_sz)
@@ -227,7 +227,7 @@ def _do_first_volume3d(frame_list, mask_fname, metadata, num_frames, num_slices,
 
 def segment_and_save2d(i, i_volume, masks_zarr, metadata, num_slices, opt_postprocessing, preprocessing_settings,
                        sd_model, verbose, video_path, keras_lock, read_lock):
-    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
+    volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
     with keras_lock:  # Keras is not thread-safe in the end
         segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
     # process masks: remove large areas, stitch, split long neurons, remove short neurons
@@ -240,7 +240,7 @@ def segment_and_save2d(i, i_volume, masks_zarr, metadata, num_slices, opt_postpr
 
 def segment_and_save3d(i, i_volume, masks_zarr, metadata, num_slices, preprocessing_settings,
                        sd_model, verbose, video_path, keras_lock=None, read_lock=None):
-    volume = _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
+    volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
     if keras_lock is None:
         final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     else:
