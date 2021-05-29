@@ -57,26 +57,29 @@ def segment_video_using_config_3d(_config):
     # get stardist model object
     # stardist_model_name = _config['segmentation_params']['stardist_model_name']
     stardist_model_name = "charlie_3d" # TODO: import from parameters, but check
+
+    _segment_full_video_3d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
+                           preprocessing_settings, stardist_model_name, verbose, video_path)
+
+
+def _segment_full_video_3d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
+                           preprocessing_settings, stardist_model_name, verbose, video_path):
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
     # Not fully working for multithreaded scenario
     # Discussion about finalizing: https://stackoverflow.com/questions/40850089/is-keras-thread-safe/43393252#43393252
     # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
     sd_model.keras_model.make_predict_function()
-
     # Do first volume outside the parallelization loop to initialize keras and zarr
     # Possibly unnecessary
     masks_zarr = _do_first_volume3d(frame_list, mask_fname, metadata, num_frames, num_slices,
-                                  preprocessing_settings, sd_model, verbose, video_path)
-
+                                    preprocessing_settings, sd_model, verbose, video_path)
     # Main function
     opt = {'masks_zarr': masks_zarr, 'metadata': metadata, 'num_slices': num_slices,
            'preprocessing_settings': preprocessing_settings,
            'sd_model': sd_model, 'verbose': verbose}
-
     with tifffile.TiffFile(video_path) as video_stream:
-        for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list)-1):
+        for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list) - 1):
             segment_and_save3d(i_rel + 1, i_abs, **opt, video_path=video_stream)
-
     # Parallel version: threading
     # keras_lock = threading.Lock()
     # read_lock = threading.Lock()
@@ -94,14 +97,11 @@ def segment_video_using_config_3d(_config):
     #             for future in concurrent.futures.as_completed(futures):
     #                 future.result()
     #                 pbar.update(1)
-
     # saving metadata and settings
     with open(metadata_fname, 'wb') as meta_save:
         pickle.dump(metadata, meta_save)
-
     if _config['self_path'] is not None:
         edit_config(_config['self_path'], _config)
-
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
