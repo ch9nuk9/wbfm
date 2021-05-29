@@ -1,7 +1,5 @@
 import threading
-
 import tifffile
-
 import segmentation.util.utils_postprocessing as post
 import numpy as np
 from tqdm import tqdm
@@ -77,6 +75,7 @@ def _segment_full_video_3d(_config, frame_list, mask_fname, metadata, metadata_f
     opt = {'masks_zarr': masks_zarr, 'metadata': metadata, 'num_slices': num_slices,
            'preprocessing_settings': preprocessing_settings,
            'sd_model': sd_model, 'verbose': verbose}
+
     with tifffile.TiffFile(video_path) as video_stream:
         for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list) - 1):
             segment_and_save3d(i_rel + 1, i_abs, **opt, video_path=video_stream)
@@ -100,7 +99,7 @@ def _segment_full_video_3d(_config, frame_list, mask_fname, metadata, metadata_f
     # saving metadata and settings
     with open(metadata_fname, 'wb') as meta_save:
         pickle.dump(metadata, meta_save)
-    if _config['self_path'] is not None:
+    if _config.get('self_path', None) is not None:
         edit_config(_config['self_path'], _config)
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
