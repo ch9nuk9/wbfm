@@ -5,6 +5,7 @@ import numpy as np
 import os
 from pathlib import Path
 import zarr
+from segmentation.util.utils_pipeline import _segment_full_video_3d
 
 
 def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=True, pad_to_align_with_original=False):
@@ -41,3 +42,31 @@ def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=
         chunk_sz = (1, ) + preprocessed_dat.shape[1:]
         print(f"Chunk size: {chunk_sz}")
         zarr.save_array(out_fname, np.array(preprocessed_dat).astype('uint16'), chunks=chunk_sz)
+
+
+def segment_local_data_subset(project_config, max_frames=100, out_fname="masks_subset.zarr"):
+    """
+    Segments a dataset that has been copied locally; assumed to be named 'data_subset.zarr'
+
+    Applies NO preprocessing; assumes that is done with the subset already
+
+    See also: write_data_subset_from_config
+    """
+    cfg = load_config(project_config)
+    project_dir = Path(project_config).parent
+
+    mask_fname = os.path.join("1-segmentation", out_fname)
+    metadata_fname = os.path.join("1-segmentation", "metadata_subset.pickle")
+
+    video_path = "data_subset.zarr"
+    verbose = cfg['other']['verbose']
+    stardist_model_name = "charlie_3d"
+    num_slices = cfg['dataset_params']['num_slices']
+    num_frames = cfg['dataset_params']['num_frames']
+    preprocessing_settings = None
+    frame_list = list(range(num_frames))
+    metadata = {}
+
+    with safe_cd(project_dir):
+        _segment_full_video_3d(cfg, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
+                               preprocessing_settings, stardist_model_name, verbose, video_path)

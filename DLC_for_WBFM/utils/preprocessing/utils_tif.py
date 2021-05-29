@@ -40,7 +40,7 @@ class PreprocessingSettings():
         return PreprocessingSettings(**cfg)
 
 
-def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings):
+def perform_preprocessing(dat_raw, preprocessing_settings: PreprocessingSettings):
     """
     Performs all preprocessing as set by the fields of preprocessing_settings
 
@@ -48,6 +48,8 @@ def perform_preprocessing(dat_raw, preprocessing_settings:PreprocessingSettings)
     """
 
     s = preprocessing_settings
+    if s is None:
+        return dat_raw
 
     if s.do_filtering:
         dat_raw = filter_stack(dat_raw, s.filter_opt)
