@@ -45,7 +45,7 @@ def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=
         zarr.save_array(out_fname, out_dat, chunks=chunk_sz)
 
 
-def segment_local_data_subset(project_config, out_fname="masks_subset.zarr"):
+def segment_local_data_subset(project_config, out_fname=None):
     """
     Segments a dataset that has been copied locally; assumed to be named 'data_subset.zarr'
 
@@ -56,6 +56,8 @@ def segment_local_data_subset(project_config, out_fname="masks_subset.zarr"):
     cfg = load_config(project_config)
     project_dir = Path(project_config).parent
 
+    if out_fname is None:
+        out_fname = "masks_subset.zarr"
     mask_fname = os.path.join("1-segmentation", out_fname)
     metadata_fname = os.path.join("1-segmentation", "metadata_subset.pickle")
 
