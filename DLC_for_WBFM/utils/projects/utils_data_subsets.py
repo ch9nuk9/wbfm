@@ -47,7 +47,7 @@ def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=
 
 def segment_local_data_subset(project_config, out_fname=None):
     """
-    Segments a dataset that has been copied locally; assumed to be named 'data_subset.zarr'
+    Segments a dataset that has been copied locally; assumed to be named 'data_subset.tif'
 
     Applies NO preprocessing; assumes that is done with the subset already
 
@@ -61,7 +61,7 @@ def segment_local_data_subset(project_config, out_fname=None):
     mask_fname = os.path.join("1-segmentation", out_fname)
     metadata_fname = os.path.join("1-segmentation", "metadata_subset.pickle")
 
-    video_path = "data_subset.zarr"
+    video_path = "data_subset.tif"
     verbose = cfg['other']['verbose']
     stardist_model_name = "charlie_3d"
     num_slices = cfg['dataset_params']['num_slices']
