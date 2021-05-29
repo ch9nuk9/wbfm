@@ -1,4 +1,4 @@
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import _preprocess_all_frames
+from DLC_for_WBFM.utils.preprocessing.utils_tif import _preprocess_all_frames
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 import tifffile
 import numpy as np

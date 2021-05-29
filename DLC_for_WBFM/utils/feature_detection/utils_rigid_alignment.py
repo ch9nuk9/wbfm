@@ -1,12 +1,7 @@
 # Based off code by Lukas Hille
 # See originals in: Y:\shared_projects\notebooks\LukasNotebooks
-import tifffile
-from matplotlib import pyplot as plt
 import cv2
 import numpy as np
-import math
-import sys
-import os
 from tqdm import tqdm
 
 

@@ -1,21 +1,14 @@
-import concurrent.futures
-import threading
 from pathlib import Path
 
-import zarr
-
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
+from DLC_for_WBFM.utils.preprocessing.utils_tif import _preprocess_all_frames, _get_video_options
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
     update_pose_config, training_data_from_annotations, \
     create_dlc_project, get_annotations_matching_video_in_folder
 import pandas as pd
-import numpy as np
-import tifffile
 import os
 from tqdm import tqdm
 import deeplabcut
@@ -203,66 +196,6 @@ def _make_avi_name(center):
         # But, that name must be the same as the video
         raise ValueError(f"Bug if this is too long {fname}")
     return fname
-
-
-def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames=None):
-    """
-    Preproceses all frames that will be analyzed as per config
-
-    Loads but does not process frames before config['dataset_params']['start_volume']
-        (to keep the indices the same as the original dataset)
-    """
-    sz, vid_opt = _get_video_options(config, vid_fname)
-    if verbose >= 1:
-        print("Preprocessing data, this could take a while...")
-    p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
-    start_volume = config['dataset_params']['start_volume']
-    num_total_frames = start_volume + config['dataset_params']['num_frames']
-    num_slices = config['dataset_params']['num_slices']
-    if DEBUG:
-        # Make a much shorter video
-        num_total_frames = which_frames[-1] + 1
-    chunk_sz = (num_slices, ) + sz
-    total_sz = (num_total_frames, ) + chunk_sz
-    preprocessed_dat = np.zeros(total_sz, dtype='uint16')
-    # preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype='uint16',
-    #                               synchronizer=zarr.ThreadSynchronizer())
-    # read_lock = threading.Lock()
-    # Load data and preprocess
-    frame_list = list(range(num_total_frames))
-    with tifffile.TiffFile(vid_fname) as vid_stream:
-        # def parallel_func(i):
-        #     preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=len(frame_list)) as executor:
-        #     futures = executor.map(parallel_func, frame_list)
-        #     [f.result() for f in futures]
-        for i in tqdm(frame_list):
-            preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream)
-    return preprocessed_dat, vid_opt
-
-
-def _get_video_options(config, vid_fname):
-    with tifffile.TiffFile(vid_fname) as tif:
-        sz = tif.pages[0].shape
-    vid_opt = {'fps': config['dataset_params']['fps'],
-               'frame_height': sz[0],
-               'frame_width': sz[1]}
-    return sz, vid_opt
-
-
-def _get_and_preprocess(i, num_slices, p, start_volume, vid_fname, read_lock=None):
-    if read_lock is None:
-        dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
-    else:
-        with read_lock:
-            dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
-    # Don't preprocess data that we didn't even segment!
-    if i >= start_volume:
-        # preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
-        return perform_preprocessing(dat_raw, p)
-    else:
-        # preprocessed_dat[i, ...] = dat_raw
-        return dat_raw
 
 
 def train_all_dlc_from_config(config):
