@@ -61,7 +61,7 @@ def segment_local_data_subset(project_config, out_fname=None):
     mask_fname = os.path.join("1-segmentation", out_fname)
     metadata_fname = os.path.join("1-segmentation", "metadata_subset.pickle")
 
-    video_path = "data_subset.tif"
+    video_path = "data_subset.tiff"
     verbose = cfg['other']['verbose']
     stardist_model_name = "charlie_3d"
     num_slices = cfg['dataset_params']['num_slices']
