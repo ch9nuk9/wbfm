@@ -5,6 +5,8 @@ import pandas as pd
 from ipywidgets import interact
 from matplotlib.ticker import NullFormatter
 from matplotlib import transforms
+from tqdm.auto import tqdm
+
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 ##
@@ -20,31 +22,46 @@ def make_grid_plot_from_project(config, trace_mode=None):
 
     fname = os.path.join("4-traces", f"{trace_mode}_traces.h5")
     df = pd.read_hdf(fname)
+    print(f"Read traces from: {fname}")
 
     # Guess a good shape for subplots
-    neuron_names = list(df.columns.get_level_values(1))
+    neuron_names = list(set(df.columns.get_level_values(0)))
+    neuron_names.sort()
 
     num_neurons = len(neuron_names)
     num_columns = 4
-    subplt_sz = num_neurons % num_columns
+    num_rows = num_neurons//num_columns + 1
+    print(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
 
     # Get axes
-    xlim = [0, max([len(df[i]['brightness']) for i in neuron_names])]
-    ylim = [0, max([df[i]['brightness']/df[i]['volume'] for i in neuron_names])]
+    # xlim = [0, max([len(df[i]) for i in neuron_names])]
+    # ylim = [0, max([max(df[i]['brightness']/df[i]['volume']) for i in neuron_names])]
 
     # Loop through neurons and plot
-    fig, axes = plt.subplots(subplt_sz)
+    fig, axes = plt.subplots(num_rows, num_columns, figsize=(45, 15), sharex=True, sharey=True)
 
-    for ax, i_neuron in zip(axes, neuron_names):
+    for ax, i_neuron in tqdm(zip(fig.axes, neuron_names)):
         y_raw = df[i_neuron]['brightness']
         y = y_raw / df[i_neuron]['volume']
-        ax.plot(y)
-        ax.set_xlim(xlim)
-        ax.set_ylim(ylim)
+        ax.plot(y, label=i_neuron)
+        # ax.set_xlim(xlim)
+        # ax.set_ylim(ylim)
+
+        ax.set_title(i_neuron, {'fontsize': 28}, y=0.7)
+        # ax.legend()
+        ax.set_frame_on(False)
+        ax.set_axis_off()
 
     # Save final figure
+    plt.subplots_adjust(left=0,
+                        bottom=0,
+                        right=1,
+                        top=1,
+                        wspace=0.0,
+                        hspace=0.0)
+
     out_fname = os.path.join("4-traces", f"{trace_mode}_grid_plot.png")
-    plt.savefig(out_fname)
+    plt.savefig(out_fname, bbox_inches='tight', pad_inches = 0)
 
 
 
