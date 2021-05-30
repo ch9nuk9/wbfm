@@ -21,6 +21,8 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
         calc_matches_using_affine_propagation
     """
 
+    if len(matches_with_conf) == 0:
+        return [], (None, None, None), np.array([])
     # Build regression vectors and z-score
     xyz = np.zeros((len(matches_with_conf), 3), dtype=np.float32) # Start point
     dat = np.zeros((len(matches_with_conf), 3), dtype=np.float32) # Difference vector
