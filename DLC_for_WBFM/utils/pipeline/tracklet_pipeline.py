@@ -38,7 +38,10 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
         opt['num_frames'] = config['dataset_params']['num_frames']
     if DEBUG:
         opt['num_frames'] = 5
-    opt['start_frame'] = config['dataset_params']['start_volume']
+    if 'start_volume' in config['tracker_params']:
+        opt['start_volume'] = config['tracker_params']['start_volume']
+    else:
+        opt['start_volume'] = config['dataset_params']['start_volume']
     opt['num_slices'] = config['dataset_params']['num_slices']
 
     all_frame_pairs, all_frame_dict = track_neurons_full_video(vid_fname,

@@ -169,5 +169,8 @@ def detect_neurons_from_file(detection_fname, which_volume, verbose=0):
         neuron_locs = pickle.load(f)[which_volume]['centroids']
     # In current format: flipped x and y
     neuron_locs = np.array([n for n in neuron_locs])
-    neuron_locs = neuron_locs[:,[0,2,1]]
+    if len(neuron_locs) > 0:
+        neuron_locs = neuron_locs[:, [0, 2, 1]]
+    else:
+        neuron_locs = []
     return neuron_locs

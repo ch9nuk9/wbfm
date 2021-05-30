@@ -27,10 +27,12 @@ def build_reference_frame(dat_raw,
                           neuron_feature_radius,
                           preprocessing_settings=PreprocessingSettings(),
                           start_slice=2,
-                          metadata={},
+                          metadata=None,
                           external_detections=None,
                           verbose=0):
     """Main convenience constructor for ReferenceFrame class"""
+    if metadata is None:
+        metadata = {}
     dat = perform_preprocessing(dat_raw, preprocessing_settings)
 
     # Get neurons and features, and a map between them
