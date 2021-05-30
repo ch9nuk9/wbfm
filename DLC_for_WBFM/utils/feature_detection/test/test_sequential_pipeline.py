@@ -45,9 +45,9 @@ class TestSequentialPipeline(unittest.TestCase):
 
     def test_full_function(self):
         all_matches, all_conf, all_neurons = track_neurons_full_video(self.fname,
-                             start_frame=0,
-                             num_frames=2,
-                             num_slices=self.num_slices,
-                             preprocessing_settings=self.preprocessing_settings,
-                             verbose=0)
+                                                                      start_volume=0,
+                                                                      num_frames=2,
+                                                                      num_slices=self.num_slices,
+                                                                      preprocessing_settings=self.preprocessing_settings,
+                                                                      verbose=0)
         raise ValueError("Needs refactor with FramePair")

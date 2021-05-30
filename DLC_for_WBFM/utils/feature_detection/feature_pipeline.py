@@ -494,7 +494,7 @@ def match_all_to_reference_frames(reference_set,
 
 
 def track_neurons_full_video(vid_fname,
-                             start_frame=0,
+                             start_volume=0,
                              num_frames=10,
                              num_slices=33,
                              neuron_feature_radius=5.0,
@@ -540,13 +540,13 @@ def track_neurons_full_video(vid_fname,
 
     if verbose >= 1:
         print("Building initial frame...")
-    frame0 = _build_frame(start_frame)
+    frame0 = _build_frame(start_volume)
 
     # Loop through all pairs
     all_frame_pairs = {}
-    all_frame_dict = {start_frame: frame0}
-    end_frame = start_frame + num_frames
-    frame_range = range(start_frame + 1, end_frame)
+    all_frame_dict = {start_volume: frame0}
+    end_frame = start_volume + num_frames
+    frame_range = range(start_volume + 1, end_frame)
     match_opt = {'use_affine_matching': use_affine_matching,
                  'add_affine_to_candidates': add_affine_to_candidates,
                  'add_gp_to_candidates': add_gp_to_candidates}
