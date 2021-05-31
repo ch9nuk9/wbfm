@@ -60,6 +60,8 @@ def get_traces_from_3d_tracks(segment_cfg,
         # REVIEW: Get segmentation point cloud
         seg_zxy = segmentation_metadata[i_volume]['centroids']
         seg_zxy = [np.asarray(row) for row in seg_zxy]
+        if len(seg_zxy) == 0:
+            continue
         zxy1 = np.array(seg_zxy)
         zxy1[:, 0] *= project_cfg['dataset_params']['z_to_xy_ratio']
         # Get matches
@@ -87,7 +89,8 @@ def get_traces_from_3d_tracks(segment_cfg,
                 break
 
         # Save
-        all_matches[i_volume] = np.hstack([matches, conf])
+        # all_matches[i_volume] = np.hstack([matches, conf])
+        all_matches[i_volume] = np.array([(m[0], m[1], c) for m, c in zip(matches, conf)])
         if DEBUG:
             break
 
