@@ -1,4 +1,5 @@
 import pickle
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -50,7 +51,7 @@ def get_traces_from_3d_tracks(segment_cfg,
     frame_list = list(range(start_volume, num_frames + start_volume))
     green_dat, red_dat = _initialize_dataframes(all_neuron_names, frame_list)
 
-    all_matches = {}  # key = i_vol; val = Nx3-element list
+    all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
     print("Matching segmentation and DLC tracking...")
     for i_volume in tqdm(frame_list):
         # Get DLC point cloud
@@ -103,6 +104,8 @@ def get_traces_from_3d_tracks(segment_cfg,
         for i_volume in tqdm(frame_list):
             # Prepare matches and locations
             matches = all_matches[i_volume]
+            if len(matches) == 0:
+                continue
             mdat = segmentation_metadata[i_volume]
             all_seg_names = list(mdat['centroids'].keys())
             all_zxy_dlc = _get_dlc_zxy(i_volume)
