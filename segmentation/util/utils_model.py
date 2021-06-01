@@ -57,7 +57,7 @@ def get_stardist_model(model_name, folder=None, verbose=0):
     return model
 
 
-def segment_with_stardist_2d(vol, model=None, verbose=0):
+def segment_with_stardist_2d(vol, model=None, verbose=0) -> np.array:
     """
     Segments slices of a 3D numpy array (input) and outputs their masks.
     Best model (so far) is Lukas' self-trained 2D model
@@ -109,7 +109,7 @@ def segment_with_stardist_2d(vol, model=None, verbose=0):
     return segmented_masks
 
 
-def segment_with_stardist_3d(vol, model=None, verbose=0):
+def segment_with_stardist_3d(vol, model=None, verbose=0) -> np.array:
     """
     Segments a 3D volume using stardists 3D-segmentation.
     For now, only one self-trained 3D model is available.
