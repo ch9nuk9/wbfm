@@ -32,29 +32,8 @@ def segment_video_using_config_3d(_config):
 
     """
 
-    # Initializing variables
-    start_volume = _config['dataset_params']['start_volume']
-    num_frames = _config['dataset_params']['num_frames']
-    if _config['DEBUG']:
-        num_frames = 1
-    num_slices = _config['dataset_params']['num_slices']
-    frame_list = list(range(start_volume, start_volume + num_frames))
-    video_path = _config['video_path']
-    opt_postprocessing = _config['postprocessing_params']
-    mask_fname, metadata_fname = get_output_fnames(video_path, _config)
-    # Save settings
-    _config['output']['masks'] = mask_fname
-    _config['output']['metadata'] = metadata_fname
-
-    verbose = _config['verbose']
-    metadata = dict.fromkeys(set(frame_list))
-    preprocessing_settings = PreprocessingSettings.load_from_yaml(
-        _config['preprocessing_config']
-    )
-
-    # get stardist model object
-    # stardist_model_name = _config['segmentation_params']['stardist_model_name']
-    stardist_model_name = "charlie_3d" # TODO: import from parameters, but check
+    frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path = _unpack_config_file(
+        _config)
 
     _segment_full_video_3d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
                            preprocessing_settings, stardist_model_name, verbose, video_path)
@@ -112,6 +91,18 @@ def segment_video_using_config_2d(_config):
     See segment2d.py for parameter documentation
     """
 
+    frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path = _unpack_config_file(
+        _config)
+
+    # Unique to 2d
+    opt_postprocessing = _config['postprocessing_params']
+
+    # get stardist model object
+    _segment_full_video_2d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
+                           opt_postprocessing, preprocessing_settings, stardist_model_name, verbose, video_path)
+
+
+def _unpack_config_file(_config):
     # Initializing variables
     start_volume = _config['dataset_params']['start_volume']
     num_frames = _config['dataset_params']['num_frames']
@@ -120,22 +111,17 @@ def segment_video_using_config_2d(_config):
     num_slices = _config['dataset_params']['num_slices']
     frame_list = list(range(start_volume, start_volume + num_frames))
     video_path = _config['video_path']
-    opt_postprocessing = _config['postprocessing_params']
     mask_fname, metadata_fname = get_output_fnames(video_path, _config)
     # Save settings
     _config['output']['masks'] = mask_fname
     _config['output']['metadata'] = metadata_fname
-
     verbose = _config['verbose']
-    metadata = dict.fromkeys(set(frame_list))  # todo: does a regular dict work here?
+    metadata = dict.fromkeys(set(frame_list))
     preprocessing_settings = PreprocessingSettings.load_from_yaml(
         _config['preprocessing_config']
     )
-
-    # get stardist model object
     stardist_model_name = _config['segmentation_params']['stardist_model_name']
-    _segment_full_video_2d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
-                           opt_postprocessing, preprocessing_settings, stardist_model_name, verbose, video_path)
+    return frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path
 
 
 def _segment_full_video_2d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
@@ -190,12 +176,7 @@ def _do_first_volume2d(frame_list, mask_fname, metadata, num_frames, num_slices,
     volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path)
     final_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
-    sz = (num_frames, num_slices, x_sz, y_sz)
-    chunks = (1, num_slices, x_sz, y_sz)
-    masks_zarr = zarr.open(mask_fname, mode='w-',
-                           shape=sz, chunks=chunks, dtype=np.uint16,
-                           fill_value=0,
-                           synchronizer=zarr.ThreadSynchronizer())
+    masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz)
     final_masks = perform_post_processing_2d(final_masks,
                                              volume,
                                              **opt_postprocessing,
@@ -212,13 +193,19 @@ def _do_first_volume3d(frame_list, mask_fname, metadata, num_frames, num_slices,
     volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path)
     final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
+    masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz)
+    save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
+    return masks_zarr
+
+
+def _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz):
+    """Creates a new zarr file of the correct file, or, if it already exists, check for a stopping point"""
     sz = (num_frames, num_slices, x_sz, y_sz)
     chunks = (1, num_slices, x_sz, y_sz)
     masks_zarr = zarr.open(mask_fname, mode='w-',
                            shape=sz, chunks=chunks, dtype=np.uint16,
                            fill_value=0,
                            synchronizer=zarr.ThreadSynchronizer())
-    save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
     return masks_zarr
 
 
