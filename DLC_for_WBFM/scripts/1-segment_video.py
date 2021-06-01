@@ -19,7 +19,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None)
+ex.add_config(project_path=None, continue_from_frame=None)
 
 
 @ex.config
@@ -50,7 +50,7 @@ def segment2d(_config, _run):
     with safe_cd(_config['project_dir']):
         mode = this_config['segmentation_type']
         if mode == "3d":
-            segment_video_using_config_3d(this_config)
+            segment_video_using_config_3d(this_config, _config['continue_from_frame'])
         elif mode == "2d":
             segment_video_using_config_2d(this_config)
         else:
