@@ -34,7 +34,7 @@ def reindex_segmentation(this_config, DEBUG=False):
     # Convert dataframe to lookup tables, per volume
     # Note: if not all neurons are in the dataframe, then they are set to 0
     all_lut = {}
-    for i_volume, match in tqdm(all_matches.items()):
+    for i_volume, match in all_matches.items():
         dlc_ind = match[:, 0].astype(int)
         seg_ind = match[:, 1].astype(int)
         lut = np.zeros(1000, dtype=int)  # TODO: Should be more than the maximum local index
@@ -51,12 +51,14 @@ def reindex_segmentation(this_config, DEBUG=False):
     #         print("DEBUG mode; quitting after first volume")
     #         break
 
-    def parallel_func(i):
-        lut = all_lut[i]
-        new_masks[i, ...] = lut[seg_masks[i, ...]]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-        # executor.map(parallel_func, range(len(all_lut)))
-        future_results = {executor.submit(parallel_func, i): i for i in range(len(all_lut))}
-        for future in concurrent.futures.as_completed(future_results):
-            # _ = future_results[future]
-            _ = future.result()
+    with tqdm(total=len(all_lut)) as pbar:
+        def parallel_func(i):
+            lut = all_lut[i]
+            new_masks[i, ...] = lut[seg_masks[i, ...]]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            # executor.map(parallel_func, range(len(all_lut)))
+            future_results = {executor.submit(parallel_func, i): i for i in range(len(all_lut))}
+            for future in concurrent.futures.as_completed(future_results):
+                # _ = future_results[future]
+                _ = future.result()
+                pbar.update(1)
