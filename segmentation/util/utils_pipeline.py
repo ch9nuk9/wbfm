@@ -97,7 +97,7 @@ def _calc_metadata_full_video_3d(frame_list, masks_zarr, num_slices, preprocessi
                 # segment_and_save3d(i_out + continue_from_frame, i_vol, video_path=video_stream, **opt)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
-                futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
+                futures = {executor.submit(parallel_func, i, {'metadata': metadata}): i for i in enumerate(frame_list)}
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
                     pbar.update(1)
