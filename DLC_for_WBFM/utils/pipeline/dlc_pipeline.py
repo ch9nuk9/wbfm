@@ -265,9 +265,10 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
     fname = os.path.join(dest_folder, 'full_3d_tracks.csv')
     final_df.to_csv(fname)
 
-    # Save in yaml
-    udpates = {'final_3d_tracks': {'df_fname': df_fname}}
-    edit_config(track_cfg['self_path'], udpates)
+    # Save only df_fname in yaml; don't overwrite other fields
+    updates = track_cfg['final_3d_tracks']
+    updates['df_fname'] = df_fname
+    edit_config(track_cfg['self_path'], {'final_3d_tracks': updates})
 
     return final_df
 
