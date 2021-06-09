@@ -7,6 +7,8 @@ from segmentation.util.utils_pipeline import recalculate_metadata_from_config
 import sacred
 from sacred import Experiment
 from pathlib import Path
+from sacred import SETTINGS
+SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 ex = Experiment()
@@ -31,4 +33,5 @@ def main(_config, _run):
     this_config = _config['segment_cfg'].copy()
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
-    recalculate_metadata_from_config(this_config)
+    with safe_cd(_config['project_dir']):
+        recalculate_metadata_from_config(this_config)

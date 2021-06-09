@@ -4,21 +4,21 @@ from pathlib import Path
 
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 import pandas as pd
 import numpy as np
 import zarr
 
 
-def reindex_segmentation(project_path, DEBUG=False):
+def reindex_segmentation(this_config, DEBUG=False):
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
     """
-    cfg = load_config(project_path)
+    trace_cfg = this_config['traces_cfg']
+    seg_cfg = this_config['segment_cfg']
 
-    with safe_cd(Path(project_path).parent):
+    with safe_cd(Path(this_config['project_path']).parent):
         # Get original segmentation
-        seg_cfg = load_config(cfg['subfolder_configs']['segmentation'])
         seg_fname = seg_cfg['output']['masks']
         seg_masks = zarr.open(seg_fname)
 
@@ -27,7 +27,6 @@ def reindex_segmentation(project_path, DEBUG=False):
         new_masks = zarr.open_like(seg_masks, path=out_fname)
 
         # Get tracking (dataframe) with neuron names
-        trace_cfg = load_config(cfg['subfolder_configs']['traces'])
         matches_fname = Path(trace_cfg['all_matches'])
         all_matches = pd.read_pickle(matches_fname)
         # Format: dict with i_volume -> Nx3 array of [dlc_ind, segmentation_ind, confidence] triplets
@@ -43,7 +42,6 @@ def reindex_segmentation(project_path, DEBUG=False):
         lut[seg_ind] = dlc_ind  # Raw indices of the lut should match the local index
         all_lut[i_volume] = lut
 
-    # err
     # Apply lookup tables to each volume
     # Also see link for ways to speed this up:
     # https://stackoverflow.com/questions/14448763/is-there-a-convenient-way-to-apply-a-lookup-table-to-a-large-array-in-numpy
