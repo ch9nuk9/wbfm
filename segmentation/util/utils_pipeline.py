@@ -470,3 +470,36 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
         final_masks = post.remove_border(final_masks, border_width_to_remove)
 
     return final_masks
+
+
+##
+## Also just for metadata calculation
+##
+
+def recalculate_metadata_from_config(_config):
+    """
+
+    Given a project that contains a segmentation, recalculate the metadata
+
+    Parameters
+    ----------
+    _config : dict, loaded from project yaml file
+
+    Returns
+    -------
+    Saves metadata.pickle to disk (within folder 1-segmentation)
+
+    See also:
+        segment_video_using_config_3d
+
+    """
+
+    frame_list, mask_fname, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path = _unpack_config_file(
+        _config)
+
+    masks_zarr = zarr.open(_config['output']['masks'])
+
+    _calc_metadata_full_video_3d(frame_list, masks_zarr, num_slices, preprocessing_settings, video_path,
+                                 metadata_fname)
+
+
