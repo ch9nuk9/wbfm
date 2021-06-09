@@ -117,6 +117,7 @@ def get_traces_from_3d_tracks(segment_cfg,
             this_green_volume = get_single_volume(green_tifffile, i_volume, **vol_opt)
             is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
             for i_dlc, i_seg, _ in matches:
+                i_dlc, i_seg = i_dlc-1, i_seg-1  # Matches start at 1
                 _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg, i_volume,
                                           is_mirrored, mdat, this_green_volume, this_mask_volume)
                 if DEBUG:
