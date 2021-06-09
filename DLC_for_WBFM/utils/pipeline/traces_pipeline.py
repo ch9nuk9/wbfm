@@ -91,7 +91,8 @@ def get_traces_from_3d_tracks(segment_cfg,
 
         # Save
         # all_matches[i_volume] = np.hstack([matches, conf])
-        all_matches[i_volume] = np.array([(m[0], m[1], c) for m, c in zip(matches, conf)])
+        # NOTE: need to offset by 1, because the background is 0
+        all_matches[i_volume] = np.array([(m[0]+1, m[1]+1, c) for m, c in zip(matches, conf)])
         if DEBUG:
             break
 
