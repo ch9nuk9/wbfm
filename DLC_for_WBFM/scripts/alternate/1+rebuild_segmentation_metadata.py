@@ -1,7 +1,7 @@
 
 
 # main function
-from DLC_for_WBFM.utils.projects.utils_project import load_config
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 from segmentation.util.utils_pipeline import recalculate_metadata_from_config
 # Experiment tracking
 import sacred
