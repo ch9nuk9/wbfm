@@ -134,7 +134,7 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
     # Initialize new array
     new_sz = list(masks.shape)
     new_sz[0] = len(which_frames)
-    out_fname = os.path.join(this_config['project_dir'], '2-training_data', 'reindexed_segmentation.zarr')
+    out_fname = os.path.join(this_config['project_dir'], '2-training_data', 'reindexed_masks.zarr')
     new_masks = zarr.open_like(masks, path=out_fname, shape=new_sz)
 
     # Reindex; this automatically writes to disk
