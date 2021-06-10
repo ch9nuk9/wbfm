@@ -31,16 +31,7 @@ def reindex_segmentation(this_config, DEBUG=False):
         all_matches = pd.read_pickle(matches_fname)
         # Format: dict with i_volume -> Nx3 array of [dlc_ind, segmentation_ind, confidence] triplets
 
-    # Convert dataframe to lookup tables, per volume
-    # Note: if not all neurons are in the dataframe, then they are set to 0
-    all_lut = {}
-    for i_volume, match in all_matches.items():
-        dlc_ind = match[:, 0].astype(int)
-        seg_ind = match[:, 1].astype(int)
-        lut = np.zeros(1000, dtype=int)  # TODO: Should be more than the maximum local index
-        # TODO: are the matches always the same length?
-        lut[seg_ind] = dlc_ind  # Raw indices of the lut should match the local index
-        all_lut[i_volume] = lut
+    all_lut = all_matches_to_lookup_tables(all_matches)
 
     # Apply lookup tables to each volume
     # Also see link for ways to speed this up:
@@ -62,3 +53,17 @@ def reindex_segmentation(this_config, DEBUG=False):
                 # _ = future_results[future]
                 _ = future.result()
                 pbar.update(1)
+
+
+def all_matches_to_lookup_tables(all_matches):
+    # Convert dataframe to lookup tables, per volume
+    # Note: if not all neurons are in the dataframe, then they are set to 0
+    all_lut = {}
+    for i_volume, match in all_matches.items():
+        dlc_ind = match[:, 0].astype(int)
+        seg_ind = match[:, 1].astype(int)
+        lut = np.zeros(1000, dtype=int)  # TODO: Should be more than the maximum local index
+        # TODO: are the matches always the same length?
+        lut[seg_ind] = dlc_ind  # Raw indices of the lut should match the local index
+        all_lut[i_volume] = lut
+    return all_lut
