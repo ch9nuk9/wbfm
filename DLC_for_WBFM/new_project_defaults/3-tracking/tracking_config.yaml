@@ -17,6 +17,7 @@ training_data_2d:
   num_crop_slices: 5 # CHANGE ME; z-depth of each mini-max project
   all_center_slices: [10, 15, 20] # CHANGE ME
   max_z_dist_for_traces: 2 # CHANGE ME z-dist for neuron centroids
+  is_color: true # CHANGE ME to use z information as color for the DLC training videos
 
 preprocessing_config: 2-training_data/preprocessing_config.yaml # Reuse from 3d tracking
 
@@ -41,5 +42,5 @@ pose_config_updates:
     - - 0.00005
       - 30000
     - - 0.00001
-      - 50000
-  pos_dist_thresh: 13
+      - 100000
+  pos_dist_thresh: 9
