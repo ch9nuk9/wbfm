@@ -1,6 +1,7 @@
 import concurrent.futures
 import os
 import pickle
+from collections import defaultdict
 from pathlib import Path
 
 from tqdm.auto import tqdm
@@ -73,13 +74,17 @@ def all_matches_to_lookup_tables(all_matches):
     """
     # Convert dataframe to lookup tables, per volume
     # Note: if not all neurons are in the dataframe, then they are set to 0
-    all_lut = {}
+    all_lut = defaultdict(list)
     for i_volume, match in all_matches.items():
-        dlc_ind = match[:, 0].astype(int)
-        seg_ind = match[:, 1].astype(int)
         lut = np.zeros(1000, dtype=int)  # TODO: Should be more than the maximum local index
         # TODO: are the matches always the same length?
-        lut[seg_ind] = dlc_ind  # Raw indices of the lut should match the local index
+        try:
+            dlc_ind = match[:, 0].astype(int)
+            seg_ind = match[:, 1].astype(int)
+            lut[seg_ind] = dlc_ind  # Raw indices of the lut should match the local index
+        except IndexError:
+            # Some volumes may be empty
+            pass
         all_lut[i_volume] = lut
     return all_lut
 
