@@ -56,6 +56,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     df = pd.read_pickle(df_fname)
 
     all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, config, df)
+    edit_config(config['self_path'], config)
 
     all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(DEBUG, all_center_slices, config,
                                                                                    verbose, vid_fname, which_frames)
@@ -181,7 +182,6 @@ def _get_frames_for_dlc_training(DEBUG, config, df):
     # Also save these chosen frames
     updates = {'which_frames': which_frames}
     config['training_data_3d'].update(updates)
-    edit_config(config['self_path'], config)
     all_center_slices = config['training_data_2d']['all_center_slices']
     if DEBUG:
         all_center_slices = [all_center_slices[0]]
