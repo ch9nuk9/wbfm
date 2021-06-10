@@ -12,6 +12,8 @@ import pandas as pd
 import numpy as np
 import zarr
 
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
+
 
 def reindex_segmentation(this_config, DEBUG=False):
     """
@@ -88,18 +90,14 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
     Using tracklets and full segmentation, produces a small video (zarr) with neurons colored by track
     """
 
-
     # Get ALL matches to the segmentation, then subset
     # Also get segmentation metadata
-    with safe_cd(this_config['project_path']):
+    with safe_cd(this_config['project_dir']):
         fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
         df = pd.read_pickle(fname)
 
-        # Get the frames chosen as training data
-        try:
-            which_frames = this_config['track_cfg']['training_data_3d']['which_frames']
-        except KeyError:
-            which_frames, _ = _get_frames_for_dlc_training(DEBUG, this_config, df)
+        # Get the frames chosen as training data, or recalculate
+        which_frames = _get_or_recalculate_which_frames(DEBUG, df, this_config)
 
         # Build a sub-df with only the relevant neurons; all slices
         # Todo: connect up to actually tracked z slices?
@@ -129,10 +127,10 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
     # Reindex using look-up table
     all_lut = all_matches_to_lookup_tables(all_matches)
 
-    # Initialize
+    # Initialize new array
     new_sz = list(masks.shape)
     new_sz[0] = len(which_frames)
-    out_fname = os.path.join(this_config['project_path'], '2-training_data', 'reindexed_segmentation.zarr')
+    out_fname = os.path.join(this_config['project_dir'], '2-training_data', 'reindexed_segmentation.zarr')
     new_masks = zarr.open_like(masks, path=out_fname, shape=new_sz)
 
     # Reindex; this automatically writes to disk
@@ -140,3 +138,20 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
         new_masks[i, ...] = lut[masks[i_volume, ...]]
 
     # Note: automatically saves
+
+
+def _get_or_recalculate_which_frames(DEBUG, df, this_config):
+    try:
+        which_frames = this_config['track_cfg']['training_data_3d']['which_frames']
+    except KeyError:
+        which_frames = None
+    if which_frames is None:
+        # Choose a subset of frames with enough tracklets
+        num_frames_needed = this_config['track_cfg']['training_data_3d']['num_training_frames']
+        tracklet_opt = {'num_frames_needed': num_frames_needed,
+                        'num_frames': this_config['dataset_params']['num_frames'],
+                        'verbose': 1}
+        if DEBUG:
+            tracklet_opt['num_frames_needed'] = 2
+        which_frames, _ = best_tracklet_covering(df, **tracklet_opt)
+    return which_frames
