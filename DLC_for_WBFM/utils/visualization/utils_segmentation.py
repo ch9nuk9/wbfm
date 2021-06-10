@@ -79,8 +79,8 @@ def all_matches_to_lookup_tables(all_matches):
         lut = np.zeros(1000, dtype=int)  # TODO: Should be more than the maximum local index
         # TODO: are the matches always the same length?
         try:
-            dlc_ind = match[:, 0].astype(int)
-            seg_ind = match[:, 1].astype(int)
+            dlc_ind = np.array(match)[:, 0].astype(int)
+            seg_ind = np.array(match)[:, 1].astype(int)
             lut[seg_ind] = dlc_ind  # Raw indices of the lut should match the local index
         except IndexError:
             # Some volumes may be empty
