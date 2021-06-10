@@ -23,20 +23,20 @@ class PreprocessingSettings():
     """
 
     # Filtering
-    do_filtering : bool = False
-    filter_opt : List = field(default_factory=lambda: {'high_freq':2.0, 'low_freq':5000.0})
+    do_filtering: bool = False
+    filter_opt: List = field(default_factory=lambda: {'high_freq':2.0, 'low_freq':5000.0})
 
     # Mini max
-    do_mini_max_projection : bool = False
-    mini_max_size : int = 3
+    do_mini_max_projection: bool = False
+    mini_max_size: int = 3
 
     # Rigid alignment (slices to each other)
-    do_rigid_alignment : bool = False
+    do_rigid_alignment: bool = False
 
     # Datatypes and scaling
-    initial_dtype : str = 'uint16' # Filtering etc. will act on this
-    final_dtype : str = 'uint8'
-    alpha : float = 0.15
+    initial_dtype: str = 'uint16' # Filtering etc. will act on this
+    final_dtype: str = 'uint8'
+    alpha: float = 0.15
 
     @staticmethod
     def load_from_yaml(fname):
@@ -64,7 +64,7 @@ def perform_preprocessing(dat_raw, preprocessing_settings: PreprocessingSettings
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
-        dat_raw = ndi.maximum_filter(dat_raw, size=(mini_max_size,1,1))
+        dat_raw = ndi.maximum_filter(dat_raw, size=(mini_max_size, 1, 1))
 
     dat_raw = (dat_raw*s.alpha).astype(s.final_dtype)
 
@@ -112,7 +112,8 @@ def _get_video_options(config, vid_fname):
         sz = tif.pages[0].shape
     vid_opt = {'fps': config['dataset_params']['fps'],
                'frame_height': sz[0],
-               'frame_width': sz[1]}
+               'frame_width': sz[1],
+               'is_color': config['training_data_2d'].get('is_color', False)}
     return sz, vid_opt
 
 

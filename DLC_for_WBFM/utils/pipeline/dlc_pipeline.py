@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import numpy as np
+
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _preprocess_all_frames, _get_video_options
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
@@ -166,7 +168,14 @@ def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video
     this_avi_fname = all_avi_fnames[i]
     if not video_exists[i]:
         vid_opt['out_fname'] = this_avi_fname
-        write_numpy_as_avi(preprocessed_dat[:, center, ...], **vid_opt)
+        # If color, use adjacent planes as color information
+        if not vid_opt.get('is_color', False):
+            avi_data = preprocessed_dat[:, center, ...]
+        else:
+            z_range = np.clip([center-1, center, center+1], 0, preprocessed_dat.shape[1])
+            avi_data = np.stack([preprocessed_dat[:, i, ...] for i in z_range], axis=-1)
+
+        write_numpy_as_avi(avi_data, **vid_opt)
     return this_avi_fname
 
 
