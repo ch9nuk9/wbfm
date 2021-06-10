@@ -6,7 +6,6 @@ from pathlib import Path
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import _get_frames_for_dlc_training
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 import pandas as pd
 import numpy as np

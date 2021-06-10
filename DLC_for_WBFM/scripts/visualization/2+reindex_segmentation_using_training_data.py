@@ -37,7 +37,7 @@ def make_dlc_labeled_videos(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    this_config = _config['track_cfg'].copy()
+    this_config = _config.copy()
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     with safe_cd(_config['project_dir']):
