@@ -74,38 +74,38 @@ def _calc_metadata_full_video_3d(frame_list, masks_zarr, num_slices, preprocessi
     metadata = dict.fromkeys(set(frame_list))
 
     # Loop again in order to calculate metadata and possibly postprocess
-    # with tifffile.TiffFile(video_path) as video_stream:
-    #     for i_rel, i_abs in tqdm(enumerate(frame_list), total=len(frame_list)):
-    #         masks = masks_zarr[i_rel, :, :, :]
-    #         # TODO: Use a disk-saved preprocessing artifact instead of recalculating
-    #         volume = _get_and_prepare_volume(i_abs, num_slices, preprocessing_settings, video_path=video_stream)
+    with tifffile.TiffFile(video_path) as video_stream:
+        for i_rel, i_abs in tqdm(enumerate(frame_list), total=len(frame_list)):
+            masks = masks_zarr[i_rel, :, :, :]
+            # TODO: Use a disk-saved preprocessing artifact instead of recalculating
+            volume = _get_and_prepare_volume(i_abs, num_slices, preprocessing_settings, video_path=video_stream)
+
+            metadata[i_abs] = get_metadata_dictionary(masks, volume)
+
+    # read_lock = threading.Lock()
     #
-    #         metadata[i_abs] = get_metadata_dictionary(masks, volume)
-
-    read_lock = threading.Lock()
-
-    with tqdm(total=len(frame_list)) as pbar:
-        with tifffile.TiffFile(video_path) as video_stream:
-            def parallel_func(i_both, metadata):
-                i_out, i_vol = i_both
-                masks = masks_zarr[i_out, :, :, :]
-                # TODO: Use a disk-saved preprocessing artifact instead of recalculating
-                volume = _get_and_prepare_volume(i_vol, num_slices, preprocessing_settings, video_path=video_stream,
-                                                 read_lock=read_lock)
-
-                metadata[i_vol] = get_metadata_dictionary(masks, volume)
-                # segment_and_save3d(i_out + continue_from_frame, i_vol, video_path=video_stream, **opt)
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
-                futures = {executor.submit(parallel_func, i, {'metadata': metadata}): i for i in enumerate(frame_list)}
-                for future in concurrent.futures.as_completed(futures):
-                    future.result()
-                    pbar.update(1)
-
-                # Seems like map is better for ProcessPool vs ThreadPool
-                # https://www.tutorialspoint.com/concurrency_in_python/concurrency_in_python_pool_of_processes.htm
-                # for _ in executor.map(parallel_func, enumerate(frame_list)):
-                #     pbar.update(1)
+    # with tqdm(total=len(frame_list)) as pbar:
+    #     with tifffile.TiffFile(video_path) as video_stream:
+    #         def parallel_func(i_both, metadata):
+    #             i_out, i_vol = i_both
+    #             masks = masks_zarr[i_out, :, :, :]
+    #             # TODO: Use a disk-saved preprocessing artifact instead of recalculating
+    #             volume = _get_and_prepare_volume(i_vol, num_slices, preprocessing_settings, video_path=video_stream,
+    #                                              read_lock=read_lock)
+    #
+    #             metadata[i_vol] = get_metadata_dictionary(masks, volume)
+    #             # segment_and_save3d(i_out + continue_from_frame, i_vol, video_path=video_stream, **opt)
+    #
+    #         with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
+    #             futures = {executor.submit(parallel_func, i, {'metadata': metadata}): i for i in enumerate(frame_list)}
+    #             for future in concurrent.futures.as_completed(futures):
+    #                 future.result()
+    #                 pbar.update(1)
+    #
+    #             # Seems like map is better for ProcessPool vs ThreadPool
+    #             # https://www.tutorialspoint.com/concurrency_in_python/concurrency_in_python_pool_of_processes.htm
+    #             # for _ in executor.map(parallel_func, enumerate(frame_list)):
+    #             #     pbar.update(1)
     # saving metadata and settings
     with open(metadata_fname, 'wb') as meta_save:
         pickle.dump(metadata, meta_save)
