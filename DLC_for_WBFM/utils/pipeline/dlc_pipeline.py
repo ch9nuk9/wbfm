@@ -14,7 +14,8 @@ import pandas as pd
 import os
 from tqdm import tqdm
 import deeplabcut
-
+import numpy as np
+from scipy.spatial.distance import pdist
 
 ###
 ### For use with training a stack of DLC (step 3 of pipeline)
@@ -260,6 +261,7 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
     # Collect 2d data
     # i.e. just add the z coordinate to it
     # For some reason, the concat after adding z was broken :(
+    # TODO: deal with z if there were multiple trackings
     for name, z in neuron2z_dict.items():
         final_df[name, 'z'] = z
     final_df.sort_values('bodyparts', axis=1, inplace=True)
@@ -284,7 +286,35 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
 
 def _process_duplicates_to_final_df(all_dfs):
     # TODO: process repeats to create a final position
-    final_df = pd.concat(all_dfs, axis=1)
+    # final_df = pd.concat(all_dfs, axis=1)
+
+    # Do a naive concatenation, and check for duplicates
+    df_with_duplicates = pd.concat(all_dfs, axis=1)
+    duplicate_ind = np.where(df_with_duplicates.columns.duplicated(keep=False))[0]
+    duplicate_names = [df_with_duplicates.iloc[:, i].name[0] for i in duplicate_ind]
+    duplicate_names = list(set(duplicate_names))
+
+    # Use heuristics to combine multiple points of varying confidence levels
+    all_dfs_to_concat = []
+    for name in tqdm(duplicate_names):
+        this_df = df_with_duplicates[name]
+        print(f"Found {len(this_df.columns) // 3} duplicates for neuron {name}")
+        new_xy_conf = consolidate_duplicates(this_df, verbose=0)
+        xy_conf_dict = {
+            (name, 'x'): new_xy_conf[:, 0],
+            (name, 'y'): new_xy_conf[:, 1],
+            (name, 'likelihood'): new_xy_conf[:, 2],
+        }
+        tmp_df = pd.DataFrame(xy_conf_dict)
+        all_dfs_to_concat.append(tmp_df)
+    consolidated_df = pd.concat(all_dfs_to_concat, axis=1)
+
+    # Combine with neurons that were unique
+    unique_ind = np.where(~df_with_duplicates.columns.duplicated(keep=False))[0]
+    df_without_duplicates = df_with_duplicates.iloc[:, unique_ind]
+
+    final_df = pd.concat([consolidated_df, df_without_duplicates], axis=1)
+
     return final_df
 
 
@@ -357,3 +387,85 @@ def make_all_dlc_labeled_videos(track_cfg, use_dlc_project_videos=True, DEBUG=Fa
 
         if not DEBUG:
             deeplabcut.create_labeled_video(dlc_config, video_list, destfolder=destfolder)
+
+
+##
+## Functions for consolidating multiple 2d tracks into one
+##
+
+# Loop through the duplicates and apply heuristics
+def is_finalized(pts):
+    return pts.shape[0] == 1 or pts.ndim == 1
+
+
+def consolidate_row(this_row, verbose=0):
+    """
+    Heuristics for combining multiple points into one final position
+
+    Algorithm:
+    Given multiple tracked points, each with XY coordinates and likelihood:
+    if there is only one confident point:
+       keep that
+    if the points are close and the confidences are > THRESH:
+       average the points
+    if the points are far and one is MUCH BETTER than the other:
+       remove the low confidence point
+    if no confidences are high:
+       NaN the point (no need to do anything; low confidence will be removed later)
+    if multiple different locations are high confidence:
+       vote and average... if it is close, NaN the point
+    """
+
+    pts = np.reshape(np.array(this_row), (-1, 3))
+
+    # Remove nan
+    pts = pts[~np.isnan(pts[:, 2]), :]
+    if is_finalized(pts):
+        if verbose >= 1:
+            print("Only one non-nan point")
+        return pts
+
+    # Don't even consider below this
+    min_confidence_threshold = 0.4
+    pts = pts[pts[:, 2] > min_confidence_threshold, :]
+    if len(pts) == 0:
+        if verbose >= 1:
+            print("No good points; returning 0")
+        return np.array([0.0, 0.0, 0.0])
+    if is_finalized(pts):
+        if verbose >= 1:
+            print("Only one remaining good point")
+        return pts
+
+    # Average if the distances are close
+    averaging_distance_threshold = 5.0
+
+    pts_dists = pdist(pts[:, :2])
+    if all(pts_dists < averaging_distance_threshold):
+        pts = np.mean(pts, axis=0)
+    if is_finalized(pts):
+        if verbose >= 1:
+            print("Averaged good, close points")
+        return pts
+
+    # If multiple high-confidence points, try to vote
+    # Requires at least 3 points
+    if pts.shape[0] < 3:
+        if verbose >= 1:
+            print("2 points but both have high confidence... returning zero confidence")
+        return np.array([0.0, 0.0, 0.0])
+    else:
+        if verbose >= 1:
+            print("Trying to cluster... TODO")
+            print(pts.shape)
+        return np.array([0.0, 0.0, 0.0])
+
+
+def consolidate_duplicates(df, verbose=0):
+    final_xyconf = []
+    for _, row in df.iterrows():
+        new_row = np.squeeze(consolidate_row(row, verbose=verbose - 2))
+        if verbose >= 2:
+            print(new_row)
+        final_xyconf.append(new_row)
+    return np.vstack(final_xyconf)
