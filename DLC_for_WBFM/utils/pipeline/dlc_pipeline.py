@@ -284,7 +284,7 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
     return final_df
 
 
-def _process_duplicates_to_final_df(all_dfs):
+def _process_duplicates_to_final_df(all_dfs, verbose=0):
     # TODO: process repeats to create a final position
     # final_df = pd.concat(all_dfs, axis=1)
 
@@ -298,14 +298,17 @@ def _process_duplicates_to_final_df(all_dfs):
     all_dfs_to_concat = []
     for name in tqdm(duplicate_names):
         this_df = df_with_duplicates[name]
-        print(f"Found {len(this_df.columns) // 3} duplicates for neuron {name}")
-        new_xy_conf = consolidate_duplicates(this_df, verbose=0)
+        if verbose >= 2:
+            print(f"Found {len(this_df.columns) // 3} duplicates for neuron {name}")
+        new_xy_conf = consolidate_duplicates(this_df, verbose=verbose-2)
+        # Align with DLC formatting
         xy_conf_dict = {
             (name, 'x'): new_xy_conf[:, 0],
             (name, 'y'): new_xy_conf[:, 1],
             (name, 'likelihood'): new_xy_conf[:, 2],
         }
-        tmp_df = pd.DataFrame(xy_conf_dict)
+        columns = pd.MultiIndex.from_tuples(xy_conf_dict.keys(), names=["bodyparts", "coords"])
+        tmp_df = pd.DataFrame(xy_conf_dict, columns=columns)
         all_dfs_to_concat.append(tmp_df)
     consolidated_df = pd.concat(all_dfs_to_concat, axis=1)
 
