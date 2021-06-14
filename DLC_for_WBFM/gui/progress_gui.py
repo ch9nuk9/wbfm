@@ -25,7 +25,7 @@ from DLC_for_WBFM.gui import trace_explorer_gui
 
 class Ui_MainWindow(object):
 
-    def setupUi(self, MainWindow, project_config):
+    def setupUi(self, MainWindow, project_path):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(491, 289)
 
@@ -144,7 +144,7 @@ class Ui_MainWindow(object):
         # Load project path
         self.is_loaded = False
         self.project_dir = None
-        self.project_file = project_config
+        self.project_file = project_path
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -233,8 +233,8 @@ class Ui_MainWindow(object):
             self.tracesProgress.setValue(0)
 
 
-    def _load_config_files(self, project_config):
-        cfg = load_config(project_config)
+    def _load_config_files(self, project_path):
+        cfg = load_config(project_path)
         self.cfg = cfg
         segment_fname = cfg['subfolder_configs']['segmentation']
         self.segment_cfg = load_config(segment_fname)
@@ -266,10 +266,10 @@ class Ui_MainWindow(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Build GUI with a project')
-    parser.add_argument('--project_config', default=None,
+    parser.add_argument('--project_path', default=None,
                         help='path to config file')
     parser.add_argument('--DEBUG', default=False,
-                        help='path to config file')
+                        help='')
     args = parser.parse_args()
 
     # Basic setup
@@ -277,8 +277,8 @@ if __name__ == "__main__":
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
     # Get project settings
-    project_config = args.project_config
+    project_path = args.project_path
     # Actually build window
-    ui.setupUi(MainWindow, project_config)
+    ui.setupUi(MainWindow, project_path)
     MainWindow.show()
     sys.exit(app.exec_())
