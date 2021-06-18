@@ -38,6 +38,8 @@ def make_dlc_labeled_videos(_config, _run):
 
     if _config['is_abs']:
         use_dlc_project_videos = False
+    else:
+        use_dlc_project_videos = True
 
     with safe_cd(_config['project_dir']):
         make_all_dlc_labeled_videos(this_config, use_dlc_project_videos=use_dlc_project_videos, DEBUG=DEBUG)
