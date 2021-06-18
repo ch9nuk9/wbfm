@@ -1,6 +1,7 @@
 import os
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from ipywidgets import interact
 from matplotlib.ticker import NullFormatter
@@ -13,19 +14,49 @@ from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 ## New functions for use with project_config files
 ##
 
-def make_grid_plot_from_project(config, trace_mode=None):
+def make_grid_plot_from_project(config, trace_mode=None, do_df_over_f0=False, smoothing_func=None, background=100):
     """
     Should be run within a project folder
     """
 
-    assert (trace_mode in ['green', 'red']), f"Unknown trace mode {trace_mode}"
+    assert (trace_mode in ['green', 'red', 'ratio']), f"Unknown trace mode {trace_mode}"
 
-    fname = os.path.join("4-traces", f"{trace_mode}_traces.h5")
-    df = pd.read_hdf(fname)
+    # Read in the data
+    if smoothing_func is None:
+        smoothing_func = lambda x: x
+        smoothing_str = ""
+    else:
+        smoothing_str = "smoothing"
+    if trace_mode is not 'ratio':
+        fname = os.path.join("4-traces", f"{trace_mode}_traces.h5")
+        df = pd.read_hdf(fname)
+        neuron_names = list(set(df.columns.get_level_values(0)))
+        def get_y_raw(i):
+            y_raw = df[i]['brightness']
+            return smoothing_func(y_raw / df[i]['volume']) - background
+
+    else:
+        fname = os.path.join("4-traces", f"red_traces.h5")
+        df_red = pd.read_hdf(fname)
+        fname = os.path.join("4-traces", f"green_traces.h5")
+        df_green = pd.read_hdf(fname)
+        neuron_names = list(set(df_green.columns.get_level_values(0)))
+        def get_y_raw(i):
+            red_raw = df_red[i]['brightness']
+            green_raw = df_green[i]['brightness']
+            return smoothing_func((green_raw-background) / (red_raw-background))
+
     print(f"Read traces from: {fname}")
 
+    # Define df / f0 postprocessing (normalizing) step
+    if do_df_over_f0:
+        def get_y(i):
+            y_raw = get_y_raw(i)
+            return y_raw / np.nanquantile(y_raw, 0.1)
+    else:
+        get_y = get_y_raw
+
     # Guess a good shape for subplots
-    neuron_names = list(set(df.columns.get_level_values(0)))
     neuron_names.sort()
 
     num_neurons = len(neuron_names)
@@ -38,11 +69,10 @@ def make_grid_plot_from_project(config, trace_mode=None):
     # ylim = [0, max([max(df[i]['brightness']/df[i]['volume']) for i in neuron_names])]
 
     # Loop through neurons and plot
-    fig, axes = plt.subplots(num_rows, num_columns, figsize=(45, 15), sharex=True, sharey=True)
+    fig, axes = plt.subplots(num_rows, num_columns, figsize=(45, 15), sharex=True, sharey=False)
 
     for ax, i_neuron in tqdm(zip(fig.axes, neuron_names)):
-        y_raw = df[i_neuron]['brightness']
-        y = y_raw / df[i_neuron]['volume']
+        y = get_y(i_neuron)
         ax.plot(y, label=i_neuron)
         # ax.set_xlim(xlim)
         # ax.set_ylim(ylim)
@@ -60,7 +90,7 @@ def make_grid_plot_from_project(config, trace_mode=None):
                         wspace=0.0,
                         hspace=0.0)
 
-    out_fname = os.path.join("4-traces", f"{trace_mode}_grid_plot.png")
+    out_fname = os.path.join("4-traces", f"{smoothing_str}_{trace_mode}_grid_plot.png")
     plt.savefig(out_fname, bbox_inches='tight', pad_inches = 0)
 
 
