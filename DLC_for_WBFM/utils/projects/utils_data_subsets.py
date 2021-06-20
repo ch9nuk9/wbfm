@@ -8,10 +8,12 @@ import zarr
 from segmentation.util.utils_pipeline import _segment_full_video_3d, _segment_full_video_2d
 
 
-def write_data_subset_from_config(project_config, out_fname=None, tiff_not_zarr=True, pad_to_align_with_original=False):
+def write_data_subset_from_config(cfg,
+                                  out_fname=None,
+                                  tiff_not_zarr=True,
+                                  pad_to_align_with_original=False):
     """Takes the original giant .btf file from and writes the subset of the data"""
-    cfg = load_config(project_config)
-    project_dir = Path(project_config).parent
+    project_dir = cfg['project_dir']
     fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
     cfg['preprocessing_config'] = fname
 
