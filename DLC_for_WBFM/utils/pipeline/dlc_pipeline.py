@@ -1,3 +1,4 @@
+from concurrent import futures
 from pathlib import Path
 
 import numpy as np
@@ -411,7 +412,9 @@ def filter_all_dlc_tracks(track_cfg, filter_mode='arima', use_dlc_project_videos
     else:
         external_videos = _get_dlc_video_names_from_config(track_cfg)
 
-    for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
+    def parallel_func(vid_and_cfg, DEBUG=DEBUG, filter_mode=filter_mode):
+    # for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
+        ext_video, dlc_config = vid_and_cfg
         dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
         if ext_video is None:
             video_list = list(dlc_cfg['video_sets'].keys())
@@ -420,6 +423,11 @@ def filter_all_dlc_tracks(track_cfg, filter_mode='arima', use_dlc_project_videos
 
         if not DEBUG:
             deeplabcut.filterpredictions(dlc_config, video_list, filtertype=filter_mode)
+
+    with futures.ThreadPoolExecutor(max_workers=32) as executor:
+        results_iter = executor.map(parallel_func, zip(external_videos, all_dlc_configs))
+        results = [result for result in results_iter]
+
 
 
 ##
