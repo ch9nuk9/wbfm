@@ -1,4 +1,5 @@
 import deeplabcut
+import numpy as np
 from deeplabcut.utils import auxiliaryfunctions
 from DLC_for_WBFM.config.class_configuration import load_config, DLCForWBFMTracking, save_config
 from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, save_dlc_annotations
@@ -335,12 +336,29 @@ def get_z_from_dlc_name(name):
     return [int(s[1:]) for s in results][0]
 
 
-def get_annotations_from_dlc_config(dlc_config):
+def get_annotations_from_dlc_config(dlc_config, use_filtered=True):
+    """
+    Get the .h5 file corresponding to the DLC tracks
+
+    Assumes it is the same folder as the video itself, i.e. the videos/ folder in the DLC project
+
+    If there is more than one .h5 file, uses use_filtered to choose which to use
+        (assuming the additional files come from built-in DLC filtering functions)
+    """
     video_dir = Path(dlc_config).with_name('videos')
     fnames = os.listdir(video_dir)
     annotation_names = [f for f in fnames if f.endswith('.h5')]
     if len(annotation_names) > 1:
-        print(f"Found more than one annotation for {dlc_config}; taking first one")
+        if use_filtered:
+            annotation_is_filtered = [('filtered' in f) for f in annotation_names]
+            which_annotation_inds = np.where(annotation_is_filtered)[0]
+            if len(which_annotation_inds) > 0:
+                print(f"Found more than one filtered annotation for {dlc_config}; taking first one")
+        else:
+            annotation_is_not_filtered = [('filtered' not in f) for f in annotation_names]
+            which_annotation_inds = np.where(annotation_is_not_filtered)[0]
+            if len(which_annotation_inds) > 0:
+                print(f"Found more than one non-filtered annotation for {dlc_config}; taking first one")
     annotation_names = annotation_names[0]
     print(f"Using found annotations: {annotation_names}")
     return Path(video_dir).joinpath(annotation_names)
@@ -348,7 +366,7 @@ def get_annotations_from_dlc_config(dlc_config):
 
 def get_annotations_matching_video_in_folder(annotation_dir, video_fname):
     fnames = os.listdir(annotation_dir)
-    video_stem = Path(video_fname).stem # TODO: can cause errors if center1 and center10 both exist
+    video_stem = Path(video_fname).stem  # TODO: can cause errors if center1 and center10 both exist
     annotation_names = [f for f in fnames if (f.startswith(video_stem) and f.endswith('.h5'))]
     if len(annotation_names) > 1:
         print(f"Found more than one annotation for {video_fname}; taking first one")

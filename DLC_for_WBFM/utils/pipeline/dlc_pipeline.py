@@ -242,6 +242,7 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
     """
 
     all_dlc_configs = track_cfg['dlc_projects']['all_configs']
+    use_filtered = track_cfg['final_3d_tracks'].get('use_filtered', False)
 
     # Apply networks
     all_dfs = []
@@ -256,7 +257,8 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
             print(list(zip(external_videos, videos_exist)))
             raise FileExistsError("All avi files must exist in the main project; see 3a-alternate-only_make_videos.py")
     for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
-        i_neuron = _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict, [ext_video])
+        i_neuron = _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict,
+                                                  use_filtered, [ext_video])
     final_df = _process_duplicates_to_final_df(all_dfs)
 
     # Collect 2d data
@@ -323,7 +325,8 @@ def _process_duplicates_to_final_df(all_dfs, verbose=0):
     return final_df
 
 
-def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict, external_video_list=None):
+def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict,
+                                   use_filtered=False, external_video_list=None):
     dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
     if external_video_list[0] is None:
         video_list = list(dlc_cfg['video_sets'].keys())
@@ -341,7 +344,7 @@ def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2
     # Get data for later use
     if destfolder is None:
         # i.e. it is saved where DLC expects it
-        df_fname = get_annotations_from_dlc_config(dlc_config)
+        df_fname = get_annotations_from_dlc_config(dlc_config, use_filtered=use_filtered)
     else:
         df_fname = get_annotations_matching_video_in_folder(destfolder, video_list[0])
     if DEBUG:
