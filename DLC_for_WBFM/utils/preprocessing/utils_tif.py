@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from typing import List
 import yaml
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 
 ##
@@ -113,7 +113,9 @@ def _get_video_options(config, vid_fname):
     vid_opt = {'fps': config['dataset_params']['fps'],
                'frame_height': sz[0],
                'frame_width': sz[1],
-               'is_color': config['training_data_2d'].get('is_color', False)}
+               'is_color': False}
+    if 'training_data_2d' in config:
+        vid_opt['is_color'] = config['training_data_2d'].get('is_color', False)
     return sz, vid_opt
 
 

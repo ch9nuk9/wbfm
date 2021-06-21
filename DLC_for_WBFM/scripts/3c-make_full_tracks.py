@@ -9,6 +9,8 @@ from DLC_for_WBFM.utils.pipeline.dlc_pipeline import make_3d_tracks_from_stack
 # Experiment tracking
 import sacred
 from sacred import Experiment
+from sacred import SETTINGS
+SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 ex = Experiment()
