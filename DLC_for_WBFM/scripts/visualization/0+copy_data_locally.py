@@ -36,7 +36,7 @@ def cfg(project_path, do_only_training_data, out_fname):
         cfg['dataset_params']['num_frames'] = tracking_cfg['training_data_3d']['num_training_frames']
 
         if out_fname is None:
-            out_fname = os.path.join('2-training', 'training_data_red_channel.zarr')
+            out_fname = os.path.join('2-training_data', 'training_data_red_channel.zarr')
 
 
 @ex.automain
