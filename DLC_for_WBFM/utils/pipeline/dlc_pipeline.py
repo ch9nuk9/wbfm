@@ -419,7 +419,7 @@ def filter_all_dlc_tracks(track_cfg, filter_mode='arima', use_dlc_project_videos
             video_list = [str(Path(ext_video).resolve())]
 
         if not DEBUG:
-            deeplabcut.filterpredictions(dlc_config, video_list, filtermode=filter_mode)
+            deeplabcut.filterpredictions(dlc_config, video_list, filtertype=filter_mode)
 
 
 ##
