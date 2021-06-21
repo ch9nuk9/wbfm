@@ -22,6 +22,8 @@ def write_data_subset_from_config(cfg,
             out_fname = os.path.join(project_dir, "data_subset.tiff")
         else:
             out_fname = os.path.join(project_dir, "data_subset.zarr")
+    else:
+        out_fname = os.path.join(project_dir, out_fname)
     vid_fname = cfg['red_bigtiff_fname']
     verbose = cfg['other']['verbose']
     DEBUG = False

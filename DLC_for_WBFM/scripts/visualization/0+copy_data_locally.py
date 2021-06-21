@@ -2,6 +2,7 @@
 """
 
 # main function
+import os
 from pathlib import Path
 
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
@@ -22,7 +23,7 @@ ex.add_config(project_path=None,
               do_only_training_data=False)
 
 @ex.config
-def cfg(project_path, do_only_training_data):
+def cfg(project_path, do_only_training_data, out_fname):
     # Manually load yaml files
     cfg = load_config(project_path)
     project_dir = Path(project_path).parent
@@ -33,6 +34,9 @@ def cfg(project_path, do_only_training_data):
         # Change config to match the frames used for training (assuming contiguous)
         cfg['dataset_params']['start_volume'] = tracking_cfg['training_data_3d']['which_frames'][0]
         cfg['dataset_params']['num_frames'] = tracking_cfg['training_data_3d']['num_training_frames']
+
+        if out_fname is None:
+            out_fname = os.path.join('2-training', 'training_data_red_channel.zarr')
 
 
 @ex.automain
