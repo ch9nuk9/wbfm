@@ -21,6 +21,7 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
 from DLC_for_WBFM.gui import trace_explorer_gui
+from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_training_data
 
 
 class Ui_MainWindow(object):
@@ -102,16 +103,22 @@ class Ui_MainWindow(object):
         self.segVisButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.segVisButton.setObjectName("pushButton_2")
         self.segVisButton.clicked.connect(self.napari_for_masks)
+        self.segVisButton.setToolTip('Visualize segmentation (untracked)')
         self.gridLayout.addWidget(self.segVisButton, 1, 2, 1, 1)
-        self.pushButton_3 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton_3.setObjectName("pushButton_3")
-        self.gridLayout.addWidget(self.pushButton_3, 2, 2, 1, 1)
-        self.pushButton_4 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton_4.setObjectName("pushButton_4")
+        self.trainingVisButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.trainingVisButton.setObjectName("trainingVisButton")
+        self.trainingVisButton.clicked.connect(self.napari_for_masks_training)
+        self.trainingVisButton.setToolTip('Visualize training data (segmentation overlaid on raw data)')
+        self.gridLayout.addWidget(self.trainingVisButton, 2, 2, 1, 1)
+        self.trackingVisButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.trackingVisButton.setObjectName("trackingVisButton")
+        self.trackingVisButton.clicked.connect(self.napari_for_masks_tracking)
+        self.trackingVisButton.setToolTip('Visualize tracked data (segmentation overlaid on raw data)')
         self.gridLayout.addWidget(self.pushButton_4, 3, 2, 1, 1)
         self.tracesVisButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.tracesVisButton.setObjectName("pushButton_5")
         self.tracesVisButton.clicked.connect(self.open_traces_gui)
+        self.tracesVisButton..setToolTip('Visualize traces of neurons 1-by-1')
         self.gridLayout.addWidget(self.tracesVisButton, 4, 2, 1, 1)
 
         # Do step buttons
@@ -248,8 +255,18 @@ class Ui_MainWindow(object):
 
 
     def napari_for_masks(self):
+        """Open napari window for segmentation before tracking"""
         self.viewer = napari.view_labels(self.segment_zarr, ndisplay=3)
         self.viewer.show()
+
+    def napari_for_masks_tracking(self):
+        """Open napari window for segmentation colored by tracking"""
+        self.viewer = napari.view_labels(self.segment_zarr, ndisplay=3)
+        self.viewer.show()
+
+    def napari_for_masks_training(self):
+        """Open napari window for segmentation for just the training data"""
+        self.viewer = napari_of_training_data(self.project_dir)
 
     def open_traces_gui(self):
 
