@@ -21,7 +21,7 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
 from DLC_for_WBFM.gui import trace_explorer_gui
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_training_data
+from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_training_data, napari_of_full_data
 
 
 class Ui_MainWindow(object):
@@ -261,8 +261,7 @@ class Ui_MainWindow(object):
 
     def napari_for_masks_tracking(self):
         """Open napari window for segmentation colored by tracking"""
-        self.viewer = napari.view_labels(self.segment_zarr, ndisplay=3)
-        self.viewer.show()
+        self.viewer = napari_of_full_data(self.project_dir)
 
     def napari_for_masks_training(self):
         """Open napari window for segmentation for just the training data"""
