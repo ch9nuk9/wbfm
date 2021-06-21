@@ -169,7 +169,7 @@ class Ui_MainWindow(object):
         self.label_8.setText(_translate("MainWindow", "4. Traces"))
         self.segVisButton.setText(_translate("MainWindow", "SegVis"))
         self.trainingVisButton.setText(_translate("MainWindow", "TrainingVis"))
-        self.trackingVisButton.setText(_translate("MainWindow", "TODO-TrackingVis"))
+        self.trackingVisButton.setText(_translate("MainWindow", "TrackingVis"))
         self.tracesVisButton.setText(_translate("MainWindow", "TracesVis"))
         self.segmentationButton.setText(_translate("MainWindow", "TODO-Segment"))
         self.trainingButton.setText(_translate("MainWindow", "TODO-Make Training"))

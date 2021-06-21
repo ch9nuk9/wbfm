@@ -27,6 +27,8 @@ def napari_of_full_data(project_dir):
     with safe_cd(project_dir):
         if dat_exists:
             z_dat = zarr.open_array(training_dat_fname)
+        else:
+            z_dat = None
         z_seg = zarr.open_array(training_seg_fname)
 
     viewer = napari.view_labels(z_seg, ndisplay=3)
