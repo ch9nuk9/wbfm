@@ -373,11 +373,7 @@ def make_all_dlc_labeled_videos(track_cfg, use_dlc_project_videos=True, DEBUG=Fa
     if use_dlc_project_videos:
         external_videos = [None for _ in all_dlc_configs]
     else:
-        all_center_slices = track_cfg['training_data_2d']['all_center_slices']
-        external_videos, videos_exist = _get_and_check_avi_filename(all_center_slices)
-        if not all(videos_exist):
-            print(list(zip(external_videos, videos_exist)))
-            raise FileExistsError("All avi files must exist in the main project; see 3a-alternate-only_make_videos.py")
+        external_videos = _get_dlc_video_names_from_config(track_cfg)
 
     for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
         dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
@@ -391,6 +387,39 @@ def make_all_dlc_labeled_videos(track_cfg, use_dlc_project_videos=True, DEBUG=Fa
 
         if not DEBUG:
             deeplabcut.create_labeled_video(dlc_config, video_list, destfolder=destfolder)
+
+
+def _get_dlc_video_names_from_config(track_cfg):
+    all_center_slices = track_cfg['training_data_2d']['all_center_slices']
+    external_videos, videos_exist = _get_and_check_avi_filename(all_center_slices)
+    if not all(videos_exist):
+        print(list(zip(external_videos, videos_exist)))
+        raise FileExistsError("All avi files must exist in the main project; see 3a-alternate-only_make_videos.py")
+    return external_videos
+
+
+def filter_all_dlc_tracks(track_cfg, filter_mode='arima', use_dlc_project_videos=True, DEBUG=False):
+    """
+    Applies a simple median, arima, or spline filter to each DLC project
+
+    See also: https://github.com/DeepLabCut/DeepLabCut/blob/6c3df66e901874371d2339bbccd968a07230fc77/deeplabcut/post_processing/filtering.py
+    """
+    all_dlc_configs = track_cfg['dlc_projects']['all_configs']
+
+    if use_dlc_project_videos:
+        external_videos = [None for _ in all_dlc_configs]
+    else:
+        external_videos = _get_dlc_video_names_from_config(track_cfg)
+
+    for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
+        dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
+        if ext_video is None:
+            video_list = list(dlc_cfg['video_sets'].keys())
+        else:
+            video_list = [str(Path(ext_video).resolve())]
+
+        if not DEBUG:
+            deeplabcut.filterpredictions(dlc_config, video_list, filtermode=filter_mode)
 
 
 ##
