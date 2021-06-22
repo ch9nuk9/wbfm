@@ -11,7 +11,7 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 import pandas as pd
 import numpy as np
 import zarr
-
+import raster_geometry.raster
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 
 
@@ -58,6 +58,50 @@ def reindex_segmentation(this_config, DEBUG=False):
                 # _ = future_results[future]
                 _ = future.result()
                 pbar.update(1)
+
+
+def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
+    """
+    Creates a new psuedo-segmentation, which is just a sphere centered on the tracking point
+    """
+    track_cfg = this_config['track_cfg']
+    seg_cfg = this_config['segment_cfg']
+
+    with safe_cd(Path(this_config['project_path']).parent):
+        # Get original segmentation, just for shaping
+        seg_fname = seg_cfg['output']['masks']
+        seg_masks = zarr.open(seg_fname)
+
+        # Initialize the masks at 0
+        out_fname = os.path.join("3-tracking", "segmentation_from_tracking.zarr")
+        print(f"Saving masks at {out_fname}")
+        new_masks = zarr.open_like(seg_masks, path=out_fname)
+        mask_sz = new_masks.shape
+
+        # Get the 3d DLC tracks
+        df_fname = track_cfg['final_3d_tracks']['df_fname']
+        df = pd.read_hdf(df_fname)
+
+    neuron_names = df.columns.levels[0]
+    num_frames = mask_sz[0]
+    chunk_sz = new_masks.chunks
+
+    # Generate spheres for each neuron, for all time
+    for neuron in tqdm(neuron_names):
+        this_df = df[neuron]
+
+        def parallel_func(i):
+            position = [this_df['z'][i], this_df['x'][i], this_df['y'][i]]
+            new_masks[i, ...] = raster_geometry.raster.sphere(chunk_sz[1:], radius=sphere_radius, position=position)
+
+        with tqdm(total=num_frames, leave=False) as pbar:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+                # executor.map(parallel_func, range(len(all_lut)))
+                future_results = {executor.submit(parallel_func, i): i for i in range(num_frames)}
+                for future in concurrent.futures.as_completed(future_results):
+                    # _ = future_results[future]
+                    _ = future.result()
+                    pbar.update(1)
 
 
 def all_matches_to_lookup_tables(all_matches):
