@@ -349,19 +349,23 @@ def get_annotations_from_dlc_config(dlc_config, use_filtered=True):
     fnames = os.listdir(video_dir)
     annotation_names = [f for f in fnames if f.endswith('.h5')]
     if len(annotation_names) > 1:
+        print("Using filtered annotations")
         if use_filtered:
             annotation_is_filtered = [('filtered' in f) for f in annotation_names]
             which_annotation_inds = np.where(annotation_is_filtered)[0]
+            annotation_names = [annotation_names[i] for i in which_annotation_inds]
             if len(which_annotation_inds) > 0:
                 print(f"Found more than one filtered annotation for {dlc_config}; taking first one")
         else:
             annotation_is_not_filtered = [('filtered' not in f) for f in annotation_names]
             which_annotation_inds = np.where(annotation_is_not_filtered)[0]
+            annotation_names = [annotation_names[i] for i in which_annotation_inds]
             if len(which_annotation_inds) > 0:
                 print(f"Found more than one non-filtered annotation for {dlc_config}; taking first one")
-    annotation_names = annotation_names[0]
-    print(f"Using found annotations: {annotation_names}")
-    return Path(video_dir).joinpath(annotation_names)
+    # No matter what, we take the first one
+    final_name = annotation_names[0]
+    print(f"Using found annotations: {final_name}")
+    return Path(video_dir).joinpath(final_name)
 
 
 def get_annotations_matching_video_in_folder(annotation_dir, video_fname):
