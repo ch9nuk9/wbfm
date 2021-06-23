@@ -94,8 +94,8 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
 
     # Generate spheres for each neuron, for all time
     cube_sz = [2, 4, 4]
-    def get_clipped_sizes(z, cube_sz, total_sz):
-        return int(np.clip(z-cube_sz, a_min=0, a_max=None)), int(np.clip(z+cube_sz+1, a_max=total_sz, a_min=None))
+    def get_clipped_sizes(z, sz, total_sz):
+        return int(np.clip(z-sz, a_min=0, a_max=None)), int(np.clip(z+sz+1, a_max=total_sz, a_min=None))
 
     for ind_neuron, neuron in tqdm(enumerate(neuron_names), total=len(neuron_names)):
         this_df = df[neuron]
@@ -106,7 +106,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
             # this_shape = np.array(raster_geometry.raster.sphere(chunk_sz[1:], radius=sphere_radius, position=position))
             # new_masks[i_time, ...] = ind_neuron * this_shape
             # Instead do a cube (just for visualization)
-            z, x, y = get_crop_coords3d([z, x, y], cube_sz, chunk_sz)
+            # z, x, y = get_crop_coords3d([z, x, y], cube_sz, chunk_sz)
             z0, z1 = get_clipped_sizes(z, cube_sz[0], chunk_sz[0])
             x0, x1 = get_clipped_sizes(x, cube_sz[1], chunk_sz[1])
             y0, y1 = get_clipped_sizes(y, cube_sz[2], chunk_sz[2])
