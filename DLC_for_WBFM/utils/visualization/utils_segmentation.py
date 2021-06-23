@@ -126,7 +126,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
             create_cube(i_time, i_neuron, neuron)
 
     # Instead do a process pool that finishes one file at a time
-    with concurrent.futures.ProcessPoolExecutor(max_workers=56) as pool:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=16) as pool:
         with tqdm(total=num_frames) as progress:
             futures = []
 
