@@ -20,10 +20,12 @@ ex.add_config(project_path=None,
               out_fname=None,
               tiff_not_zarr=True,
               pad_to_align_with_original=False,
-              do_only_training_data=False)
+              do_only_training_data=False,
+              copy_locally=True,
+              DEBUG=False)
 
 @ex.config
-def cfg(project_path, do_only_training_data, out_fname):
+def cfg(project_path, do_only_training_data, out_fname, copy_locally, tiff_not_zarr):
     # Manually load yaml files
     cfg = load_config(project_path)
     project_dir = Path(project_path).parent
@@ -38,6 +40,14 @@ def cfg(project_path, do_only_training_data, out_fname):
         if out_fname is None:
             out_fname = os.path.join('2-training_data', 'training_data_red_channel.zarr')
 
+    if not copy_locally:
+        if out_fname is None:
+            if tiff_not_zarr:
+                raise ValueError("Did you really mean to re-copy the bigtiff as tiff?")
+            else:
+                fname = Path(cfg['red_bigtiff_fname'])
+                out_fname = fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr')
+
 
 @ex.automain
 def main(_config, _run):
@@ -45,7 +55,8 @@ def main(_config, _run):
 
     opt = {'out_fname': _config['out_fname'],
            'tiff_not_zarr': _config['tiff_not_zarr'],
-           'pad_to_align_with_original': _config['pad_to_align_with_original']}
+           'pad_to_align_with_original': _config['pad_to_align_with_original'],
+           'DEBUG': _config['DEBUG']}
     cfg = _config['cfg']
     cfg['project_dir'] = _config['project_dir']
     with safe_cd(_config['project_dir']):

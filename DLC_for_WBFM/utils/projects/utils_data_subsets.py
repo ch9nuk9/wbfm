@@ -11,7 +11,8 @@ from segmentation.util.utils_pipeline import _segment_full_video_3d, _segment_fu
 def write_data_subset_from_config(cfg,
                                   out_fname=None,
                                   tiff_not_zarr=True,
-                                  pad_to_align_with_original=False):
+                                  pad_to_align_with_original=False,
+                                  DEBUG=False):
     """Takes the original giant .btf file from and writes the subset of the data"""
     project_dir = cfg['project_dir']
     fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
@@ -26,7 +27,6 @@ def write_data_subset_from_config(cfg,
         out_fname = os.path.join(project_dir, out_fname)
     vid_fname = cfg['red_bigtiff_fname']
     verbose = cfg['other']['verbose']
-    DEBUG = False
 
     with safe_cd(project_dir):
         preprocessed_dat, _ = _preprocess_all_frames(DEBUG, cfg, verbose, vid_fname, None)
