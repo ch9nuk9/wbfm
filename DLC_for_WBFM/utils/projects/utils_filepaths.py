@@ -2,7 +2,7 @@ import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 
-def resolve_mounted_path_in_current_os(path: str):
+def resolve_mounted_path_in_current_os(path: str, verbose=1):
     """
     Removes windows-specific mounted drive names (Y:, D:, etc.) and replaces them with the networked system equivalent
 
@@ -13,6 +13,9 @@ def resolve_mounted_path_in_current_os(path: str):
     is_abs = PurePosixPath(path).is_absolute() or PureWindowsPath(path).is_absolute()
     if not is_abs:
         return path
+
+    if verbose >= 1:
+        print(f"Checking path {path} on os {os.name}...")
 
     # Swap mounted drive locations
     # UPDATE REGULARLY
@@ -33,4 +36,7 @@ def resolve_mounted_path_in_current_os(path: str):
             if path.startswith(drive):
                 raise FileNotFoundError("File mounted to local drive; network system can't find it")
 
-    return str(Path(path).resolve())
+    path = str(Path(path).resolve())
+    if verbose >= 1:
+        print(f"Resolved path to {path}")
+    return path
