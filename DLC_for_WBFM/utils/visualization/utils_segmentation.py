@@ -75,7 +75,8 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
         # Initialize the masks at 0
         out_fname = os.path.join("3-tracking", "segmentation_from_tracking.zarr")
         print(f"Saving masks at {out_fname}")
-        new_masks = zarr.open_like(seg_masks, path=out_fname)
+        new_masks = zarr.open_like(seg_masks, path=out_fname,
+                           synchronizer=zarr.ThreadSynchronizer())
         mask_sz = new_masks.shape
 
         # Get the 3d DLC tracks
@@ -87,15 +88,16 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
     chunk_sz = new_masks.chunks
 
     # Generate spheres for each neuron, for all time
-    for neuron in tqdm(neuron_names):
+    for ind_neuron, neuron in tqdm(enumerate(neuron_names)):
         this_df = df[neuron]
 
-        def parallel_func(i):
-            position = [this_df['z'][i], this_df['x'][i], this_df['y'][i]]
-            new_masks[i, ...] = raster_geometry.raster.sphere(chunk_sz[1:], radius=sphere_radius, position=position)
+        def parallel_func(i_time):
+            position = [this_df['z'][i_time], this_df['x'][i_time], this_df['y'][i_time]]
+            this_shape = np.array(raster_geometry.raster.sphere(chunk_sz[1:], radius=sphere_radius, position=position))
+            new_masks[i_time, ...] = ind_neuron * this_shape
 
         with tqdm(total=num_frames, leave=False) as pbar:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
                 # executor.map(parallel_func, range(len(all_lut)))
                 future_results = {executor.submit(parallel_func, i): i for i in range(num_frames)}
                 for future in concurrent.futures.as_completed(future_results):
