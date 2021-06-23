@@ -24,14 +24,14 @@ def resolve_mounted_path_in_current_os(path: str, verbose=1):
     }
 
     for win_drive, linux_drive in mounted_drive_dict.items():
-        if os.name.lower() == "linux" and path.startswith(win_drive):
+        if "ix" in os.name.lower() and path.startswith(win_drive):
             path = path.replace(win_drive, linux_drive)
         if os.name.lower() == "windows" and path.startswith(linux_drive):
             path = path.replace(linux_drive, win_drive)
 
     # Check for unreachable local drives
     local_drives = ['C:', 'D:']
-    if os.name.lower() == "linux":
+    if "ix" in os.name.lower():
         for drive in local_drives:
             if path.startswith(drive):
                 raise FileNotFoundError("File mounted to local drive; network system can't find it")
