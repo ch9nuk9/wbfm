@@ -7,6 +7,7 @@ from pathlib import Path
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 import pandas as pd
 import numpy as np
@@ -88,22 +89,56 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
     chunk_sz = new_masks.chunks
 
     # Generate spheres for each neuron, for all time
-    for ind_neuron, neuron in tqdm(enumerate(neuron_names)):
+    # cube_sz = [3, 7, 7]
+    # for ind_neuron, neuron in tqdm(enumerate(neuron_names)):
+    #     this_df = df[neuron]
+    #
+    #     def parallel_func(i_time):
+    #         # FLIP XY
+    #         z, y, x = [int(this_df['z'][i_time]), int(this_df['x'][i_time]), int(this_df['y'][i_time])]
+    #         # this_shape = np.array(raster_geometry.raster.sphere(chunk_sz[1:], radius=sphere_radius, position=position))
+    #         # new_masks[i_time, ...] = ind_neuron * this_shape
+    #         # Instead do a cube (just for visualization)
+    #         z, x, y = get_crop_coords3d([z, x, y], cube_sz, chunk_sz)
+    #         new_masks[i_time, z[0]:z[-1]+1, x[0]:x[-1]+1, y[0]:y[-1]+1] = ind_neuron
+    #
+    #     with tqdm(total=num_frames, leave=False) as pbar:
+    #         with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+    #             future_results = {executor.submit(parallel_func, i): i for i in range(num_frames)}
+    #             for future in concurrent.futures.as_completed(future_results):
+    #                 _ = future.result()
+    #                 pbar.update(1)
+
+    cube_sz = [3, 7, 7]
+
+    def create_cube(i_time, ind_neuron, neuron):
+        # Inner loop: one time and one neuron
         this_df = df[neuron]
+        # FLIP XY
+        z, y, x = [int(this_df['z'][i_time]), int(this_df['x'][i_time]), int(this_df['y'][i_time])]
+        # Instead do a cube (just for visualization)
+        z, x, y = get_crop_coords3d([z, x, y], cube_sz, chunk_sz)
+        new_masks[i_time, z[0]:z[-1]+1, x[0]:x[-1]+1, y[0]:y[-1]+1] = ind_neuron
 
-        def parallel_func(i_time):
-            position = [this_df['z'][i_time], this_df['x'][i_time], this_df['y'][i_time]]
-            this_shape = np.array(raster_geometry.raster.sphere(chunk_sz[1:], radius=sphere_radius, position=position))
-            new_masks[i_time, ...] = ind_neuron * this_shape
+    def process_single_volume(i_time):
+        # Outer loop: process one full volume
+        for i_neuron, neuron in enumerate(neuron_names):
+            create_cube(i_time, i_neuron, neuron)
 
-        with tqdm(total=num_frames, leave=False) as pbar:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
-                # executor.map(parallel_func, range(len(all_lut)))
-                future_results = {executor.submit(parallel_func, i): i for i in range(num_frames)}
-                for future in concurrent.futures.as_completed(future_results):
-                    # _ = future_results[future]
-                    _ = future.result()
-                    pbar.update(1)
+    # Instead do a process pool that finishes one file at a time
+    with concurrent.futures.ProcessPoolExecutor(max_workers=56) as pool:
+        with tqdm(total=num_frames) as progress:
+            futures = []
+
+            for t in range(num_frames):
+                future = pool.submit(process_single_volume, t)
+                future.add_done_callback(lambda p: progress.update())
+                futures.append(future)
+
+            results = []
+            for future in futures:
+                result = future.result()
+                results.append(result)
 
 
 def all_matches_to_lookup_tables(all_matches):
