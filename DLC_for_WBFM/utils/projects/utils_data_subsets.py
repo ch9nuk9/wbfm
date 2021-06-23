@@ -1,4 +1,5 @@
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _preprocess_all_frames
+from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 import tifffile
 import numpy as np
@@ -24,7 +25,7 @@ def write_data_subset_from_config(cfg,
             out_fname = os.path.join(project_dir, "data_subset.zarr")
     else:
         out_fname = os.path.join(project_dir, out_fname)
-    vid_fname = cfg['red_bigtiff_fname']
+    vid_fname = resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])
     verbose = cfg['other']['verbose']
 
     with safe_cd(project_dir):
