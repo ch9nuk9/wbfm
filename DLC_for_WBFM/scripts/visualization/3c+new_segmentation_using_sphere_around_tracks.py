@@ -11,7 +11,7 @@ from pathlib import Path
 # Initialize sacred experiment
 
 ex = Experiment()
-ex.add_config(project_path=None, sphere_radius=5.0, out_fname=None)
+ex.add_config(project_path=None, sphere_radius=5.0, out_fname=None, DEBUG=False)
 
 
 @ex.config
@@ -39,5 +39,6 @@ def main(_config, _run):
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     sphere_radius = _config['sphere_radius']
+    DEBUG = _config['DEBUG']
 
-    create_spherical_segmentation(this_config, sphere_radius)
+    create_spherical_segmentation(this_config, sphere_radius, DEBUG=DEBUG)
