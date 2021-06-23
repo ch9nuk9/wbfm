@@ -94,7 +94,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
 
     # Generate spheres for each neuron, for all time
     cube_sz = [3, 7, 7]
-    for ind_neuron, neuron in tqdm(enumerate(neuron_names)):
+    for ind_neuron, neuron in tqdm(enumerate(neuron_names), total=len(neuron_names)):
         this_df = df[neuron]
 
         def parallel_func(i_time):
