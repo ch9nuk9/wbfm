@@ -68,6 +68,10 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
     track_cfg = this_config['track_cfg']
     seg_cfg = this_config['segment_cfg']
 
+    # Required if using in multiple processes
+    from zarr import blosc
+    blosc.use_threads = False
+
     with safe_cd(Path(this_config['project_path']).parent):
         # Get original segmentation, just for shaping
         seg_fname = seg_cfg['output']['masks']
@@ -126,7 +130,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
             create_cube(i_time, i_neuron, neuron)
 
     # Instead do a process pool that finishes one file at a time
-    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as pool:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=8) as pool:
         with tqdm(total=num_frames) as progress:
             futures = []
 
@@ -139,6 +143,9 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
             for future in futures:
                 result = future.result()
                 results.append(result)
+
+    # Reset to automatic detection
+    blosc.use_threads = None
 
 
 def all_matches_to_lookup_tables(all_matches):
