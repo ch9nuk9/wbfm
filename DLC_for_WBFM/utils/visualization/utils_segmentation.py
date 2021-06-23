@@ -95,7 +95,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
     # Generate spheres for each neuron, for all time
     cube_sz = [2, 4, 4]
     def get_clipped_sizes(z, cube_sz, total_sz):
-        return np.clip(z-cube_sz, a_min=0, a_max=None), np.clip(z+cube_sz+1, a_max=total_sz, a_min=None)
+        return int(np.clip(z-cube_sz, a_min=0, a_max=None)), int(np.clip(z+cube_sz+1, a_max=total_sz, a_min=None))
 
     for ind_neuron, neuron in tqdm(enumerate(neuron_names), total=len(neuron_names)):
         this_df = df[neuron]
