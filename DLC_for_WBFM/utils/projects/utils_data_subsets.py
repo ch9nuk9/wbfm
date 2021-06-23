@@ -5,7 +5,6 @@ import numpy as np
 import os
 from pathlib import Path
 import zarr
-from segmentation.util.utils_pipeline import _segment_full_video_3d, _segment_full_video_2d
 
 
 def write_data_subset_from_config(cfg,
@@ -57,6 +56,8 @@ def segment_local_data_subset(project_config, out_fname=None):
 
     See also: write_data_subset_from_config
     """
+    from segmentation.util.utils_pipeline import _segment_full_video_3d, _segment_full_video_2d
+
     cfg = load_config(project_config)
     project_dir = Path(project_config).parent
 
