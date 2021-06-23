@@ -87,7 +87,10 @@ def _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames=None)
     num_slices = config['dataset_params']['num_slices']
     if DEBUG:
         # Make a much shorter video
-        num_total_frames = which_frames[-1] + 1
+        if which_frames is not None:
+            num_total_frames = which_frames[-1] + 1
+        else:
+            num_total_frames = 3
     chunk_sz = (num_slices, ) + sz
     total_sz = (num_total_frames, ) + chunk_sz
     preprocessed_dat = np.zeros(total_sz, dtype='uint16')
