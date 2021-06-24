@@ -108,7 +108,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
             z0, z1 = get_clipped_sizes(z, cube_sz[0], chunk_sz[1])
             x0, x1 = get_clipped_sizes(x, cube_sz[1], chunk_sz[2])
             y0, y1 = get_clipped_sizes(y, cube_sz[2], chunk_sz[3])
-            new_masks[i_time, z0:z1, x0:x1, y0:y1] = ind_neuron + 1 # Skip 0
+            new_masks[i_time, z0:z1, x0:x1, y0:y1] = ind_neuron + 1  # Skip 0
 
         # for i in tqdm(range(num_frames), total=num_frames, leave=False):
         #     parallel_func(i)
