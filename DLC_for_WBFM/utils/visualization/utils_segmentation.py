@@ -100,27 +100,22 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
         upper_dim = int(np.clip(this_sz + sz + 1, a_max=total_sz, a_min=0))
         return lower_dim, upper_dim
 
+    def parallel_func(i_time: int, ind_neuron: int, this_df: pd.DataFrame):
+        # X=col, Y=row
+        z, col, row = [int(this_df['z'][i_time]), int(this_df['x'][i_time]), int(this_df['y'][i_time])]
+        # Instead do a cube (just for visualization)
+        z0, z1 = get_clipped_sizes(z, cube_sz[0], chunk_sz[1])
+        row0, row1 = get_clipped_sizes(row, cube_sz[1], chunk_sz[2])
+        col0, col1 = get_clipped_sizes(col, cube_sz[2], chunk_sz[3])
+        new_masks[i_time, z0:z1, row0:row1, col0:col1] = ind_neuron + 1  # Skip 0
+
     for ind_neuron, neuron in tqdm(enumerate(neuron_names), total=len(neuron_names)):
-        this_df = df[neuron]
-
-        def parallel_func(i_time: int):
-            # X=col, Y=row
-            z, col, row = [int(this_df['z'][i_time]), int(this_df['x'][i_time]), int(this_df['y'][i_time])]
-            # Instead do a cube (just for visualization)
-            z0, z1 = get_clipped_sizes(z, cube_sz[0], chunk_sz[1])
-            row0, row1 = get_clipped_sizes(row, cube_sz[1], chunk_sz[2])
-            col0, col1 = get_clipped_sizes(col, cube_sz[2], chunk_sz[3])
-            new_masks[i_time, z0:z1, row0:row1, col0:col1] = ind_neuron + 1  # Skip 0
-
-            # if ind_neuron > 0:
-            #     err
-
         # for i in tqdm(range(num_frames), total=num_frames, leave=False):
-        #     parallel_func(i)
+        #     parallel_func(i, this_df=df[neuron])
 
         with tqdm(total=num_frames, leave=False) as pbar:
             with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
-                future_results = {executor.submit(parallel_func, i): i for i in range(num_frames)}
+                future_results = {executor.submit(parallel_func, i, ind_neuron=ind_neuron, this_df=df[neuron]): i for i in range(num_frames)}
                 for future in concurrent.futures.as_completed(future_results):
                     _ = future.result()
                     pbar.update(1)

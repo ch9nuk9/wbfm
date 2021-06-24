@@ -75,7 +75,7 @@ def get_traces_from_3d_tracks(segment_cfg,
         mdat = segmentation_metadata[i_volume]
         all_seg_names = list(mdat['centroids'].keys())
         zxy0[:, 0] /= project_cfg['dataset_params']['z_to_xy_ratio']  # Return to original
-        for i_dlc, i_seg in matches:
+        for (i_dlc, i_seg), c in zip(matches, conf):
             d_name = all_neuron_names[i_dlc]  # output name
             s_name = int(all_seg_names[i_seg])
             # See saved_names above
@@ -85,7 +85,7 @@ def get_traces_from_3d_tracks(segment_cfg,
             red_dat[(d_name, 'centroid_ind')].loc[i] = s_name
             zxy_seg = mdat['centroids'][s_name]
             zxy_dlc = zxy0[i_dlc]
-            _save_locations_in_df(d_name, red_dat, i, zxy_dlc, zxy_seg)
+            _save_locations_in_df(d_name, red_dat, i, zxy_dlc, zxy_seg, c)
             if DEBUG:
                 break
 
@@ -116,10 +116,10 @@ def get_traces_from_3d_tracks(segment_cfg,
             this_mask_volume = mask_array[i_mask, ...]
             this_green_volume = get_single_volume(green_tifffile, i_volume, **vol_opt)
             is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
-            for i_dlc, i_seg, _ in matches:
+            for i_dlc, i_seg, c in matches:
                 i_dlc, i_seg = i_dlc-1, i_seg-1  # Matches start at 1
                 _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg, i_volume,
-                                          is_mirrored, mdat, this_green_volume, this_mask_volume)
+                                          is_mirrored, mdat, this_green_volume, this_mask_volume, c)
                 if DEBUG:
                     print("Single pass-through sucessful; did not write any files")
                     return
@@ -148,7 +148,8 @@ def _initialize_dataframes(all_neuron_names, frame_list):
     save_names = ['brightness', 'volume',
                   'centroid_ind',
                   'z_seg', 'x_seg', 'y_seg',
-                  'z_dlc', 'x_dlc', 'y_dlc']
+                  'z_dlc', 'x_dlc', 'y_dlc',
+                  'match_confidence']
     m_index = pd.MultiIndex.from_product([all_neuron_names,
                                           save_names],
                                          names=['neurons', 'data'])
@@ -163,7 +164,7 @@ def _initialize_dataframes(all_neuron_names, frame_list):
 
 
 def _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg, i_volume,
-                              is_mirrored, mdat, this_green_volume, this_mask_volume):
+                              is_mirrored, mdat, this_green_volume, this_mask_volume, confidence):
     # For conversion between lists
     i_dlc, i_seg = int(i_dlc), int(i_seg)
     d_name = all_neuron_names[i_dlc]  # output name
@@ -181,13 +182,14 @@ def _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, gree
     green_dat[(d_name, 'centroid_ind')].loc[i] = s_name
     zxy_seg = mdat['centroids'][s_name]
     zxy_dlc = all_zxy_dlc[i_dlc]
-    _save_locations_in_df(d_name, green_dat, i, zxy_dlc, zxy_seg)
+    _save_locations_in_df(d_name, green_dat, i, zxy_dlc, zxy_seg, confidence)
 
 
-def _save_locations_in_df(d_name, df, i, zxy_dlc, zxy_seg):
+def _save_locations_in_df(d_name, df, i, zxy_dlc, zxy_seg, conf):
     df[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
     df[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
     df[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
     df[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
     df[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
     df[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
+    df[(d_name, 'match_confidence')].loc[i] = conf

@@ -162,7 +162,7 @@ def calc_bipartite_from_distance(xyz0, xyz1, max_dist=None):
         to_remove.reverse()
         [matches.pop(i) for i in to_remove]
 
-    conf_func = lambda dist : np.tanh(1.0 / dist)
+    conf_func = lambda dist: np.tanh(1.0 / dist)
 
     # Calculate confidences from distance
     matches = np.array(matches)
