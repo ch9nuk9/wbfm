@@ -94,6 +94,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
 
     # Generate spheres for each neuron, for all time
     cube_sz = [2, 4, 4]
+
     def get_clipped_sizes(tmp, sz, total_sz):
         return int(np.clip(tmp - sz, a_min=0, a_max=None)), int(np.clip(tmp + sz + 1, a_max=total_sz, a_min=None))
 
@@ -103,15 +104,14 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
         def parallel_func(i_time: int):
             # FLIP XY
             z, y, x = [int(this_df['z'][i_time]), int(this_df['x'][i_time]), int(this_df['y'][i_time])]
-            # this_shape = np.array(raster_geometry.raster.sphere(chunk_sz[1:], radius=sphere_radius, position=position))
-            # new_masks[i_time, ...] = ind_neuron * this_shape
             # Instead do a cube (just for visualization)
-            # z, x, y = get_crop_coords3d([z, x, y], cube_sz, chunk_sz)
             z0, z1 = get_clipped_sizes(z, cube_sz[0], chunk_sz[1])
             x0, x1 = get_clipped_sizes(x, cube_sz[1], chunk_sz[2])
             y0, y1 = get_clipped_sizes(y, cube_sz[2], chunk_sz[3])
-            # new_masks[i_time, z[0]:z[-1]+1, x[0]:x[-1]+1, y[0]:y[-1]+1] = ind_neuron
-            new_masks[i_time, z0:z1, x0:x1, y0:y1] = ind_neuron
+            new_masks[i_time, z0:z1, x0:x1, y0:y1] = ind_neuron + 1 # Skip 0
+
+        # for i in tqdm(range(num_frames), total=num_frames, leave=False):
+        #     parallel_func(i)
 
         with tqdm(total=num_frames, leave=False) as pbar:
             with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
@@ -139,6 +139,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
     #         create_cube(i_time, i_neuron, neuron)
     #
     # # Instead do a process pool that finishes one file at a time
+    # # NOTE: blosc can hang when doing the multiprocesssing :(
     # with concurrent.futures.ProcessPoolExecutor(max_workers=8) as pool:
     #     with tqdm(total=num_frames) as progress:
     #         futures = []
