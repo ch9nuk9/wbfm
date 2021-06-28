@@ -17,7 +17,7 @@ from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import g
 
 
 @dataclass
-class PreprocessingSettings():
+class PreprocessingSettings:
     """
     Holds settings that will be applied to the ReferenceFrame class
     """

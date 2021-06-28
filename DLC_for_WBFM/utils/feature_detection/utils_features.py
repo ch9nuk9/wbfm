@@ -3,7 +3,10 @@ import os
 import numpy as np
 import cv2
 import open3d as o3d
+from matplotlib import pyplot as plt
 from scipy import stats
+from tqdm.auto import tqdm
+
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 
 ##
@@ -21,6 +24,7 @@ def convert_to_grayscale(im1):
 def detect_features(im1, max_features,
                     setFastThreshold=True,
                     use_sift=False):
+    # Assumes 2d images
 
     im1Gray = convert_to_grayscale(im1)
     if use_sift:
@@ -73,15 +77,17 @@ def match_known_features(descriptors1, descriptors2,
 def detect_features_and_match(im1, im2,
                               max_features=3000,
                               matches_to_keep=0.3,
-                              use_GMS=True):
+                              use_GMS=True,
+                              verbose=0):
     """
     Uses orb to detect and match generic features
     """
 
     keypoints1, descriptors1 = detect_features(im1, max_features)
     keypoints2, descriptors2 = detect_features(im2, max_features)
-    if len(keypoints1)==0 or len(keypoints2)==0:
-        print("Found no keypoints on at least one frame; skipping")
+    if len(keypoints1) == 0 or len(keypoints2) == 0:
+        if verbose >= 1:
+            print("Found no keypoints on at least one frame; skipping")
         return keypoints1, keypoints2, []
 
     matches = match_known_features(descriptors1, descriptors2,
@@ -406,7 +412,7 @@ def calc_2frame_matches(neurons0,
     for i in range(neurons0.shape[0]):
         # Get features of this neuron
         if pc_n0 is None:
-            this_neuron = neurons0[i,:]
+            this_neuron = neurons0[i, :]
         else:
             # I use pc_n0 because there may be a coordinate transformation in the pc
             this_neuron = np.asarray(pc_n0.points)[i]
@@ -422,7 +428,7 @@ def calc_2frame_matches(neurons0,
             np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
 
 #             print("Visualize the point cloud.")
-            o3d.visualization.draw_geometries([one_point,pc_f0])
+            o3d.visualization.draw_geometries([one_point, pc_f0])
 
         # Get the corresponding neurons in vol1, and vote
         #this_n1 = features_to_neurons1[this_f0]
@@ -463,8 +469,8 @@ def match_centroids_using_tree(neurons0,
     """
 
     # Build point clouds and trees
-    num_features0, pc_f0, tree_features0 = build_feature_tree(features0,which_slice)
-    num_features1, pc_f1, tree_features1 = build_feature_tree(features1,which_slice)
+    num_features0, pc_f0, tree_features0 = build_feature_tree(features0, which_slice)
+    num_features1, pc_f1, tree_features1 = build_feature_tree(features1, which_slice)
     num_neurons0, pc_n0, _ = build_neuron_tree(neurons0, to_mirror)
     num_neurons1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror)
 
@@ -509,7 +515,7 @@ def build_features_1volume(dat,
     for i in range(dat.shape[0]):
         if i < start_plane:
             continue
-        im = np.squeeze(dat[i,...])
+        im = np.squeeze(dat[i, ...])
         kp, features = detect_features(im, num_features_per_plane)
 
         if features is None:
@@ -531,6 +537,7 @@ def build_features_and_match_2volumes(dat0, dat1,
                                 sz=31.0,
                                 num_features_per_plane=1000,
                                 matches_to_keep=0.5,
+                                use_GMS=True,
                                 dat_foldername = r'..\point_cloud_alignment'):
     """
     Multi-plane wrapper around: detect_features_and_match
@@ -538,15 +545,20 @@ def build_features_and_match_2volumes(dat0, dat1,
 
     all_locs0 = []
     all_locs1 = []
-    for i in range(dat0.shape[0]):
-        if i<start_plane:
+    all_matches = []
+    all_kp0 = []
+    all_kp1 = []
+    if start_plane > dat0.shape[0]:
+        print("Warning: Start plane is greater than the shape of the image... no matches possible")
+    for i in tqdm(range(dat0.shape[0]), leave=False):
+        if i < start_plane:
             continue
-        im0 = np.squeeze(dat0[i,...])
-        im1 = np.squeeze(dat1[i,...])
+        im0 = np.squeeze(dat0[i, ...])
+        im1 = np.squeeze(dat1[i, ...])
         if detect_keypoints:
             #keypoints0, _, keypoints1, _ = detect_features(im1, im2, num_features_per_plane)
-            keypoints0, keypoints1, matches = detect_features_and_match(im0, im1, num_features_per_plane, matches_to_keep)
-            if len(matches)==0:
+            keypoints0, keypoints1, matches = detect_features_and_match(im0, im1, num_features_per_plane, matches_to_keep, use_GMS)
+            if len(matches) == 0:
                 continue
         else:
             kp0_cv2 = get_keypoints_from_3dseg(kp0, i, sz=sz)
@@ -565,5 +577,8 @@ def build_features_and_match_2volumes(dat0, dat1,
         all_locs0.extend(locs_3d)
         locs_3d = np.array([np.hstack((i, row)) for row in locs1])
         all_locs1.extend(locs_3d)
+        all_matches.append(matches)
+        all_kp0.extend(keypoints0)
+        all_kp1.extend(keypoints1)
 
-    return np.array(all_locs0), np.array(all_locs1), keypoints0, keypoints1, matches
+    return np.array(all_locs0), np.array(all_locs1), all_kp0, all_kp1, all_matches

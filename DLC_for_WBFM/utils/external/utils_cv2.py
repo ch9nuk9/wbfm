@@ -25,9 +25,9 @@ def get_keypoints_from_3dseg(kp0, i=None, sz=31.0, neuron_height=None):
 
     """
     kp_cv2 = []
-    for z,x,y in kp0:
+    for z, x, y in kp0:
         if i is None or abs(z-i) < neuron_height:
-            kp_cv2.append(cv2.KeyPoint(y,x,sz))
+            kp_cv2.append(cv2.KeyPoint(y, x, sz))
 
     return kp_cv2
 

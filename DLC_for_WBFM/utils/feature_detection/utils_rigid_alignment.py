@@ -61,11 +61,13 @@ def filter_image(img_to_filter, high_freq, low_freq):
     return filtered_img
 
 
-def filter_stack(stack_to_align, filter_opt={'high_freq':2.0, 'low_freq':5000.0}):
+def filter_stack(stack_to_align, filter_opt=None):
     # First, filter all planes
+    if filter_opt is None:
+        filter_opt = {'high_freq': 2.0, 'low_freq': 5000.0}
     filtered_stack = np.array(stack_to_align)
     for i in range(stack_to_align.shape[0]):
-        filtered_stack[i,...] = filter_image(filtered_stack[i,...], **filter_opt)
+        filtered_stack[i, ...] = filter_image(filtered_stack[i, ...], **filter_opt)
     return filtered_stack
 
 
@@ -134,11 +136,11 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
     # Define 2x3 or 3x3 matrices and initialize the matrix to identity
     if warp_mode == cv2.MOTION_HOMOGRAPHY:
         warp_matrix = np.eye(3, 3, dtype=np.float32)
-    else :
+    else:
         warp_matrix = np.eye(2, 3, dtype=np.float32)
 
     # Specify the number of iterations.
-    number_of_iterations = 10000;
+    # number_of_iterations = 10000
 
     # Specify the threshold of the increment
     # in the correlation coefficient between two iterations
@@ -152,9 +154,9 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
     # Run the ECC algorithm. The results are stored in warp_matrix.
     # Depends on version of cv2
     try:
-        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'),im2_gray.astype('float32'),warp_matrix, warp_mode, criteria, None)
+        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix, warp_mode, criteria, None)
     except TypeError:
-        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'),im2_gray.astype('float32'),warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1)
+        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1)
 
 
     # example to execute the transformation
@@ -174,7 +176,7 @@ def align_stack(stack_to_align, hide_progress=True):
     """
     # Settings for the actual warping
     sz = stack_to_align[0].shape
-    sz = (sz[1],sz[0])
+    sz = (sz[1], sz[0])
     flags = cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
     # align volumes, starting from the center
     i_center_plane = int(stack_to_align.shape[0]/2)
@@ -190,8 +192,8 @@ def align_stack(stack_to_align, hide_progress=True):
         stack_aligned[i-1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     # From i_center_plane to end (usually 33)
-    warp_mat = np.identity(3)[0:2,:]
-    for i in tqdm(range(i_center_plane,(stack_to_align.shape[0]-1)), disable=hide_progress):
+    warp_mat = np.identity(3)[0:2, :]
+    for i in tqdm(range(i_center_plane, (stack_to_align.shape[0]-1)), disable=hide_progress):
         im_prev, im_next = stack_to_align[i], stack_to_align[i+1]
         warp_mat = get_warp_mat(im_prev, im_next, warp_mat)
         stack_aligned[i+1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)

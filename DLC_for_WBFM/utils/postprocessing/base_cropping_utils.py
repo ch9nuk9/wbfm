@@ -5,9 +5,7 @@ from math import ceil
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 
-
-
-def get_crop_coords(center, sz=(28,28)):
+def get_crop_coords(center, sz=(28, 28)):
     x_ind = range(int(center[0] - sz[0]/2), int(center[0] + sz[0]/2))
     y_ind = range(int(center[1] - sz[1]/2), int(center[1] + sz[1]/2))
     return list(x_ind), list(y_ind)
@@ -49,7 +47,7 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28,28),start_frame=0):
     return cropped_dat
 
 
-def get_crop_coords3d(center, crop_sz=(28,28,10), clip_sz=None):
+def get_crop_coords3d(center, crop_sz=(28, 28, 10), clip_sz=None):
     x_ind = range(ceil(center[0] - crop_sz[0]/2), int(center[0] + crop_sz[0]/2)+1)
     y_ind = range(ceil(center[1] - crop_sz[1]/2), int(center[1] + crop_sz[1]/2)+1)
     z_ind = range(ceil(center[2] - crop_sz[2]/2), int(center[2] + crop_sz[2]/2)+1)
