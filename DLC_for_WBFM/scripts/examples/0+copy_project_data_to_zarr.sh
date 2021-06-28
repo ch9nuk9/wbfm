@@ -7,4 +7,4 @@ OPT="tiff_not_zarr=False copy_locally=False"
 
 LOG="/groups/zimmer/shared_projects/wbfm/dlc_stacks/Charlie-worm3-long/log.log"
 
-sbatch --wrap="python $PYTHON_CMD with $PROJECT $OPT > $LOG"
+sbatch --mem 128G --wrap="python $PYTHON_CMD with $PROJECT $OPT > $LOG"
