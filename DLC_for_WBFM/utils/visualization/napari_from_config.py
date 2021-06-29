@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 import zarr
 import napari
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -37,3 +39,30 @@ def napari_of_full_data(project_dir):
     viewer.show()
 
     return viewer, z_dat, z_seg
+
+
+def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
+    """
+    Convert a deeplabcut-style track to an array that can be visualized using:
+        napari.view_tracks(dat)
+    """
+
+    # Convert tracks to napari style
+    neuron_names = df.columns.levels[0]
+    # 5 columns:
+    # track_id, t, z, y, x
+    coords = ['z', 'y', 'x']
+    all_tracks_list = []
+    for i, name in enumerate(neuron_names):
+        zxy_array = np.array(df[name][coords])
+        t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
+        # Remove low likelihood
+        to_keep = df[name]['likelihood'] > likelihood_thresh
+        zxy_array = zxy_array[to_keep, :]
+        t_array = t_array[to_keep, :]
+
+        id_array = np.ones_like(t_array) * i
+
+        all_tracks_list.append(np.hstack([id_array, t_array, zxy_array]))
+
+    return np.vstack(all_tracks_list)
