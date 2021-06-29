@@ -1,0 +1,27 @@
+# stardist-GPU.yaml
+
+# Made by Charles Fieseler for intended use with:
+
+# update:  conda env update -f DLC-preprocessing.yaml
+
+name: stardist-GPU
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - pip
+  - cudnn=7
+  - jupyter
+  - nb_conda
+  - opencv
+  - pip:
+    - sacred
+    - tables
+    - zarr
+    - ruamel.yaml
+    - tifffile
+    - tensorflow-gpu==1.15.5
+    - napari[all]
+    - easydict
+    - stardist
