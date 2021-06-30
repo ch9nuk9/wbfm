@@ -38,8 +38,7 @@ def get_stardist_model(model_name, folder=None, verbose=0):
             folder = Path('/groups/zimmer/shared_projects/wbfm/TrainedStardist')
 
     # available models' aliases
-    sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d']
-    sd_names = ['2D_versatile_fluo', 'stardistNiklas', 'starDistCharlie', 'charlie100-3d']
+    sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d', 'charlie_3d_party']
 
     # create aliases for each model_name
     if model_name == 'versatile':
@@ -50,6 +49,8 @@ def get_stardist_model(model_name, folder=None, verbose=0):
         model = StarDist2D(None, name='stardistCharlie', basedir=folder)
     elif model_name == 'charlie_3d':
         model = StarDist3D(None, name='Charlie100-3d', basedir=folder)
+    elif model_name == 'charlie_3d_party':
+        model = StarDist3D(None, name='Charlie100-3d-party', basedir=folder)
     else:
         if verbose >=1:
             print(f'No StarDist model found using {model_name}! Current models are {sd_options}')
