@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
-from DLC_for_WBFM.utils.preprocessing.utils_tif import _preprocess_all_frames, _get_video_options
+from DLC_for_WBFM.utils.preprocessing.utils_tif import preprocess_all_frames_using_config, _get_video_options
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
@@ -99,7 +99,7 @@ def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, w
         preprocessed_dat = []
         _, vid_opt = _get_video_options(config, vid_fname)
     else:
-        preprocessed_dat, vid_opt = _preprocess_all_frames(DEBUG, config, verbose, vid_fname, which_frames)
+        preprocessed_dat, vid_opt = preprocess_all_frames_using_config(DEBUG, config, verbose, vid_fname, which_frames)
     return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
 
 

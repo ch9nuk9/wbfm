@@ -1,4 +1,4 @@
-from DLC_for_WBFM.utils.preprocessing.utils_tif import _preprocess_all_frames
+from DLC_for_WBFM.utils.preprocessing.utils_tif import preprocess_all_frames_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 import tifffile
@@ -27,12 +27,12 @@ def write_data_subset_from_config(cfg,
         out_fname = os.path.join(project_dir, out_fname)
     vid_fname = resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])
     verbose = cfg['other']['verbose']
+    start_volume = cfg['dataset_params']['start_volume']
 
     with safe_cd(project_dir):
-        preprocessed_dat, _ = _preprocess_all_frames(DEBUG, cfg, verbose, vid_fname, None)
+        preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg, verbose, vid_fname, None)
 
     if not pad_to_align_with_original:
-        start_volume = cfg['dataset_params']['start_volume']
         preprocessed_dat = preprocessed_dat[start_volume:, ...]
 
     print(f"Writing array of size: {preprocessed_dat.shape}")
