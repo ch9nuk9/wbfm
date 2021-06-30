@@ -30,3 +30,4 @@ dependencies:
     - stardist
     - sacred
     - zarr
+    - numpy==1.20.0 # See https://github.com/scikit-learn-contrib/hdbscan/issues/457#issuecomment-773671043
