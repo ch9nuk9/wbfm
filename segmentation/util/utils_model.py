@@ -52,8 +52,7 @@ def get_stardist_model(model_name, folder=None, verbose=0):
     elif model_name == 'charlie_3d_party':
         model = StarDist3D(None, name='Charlie100-3d-party', basedir=folder)
     else:
-        if verbose >=1:
-            print(f'No StarDist model found using {model_name}! Current models are {sd_options}')
+        raise NameError(f'No StarDist model found using {model_name}! Current models are {sd_options}')
 
     return model
 

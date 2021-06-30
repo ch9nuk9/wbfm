@@ -27,6 +27,7 @@ dependencies:
     - networkx
     - tensorflow
     - argh
+    - ruamel.yaml
     - stardist
     - sacred
     - zarr
