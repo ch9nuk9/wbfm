@@ -1,4 +1,4 @@
-#!bash
+#!/usr/bin/env bash
 
 # Get the experimenter name from the command line
 if [[ "$#" -eq 1 ]]; then
