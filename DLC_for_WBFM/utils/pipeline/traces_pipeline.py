@@ -140,7 +140,7 @@ def get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_fname, is_mirrored, mask_
                 _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg,
                                           i_volume,
                                           is_mirrored, mdat, this_green_volume, this_mask_volume, c)
-                
+
     return all_matches, all_neuron_names, green_dat, red_dat
 
 
