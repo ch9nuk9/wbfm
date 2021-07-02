@@ -13,27 +13,53 @@ from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 
-def get_traces_from_3d_tracks(segment_cfg,
-                              track_cfg,
-                              traces_cfg,
-                              project_cfg,
-                              DEBUG=False):
+def get_traces_from_3d_tracks_using_config(segment_cfg,
+                                           track_cfg,
+                                           traces_cfg,
+                                           project_cfg,
+                                           DEBUG=False):
     """
     Connect the 3d traces to previously segmented masks
 
     Get both red and green traces for each neuron
     """
-    # Settings
-    max_dist = track_cfg['final_3d_tracks']['max_dist_to_segmentation']
-    start_volume = project_cfg['dataset_params']['start_volume']
-    num_frames = project_cfg['dataset_params']['num_frames']
-    # Get previous annotations
-    segmentation_fname = segment_cfg['output']['metadata']
-    with open(segmentation_fname, 'rb') as f:
-        segmentation_metadata = pickle.load(f)
-    dlc_fname = track_cfg['final_3d_tracks']['df_fname']
-    dlc_tracks = pd.read_hdf(dlc_fname)
+    dlc_tracks, green_fname, is_mirrored, mask_array, max_dist, num_frames, num_slices, params_start_volume, segmentation_metadata, z_to_xy_ratio = _unpack_configs_for_traces(
+        project_cfg, segment_cfg, track_cfg)
 
+    all_matches, all_neuron_names, green_dat, red_dat = get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_fname,
+                                                                                  is_mirrored, mask_array, max_dist,
+                                                                                  num_frames, num_slices,
+                                                                                  params_start_volume,
+                                                                                  segmentation_metadata, z_to_xy_ratio)
+
+    if DEBUG:
+        print("Single pass-through sucessful; did not write any files")
+        return
+
+    _save_traces_as_hdf_and_update_configs(all_matches, all_neuron_names, green_dat, red_dat, traces_cfg)
+
+
+def _save_traces_as_hdf_and_update_configs(all_matches, all_neuron_names, green_dat, red_dat, traces_cfg):
+    # Save traces (red and green) and neuron names
+    red_fname = Path('4-traces').joinpath('red_traces.h5')
+    red_dat.to_hdf(red_fname, "df_with_missing")
+    green_fname = Path('4-traces').joinpath('green_traces.h5')
+    green_dat.to_hdf(green_fname, "df_with_missing")
+    # Also save matches as a separate file
+    # ENHANCE: save as part of the dataframes?
+    matches_fname = Path('4-traces').joinpath('all_matches.pickle')
+    with open(matches_fname, 'wb') as f:
+        pickle.dump(all_matches, f)
+    # Save the output filenames
+    traces_cfg['all_matches'] = str(matches_fname)
+    traces_cfg['traces']['green'] = str(green_fname)
+    traces_cfg['traces']['red'] = str(red_fname)
+    traces_cfg['traces']['neuron_names'] = all_neuron_names
+    edit_config(traces_cfg['self_path'], traces_cfg)
+
+
+def get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_fname, is_mirrored, mask_array, max_dist, num_frames, num_slices,
+                              params_start_volume, segmentation_metadata, z_to_xy_ratio):
     # Convert DLC dataframe to array
     all_neuron_names = list(dlc_tracks.columns.levels[0])
 
@@ -46,25 +72,25 @@ def get_traces_from_3d_tracks(segment_cfg,
 
     # Main loop: Match segmentations to tracks
     # Also: get connected red brightness and mask
-
     # Initialize multi-index dataframe for data
-    frame_list = list(range(start_volume, num_frames + start_volume))
+    frame_list = list(range(params_start_volume, num_frames + params_start_volume))
     green_dat, red_dat = _initialize_dataframes(all_neuron_names, frame_list)
-
     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
     print("Matching segmentation and DLC tracking...")
+    if DEBUG:
+        frame_list = frame_list[:2]  # Shorten (to avoid break)
     for i_volume in tqdm(frame_list):
         # Get DLC point cloud
         # NOTE: This dataframe starts at 0, not start_volume
         zxy0 = _get_dlc_zxy(i_volume)
-        zxy0[:, 0] *= project_cfg['dataset_params']['z_to_xy_ratio']
+        zxy0[:, 0] *= z_to_xy_ratio
         # REVIEW: Get segmentation point cloud
         seg_zxy = segmentation_metadata[i_volume]['centroids']
         seg_zxy = [np.asarray(row) for row in seg_zxy]
         if len(seg_zxy) == 0:
             continue
         zxy1 = np.array(seg_zxy)
-        zxy1[:, 0] *= project_cfg['dataset_params']['z_to_xy_ratio']
+        zxy1[:, 0] *= z_to_xy_ratio
         # Get matches
         out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
@@ -74,7 +100,7 @@ def get_traces_from_3d_tracks(segment_cfg,
         # OPTIMIZE: minimum confidence?
         mdat = segmentation_metadata[i_volume]
         all_seg_names = list(mdat['centroids'].keys())
-        zxy0[:, 0] /= project_cfg['dataset_params']['z_to_xy_ratio']  # Return to original
+        zxy0[:, 0] /= z_to_xy_ratio  # Return to original
         for (i_dlc, i_seg), c in zip(matches, conf):
             d_name = all_neuron_names[i_dlc]  # output name
             s_name = int(all_seg_names[i_seg])
@@ -86,22 +112,16 @@ def get_traces_from_3d_tracks(segment_cfg,
             zxy_seg = mdat['centroids'][s_name]
             zxy_dlc = zxy0[i_dlc]
             _save_locations_in_df(d_name, red_dat, i, zxy_dlc, zxy_seg, c)
-            if DEBUG:
-                break
 
         # Save
         # all_matches[i_volume] = np.hstack([matches, conf])
         # NOTE: need to offset by 1, because the background is 0
-        all_matches[i_volume] = np.array([(m[0]+1, m[1]+1, c) for m, c in zip(matches, conf)])
-        if DEBUG:
-            break
+        all_matches[i_volume] = np.array([(m[0] + 1, m[1] + 1, c) for m, c in zip(matches, conf)])
 
     print("Extracting green traces...")
-    green_fname = project_cfg['green_bigtiff_fname']
-    num_slices = project_cfg['dataset_params']['num_slices']
-    mask_array = zarr.open(segment_cfg['output']['masks'])
     vol_opt = {'num_slices': num_slices, 'dtype': 'uint16'}
     with tifffile.TiffFile(green_fname) as green_tifffile:
+
         for i_volume in tqdm(frame_list):
             # Prepare matches and locations
             matches = all_matches[i_volume]
@@ -111,37 +131,38 @@ def get_traces_from_3d_tracks(segment_cfg,
             all_seg_names = list(mdat['centroids'].keys())
             all_zxy_dlc = _get_dlc_zxy(i_volume)
             # Prepare mask (segmentation)
-            i_mask = i_volume - project_cfg['dataset_params']['start_volume']
+            i_mask = i_volume - params_start_volume
             # this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt) # TODO: can this read zarr directly?
             this_mask_volume = mask_array[i_mask, ...]
             this_green_volume = get_single_volume(green_tifffile, i_volume, **vol_opt)
-            is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
             for i_dlc, i_seg, c in matches:
-                i_dlc, i_seg = i_dlc-1, i_seg-1  # Matches start at 1
-                _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg, i_volume,
+                i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
+                _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg,
+                                          i_volume,
                                           is_mirrored, mdat, this_green_volume, this_mask_volume, c)
-                if DEBUG:
-                    print("Single pass-through sucessful; did not write any files")
-                    return
+                
+    return all_matches, all_neuron_names, green_dat, red_dat
 
-    # Save traces (red and green) and neuron names
-    red_fname = Path('4-traces').joinpath('red_traces.h5')
-    red_dat.to_hdf(red_fname, "df_with_missing")
-    green_fname = Path('4-traces').joinpath('green_traces.h5')
-    green_dat.to_hdf(green_fname, "df_with_missing")
 
-    # Also save matches as a separate file
-    # ENHANCE: save as part of the dataframes?
-    matches_fname = Path('4-traces').joinpath('all_matches.pickle')
-    with open(matches_fname, 'wb') as f:
-        pickle.dump(all_matches, f)
+def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
+    # Settings
+    max_dist = track_cfg['final_3d_tracks']['max_dist_to_segmentation']
+    params_start_volume = project_cfg['dataset_params']['start_volume']
+    num_frames = project_cfg['dataset_params']['num_frames']
+    # Get previous annotations
+    segmentation_fname = segment_cfg['output']['metadata']
+    with open(segmentation_fname, 'rb') as f:
+        segmentation_metadata = pickle.load(f)
+    dlc_fname = track_cfg['final_3d_tracks']['df_fname']
+    z_to_xy_ratio = project_cfg['dataset_params']['z_to_xy_ratio']
+    green_fname = project_cfg['green_bigtiff_fname']
+    num_slices = project_cfg['dataset_params']['num_slices']
+    mask_array = zarr.open(segment_cfg['output']['masks'])
+    is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
 
-    # Save the output filenames
-    traces_cfg['all_matches'] = str(matches_fname)
-    traces_cfg['traces']['green'] = str(green_fname)
-    traces_cfg['traces']['red'] = str(red_fname)
-    traces_cfg['traces']['neuron_names'] = all_neuron_names
-    edit_config(traces_cfg['self_path'], traces_cfg)
+    dlc_tracks = pd.read_hdf(dlc_fname)
+
+    return dlc_tracks, green_fname, is_mirrored, mask_array, max_dist, num_frames, num_slices, params_start_volume, segmentation_metadata, z_to_xy_ratio
 
 
 def _initialize_dataframes(all_neuron_names, frame_list):

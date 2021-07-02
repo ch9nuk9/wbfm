@@ -5,7 +5,7 @@ The top level function for getting final traces from 3d tracks and neuron masks
 from pathlib import Path
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks
+from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks_using_config
 # Experiment tracking
 import sacred
 from sacred import Experiment
@@ -44,8 +44,8 @@ def make_full_tracks(_config, _run):
     project_cfg = _config['project_cfg'].copy()
 
     with safe_cd(_config['project_dir']):
-        get_traces_from_3d_tracks(seg_cfg,
-                                  track_cfg,
-                                  trace_cfg,
-                                  project_cfg,
-                                  DEBUG=DEBUG)
+        get_traces_from_3d_tracks_using_config(seg_cfg,
+                                               track_cfg,
+                                               trace_cfg,
+                                               project_cfg,
+                                               DEBUG=DEBUG)
