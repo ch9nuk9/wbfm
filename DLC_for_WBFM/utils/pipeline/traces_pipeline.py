@@ -107,6 +107,7 @@ def get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_fname, is_mirrored, mask_
             # See saved_names above
             i = i_volume
             red_dat[(d_name, 'brightness')].loc[i] = mdat['total_brightness'][s_name]
+            red_dat[(d_name, 'all_values')].loc[i] = mdat['all_values'][s_name]
             red_dat[(d_name, 'volume')].loc[i] = mdat['neuron_volume'][s_name]
             red_dat[(d_name, 'centroid_ind')].loc[i] = s_name
             zxy_seg = mdat['centroids'][s_name]
@@ -167,7 +168,7 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
 
 def _initialize_dataframes(all_neuron_names, frame_list):
     save_names = ['brightness', 'volume',
-                  'histogram',
+                  'all_values',
                   'centroid_ind',
                   'z_seg', 'x_seg', 'y_seg',
                   'z_dlc', 'x_dlc', 'y_dlc',
@@ -197,11 +198,13 @@ def _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, gree
     if is_mirrored:
         this_mask_neuron = np.flip(this_mask_neuron, axis=2)
     volume = np.count_nonzero(this_mask_neuron)
-    brightness = np.sum(this_green_volume[this_mask_neuron])
+    all_values = this_green_volume[this_mask_neuron]
+    brightness = np.sum(all_values)
     # Save in dataframe
     green_dat[(d_name, 'brightness')].loc[i] = brightness
     green_dat[(d_name, 'volume')].loc[i] = volume
     green_dat[(d_name, 'centroid_ind')].loc[i] = s_name
+    green_dat[(d_name, 'all_values')].loc[i] = all_values
     zxy_seg = mdat['centroids'][s_name]
     zxy_dlc = all_zxy_dlc[i_dlc]
     _save_locations_in_df(d_name, green_dat, i, zxy_dlc, zxy_seg, confidence)
