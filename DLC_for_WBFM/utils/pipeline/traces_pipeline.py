@@ -106,8 +106,12 @@ def get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_fname, is_mirrored, mask_
             s_name = int(all_seg_names[i_seg])
             # See saved_names above
             i = i_volume
+            if 'all_values' in mdat:
+                red_dat[(d_name, 'all_values')].loc[i] = mdat['all_values'][s_name]
+            elif 'pixel_counts' in mdat:
+                # Temporary workaround when I saved the wrong thing
+                red_dat[(d_name, 'all_values')].loc[i] = rebuild_pixel_values(mdat, s_name)
             red_dat[(d_name, 'brightness')].loc[i] = mdat['total_brightness'][s_name]
-            red_dat[(d_name, 'all_values')].loc[i] = mdat['all_values'][s_name]
             red_dat[(d_name, 'volume')].loc[i] = mdat['neuron_volume'][s_name]
             red_dat[(d_name, 'centroid_ind')].loc[i] = s_name
             zxy_seg = mdat['centroids'][s_name]
@@ -218,3 +222,10 @@ def _save_locations_in_df(d_name, df, i, zxy_dlc, zxy_seg, conf):
     df[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
     df[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
     df[(d_name, 'match_confidence')].loc[i] = conf
+
+
+def rebuild_pixel_values(frame_df, which_neuron):
+    # I accidentally didn't save the full histogram... so I remake it
+    counts, edges = frame_df.loc[which_neuron, 'pixel_counts'], frame_df.loc[which_neuron, 'pixel_values']
+    pixel_vals = np.repeat(edges, counts)
+    return pixel_vals
