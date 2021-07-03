@@ -39,11 +39,16 @@ def get_metadata_dictionary(masks, original_vol):
     all_centroids = []
     neuron_volumes = []
     brightnesses = []
+    all_values = []
+    all_value_counts = []
 
     for n in neurons:
         neuron_mask = masks == n
         neuron_vol = np.count_nonzero(neuron_mask)
-        total_brightness = np.sum(original_vol[neuron_mask])
+
+        original_vals = original_vol[neuron_mask]
+        total_brightness = np.sum(original_vals)
+        vals, counts = np.unique(original_vals, return_counts=True)
 
         neuron_label = label(neuron_mask)
         centroids = regionprops(neuron_label)[0].centroid
@@ -51,12 +56,14 @@ def get_metadata_dictionary(masks, original_vol):
         brightnesses.append(total_brightness)
         neuron_volumes.append(neuron_vol)
         all_centroids.append(centroids)
+        all_values.append(vals)
+        all_value_counts.append(counts)
 
     # create dataframe with
     # cols = (total brightness, volume, centroids, z_planes)
     # rows = neuron ID
     df = pd.DataFrame(list(zip(brightnesses, neuron_volumes, all_centroids)),
                       index=neurons,
-                      columns=['total_brightness', 'neuron_volume', 'centroids'])
+                      columns=['total_brightness', 'neuron_volume', 'centroids', 'pixel_values', 'pixel_counts'])
 
     return df
