@@ -29,7 +29,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg,
 
     cfg = project_cfg.copy()
     cfg['preprocessing_config'] = track_cfg['preprocessing_config']
-    green_video = preprocess_all_frames_using_config(DEBUG, cfg, verbose=0, vid_fname=green_fname)
+    green_video, _ = preprocess_all_frames_using_config(DEBUG, cfg, verbose=0, vid_fname=green_fname)
 
     all_matches, all_neuron_names, green_dat, red_dat = get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_video,
                                                                                   is_mirrored, mask_array, max_dist,
