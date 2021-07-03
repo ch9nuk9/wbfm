@@ -12,7 +12,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 ex = Experiment()
-ex.add_config(project_path=None, out_fname=None)
+ex.add_config(project_path=None, out_fname=None, DEBUG=False)
 
 
 @ex.config
@@ -34,4 +34,4 @@ def main(_config, _run):
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     with safe_cd(_config['project_dir']):
-        recalculate_metadata_from_config(this_config)
+        recalculate_metadata_from_config(this_config, _config['DEBUG'])

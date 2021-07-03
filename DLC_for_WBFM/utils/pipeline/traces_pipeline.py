@@ -167,6 +167,7 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
 
 def _initialize_dataframes(all_neuron_names, frame_list):
     save_names = ['brightness', 'volume',
+                  'histogram',
                   'centroid_ind',
                   'z_seg', 'x_seg', 'y_seg',
                   'z_dlc', 'x_dlc', 'y_dlc',
