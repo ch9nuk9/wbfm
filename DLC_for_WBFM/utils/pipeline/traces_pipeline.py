@@ -110,7 +110,7 @@ def get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_fname, is_mirrored, mask_
                 red_dat[(d_name, 'all_values')].loc[i] = mdat['all_values'][s_name]
             elif 'pixel_counts' in mdat:
                 # Temporary workaround when I saved the wrong thing
-                red_dat[(d_name, 'all_values')].loc[i] = rebuild_pixel_values(mdat, s_name)
+                red_dat[(d_name, 'all_values')].loc[i] = [rebuild_pixel_values(mdat, s_name)]
             red_dat[(d_name, 'brightness')].loc[i] = mdat['total_brightness'][s_name]
             red_dat[(d_name, 'volume')].loc[i] = mdat['neuron_volume'][s_name]
             red_dat[(d_name, 'centroid_ind')].loc[i] = s_name
