@@ -42,12 +42,6 @@ def get_metadata_dictionary(masks, original_vol):
     df = pd.DataFrame(index=neurons,
                       columns=['total_brightness', 'neuron_volume', 'centroids', 'pixel_values', 'pixel_counts'])
 
-    # all_centroids = []
-    # neuron_volumes = []
-    # brightnesses = []
-    # all_values = []
-    # all_value_counts = []
-
     for n in neurons:
         neuron_mask = masks == n
         neuron_vol = np.count_nonzero(neuron_mask)
@@ -64,16 +58,5 @@ def get_metadata_dictionary(masks, original_vol):
         df.at[n, 'centroids'] = centroids
         df.at[n, 'pixel_values'] = vals
         df.at[n, 'pixel_counts'] = counts
-        # brightnesses.append(total_brightness)
-        # neuron_volumes.append(neuron_vol)
-        # all_centroids.append(centroids)
-        # all_values.append(vals)
-        # all_value_counts.append(counts)
-
-    # df['total_brightness'] = brightnesses
-    # df['neuron_volume'] = neuron_volumes
-    # df['centroids'] = all_centroids
-    # df['pixel_values'] = all_values
-    # df['pixel_counts'] = all_value_counts
 
     return df
