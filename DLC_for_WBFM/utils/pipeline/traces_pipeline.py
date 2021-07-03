@@ -186,6 +186,9 @@ def _initialize_dataframes(all_neuron_names, frame_list):
     red_dat = pd.DataFrame(empty_dat,
                            columns=m_index,
                            index=frame_list)
+    for name in all_neuron_names:
+        # Allow saving numpy arrays in the column
+        red_dat[(name, 'all_values')] = red_dat[(name, 'all_values')].astype('object')
     green_dat = red_dat.copy()
     return green_dat, red_dat
 
