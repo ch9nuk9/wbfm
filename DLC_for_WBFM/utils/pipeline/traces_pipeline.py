@@ -9,6 +9,7 @@ from tqdm import tqdm
 import zarr
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
 from DLC_for_WBFM.utils.feature_detection.visualization_tracks import visualize_tracks
+from DLC_for_WBFM.utils.preprocessing.utils_tif import get_and_preprocess, preprocess_all_frames_using_config
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
@@ -26,7 +27,11 @@ def get_traces_from_3d_tracks_using_config(segment_cfg,
     dlc_tracks, green_fname, is_mirrored, mask_array, max_dist, num_frames, num_slices, params_start_volume, segmentation_metadata, z_to_xy_ratio = _unpack_configs_for_traces(
         project_cfg, segment_cfg, track_cfg)
 
-    all_matches, all_neuron_names, green_dat, red_dat = get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_fname,
+    cfg = project_cfg.copy()
+    cfg['preprocessing_config'] = track_cfg['preprocessing_config']
+    green_video = preprocess_all_frames_using_config(DEBUG, cfg, green_fname)
+
+    all_matches, all_neuron_names, green_dat, red_dat = get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_video,
                                                                                   is_mirrored, mask_array, max_dist,
                                                                                   num_frames, num_slices,
                                                                                   params_start_volume,
@@ -58,7 +63,7 @@ def _save_traces_as_hdf_and_update_configs(all_matches, all_neuron_names, green_
     edit_config(traces_cfg['self_path'], traces_cfg)
 
 
-def get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_fname, is_mirrored, mask_array, max_dist, num_frames, num_slices,
+def get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_video, is_mirrored, mask_array, max_dist, num_frames, num_slices,
                               params_start_volume, segmentation_metadata, z_to_xy_ratio):
     # Convert DLC dataframe to array
     all_neuron_names = list(dlc_tracks.columns.levels[0])
@@ -124,27 +129,30 @@ def get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_fname, is_mirrored, mask_
         all_matches[i_volume] = np.array([(m[0] + 1, m[1] + 1, c) for m, c in zip(matches, conf)])
 
     print("Extracting green traces...")
-    vol_opt = {'num_slices': num_slices, 'dtype': 'uint16'}
-    with tifffile.TiffFile(green_fname) as green_tifffile:
+    # vol_opt = {'num_slices': num_slices, 'dtype': 'uint16'}
+    # vol_opt = {'num_slices': num_slices}
+    # with tifffile.TiffFile(green_fname) as green_tifffile:
 
-        for i_volume in tqdm(frame_list):
-            # Prepare matches and locations
-            matches = all_matches[i_volume]
-            if len(matches) == 0:
-                continue
-            mdat = segmentation_metadata[i_volume]
-            all_seg_names = list(mdat['centroids'].keys())
-            all_zxy_dlc = _get_dlc_zxy(i_volume)
-            # Prepare mask (segmentation)
-            i_mask = i_volume - params_start_volume
-            # this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt) # TODO: can this read zarr directly?
-            this_mask_volume = mask_array[i_mask, ...]
-            this_green_volume = get_single_volume(green_tifffile, i_volume, **vol_opt)
-            for i_dlc, i_seg, c in matches:
-                i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
-                _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg,
-                                          i_volume,
-                                          is_mirrored, mdat, this_green_volume, this_mask_volume, c)
+    for i_volume in tqdm(frame_list):
+        # Prepare matches and locations
+        matches = all_matches[i_volume]
+        if len(matches) == 0:
+            continue
+        mdat = segmentation_metadata[i_volume]
+        all_seg_names = list(mdat['centroids'].keys())
+        all_zxy_dlc = _get_dlc_zxy(i_volume)
+        # Prepare mask (segmentation)
+        i_mask = i_volume - params_start_volume
+        # this_mask_volume = get_single_volume(mask_fname, i_mask, **vol_opt) # TODO: can this read zarr directly?
+        this_mask_volume = mask_array[i_mask, ...]
+        # this_green_volume = get_and_preprocess(i_volume, num_slices, p, params_start_volume, green_tifffile, **vol_opt)
+        # this_green_volume = get_single_volume(green_tifffile, i_volume, **vol_opt)
+        this_green_volume = green_video[i_volume, ...]
+        for i_dlc, i_seg, c in matches:
+            i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
+            _analyze_video_using_mask(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg,
+                                      i_volume,
+                                      is_mirrored, mdat, this_green_volume, this_mask_volume, c)
 
     return all_matches, all_neuron_names, green_dat, red_dat
 

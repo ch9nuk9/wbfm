@@ -79,7 +79,7 @@ def preprocess_all_frames_using_config(DEBUG, config, verbose, vid_fname, which_
     """
     Preproceses all frames that will be analyzed as per config
 
-    NOTE: expects config['preprocessing_config'] to be present
+    NOTE: expects 'preprocessing_config' and 'dataset_params' to be in config
 
     Loads but does not process frames before config['dataset_params']['start_volume']
         (to keep the indices the same as the original dataset)
@@ -109,7 +109,7 @@ def preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, 
     with tifffile.TiffFile(vid_fname) as vid_stream:
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
-                preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
+                preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
             with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
                 # futures = executor.map(parallel_func, frame_list)
                 # [f.result() for f in futures]
@@ -145,7 +145,7 @@ def _get_video_options(config, vid_fname):
     return sz, vid_opt
 
 
-def _get_and_preprocess(i, num_slices, p, start_volume, vid_fname, read_lock=None):
+def get_and_preprocess(i, num_slices, p, start_volume, vid_fname, read_lock=None):
     if read_lock is None:
         dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
     else:
