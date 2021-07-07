@@ -27,7 +27,6 @@ def cfg(project_path):
     # Manually load yaml files
     project_cfg = load_config(project_path)
     segment_fname = Path(project_cfg['subfolder_configs']['segmentation'])
-    # print(project_path, segment_fname)
     project_dir = Path(project_path).parent
     segment_fname = Path(project_dir).joinpath(segment_fname)
     segment_cfg = dict(load_config(segment_fname))

@@ -79,7 +79,6 @@ def _detect_or_import_neurons(dat, external_detections, metadata, num_slices, st
 def build_reference_frame_encoding(dat_raw,
                                    num_slices,
                                    z_depth,
-                                   preprocessing_settings=PreprocessingSettings(),
                                    start_slice=None,
                                    metadata={},
                                    external_detections=None,
@@ -89,8 +88,9 @@ def build_reference_frame_encoding(dat_raw,
 
     See: build_reference_frame
     """
-
-    dat = perform_preprocessing(dat_raw, preprocessing_settings)
+    # DEPRECATE PREPROCESSING
+    # dat = perform_preprocessing(dat_raw, preprocessing_settings)
+    dat = dat_raw
     neuron_zxy = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
 
     embeddings, keypoints = encode_all_neurons(neuron_zxy, dat, z_depth)
@@ -99,7 +99,7 @@ def build_reference_frame_encoding(dat_raw,
     f2n_map = {i: i for i in range(len(neuron_zxy))}
     f = ReferenceFrame(neuron_zxy, keypoints, neuron_zxy, embeddings, f2n_map,
                        **metadata,
-                       preprocessing_settings=preprocessing_settings)
+                       preprocessing_settings=None)
 
     return f
 

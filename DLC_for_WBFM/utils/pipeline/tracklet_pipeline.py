@@ -25,10 +25,19 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     See also track_neurons_full_video()
     """
 
-    # Load preprocessing settings
-    p_fname = config['preprocessing_config']
-    p = PreprocessingSettings.load_from_yaml(p_fname)
+    opt = _unpack_config_partial_tracking(DEBUG, config)
+    all_frame_pairs, all_frame_dict = track_neurons_full_video(vid_fname, **opt)
 
+    # Also updates the matches of the object
+    all_matches = {k: pair.calc_final_matches_using_bipartite_matching() for k, pair in all_frame_pairs.items()}
+
+    all_xyz = {k: f.neuron_locs for k, f in all_frame_dict.items()}
+    df = build_tracklets_dfs(all_matches, all_xyz)
+
+    _save_matches_and_frames(all_frame_dict, all_frame_pairs, df)
+
+
+def _unpack_config_partial_tracking(DEBUG, config):
     # Make tracklets
     # Get options
     opt = config['tracker_params'].copy()
@@ -43,23 +52,12 @@ def partial_track_video_using_config(vid_fname, config, DEBUG=False):
     else:
         opt['start_volume'] = config['dataset_params']['start_volume']
     opt['num_slices'] = config['dataset_params']['num_slices']
-
-    all_frame_pairs, all_frame_dict = track_neurons_full_video(vid_fname,
-                                                               preprocessing_settings=p,
-                                                               **opt)
-    # Postprocess matches
-    # b_matches, b_conf, b_frames, b_candidates = out
-    # new_candidates = fix_candidates_without_confidences(b_candidates)
-
-    # Also updates the matches of the object
-    all_matches = {k: pair.calc_final_matches_using_bipartite_matching() for k, pair in all_frame_pairs.items()}
-    # df = build_tracklets_from_classes(all_frame_dict, all_matches)
-
-    # all_matches = [m.calc_final_matches_using_bipartite_matching() for m in all_frame_pairs.values()]
-    all_xyz = {k: f.neuron_locs for k, f in all_frame_dict.items()}
-    df = build_tracklets_dfs(all_matches, all_xyz)
-
-    _save_matches_and_frames(all_frame_dict, all_frame_pairs, df)
+    # Load preprocessing settings
+    # DEPRECATED
+    # p_fname = config['preprocessing_config']
+    # p = PreprocessingSettings.load_from_yaml(p_fname)
+    opt['preprocessing_settings'] = None
+    return opt
 
 
 def _save_matches_and_frames(all_frame_dict, all_frame_pairs, df):

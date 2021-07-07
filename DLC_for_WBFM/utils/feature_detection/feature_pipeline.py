@@ -511,30 +511,29 @@ def track_neurons_full_video(vid_fname,
 
     New: uses and returns my class of features
     """
+    if preprocessing_settings is not None:
+        dtype = preprocessing_settings.initial_dtype
+        raise DeprecationWarning("preprocessing on individual frames is deprecated")
+    else:
+        # TODO: better way to get datatype
+        dtype = 'uint8'
     # Get initial volume; settings are same for all
     import_opt = {'num_slices': num_slices,
                   'alpha': 1.0,
-                  'dtype': preprocessing_settings.initial_dtype}
-    # ref_opt = {'neuron_feature_radius': neuron_feature_radius}
-    ref_opt = {'z_depth': neuron_feature_radius} # TODO: rename this parameter
+                  'dtype': dtype}
+    ref_opt = {'z_depth': neuron_feature_radius}  # TODO: rename this parameter
 
     def _build_frame(frame_ind):
         dat = get_single_volume(vid_fname, frame_ind, **import_opt)
         metadata = {'frame_ind': frame_ind,
                     'vol_shape': dat.shape,
                     'video_fname': vid_fname}
-        # f = build_reference_frame(dat,
-        #                           num_slices=import_opt['num_slices'],
-        #                           **ref_opt,
-        #                           metadata=metadata,
-        #                           preprocessing_settings=preprocessing_settings,
-        #                           external_detections=external_detections)
 
         f = build_reference_frame_encoding(dat,
                                            num_slices=import_opt['num_slices'],
                                            **ref_opt,
                                            metadata=metadata,
-                                           preprocessing_settings=preprocessing_settings,
+                                           preprocessing_settings=None,
                                            external_detections=external_detections)
         return f
 
