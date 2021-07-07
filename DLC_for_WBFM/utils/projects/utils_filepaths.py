@@ -24,9 +24,14 @@ def resolve_mounted_path_in_current_os(path: str, verbose=1):
     }
 
     for win_drive, linux_drive in mounted_drive_dict.items():
-        if "ix" in os.name.lower() and path.startswith(win_drive):
+        is_linux = "ix" in os.name.lower()
+        is_windows_style = path.startswith(win_drive)
+        is_windows = os.name.lower() == "windows" or os.name.lower() == "nt"
+        is_linux_style = path.startswith(linux_drive)
+
+        if is_linux and is_windows_style:
             path = path.replace(win_drive, linux_drive)
-        if os.name.lower() == "windows" and path.startswith(linux_drive):
+        if is_windows and is_linux_style:
             path = path.replace(linux_drive, win_drive)
 
     # Check for unreachable local drives
