@@ -10,6 +10,7 @@ import zarr
 
 def write_data_subset_from_config(cfg,
                                   out_fname=None,
+                                  vid_fname=None,
                                   tiff_not_zarr=True,
                                   pad_to_align_with_original=False,
                                   DEBUG=False):
@@ -25,7 +26,8 @@ def write_data_subset_from_config(cfg,
             out_fname = os.path.join(project_dir, "data_subset.zarr")
     else:
         out_fname = os.path.join(project_dir, out_fname)
-    vid_fname = resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])
+    if vid_fname is None:
+        vid_fname = resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])
     verbose = cfg['other']['verbose']
     start_volume = cfg['dataset_params']['start_volume']
 
@@ -35,7 +37,8 @@ def write_data_subset_from_config(cfg,
     if not pad_to_align_with_original:
         preprocessed_dat = preprocessed_dat[start_volume:, ...]
 
-    print(f"Writing array of size: {preprocessed_dat.shape}")
+    if verbose >= 1:
+        print(f"Writing array of size: {preprocessed_dat.shape}")
 
     if tiff_not_zarr:
         # Have to add a color channel to make format: TZCYX
@@ -47,6 +50,8 @@ def write_data_subset_from_config(cfg,
         print(f"Chunk size: {chunk_sz}")
         out_dat = np.array(preprocessed_dat).astype('uint16')
         zarr.save_array(out_fname, out_dat, chunks=chunk_sz)
+
+    # Save this name in the config file itself
 
 
 def segment_local_data_subset(project_config, out_fname=None):
