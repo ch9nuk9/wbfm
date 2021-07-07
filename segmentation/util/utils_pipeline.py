@@ -40,7 +40,7 @@ def segment_video_using_config_3d(_config, continue_from_frame=None):
         _config)
 
     # Open the file
-    if not video_path.ends_with('.zarr'):
+    if not video_path.endswith('.zarr'):
         raise ValueError("Non-zarr usage has been deprecated")
     video_dat = zarr.open(video_path)
 
