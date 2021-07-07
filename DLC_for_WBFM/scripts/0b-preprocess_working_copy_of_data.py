@@ -46,6 +46,8 @@ def main(_config, _run):
     cfg['project_dir'] = _config['project_dir']
 
     with safe_cd(_config['project_dir']):
+        print("WARNING: current preprocessing is not deterministic between channels if rigid correction is used")
+
         opt['out_fname'] = _config['out_fname_red']
         write_data_subset_from_config(cfg, **opt)
 
