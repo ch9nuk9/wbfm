@@ -31,8 +31,10 @@ def resolve_mounted_path_in_current_os(path: str, verbose=1):
 
         if is_linux and is_windows_style:
             path = path.replace(win_drive, linux_drive)
+            path = str(Path(path).resolve())
         if is_windows and is_linux_style:
             path = path.replace(linux_drive, win_drive)
+            path = str(Path(path).resolve())
 
     # Check for unreachable local drives
     local_drives = ['C:', 'D:']
@@ -41,7 +43,6 @@ def resolve_mounted_path_in_current_os(path: str, verbose=1):
             if path.startswith(drive):
                 raise FileNotFoundError("File mounted to local drive; network system can't find it")
 
-    path = str(Path(path).resolve())
     if verbose >= 1:
         print(f"Resolved path to {path}")
     return path
