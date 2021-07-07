@@ -44,6 +44,7 @@ def main(_config, _run):
            'DEBUG': _config['DEBUG']}
     cfg = _config['cfg']
     cfg['project_dir'] = _config['project_dir']
+    cfg['project_path'] = _config['project_path']
 
     with safe_cd(_config['project_dir']):
         print("WARNING: current preprocessing is not deterministic between channels if rigid correction is used")
