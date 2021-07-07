@@ -112,7 +112,9 @@ def synchronize_segment_config(project_path, segment_cfg):
     # For now, does NOT overwrite anything on disk
     project_cfg = load_config(project_path)
 
-    updates = {'video_path': project_cfg['red_bigtiff_fname']}
+    if 'preprocessed_red' not in project_cfg:
+        raise ValueError("Must preprocess data before the segmentation step")
+    updates = {'video_path': project_cfg['preprocessed_red']}
     segment_cfg.update(updates)
 
     # segment_folder = get_absname(project_path, 'segmentation')
