@@ -36,9 +36,13 @@ def segment_video_using_config_3d(_config, continue_from_frame=None):
 
     """
 
-    frame_list, mask_fname, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path = _unpack_config_file(
+    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path = _unpack_config_file(
         _config)
 
+    # Open the file
+    if not video_path.ends_with('.zarr'):
+        raise ValueError("Non-zarr usage has been deprecated")
+    video_dat = zarr.open(video_path)
 
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
     # Not fully working for multithreaded scenario
@@ -47,10 +51,9 @@ def segment_video_using_config_3d(_config, continue_from_frame=None):
     sd_model.keras_model.make_predict_function()
     # Do first volume outside the parallelization loop to initialize keras and zarr
     masks_zarr = _do_first_volume3d(frame_list, mask_fname, num_frames, num_slices,
-                                    preprocessing_settings, sd_model, verbose, video_path, continue_from_frame)
+                                    sd_model, verbose, video_dat, continue_from_frame)
     # Main function
-    segmentation_options = {'masks_zarr': masks_zarr, 'num_slices': num_slices,
-                            'preprocessing_settings': preprocessing_settings,
+    segmentation_options = {'masks_zarr': masks_zarr,
                             'sd_model': sd_model, 'verbose': verbose}
 
     # Will always be at least continuing after the first frame
@@ -60,18 +63,13 @@ def segment_video_using_config_3d(_config, continue_from_frame=None):
         continue_from_frame += 1
         print(f"Continuing from frame {continue_from_frame}")
 
-    _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose, video_path,
+    _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
 
-    calc_metadata_full_video_3d(frame_list, masks_zarr, num_slices, preprocessing_settings, video_path,
-                                metadata_fname)
+    calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fname)
 
 
-def calc_metadata_full_video_3d(frame_list, masks_zarr, num_slices, preprocessing_settings, video_path,
-                                metadata_fname):
-    # manager = Manager()
-    # metadata = manager.dict()
-    # metadata = dict.fromkeys(set(frame_list))
+def calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fname):
     metadata = dict()
 
     # Loop again in order to calculate metadata and possibly postprocess
@@ -83,36 +81,25 @@ def calc_metadata_full_video_3d(frame_list, masks_zarr, num_slices, preprocessin
     #
     #         metadata[i_abs] = get_metadata_dictionary(masks, volume)
 
-    read_lock = threading.Lock()
-
     with tqdm(total=len(frame_list)) as pbar:
-        with tifffile.TiffFile(video_path) as video_stream:
-            def parallel_func(i_both):
-                i_out, i_vol = i_both
-                masks = masks_zarr[i_out, :, :, :]
-                # TODO: Use a disk-saved preprocessing artifact instead of recalculating
-                volume = _get_and_prepare_volume(i_vol, num_slices, preprocessing_settings, video_path=video_stream,
-                                                 read_lock=read_lock)
+        def parallel_func(i_both):
+            i_out, i_vol = i_both
+            masks = masks_zarr[i_out, :, :, :]
+            volume = video_dat[i_vol, ...]
+            metadata[i_vol] = get_metadata_dictionary(masks, volume)
 
-                metadata[i_vol] = get_metadata_dictionary(masks, volume)
-                # segment_and_save3d(i_out + continue_from_frame, i_vol, video_path=video_stream, **opt)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+                pbar.update(1)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
-                futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
-                for future in concurrent.futures.as_completed(futures):
-                    future.result()
-                    pbar.update(1)
-    #
-    #             # Seems like map is better for ProcessPool vs ThreadPool
-    #             # https://www.tutorialspoint.com/concurrency_in_python/concurrency_in_python_pool_of_processes.htm
-    #             # for _ in executor.map(parallel_func, enumerate(frame_list)):
-    #             #     pbar.update(1)
     # saving metadata and settings
     with open(metadata_fname, 'wb') as meta_save:
         pickle.dump(metadata, meta_save)
 
 
-def _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose, video_path,
+def _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
                            opt, continue_from_frame):
     # with tifffile.TiffFile(video_path) as video_stream:
     #     for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list) - 1):
@@ -124,16 +111,15 @@ def _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose,
     opt['read_lock'] = read_lock
 
     with tqdm(total=num_frames - continue_from_frame) as pbar:
-        with tifffile.TiffFile(video_path) as video_stream:
-            def parallel_func(i_both):
-                i_out, i_vol = i_both
-                segment_and_save3d(i_out + continue_from_frame, i_vol, video_path=video_stream, **opt)
+        def parallel_func(i_both):
+            i_out, i_vol = i_both
+            segment_and_save3d(i_out + continue_from_frame, i_vol, video_dat=video_dat, **opt)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-                futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
-                for future in concurrent.futures.as_completed(futures):
-                    future.result()
-                    pbar.update(1)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+                pbar.update(1)
 
     if _config.get('self_path', None) is not None:
         edit_config(_config['self_path'], _config)
@@ -186,11 +172,8 @@ def _unpack_config_file(_config):
     _config['output']['masks'] = mask_fname
     _config['output']['metadata'] = metadata_fname
     verbose = _config['verbose']
-    preprocessing_settings = PreprocessingSettings.load_from_yaml(
-        _config['preprocessing_config']
-    )
     stardist_model_name = _config['segmentation_params']['stardist_model_name']
-    return frame_list, mask_fname, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path
+    return frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path
 
 
 def _segment_full_video_2d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
@@ -257,7 +240,7 @@ def _do_first_volume2d(frame_list, mask_fname, metadata, num_frames, num_slices,
 
 
 def _do_first_volume3d(frame_list, mask_fname, num_frames, num_slices,
-                       preprocessing_settings, sd_model, verbose, video_path, continue_from_frame=None):
+                       sd_model, verbose, video_dat, continue_from_frame=None):
     # Do first loop to initialize the zarr data
     if continue_from_frame is None:
         i = 0
@@ -267,13 +250,12 @@ def _do_first_volume3d(frame_list, mask_fname, num_frames, num_slices,
         # Old file MUST exist in this case
         mode = 'r+'
     i_volume = frame_list[i]
-    volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path)
+    volume = video_dat[i, ...]
     final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
     masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
     # Add masks to zarr file; automatically saves
     masks_zarr[i, :, :, :] = final_masks
-    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
     return masks_zarr
 
 
@@ -302,9 +284,10 @@ def segment_and_save2d(i, i_volume, masks_zarr, metadata, num_slices, opt_postpr
     # masks_zarr[i, :, :, :] = final_masks
 
 
-def segment_and_save3d(i, i_volume, masks_zarr, num_slices, preprocessing_settings,
-                       sd_model, verbose, video_path, keras_lock=None, read_lock=None):
-    volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
+def segment_and_save3d(i, i_volume, masks_zarr,
+                       sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
+    volume = video_dat[i_volume, ...]
+    # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
     if keras_lock is None:
         final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     else:
