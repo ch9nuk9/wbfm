@@ -1,6 +1,6 @@
 from DLC_for_WBFM.utils.preprocessing.utils_tif import preprocess_all_frames_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 import tifffile
 import numpy as np
 import os
@@ -13,6 +13,7 @@ def write_data_subset_from_config(cfg,
                                   vid_fname=None,
                                   tiff_not_zarr=True,
                                   pad_to_align_with_original=False,
+                                  save_fname_in_red_not_green=None,
                                   DEBUG=False):
     """Takes the original giant .btf file from and writes the subset of the data"""
     project_dir = cfg['project_dir']
@@ -52,6 +53,12 @@ def write_data_subset_from_config(cfg,
         zarr.save_array(out_fname, out_dat, chunks=chunk_sz)
 
     # Save this name in the config file itself
+    if save_fname_in_red_not_green is not None:
+        if save_fname_in_red_not_green:
+            edits = {'preprocessed_red': out_fname}
+        else:
+            edits = {'preprocessed_green': out_fname}
+        edit_config(cfg['project_path'], edits)
 
 
 def segment_local_data_subset(project_config, out_fname=None):

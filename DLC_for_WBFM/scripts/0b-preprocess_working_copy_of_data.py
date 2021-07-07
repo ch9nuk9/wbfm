@@ -49,7 +49,9 @@ def main(_config, _run):
         print("WARNING: current preprocessing is not deterministic between channels if rigid correction is used")
 
         opt['out_fname'] = _config['out_fname_red']
+        opt['save_fname_in_red_not_green'] = True
         write_data_subset_from_config(cfg, **opt)
 
         opt['out_fname'] = _config['out_fname_green']
+        opt['save_fname_in_red_not_green'] = False
         write_data_subset_from_config(cfg, **opt)
