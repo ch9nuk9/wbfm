@@ -48,7 +48,8 @@ def get_metadata_dictionary(masks, original_vol):
 
         original_vals = original_vol[neuron_mask]
         total_brightness = np.sum(original_vals)
-        vals, counts = np.unique(original_vals, return_counts=True)
+        vals = np.ravel(original_vals)
+        # vals, counts = np.unique(original_vals, return_counts=True)
 
         neuron_label = label(neuron_mask)
         centroids = regionprops(neuron_label)[0].centroid
@@ -56,7 +57,7 @@ def get_metadata_dictionary(masks, original_vol):
         df.at[n, 'total_brightness'] = total_brightness
         df.at[n, 'neuron_volume'] = neuron_vol
         df.at[n, 'centroids'] = centroids
-        df.at[n, 'pixel_values'] = vals
-        df.at[n, 'pixel_counts'] = counts
+        df.at[n, 'all_values'] = vals
+        # df.at[n, 'pixel_counts'] = counts
 
     return df
