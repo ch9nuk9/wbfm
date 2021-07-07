@@ -80,7 +80,7 @@ def build_reference_frame_encoding(dat_raw,
                                    num_slices,
                                    z_depth,
                                    start_slice=None,
-                                   metadata={},
+                                   metadata=None,
                                    external_detections=None,
                                    verbose=0):
     """
@@ -90,6 +90,8 @@ def build_reference_frame_encoding(dat_raw,
     """
     # DEPRECATE PREPROCESSING
     # dat = perform_preprocessing(dat_raw, preprocessing_settings)
+    if metadata is None:
+        metadata = {}
     dat = dat_raw
     neuron_zxy = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
 

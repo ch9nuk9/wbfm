@@ -1,3 +1,5 @@
+import zarr as zarr
+
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, \
     match_centroids_using_tree
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
@@ -523,8 +525,12 @@ def track_neurons_full_video(vid_fname,
                   'dtype': dtype}
     ref_opt = {'z_depth': neuron_feature_radius}  # TODO: rename this parameter
 
+    # Open the zarr file
+    vid_dat = zarr.open(vid_fname)
+
     def _build_frame(frame_ind):
-        dat = get_single_volume(vid_fname, frame_ind, **import_opt)
+        # dat = get_single_volume(vid_fname, frame_ind, **import_opt)
+        dat = vid_dat[frame_ind, ...]
         metadata = {'frame_ind': frame_ind,
                     'vol_shape': dat.shape,
                     'video_fname': vid_fname}

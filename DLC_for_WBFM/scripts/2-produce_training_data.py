@@ -35,7 +35,8 @@ def produce_training_data(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    vid_fname = _config['project_cfg']['red_bigtiff_fname']
+    # vid_fname = _config['project_cfg']['red_bigtiff_fname']
+    vid_fname = _config['project_cfg']['preprocessed_red']
     this_config = _config['train_cfg'].copy()
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
