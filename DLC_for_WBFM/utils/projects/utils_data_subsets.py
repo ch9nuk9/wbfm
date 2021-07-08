@@ -8,14 +8,15 @@ from pathlib import Path
 import zarr
 
 
-def write_data_subset_from_config(cfg,
-                                  out_fname=None,
-                                  vid_fname=None,
-                                  tiff_not_zarr=True,
-                                  pad_to_align_with_original=False,
-                                  save_fname_in_red_not_green=None,
-                                  DEBUG=False):
-    """Takes the original giant .btf file from and writes the subset of the data"""
+def write_data_subset_from_config(cfg: dict,
+                                  out_fname: str = None,
+                                  vid_fname: str = None,
+                                  tiff_not_zarr: bool = True,
+                                  pad_to_align_with_original: bool = False,
+                                  save_fname_in_red_not_green: bool = None,
+                                  DEBUG: bool = False) -> None:
+    """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
+
     project_dir = cfg['project_dir']
     fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
     cfg['preprocessing_config'] = fname

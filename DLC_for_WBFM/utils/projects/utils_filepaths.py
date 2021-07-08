@@ -2,7 +2,7 @@ import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 
-def resolve_mounted_path_in_current_os(path: str, verbose=1):
+def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
     """
     Removes windows-specific mounted drive names (Y:, D:, etc.) and replaces them with the networked system equivalent
 

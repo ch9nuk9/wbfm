@@ -9,7 +9,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_sta
 import scipy.ndimage as ndi
 from dataclasses import dataclass
 from dataclasses import field
-from typing import List
+from typing import List, Tuple
 import yaml
 from tqdm.auto import tqdm
 
@@ -75,7 +75,8 @@ def perform_preprocessing(dat_raw, preprocessing_settings: PreprocessingSettings
     return dat_raw
 
 
-def preprocess_all_frames_using_config(DEBUG, config, verbose, vid_fname, which_frames=None):
+def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, vid_fname: str,
+                                       which_frames: list = None) -> Tuple[zarr.Array, dict]:
     """
     Preproceses all frames that will be analyzed as per config
 
@@ -90,7 +91,9 @@ def preprocess_all_frames_using_config(DEBUG, config, verbose, vid_fname, which_
                                  which_frames)
 
 
-def preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, vid_fname, vid_opt, which_frames):
+def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p: PreprocessingSettings,
+                          start_volume: int, sz: Tuple, vid_fname: str, vid_opt: dict,
+                          which_frames: list) -> Tuple[zarr.Array, dict]:
     if DEBUG:
         # Make a much shorter video
         if which_frames is not None:
@@ -100,7 +103,6 @@ def preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, 
     chunk_sz = (1, num_slices,) + sz
     total_sz = (num_total_frames,) + chunk_sz[1:]
 
-    # preprocessed_dat = np.zeros(total_sz, dtype='uint16')
     preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype='uint16',
                                   synchronizer=zarr.ThreadSynchronizer())
     read_lock = threading.Lock()
