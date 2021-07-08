@@ -28,7 +28,7 @@ class FramePair:
         all_matches.extend(self.gp_matches)
         return all_matches
 
-    def calc_final_matches_using_bipartite_matching(self):
+    def calc_final_matches_using_bipartite_matching(self) -> list:
         matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches)
         self.final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
         return self.final_matches

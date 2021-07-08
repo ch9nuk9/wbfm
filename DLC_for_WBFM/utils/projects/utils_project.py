@@ -1,4 +1,6 @@
 import os.path as osp
+import pathlib
+import typing
 from datetime import datetime
 from pathlib import Path
 from shutil import copytree
@@ -62,7 +64,7 @@ def get_absname(project_path, fname):
 
 
 @contextmanager
-def safe_cd(newdir: str) -> None:
+def safe_cd(newdir: typing.Union[str, pathlib.Path]) -> None:
     """
     Safe change directory that switches back
 
@@ -81,7 +83,7 @@ def safe_cd(newdir: str) -> None:
 #####################
 
 
-def edit_config(config_fname: str, edits: dict, DEBUG: bool = False) -> dict:
+def edit_config(config_fname: typing.Union[str, pathlib.Path], edits: dict, DEBUG: bool = False) -> dict:
     """Generic overwriting, based on DLC"""
 
     if DEBUG:
@@ -129,7 +131,7 @@ def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
     return segment_cfg
 
 
-def synchronize_train_config(project_path, train_cfg):
+def synchronize_train_config(project_path: str) -> dict:
     # For now, does NOT overwrite anything on disk
     project_cfg = load_config(project_path)
 

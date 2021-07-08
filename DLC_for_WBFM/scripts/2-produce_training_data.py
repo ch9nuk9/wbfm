@@ -26,7 +26,7 @@ def cfg(project_path):
         train_fname = Path(project_cfg['subfolder_configs']['training_data'])
         train_cfg = dict(load_config(train_fname))
 
-        train_cfg = synchronize_train_config(Path(project_path).name, train_cfg)
+        train_cfg = synchronize_train_config(Path(project_path).name)
         edit_config(train_fname, train_cfg)
 
 

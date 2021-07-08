@@ -1,5 +1,8 @@
+from typing import Tuple, Dict
+
 import zarr as zarr
 
+from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, \
     match_centroids_using_tree
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
@@ -7,7 +10,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import build_reference_frame, add_all_good_components, \
     is_ordered_subset, calc_2frame_matches_using_class, build_reference_frame_encoding
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, \
     calc_all_bipartite_matches, community_to_matches, calc_neuron_using_voronoi
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name, \
@@ -495,17 +498,17 @@ def match_all_to_reference_frames(reference_set,
 ##
 
 
-def track_neurons_full_video(vid_fname,
-                             start_volume=0,
-                             num_frames=10,
-                             num_slices=33,
-                             neuron_feature_radius=5.0,
-                             preprocessing_settings=PreprocessingSettings(),
-                             use_affine_matching=False,
-                             add_affine_to_candidates=False,
-                             add_gp_to_candidates=False,
-                             external_detections=None,
-                             verbose=0):
+def track_neurons_full_video(vid_fname: str,
+                             start_volume: int = 0,
+                             num_frames: int = 10,
+                             num_slices: int = 33,
+                             neuron_feature_radius: float = 5.0,
+                             preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
+                             use_affine_matching: bool = False,
+                             add_affine_to_candidates: bool = False,
+                             add_gp_to_candidates: bool = False,
+                             external_detections: str = None,
+                             verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
     """
     Detects and tracks neurons using opencv-based feature matching
     Note: only compares adjacent frames
@@ -528,7 +531,7 @@ def track_neurons_full_video(vid_fname,
     # Open the zarr file
     vid_dat = zarr.open(vid_fname)
 
-    def _build_frame(frame_ind):
+    def _build_frame(frame_ind: int) -> ReferenceFrame:
         # dat = get_single_volume(vid_fname, frame_ind, **import_opt)
         dat = vid_dat[frame_ind, ...]
         metadata = {'frame_ind': frame_ind,

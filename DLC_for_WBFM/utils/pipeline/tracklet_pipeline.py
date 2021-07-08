@@ -15,7 +15,7 @@ import pickle
 ###
 
 
-def partial_track_video_using_config(vid_fname, config, DEBUG=False):
+def partial_track_video_using_config(vid_fname: str, config: dict, DEBUG: bool = False) -> None:
     """
     Produce training data via partial tracking using 3d feature-based method
 
@@ -60,7 +60,7 @@ def _unpack_config_partial_tracking(DEBUG, config):
     return opt
 
 
-def _save_matches_and_frames(all_frame_dict, all_frame_pairs, df):
+def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict, df: pd.DataFrame) -> None:
     subfolder = osp.join('2-training_data', 'raw')
     subfolder = get_sequential_filename(subfolder)
     os.mkdir(subfolder)

@@ -159,7 +159,7 @@ def detect_neurons_using_ICP(dat,
 ## Alternative: read from pipeline
 ##
 
-def detect_neurons_from_file(detection_fname, which_volume, verbose=0):
+def detect_neurons_from_file(detection_fname: str, which_volume: int, verbose: int = 0) -> list:
     """
     Designed to be used with centroids detected using a different pipeline
     """

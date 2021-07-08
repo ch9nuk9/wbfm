@@ -399,7 +399,8 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
 ## Massive simplification / refactor
 ##
 
-def build_tracklets_dfs(pairwise_matches_dict, xyz_per_neuron_per_frame=None, slice_offset=0):
+def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: list = None,
+                        slice_offset: int = 0) -> pd.DataFrame:
     """
     Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
 

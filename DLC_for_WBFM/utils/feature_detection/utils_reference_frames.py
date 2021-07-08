@@ -22,14 +22,14 @@ import collections
 ## Main convinience constructors
 ##
 
-def build_reference_frame(dat_raw,
-                          num_slices,
-                          neuron_feature_radius,
-                          preprocessing_settings=PreprocessingSettings(),
-                          start_slice=2,
-                          metadata=None,
-                          external_detections=None,
-                          verbose=0):
+def build_reference_frame(dat_raw: np.ndarray,
+                          num_slices: int,
+                          neuron_feature_radius: float,
+                          preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
+                          start_slice: int = 2,
+                          metadata: dict = None,
+                          external_detections: str = None,
+                          verbose: int = 0) -> ReferenceFrame:
     """Main convenience constructor for ReferenceFrame class"""
     if metadata is None:
         metadata = {}
@@ -61,7 +61,8 @@ def build_reference_frame(dat_raw,
     return f
 
 
-def _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice):
+def _detect_or_import_neurons(dat: list, external_detections: str, metadata: dict, num_slices: int,
+                              start_slice: int) -> list:
     if external_detections is None:
         neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
                                                         num_slices=num_slices,
@@ -315,13 +316,13 @@ def calc_matches_using_feature_voting(frame0, frame1,
     return matches_with_conf, all_candidate_matches, []
 
 
-def calc_2frame_matches_using_class(frame0,
-                                    frame1,
-                                    verbose=1,
-                                    use_affine_matching=False, # DEPRECATED
-                                    add_affine_to_candidates=False,
-                                    add_gp_to_candidates=False,
-                                    DEBUG=False):
+def calc_2frame_matches_using_class(frame0: ReferenceFrame,
+                                    frame1: ReferenceFrame,
+                                    verbose: int = 1,
+                                    use_affine_matching: bool = False,  # DEPRECATED
+                                    add_affine_to_candidates: bool = False,
+                                    add_gp_to_candidates: bool = False,
+                                    DEBUG: bool = False) -> FramePair:
     """
     Similar to older function, but this doesn't assume the features are
     already matched
@@ -342,23 +343,9 @@ def calc_2frame_matches_using_class(frame0,
     # With neuron embeddings, the keypoints are the neurons
     matches_with_conf = match_object_to_array(keypoint_matches, gamma=1.0)
 
-    # if not use_affine_matching:
-    #     f = calc_matches_using_feature_voting
-    #     keypoint_matches = keep_top_matches_per_neuron(keypoint_matches, frame0, matches_to_keep=0.5)
-    #     feature_matches_dict = extract_map1to2_from_matches(keypoint_matches)
-    #     opt = {'feature_matches_dict': feature_matches_dict}
-    # else:
-    #     f = calc_matches_using_affine_propagation
-    #     opt = {'all_feature_matches': keypoint_matches}
-    # matches_with_conf, all_candidate_matches, _ = f(frame0, frame1, **opt)
-
     # Create convenience object to store matches
     frame_pair = FramePair(matches_with_conf, matches_with_conf)
     frame_pair.keypoint_matches = matches_with_conf
-    # if not use_affine_matching:
-    #     frame_pair.feature_matches = all_candidate_matches
-    # else:
-    #     frame_pair.affine_matches = all_candidate_matches
 
     # Add additional candidates, if used
     if add_affine_to_candidates:
@@ -372,8 +359,8 @@ def calc_2frame_matches_using_class(frame0,
         n1 = frame1.neuron_locs.copy()
 
         # TODO: Increase z distances correctly
-        n0[:, 0] *= 3
-        n1[:, 0] *= 3
+        n0[:, 0] *= 5
+        n1[:, 0] *= 5
         # Actually match
         opt = {'matches_with_conf': matches_with_conf}
         matches_with_conf, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **opt)
