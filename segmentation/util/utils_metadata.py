@@ -37,10 +37,10 @@ def get_metadata_dictionary(masks, original_vol):
         neurons.append(int(x))
 
     # create dataframe with
-    # cols = (total brightness, volume, centroids, z_planes)
+    # cols = (total brightness, volume, centroids, all_values (full histogram))
     # rows = neuron ID
     df = pd.DataFrame(index=neurons,
-                      columns=['total_brightness', 'neuron_volume', 'centroids', 'pixel_values', 'pixel_counts'])
+                      columns=['total_brightness', 'neuron_volume', 'centroids', 'all_values'])
 
     for n in neurons:
         neuron_mask = masks == n

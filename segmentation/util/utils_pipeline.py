@@ -87,8 +87,8 @@ def calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fnam
             masks = masks_zarr[i_out, :, :, :]
             volume = video_dat[i_vol, ...]
             metadata[i_vol] = get_metadata_dictionary(masks, volume)
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
             futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
             for future in concurrent.futures.as_completed(futures):
                 future.result()
@@ -482,10 +482,11 @@ def recalculate_metadata_from_config(_config, DEBUG=False):
         _config)
 
     masks_zarr = zarr.open(_config['output']['masks'])
+    video_dat = zarr.open(video_path)
 
     if DEBUG:
         frame_list = frame_list[:2]
 
-    calc_metadata_full_video_3d(frame_list, masks_zarr, video_path, metadata_fname)
+    calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fname)
 
 
