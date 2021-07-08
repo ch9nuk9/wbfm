@@ -113,7 +113,7 @@ def load_config(config_fname):
 #####################
 
 
-def synchronize_segment_config(project_path, segment_cfg):
+def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
     # For now, does NOT overwrite anything on disk
     project_cfg = load_config(project_path)
 
