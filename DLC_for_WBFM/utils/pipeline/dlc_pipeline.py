@@ -2,6 +2,7 @@ from concurrent import futures
 from pathlib import Path
 
 import numpy as np
+import zarr
 
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import preprocess_all_frames_using_config, _get_video_options
@@ -30,9 +31,7 @@ def create_only_videos(vid_fname, config, verbose=1, DEBUG=False):
     """
 
     all_center_slices = config['training_data_2d']['all_center_slices']
-    which_frames = None
-    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(DEBUG, all_center_slices, config,
-                                                                                   verbose, vid_fname, which_frames)
+    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, config, vid_fname)
 
     def parallel_func(i_center):
         i, center = i_center
@@ -53,7 +52,6 @@ def create_dlc_training_from_tracklets(vid_fname,
                                        config,
                                        scorer=None,
                                        task_name=None,
-                                       verbose=0,
                                        DEBUG=False):
 
     df_fname = config['training_data_3d']['annotation_fname']
@@ -62,8 +60,7 @@ def create_dlc_training_from_tracklets(vid_fname,
     all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, config, df)
     edit_config(config['self_path'], config)
 
-    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(DEBUG, all_center_slices, config,
-                                                                                   verbose, vid_fname, which_frames)
+    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, config, vid_fname)
 
     dlc_opt, net_opt, png_opt = _define_project_options(config, df, scorer, task_name)
     # Actually make projects
@@ -91,15 +88,17 @@ def create_dlc_training_from_tracklets(vid_fname,
     edit_config(config['self_path'], config)
 
 
-def _prep_videos_for_dlc(DEBUG, all_center_slices, config, verbose, vid_fname, which_frames=None):
+def _prep_videos_for_dlc(all_center_slices, config, vid_fname):
     all_avi_fnames, video_exists = _get_and_check_avi_filename(all_center_slices, subfolder="3-tracking")
     # IF videos are required, then prep the data
+    _, vid_opt = _get_video_options(config, vid_fname)
     if all(video_exists):
         print("All required videos exist; no preprocessing necessary")
         preprocessed_dat = []
-        _, vid_opt = _get_video_options(config, vid_fname)
     else:
-        preprocessed_dat, vid_opt = preprocess_all_frames_using_config(DEBUG, config, verbose, vid_fname, which_frames)
+        # DEPRECATE PREPROCESSING
+        # preprocessed_dat, vid_opt = preprocess_all_frames_using_config(DEBUG, config, verbose, vid_fname, which_frames)
+        preprocessed_dat = zarr.open(vid_fname)
     return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
 
 
