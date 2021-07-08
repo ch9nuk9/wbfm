@@ -21,10 +21,11 @@ from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 ex = Experiment()
 ex.add_config(project_path=None,
               out_fname=None,
-              tiff_not_zarr=True,
+              tiff_not_zarr=False,
               pad_to_align_with_original=False,
-              do_only_training_data=False,
+              do_only_training_data=True,
               copy_locally=True,
+              use_preprocessed_data=True,
               DEBUG=False)
 
 @ex.config
@@ -59,6 +60,7 @@ def main(_config, _run):
     opt = {'out_fname': _config['out_fname'],
            'tiff_not_zarr': _config['tiff_not_zarr'],
            'pad_to_align_with_original': _config['pad_to_align_with_original'],
+           'use_preprocessed_data': _config['use_preprocessed_data'],
            'DEBUG': _config['DEBUG']}
     cfg = _config['cfg']
     cfg['project_dir'] = _config['project_dir']

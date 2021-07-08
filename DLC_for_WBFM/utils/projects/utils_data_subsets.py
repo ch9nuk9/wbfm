@@ -14,6 +14,7 @@ def write_data_subset_from_config(cfg: dict,
                                   tiff_not_zarr: bool = True,
                                   pad_to_align_with_original: bool = False,
                                   save_fname_in_red_not_green: bool = None,
+                                  use_preprocessed_data: bool = False,
                                   DEBUG: bool = False) -> None:
     """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
 
@@ -29,7 +30,10 @@ def write_data_subset_from_config(cfg: dict,
     else:
         out_fname = os.path.join(project_dir, out_fname)
     if vid_fname is None:
-        vid_fname = resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])
+        if not use_preprocessed_data:
+            vid_fname = resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])
+        else:
+            vid_fname = resolve_mounted_path_in_current_os(cfg['preprocessed_red'])
     verbose = cfg['other']['verbose']
     start_volume = cfg['dataset_params']['start_volume']
 
