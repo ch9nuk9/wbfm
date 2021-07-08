@@ -8,7 +8,7 @@ import os
 # import concurrent.futures
 
 
-def build_project_structure(_config):
+def build_project_structure(_config: dict) -> None:
 
     # parent_folder = Path(_config['project_dir']).resolve()
     parent_folder = _config['project_dir']
@@ -33,7 +33,7 @@ def build_project_structure(_config):
 # Filename utils
 #####################
 
-def get_project_name(_config):
+def get_project_name(_config: dict) -> str:
     # Use current time
     project_name = datetime.now().strftime("%Y_%m_%d")
     exp = _config['experimenter']
@@ -42,7 +42,7 @@ def get_project_name(_config):
     return project_name
 
 
-def get_sequential_filename(fname):
+def get_sequential_filename(fname: str) -> str:
     """Check if the file or dir exists, and if so, append an integer"""
     i = 1
     if Path(fname).exists():
@@ -76,7 +76,7 @@ def safe_cd(newdir):
 #####################
 
 
-def edit_config(config_fname, edits, DEBUG=False):
+def edit_config(config_fname: str, edits: dict, DEBUG: bool = False) -> dict:
     """Generic overwriting, based on DLC"""
 
     if DEBUG:

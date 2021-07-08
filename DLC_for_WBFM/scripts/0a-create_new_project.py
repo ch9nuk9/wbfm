@@ -12,10 +12,10 @@ ex.add_config('new_project_defaults/project_config.yaml')
 
 
 @ex.config
-def cfg(red_bigtiff_fname, green_bigtiff_fname):
-    # assert osp.exists(red_bigtiff_fname)
-    # assert osp.exists(green_bigtiff_fname)
-    pass
+def cfg(red_bigtiff_fname, green_bigtiff_fname, DEBUG):
+    if not DEBUG:
+        assert osp.exists(red_bigtiff_fname)
+        assert osp.exists(green_bigtiff_fname)
 
 @ex.automain
 def main(_config, _run):
