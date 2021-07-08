@@ -198,7 +198,7 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     mask_array = zarr.open(segment_cfg['output']['masks'])
     is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
 
-    dlc_tracks : pd.DataFrame = pd.read_hdf(dlc_fname)
+    dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
 
     return dlc_tracks, green_fname, is_mirrored, mask_array, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio
 
