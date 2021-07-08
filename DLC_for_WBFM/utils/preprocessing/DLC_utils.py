@@ -2,7 +2,7 @@ import deeplabcut
 import numpy as np
 from deeplabcut.utils import auxiliaryfunctions
 from DLC_for_WBFM.config.class_configuration import load_config, DLCForWBFMTracking, save_config
-from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, save_dlc_annotations
+from DLC_for_WBFM.utils.visualization.visualize_using_dlc import build_subset_df, build_dlc_annotation_all, save_dlc_annotations
 from DLC_for_WBFM.utils.projects.utils_project import load_config
 import pandas as pd
 from pathlib import Path

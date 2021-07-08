@@ -51,4 +51,4 @@ def bpcd_tracker2config_names(path_config_file):
             for row in config_rows_edit:
                 c_writer.writerow(row)
 
-    print("Finished! Check the config.yaml file to make sure the bodyparts are properly written"
+    print("Finished! Check the config.yaml file to make sure the bodyparts are properly written")

@@ -1,20 +1,8 @@
 import unittest
 
-import cv2
-import numpy as np
-import tifffile
-import os
-import copy
-import open3d as o3d
-import pandas as pd
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-
-from DLC_for_WBFM.utils.feature_detection.utils_features import *
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
-from DLC_for_WBFM.utils.feature_detection.visualization_tracks import *
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import *
 
 

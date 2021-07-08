@@ -6,13 +6,11 @@ from pathlib import Path
 
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.feature_detection.visualize_using_dlc import build_subset_df
-from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
+from DLC_for_WBFM.utils.visualization.visualize_using_dlc import build_subset_df
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 import pandas as pd
 import numpy as np
 import zarr
-import raster_geometry.raster
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 
 

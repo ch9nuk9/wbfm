@@ -5,14 +5,10 @@ from typing import Tuple, Callable, Dict, List
 
 import numpy as np
 import pandas as pd
-import tifffile
 from tqdm import tqdm
 import zarr
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
-from DLC_for_WBFM.utils.feature_detection.visualization_tracks import visualize_tracks
-from DLC_for_WBFM.utils.preprocessing.utils_tif import get_and_preprocess, preprocess_all_frames_using_config
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 
 def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
