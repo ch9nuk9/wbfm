@@ -1,6 +1,7 @@
 import threading
 from multiprocessing import Manager
 
+import stardist.models
 import tifffile
 import segmentation.util.utils_postprocessing as post
 import numpy as np
@@ -20,7 +21,7 @@ from segmentation.util.utils_model import get_stardist_model
 import concurrent.futures
 
 
-def segment_video_using_config_3d(_config, continue_from_frame=None):
+def segment_video_using_config_3d(_config: dict, continue_from_frame: int =None) -> None:
     """
 
     Parameters
@@ -69,7 +70,18 @@ def segment_video_using_config_3d(_config, continue_from_frame=None):
     calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fname)
 
 
-def calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fname):
+def calc_metadata_full_video_3d(frame_list: list, masks_zarr: zarr.Array, video_dat: zarr.Array,
+                                metadata_fname: str) -> None:
+    """
+    Calculates metadata once segmentation is finished
+
+    Parameters
+    ----------
+    frame_list
+    masks_zarr
+    video_dat
+    metadata_fname
+    """
     metadata = dict()
 
     # Loop again in order to calculate metadata and possibly postprocess
@@ -87,7 +99,7 @@ def calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fnam
             masks = masks_zarr[i_out, :, :, :]
             volume = video_dat[i_vol, ...]
             metadata[i_vol] = get_metadata_dictionary(masks, volume)
-        
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
             futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
             for future in concurrent.futures.as_completed(futures):
@@ -99,8 +111,9 @@ def calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fnam
         pickle.dump(metadata, meta_save)
 
 
-def _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
-                           opt, continue_from_frame):
+def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num_frames: int, verbose: int,
+                           video_dat: zarr.Array,
+                           opt: dict, continue_from_frame: int) -> None:
     # with tifffile.TiffFile(video_path) as video_stream:
     #     for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list) - 1):
     #         segment_and_save3d(i_rel + 1, i_abs, **opt, video_path=video_stream)
@@ -127,7 +140,7 @@ def _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose,
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
 
-def segment_video_using_config_2d(_config):
+def segment_video_using_config_2d(_config: dict) -> None:
     """
     Full pipeline based on only a config file
 
@@ -144,7 +157,7 @@ def segment_video_using_config_2d(_config):
     _segment_full_video_2d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
                            opt_postprocessing, preprocessing_settings, stardist_model_name, verbose, video_path)
 
-    # _calc_metadata_full_video_2d(frame_list, masks_zarr, metadata, num_slices, preprocessing_settings, video_path)
+    _calc_metadata_full_video_2d(frame_list, masks_zarr, metadata, num_slices, preprocessing_settings, video_path)
 
 
 # def _calc_metadata_full_video_2d(frame_list, masks_zarr, metadata, num_slices, preprocessing_settings, video_path):
@@ -239,8 +252,9 @@ def _do_first_volume2d(frame_list, mask_fname, metadata, num_frames, num_slices,
     return masks_zarr
 
 
-def _do_first_volume3d(frame_list, mask_fname, num_frames, num_slices,
-                       sd_model, verbose, video_dat, continue_from_frame=None):
+def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int, num_slices: int,
+                       sd_model: stardist.models.StarDist3D, verbose: int, video_dat: zarr.Array,
+                       continue_from_frame: int = None) -> zarr.Array:
     # Do first loop to initialize the zarr data
     if continue_from_frame is None:
         i = 0

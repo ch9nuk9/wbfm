@@ -2,12 +2,13 @@
 StarDist functions for segmentation
 """
 import numpy as np
+import stardist.models
 from stardist.models import Config3D, StarDistData3D, StarDist3D, StarDist2D
 import os
 from csbdeep.utils import Path, normalize
 
 
-def get_stardist_model(model_name, folder=None, verbose=0):
+def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) -> stardist.models.StarDist3D:
     """
     Fetches the wanted StarDist model for segmenting images.
     Add new StarDist models as an alias below (incl. sd_options)
