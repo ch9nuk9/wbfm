@@ -478,7 +478,7 @@ def recalculate_metadata_from_config(_config, DEBUG=False):
 
     """
 
-    frame_list, mask_fname, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path = _unpack_config_file(
+    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path = _unpack_config_file(
         _config)
 
     masks_zarr = zarr.open(_config['output']['masks'])
@@ -486,7 +486,6 @@ def recalculate_metadata_from_config(_config, DEBUG=False):
     if DEBUG:
         frame_list = frame_list[:2]
 
-    calc_metadata_full_video_3d(frame_list, masks_zarr, num_slices, preprocessing_settings, video_path,
-                                metadata_fname)
+    calc_metadata_full_video_3d(frame_list, masks_zarr, video_path, metadata_fname)
 
 
