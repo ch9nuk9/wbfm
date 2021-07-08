@@ -1,23 +1,24 @@
+import os
 from concurrent import futures
 from pathlib import Path
+from typing import Tuple, List
 
+import deeplabcut
 import numpy as np
+import pandas as pd
 import zarr
+from scipy.spatial.distance import pdist
+from tqdm import tqdm
 
-from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
-from DLC_for_WBFM.utils.preprocessing.utils_tif import preprocess_all_frames_using_config, _get_video_options
-from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
-from DLC_for_WBFM.utils.projects.utils_project import edit_config
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
     update_pose_config, training_data_from_annotations, \
     create_dlc_project, get_annotations_matching_video_in_folder
-import pandas as pd
-import os
-from tqdm import tqdm
-import deeplabcut
-import numpy as np
-from scipy.spatial.distance import pdist
+from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
+from DLC_for_WBFM.utils.preprocessing.utils_tif import _get_video_options
+from DLC_for_WBFM.utils.projects.utils_project import edit_config
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
+from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
+
 
 ###
 ### For use with training a stack of DLC (step 3 of pipeline)
@@ -48,11 +49,11 @@ def create_only_videos(vid_fname, config, verbose=1, DEBUG=False):
     return all_avi_fnames
 
 
-def create_dlc_training_from_tracklets(vid_fname,
-                                       config,
-                                       scorer=None,
-                                       task_name=None,
-                                       DEBUG=False):
+def create_dlc_training_from_tracklets(vid_fname: str,
+                                       config: dict,
+                                       scorer: str = None,
+                                       task_name: str = None,
+                                       DEBUG: bool = False) -> None:
 
     df_fname = config['training_data_3d']['annotation_fname']
     df = pd.read_pickle(df_fname)
@@ -88,7 +89,8 @@ def create_dlc_training_from_tracklets(vid_fname,
     edit_config(config['self_path'], config)
 
 
-def _prep_videos_for_dlc(all_center_slices, config, vid_fname):
+def _prep_videos_for_dlc(all_center_slices: List[int], config: dict,
+                         vid_fname: str) -> Tuple[List[str], zarr.Array, dict, List[bool]]:
     all_avi_fnames, video_exists = _get_and_check_avi_filename(all_center_slices, subfolder="3-tracking")
     # IF videos are required, then prep the data
     _, vid_opt = _get_video_options(config, vid_fname)
@@ -102,7 +104,8 @@ def _prep_videos_for_dlc(all_center_slices, config, vid_fname):
     return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
 
 
-def _get_and_check_avi_filename(all_center_slices, subfolder="3-tracking"):
+def _get_and_check_avi_filename(all_center_slices: List[int],
+                                subfolder: str = "3-tracking") -> Tuple[List[str], List[bool]]:
     """Returns relative path of avi file, not just name"""
     # OPTIMIZE: for now, requires re-preprocessing
     video_exists = []
@@ -120,7 +123,7 @@ def _get_and_check_avi_filename(all_center_slices, subfolder="3-tracking"):
     return all_avi_fnames, video_exists
 
 
-def _define_project_options(config, df, scorer, task_name):
+def _define_project_options(config: dict, df: pd.DataFrame, scorer: str, task_name: str) -> Tuple[dict, dict, dict]:
     # Get dlc project and naming options
     dlc_opt = {'task_name': task_name,
                'experimenter': scorer,
@@ -180,7 +183,7 @@ def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video
     return this_avi_fname
 
 
-def _get_frames_for_dlc_training(DEBUG, config, df):
+def _get_frames_for_dlc_training(DEBUG: bool, config: dict, df: pd.DataFrame):
     # Choose a subset of frames with enough tracklets
     num_frames_needed = config['training_data_3d']['num_training_frames']
     tracklet_opt = {'num_frames_needed': num_frames_needed,
@@ -208,7 +211,7 @@ def _make_avi_name(center):
     return fname
 
 
-def train_all_dlc_from_config(config):
+def train_all_dlc_from_config(config: dict) -> None:
     """
     Simple multi-network wrapper around:
     deeplabcut.train_network()
@@ -233,7 +236,8 @@ def train_all_dlc_from_config(config):
             pass
 
 
-def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=False):
+def make_3d_tracks_from_stack(track_cfg: dict, use_dlc_project_videos: bool = True,
+                              DEBUG: bool = False) -> pd.DataFrame:
     """
     Applies trained DLC networks to full 2d videos and collects into 3d track
 
@@ -262,8 +266,7 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
 
     # Collect 2d data
     # i.e. just add the z coordinate to it
-    # For some reason, the concat after adding z was broken :(
-    # TODO: deal with z if there were multiple trackings
+    # For some reason, the concat after adding z was broken
     for name, z in neuron2z_dict.items():
         final_df[name, 'z'] = z
     final_df.sort_values('bodyparts', axis=1, inplace=True)
@@ -287,10 +290,7 @@ def make_3d_tracks_from_stack(track_cfg, use_dlc_project_videos=True, DEBUG=Fals
     return final_df
 
 
-def _process_duplicates_to_final_df(all_dfs, verbose=0):
-    # TODO: process repeats to create a final position
-    # final_df = pd.concat(all_dfs, axis=1)
-
+def _process_duplicates_to_final_df(all_dfs: List[pd.DataFrame], verbose: bool = 0) -> pd.DataFrame:
     # Do a naive concatenation, and check for duplicates
     df_with_duplicates = pd.concat(all_dfs, axis=1)
     duplicate_ind = np.where(df_with_duplicates.columns.duplicated(keep=False))[0]
@@ -324,8 +324,9 @@ def _process_duplicates_to_final_df(all_dfs, verbose=0):
     return final_df
 
 
-def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2z_dict,
-                                   use_filtered=False, external_video_list=None):
+def _analyze_video_and_save_tracks(DEBUG: bool, all_dfs: List[pd.DataFrame], dlc_config: dict, i_neuron: int,
+                                   neuron2z_dict: dict,
+                                   use_filtered: bool = False, external_video_list: list = None) -> int:
     dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
     if external_video_list[0] is None:
         video_list = list(dlc_cfg['video_sets'].keys())
@@ -348,7 +349,7 @@ def _analyze_video_and_save_tracks(DEBUG, all_dfs, dlc_config, i_neuron, neuron2
         df_fname = get_annotations_matching_video_in_folder(destfolder, video_list[0])
     if DEBUG:
         print(f"Using 2d annotations: {df_fname}")
-    df = pd.read_hdf(df_fname)
+    df: pd.DataFrame = pd.read_hdf(df_fname)
     df_scorer = df.columns.values[0][0]
     df = df[df_scorer]
     # TODO: combine neurons that are the same

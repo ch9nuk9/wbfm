@@ -102,7 +102,7 @@ def edit_config(config_fname: typing.Union[str, pathlib.Path], edits: dict, DEBU
     return cfg
 
 
-def load_config(config_fname):
+def load_config(config_fname: typing.Union[str, pathlib.Path]) -> dict:
     assert osp.exists(config_fname), f"{config_fname} not found!"
 
     with open(config_fname, 'r') as f:

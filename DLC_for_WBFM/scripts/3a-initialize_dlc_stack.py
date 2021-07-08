@@ -38,11 +38,8 @@ def initialize_dlc_stack(_config, _run):
     this_config = _config['tracking_cfg'].copy()
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
-    opt = {}
-    opt['scorer'] = _config['project_cfg']['experimenter']
-    opt['task_name'] = _config['project_cfg']['experimenter']
-    opt['verbose'] = _config['project_cfg']['other']['verbose']
-    opt['DEBUG'] = _config['DEBUG']
+    opt = {'scorer': _config['project_cfg']['experimenter'], 'task_name': _config['project_cfg']['experimenter'],
+           'verbose': _config['project_cfg']['other']['verbose'], 'DEBUG': _config['DEBUG']}
 
     with safe_cd(_config['project_dir']):
         create_dlc_training_from_tracklets(vid_fname, this_config, **opt)
