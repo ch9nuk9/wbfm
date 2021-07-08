@@ -8,7 +8,20 @@ import cv2
 from collections import defaultdict
 
 
-def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
+def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False, to_plot=True):
+    """
+
+    Parameters
+    ----------
+    neurons0 - painted gray
+    neurons1 - painted black
+    matches - list of 2-element indices
+    to_plot_failed_lines
+
+    Returns
+    -------
+
+    """
     n0, pc_n0, tree_neurons0 = build_neuron_tree(neurons0, to_mirror=False)
     n1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror=False)
     pc_n0.paint_uniform_color([0.5, 0.5, 0.5])
@@ -46,7 +59,9 @@ def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False):
     else:
         to_draw = [successful_line_set, pc_n0, pc_n1]
 
-    o3d.visualization.draw_geometries(to_draw)
+    if to_plot:
+        o3d.visualization.draw_geometries(to_draw)
+
     return to_draw
 
 

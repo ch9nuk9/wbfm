@@ -542,7 +542,6 @@ def track_neurons_full_video(vid_fname: str,
                                            num_slices=import_opt['num_slices'],
                                            **ref_opt,
                                            metadata=metadata,
-                                           preprocessing_settings=None,
                                            external_detections=external_detections)
         return f
 

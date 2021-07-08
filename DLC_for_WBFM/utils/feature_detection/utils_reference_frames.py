@@ -130,7 +130,7 @@ def encode_all_neurons(locs_zxy, im_3d, z_depth):
         # Repeat slices if near the edge
         ds = []
         for i in all_slices:
-            im_2d = im_3d_gray[int(i)]
+            im_2d = im_3d_gray[int(i)].astype('uint8')
             _, this_ds = encoder.compute(im_2d, [kp])
             ds.append(this_ds)
 
