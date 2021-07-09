@@ -55,8 +55,8 @@ class DLCForWBFMPreprocessing:
     red_and_green_mirrored: bool = True
 
     def which_slices(self):
-        return list( get_crop_coords3d((0,0,self.center_slice),
-                                (1,1,self.num_crop_slices) )[-1] )
+        return list(get_crop_coords3d((0, 0, self.center_slice),
+                                (1, 1, self.num_crop_slices))[-1])
 
 
 @dataclass
