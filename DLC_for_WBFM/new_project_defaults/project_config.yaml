@@ -14,6 +14,8 @@ project_path: null # For reference afterwards
 red_bigtiff_fname: null
 green_bigtiff_fname: null
 
+preprocessing_config: 'preprocessing_config.yaml'
+
 preprocessed_red: null
 preprocessed_green: null
 

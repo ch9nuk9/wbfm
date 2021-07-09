@@ -5,9 +5,6 @@ self_path: 1-segmentation/segment_config.yaml # for programmatic updating
 video_path: null
 segmentation_type: 3d
 
-# Preprocessing
-preprocessing_config: 1-segmentation/preprocessing_config.yaml
-
 # Segmentation
 segmentation_params:
   stardist_model_name: charlie_3d
