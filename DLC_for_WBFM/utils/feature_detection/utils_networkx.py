@@ -1,5 +1,5 @@
 from typing import Tuple, List
-
+import open3d as o3d
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
@@ -166,18 +166,65 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
         to_remove.reverse()
         [matches.pop(i) for i in to_remove]
 
-    conf_func = lambda dist: np.tanh(1.0 / dist)
-
-    # Calculate confidences from distance
     matches = np.array(matches)
-    conf = np.zeros((matches.shape[0], 1))
-    for i, (m0, m1) in enumerate(matches):
-        dist = cost_matrix[m0, m1]
-        conf[i] = conf_func(dist)
+    conf = calc_confidence_from_distance_array_and_matches(cost_matrix, matches)
     # conf = [conf_func(d) for d in match_dist]
 
     # Return matches twice to fit old function signature
     return matches, conf, np.array(raw_matches)
+
+
+def calc_confidence_from_distance_array_and_matches(distance_matrix, matches):
+    conf_func = lambda dist: np.tanh(1.0 / dist)
+    # Calculate confidences from distance
+    conf = np.zeros((matches.shape[0], 1))
+    for i, (m0, m1) in enumerate(matches):
+        dist = distance_matrix[m0, m1]
+        conf[i] = conf_func(dist)
+    return conf
+
+
+def calc_icp_matches(xyz0: np.ndarray, xyz1: np.ndarray,
+                     max_dist: float = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculates matches between lists of 3d points (which may have outliers) using ICP
+
+    Currently using open3d implementation of ICP
+    TODO: does this work on a cluster?
+
+    Parameters
+    ----------
+    xyz0
+    xyz1
+    max_dist
+
+    Returns
+    -------
+
+    """
+    zxy0, zxy1 = np.array(xyz0), np.array(xyz1)
+
+    pc0 = o3d.geometry.PointCloud()
+    if len(xyz0) > 0:
+        pc0.points = o3d.utility.Vector3dVector(xyz0)
+    else:
+        return np.array([]), np.array([]), np.array([])
+
+    pc1 = o3d.geometry.PointCloud()
+    if len(xyz1) > 0:
+        pc1.points = o3d.utility.Vector3dVector(xyz1)
+    else:
+        return np.array([]), np.array([]), np.array([])
+
+    # Do greedy matching
+    icp_result = o3d.pipelines.registration.registration_icp(pc0, pc1, max_correspondence_distance=max_dist)
+    matches = np.array(icp_result.correspondence_set)
+
+    # Calculate confidences
+    dist_matrix = cdist(zxy0, zxy1, 'euclidean')
+    conf = calc_confidence_from_distance_array_and_matches(dist_matrix, matches)
+
+    return matches, conf, matches
 
 
 def is_one_neuron_per_frame(node_names, min_size=None, total_frames=None):

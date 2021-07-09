@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import zarr
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, \
+    calc_icp_matches
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 
 
@@ -149,7 +150,8 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
         zxy1 = np.array(seg_zxy)
         zxy1[:, 0] *= z_to_xy_ratio
         # Get matches
-        out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
+        out = calc_icp_matches(zxy0, zxy1, max_dist=max_dist)
+        # out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
         # if DEBUG:
         #     visualize_tracks(zxy0, zxy1, matches)
