@@ -95,17 +95,24 @@ def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
 
 
 def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, vid_fname: str,
+                                       preprocessing_settings: PreprocessingSettings = None,
                                        which_frames: list = None) -> Tuple[zarr.Array, dict]:
     """
     Preproceses all frames that will be analyzed as per config
 
     NOTE: expects 'preprocessing_config' and 'dataset_params' to be in config
+    OR for the PreprocessingSettings object to be passed directly
 
     Loads but does not process frames before config['dataset_params']['start_volume']
         (to keep the indices the same as the original dataset)
     """
-    num_slices, num_total_frames, p, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config, verbose,
-                                                                                                      vid_fname)
+    if preprocessing_settings is None:
+        p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
+    else:
+        p = preprocessing_settings
+        
+    num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config, verbose,
+                                                                                                   vid_fname)
     return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, vid_fname, vid_opt,
                                  which_frames)
 
@@ -147,11 +154,10 @@ def _preprocess_all_frames_unpack_config(config, verbose, vid_fname):
     sz, vid_opt = _get_video_options(config, vid_fname)
     if verbose >= 1:
         print("Preprocessing data, this could take a while...")
-    p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
     start_volume = config['dataset_params']['start_volume']
     num_total_frames = start_volume + config['dataset_params']['num_frames']
     num_slices = config['dataset_params']['num_slices']
-    return num_slices, num_total_frames, p, start_volume, sz, vid_opt
+    return num_slices, num_total_frames, start_volume, sz, vid_opt
 
 
 def _get_video_options(config, vid_fname):

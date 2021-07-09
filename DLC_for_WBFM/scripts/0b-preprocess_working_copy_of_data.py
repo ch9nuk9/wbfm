@@ -5,6 +5,7 @@
 import os
 from pathlib import Path
 
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
 # Experiment tracking
 import sacred
@@ -47,11 +48,20 @@ def main(_config, _run):
     cfg['project_path'] = _config['project_path']
 
     with safe_cd(_config['project_dir']):
-        
+
+        preprocessing_fname = cfg['preprocessing_config']
+        preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_fname)
+
         opt['out_fname'] = _config['out_fname_red']
         opt['save_fname_in_red_not_green'] = True
-        write_data_subset_from_config(cfg, **opt)
+        # The preprocessing will be calculated based off the red channel, and will be saved to disk
+        fname = str(Path("{0}_preprocessing".format(opt['out_fname'])).with_suffix('.pickle'))
+        preprocessing_settings.path_to_previous_warp_matrices = fname
+        assert preprocessing_settings.to_save_warp_matrices
+        write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
 
+        # Now the green channel will read the artifact as saved above
         opt['out_fname'] = _config['out_fname_green']
         opt['save_fname_in_red_not_green'] = False
-        write_data_subset_from_config(cfg, **opt)
+        preprocessing_settings.to_use_previous_warp_matrices = True
+        write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)

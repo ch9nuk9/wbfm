@@ -1,4 +1,4 @@
-from DLC_for_WBFM.utils.preprocessing.utils_tif import preprocess_all_frames_using_config
+from DLC_for_WBFM.utils.preprocessing.utils_tif import preprocess_all_frames_using_config, PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 import tifffile
@@ -15,12 +15,17 @@ def write_data_subset_from_config(cfg: dict,
                                   pad_to_align_with_original: bool = False,
                                   save_fname_in_red_not_green: bool = None,
                                   use_preprocessed_data: bool = False,
+                                  preprocessing_settings: PreprocessingSettings = None,
                                   DEBUG: bool = False) -> None:
     """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
 
     project_dir = cfg['project_dir']
-    fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
-    cfg['preprocessing_config'] = fname
+    # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
+    if use_preprocessed_data:
+        preprocessing_settings = None
+    elif preprocessing_settings is None:
+        preprocessing_fname = cfg['preprocessing_config']
+        preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_fname)
 
     if out_fname is None:
         if tiff_not_zarr:
@@ -38,7 +43,8 @@ def write_data_subset_from_config(cfg: dict,
     start_volume = cfg['dataset_params']['start_volume']
 
     with safe_cd(project_dir):
-        preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg, verbose, vid_fname, None)
+        preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg, verbose, vid_fname,
+                                                                 preprocessing_settings, None)
 
     if not pad_to_align_with_original:
         preprocessed_dat = preprocessed_dat[start_volume:, ...]
