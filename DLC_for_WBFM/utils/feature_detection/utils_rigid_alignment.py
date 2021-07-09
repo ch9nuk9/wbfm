@@ -107,9 +107,9 @@ def merge_matrices(mat1, mat2):
 
 def get_warp_mat(im_prev, im_next, warp_mat):
     warp_new = calc_warp_ECC(im_prev, im_next)
-    if warp_new is None:
-        print(f"Skipping plane {i}, error {error_mode}")
-        warp_new = np.identity(3)[0:2,:]
+    # if warp_new is None:
+    #     print(f"Skipping plane {i}, error {error_mode}")
+    #     warp_new = np.identity(3)[0:2,:]
 
     return merge_matrices(warp_mat, warp_new)
 
@@ -157,7 +157,6 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
         (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix, warp_mode, criteria, None)
     except TypeError:
         (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1)
-
 
     # example to execute the transformation
     #if warp_mode == cv2.MOTION_HOMOGRAPHY :
@@ -222,16 +221,14 @@ def align_stack_using_previous_results(stack_to_align, previous_warp_matrices, h
     # From i_center_plane to 0
     # Calculates the matrix per plane, and cumulatively multiplies them
     for i in tqdm(range(i_center_plane, 0, -1), disable=hide_progress):
-        im_next, im_prev = stack_to_align[i-1], stack_to_align[i]
+        im_next = stack_to_align[i-1]
         warp_mat = previous_warp_matrices[(i - 1, i)]
-        warp_mat = get_warp_mat(im_prev, im_next, warp_mat)
         stack_aligned[i-1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     # From i_center_plane to end (usually 33)
-    warp_mat = np.identity(3)[0:2, :]
     for i in tqdm(range(i_center_plane, (stack_to_align.shape[0]-1)), disable=hide_progress):
-        im_prev, im_next = stack_to_align[i], stack_to_align[i+1]
-        warp_mat = get_warp_mat(im_prev, im_next, warp_mat)
+        im_next = stack_to_align[i+1]
+        warp_mat = previous_warp_matrices[(i, i+1)]
         stack_aligned[i+1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     return stack_aligned

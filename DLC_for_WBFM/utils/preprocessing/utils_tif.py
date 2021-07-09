@@ -1,4 +1,5 @@
 import concurrent
+import pickle
 import threading
 import typing
 
@@ -47,12 +48,12 @@ class PreprocessingSettings:
     alpha: float = 0.15
 
     # Load results of a separate preprocessing step, if available
-    path_to_previous_warp_matrices: str = None
     to_save_warp_matrices: bool = True
+    to_use_previous_warp_matrices: bool = False
+    path_to_previous_warp_matrices: str = None  # This file may not exist, and will be written the first time
 
     @staticmethod
     def load_from_yaml(fname):
-        zzz
         with open(fname, 'r') as f:
             cfg = yaml.safe_load(f)
         return PreprocessingSettings(**cfg)
@@ -74,11 +75,15 @@ def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
         dat_raw = filter_stack(dat_raw, s.filter_opt)
 
     if s.do_rigid_alignment:
-        if s.path_to_previous_warp_matrices is None:
-            dat_raw, warp_matrices = align_stack(dat_raw, s.to_save_warp_matrices)
-            zzz
+        if not s.to_use_previous_warp_matrices:
+            dat_raw, warp_matrices_dict = align_stack(dat_raw, s.to_save_warp_matrices)
+            if s.to_save_warp_matrices:
+                with open(s.path_to_previous_warp_matrices, 'wb') as f:
+                    pickle.dump(warp_matrices_dict, f)
         else:
-            dat_raw = align_stack_using_previous_results(dat_raw, s.path_to_previous_warp_matrices)
+            with open(s.path_to_previous_warp_matrices, 'rb') as f:
+                warp_matrices_dict = pickle.load(f)
+            dat_raw = align_stack_using_previous_results(dat_raw, warp_matrices_dict)
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
