@@ -1,34 +1,38 @@
 import concurrent
 import threading
+import typing
 
 import numpy as np
 import tifffile
 import zarr
 
-from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack
+from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack, \
+    align_stack_using_previous_results
 import scipy.ndimage as ndi
 from dataclasses import dataclass
 from dataclasses import field
 from typing import List, Tuple
 import yaml
 from tqdm.auto import tqdm
+from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 
 ##
 ## Class to hold preprocessing settings
 ##
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 
 @dataclass
 class PreprocessingSettings:
     """
-    Holds settings that will be applied to the ReferenceFrame class
+    Holds settings that will be applied to a video (.tiff or .btf)
+
+    Designed to be used with the ReferenceFrame class
     """
 
     # Filtering
     do_filtering: bool = False
-    filter_opt: List = field(default_factory=lambda: {'high_freq':2.0, 'low_freq':5000.0})
+    filter_opt: List = field(default_factory=lambda: {'high_freq': 2.0, 'low_freq': 5000.0})
 
     # Mini max
     do_mini_max_projection: bool = False
@@ -38,18 +42,24 @@ class PreprocessingSettings:
     do_rigid_alignment: bool = False
 
     # Datatypes and scaling
-    initial_dtype: str = 'uint16' # Filtering etc. will act on this
+    initial_dtype: str = 'uint16'  # Filtering etc. will act on this
     final_dtype: str = 'uint8'
     alpha: float = 0.15
 
+    # Load results of a separate preprocessing step, if available
+    path_to_previous_warp_matrices: str = None
+    to_save_warp_matrices: bool = True
+
     @staticmethod
     def load_from_yaml(fname):
+        zzz
         with open(fname, 'r') as f:
             cfg = yaml.safe_load(f)
         return PreprocessingSettings(**cfg)
 
 
-def perform_preprocessing(dat_raw, preprocessing_settings: PreprocessingSettings):
+def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
+                          preprocessing_settings: PreprocessingSettings) -> np.ndarray:
     """
     Performs all preprocessing as set by the fields of preprocessing_settings
 
@@ -64,7 +74,11 @@ def perform_preprocessing(dat_raw, preprocessing_settings: PreprocessingSettings
         dat_raw = filter_stack(dat_raw, s.filter_opt)
 
     if s.do_rigid_alignment:
-        dat_raw = align_stack(dat_raw)
+        if s.path_to_previous_warp_matrices is None:
+            dat_raw, warp_matrices = align_stack(dat_raw, s.to_save_warp_matrices)
+            zzz
+        else:
+            dat_raw = align_stack_using_previous_results(dat_raw, s.path_to_previous_warp_matrices)
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
