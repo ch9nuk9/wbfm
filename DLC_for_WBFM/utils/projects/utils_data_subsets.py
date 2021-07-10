@@ -38,10 +38,17 @@ def write_data_subset_from_config(cfg: dict,
     else:
         out_fname = os.path.join(project_dir, out_fname)
     if vid_fname is None:
-        if not use_preprocessed_data:
-            vid_fname = resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])
+        if save_fname_in_red_not_green:
+            if not use_preprocessed_data:
+                vid_fname = cfg['red_bigtiff_fname']
+            else:
+                vid_fname = cfg['preprocessed_red']
         else:
-            vid_fname = resolve_mounted_path_in_current_os(cfg['preprocessed_red'])
+            if not use_preprocessed_data:
+                vid_fname = cfg['green_bigtiff_fname']
+            else:
+                vid_fname = cfg['preprocessed_green']
+        vid_fname = resolve_mounted_path_in_current_os(vid_fname)
     start_volume = cfg['dataset_params']['start_volume']
 
     with safe_cd(project_dir):
