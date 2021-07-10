@@ -59,6 +59,7 @@ def main(_config, _run):
         red_name = Path(opt['out_fname'])
         fname = red_name.parent / (red_name.stem + "_preprocessed.pickle")
         preprocessing_settings.path_to_previous_warp_matrices = fname
+        preprocessing_settings.do_mirroring = False
         assert preprocessing_settings.to_save_warp_matrices
         write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
 
@@ -66,8 +67,9 @@ def main(_config, _run):
         opt['out_fname'] = _config['out_fname_green']
         opt['save_fname_in_red_not_green'] = False
         preprocessing_settings.to_use_previous_warp_matrices = True
-        if cfg['dataset_params']['red_and_green_mirrored']:
-            preprocessing_settings.do_mirroring = True
+        preprocessing_settings.do_mirroring = False
+        # if cfg['dataset_params']['red_and_green_mirrored']:
+        #     preprocessing_settings.do_mirroring = True
         # print(preprocessing_settings)
         write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
 

@@ -158,7 +158,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
             num_total_frames = which_frames[-1] + 1
         else:
             num_total_frames = 2
-        print("Applying preprocessing:")
+        print("DEBUG MODE: Applying preprocessing:")
         print(p)
     chunk_sz = (1, num_slices,) + sz
     total_sz = (num_total_frames,) + chunk_sz[1:]
