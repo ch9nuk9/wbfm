@@ -101,6 +101,7 @@ def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
         dat_raw = filter_stack(dat_raw, s.filter_opt)
 
     if s.do_mirroring:
+        print("Mirroring data")
         dat_raw = np.flip(dat_raw, axis=2)
 
     if s.do_rigid_alignment:
@@ -210,12 +211,10 @@ def get_and_preprocess(i, num_slices, p, start_volume, vid_fname, read_lock=None
             dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
-        print("Applying preprocessing:")
-        print(p)
-        # preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
+        # print("Applying preprocessing:")
+        # print(p)
         return perform_preprocessing(dat_raw, p, i)
     else:
-        print("SKIPPING preprocessing:")
-        print(p)
-        # preprocessed_dat[i, ...] = dat_raw
+        # print("SKIPPING preprocessing:")
+        # print(p)
         return dat_raw
