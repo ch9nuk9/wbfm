@@ -11,6 +11,9 @@ filter_opt:
 do_mini_max_projection : false
 mini_max_size: 3
 
+# Mirroring, usually between green and red channels
+do_mirroring: false
+
 # Rigid alignment (slices to each other, within a volume)
 do_rigid_alignment: true # CHANGE ME; not needed for immobilized projects
 

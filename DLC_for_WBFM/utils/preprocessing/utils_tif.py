@@ -42,6 +42,9 @@ class PreprocessingSettings:
     do_mini_max_projection: bool = False
     mini_max_size: int = 3
 
+    # Mirroring, usually between green and red channels
+    do_mirroring: bool = False
+
     # Rigid alignment (slices to each other)
     do_rigid_alignment: bool = False
 
@@ -80,6 +83,9 @@ def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
 
     if s.do_filtering:
         dat_raw = filter_stack(dat_raw, s.filter_opt)
+
+    if s.do_mirroring:
+        dat_raw = np.flip(dat_raw, axis=2)
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:
