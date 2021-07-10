@@ -167,8 +167,8 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     with tifffile.TiffFile(vid_fname) as vid_stream:
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
-                print("Applying preprocessing:")
-                print(p)
+                # print("Applying preprocessing:")
+                # print(p)
                 preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
             with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in frame_list}
@@ -210,8 +210,12 @@ def get_and_preprocess(i, num_slices, p, start_volume, vid_fname, read_lock=None
             dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
+        print("Applying preprocessing:")
+        print(p)
         # preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
         return perform_preprocessing(dat_raw, p, i)
     else:
+        print("SKIPPING preprocessing:")
+        print(p)
         # preprocessed_dat[i, ...] = dat_raw
         return dat_raw
