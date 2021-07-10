@@ -253,10 +253,22 @@ class Ui_MainWindow(object):
         self.tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
         self.traces_cfg = load_config(cfg['subfolder_configs']['traces'])
 
+        fname = cfg.get('preprocessed_red', None)
+        if fname is not None:
+            self.preprocessed_red = zarr.open(fname)
+        else:
+            self.preprocessed_red = None
+        fname = cfg.get('preprocessed_green', None)
+        if fname is not None:
+            self.preprocessed_green = zarr.open(fname)
+        else:
+            self.preprocessed_green = None
+
 
     def napari_for_masks(self):
         """Open napari window for segmentation before tracking"""
         self.viewer = napari.view_labels(self.segment_zarr, ndisplay=3)
+        self.viewer.add_image(self.preprocessed_red)
         self.viewer.show()
 
     def napari_for_masks_tracking(self):

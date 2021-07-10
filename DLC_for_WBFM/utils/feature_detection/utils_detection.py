@@ -82,10 +82,12 @@ def build_point_clouds_for_volume(dat,
 
 
 def build_correspondence_icp(all_keypoints_pcs,
-                            opt = {'max_correspondence_distance':4.0},
-                            verbose=0):
+                             opt=None,
+                             verbose=0):
     # Build correspondence between each pair of planes
 
+    if opt is None:
+        opt = {'max_correspondence_distance': 4.0}
     all_icp = []
 
     for i in range(len(all_keypoints_pcs)-1):
