@@ -101,9 +101,11 @@ def perform_preprocessing(dat_raw: np.ndarray,
         dat_raw = filter_stack(dat_raw, s.filter_opt)
 
     if s.do_mirroring:
-        print(dat_raw.shape)
+        # print(dat_raw.shape)
+        np.save('before_flip.npy')
         dat_raw = np.flip(dat_raw, axis=-1)
-        print(dat_raw.shape)
+        np.save('after_flip.npy')
+        # print(dat_raw.shape)
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:
