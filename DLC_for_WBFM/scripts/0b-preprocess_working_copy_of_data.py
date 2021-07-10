@@ -55,7 +55,8 @@ def main(_config, _run):
         opt['out_fname'] = _config['out_fname_red']
         opt['save_fname_in_red_not_green'] = True
         # The preprocessing will be calculated based off the red channel, and will be saved to disk
-        fname = Path(opt['out_fname']).stem + "_preprocessed.pickle"
+        red_name = Path(opt['out_fname'])
+        fname = red_name.parent / (red_name.stem + "_preprocessed.pickle")
         preprocessing_settings.path_to_previous_warp_matrices = fname
         assert preprocessing_settings.to_save_warp_matrices
         write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
