@@ -84,7 +84,7 @@ class PreprocessingSettings:
             self.all_warp_matrices = pickle.load(f)
 
 
-def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
+def perform_preprocessing(dat_raw: np.ndarray,
                           preprocessing_settings: PreprocessingSettings,
                           which_frame: int = None) -> np.ndarray:
     """
@@ -101,8 +101,9 @@ def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
         dat_raw = filter_stack(dat_raw, s.filter_opt)
 
     if s.do_mirroring:
-        print(type(dat_raw))
-        dat_raw = np.flip(np.array(dat_raw), axis=2)
+        print(dat_raw.shape)
+        dat_raw = np.flip(dat_raw, axis=-1)
+        print(dat_raw.shape)
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:

@@ -1,3 +1,5 @@
+import typing
+
 import numpy as np
 import tifffile
 import os
@@ -41,7 +43,8 @@ def get_video_from_ome_file_subset(video_fname,
     return dat
 
 
-def get_single_volume(fname, which_vol, num_slices, alpha=1.0, dtype='uint8'):
+def get_single_volume(fname: typing.Union[str, Path], which_vol: int, num_slices: int, alpha: float = 1.0,
+                      dtype: str = 'uint8') -> np.ndarray:
     # Convert to page coordinates
     start_ind = num_slices*which_vol
     key = range(start_ind, start_ind+num_slices)
