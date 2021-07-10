@@ -62,7 +62,7 @@ def write_data_subset_from_config(cfg: dict,
     else:
         chunk_sz = (1, ) + preprocessed_dat.shape[1:]
         print(f"Chunk size: {chunk_sz}")
-        out_dat = np.array(preprocessed_dat).astype('uint16')
+        out_dat = np.array(preprocessed_dat)#.astype('uint16')
         zarr.save_array(out_fname, out_dat, chunks=chunk_sz)
 
     # Save this name in the config file itself

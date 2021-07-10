@@ -159,7 +159,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     chunk_sz = (1, num_slices,) + sz
     total_sz = (num_total_frames,) + chunk_sz[1:]
 
-    preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype='uint16',
+    preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype=p.final_dtype,
                                   synchronizer=zarr.ThreadSynchronizer())
     read_lock = threading.Lock()
     # Load data and preprocess
@@ -167,10 +167,10 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     with tifffile.TiffFile(vid_fname) as vid_stream:
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
+                print("Applying preprocessing:")
+                print(p)
                 preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
             with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
-                # futures = executor.map(parallel_func, frame_list)
-                # [f.result() for f in futures]
                 futures = {executor.submit(parallel_func, i): i for i in frame_list}
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
