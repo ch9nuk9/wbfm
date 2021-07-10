@@ -19,10 +19,13 @@ def write_data_subset_from_config(cfg: dict,
                                   DEBUG: bool = False) -> None:
     """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
 
+    verbose = cfg['other']['verbose']
     project_dir = cfg['project_dir']
     # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
     if use_preprocessed_data:
         preprocessing_settings = None
+        if verbose >= 1:
+            print("Reusing already preprocessed data")
     elif preprocessing_settings is None:
         preprocessing_fname = cfg['preprocessing_config']
         preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_fname)
@@ -39,7 +42,6 @@ def write_data_subset_from_config(cfg: dict,
             vid_fname = resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])
         else:
             vid_fname = resolve_mounted_path_in_current_os(cfg['preprocessed_red'])
-    verbose = cfg['other']['verbose']
     start_volume = cfg['dataset_params']['start_volume']
 
     with safe_cd(project_dir):
