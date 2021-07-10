@@ -101,8 +101,8 @@ def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
         dat_raw = filter_stack(dat_raw, s.filter_opt)
 
     if s.do_mirroring:
-        print("Mirroring data")
-        dat_raw = np.flip(dat_raw, axis=2)
+        print(type(dat_raw))
+        dat_raw = np.flip(np.array(dat_raw), axis=2)
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:
