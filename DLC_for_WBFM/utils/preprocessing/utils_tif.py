@@ -59,7 +59,7 @@ class PreprocessingSettings:
     path_to_previous_warp_matrices: str = None  # This file may not exist, and will be written the first time
 
     # Temporary variable to store warp matrices across time
-    all_warp_matrices: dict = None
+    all_warp_matrices: dict = field(default_factory=dict)
 
     @staticmethod
     def load_from_yaml(fname):
