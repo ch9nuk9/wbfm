@@ -102,9 +102,9 @@ def perform_preprocessing(dat_raw: np.ndarray,
 
     if s.do_mirroring:
         # print(dat_raw.shape)
-        np.save('before_flip.npy')
+        np.save('before_flip.npy', dat_raw)
         dat_raw = np.flip(dat_raw, axis=-1)
-        np.save('after_flip.npy')
+        np.save('after_flip.npy', dat_raw)
         # print(dat_raw.shape)
 
     if s.do_rigid_alignment:
