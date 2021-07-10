@@ -58,6 +58,9 @@ class PreprocessingSettings:
     to_use_previous_warp_matrices: bool = False
     path_to_previous_warp_matrices: str = None  # This file may not exist, and will be written the first time
 
+    # Temporary variable to store warp matrices across time
+    all_warp_matrices: dict = None
+
     @staticmethod
     def load_from_yaml(fname):
         with open(fname, 'r') as f:
@@ -67,9 +70,23 @@ class PreprocessingSettings:
     def write_to_yaml(self, fname):
         edit_config(fname, dataclasses.asdict(self))
 
+    def save_all_warp_matrices(self):
+        with open(self.path_to_previous_warp_matrices, 'wb') as f:
+            pickle.dump(self.all_warp_matrices, f)
+
+    def load_all_warp_matrices(self):
+        """
+        Loads warp matrices from disk
+
+        Note that if the same preprocessing_settings object is used to process multiple files, then this is not needed
+        """
+        with open(self.path_to_previous_warp_matrices, 'rb') as f:
+            self.all_warp_matrices = pickle.load(f)
+
 
 def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
-                          preprocessing_settings: PreprocessingSettings) -> np.ndarray:
+                          preprocessing_settings: PreprocessingSettings,
+                          which_frame: int = None) -> np.ndarray:
     """
     Performs all preprocessing as set by the fields of preprocessing_settings
 
@@ -88,13 +105,12 @@ def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:
-            dat_raw, warp_matrices_dict = align_stack(dat_raw, s.to_save_warp_matrices)
+            dat_raw, warp_matrices_dict = align_stack(dat_raw)
             if s.to_save_warp_matrices:
-                with open(s.path_to_previous_warp_matrices, 'wb') as f:
-                    pickle.dump(warp_matrices_dict, f)
+                s.all_warp_matrices[which_frame] = warp_matrices_dict
         else:
-            with open(s.path_to_previous_warp_matrices, 'rb') as f:
-                warp_matrices_dict = pickle.load(f)
+            assert len(s.all_warp_matrices) > 0
+            warp_matrices_dict = s.all_warp_matrices[which_frame]
             dat_raw = align_stack_using_previous_results(dat_raw, warp_matrices_dict)
 
     if s.do_mini_max_projection:
@@ -195,7 +211,7 @@ def get_and_preprocess(i, num_slices, p, start_volume, vid_fname, read_lock=None
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
         # preprocessed_dat[i, ...] = perform_preprocessing(dat_raw, p)
-        return perform_preprocessing(dat_raw, p)
+        return perform_preprocessing(dat_raw, p, i)
     else:
         # preprocessed_dat[i, ...] = dat_raw
         return dat_raw

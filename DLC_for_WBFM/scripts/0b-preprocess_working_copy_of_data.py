@@ -71,5 +71,6 @@ def main(_config, _run):
         # print(preprocessing_settings)
         write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
 
-        # Finalize by updating the preprocessing yaml
+        # Save the warp matrices to disk if needed further
+        preprocessing_settings.save_all_warp_matrices()
         # preprocessing_settings.write_to_yaml(preprocessing_fname)
