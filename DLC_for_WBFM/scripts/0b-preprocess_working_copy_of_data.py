@@ -68,4 +68,4 @@ def main(_config, _run):
         write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
 
         # Finalize by updating the preprocessing yaml
-        preprocessing_settings.write_to_yaml(preprocessing_fname)
+        # preprocessing_settings.write_to_yaml(preprocessing_fname)
