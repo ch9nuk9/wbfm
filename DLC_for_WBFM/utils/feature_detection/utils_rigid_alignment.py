@@ -190,7 +190,7 @@ def align_stack(stack_to_align, to_save_warp_matrices=False, hide_progress=True)
         im_next, im_prev = stack_to_align[i-1], stack_to_align[i]
         warp_mat = get_warp_mat(im_prev, im_next, warp_mat)
         if to_save_warp_matrices:
-            warp_matrices[(i-1, i)] = warp_mat
+            warp_matrices[(i-1, i)] = warp_mat.copy()
         stack_aligned[i-1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     # From i_center_plane to end (usually 33)
@@ -199,7 +199,7 @@ def align_stack(stack_to_align, to_save_warp_matrices=False, hide_progress=True)
         im_prev, im_next = stack_to_align[i], stack_to_align[i+1]
         warp_mat = get_warp_mat(im_prev, im_next, warp_mat)
         if to_save_warp_matrices:
-            warp_matrices[(i, i+1)] = warp_mat
+            warp_matrices[(i, i+1)] = warp_mat.copy()
         stack_aligned[i+1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     return stack_aligned, warp_matrices

@@ -68,7 +68,6 @@ class PreprocessingSettings:
         edit_config(fname, dataclasses.asdict(self))
 
 
-
 def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
                           preprocessing_settings: PreprocessingSettings) -> np.ndarray:
     """

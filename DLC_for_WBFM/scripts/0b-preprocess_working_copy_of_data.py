@@ -65,7 +65,9 @@ def main(_config, _run):
         opt['out_fname'] = _config['out_fname_green']
         opt['save_fname_in_red_not_green'] = False
         preprocessing_settings.to_use_previous_warp_matrices = True
-        preprocessing_settings.do_mirroring = cfg['dataset_params']['red_and_green_mirrored']
+        if cfg['dataset_params']['red_and_green_mirrored']:
+            preprocessing_settings.do_mirroring = True
+            print("Mirroring green channel")
         write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
 
         # Finalize by updating the preprocessing yaml
