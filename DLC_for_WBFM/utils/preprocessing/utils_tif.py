@@ -1,4 +1,5 @@
 import concurrent
+import dataclasses
 import pickle
 import threading
 import typing
@@ -15,6 +16,8 @@ from dataclasses import field
 from typing import List, Tuple
 import yaml
 from tqdm.auto import tqdm
+
+from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 
@@ -57,6 +60,10 @@ class PreprocessingSettings:
         with open(fname, 'r') as f:
             cfg = yaml.safe_load(f)
         return PreprocessingSettings(**cfg)
+
+    def write_to_yaml(self, fname):
+        edit_config(fname, dataclasses.asdict(self))
+
 
 
 def perform_preprocessing(dat_raw: typing.Union[np.ndarray, zarr.Array],
