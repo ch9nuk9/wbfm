@@ -2,7 +2,7 @@ import open3d as o3d
 import cv2
 import numpy as np
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree, build_neuron_tree
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, calc_icp_matches
 from tqdm import tqdm
 
 
@@ -131,7 +131,8 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
     xyz0 = np.array(all_propagated.points)
     xyz1 = f1.neuron_locs
 
-    out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=10*distance_ratio)
+    # out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=10*distance_ratio)
+    out = calc_icp_matches(xyz0, xyz1, max_dist=10*distance_ratio)
     all_matches, all_conf, all_candidate_matches = out
     matches_with_conf = [(m[0], m[1], c) for m, c in zip(all_matches, all_conf)]
 

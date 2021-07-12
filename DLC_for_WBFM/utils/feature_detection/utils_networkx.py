@@ -201,6 +201,9 @@ def calc_icp_matches(xyz0: np.ndarray, xyz1: np.ndarray,
     Returns
     -------
 
+    See also: calc_bipartite_from_distance
+        (uses same API)
+
     """
     zxy0, zxy1 = np.array(xyz0), np.array(xyz1)
 
