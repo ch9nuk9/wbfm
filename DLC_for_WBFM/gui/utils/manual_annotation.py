@@ -80,12 +80,12 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         @viewer.bind_key('.', overwrite=True)
         def zoom_next(viewer):
-            change_viewer_time_point(viewer, dt=1, a_max=len(self.df))
+            change_viewer_time_point(viewer, dt=1, a_max=len(self.df)-1)
             zoom_using_viewer(viewer, zoom=None)
 
         @viewer.bind_key(',', overwrite=True)
         def zoom_previous(viewer):
-            change_viewer_time_point(viewer, dt=-1, a_max=len(self.df))
+            change_viewer_time_point(viewer, dt=-1, a_max=len(self.df)-1)
             zoom_using_viewer(viewer, zoom=None)
 
         # @viewer.bind_key('.', overwrite=True)
