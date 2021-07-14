@@ -116,7 +116,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
     def save_annotations(self):
         new_df = self.build_df_of_current_points()
         self.df[self.current_name] = new_df[self.current_name]
-        
+
         out_fname = os.path.join(self.output_dir, f'corrected_tracks-{self.corrector_name}.h5')
         self.df.to_hdf(out_fname, 'df_with_missing')
 
@@ -132,18 +132,19 @@ class manual_annotation_widget(QtWidgets.QWidget):
         name = self.current_name
         new_points = self.viewer.layers['pts_with_future_and_past'].data
 
-        col = pd.MultiIndex.from_product([[self.current_name], ['t', 'z', 'x', 'y']])
+        col = pd.MultiIndex.from_product([[self.current_name], ['z', 'x', 'y', 'likelihood']])
         df_new = pd.DataFrame(columns=col)
 
-        df_new[(name, 't')] = new_points[:, 0]
-        df_new[(name, 'z')] = new_points[:, 1]
+        # df_new[(name, 't')] = new_points[:, 0]
+        df_new[(name, 'z')] = new_points[:, 0]
+        df_new[(name, 'x')] = new_points[:, 1]
         df_new[(name, 'y')] = new_points[:, 2]
-        df_new[(name, 'x')] = new_points[:, 3]
         df_new[(name, 'likelihood')] = self.df[(name, 'likelihood')]  # Same as before
 
         df_new.sort_values((name, 't'), inplace=True, ignore_index=True)
 
-        # print(df_new)
+        print("Corrected dataframe: ")
+        print(df_new)
 
         return df_new
 
