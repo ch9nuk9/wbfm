@@ -53,9 +53,14 @@ def convert_training_dataframe_to_dlc_format(df, scorer='Charlie'):
 
     for ind, row in df.iterrows():
         bodypart = f'neuron{ind}'
-        coords = row['all_xyz']
+        confidence = row['all_prob']
+        zxy = row['all_xyz']
+        if len(confidence) == 0:
+            # Then I didn't save confidences, so just set to 1
+            confidence = np.ones((len(zxy), 1))
+        coords = np.hstack([zxy, confidence])
 
-        index = pd.MultiIndex.from_product([[scorer], [bodypart], ['z', 'x', 'y']],
+        index = pd.MultiIndex.from_product([[scorer], [bodypart], ['z', 'x', 'y', 'likelihood']],
                                            names=['scorer', 'bodyparts', 'coords'])
         frame = pd.DataFrame(coords, columns=index, index=which_frames)
         new_df = pd.concat([new_df, frame], axis=1)

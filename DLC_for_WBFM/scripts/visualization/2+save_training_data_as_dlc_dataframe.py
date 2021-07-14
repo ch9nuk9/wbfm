@@ -11,6 +11,7 @@ import sacred
 from sacred import Experiment
 
 # Initialize sacred experiment
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 
 ex = Experiment()
@@ -33,7 +34,7 @@ def cfg(project_path):
 
 
 @ex.automain
-def make_dlc_labeled_videos(_config, _run):
+def save_training_data(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
@@ -41,4 +42,4 @@ def make_dlc_labeled_videos(_config, _run):
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     with safe_cd(_config['project_dir']):
-        reindex_segmentation_only_training_data(this_config, DEBUG=DEBUG)
+        save_training_data_as_dlc_format(this_config, DEBUG=DEBUG)
