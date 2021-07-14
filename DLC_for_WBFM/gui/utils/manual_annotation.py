@@ -217,7 +217,7 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=Fa
     """
     project_dir = this_config['project_dir']
 
-    annotation_output_name = os.path.join(project_dir, '2-training_data', 'manual_tracking', f'corrected_tracks-{corrector_name}.csv')
+    annotation_output_name = os.path.join(project_dir, '2-training_data', 'manual_tracking', f'corrected_tracks-{corrector_name}.h5')
     if Path(annotation_output_name).exists():
         raise FileExistsError(f"File already {annotation_output_name} exists! Please rename or delete")
 
