@@ -55,10 +55,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.initialize_shortcuts()
 
     def change_neurons(self):
-        # Save current track (overwrite old df)
-        new_df = self.build_df_of_current_points()
-        self.df[self.current_name] = new_df[self.current_name]
-
+        self.update_dataframe_using_points()
         self.update_track_layers()
 
     def update_track_layers(self):
@@ -114,8 +111,8 @@ class manual_annotation_widget(QtWidgets.QWidget):
         return self.build_tracks_from_name()
 
     def save_annotations(self):
-        new_df = self.build_df_of_current_points()
-        self.df[self.current_name] = new_df[self.current_name]
+        self.update_dataframe_using_points()
+        # self.df[self.current_name] = new_df[self.current_name]
 
         out_fname = os.path.join(self.output_dir, f'corrected_tracks-{self.corrector_name}.h5')
         self.df.to_hdf(out_fname, 'df_with_missing')
@@ -128,18 +125,24 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         print(f"Saved manual annotations for neuron {self.current_name} at {out_fname}")
 
+    def update_dataframe_using_points(self):
+        new_df = self.build_df_of_current_points()
+        self.df.drop(columns=self.current_name, level=0, inplace=True)
+        self.df.join(new_df)
+
     def build_df_of_current_points(self) -> pd.DataFrame:
         name = self.current_name
         new_points = self.viewer.layers['pts_with_future_and_past'].data
 
-        col = pd.MultiIndex.from_product([[self.current_name], ['z', 'x', 'y', 'likelihood']])
+        col = pd.MultiIndex.from_product([[self.current_name], ['t', 'z', 'x', 'y', 'likelihood']])
         df_new = pd.DataFrame(columns=col)
 
         df_new[(name, 't')] = new_points[:, 0]
         df_new[(name, 'z')] = new_points[:, 1]
-        df_new[(name, 'x')] = new_points[:, 2]
-        df_new[(name, 'y')] = new_points[:, 3]
-        df_new[(name, 'likelihood')] = self.df[(name, 'likelihood')]  # Same as before
+        df_new[(name, 'y')] = new_points[:, 2]
+        df_new[(name, 'x')] = new_points[:, 3]
+        df_new[(name, 'likelihood')] = np.ones(new_points.shape[0])
+        # df_new[(name, 'likelihood')] = self.df[(name, 'likelihood')]  # Same as before
 
         df_new.sort_values((name, 't'), inplace=True, ignore_index=True)
 
