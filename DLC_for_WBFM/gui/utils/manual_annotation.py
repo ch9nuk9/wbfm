@@ -202,6 +202,8 @@ def create_manual_correction_gui(this_config, DEBUG=False):
     viewer.window.add_dock_widget(ui)
     ui.show()
 
+    napari.run()
+
 
 if __name__ == "__main__":
 
