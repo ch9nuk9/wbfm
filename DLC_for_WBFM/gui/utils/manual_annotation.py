@@ -36,6 +36,14 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.changeNeuronsButton.currentIndexChanged.connect(self.change_neurons)
         self.verticalLayout.addWidget(self.changeNeuronsButton)
 
+        # Change zoom (slider)
+        self.changeZoomSlider = QtWidgets.QSlider(self.verticalLayoutWidget)
+        self.changeZoomSlider.setMinimum(1)
+        self.changeZoomSlider.setMaximum(20)
+        self.changeZoomSlider.valueChanged.connect(self.zoom_and_change_time)
+        self.verticalLayout.addWidget(self.changeZoomSlider)
+
+
         # Save annotations (button)
         self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.saveButton.clicked.connect(self.save_annotations)
@@ -73,14 +81,22 @@ class manual_annotation_widget(QtWidgets.QWidget):
         viewer = self.viewer
 
         @viewer.bind_key('.', overwrite=True)
-        def zoom_next(viewer: napari.Viewer) -> None:
-            change_viewer_time_point(viewer, 1)
-            zoom_using_viewer(viewer)
+        def zoom_next():
+            self.zoom_and_change_time(1)
 
         @viewer.bind_key(',', overwrite=True)
-        def zoom_previous(viewer: napari.Viewer) -> None:
-            change_viewer_time_point(viewer, -1)
-            zoom_using_viewer(viewer)
+        def zoom_previous():
+            self.zoom_and_change_time(-1)
+
+    def zoom_and_change_time(self, dt=0):
+        viewer = self.viewer
+        zoom = self.get_zoom()
+        change_viewer_time_point(viewer, dt)
+        zoom_using_viewer(viewer, zoom)
+
+
+    def get_zoom(self):
+        return 10
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsButton.currentText()
@@ -141,13 +157,13 @@ class manual_annotation_widget(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def zoom_using_viewer(viewer: napari.Viewer) -> None:
+def zoom_using_viewer(viewer: napari.Viewer, zoom=10) -> None:
     # Get current point
     t = viewer.dims.current_step[0]
     tzxy = viewer.layers['pts_with_future_and_past'].data[t]
 
     # Zoom to it in XY
-    viewer.camera.zoom = 10
+    viewer.camera.zoom = zoom
     viewer.camera.center = tzxy[1:]
 
     # Zoom in Z
