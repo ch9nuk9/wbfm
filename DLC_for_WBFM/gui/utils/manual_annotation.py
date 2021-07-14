@@ -226,7 +226,8 @@ if __name__ == "__main__":
         segment_cfg = dict(load_config(seg_fname))
 
     this_config = {'track_cfg': track_cfg, 'segment_cfg': segment_cfg, 'project_cfg': project_cfg,
-                   'dataset_params': project_cfg['dataset_params'].copy()}
+                   'dataset_params': project_cfg['dataset_params'].copy(),
+                   'project_dir': project_dir}
 
     with safe_cd(project_dir):
         create_manual_correction_gui(this_config, DEBUG=DEBUG)
