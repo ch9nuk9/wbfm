@@ -37,11 +37,11 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.changeNeuronsButton)
 
         # Change zoom (slider)
-        self.changeZoomSlider = QtWidgets.QSlider(self.verticalLayoutWidget)
-        self.changeZoomSlider.setMinimum(1)
-        self.changeZoomSlider.setMaximum(20)
-        # self.changeZoomSlider.valueChanged.connect(self.zoom_and_change_time)
-        self.verticalLayout.addWidget(self.changeZoomSlider)
+        # self.changeZoomSlider = QtWidgets.QSlider(self.verticalLayoutWidget)
+        # self.changeZoomSlider.setMinimum(1)
+        # self.changeZoomSlider.setMaximum(20)
+        # # self.changeZoomSlider.valueChanged.connect(self.zoom_and_change_time)
+        # self.verticalLayout.addWidget(self.changeZoomSlider)
 
 
         # Save annotations (button)
@@ -81,22 +81,32 @@ class manual_annotation_widget(QtWidgets.QWidget):
         viewer = self.viewer
 
         @viewer.bind_key('.', overwrite=True)
-        def zoom_next():
-            self.zoom_and_change_time(1)
+        def zoom_next(viewer):
+            change_viewer_time_point(viewer, dt=1)
+            zoom_using_viewer(viewer, zoom=10)
 
         @viewer.bind_key(',', overwrite=True)
-        def zoom_previous():
-            self.zoom_and_change_time(-1)
+        def zoom_previous(viewer):
+            change_viewer_time_point(viewer, dt=-1)
+            zoom_using_viewer(viewer, zoom=10)
 
-    def zoom_and_change_time(self, dt=0):
-        viewer = self.viewer
-        zoom = self.get_zoom()
-        change_viewer_time_point(viewer, dt)
-        zoom_using_viewer(viewer, zoom)
-
-
-    def get_zoom(self):
-        return self.changeZoomSlider.value()
+        # @viewer.bind_key('.', overwrite=True)
+        # def zoom_next(dummy):
+        #     self.zoom_and_change_time(1)
+        #
+        # @viewer.bind_key(',', overwrite=True)
+        # def zoom_previous(dummy):
+        #     self.zoom_and_change_time(-1)
+    #
+    # def zoom_and_change_time(self, dt=0):
+    #     viewer = self.viewer
+    #     zoom = self.get_zoom()
+    #     change_viewer_time_point(viewer, dt)
+    #     zoom_using_viewer(viewer, zoom)
+    #
+    #
+    # def get_zoom(self):
+    #     return self.changeZoomSlider.value()
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsButton.currentText()
