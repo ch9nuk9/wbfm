@@ -73,7 +73,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
 
-        zoom_using_viewer(self.viewer)
+        zoom_using_viewer(self.viewer, zoom=10)
 
     def initialize_shortcuts(self):
         viewer = self.viewer
