@@ -147,7 +147,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         # col = pd.MultiIndex.from_product([[self.current_name], ['t', 'z', 'x', 'y', 'likelihood']])
         col = pd.MultiIndex.from_product([[self.current_name], ['z', 'x', 'y', 'likelihood']])
-        df_new = pd.DataFrame(columns=col)
+        df_new = pd.DataFrame(columns=col, index=self.df.index)
 
         # df_new[(name, 't')] = new_points[:, 0]
         df_new[(name, 'z')] = new_points[:, 1]
