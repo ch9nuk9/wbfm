@@ -114,6 +114,9 @@ class manual_annotation_widget(QtWidgets.QWidget):
         return self.build_tracks_from_name()
 
     def save_annotations(self):
+        new_df = self.build_df_of_current_points()
+        self.df[self.current_name] = new_df[self.current_name]
+        
         out_fname = os.path.join(self.output_dir, f'corrected_tracks-{self.corrector_name}.h5')
         self.df.to_hdf(out_fname, 'df_with_missing')
 
