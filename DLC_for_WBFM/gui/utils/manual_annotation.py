@@ -137,7 +137,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         # print("pandas try 2:")
         self.df = self.df.drop(columns=self.current_name, level=0)
-        self.df = pd.concat([self.df, new_df], axis=1, ignore_index=True)
+        self.df = pd.concat([self.df, new_df], axis=1)
         # self.df = self.df.join(new_df)
         print(self.df)
 
