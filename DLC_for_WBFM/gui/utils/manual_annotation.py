@@ -20,10 +20,10 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
 
     #     def setupUi(self, MainWindow, df, output_dir, viewer: napari.Viewer):
-    def setupUi(self, df: pd.DataFrame, output_dir: str, viewer: napari.Viewer, corrector_name: str):
+    def setupUi(self, df: pd.DataFrame, output_dir: str, viewer: napari.Viewer, annotation_output_name: str):
 
         # Load dataframe and path to outputs
-        self.corrector_name = corrector_name
+        self.annotation_output_name = annotation_output_name
         self.viewer = viewer
         self.output_dir = output_dir
         self.df = df
@@ -114,7 +114,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.update_dataframe_using_points()
         # self.df[self.current_name] = new_df[self.current_name]
 
-        out_fname = os.path.join(self.output_dir, f'corrected_tracks-{self.corrector_name}.h5')
+        out_fname = self.annotation_output_name
         self.df.to_hdf(out_fname, 'df_with_missing')
 
         out_fname = str(Path(out_fname).with_suffix('.csv'))
@@ -217,6 +217,10 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=Fa
     """
     project_dir = this_config['project_dir']
 
+    annotation_output_name = os.path.join(project_dir, '2-training_data', 'manual_tracking', f'corrected_tracks-{corrector_name}.csv')
+    if Path(annotation_output_name).exists():
+        raise FileExistsError(f"File already {annotation_output_name} exists! Please rename or delete")
+
     with safe_cd(project_dir):
 
         fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
@@ -253,7 +257,7 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=Fa
 
     output_dir = os.path.join("2-training_data", "manual_tracking")
     ui = manual_annotation_widget()
-    ui.setupUi(df, output_dir, viewer, corrector_name)
+    ui.setupUi(df, output_dir, viewer, annotation_output_name)
 
     # Actually dock
     viewer.window.add_dock_widget(ui)
