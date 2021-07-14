@@ -208,6 +208,13 @@ def create_manual_correction_gui(this_config, DEBUG=False):
         fname = this_config['segment_cfg']['output']['masks']
         raw_segmentation = zarr.open(fname)
 
+        fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
+        if Path(fname).exists():
+            colored_segmentation = zarr.open(fname)
+        else:
+            colored_segmentation = None
+
+
         fname = os.path.join('2-training_data', 'training_data_tracks.h5')
         df = pd.read_hdf(fname)
 
@@ -217,7 +224,9 @@ def create_manual_correction_gui(this_config, DEBUG=False):
 
     # Build Napari and add widgets
     viewer = napari.view_image(red_data[which_frames[0]:which_frames[-1]+1, ...], name="Red data", ndisplay=2, opacity=0.5)
-    viewer.add_labels(raw_segmentation[which_frames[0]:which_frames[-1]+1, ...], name="Raw segmentation")
+    viewer.add_labels(raw_segmentation[which_frames[0]:which_frames[-1]+1, ...], name="Raw segmentation", opacity=0.5)
+    if colored_segmentation is not None:
+        viewer.add_labels(colored_segmentation)
 
     output_dir = os.path.join("2-training_data", "manual_tracking")
     ui = manual_annotation_widget()
