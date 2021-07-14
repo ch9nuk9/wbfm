@@ -135,10 +135,10 @@ class manual_annotation_widget(QtWidgets.QWidget):
         col = pd.MultiIndex.from_product([[self.current_name], ['z', 'x', 'y', 'likelihood']])
         df_new = pd.DataFrame(columns=col)
 
-        # df_new[(name, 't')] = new_points[:, 0]
-        df_new[(name, 'z')] = new_points[:, 0]
-        df_new[(name, 'x')] = new_points[:, 1]
-        df_new[(name, 'y')] = new_points[:, 2]
+        df_new[(name, 't')] = new_points[:, 0]
+        df_new[(name, 'z')] = new_points[:, 1]
+        df_new[(name, 'x')] = new_points[:, 2]
+        df_new[(name, 'y')] = new_points[:, 3]
         df_new[(name, 'likelihood')] = self.df[(name, 'likelihood')]  # Same as before
 
         df_new.sort_values((name, 't'), inplace=True, ignore_index=True)
