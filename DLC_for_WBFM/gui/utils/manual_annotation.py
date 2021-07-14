@@ -126,6 +126,9 @@ class manual_annotation_widget(QtWidgets.QWidget):
         print(f"Saved manual annotations for neuron {self.current_name} at {out_fname}")
 
     def update_dataframe_using_points(self):
+        print("Before saving:")
+        print(self.df)
+
         new_df = self.build_df_of_current_points()
         print("pandas try 1:")
         self.df[self.current_name] = new_df[self.current_name]
@@ -232,7 +235,8 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=Fa
 
 
         fname = os.path.join('2-training_data', 'training_data_tracks.h5')
-        df = pd.read_hdf(fname)
+        # TODO: not hardcoded experimenter
+        df = pd.read_hdf(fname)['Charlie'].copy()
 
         # Import raw data
         fname = this_config['project_cfg']['preprocessed_red']
@@ -246,8 +250,7 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=Fa
 
     output_dir = os.path.join("2-training_data", "manual_tracking")
     ui = manual_annotation_widget()
-    # TODO: not hardcoded experimenter
-    ui.setupUi(df['Charlie'], output_dir, viewer, corrector_name)
+    ui.setupUi(df, output_dir, viewer, corrector_name)
 
     # Actually dock
     viewer.window.add_dock_widget(ui)
