@@ -40,7 +40,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.changeZoomSlider = QtWidgets.QSlider(self.verticalLayoutWidget)
         self.changeZoomSlider.setMinimum(1)
         self.changeZoomSlider.setMaximum(20)
-        self.changeZoomSlider.valueChanged.connect(self.zoom_and_change_time)
+        # self.changeZoomSlider.valueChanged.connect(self.zoom_and_change_time)
         self.verticalLayout.addWidget(self.changeZoomSlider)
 
 
@@ -96,7 +96,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
 
     def get_zoom(self):
-        return 10
+        return self.changeZoomSlider.value()
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsButton.currentText()
