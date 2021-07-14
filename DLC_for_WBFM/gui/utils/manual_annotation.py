@@ -127,9 +127,15 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
     def update_dataframe_using_points(self):
         new_df = self.build_df_of_current_points()
-        self.df.drop(columns=self.current_name, level=0, inplace=True)
+        print("pandas try 1:")
+        self.df[self.current_name] = new_df[self.current_name]
+        print(self.df)
+
+        print("pandas try 2:")
+        self.df = self.df.drop(columns=self.current_name, level=0)
         self.df = pd.concat([self.df, new_df], axis=1, ignore_index=True)
-        # self.df = self.df.join(new_df)
+        self.df = self.df.join(new_df)
+        print(self.df)
 
     def build_df_of_current_points(self) -> pd.DataFrame:
         name = self.current_name
