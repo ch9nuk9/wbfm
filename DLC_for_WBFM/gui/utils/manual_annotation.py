@@ -185,7 +185,7 @@ def create_manual_correction_gui(this_config, DEBUG=False):
         df = pd.read_hdf(fname)
 
         # Import raw data
-        fname = this_config['project_config']['preprocessed_red']
+        fname = this_config['project_cfg']['preprocessed_red']
         red_data = zarr.open(fname)
 
     # Build Napari and add widgets
