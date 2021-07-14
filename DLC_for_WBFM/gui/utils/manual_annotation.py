@@ -81,12 +81,12 @@ class manual_annotation_widget(QtWidgets.QWidget):
         @viewer.bind_key('.', overwrite=True)
         def zoom_next(viewer):
             change_viewer_time_point(viewer, dt=1)
-            # zoom_using_viewer(viewer, zoom=10)
+            zoom_using_viewer(viewer, zoom=None)
 
         @viewer.bind_key(',', overwrite=True)
         def zoom_previous(viewer):
             change_viewer_time_point(viewer, dt=-1)
-            # zoom_using_viewer(viewer, zoom=10)
+            zoom_using_viewer(viewer, zoom=None)
 
         # @viewer.bind_key('.', overwrite=True)
         # def zoom_next(dummy):
@@ -187,16 +187,17 @@ class manual_annotation_widget(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def zoom_using_viewer(viewer: napari.Viewer, zoom=10) -> None:
+def zoom_using_viewer(viewer: napari.Viewer, zoom=None) -> None:
     # Get current point
     t = viewer.dims.current_step[0]
     tzxy = viewer.layers['pts_with_future_and_past'].data[t]
 
-    # Zoom to it in XY
-    viewer.camera.zoom = zoom
+    # Center to the neuron in xy
+    if zoom is not None:
+        viewer.camera.zoom = zoom
     viewer.camera.center = tzxy[1:]
 
-    # Zoom in Z
+    # Center around the neuron in z
     if tzxy[2] > 0 and tzxy[3] > 0:
         viewer.dims.current_step = (t, tzxy[1], 0, 0)
 
