@@ -69,7 +69,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         point_layer_data, track_layer_data = self.get_track_data()
 
         points_opt = dict(face_color='blue', size=4)
-        self.viewer.add_points(point_layer_data, name="pts_with_future_and_past", n_dimensional=True, symbol='square', **points_opt)
+        self.viewer.add_points(point_layer_data, name="pts_with_future_and_past", n_dimensional=True, symbol='cross', **points_opt)
 
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
 
@@ -81,12 +81,12 @@ class manual_annotation_widget(QtWidgets.QWidget):
         @viewer.bind_key('.', overwrite=True)
         def zoom_next(viewer):
             change_viewer_time_point(viewer, dt=1)
-            zoom_using_viewer(viewer, zoom=10)
+            # zoom_using_viewer(viewer, zoom=10)
 
         @viewer.bind_key(',', overwrite=True)
         def zoom_previous(viewer):
             change_viewer_time_point(viewer, dt=-1)
-            zoom_using_viewer(viewer, zoom=10)
+            # zoom_using_viewer(viewer, zoom=10)
 
         # @viewer.bind_key('.', overwrite=True)
         # def zoom_next(dummy):
