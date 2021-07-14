@@ -20,9 +20,10 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
 
     #     def setupUi(self, MainWindow, df, output_dir, viewer: napari.Viewer):
-    def setupUi(self, df, output_dir, viewer: napari.Viewer):
+    def setupUi(self, df: pd.DataFrame, output_dir: str, viewer: napari.Viewer, corrector_name: str):
 
         # Load dataframe and path to outputs
+        self.corrector_name = corrector_name
         self.viewer = viewer
         self.output_dir = output_dir
         self.df = df
@@ -113,7 +114,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         return self.build_tracks_from_name()
 
     def save_annotations(self):
-        out_fname = os.path.join(self.output_dir, f'corrected_tracks.h5')
+        out_fname = os.path.join(self.output_dir, f'corrected_tracks-{self.corrector_name}.h5')
         self.df.to_hdf(out_fname, 'df_with_missing')
 
         out_fname = str(Path(out_fname).with_suffix('.csv'))
@@ -188,7 +189,7 @@ def change_viewer_time_point(viewer: napari.Viewer, dt: int) -> None:
     viewer.dims.current_step = tzxy
 
 
-def create_manual_correction_gui(this_config, DEBUG=False):
+def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=False):
     """
     Creates a napari-based gui for correcting tracks
 
@@ -231,7 +232,7 @@ def create_manual_correction_gui(this_config, DEBUG=False):
     output_dir = os.path.join("2-training_data", "manual_tracking")
     ui = manual_annotation_widget()
     # TODO: not hardcoded experimenter
-    ui.setupUi(df['Charlie'], output_dir, viewer)
+    ui.setupUi(df['Charlie'], output_dir, viewer, corrector_name)
 
     # Actually dock
     viewer.window.add_dock_widget(ui)
@@ -245,10 +246,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')
     parser.add_argument('--project_path', default=None,
                         help='path to config file')
+    parser.add_argument('--corrector_name', default=None,
+                        help='name of the person doing the correction')
     parser.add_argument('--DEBUG', default=False,
                         help='')
     args = parser.parse_args()
     project_path = args.project_path
+    corrector_name = args.corrector_name
     DEBUG = args.DEBUG
 
     project_cfg = load_config(project_path)
@@ -267,4 +271,4 @@ if __name__ == "__main__":
                    'project_dir': project_dir}
 
     with safe_cd(project_dir):
-        create_manual_correction_gui(this_config, DEBUG=DEBUG)
+        create_manual_correction_gui(this_config, corrector_name, DEBUG=DEBUG)
