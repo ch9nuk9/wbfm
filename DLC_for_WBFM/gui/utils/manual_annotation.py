@@ -243,6 +243,8 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=Fa
         fname = this_config['project_cfg']['preprocessed_red']
         red_data = zarr.open(fname)
 
+    print("Finished loading data, starting napari...")
+
     # Build Napari and add widgets
     viewer = napari.view_image(red_data[which_frames[0]:which_frames[-1]+1, ...], name="Red data", ndisplay=2, opacity=0.5)
     viewer.add_labels(raw_segmentation[which_frames[0]:which_frames[-1]+1, ...], name="Raw segmentation", opacity=0.5)
@@ -256,6 +258,8 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=Fa
     # Actually dock
     viewer.window.add_dock_widget(ui)
     ui.show()
+
+    print("Finished GUI setup")
 
     napari.run()
 
@@ -273,6 +277,8 @@ if __name__ == "__main__":
     project_path = args.project_path
     corrector_name = args.corrector_name
     DEBUG = args.DEBUG
+
+    print("Starting manual annotation GUI, may take a while to load...")
 
     project_cfg = load_config(project_path)
     project_dir = Path(project_path).parent
