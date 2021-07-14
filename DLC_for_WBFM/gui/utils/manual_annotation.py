@@ -139,7 +139,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.df = self.df.drop(columns=self.current_name, level=0)
         self.df = pd.concat([self.df, new_df], axis=1)
         # self.df = self.df.join(new_df)
-        print(self.df)
+        # print(self.df)
 
     def build_df_of_current_points(self) -> pd.DataFrame:
         name = self.current_name
@@ -158,8 +158,8 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         # df_new.sort_values((name, 't'), inplace=True, ignore_index=True)
 
-        print("Corrected dataframe: ")
-        print(df_new)
+        # print("Corrected dataframe: ")
+        # print(df_new)
 
         return df_new
 
