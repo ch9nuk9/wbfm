@@ -1,3 +1,4 @@
+import argparse
 import os
 from pathlib import Path
 
@@ -7,7 +8,7 @@ import pandas as pd
 import zarr
 from PyQt5 import QtWidgets
 
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_which_frames
 
 
@@ -200,3 +201,32 @@ def create_manual_correction_gui(this_config, DEBUG=False):
     # Actually dock
     viewer.window.add_dock_widget(ui)
     ui.show()
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Build GUI with a project')
+    parser.add_argument('--project_path', default=None,
+                        help='path to config file')
+    parser.add_argument('--DEBUG', default=False,
+                        help='')
+    args = parser.parse_args()
+    project_path = args.project_path
+    DEBUG = args.DEBUG
+
+    project_cfg = load_config(project_path)
+    project_dir = Path(project_path).parent
+
+    with safe_cd(project_dir):
+        trace_fname = Path(project_cfg['subfolder_configs']['traces'])
+        trace_cfg = dict(load_config(trace_fname))
+        track_fname = Path(project_cfg['subfolder_configs']['tracking'])
+        track_cfg = dict(load_config(track_fname))
+        seg_fname = Path(project_cfg['subfolder_configs']['segmentation'])
+        segment_cfg = dict(load_config(seg_fname))
+
+    this_config = {'track_cfg': track_cfg, 'segment_cfg': segment_cfg, 'project_cfg': project_cfg,
+                   'dataset_params': project_cfg['dataset_params'].copy()}
+
+    with safe_cd(project_dir):
+        create_manual_correction_gui(this_config, DEBUG=DEBUG)
