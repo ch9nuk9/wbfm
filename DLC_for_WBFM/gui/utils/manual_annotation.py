@@ -80,12 +80,12 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         @viewer.bind_key('.', overwrite=True)
         def zoom_next(viewer):
-            change_viewer_time_point(viewer, dt=1)
+            change_viewer_time_point(viewer, dt=1, a_max=len(self.df))
             zoom_using_viewer(viewer, zoom=None)
 
         @viewer.bind_key(',', overwrite=True)
         def zoom_previous(viewer):
-            change_viewer_time_point(viewer, dt=-1)
+            change_viewer_time_point(viewer, dt=-1, a_max=len(self.df))
             zoom_using_viewer(viewer, zoom=None)
 
         # @viewer.bind_key('.', overwrite=True)
@@ -202,9 +202,9 @@ def zoom_using_viewer(viewer: napari.Viewer, zoom=None) -> None:
         viewer.dims.current_step = (t, tzxy[1], 0, 0)
 
 
-def change_viewer_time_point(viewer: napari.Viewer, dt: int) -> None:
+def change_viewer_time_point(viewer: napari.Viewer, dt: int, a_max: int = None) -> None:
     # Increment time
-    t = viewer.dims.current_step[0] + dt
+    t = np.clip(viewer.dims.current_step[0] + dt, a_min=0, a_max=a_max)
     tzxy = (t,) + viewer.dims.current_step[1:]
     viewer.dims.current_step = tzxy
 
@@ -234,7 +234,6 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=Fa
             colored_segmentation = zarr.open(fname)
         else:
             colored_segmentation = None
-
 
         fname = os.path.join('2-training_data', 'training_data_tracks.h5')
         # TODO: not hardcoded experimenter
