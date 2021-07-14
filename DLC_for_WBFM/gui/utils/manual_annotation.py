@@ -7,6 +7,7 @@ import pandas as pd
 import zarr
 from PyQt5 import QtWidgets
 
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_which_frames
 
 
@@ -166,27 +167,30 @@ def create_manual_correction_gui(this_config, DEBUG=False):
 
     For now, only works with training data
     """
+    project_dir = this_config['project_dir']
 
-    fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
-    df = pd.read_pickle(fname)
+    with safe_cd(project_dir):
 
-    # Get the frames chosen as training data, or recalculate
-    which_frames = list(get_or_recalculate_which_frames(DEBUG, df, this_config))
+        fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
+        df = pd.read_pickle(fname)
 
-    # Import segmentation
-    fname = this_config['segment_cfg']['output']['masks']
-    raw_segmentation = zarr.open(fname)
+        # Get the frames chosen as training data, or recalculate
+        which_frames = list(get_or_recalculate_which_frames(DEBUG, df, this_config))
 
-    fname = os.path.join('2-training_data', 'training_data_tracks.h5')
-    df = pd.read_hdf(fname)
+        # Import segmentation
+        fname = this_config['segment_cfg']['output']['masks']
+        raw_segmentation = zarr.open(fname)
 
-    # Import raw data
-    fname = this_config['project_config']['preprocessed_red']
-    red_data = zarr.open(fname)
+        fname = os.path.join('2-training_data', 'training_data_tracks.h5')
+        df = pd.read_hdf(fname)
+
+        # Import raw data
+        fname = this_config['project_config']['preprocessed_red']
+        red_data = zarr.open(fname)
 
     # Build Napari and add widgets
-    viewer = napari.view_image(red_data[which_frames[0]:which_frames[-1], ...], name="Red data", ndisplay=2, opacity=0.5)
-    viewer.add_labels(raw_segmentation[which_frames[0]:which_frames[-1], ...], name="Raw segmentation")
+    viewer = napari.view_image(red_data[which_frames[0]:which_frames[-1]+1, ...], name="Red data", ndisplay=2, opacity=0.5)
+    viewer.add_labels(raw_segmentation[which_frames[0]:which_frames[-1]+1, ...], name="Raw segmentation")
 
     output_dir = os.path.join("2-training_data", "manual_tracking")
     ui = manual_annotation_widget()
