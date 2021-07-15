@@ -33,6 +33,8 @@ final_3d_tracks:
   max_dist_to_segmentation: 20.0 # CHANGE ME
   use_filtered: False # See postprocessing/3b+filter_dlc_predictions
 
+use_pretrained_dlc: true
+
 pose_config_updates:
   rotation: 180
   multi_step:

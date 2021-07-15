@@ -293,6 +293,7 @@ def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
         "train/pose_cfg.yaml",
     )
 
+    # Copy settings from my global config file
     updates_from_project = project_config['pose_config_updates']
 
     pose_config = auxiliaryfunctions.read_plainconfig(posefile)
@@ -320,8 +321,26 @@ def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
                                      [5e-5, 3e4],
                                      [1e-5, 5e4]]
         # pose_config['multi_step'] = [[0.005, 7500], [5e-4, 2e4], [1e-4, 5e4]]
-    pose_config['pos_dist_thresh'] = updates_from_project.get('pos_dist_thresh', 13)  # We have very small objects
+    pose_config['pos_dist_thresh'] = updates_from_project.get('pos_dist_thresh', 9)  # We have very small objects
     # pose_config['pairwise_predict'] = False  # Broken?
+
+    # Reuse initial weights, and decrease the training time
+    if project_config.get('use_pretrained_dlc', False):
+        num_neurons = len(cfg['bodyparts'])
+        pretrained_dir = os.path.join('Y:', 'shared_projects', 'wbfm', 'dlc_pretrained')
+        network_path = os.path.join(pretrained_dir, f"{num_neurons}", "snapshot-100000")
+
+        if Path(network_path).exists():
+            print(f"Using pretrained network at {network_path}")
+            pose_config['init_weights'] = network_path
+
+            steps = pose_config['multi_step']
+            steps = steps[-1]
+            steps[1] = 1e4  # Shorten
+            pose_config['multi_step'] = [steps]
+
+        else:
+            print(f"No pretrained network exists for {num_neurons} neurons")
 
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
 
