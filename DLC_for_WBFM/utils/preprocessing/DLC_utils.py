@@ -330,7 +330,7 @@ def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
         pretrained_dir = os.path.join('Y:', 'shared_projects', 'wbfm', 'dlc_pretrained')
         network_path = os.path.join(pretrained_dir, f"{num_neurons}", "snapshot-100000")
 
-        if Path(network_path).with_suffix(".meta").exists():
+        if Path(network_path + ".meta").exists():
             print(f"Using pretrained network at {network_path}")
             pose_config['init_weights'] = network_path
 
@@ -340,7 +340,7 @@ def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
             pose_config['multi_step'] = [steps]
 
         else:
-            print(f"No pretrained network exists for {num_neurons} neurons")
+            print(f"No pretrained network exists for {num_neurons} neurons ({network_path})")
     else:
         print(f"Training project {dlc_config_fname} from scratch")
 
