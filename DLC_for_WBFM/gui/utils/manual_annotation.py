@@ -209,7 +209,7 @@ def change_viewer_time_point(viewer: napari.Viewer, dt: int, a_max: int = None) 
     viewer.dims.current_step = tzxy
 
 
-def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=False):
+def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_annotation_name=None, DEBUG=False):
     """
     Creates a napari-based gui for correcting tracks
 
@@ -239,9 +239,14 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', DEBUG=Fa
         else:
             colored_segmentation = None
 
-        fname = os.path.join('2-training_data', 'training_data_tracks.h5')
-        # TODO: not hardcoded experimenter
-        df = pd.read_hdf(fname)['Charlie'].copy()
+        if initial_annotation_name is None:
+            # Use the output of my tracker
+            fname = os.path.join('2-training_data', 'training_data_tracks.h5')
+            # TODO: not hardcoded experimenter
+            df = pd.read_hdf(fname)['Charlie'].copy()
+        else:
+            # Use partially manually annotated tracking
+            df = pd.read_hdf(fname)
 
         # Import raw data
         fname = this_config['project_cfg']['preprocessed_red']
