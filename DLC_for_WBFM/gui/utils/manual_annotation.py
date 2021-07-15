@@ -280,11 +280,14 @@ if __name__ == "__main__":
                         help='path to config file')
     parser.add_argument('--corrector_name', default=None,
                         help='name of the person doing the correction')
+    parser.add_argument('--annotation', default=None,
+                        help='path to a previous or partial annotation to use as the starting point')
     parser.add_argument('--DEBUG', default=False,
                         help='')
     args = parser.parse_args()
     project_path = args.project_path
     corrector_name = args.corrector_name
+    initial_annotation_name = args.annotation
     DEBUG = args.DEBUG
 
     print("Starting manual annotation GUI, may take a while to load...")
@@ -305,4 +308,4 @@ if __name__ == "__main__":
                    'project_dir': project_dir}
 
     with safe_cd(project_dir):
-        create_manual_correction_gui(this_config, corrector_name, DEBUG=DEBUG)
+        create_manual_correction_gui(this_config, corrector_name, initial_annotation_name, DEBUG=DEBUG)
