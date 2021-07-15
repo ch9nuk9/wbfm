@@ -195,8 +195,13 @@ def _preprocess_all_frames_unpack_config(config, verbose, vid_fname):
 
 
 def _get_video_options(config, vid_fname):
-    with tifffile.TiffFile(vid_fname) as tif:
-        sz = tif.pages[0].shape
+    if vid_fname.endswith('.tif') or vid_fname.endswith('.btf'):
+        with tifffile.TiffFile(vid_fname) as tif:
+            sz = tif.pages[0].shape
+    elif vid_fname.endswith('.zarr'):
+        sz = zarr.open(vid_fname).shape[2:]
+    else:
+        raise FileNotFoundError("Must pass .zarr or .tif or .btf file")
     vid_opt = {'fps': config['dataset_params']['fps'],
                'frame_height': sz[0],
                'frame_width': sz[1],
