@@ -246,7 +246,7 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_
             df = pd.read_hdf(fname)['Charlie'].copy()
         else:
             # Use partially manually annotated tracking
-            df = pd.read_hdf(fname)
+            df = pd.read_hdf(initial_annotation_name)
 
         # Import raw data
         fname = this_config['project_cfg']['preprocessed_red']
