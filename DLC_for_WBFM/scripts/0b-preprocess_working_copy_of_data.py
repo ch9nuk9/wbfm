@@ -59,11 +59,20 @@ def main(_config, _run):
         red_name = Path(opt['out_fname'])
         fname = red_name.parent / (red_name.stem + "_preprocessed.pickle")
         preprocessing_settings.path_to_previous_warp_matrices = fname
-        preprocessing_settings.do_mirroring = False
-        assert preprocessing_settings.to_save_warp_matrices
-        write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
+
+        # print(fname)
+        # print(opt['out_fname'])
+
+        if not (Path(opt['out_fname']).exists() and fname.exists()):
+            print("Preprocessing red...")
+            preprocessing_settings.do_mirroring = False
+            assert preprocessing_settings.to_save_warp_matrices
+            write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
+        else:
+            print("Preprocessed red already exists; skipping to green")
 
         # Now the green channel will read the artifact as saved above
+        print("Preprocessing green...")
         opt['out_fname'] = _config['out_fname_green']
         opt['save_fname_in_red_not_green'] = False
         preprocessing_settings.to_use_previous_warp_matrices = True
@@ -75,3 +84,5 @@ def main(_config, _run):
         # Save the warp matrices to disk if needed further
         preprocessing_settings.save_all_warp_matrices()
         # preprocessing_settings.write_to_yaml(preprocessing_fname)
+
+        print("Finished.")
