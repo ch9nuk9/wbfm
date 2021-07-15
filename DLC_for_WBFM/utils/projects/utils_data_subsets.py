@@ -19,37 +19,9 @@ def write_data_subset_from_config(cfg: dict,
                                   DEBUG: bool = False) -> None:
     """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
 
-    verbose = cfg['other']['verbose']
-    project_dir = cfg['project_dir']
-    # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
-    if use_preprocessed_data:
-        preprocessing_settings = None
-        if verbose >= 1:
-            print("Reusing already preprocessed data")
-    elif preprocessing_settings is None:
-        preprocessing_fname = cfg['preprocessing_config']
-        preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_fname)
-
-    if out_fname is None:
-        if tiff_not_zarr:
-            out_fname = os.path.join(project_dir, "data_subset.tiff")
-        else:
-            out_fname = os.path.join(project_dir, "data_subset.zarr")
-    else:
-        out_fname = os.path.join(project_dir, out_fname)
-    if vid_fname is None:
-        if save_fname_in_red_not_green:
-            if not use_preprocessed_data:
-                vid_fname = cfg['red_bigtiff_fname']
-            else:
-                vid_fname = cfg['preprocessed_red']
-        else:
-            if not use_preprocessed_data:
-                vid_fname = cfg['green_bigtiff_fname']
-            else:
-                vid_fname = cfg['preprocessed_green']
-        vid_fname = resolve_mounted_path_in_current_os(vid_fname)
-    start_volume = cfg['dataset_params']['start_volume']
+    out_fname, preprocessing_settings, project_dir, start_volume, verbose, vid_fname = _unpack_config_for_data_subset(
+        cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data,
+        vid_fname)
 
     with safe_cd(project_dir):
         preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg, verbose, vid_fname,
@@ -79,6 +51,41 @@ def write_data_subset_from_config(cfg: dict,
         else:
             edits = {'preprocessed_green': out_fname}
         edit_config(cfg['project_path'], edits)
+
+
+def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr,
+                                   use_preprocessed_data, vid_fname):
+    verbose = cfg['other']['verbose']
+    project_dir = cfg['project_dir']
+    # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
+    if use_preprocessed_data:
+        preprocessing_settings = None
+        if verbose >= 1:
+            print("Reusing already preprocessed data")
+    elif preprocessing_settings is None:
+        preprocessing_fname = cfg['preprocessing_config']
+        preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_fname)
+    if out_fname is None:
+        if tiff_not_zarr:
+            out_fname = os.path.join(project_dir, "data_subset.tiff")
+        else:
+            out_fname = os.path.join(project_dir, "data_subset.zarr")
+    else:
+        out_fname = os.path.join(project_dir, out_fname)
+    if vid_fname is None:
+        if save_fname_in_red_not_green:
+            if not use_preprocessed_data:
+                vid_fname = cfg['red_bigtiff_fname']
+            else:
+                vid_fname = cfg['preprocessed_red']
+        else:
+            if not use_preprocessed_data:
+                vid_fname = cfg['green_bigtiff_fname']
+            else:
+                vid_fname = cfg['preprocessed_green']
+        vid_fname = resolve_mounted_path_in_current_os(vid_fname)
+    start_volume = cfg['dataset_params']['start_volume']
+    return out_fname, preprocessing_settings, project_dir, start_volume, verbose, vid_fname
 
 
 def segment_local_data_subset(project_config, out_fname=None):
