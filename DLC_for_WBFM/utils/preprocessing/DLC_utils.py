@@ -327,7 +327,7 @@ def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
     # Reuse initial weights, and decrease the training time
     if project_config.get('use_pretrained_dlc', False):
         num_neurons = len(cfg['bodyparts'])
-        pretrained_dir = os.path.join('Y:', 'shared_projects', 'wbfm', 'dlc_pretrained')
+        pretrained_dir = os.path.join('Y:/', 'shared_projects', 'wbfm', 'dlc_pretrained')
         network_path = os.path.join(pretrained_dir, f"{num_neurons}", "snapshot-100000")
 
         if Path(network_path + ".meta").exists():
