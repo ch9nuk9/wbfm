@@ -2,9 +2,9 @@ import deeplabcut
 import numpy as np
 from deeplabcut.utils import auxiliaryfunctions
 from DLC_for_WBFM.config.class_configuration import load_config, DLCForWBFMTracking, save_config
-from DLC_for_WBFM.utils.visualization.visualize_using_dlc import build_dlc_annotation_from_tracklets, \
-    save_dlc_annotations, build_dlc_annotation_from_3dDLC
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC
+from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
+    build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC
 from DLC_for_WBFM.utils.projects.utils_project import load_config
 import pandas as pd
 from pathlib import Path
@@ -279,6 +279,7 @@ def training_data_from_tracklet_annotations(vid_fname,
 
 def training_data_from_3dDLC_annotations(vid_fname,
                                          df_fname,
+                                         which_frames,
                                          which_z,
                                          dlc_config_fname,
                                          max_z_dist_for_traces=2,
@@ -350,7 +351,7 @@ def training_data_from_3dDLC_annotations(vid_fname,
         return None, None
 
     # Get which frames directly from dataframe
-    which_frames = list(dlc3d_df['bodyparts']['coords'])
+    which_frames = list(dlc3d_df.index)
 
     # Save the individual png files
     png_opt = {'dlc_config': dlc_config_fname,
