@@ -70,11 +70,14 @@ def create_dlc_training_from_tracklets(vid_fname: str,
 
     dlc_opt, net_opt, png_opt = _define_project_options(config, df, scorer, task_name)
     # Actually make projects
-    all_dlc_configs = []
+    # all_dlc_configs = []
     for i, center in enumerate(all_center_slices):
-        this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
-                                     preprocessed_dat, vid_opt, video_exists, config)
-        all_dlc_configs.append(this_dlc_config)
+        try:
+            this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
+                                         preprocessed_dat, vid_opt, video_exists, config)
+            # all_dlc_configs.append(this_dlc_config)
+        except FileExistsError:
+            print("Found existing folder, skipping")
 
     # def parallel_func(i_center):
     #     i, center = i_center
@@ -90,6 +93,16 @@ def create_dlc_training_from_tracklets(vid_fname: str,
     # [os.remove(f) for f in all_avi_fnames]
 
     # Save list of dlc config names
+    all_dlc_configs = []
+    base_dir = Path(os.path.join(config['project_dir'], '3-tracking'))
+    for fname in tqdm(base_dir.iterdir()):
+        if fname.is_dir():
+            # Check for DLC project
+            dlc_name = fname.joinpath('config.yaml')
+            if dlc_name.exists():
+                all_dlc_configs.append(str(dlc_name))
+    print(f"Found config files: {all_dlc_configs}")
+
     config['dlc_projects']['all_configs'] = all_dlc_configs
     edit_config(config['self_path'], config)
 

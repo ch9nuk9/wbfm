@@ -71,7 +71,7 @@ def create_dlc_project(task_name,
     if dlc_config_fname is None:
         print("Did not create dlc project... maybe it already exists?")
         print("If so, try deleting the project")
-        raise ValueError
+        raise FileExistsError
 
     return dlc_config_fname
 

@@ -439,9 +439,9 @@ def build_dlc_annotation_from_3dDLC(subset_df: pd.DataFrame,
            'scorer': scorer,
            'verbose': verbose-1}
 
-    neuron_names = list(subset_df.columns.levels[0])
+    neuron_names = list(subset_df.columns.levels[0])  # This returns columns that no longer exist
+    neuron_names = [n for n in neuron_names if n in subset_df]
 
-    # for i, row in tqdm(subset_df.iterrows(), total=subset_df.shape[0]):
     for name in tqdm(neuron_names):
         bodypart = name  # Keep original neuron name
         frame = build_dlc_annotation_one_dlc3d_subset(subset_df[name], bodypart, **opt)
@@ -451,8 +451,8 @@ def build_dlc_annotation_from_3dDLC(subset_df: pd.DataFrame,
     if verbose >= 1 and new_dlc_df is not None:
         print(f"Found {len(new_dlc_df.columns)/len(coord_names)} tracks of length >{min_length}")
 
-    print("New dataframe written:")
-    print(new_dlc_df)
+    # print("New dataframe written:")
+    # print(new_dlc_df)
 
     return new_dlc_df
 
