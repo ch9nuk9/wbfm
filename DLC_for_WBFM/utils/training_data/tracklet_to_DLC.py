@@ -93,7 +93,7 @@ def save_training_data_as_dlc_format(this_config, DEBUG=False):
     subset_opt = {'which_z': None,
                   'max_z_dist': None,
                   'verbose': 1}
-    subset_df = build_subset_df(df, which_frames, **subset_opt)
+    subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
     training_df = convert_training_dataframe_to_dlc_format(subset_df, scorer='Charlie')
 
     out_fname = os.path.join("2-training_data", "training_data_tracks.h5")
@@ -103,11 +103,11 @@ def save_training_data_as_dlc_format(this_config, DEBUG=False):
     training_df.to_csv(out_fname)
 
 
-def build_subset_df(clust_df,
-                    which_frames,
-                    which_z=None,
-                    max_z_dist=1,
-                    verbose=0):
+def build_subset_df_from_tracklets(clust_df,
+                                   which_frames,
+                                   which_z=None,
+                                   max_z_dist=1,
+                                   verbose=0):
     """
     Build a dataframe that is a subset of a larger dataframe
 
@@ -224,6 +224,36 @@ def build_subset_df(clust_df,
     out_df['slice_ind'] = out_df.apply(f3, axis=1)
 
     return out_df
+
+
+def build_subset_df_from_3dDLC(dlc3d_dlc: pd.DataFrame,
+                               which_z=None,
+                               max_z_dist=1,
+                               verbose=0) -> pd.DataFrame:
+    """
+    Build a 2d DLC dataframe starting from a 3d dataframe
+
+    Parameters
+    ----------
+    dlc3d_dlc
+
+    Returns
+    -------
+
+    """
+
+    neuron_names = list(dlc3d_dlc.columns.levels[0])
+    names_to_keep = []
+
+    for name in neuron_names:
+        if which_z is not None:
+            close_in_z = abs(which_z - np.mean(dlc3d_dlc[name]['z'])) < max_z_dist
+            if close_in_z:
+                names_to_keep.append(name)
+        else:
+            names_to_keep.append(name)
+
+    return dlc3d_dlc[names_to_keep].copy()
 
 
 def get_or_recalculate_which_frames(DEBUG, df, this_config):

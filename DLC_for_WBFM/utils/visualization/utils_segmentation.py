@@ -10,7 +10,7 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 import pandas as pd
 import numpy as np
 import zarr
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df, \
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames
 
 
@@ -204,7 +204,7 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
         subset_opt = {'which_z': None,
                       'max_z_dist': None,
                       'verbose': 1}
-        subset_df = build_subset_df(df, which_frames, **subset_opt)
+        subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
 
         fname = this_config['segment_cfg']['output']['metadata']
         with open(fname, 'rb') as f:

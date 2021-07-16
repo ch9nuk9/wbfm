@@ -11,7 +11,7 @@ from scipy.spatial.distance import pdist
 from tqdm import tqdm
 
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
-    update_pose_config, training_data_from_annotations, \
+    update_pose_config, training_data_from_tracklet_annotations, \
     create_dlc_project, get_annotations_matching_video_in_folder
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _get_video_options
@@ -56,9 +56,14 @@ def create_dlc_training_from_tracklets(vid_fname: str,
                                        DEBUG: bool = False) -> None:
 
     df_fname = config['training_data_3d']['annotation_fname']
-    df = pd.read_pickle(df_fname)
+    if df_fname.endswith(".pickle"):
+        raise DeprecationWarning("Creating training data from raw pickle not supported; convert to 3d DLC dataframe")
+        # df = pd.read_pickle(df_fname)
+    else:
+        assert df_fname.endswith(".h5")
+        df = pd.read_hdf(df_fname)
 
-    all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, config, df)
+    all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, config)
     edit_config(config['self_path'], config)
 
     all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, config, vid_fname)
@@ -151,7 +156,7 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
     png_opt['which_z'] = center
     png_opt['dlc_config_fname'] = this_dlc_config
     png_opt['vid_fname'] = this_avi_fname
-    ann_fname = training_data_from_annotations(**png_opt)[1]
+    ann_fname = training_data_from_tracklet_annotations(**png_opt)[1]
     if ann_fname is not None:
         # Synchronize the dlc_config with the annotations
         csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2, to_add_skeleton=True)
@@ -183,15 +188,22 @@ def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video
     return this_avi_fname
 
 
-def _get_frames_for_dlc_training(DEBUG: bool, config: dict, df: pd.DataFrame):
+def _get_frames_for_dlc_training(DEBUG: bool, config: dict):
     # Choose a subset of frames with enough tracklets
-    num_frames_needed = config['training_data_3d']['num_training_frames']
-    tracklet_opt = {'num_frames_needed': num_frames_needed,
-                    'num_frames': config['dataset_params']['num_frames'],
-                    'verbose': 1}
-    if DEBUG:
-        tracklet_opt['num_frames_needed'] = 2
-    which_frames, _ = best_tracklet_covering(df, **tracklet_opt)
+    if 'which_frames' not in config['training_data_3d']:
+        raise DeprecationWarning("Calculating which frames at this point is deprecated; calculate before calling this")
+        # num_frames_needed = config['training_data_3d']['num_training_frames']
+        # tracklet_opt = {'num_frames_needed': num_frames_needed,
+        #                 'num_frames': config['dataset_params']['num_frames'],
+        #                 'verbose': 1}
+        # if DEBUG:
+        #     tracklet_opt['num_frames_needed'] = 2
+        # which_frames, _ = best_tracklet_covering(df, **tracklet_opt)
+    else:
+        which_frames = config['training_data_3d']['which_frames']
+        if which_frames is None:
+            raise DeprecationWarning(
+                "Calculating which frames at this point is deprecated; calculate before calling this")
     # Also save these chosen frames
     updates = {'which_frames': which_frames}
     config['training_data_3d'].update(updates)
