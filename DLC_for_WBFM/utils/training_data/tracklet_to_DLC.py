@@ -36,7 +36,7 @@ def best_tracklet_covering(df, num_frames_needed, num_frames,
     return make_window(best_covering), y
 
 
-def convert_training_dataframe_to_dlc_format(df, scorer='Charlie'):
+def convert_training_dataframe_to_dlc_format(df, scorer=None):
     """
     Converts a dataframe of my tracklets to DLC format
 
@@ -59,9 +59,12 @@ def convert_training_dataframe_to_dlc_format(df, scorer='Charlie'):
             # Then I didn't save confidences, so just set to 1
             confidence = np.ones((len(zxy), 1))
         coords = np.hstack([zxy, confidence])
-
-        index = pd.MultiIndex.from_product([[scorer], [bodypart], ['z', 'x', 'y', 'likelihood']],
-                                           names=['scorer', 'bodyparts', 'coords'])
+        if scorer is not None:
+            index = pd.MultiIndex.from_product([[scorer], [bodypart], ['z', 'x', 'y', 'likelihood']],
+                                               names=['scorer', 'bodyparts', 'coords'])
+        else:
+            index = pd.MultiIndex.from_product([[bodypart], ['z', 'x', 'y', 'likelihood']],
+                                               names=['scorer', 'bodyparts', 'coords'])
         frame = pd.DataFrame(coords, columns=index, index=which_frames)
         new_df = pd.concat([new_df, frame], axis=1)
 
@@ -94,7 +97,7 @@ def save_training_data_as_dlc_format(this_config, DEBUG=False):
                   'max_z_dist': None,
                   'verbose': 1}
     subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
-    training_df = convert_training_dataframe_to_dlc_format(subset_df, scorer='Charlie')
+    training_df = convert_training_dataframe_to_dlc_format(subset_df, scorer=None)
 
     out_fname = os.path.join("2-training_data", "training_data_tracks.h5")
     training_df.to_hdf(out_fname, 'df_with_missing')
