@@ -189,7 +189,7 @@ def build_dlc_annotation_from_3dDLC(subset_df: pd.DataFrame,
     if verbose >= 1 and new_dlc_df is not None:
         print(f"Found {len(new_dlc_df.columns)/len(coord_names)} tracks of length >{min_length}")
 
-    print("New dataframe written:")\
+    print("New dataframe written:")
     print(new_dlc_df)
 
     return new_dlc_df
