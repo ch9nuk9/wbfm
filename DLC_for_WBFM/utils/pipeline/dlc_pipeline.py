@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
     update_pose_config, training_data_from_tracklet_annotations, \
-    create_dlc_project, get_annotations_matching_video_in_folder
+    create_dlc_project, get_annotations_matching_video_in_folder, training_data_from_3dDLC_annotations
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _get_video_options
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
@@ -156,7 +156,7 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
     png_opt['which_z'] = center
     png_opt['dlc_config_fname'] = this_dlc_config
     png_opt['vid_fname'] = this_avi_fname
-    ann_fname = training_data_from_tracklet_annotations(**png_opt)[1]
+    ann_fname = training_data_from_3dDLC_annotations(**png_opt)[1]
     if ann_fname is not None:
         # Synchronize the dlc_config with the annotations
         csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2, to_add_skeleton=True)
