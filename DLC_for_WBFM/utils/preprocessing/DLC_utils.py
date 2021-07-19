@@ -387,26 +387,14 @@ def training_data_from_3dDLC_annotations(vid_fname,
 
 
 #
-def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
+def update_pose_config(dlc_config_fname, tracking_config, DEBUG=False):
     # Copied from: https://github.com/DeepLabCut/DeepLabCut/blob/master/examples/testscript.py
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
 
-    posefile = os.path.join(
-        cfg["project_path"],
-        "dlc-models/iteration-"
-        + str(cfg["iteration"])
-        + "/"
-        + cfg["Task"]
-        + cfg["date"]
-        + "-trainset"
-        + str(int(cfg["TrainingFraction"][0] * 100))
-        + "shuffle"
-        + str(1),
-        "train/pose_cfg.yaml",
-    )
+    posefile = posefile_from_dlc_cfg(cfg)
 
     # Copy settings from my global config file
-    updates_from_project = project_config['pose_config_updates']
+    updates_from_project = tracking_config['pose_config_updates']
 
     pose_config = auxiliaryfunctions.read_plainconfig(posefile)
     # These are mostly from the official recommendations:
@@ -437,7 +425,7 @@ def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
     # pose_config['pairwise_predict'] = False  # Broken?
 
     # Reuse initial weights, and decrease the training time
-    if project_config.get('use_pretrained_dlc', False):
+    if tracking_config.get('use_pretrained_dlc', False):
         num_neurons = len(cfg['bodyparts'])
         pretrained_dir = os.path.join('Y:/', 'shared_projects', 'wbfm', 'dlc_pretrained')
         network_path = os.path.join(pretrained_dir, f"{num_neurons}", "snapshot-100000")
@@ -446,9 +434,12 @@ def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
             print(f"Using pretrained network at {network_path}")
             pose_config['init_weights'] = network_path
 
-            steps = pose_config['multi_step']
-            steps = steps[-1]
-            steps[1] = 1e4  # Shorten
+            # steps = pose_config['multi_step']
+            # steps = steps[-1]
+            # steps[1] = 5e4  # Shorten
+            steps = [[0.00005, 10000],
+                     [0.00001, 30000]]
+            print(f"Shortening training to: {steps}")
             pose_config['multi_step'] = [steps]
 
         else:
@@ -457,6 +448,58 @@ def update_pose_config(dlc_config_fname, project_config, DEBUG=False):
         print(f"Training project {dlc_config_fname} from scratch")
 
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
+
+
+def update_all_pose_configs(tracking_config, updates=None):
+    """
+
+    Updates all DLC pose config files in a project
+
+    Parameters
+    ----------
+    tracking_config
+    updates - custom update dictionary; if none, then use the default update from tracking_config.yaml
+
+    Returns
+    -------
+    None
+
+    See also: update_pose_config
+    """
+
+    all_dlc_configs = tracking_config['dlc_projects']['all_configs']
+
+    for dlc_config_fname in all_dlc_configs:
+
+        if updates is None:
+            update_pose_config(dlc_config_fname, tracking_config)
+        else:
+            cfg = auxiliaryfunctions.read_config(dlc_config_fname)
+            posefile = posefile_from_dlc_cfg(cfg)
+            pose_config = auxiliaryfunctions.read_plainconfig(posefile)
+            pose_config.update(updates)
+
+            auxiliaryfunctions.write_plainconfig(posefile, pose_config)
+
+    return None
+
+
+def posefile_from_dlc_cfg(cfg):
+    posefile = os.path.join(
+        cfg["project_path"],
+        "dlc-models/iteration-"
+        + str(cfg["iteration"])
+        + "/"
+        + cfg["Task"]
+        + cfg["date"]
+        + "-trainset"
+        + str(int(cfg["TrainingFraction"][0] * 100))
+        + "shuffle"
+        + str(1),
+        "train/pose_cfg.yaml",
+    )
+
+    return posefile
 
 
 ##
