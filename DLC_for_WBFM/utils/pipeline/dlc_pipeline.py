@@ -204,6 +204,7 @@ def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video
 def _get_frames_for_dlc_training(DEBUG: bool, config: dict):
     # Choose a subset of frames with enough tracklets
     if 'which_frames' not in config['training_data_3d']:
+        # which_frames = get_or_recalculate_which_frames(DEBUG, df, this_config)
         raise DeprecationWarning("Calculating which frames at this point is deprecated; calculate before calling this")
         # num_frames_needed = config['training_data_3d']['num_training_frames']
         # tracklet_opt = {'num_frames_needed': num_frames_needed,
