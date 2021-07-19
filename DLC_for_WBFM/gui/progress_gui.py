@@ -273,11 +273,12 @@ class Ui_MainWindow(object):
 
     def napari_for_masks_tracking(self):
         """Open napari window for segmentation colored by tracking"""
-        self.viewer = napari_of_full_data(self.project_dir)
+        self.viewer = napari_of_full_data(self.project_dir)[0]
+        self.viewer.add_image(self.preprocessed_red)
 
     def napari_for_masks_training(self):
         """Open napari window for segmentation for just the training data"""
-        self.viewer = napari_of_training_data(self.project_dir)
+        self.viewer = napari_of_training_data(self.project_dir)[0]
 
     def open_traces_gui(self):
 

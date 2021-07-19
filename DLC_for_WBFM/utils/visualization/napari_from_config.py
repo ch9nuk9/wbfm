@@ -31,10 +31,10 @@ def napari_of_full_data(project_dir):
             z_dat = zarr.open_array(training_dat_fname)
         else:
             z_dat = None
-        z_seg = zarr.open_array(training_seg_fname)
 
-    if not os.path.exists(training_seg_fname):
-        raise FileNotFoundError("Reindexed masks must exist; run scripts/visualization/4+reindex_...")
+        if not os.path.exists(training_seg_fname):
+            raise FileNotFoundError(f"{training_seg_fname} must exist; run scripts/visualization/4+reindex_...")
+        z_seg = zarr.open_array(training_seg_fname)
 
     viewer = napari.view_labels(z_seg, ndisplay=3)
     if dat_exists:
