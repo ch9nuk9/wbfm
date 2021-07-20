@@ -296,7 +296,7 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_s
         # Old file MUST exist in this case
         mode = 'r+'
     i_volume = frame_list[i]
-    volume = video_dat[i, ...]
+    volume = video_dat[i_volume, ...]
     # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path)
     final_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
@@ -323,7 +323,7 @@ def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int, num_s
         # Old file MUST exist in this case
         mode = 'r+'
     i_volume = frame_list[i]
-    volume = video_dat[i, ...]
+    volume = video_dat[i_volume, ...]
     final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
     masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
