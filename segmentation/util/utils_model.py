@@ -131,7 +131,7 @@ def segment_with_stardist_3d(vol, model=None, verbose=0) -> np.array:
     """
 
     if verbose >= 1:
-        print(f'Start of 3D segmentation')
+        print('Start of 3D segmentation')
 
     # initialize variables
     axis_norm = (0, 1, 2)

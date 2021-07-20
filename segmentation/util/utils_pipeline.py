@@ -139,38 +139,6 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
-
-def segment_video_using_config_2d(_config: dict) -> None:
-    """
-    Full pipeline based on only a config file
-
-    See segment2d.py for parameter documentation
-    """
-
-    frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path = _unpack_config_file(
-        _config)
-
-    # Unique to 2d
-    opt_postprocessing = _config['postprocessing_params']
-
-    # get stardist model object
-    _segment_full_video_2d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
-                           opt_postprocessing, preprocessing_settings, stardist_model_name, verbose, video_path)
-
-    _calc_metadata_full_video_2d(frame_list, masks_zarr, metadata, num_slices, preprocessing_settings, video_path)
-
-
-# def _calc_metadata_full_video_2d(frame_list, masks_zarr, metadata, num_slices, preprocessing_settings, video_path):
-#     # Loop again in order to calculate metadata and possibly postprocess
-#     with tifffile.TiffFile(video_path) as video_stream:
-#         for i_rel, i_abs in tqdm(enumerate(frame_list), total=len(frame_list)):
-#             masks = masks_zarr[i_rel, :, :, :]
-#             # TODO: Use a disk-saved preprocessing artifact instead of recalculating
-#             volume = _get_and_prepare_volume(i_abs, num_slices, preprocessing_settings, video_path=video_stream)
-#
-#             metadata[i_abs] = get_metadata_dictionary(masks, volume)
-
-
 def _unpack_config_file(_config):
     # Initializing variables
     start_volume = _config['dataset_params']['start_volume']
@@ -189,48 +157,133 @@ def _unpack_config_file(_config):
     return frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path
 
 
-def _segment_full_video_2d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
-                           opt_postprocessing, preprocessing_settings, stardist_model_name, verbose, video_path):
+##
+## 2d pipeline (stitch to get 3d)
+##
+
+def segment_video_using_config_2d(_config: dict, continue_from_frame: int =None) -> None:
+    """
+    Full pipeline based on only a config file
+
+    See segment2d.py for parameter documentation
+    """
+    
+
+    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path = _unpack_config_file(
+        _config)
+
+
+    # Open the file
+    if not video_path.endswith('.zarr'):
+        raise ValueError("Non-zarr usage has been deprecated")
+    video_dat = zarr.open(video_path)
+
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
     # Not fully working for multithreaded scenario
     # Discussion about finalizing: https://stackoverflow.com/questions/40850089/is-keras-thread-safe/43393252#43393252
     # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
     sd_model.keras_model.make_predict_function()
     # Do first volume outside the parallelization loop to initialize keras and zarr
-    # Possibly unnecessary
-    masks_zarr = _do_first_volume2d(frame_list, mask_fname, metadata, num_frames, num_slices, opt_postprocessing,
-                                    preprocessing_settings, sd_model, verbose, video_path)
+    masks_zarr = _do_first_volume3d(frame_list, mask_fname, num_frames, num_slices,
+                                    sd_model, verbose, video_dat, continue_from_frame)
     # Main function
-    opt = {'masks_zarr': masks_zarr, 'metadata': metadata, 'num_slices': num_slices,
-           'opt_postprocessing': opt_postprocessing, 'preprocessing_settings': preprocessing_settings,
-           'sd_model': sd_model, 'verbose': verbose}
-    # Sequential version
-    # with tifffile.TiffFile(video_path) as video_stream:
-    #     for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list)-1):
-    #         segment_and_save(i_rel + 1, i_abs, **opt, video_path=video_stream)
+    opt_postprocessing = _config['postprocessing_params']  # Unique to 2d
+    segmentation_options = {'masks_zarr': masks_zarr, 'opt_postprocessing': opt_postprocessing,
+                            'sd_model': sd_model, 'verbose': verbose}
+
+    # Will always be at least continuing after the first frame
+    if continue_from_frame is None:
+        continue_from_frame = 1
+    else:
+        continue_from_frame += 1
+        print(f"Continuing from frame {continue_from_frame}")
+
+    _segment_full_video_2d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
+                           segmentation_options, continue_from_frame)
+
+
+    # Same 2d and 3d
+    calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fname)
+
+
+    # frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path = _unpack_config_file(
+    #     _config)
+    #
+    #
+    # # get stardist model object
+    # _segment_full_video_2d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
+    #                        opt_postprocessing, preprocessing_settings, stardist_model_name, verbose, video_path)
+    #
+    # _calc_metadata_full_video_2d(frame_list, masks_zarr, metadata, num_slices, preprocessing_settings, video_path)
+
+
+def _segment_full_video_2d(_config: dict, frame_list: list, mask_fname: str, num_frames: int, verbose: int,
+                           video_dat: zarr.Array,
+                           opt: dict, continue_from_frame: int) -> None:
+
     # Parallel version: threading
     keras_lock = threading.Lock()
     read_lock = threading.Lock()
     opt['keras_lock'] = keras_lock
     opt['read_lock'] = read_lock
-    with tqdm(total=num_frames - 1) as pbar:
-        with tifffile.TiffFile(video_path) as video_stream:
-            def parallel_func(i_both):
-                i_out, i_vol = i_both
-                segment_and_save2d(i_out + 1, i_vol, video_path=video_stream, **opt)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
-                futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
-                for future in concurrent.futures.as_completed(futures):
-                    future.result()
-                    pbar.update(1)
-    # saving metadata and settings
-    with open(metadata_fname, 'wb') as meta_save:
-        pickle.dump(metadata, meta_save)
+    with tqdm(total=num_frames - continue_from_frame) as pbar:
+        def parallel_func(i_both):
+            i_out, i_vol = i_both
+            segment_and_save2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, **opt)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+                pbar.update(1)
+
     if _config.get('self_path', None) is not None:
         edit_config(_config['self_path'], _config)
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
+
+
+    # sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
+    # # Not fully working for multithreaded scenario
+    # # Discussion about finalizing: https://stackoverflow.com/questions/40850089/is-keras-thread-safe/43393252#43393252
+    # # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
+    # sd_model.keras_model.make_predict_function()
+    # # Do first volume outside the parallelization loop to initialize keras and zarr
+    # # Possibly unnecessary
+    # masks_zarr = _do_first_volume2d(frame_list, mask_fname, metadata, num_frames, num_slices, opt_postprocessing,
+    #                                 preprocessing_settings, sd_model, verbose, video_path)
+    # # Main function
+    # opt = {'masks_zarr': masks_zarr, 'metadata': metadata, 'num_slices': num_slices,
+    #        'opt_postprocessing': opt_postprocessing, 'preprocessing_settings': preprocessing_settings,
+    #        'sd_model': sd_model, 'verbose': verbose}
+    # # Sequential version
+    # # with tifffile.TiffFile(video_path) as video_stream:
+    # #     for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list)-1):
+    # #         segment_and_save(i_rel + 1, i_abs, **opt, video_path=video_stream)
+    # # Parallel version: threading
+    # keras_lock = threading.Lock()
+    # read_lock = threading.Lock()
+    # opt['keras_lock'] = keras_lock
+    # opt['read_lock'] = read_lock
+    # with tqdm(total=num_frames - 1) as pbar:
+    #     with tifffile.TiffFile(video_path) as video_stream:
+    #         def parallel_func(i_both):
+    #             i_out, i_vol = i_both
+    #             segment_and_save2d(i_out + 1, i_vol, video_path=video_stream, **opt)
+    #
+    #         with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
+    #             futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[1:])}
+    #             for future in concurrent.futures.as_completed(futures):
+    #                 future.result()
+    #                 pbar.update(1)
+    # # saving metadata and settings
+    # with open(metadata_fname, 'wb') as meta_save:
+    #     pickle.dump(metadata, meta_save)
+    # if _config.get('self_path', None) is not None:
+    #     edit_config(_config['self_path'], _config)
+    # if verbose >= 1:
+    #     print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
 
 def _do_first_volume2d(frame_list, mask_fname, metadata, num_frames, num_slices, opt_postprocessing,
@@ -277,6 +330,7 @@ def _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mod
     """Creates a new zarr file of the correct file, or, if it already exists, check for a stopping point"""
     sz = (num_frames, num_slices, x_sz, y_sz)
     chunks = (1, num_slices, x_sz, y_sz)
+    print(f"Opening zarr at: {mask_fname}")
     masks_zarr = zarr.open(mask_fname, mode=mode,
                            shape=sz, chunks=chunks, dtype=np.uint16,
                            fill_value=0,
@@ -284,18 +338,32 @@ def _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mod
     return masks_zarr
 
 
-def segment_and_save2d(i, i_volume, masks_zarr, metadata, num_slices, opt_postprocessing, preprocessing_settings,
-                       sd_model, verbose, video_path, keras_lock, read_lock):
-    volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
-    with keras_lock:  # Keras is not thread-safe in the end
-        segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
-    # process masks: remove large areas, stitch, split long neurons, remove short neurons
+def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
+                       sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
+    volume = video_dat[i_volume, ...]
+    if keras_lock is None:
+        segmented_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+    else:
+        with keras_lock:  # Keras is not thread-safe in the end
+            segmented_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+
     final_masks = perform_post_processing_2d(segmented_masks,
                                              volume,
                                              **opt_postprocessing,
                                              verbose=verbose - 1)
-    save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
-    # masks_zarr[i, :, :, :] = final_masks
+    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
+    masks_zarr[i, :, :, :] = final_masks
+
+    # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
+    # with keras_lock:  # Keras is not thread-safe in the end
+    #     segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
+    # # process masks: remove large areas, stitch, split long neurons, remove short neurons
+    # final_masks = perform_post_processing_2d(segmented_masks,
+    #                                          volume,
+    #                                          **opt_postprocessing,
+    #                                          verbose=verbose - 1)
+    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
+    # # masks_zarr[i, :, :, :] = final_masks
 
 
 def segment_and_save3d(i, i_volume, masks_zarr,
