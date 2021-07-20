@@ -344,14 +344,28 @@ def _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mod
     return masks_zarr
 
 
+def segment_and_save3d(i, i_volume, masks_zarr,
+                       sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
+    volume = video_dat[i_volume, ...]
+    # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
+    if keras_lock is None:
+        final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+    else:
+        with keras_lock:  # Keras is not thread-safe in the end
+            final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+
+    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
+    masks_zarr[i, :, :, :] = final_masks
+
+
 def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
     volume = video_dat[i_volume, ...]
     if keras_lock is None:
-        segmented_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+        segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
     else:
         with keras_lock:  # Keras is not thread-safe in the end
-            segmented_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+            segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
 
     final_masks = perform_post_processing_2d(segmented_masks,
                                              volume,
@@ -370,20 +384,6 @@ def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
     #                                          verbose=verbose - 1)
     # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
     # # masks_zarr[i, :, :, :] = final_masks
-
-
-def segment_and_save3d(i, i_volume, masks_zarr,
-                       sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
-    volume = video_dat[i_volume, ...]
-    # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
-    if keras_lock is None:
-        final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
-    else:
-        with keras_lock:  # Keras is not thread-safe in the end
-            final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
-
-    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
-    masks_zarr[i, :, :, :] = final_masks
 
 
 def _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path, read_lock=None):
