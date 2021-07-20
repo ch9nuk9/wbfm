@@ -67,11 +67,11 @@ def segment_video_using_config_3d(_config: dict, continue_from_frame: int =None)
     _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
 
-    calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fname)
+    calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
 
 
-def calc_metadata_full_video_3d(frame_list: list, masks_zarr: zarr.Array, video_dat: zarr.Array,
-                                metadata_fname: str) -> None:
+def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat: zarr.Array,
+                             metadata_fname: str) -> None:
     """
     Calculates metadata once segmentation is finished
 
@@ -201,10 +201,8 @@ def segment_video_using_config_2d(_config: dict, continue_from_frame: int =None)
     _segment_full_video_2d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
 
-
     # Same 2d and 3d
-    calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fname)
-
+    calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
 
     # frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path = _unpack_config_file(
     #     _config)
@@ -577,6 +575,6 @@ def recalculate_metadata_from_config(_config, DEBUG=False):
     if DEBUG:
         frame_list = frame_list[:2]
 
-    calc_metadata_full_video_3d(frame_list, masks_zarr, video_dat, metadata_fname)
+    calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
 
 
