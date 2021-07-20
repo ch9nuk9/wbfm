@@ -184,10 +184,10 @@ def segment_video_using_config_2d(_config: dict, continue_from_frame: int =None)
     # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
     sd_model.keras_model.make_predict_function()
     # Do first volume outside the parallelization loop to initialize keras and zarr
-    masks_zarr = _do_first_volume3d(frame_list, mask_fname, num_frames, num_slices,
-                                    sd_model, verbose, video_dat, continue_from_frame)
-    # Main function
     opt_postprocessing = _config['postprocessing_params']  # Unique to 2d
+    masks_zarr = _do_first_volume2d(frame_list, mask_fname, num_frames, num_slices,
+                                    sd_model, verbose, video_dat, continue_from_frame, opt_postprocessing)
+    # Main function
     segmentation_options = {'masks_zarr': masks_zarr, 'opt_postprocessing': opt_postprocessing,
                             'sd_model': sd_model, 'verbose': verbose}
 
@@ -286,22 +286,30 @@ def _segment_full_video_2d(_config: dict, frame_list: list, mask_fname: str, num
     #     print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
 
-def _do_first_volume2d(frame_list, mask_fname, metadata, num_frames, num_slices, opt_postprocessing,
-                       preprocessing_settings, sd_model, verbose, video_path):
+def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_slices: int,
+                       sd_model: stardist.models.StarDist3D, verbose: int, video_dat: zarr.Array,
+                       continue_from_frame: int = None, opt_postprocessing: dict = None) -> zarr.Array:
     # Do first loop to initialize the zarr data
-    i = 0
+    if continue_from_frame is None:
+        i = 0
+        mode = 'w-'
+    else:
+        i = continue_from_frame
+        # Old file MUST exist in this case
+        mode = 'r+'
     i_volume = frame_list[i]
-    volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path)
+    volume = video_dat[i, ...]
+    # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path)
     final_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
-    masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz)
+    masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
     final_masks = perform_post_processing_2d(final_masks,
                                              volume,
                                              **opt_postprocessing,
                                              verbose=verbose - 1)
     # Add masks to zarr file; automatically saves
-    # masks_zarr[i, :, :, :] = final_masks
-    save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
+    masks_zarr[i, :, :, :] = final_masks
+    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
     return masks_zarr
 
 
