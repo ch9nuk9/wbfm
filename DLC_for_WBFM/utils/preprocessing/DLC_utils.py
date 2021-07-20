@@ -440,13 +440,14 @@ def update_pose_config(dlc_config_fname, tracking_config, DEBUG=False):
             steps = [[0.00005, 10000],
                      [0.00001, 30000]]
             print(f"Shortening training to: {steps}")
-            pose_config['multi_step'] = [steps]
+            pose_config['multi_step'] = steps
 
         else:
             print(f"No pretrained network exists for {num_neurons} neurons ({network_path})")
     else:
         print(f"Training project {dlc_config_fname} from scratch")
 
+    print(f"Updates: {pose_config}")
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
 
 
