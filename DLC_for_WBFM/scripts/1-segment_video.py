@@ -19,7 +19,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None, continue_from_frame=None)
+ex.add_config(project_path=None, continue_from_frame=None, DEBUG=False)
 
 
 @ex.config
@@ -45,6 +45,9 @@ def segment2d(_config, _run):
 
     this_config = _config['segment_cfg'].copy()
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
+
+    if _config['DEBUG']:
+        this_config['dataset_params']['num_frames'] = 3
 
     with safe_cd(_config['project_dir']):
         mode = this_config['segmentation_type']
