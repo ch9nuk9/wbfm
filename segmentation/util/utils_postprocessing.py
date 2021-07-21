@@ -4,6 +4,8 @@ Postprocessing functions for segmentation pipeline
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import scipy
+import skimage
 from scipy.optimize import curve_fit
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
@@ -140,6 +142,45 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
     sorted_stitched_array = rename_stitched_array(array_3d, clust_df)
 
     return sorted_stitched_array, (clust_df, all_matches)
+
+
+def stitch_via_watershed(seg_dat, red_dat, sigma=1, verbose=0):
+    """
+    New method for creating 3d objects via watershed
+
+    Parameters
+    ----------
+    seg_dat
+    red_dat
+    sigma
+
+    Returns
+    -------
+
+    """
+
+    # Filter the brightness
+    filtered_red = skimage.filters.gaussian(red_dat, sigma=sigma)
+
+    # Now we want to separate the two objects in image
+    # Generate the markers as local maxima of the distance to the background
+    if verbose >= 1:
+        print("Applying distance transform...")
+    distance = scipy.ndimage.distance_transform_edt(seg_dat.astype(bool))
+    distance_times_brightness = np.multiply(distance, filtered_red)
+    coords = skimage.feature.peak_local_max(distance_times_brightness, footprint=np.ones((5, 11, 11)))
+    # Can be used if the labels are basically correct and need to be refined, but not if they are just boolean
+    #     coords = peak_local_max(distance_times_brightness, footprint=np.ones((5, 11, 11)), labels=seg_dat, num_peaks_per_label=3)
+    mask = np.zeros(distance.shape, dtype=bool)
+    mask[tuple(coords.T)] = True
+    markers, _ = scipy.ndimage.label(mask)
+    if verbose >= 1:
+        print("Resegmenting using watershed...")
+    labels = skimage.segmentation.watershed(-distance, markers, mask=seg_dat)
+    if verbose >= 1:
+        print("Finished distance transform mask calculation")
+
+    return labels
 
 
 def create_matches_list(slice_1, slice_2, verbose=0):

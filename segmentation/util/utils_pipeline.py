@@ -409,6 +409,7 @@ def save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volu
 def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, to_remove_border=True,
                                upper_length_threshold=12, lower_length_threshold=3,
                                to_remove_dim_slices=False,
+                               stitch_via_watershed=False,
                                verbose=0):
     """
     Performs some post-processing steps including: Splitting long neurons, removing short neurons and
@@ -430,6 +431,8 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         masks shorter than this will be removed
     to_remove_dim_slices : bool
         Before stitching, removes stardist segments that are too dim
+    stitch_via_watershed : bool
+        Default is False, which means stitching via bipartite matching and a lot of post-processing
     verbose : int
         flag for print statements. Increasing by 1, increase depth by 1
 
@@ -447,34 +450,38 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         masks = post.remove_dim_slices(masks, img_volume, verbose=verbose)
     if verbose >= 1:
         print(f"After large area removal: {len(np.unique(masks)) - 1}")
-    stitched_masks, intermediates = post.bipartite_stitching(masks, verbose=verbose)
-    if verbose >= 1:
-        print(f"After stitching: {len(np.unique(stitched_masks)) - 1}")
-    neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
-    # calculate brightnesses and their global Z-plane
-    brightnesses, neuron_planes = post.calc_brightness(img_volume, stitched_masks, neuron_lengths)
-    # split too long neurons
-    current_global_neuron = len(neuron_lengths)
-    split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
-        post.split_long_neurons(stitched_masks,
-                                neuron_lengths,
-                                brightnesses,
-                                current_global_neuron,
-                                upper_length_threshold,
-                                neuron_planes,
-                                verbose - 1)
-    if verbose >= 1:
-        print(f"After splitting: {len(np.unique(split_masks)) - 1}")
+    if stitch_via_watershed:
+        stitched_masks, intermediates = post.bipartite_stitching(masks, verbose=verbose)
+        if verbose >= 1:
+            print(f"After stitching: {len(np.unique(stitched_masks)) - 1}")
+        neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
-    final_masks, final_neuron_lengths, final_brightness, final_neuron_planes, removed_neurons_list = \
-        post.remove_short_neurons(split_masks,
-                                  split_lengths,
-                                  lower_length_threshold,
-                                  split_brightnesses,
-                                  split_neuron_planes)
-    if verbose >= 1:
-        print(f"After short neuron removal: {len(np.unique(final_masks)) - 1}")
+        # calculate brightnesses and their global Z-plane
+        brightnesses, neuron_planes = post.calc_brightness(img_volume, stitched_masks, neuron_lengths)
+        # split too long neurons
+        current_global_neuron = len(neuron_lengths)
+        split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
+            post.split_long_neurons(stitched_masks,
+                                    neuron_lengths,
+                                    brightnesses,
+                                    current_global_neuron,
+                                    upper_length_threshold,
+                                    neuron_planes,
+                                    verbose - 1)
+        if verbose >= 1:
+            print(f"After splitting: {len(np.unique(split_masks)) - 1}")
+
+        final_masks, final_neuron_lengths, final_brightness, final_neuron_planes, removed_neurons_list = \
+            post.remove_short_neurons(split_masks,
+                                      split_lengths,
+                                      lower_length_threshold,
+                                      split_brightnesses,
+                                      split_neuron_planes)
+        if verbose >= 1:
+            print(f"After short neuron removal: {len(np.unique(final_masks)) - 1}")
+    else:
+        final_masks = post.stitch_via_watershed(masks, img_volume)
 
     if to_remove_border is True:
         final_masks = post.remove_border(final_masks, border_width_to_remove)
