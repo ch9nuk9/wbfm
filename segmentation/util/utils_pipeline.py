@@ -451,7 +451,7 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
     if verbose >= 1:
         print(f"After large area removal: {len(np.unique(masks)) - 1}")
 
-    if stitch_via_watershed:
+    if not stitch_via_watershed:
         stitched_masks, intermediates = post.bipartite_stitching(masks, verbose=verbose)
         if verbose >= 1:
             print(f"After stitching: {len(np.unique(stitched_masks)) - 1}")
