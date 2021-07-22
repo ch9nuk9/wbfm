@@ -14,7 +14,9 @@ from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 ## New functions for use with project_config files
 ##
 
-def make_grid_plot_from_project(config, trace_mode=None, do_df_over_f0=False, smoothing_func=None, background=100):
+
+def make_grid_plot_from_project(config, trace_mode=None, do_df_over_f0=False, smoothing_func=None,
+                                background_per_pixel=15):
     """
     Should be run within a project folder
     """
@@ -33,7 +35,7 @@ def make_grid_plot_from_project(config, trace_mode=None, do_df_over_f0=False, sm
         neuron_names = list(set(df.columns.get_level_values(0)))
         def get_y_raw(i):
             y_raw = df[i]['brightness']
-            return smoothing_func(y_raw / df[i]['volume']) - background
+            return smoothing_func(y_raw - background_per_pixel * df[i]['volume'])
 
     else:
         fname = os.path.join("4-traces", f"red_traces.h5")
@@ -44,8 +46,8 @@ def make_grid_plot_from_project(config, trace_mode=None, do_df_over_f0=False, sm
         def get_y_raw(i):
             red_raw = df_red[i]['brightness']
             green_raw = df_green[i]['brightness']
-            return smoothing_func((green_raw-background) / (red_raw-background))
-
+            vol = df_green[i]['volume']  # Same for both
+            return smoothing_func((green_raw - vol*background_per_pixel) / (red_raw - vol*background_per_pixel))
     print(f"Read traces from: {fname}")
 
     # Define df / f0 postprocessing (normalizing) step
