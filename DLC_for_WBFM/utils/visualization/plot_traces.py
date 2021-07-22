@@ -29,7 +29,7 @@ def make_grid_plot_from_project(config, trace_mode=None, do_df_over_f0=False, sm
         smoothing_str = ""
     else:
         smoothing_str = "smoothing"
-    if trace_mode is not 'ratio':
+    if trace_mode in ['red', 'green']:
         fname = os.path.join("4-traces", f"{trace_mode}_traces.h5")
         df = pd.read_hdf(fname)
         neuron_names = list(set(df.columns.get_level_values(0)))
