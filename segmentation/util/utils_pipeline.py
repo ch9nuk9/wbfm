@@ -37,7 +37,7 @@ def segment_video_using_config_3d(_config: dict, continue_from_frame: int =None)
 
     """
 
-    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path = _unpack_config_file(
+    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
         _config)
 
     # Open the file
@@ -154,7 +154,8 @@ def _unpack_config_file(_config):
     _config['output']['metadata'] = metadata_fname
     verbose = _config['verbose']
     stardist_model_name = _config['segmentation_params']['stardist_model_name']
-    return frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path
+    zero_out_borders = _config['segmentation_params']['zero_out_borders']
+    return frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders
 
 
 ##
@@ -169,7 +170,7 @@ def segment_video_using_config_2d(_config: dict, continue_from_frame: int =None)
     """
     
 
-    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path = _unpack_config_file(
+    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders = _unpack_config_file(
         _config)
 
 
@@ -185,11 +186,16 @@ def segment_video_using_config_2d(_config: dict, continue_from_frame: int =None)
     sd_model.keras_model.make_predict_function()
     # Do first volume outside the parallelization loop to initialize keras and zarr
     opt_postprocessing = _config['postprocessing_params']  # Unique to 2d
+    if verbose > 1:
+        print("Postprocessing settings: ")
+        print(opt_postprocessing)
     masks_zarr = _do_first_volume2d(frame_list, mask_fname, num_frames, num_slices,
-                                    sd_model, verbose, video_dat, continue_from_frame, opt_postprocessing)
+                                    sd_model, verbose, video_dat, zero_out_borders,
+                                    continue_from_frame, opt_postprocessing)
+
     # Main function
     segmentation_options = {'masks_zarr': masks_zarr, 'opt_postprocessing': opt_postprocessing,
-                            'sd_model': sd_model, 'verbose': verbose}
+                            'sd_model': sd_model, 'verbose': verbose, 'zero_out_borders': zero_out_borders}
 
     # Will always be at least continuing after the first frame
     if continue_from_frame is None:
@@ -286,6 +292,7 @@ def _segment_full_video_2d(_config: dict, frame_list: list, mask_fname: str, num
 
 def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_slices: int,
                        sd_model: stardist.models.StarDist3D, verbose: int, video_dat: zarr.Array,
+                       zero_out_borders: bool,
                        continue_from_frame: int = None, opt_postprocessing: dict = None) -> zarr.Array:
     # Do first loop to initialize the zarr data
     if continue_from_frame is None:
@@ -298,7 +305,7 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_s
     i_volume = frame_list[i]
     volume = video_dat[i_volume, ...]
     # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path)
-    final_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
+    final_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
     masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
     final_masks = perform_post_processing_2d(final_masks,
@@ -359,13 +366,14 @@ def segment_and_save3d(i, i_volume, masks_zarr,
 
 
 def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
+                       zero_out_borders,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
     volume = video_dat[i_volume, ...]
     if keras_lock is None:
-        segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
+        segmented_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     else:
         with keras_lock:  # Keras is not thread-safe in the end
-            segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
+            segmented_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
 
     final_masks = perform_post_processing_2d(segmented_masks,
                                              volume,
@@ -481,6 +489,8 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         if verbose >= 1:
             print(f"After short neuron removal: {len(np.unique(final_masks)) - 1}")
     else:
+        if verbose >= 1:
+            print("Stitching using watershed")
         final_masks = post.stitch_via_watershed(masks, img_volume)
 
     if to_remove_border is True:
@@ -573,7 +583,7 @@ def recalculate_metadata_from_config(_config, DEBUG=False):
 
     """
 
-    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path = _unpack_config_file(
+    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
         _config)
 
     masks_zarr = zarr.open(_config['output']['masks'])

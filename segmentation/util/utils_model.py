@@ -2,6 +2,7 @@
 StarDist functions for segmentation
 """
 import numpy as np
+import skimage
 import stardist.models
 from stardist.models import Config3D, StarDistData3D, StarDist3D, StarDist2D
 import os
@@ -58,7 +59,7 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
     return model
 
 
-def segment_with_stardist_2d(vol, model=None, verbose=0) -> np.array:
+def segment_with_stardist_2d(vol, model=None, zero_out_borders=False, verbose=0) -> np.array:
     """
     Segments slices of a 3D numpy array (input) and outputs their masks.
     Best model (so far) is Lukas' self-trained 2D model
@@ -68,6 +69,8 @@ def segment_with_stardist_2d(vol, model=None, verbose=0) -> np.array:
         Original image array
     model : StarDist2D model object
         Object of a Stardist model, which will be used for prediction
+    zero_out_borders : bool
+        Whether to calculate the object borders (which may be touching) and zero them out (to prevent touching)
     verbose : int
         flag for print statements. Increasing by 1, increase depth by 1
 
@@ -81,15 +84,18 @@ def segment_with_stardist_2d(vol, model=None, verbose=0) -> np.array:
     if model is None:
         model = StarDist2D.from_pretrained('2D_versatile_fluo')
 
-    if verbose >=1:
+    if verbose >= 1:
         print(f'Start of 2D segmentation.')
 
     # initialize output dimensions and other variables
     z = len(vol)
-    xy = vol.shape[1:]
-    segmented_masks = np.zeros((z, *xy))    # '*' = tuple unpacking
+    # xy = vol.shape[1:]
+    segmented_masks = np.zeros_like(vol)    # '*' = tuple unpacking
+    if zero_out_borders:
+        boundary = np.zeros_like(segmented_masks, dtype='bool')
+    # segmented_masks = np.zeros((z, *xy))    # '*' = tuple unpacking
     axis_norm = (0, 1)
-    n_channel = 1
+    # n_channel = 1
 
     # iterate over images to run stardist on single images
     for idx, plane in enumerate(vol):
@@ -106,6 +112,19 @@ def segment_with_stardist_2d(vol, model=None, verbose=0) -> np.array:
 
         if verbose >= 2:
             print(f"Found {len(np.unique(labels))} neurons on slice {idx}/{z}")
+
+        if zero_out_borders:
+            # Postprocess to add separation between labels
+            # From: watershed.py in 3DeeCellTracker
+            labels_bd = skimage.segmentation.find_boundaries(labels, connectivity=2, mode='outer', background=0)
+
+            boundary[idx, :, :] = labels_bd
+
+            # save labels in 3D array for output
+            segmented_masks[idx] = labels
+
+    if zero_out_borders:
+        segmented_masks[boundary == 1] = 0
 
     return segmented_masks
 
