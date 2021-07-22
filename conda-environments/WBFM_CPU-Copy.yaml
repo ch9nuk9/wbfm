@@ -16,7 +16,7 @@
 
 # update:  conda env update -f DLC-preprocessing.yaml
 
-name: WBFM_CPU
+name: WBFM_CPU2
 channels:
   - conda-forge
   - defaults
@@ -38,9 +38,9 @@ dependencies:
     - ruamel.yaml
     - networkx
     - tifffile
-    - tensorflow==1.15.5
+#    - tensorflow==1.15.5
 #    - deeplabcut[gui]
-    - pyqt5
-    - pyqt5-tools
-    - napari[all]
-    - easydict
+#    - pyqt5
+#    - pyqt5-tools
+#    - napari[all]
+#    - easydict
