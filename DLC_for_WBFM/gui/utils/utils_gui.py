@@ -67,18 +67,23 @@ def array2qt(img):
     return QtGui.QPixmap.fromImage(new_img)
 
 
-def zoom_using_viewer(viewer: napari.Viewer, zoom=None) -> None:
+def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_past', zoom=None) -> None:
     # Get current point
     t = viewer.dims.current_step[0]
-    tzxy = viewer.layers['pts_with_future_and_past'].data[t]
+    tzxy = viewer.layers[layer_name].data[t]
+
+    # Data may be incorrect (but t should be good)
+    is_positive = tzxy[2] > 0 and tzxy[3] > 0
+    is_finite = not all(np.isnan(tzxy))
 
     # Center to the neuron in xy
     if zoom is not None:
         viewer.camera.zoom = zoom
-    viewer.camera.center = tzxy[1:]
+    if is_positive and is_finite:
+        viewer.camera.center = tzxy[1:]
 
     # Center around the neuron in z
-    if tzxy[2] > 0 and tzxy[3] > 0:
+    if is_positive and is_finite:
         viewer.dims.current_step = (t, tzxy[1], 0, 0)
 
 

@@ -63,6 +63,10 @@ class napari_trace_explorer(QtWidgets.QWidget):
             else:
                 self.segmentation = None
 
+        # TODO: do not hardcode
+        self.background_per_pixel = 15
+
+
     def _load_config_files(self, project_config):
         self.project_dir = Path(project_config).parent
         cfg = load_config(project_config)
@@ -88,11 +92,11 @@ class napari_trace_explorer(QtWidgets.QWidget):
         self.current_name = neuron_names[0]
 
         # Change neurons (dropdown)
-        self.changeNeuronsButton = QtWidgets.QComboBox(self.verticalLayoutWidget)
-        self.changeNeuronsButton.addItems(neuron_names)
-        self.changeNeuronsButton.setItemText(0, self.current_name)
-        self.changeNeuronsButton.currentIndexChanged.connect(self.change_neurons)
-        self.verticalLayout.addWidget(self.changeNeuronsButton)
+        self.changeNeuronsDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.changeNeuronsDropdown.addItems(neuron_names)
+        self.changeNeuronsDropdown.setItemText(0, self.current_name)
+        self.changeNeuronsDropdown.currentIndexChanged.connect(self.change_neurons)
+        self.verticalLayout.addWidget(self.changeNeuronsDropdown)
 
         # Save annotations (button)
         # self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
@@ -113,7 +117,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
         self.viewer.layers['deeplabcut_track'].data = point_layer_data
         self.viewer.layers['track_of_point'].data = track_layer_data
 
-        zoom_using_viewer(self.viewer)
+        zoom_using_viewer(self.viewer, layer_name='deeplabcut_track')
 
     def initialize_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -123,7 +127,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
 
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
 
-        zoom_using_viewer(self.viewer, zoom=10)
+        zoom_using_viewer(self.viewer, layer_name='deeplabcut_track', zoom=10)
 
     def initialize_shortcuts(self):
         viewer = self.viewer
@@ -131,24 +135,42 @@ class napari_trace_explorer(QtWidgets.QWidget):
         @viewer.bind_key('.', overwrite=True)
         def zoom_next(viewer):
             change_viewer_time_point(viewer, dt=1, a_max=len(self.df) - 1)
-            zoom_using_viewer(viewer, zoom=None)
+            zoom_using_viewer(viewer, layer_name='deeplabcut_track', zoom=None)
 
         @viewer.bind_key(',', overwrite=True)
         def zoom_previous(viewer):
             change_viewer_time_point(viewer, dt=-1, a_max=len(self.df) - 1)
-            zoom_using_viewer(viewer, zoom=None)
+            zoom_using_viewer(viewer, layer_name='deeplabcut_track', zoom=None)
 
     def initialize_trace_subplot(self):
-        mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
-        static_ax = mpl_widget.figure.subplots()
-        static_ax.plot()
+        self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
+        self.static_ax = self.mpl_widget.figure.subplots()
+        self.trace_line = self.static_ax.plot(self.calculate_trace())
         # t = np.linspace(0, 10, 501)
         # static_ax.plot(t, np.tan(t), ".")
 
-        self.viewer.window.add_dock_widget(mpl_widget, area='bottom')
+        # self.mpl_widget.draw()
+        self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
+
+    def update_trace_subplot(self):
+        self.trace_line.set_ydata(self.calculate_trace())
+        self.mpl_widget.draw()
+
+
+    def calculate_trace(self):
+        # i = self.changeNeuronsDropdown.currentIndex()
+        i = self.current_name
+
+        df = self.red_traces
+        # print(df)
+        y_raw = df[i]['brightness']
+        smoothing_func = lambda x: x
+        y = smoothing_func(y_raw - self.background_per_pixel * df[i]['volume'])
+        self.y = y
+        return y
 
     def get_track_data(self):
-        self.current_name = self.changeNeuronsButton.currentText()
+        self.current_name = self.changeNeuronsDropdown.currentText()
         return self.build_tracks_from_name()
 
     # def save_annotations(self):
