@@ -7,6 +7,7 @@ from ipywidgets import interact
 from matplotlib.ticker import NullFormatter
 from matplotlib import transforms
 from tqdm.auto import tqdm
+from pathlib import Path
 
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
@@ -15,7 +16,8 @@ from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 ##
 
 
-def make_grid_plot_from_project(config, trace_mode=None, do_df_over_f0=False, smoothing_func=None,
+def make_grid_plot_from_project(traces_config,
+                                trace_mode=None, do_df_over_f0=False, smoothing_func=None,
                                 background_per_pixel=15):
     """
     Should be run within a project folder
@@ -23,32 +25,16 @@ def make_grid_plot_from_project(config, trace_mode=None, do_df_over_f0=False, sm
 
     assert (trace_mode in ['green', 'red', 'ratio']), f"Unknown trace mode {trace_mode}"
 
+    base_trace_fname = Path(traces_config['traces']['red'])
+
     # Read in the data
     if smoothing_func is None:
         smoothing_func = lambda x: x
         smoothing_str = ""
     else:
         smoothing_str = "smoothing"
-    if trace_mode in ['red', 'green']:
-        fname = os.path.join("4-traces", f"{trace_mode}_traces.h5")
-        df = pd.read_hdf(fname)
-        neuron_names = list(set(df.columns.get_level_values(0)))
-        def get_y_raw(i):
-            y_raw = df[i]['brightness']
-            return smoothing_func(y_raw - background_per_pixel * df[i]['volume'])
 
-    else:
-        fname = os.path.join("4-traces", f"red_traces.h5")
-        df_red = pd.read_hdf(fname)
-        fname = os.path.join("4-traces", f"green_traces.h5")
-        df_green = pd.read_hdf(fname)
-        neuron_names = list(set(df_green.columns.get_level_values(0)))
-        def get_y_raw(i):
-            red_raw = df_red[i]['brightness']
-            green_raw = df_green[i]['brightness']
-            vol = df_green[i]['volume']  # Same for both
-            return smoothing_func((green_raw - vol*background_per_pixel) / (red_raw - vol*background_per_pixel))
-    print(f"Read traces from: {fname}")
+    get_y_raw, neuron_names = build_trace_factory(base_trace_fname, trace_mode, smoothing_func, background_per_pixel)
 
     # Define df / f0 postprocessing (normalizing) step
     if do_df_over_f0:
@@ -92,9 +78,36 @@ def make_grid_plot_from_project(config, trace_mode=None, do_df_over_f0=False, sm
                         wspace=0.0,
                         hspace=0.0)
 
-    out_fname = os.path.join("4-traces", f"{smoothing_str}_{trace_mode}_grid_plot.png")
-    plt.savefig(out_fname, bbox_inches='tight', pad_inches = 0)
+    out_fname = base_trace_fname.with_name(f"{smoothing_str}_{trace_mode}_grid_plot.png")
+    plt.savefig(out_fname, bbox_inches='tight', pad_inches=0)
 
+
+def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
+
+    if trace_mode in ['red', 'green']:
+        fname = base_trace_fname.with_name(f"{trace_mode}_traces.h5")
+        df = pd.read_hdf(fname)
+        neuron_names = list(set(df.columns.get_level_values(0)))
+
+        def get_y_raw(i):
+            y_raw = df[i]['brightness']
+            return smoothing_func(y_raw - background_per_pixel * df[i]['volume'])
+
+    else:
+        fname = base_trace_fname.with_name("red_traces.h5")
+        df_red = pd.read_hdf(fname)
+        fname = base_trace_fname.with_name("green_traces.h5")
+        df_green = pd.read_hdf(fname)
+        neuron_names = list(set(df_green.columns.get_level_values(0)))
+
+        def get_y_raw(i):
+            red_raw = df_red[i]['brightness']
+            green_raw = df_green[i]['brightness']
+            vol = df_green[i]['volume']  # Same for both
+            return smoothing_func((green_raw - vol * background_per_pixel) / (red_raw - vol * background_per_pixel))
+    print(f"Read traces from: {fname}")
+
+    return get_y_raw, neuron_names
 
 
 ##
