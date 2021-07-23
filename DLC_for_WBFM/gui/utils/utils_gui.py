@@ -1,3 +1,4 @@
+import napari
 from PyQt5 import QtGui
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume, get_single_volume_specific_slices
@@ -64,3 +65,25 @@ def array2qt(img):
     # return QtGui.QPixmap(img.data, w, h, 3 * w, QtGui.QImage.Format_RGB888)
     new_img = QtGui.QImage(img.data, w, h, 3 * w, QtGui.QImage.Format_RGB888)
     return QtGui.QPixmap.fromImage(new_img)
+
+
+def zoom_using_viewer(viewer: napari.Viewer, zoom=None) -> None:
+    # Get current point
+    t = viewer.dims.current_step[0]
+    tzxy = viewer.layers['pts_with_future_and_past'].data[t]
+
+    # Center to the neuron in xy
+    if zoom is not None:
+        viewer.camera.zoom = zoom
+    viewer.camera.center = tzxy[1:]
+
+    # Center around the neuron in z
+    if tzxy[2] > 0 and tzxy[3] > 0:
+        viewer.dims.current_step = (t, tzxy[1], 0, 0)
+
+
+def change_viewer_time_point(viewer: napari.Viewer, dt: int, a_max: int = None) -> None:
+    # Increment time
+    t = np.clip(viewer.dims.current_step[0] + dt, a_min=0, a_max=a_max)
+    tzxy = (t,) + viewer.dims.current_step[1:]
+    viewer.dims.current_step = tzxy

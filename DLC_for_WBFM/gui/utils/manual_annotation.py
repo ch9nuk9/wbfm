@@ -1,4 +1,3 @@
-import argparse
 import os
 from pathlib import Path
 
@@ -8,7 +7,8 @@ import pandas as pd
 import zarr
 from PyQt5 import QtWidgets
 
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
+from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_which_frames
 
 
@@ -80,12 +80,12 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         @viewer.bind_key('.', overwrite=True)
         def zoom_next(viewer):
-            change_viewer_time_point(viewer, dt=1, a_max=len(self.df)-1)
+            change_viewer_time_point(viewer, dt=1, a_max=len(self.df) - 1)
             zoom_using_viewer(viewer, zoom=None)
 
         @viewer.bind_key(',', overwrite=True)
         def zoom_previous(viewer):
-            change_viewer_time_point(viewer, dt=-1, a_max=len(self.df)-1)
+            change_viewer_time_point(viewer, dt=-1, a_max=len(self.df) - 1)
             zoom_using_viewer(viewer, zoom=None)
 
         # @viewer.bind_key('.', overwrite=True)
@@ -187,28 +187,6 @@ class manual_annotation_widget(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def zoom_using_viewer(viewer: napari.Viewer, zoom=None) -> None:
-    # Get current point
-    t = viewer.dims.current_step[0]
-    tzxy = viewer.layers['pts_with_future_and_past'].data[t]
-
-    # Center to the neuron in xy
-    if zoom is not None:
-        viewer.camera.zoom = zoom
-    viewer.camera.center = tzxy[1:]
-
-    # Center around the neuron in z
-    if tzxy[2] > 0 and tzxy[3] > 0:
-        viewer.dims.current_step = (t, tzxy[1], 0, 0)
-
-
-def change_viewer_time_point(viewer: napari.Viewer, dt: int, a_max: int = None) -> None:
-    # Increment time
-    t = np.clip(viewer.dims.current_step[0] + dt, a_min=0, a_max=a_max)
-    tzxy = (t,) + viewer.dims.current_step[1:]
-    viewer.dims.current_step = tzxy
-
-
 def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_annotation_name=None, DEBUG=False):
     """
     Creates a napari-based gui for correcting tracks
@@ -271,41 +249,3 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_
     print("Finished GUI setup")
 
     napari.run()
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='Build GUI with a project')
-    parser.add_argument('--project_path', default=None,
-                        help='path to config file')
-    parser.add_argument('--corrector_name', default=None,
-                        help='name of the person doing the correction')
-    parser.add_argument('--annotation', default=None,
-                        help='path to a previous or partial annotation to use as the starting point')
-    parser.add_argument('--DEBUG', default=False,
-                        help='')
-    args = parser.parse_args()
-    project_path = args.project_path
-    corrector_name = args.corrector_name
-    initial_annotation_name = args.annotation
-    DEBUG = args.DEBUG
-
-    print("Starting manual annotation GUI, may take a while to load...")
-
-    project_cfg = load_config(project_path)
-    project_dir = Path(project_path).parent
-
-    with safe_cd(project_dir):
-        trace_fname = Path(project_cfg['subfolder_configs']['traces'])
-        trace_cfg = dict(load_config(trace_fname))
-        track_fname = Path(project_cfg['subfolder_configs']['tracking'])
-        track_cfg = dict(load_config(track_fname))
-        seg_fname = Path(project_cfg['subfolder_configs']['segmentation'])
-        segment_cfg = dict(load_config(seg_fname))
-
-    this_config = {'track_cfg': track_cfg, 'segment_cfg': segment_cfg, 'project_cfg': project_cfg,
-                   'dataset_params': project_cfg['dataset_params'].copy(),
-                   'project_dir': project_dir}
-
-    with safe_cd(project_dir):
-        create_manual_correction_gui(this_config, corrector_name, initial_annotation_name, DEBUG=DEBUG)
