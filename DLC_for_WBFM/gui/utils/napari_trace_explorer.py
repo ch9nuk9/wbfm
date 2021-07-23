@@ -111,6 +111,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
     def change_neurons(self):
         self.update_dataframe_using_points()
         self.update_track_layers()
+        self.update_trace_subplot()
 
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -145,23 +146,49 @@ class napari_trace_explorer(QtWidgets.QWidget):
     def initialize_trace_subplot(self):
         self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         self.static_ax = self.mpl_widget.figure.subplots()
-        self.trace_line = self.static_ax.plot(self.calculate_trace())
-        # t = np.linspace(0, 10, 501)
-        # static_ax.plot(t, np.tan(t), ".")
+        self.trace_line = self.static_ax.plot(self.calculate_trace())[0]
+        # self.time_line = self.static_ax.vlines(*self.calculate_time_line())
+        self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
+        self.connect_time_line_callback()
 
-        # self.mpl_widget.draw()
         self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
 
     def update_trace_subplot(self):
         self.trace_line.set_ydata(self.calculate_trace())
+        # t, y0, y1, _ = self.calculate_time_line()
+        # self.time_line.set_segments(np.array([[t, y0], [t, y1]]))
+        self.time_line.set_data(self.calculate_time_line()[:2])
         self.mpl_widget.draw()
 
+    def connect_time_line_callback(self):
+        viewer = self.viewer
+        @viewer.dims.events.current_step.connect
+        def update_time_line(event):
+            self.time_line.set_data(self.calculate_time_line()[:2])
+            self.mpl_widget.draw()
+
+    def calculate_time_line(self):
+        t = self.viewer.dims.current_step[0]
+        y = self.y
+        ymin, ymax = np.min(y), np.max(y)
+        self.tracking_lost = not np.isnan(y[t])
+        if not self.tracking_lost:
+            # z, x, y = self.current_centroid
+            # title = f"{current_neuron}: {mode} trace at ({z:.1f}, {x:.0f}, {y:.0f})"
+            line_color = 'b'
+        else:
+            # title = "Tracking lost!"
+            line_color = 'r'
+        # print(f"Calculated vertical line for t={t}")
+        return [t, t], [ymin, ymax], line_color
+        # return t, ymin, ymax, line_color
+        # self.time_line.update_line(t, ymin, ymax, line_color)
 
     def calculate_trace(self):
         # i = self.changeNeuronsDropdown.currentIndex()
         i = self.current_name
 
-        df = self.red_traces
+        df = self.green_traces
         # print(df)
         y_raw = df[i]['brightness']
         smoothing_func = lambda x: x
@@ -242,9 +269,10 @@ def build_napari_trace_explorer(project_config):
     # Build Napari and add widgets
     print("Finished loading data, starting napari...")
     viewer.add_image(ui.red_data, name="Red data", opacity=0.5)
+    viewer.add_image(ui.green_data, name="Green data", opacity=0.5)
     viewer.add_labels(ui.raw_segmentation, name="Raw segmentation", opacity=0.5)
     if ui.segmentation is not None:
-        viewer.add_labels(ui.segmentation)
+        viewer.add_labels(ui.segmentation, name="Colored segmentation")
 
     # Actually dock my additional gui elements
     ui.setupUi(viewer)
