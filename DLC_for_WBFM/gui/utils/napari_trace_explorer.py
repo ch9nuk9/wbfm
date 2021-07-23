@@ -15,7 +15,7 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_which_frames
 
 
-class manual_annotation_widget(QtWidgets.QWidget):
+class napari_trace_explorer(QtWidgets.QWidget):
 
     def __init__(self, project_config):
         super(QtWidgets.QWidget, self).__init__()
@@ -26,38 +26,42 @@ class manual_annotation_widget(QtWidgets.QWidget):
         # Load Configs
         ########################
         cfg, traces_cfg, tracking_cfg = self._load_config_files(project_config)
+        self._load_data(cfg, traces_cfg, tracking_cfg)
+
+        # Temporary
+        self.df = self.dlc_raw
+
+    def _load_data(self, cfg, traces_cfg, tracking_cfg):
         ########################
         # Load Data
         ########################
         # Raw data
         red_dat_fname = cfg['preprocessed_red']
         green_dat_fname = cfg['preprocessed_green']
-        self.red_data = pd.read_hdf(red_dat_fname)
-        self.green_data = pd.read_hdf(green_dat_fname)
+        self.red_data = zarr.open(red_dat_fname)
+        self.green_data = zarr.open(green_dat_fname)
 
-        # Traces
-        red_traces_fname = traces_cfg['traces']['red']
-        green_traces_fname = traces_cfg['traces']['green']
-        dlc_raw_fname = tracking_cfg['final_3d_tracks']['df_fname']
-        self.red_traces = pd.read_hdf(red_traces_fname)
-        self.green_traces = pd.read_hdf(green_traces_fname)
-        self.dlc_raw = pd.read_hdf(dlc_raw_fname)
+        with safe_cd(self.project_dir):
+            # Traces
+            red_traces_fname = traces_cfg['traces']['red']
+            green_traces_fname = traces_cfg['traces']['green']
+            dlc_raw_fname = tracking_cfg['final_3d_tracks']['df_fname']
+            self.red_traces = pd.read_hdf(red_traces_fname)
+            self.green_traces = pd.read_hdf(green_traces_fname)
+            self.dlc_raw = pd.read_hdf(dlc_raw_fname)
 
-        # Segmentation
-        seg_fname_raw = self.segment_cfg['output']['masks']
-        seg_fname_raw = os.path.join(self.project_dir, seg_fname_raw)
-        if '.zarr' in seg_fname_raw:
-            self.raw_segmentation = zarr.open(seg_fname_raw, mode='r')
-        else:
-            self.raw_segmentation = None
+            # Segmentation
+            seg_fname_raw = self.segment_cfg['output']['masks']
+            if '.zarr' in seg_fname_raw:
+                self.raw_segmentation = zarr.open(seg_fname_raw, mode='r')
+            else:
+                self.raw_segmentation = None
 
-        seg_fname = os.path.join(self.project_dir, '4-traces', 'reindexed_masks.zarr')
-        if os.path.exists(seg_fname):
-            self.segmentation = zarr.open(seg_fname, mode='r')
-        else:
-            self.segmentation = None
-
-        self.initialize_napari_viewer()
+            seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
+            if os.path.exists(seg_fname):
+                self.segmentation = zarr.open(seg_fname, mode='r')
+            else:
+                self.segmentation = None
 
     def _load_config_files(self, project_config):
         self.project_dir = Path(project_config).parent
@@ -76,14 +80,11 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.x = list(range(start, end))
         return cfg, traces_cfg, tracking_cfg
 
-    def setupUi(self, df: pd.DataFrame, output_dir: str, viewer: napari.Viewer, annotation_output_name: str):
+    def setupUi(self, viewer: napari.Viewer):
 
         # Load dataframe and path to outputs
-        self.annotation_output_name = annotation_output_name
         self.viewer = viewer
-        self.output_dir = output_dir
-        self.df = df
-        neuron_names = list(df.columns.levels[0])
+        neuron_names = list(self.dlc_raw.columns.levels[0])
         self.current_name = neuron_names[0]
 
         # Change neurons (dropdown)
@@ -94,10 +95,10 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.changeNeuronsButton)
 
         # Save annotations (button)
-        self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.saveButton.clicked.connect(self.save_annotations)
-        self.saveButton.setText("Save Annotations")
-        self.verticalLayout.addWidget(self.saveButton)
+        # self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        # self.saveButton.clicked.connect(self.save_annotations)
+        # self.saveButton.setText("Save Annotations")
+        # self.verticalLayout.addWidget(self.saveButton)
 
         self.initialize_track_layers()
         self.initialize_shortcuts()
@@ -109,7 +110,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
-        self.viewer.layers['pts_with_future_and_past'].data = point_layer_data
+        self.viewer.layers['deeplabcut_track'].data = point_layer_data
         self.viewer.layers['track_of_point'].data = track_layer_data
 
         zoom_using_viewer(self.viewer)
@@ -118,7 +119,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         point_layer_data, track_layer_data = self.get_track_data()
 
         points_opt = dict(face_color='blue', size=4)
-        self.viewer.add_points(point_layer_data, name="pts_with_future_and_past", n_dimensional=True, symbol='cross', **points_opt)
+        self.viewer.add_points(point_layer_data, name="deeplabcut_track", n_dimensional=True, symbol='cross', **points_opt)
 
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
 
@@ -140,8 +141,9 @@ class manual_annotation_widget(QtWidgets.QWidget):
     def initialize_trace_subplot(self):
         mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         static_ax = mpl_widget.figure.subplots()
-        t = np.linspace(0, 10, 501)
-        static_ax.plot(t, np.tan(t), ".")
+        static_ax.plot()
+        # t = np.linspace(0, 10, 501)
+        # static_ax.plot(t, np.tan(t), ".")
 
         self.viewer.window.add_dock_widget(mpl_widget, area='bottom')
 
@@ -149,42 +151,32 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.current_name = self.changeNeuronsButton.currentText()
         return self.build_tracks_from_name()
 
-    def save_annotations(self):
-        self.update_dataframe_using_points()
-        # self.df[self.current_name] = new_df[self.current_name]
-
-        out_fname = self.annotation_output_name
-        self.df.to_hdf(out_fname, 'df_with_missing')
-
-        out_fname = str(Path(out_fname).with_suffix('.csv'))
-        #     df_old = pd.read_csv(out_fname)
-        #     df_old[name] = df_new[name]
-        #     df_old.to_csv(out_fname, mode='a')
-        self.df.to_csv(out_fname)  # Just overwrite
-
-        print(f"Saved manual annotations for neuron {self.current_name} at {out_fname}")
+    # def save_annotations(self):
+    #     self.update_dataframe_using_points()
+    #     # self.df[self.current_name] = new_df[self.current_name]
+    #
+    #     out_fname = self.annotation_output_name
+    #     self.df.to_hdf(out_fname, 'df_with_missing')
+    #
+    #     out_fname = str(Path(out_fname).with_suffix('.csv'))
+    #     #     df_old = pd.read_csv(out_fname)
+    #     #     df_old[name] = df_new[name]
+    #     #     df_old.to_csv(out_fname, mode='a')
+    #     self.df.to_csv(out_fname)  # Just overwrite
+    #
+    #     print(f"Saved manual annotations for neuron {self.current_name} at {out_fname}")
 
     def update_dataframe_using_points(self):
-        # print("Before saving:")
-        # print(self.df)
-
+        # Note: this allows for manual changing of the points
         new_df = self.build_df_of_current_points()
 
-        # print("pandas try 1:")
-        # self.df[self.current_name] = new_df[self.current_name]
-        # print(self.df)
-
-        # print("pandas try 2:")
         self.df = self.df.drop(columns=self.current_name, level=0)
         self.df = pd.concat([self.df, new_df], axis=1)
-        # self.df = self.df.join(new_df)
-        # print(self.df)
 
     def build_df_of_current_points(self) -> pd.DataFrame:
         name = self.current_name
-        new_points = self.viewer.layers['pts_with_future_and_past'].data
+        new_points = self.viewer.layers['deeplabcut_track'].data
 
-        # col = pd.MultiIndex.from_product([[self.current_name], ['t', 'z', 'x', 'y', 'likelihood']])
         col = pd.MultiIndex.from_product([[self.current_name], ['z', 'x', 'y', 'likelihood']])
         df_new = pd.DataFrame(columns=col, index=self.df.index)
 
@@ -193,12 +185,6 @@ class manual_annotation_widget(QtWidgets.QWidget):
         df_new[(name, 'y')] = new_points[:, 2]
         df_new[(name, 'x')] = new_points[:, 3]
         df_new[(name, 'likelihood')] = np.ones(new_points.shape[0])
-        # df_new[(name, 'likelihood')] = self.df[(name, 'likelihood')]  # Same as before
-
-        # df_new.sort_values((name, 't'), inplace=True, ignore_index=True)
-
-        # print("Corrected dataframe: ")
-        # print(df_new)
 
         return df_new
 
@@ -213,8 +199,6 @@ class manual_annotation_widget(QtWidgets.QWidget):
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
         # Remove low likelihood
         to_remove = self.df[self.current_name]['likelihood'] < likelihood_thresh
-        # zxy_array = zxy_array[to_keep, :]
-        # t_array = t_array[to_keep, :]
         zxy_array[to_remove, :] = 0
 
         all_tracks_list.append(np.hstack([t_array, zxy_array]))
@@ -226,80 +210,16 @@ class manual_annotation_widget(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_annotation_name=None, DEBUG=False):
-    """
-    Creates a napari-based gui for correcting tracks
-
-    For now, only works with training data
-    """
-    project_dir = this_config['project_dir']
-
-    annotation_output_name = os.path.join(project_dir, '2-training_data', 'manual_tracking', f'corrected_tracks-{corrector_name}.h5')
-    if Path(annotation_output_name).exists():
-        raise FileExistsError(f"File already {annotation_output_name} exists! Please rename or delete")
-
-    with safe_cd(project_dir):
-
-        fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
-        df = pd.read_pickle(fname)
-
-        # Get the frames chosen as training data, or recalculate
-        which_frames = list(get_or_recalculate_which_frames(DEBUG, df, this_config))
-
-        # Import segmentation
-        fname = this_config['segment_cfg']['output']['masks']
-        raw_segmentation = zarr.open(fname)
-
-        fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
-        if Path(fname).exists():
-            colored_segmentation = zarr.open(fname)
-        else:
-            colored_segmentation = None
-
-        if initial_annotation_name is None:
-            # Use the output of my tracker
-            fname = os.path.join('2-training_data', 'training_data_tracks.h5')
-            # TODO: not hardcoded experimenter
-            df = pd.read_hdf(fname)['Charlie'].copy()
-        else:
-            # Use partially manually annotated tracking
-            df = pd.read_hdf(initial_annotation_name)
-
-        # Import raw data
-        fname = this_config['project_cfg']['preprocessed_red']
-        red_data = zarr.open(fname)
-
-    print("Finished loading data, starting napari...")
-
-    # Build Napari and add widgets
-    viewer = napari.view_image(red_data[which_frames[0]:which_frames[-1]+1, ...], name="Red data", ndisplay=2, opacity=0.5)
-    viewer.add_labels(raw_segmentation[which_frames[0]:which_frames[-1]+1, ...], name="Raw segmentation", opacity=0.5)
-    if colored_segmentation is not None:
-        viewer.add_labels(colored_segmentation)
-
-    output_dir = os.path.join("2-training_data", "manual_tracking")
-    ui = manual_annotation_widget()
-    ui.setupUi(df, output_dir, viewer, annotation_output_name)
-
-    # Actually dock
-    viewer.window.add_dock_widget(ui)
-    ui.show()
-
-    print("Finished GUI setup")
-
-    napari.run()
-
-
 def build_napari_trace_explorer(project_config):
 
-    viewer = napari.Viewer()
+    viewer = napari.Viewer(ndisplay=2)
 
     # Build object that has all the data
-    ui = manual_annotation_widget(project_config)
+    ui = napari_trace_explorer(project_config)
 
     # Build Napari and add widgets
     print("Finished loading data, starting napari...")
-    viewer.add_image(ui.red_data, name="Red data", ndisplay=2, opacity=0.5)
+    viewer.add_image(ui.red_data, name="Red data", opacity=0.5)
     viewer.add_labels(ui.raw_segmentation, name="Raw segmentation", opacity=0.5)
     if ui.segmentation is not None:
         viewer.add_labels(ui.segmentation)
