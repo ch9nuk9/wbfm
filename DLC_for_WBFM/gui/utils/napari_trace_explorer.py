@@ -1,3 +1,4 @@
+import argparse
 import os
 from pathlib import Path
 
@@ -6,6 +7,8 @@ import numpy as np
 import pandas as pd
 import zarr
 from PyQt5 import QtWidgets
+from matplotlib.backends.backend_qt5agg import FigureCanvas
+from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
@@ -14,10 +17,64 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_
 
 class manual_annotation_widget(QtWidgets.QWidget):
 
-    def __init__(self):
+    def __init__(self, project_config):
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+
+        ########################
+        # Load Configs
+        ########################
+        cfg, traces_cfg, tracking_cfg = self._load_config_files(project_config)
+        ########################
+        # Load Data
+        ########################
+        # Raw data
+        red_dat_fname = cfg['preprocessed_red']
+        green_dat_fname = cfg['preprocessed_green']
+        self.red_data = pd.read_hdf(red_dat_fname)
+        self.green_data = pd.read_hdf(green_dat_fname)
+
+        # Traces
+        red_traces_fname = traces_cfg['traces']['red']
+        green_traces_fname = traces_cfg['traces']['green']
+        dlc_raw_fname = tracking_cfg['final_3d_tracks']['df_fname']
+        self.red_traces = pd.read_hdf(red_traces_fname)
+        self.green_traces = pd.read_hdf(green_traces_fname)
+        self.dlc_raw = pd.read_hdf(dlc_raw_fname)
+
+        # Segmentation
+        seg_fname_raw = self.segment_cfg['output']['masks']
+        seg_fname_raw = os.path.join(self.project_dir, seg_fname_raw)
+        if '.zarr' in seg_fname_raw:
+            self.raw_segmentation = zarr.open(seg_fname_raw, mode='r')
+        else:
+            self.raw_segmentation = None
+
+        seg_fname = os.path.join(self.project_dir, '4-traces', 'reindexed_masks.zarr')
+        if os.path.exists(seg_fname):
+            self.segmentation = zarr.open(seg_fname, mode='r')
+        else:
+            self.segmentation = None
+
+        self.initialize_napari_viewer()
+
+    def _load_config_files(self, project_config):
+        self.project_dir = Path(project_config).parent
+        cfg = load_config(project_config)
+        self.cfg = cfg
+        with safe_cd(self.project_dir):
+            traces_cfg = load_config(cfg['subfolder_configs']['traces'])
+            self.traces_cfg = traces_cfg
+            segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
+            self.segment_cfg = segment_cfg
+            tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
+            self.tracking_cfg = tracking_cfg
+        # self.crop_sz = (1, 48, 48)
+        start = cfg['dataset_params']['start_volume']
+        end = start + cfg['dataset_params']['num_frames']
+        self.x = list(range(start, end))
+        return cfg, traces_cfg, tracking_cfg
 
     def setupUi(self, df: pd.DataFrame, output_dir: str, viewer: napari.Viewer, annotation_output_name: str):
 
@@ -44,6 +101,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         self.initialize_track_layers()
         self.initialize_shortcuts()
+        self.initialize_trace_subplot()
 
     def change_neurons(self):
         self.update_dataframe_using_points()
@@ -79,23 +137,13 @@ class manual_annotation_widget(QtWidgets.QWidget):
             change_viewer_time_point(viewer, dt=-1, a_max=len(self.df) - 1)
             zoom_using_viewer(viewer, zoom=None)
 
-        # @viewer.bind_key('.', overwrite=True)
-        # def zoom_next(dummy):
-        #     self.zoom_and_change_time(1)
-        #
-        # @viewer.bind_key(',', overwrite=True)
-        # def zoom_previous(dummy):
-        #     self.zoom_and_change_time(-1)
-    #
-    # def zoom_and_change_time(self, dt=0):
-    #     viewer = self.viewer
-    #     zoom = self.get_zoom()
-    #     change_viewer_time_point(viewer, dt)
-    #     zoom_using_viewer(viewer, zoom)
-    #
-    #
-    # def get_zoom(self):
-    #     return self.changeZoomSlider.value()
+    def initialize_trace_subplot(self):
+        mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
+        static_ax = mpl_widget.figure.subplots()
+        t = np.linspace(0, 10, 501)
+        static_ax.plot(t, np.tan(t), ".")
+
+        self.viewer.window.add_dock_widget(mpl_widget, area='bottom')
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsButton.currentText()
@@ -240,3 +288,43 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_
     print("Finished GUI setup")
 
     napari.run()
+
+
+def build_napari_trace_explorer(project_config):
+
+    viewer = napari.Viewer()
+
+    # Build object that has all the data
+    ui = manual_annotation_widget(project_config)
+
+    # Build Napari and add widgets
+    print("Finished loading data, starting napari...")
+    viewer.add_image(ui.red_data, name="Red data", ndisplay=2, opacity=0.5)
+    viewer.add_labels(ui.raw_segmentation, name="Raw segmentation", opacity=0.5)
+    if ui.segmentation is not None:
+        viewer.add_labels(ui.segmentation)
+
+    # Actually dock my additional gui elements
+    ui.setupUi(viewer)
+    viewer.window.add_dock_widget(ui)
+    ui.show()
+
+    print("Finished GUI setup")
+
+    napari.run()
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Build GUI with a project')
+    parser.add_argument('--project_path', default=None,
+                        help='path to config file')
+    parser.add_argument('--DEBUG', default=False,
+                        help='')
+    args = parser.parse_args()
+    project_path = args.project_path
+    DEBUG = args.DEBUG
+
+    print("Starting trace explorer GUI, may take a while to load...")
+
+    build_napari_trace_explorer(project_path)
