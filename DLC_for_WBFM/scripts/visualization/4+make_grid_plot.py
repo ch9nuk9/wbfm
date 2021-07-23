@@ -19,10 +19,15 @@ ex.add_config(project_path=None, trace_mode='green')
 @ex.config
 def cfg(project_path):
     project_dir = Path(project_path).parent
+    project_cfg = load_config(project_path)
+
+    traces_fname = Path(project_cfg['subfolder_configs']['traces'])
+    traces_fname = Path(project_dir).joinpath(traces_fname)
+    traces_cfg = dict(load_config(traces_fname))
 
 @ex.automain
 def make_dlc_labeled_videos(_config, _run):
     sacred.commands.print_config(_run)
 
     with safe_cd(_config['project_dir']):
-        make_grid_plot_from_project(None, trace_mode=_config['trace_mode'])
+        make_grid_plot_from_project(_config['traces_cfg'], trace_mode=_config['trace_mode'])
