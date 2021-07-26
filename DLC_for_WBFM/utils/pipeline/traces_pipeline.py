@@ -152,6 +152,7 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
         zxy1[:, 0] *= z_to_xy_ratio
         # Get matches
         out = calc_icp_matches(zxy0, zxy1, max_dist=max_dist)
+        # TODO: the distance function doesn't produce the correct reindexed segmentations
         # out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
         if DEBUG:

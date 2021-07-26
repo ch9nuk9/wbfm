@@ -14,7 +14,7 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_fro
     get_or_recalculate_which_frames
 
 
-def reindex_segmentation(this_config, DEBUG=False):
+def reindex_segmentation_using_config(this_config, DEBUG=False):
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
     """
@@ -172,12 +172,14 @@ def all_matches_to_lookup_tables(all_matches):
     # Note: if not all neurons are in the dataframe, then they are set to 0
     all_lut = defaultdict(list)
     for i_volume, match in all_matches.items():
-        lut = np.zeros(1000, dtype=int)  # TODO: Should be more than the maximum local index
-        # TODO: are the matches always the same length?
         try:
+            # TODO: are the matches always the same length?
             dlc_ind = np.array(match)[:, 0].astype(int)
             seg_ind = np.array(match)[:, 1].astype(int)
+            lut = np.zeros(np.max(seg_ind)+2, dtype=int)  # TODO: Should be more than the maximum local index
             lut[seg_ind] = dlc_ind  # Raw indices of the lut should match the local index
+            # if np.max(seg_ind) > 1000:
+            #     raise ValueError("Lookup-table size is too small; increase this (in code) or fix it!")
         except IndexError:
             # Some volumes may be empty
             pass

@@ -2,7 +2,7 @@
 
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config
-from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation
+from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
 # Experiment tracking
 import sacred
 from sacred import Experiment
@@ -37,4 +37,4 @@ def main(_config, _run):
     this_config = _config.copy()
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
-    reindex_segmentation(this_config)
+    reindex_segmentation_using_config(this_config)
