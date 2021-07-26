@@ -8,7 +8,7 @@ from pathlib import Path
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 
-def impute_missing_values_using_config(tracking_config):
+def impute_missing_values_using_config(tracking_config, DEBUG=False):
     """
     Using gappy time series of the positions of all neurons, uses probabilistic PCA (PPCA) to impute the missing values
 
