@@ -1,0 +1,52 @@
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from ppca import PPCA
+from pathlib import Path
+
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+
+
+def impute_missing_position_values(tracking_config):
+    """
+    Using gappy time series of the positions of all neurons, uses probabilistic PCA (PPCA) to impute the missing values
+
+
+    Parameters
+    ----------
+    project_config
+
+    Returns
+    -------
+
+    """
+
+    # Unpack config
+    project_dir = tracking_config['project_dir']
+    df_fname = tracking_config['final_3d_tracks']['df_fname']
+
+    #
+    with safe_cd(project_dir):
+        df = pd.read_hdf(df_fname)
+
+    # DLC uses zeros as "failed tracking"
+    # Replace with nan and scale
+    df.replace(0, np.NaN, inplace=True)
+
+    df_dat = df.to_numpy()
+    scaler = StandardScaler()
+    scaler.fit(df_dat)
+    dat_normalized = scaler.transform(df_dat)
+
+    # Actually impute
+    ppca10 = PPCA()
+    ppca10.fit(data=dat_normalized, d=10, verbose=False)
+
+    dat_imputed = scaler.inverse_transform(ppca10.data)
+    df_imputed = pd.DataFrame(data=dat_imputed, columns=df.columns)
+
+    # Save
+    out_fname = Path(df_fname).with_name('postprocessing').joinpath('full_3d_tracks.h5')
+    df_imputed.to_hdf(out_fname, 'df_with_missing')
+    df_imputed.to_csv(Path(out_fname).with_suffix('.csv'))
