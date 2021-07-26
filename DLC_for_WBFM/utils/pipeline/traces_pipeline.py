@@ -10,6 +10,7 @@ import zarr
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, \
     calc_icp_matches
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
+from DLC_for_WBFM.utils.visualization.visualization_tracks import visualize_tracks
 
 
 def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
@@ -88,7 +89,7 @@ def get_traces_from_3d_tracks(DEBUG: bool, dlc_tracks: pd.DataFrame, green_video
     if DEBUG:
         frame_list = frame_list[:2]  # Shorten (to avoid break)
     calculate_segmentation_and_dlc_matches(_get_dlc_zxy, all_matches, all_neuron_names, frame_list, max_dist, red_dat,
-                                           segmentation_metadata, z_to_xy_ratio)
+                                           segmentation_metadata, z_to_xy_ratio, DEBUG=DEBUG)
 
     print("Extracting green traces using matches...")
     for i_volume in tqdm(frame_list):
@@ -119,7 +120,7 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
                                            max_dist: float,
                                            red_dat: pd.DataFrame,
                                            segmentation_metadata: Dict[int, pd.DataFrame],
-                                           z_to_xy_ratio: float) -> None:
+                                           z_to_xy_ratio: float, DEBUG: bool = False) -> None:
     """
 
     Parameters
@@ -153,8 +154,8 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
         out = calc_icp_matches(zxy0, zxy1, max_dist=max_dist)
         # out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
-        # if DEBUG:
-        #     visualize_tracks(zxy0, zxy1, matches)
+        if DEBUG:
+            visualize_tracks(zxy0, zxy1, matches)
         # Use metadata to get red traces
         # OPTIMIZE: minimum confidence?
         mdat = segmentation_metadata[i_volume]
