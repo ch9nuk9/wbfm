@@ -74,7 +74,7 @@ def convert_training_dataframe_to_dlc_format(df, scorer=None):
 
 def save_training_data_as_dlc_format(this_config, DEBUG=False):
     """
-    Takes my tracklet format and saves as a DLC dataframe
+    Takes my training data from my tracklet format and saves as a DLC dataframe
 
     Parameters
     ----------
@@ -101,6 +101,34 @@ def save_training_data_as_dlc_format(this_config, DEBUG=False):
     training_df = convert_training_dataframe_to_dlc_format(subset_df, scorer=None)
 
     out_fname = os.path.join("2-training_data", "training_data_tracks.h5")
+    training_df.to_hdf(out_fname, 'df_with_missing')
+
+    out_fname = Path(out_fname).with_suffix(".csv")
+    training_df.to_csv(out_fname)
+
+
+def save_all_tracklets_as_dlc_format(this_config, DEBUG=False):
+    """
+    Takes my tracklet format and saves ALL as DLC format (i.e. many short tracklets)
+
+    Note: uses hardcoded relative path, so it only needs to be executed in the right folder
+
+    Parameters
+    ----------
+    this_config - unused
+    DEBUG - unused
+
+    Returns
+    -------
+
+    """
+
+    fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
+    df = pd.read_pickle(fname)
+
+    training_df = convert_training_dataframe_to_dlc_format(df, scorer=None)
+
+    out_fname = os.path.join("2-training_data", "all_tracklets.h5")
     training_df.to_hdf(out_fname, 'df_with_missing')
 
     out_fname = Path(out_fname).with_suffix(".csv")
