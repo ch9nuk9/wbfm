@@ -48,11 +48,10 @@ def convert_training_dataframe_to_dlc_format(df, scorer=None):
 
     """
 
-    ind = list(df.index)[0]
-    which_frames = df.at[ind, 'slice_ind']
     new_df = None
 
-    for ind, row in df.iterrows():
+    for ind, row in tqdm(df.iterrows()):
+        which_frames = df.at[ind, 'slice_ind']
         bodypart = f'neuron{ind}'
         confidence = row['all_prob']
         zxy = row['all_xyz']
@@ -65,7 +64,7 @@ def convert_training_dataframe_to_dlc_format(df, scorer=None):
                                                names=['scorer', 'bodyparts', 'coords'])
         else:
             index = pd.MultiIndex.from_product([[bodypart], ['z', 'x', 'y', 'likelihood']],
-                                               names=['scorer', 'bodyparts', 'coords'])
+                                               names=['bodyparts', 'coords'])
         frame = pd.DataFrame(coords, columns=index, index=which_frames)
         new_df = pd.concat([new_df, frame], axis=1)
 
