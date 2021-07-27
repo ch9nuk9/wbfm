@@ -197,7 +197,10 @@ class napari_trace_explorer(QtWidgets.QWidget):
         zxy_array = np.array(self.dat.dlc_raw[self.current_name][coords])
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
         # Remove low likelihood
-        to_remove = self.dat.dlc_raw[self.current_name]['likelihood'] < likelihood_thresh
+        if 'likelihood' in self.dat.dlc_raw[self.current_name]:
+            to_remove = self.dat.dlc_raw[self.current_name]['likelihood'] < likelihood_thresh
+        else:
+            to_remove = np.zeros_like(zxy_array[:, 0], dtype=bool)
         zxy_array[to_remove, :] = 0
 
         all_tracks_list.append(np.hstack([t_array, zxy_array]))
