@@ -13,6 +13,7 @@ from DLC_for_WBFM.utils.visualization.utils_plot_traces import build_trace_facto
 
 def make_grid_plot_from_project(traces_config,
                                 trace_mode=None, do_df_over_f0=False, smoothing_func=None,
+                                color_using_behavior=True,
                                 background_per_pixel=15):
     """
     Should be run within a project folder
