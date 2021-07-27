@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Union
 
 import pandas as pd
 import zarr
@@ -95,5 +96,10 @@ class finished_project_data:
 
     @staticmethod
     def load_all_project_data_from_config(project_path):
-        args = finished_project_data.unpack_config_file(project_path)
-        return finished_project_data.load_data_from_configs(*args)
+        if isinstance(project_path, (str, os.PathLike)):
+            args = finished_project_data.unpack_config_file(project_path)
+            return finished_project_data.load_data_from_configs(*args)
+        elif isinstance(project_path, finished_project_data):
+            return project_path
+        else:
+            raise TypeError("Must path pathlike or already loaded project data")
