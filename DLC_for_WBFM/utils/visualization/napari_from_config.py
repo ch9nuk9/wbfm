@@ -60,9 +60,10 @@ def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
         zxy_array = np.array(df[name][coords])
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
         # Remove low likelihood
-        to_keep = df[name]['likelihood'] > likelihood_thresh
-        zxy_array = zxy_array[to_keep, :]
-        t_array = t_array[to_keep, :]
+        if 'likelihood' in df[name]:
+            to_keep = df[name]['likelihood'] > likelihood_thresh
+            zxy_array = zxy_array[to_keep, :]
+            t_array = t_array[to_keep, :]
 
         id_array = np.ones_like(t_array) * i
 
