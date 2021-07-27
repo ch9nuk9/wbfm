@@ -37,7 +37,7 @@ def best_tracklet_covering(df, num_frames_needed, num_frames,
     return make_window(best_covering), y
 
 
-def convert_training_dataframe_to_dlc_format(df, scorer=None):
+def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
     """
     Converts a dataframe of my tracklets to DLC format
 
@@ -49,9 +49,12 @@ def convert_training_dataframe_to_dlc_format(df, scorer=None):
     """
 
     new_df = None
+    all_dfs = []
 
     for ind, row in tqdm(df.iterrows()):
         which_frames = df.at[ind, 'slice_ind']
+        if len(which_frames) < min_length:
+            continue
         bodypart = f'neuron{ind}'
         confidence = row['all_prob']
         zxy = row['all_xyz']
@@ -66,7 +69,9 @@ def convert_training_dataframe_to_dlc_format(df, scorer=None):
             index = pd.MultiIndex.from_product([[bodypart], ['z', 'x', 'y', 'likelihood']],
                                                names=['bodyparts', 'coords'])
         frame = pd.DataFrame(coords, columns=index, index=which_frames)
-        new_df = pd.concat([new_df, frame], axis=1)
+        all_dfs.append(frame)
+        # new_df = pd.concat([new_df, frame], axis=1)
+    new_df = pd.concat(all_dfs, axis=1)
 
     return new_df
 
@@ -106,7 +111,7 @@ def save_training_data_as_dlc_format(this_config, DEBUG=False):
     training_df.to_csv(out_fname)
 
 
-def save_all_tracklets_as_dlc_format(this_config, DEBUG=False):
+def save_all_tracklets_as_dlc_format(this_config, min_length, DEBUG=False):
     """
     Takes my tracklet format and saves ALL as DLC format (i.e. many short tracklets)
 
@@ -125,7 +130,7 @@ def save_all_tracklets_as_dlc_format(this_config, DEBUG=False):
     fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
     df = pd.read_pickle(fname)
 
-    training_df = convert_training_dataframe_to_dlc_format(df, scorer=None)
+    training_df = convert_training_dataframe_to_dlc_format(df, min_length=min_length, scorer=None)
 
     out_fname = os.path.join("2-training_data", "all_tracklets.h5")
     training_df.to_hdf(out_fname, 'df_with_missing')
