@@ -51,7 +51,7 @@ def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
     """
 
     # Convert tracks to napari style
-    neuron_names = df.columns.levels[0]
+    neuron_names = df.columns.remove_unused_levels().levels[0]
     # 5 columns:
     # track_id, t, z, y, x
     coords = ['z', 'y', 'x']
