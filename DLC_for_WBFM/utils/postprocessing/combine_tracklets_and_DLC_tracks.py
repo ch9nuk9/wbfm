@@ -137,7 +137,7 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tr
     return final_track_df, new_tracklet_df
 
 
-def combine_all_dlc_and_tracklet_coverings_from_config(project_path, DEBUG=False):
+def combine_all_dlc_and_tracklet_coverings_from_config(track_config, DEBUG=False):
     """
     Improves tracking by combining DLC neurons with my short tracklets
 
@@ -151,16 +151,11 @@ def combine_all_dlc_and_tracklet_coverings_from_config(project_path, DEBUG=False
 
     """
 
-    # LOAD
-    project_cfg = load_config(project_path)
-    track_fname = project_cfg['subfolder_configs']['tracking']
-    project_dir = Path(project_path).parent
+    project_dir = track_config['project_dir']
 
     with safe_cd(project_dir):
-        track_cfg = load_config(track_fname)
-
         tracklet_fname = os.path.join('2-training_data', 'all_tracklets.h5')
-        dlc_fname = track_cfg['final_3d_tracks']['df_fname']
+        dlc_fname = track_config['final_3d_tracks']['df_fname']
 
         df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
@@ -192,9 +187,9 @@ def combine_all_dlc_and_tracklet_coverings_from_config(project_path, DEBUG=False
 
     with safe_cd(project_dir):
         # Save only df_fname in yaml; don't overwrite other fields
-        updates = track_cfg['final_3d_tracks']
+        updates = track_config['final_3d_tracks']
         updates['df_fname'] = df_fname
-        edit_config(track_cfg['self_path'], {'final_3d_tracks': updates})
+        edit_config(track_config['self_path'], {'final_3d_tracks': updates})
 
         # Actually save
         combined_df.to_hdf(df_fname, key='df_with_missing')
