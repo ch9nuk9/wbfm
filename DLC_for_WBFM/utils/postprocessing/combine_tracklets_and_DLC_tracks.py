@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 
 
 def calc_dlc_to_tracklet_distances(dlc_tracks, df_tracklet, dlc_name, all_covering_ind, min_overlap=5,
@@ -162,18 +162,18 @@ def combine_all_dlc_and_tracklet_coverings_from_config(project_path, DEBUG=False
         tracklet_fname = os.path.join('2-training_data', 'all_tracklets.h5')
         dlc_fname = track_cfg['final_3d_tracks']['df_fname']
 
-        df_tracklet = pd.read_hdf(tracklet_fname)
-        dlc_tracks = pd.read_hdf(dlc_fname)
-        dlc_tracks.replace(0, np.NaN, inplace=True)
+        df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
+        df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
+        df_dlc_tracks.replace(0, np.NaN, inplace=True)
 
     # Match tracklets to DLC neurons
-    all_dlc_names = list(dlc_tracks.columns.levels[0])
+    all_dlc_names = list(df_dlc_tracks.columns.levels[0])
     # all_covering_dist = []
     # all_covering_time_points = []
     all_covering_ind = []
     for i, dlc_name in enumerate(tqdm(all_dlc_names)):
-        dist = calc_dlc_to_tracklet_distances(dlc_tracks, df_tracklet, dlc_name, all_covering_ind)
-        out = calc_covering_from_distances(dist, df_tracklet, all_covering_ind, d_max=5)
+        dist = calc_dlc_to_tracklet_distances(df_dlc_tracks, df_tracklets, dlc_name, all_covering_ind)
+        out = calc_covering_from_distances(dist, df_tracklets, all_covering_ind, d_max=5)
         # covering_time_points, covering_ind, these_dist = out
         _, covering_ind, _ = out
 
@@ -185,12 +185,20 @@ def combine_all_dlc_and_tracklet_coverings_from_config(project_path, DEBUG=False
             break
 
     # Combine and save
-    combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tracks,
+    combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklets, df_dlc_tracks,
                                                                           verbose=0)
 
+    df_fname = os.path.join('3-tracking', 'postprocessing', 'combined_3d_tracks.h5')
+
     with safe_cd(project_dir):
-        df_fname = os.path.join('3-tracking', 'postprocessing', 'combined_3d_tracks.h5')
+        # Save only df_fname in yaml; don't overwrite other fields
+        updates = track_cfg['final_3d_tracks']
+        updates['df_fname'] = df_fname
+        edit_config(track_cfg['self_path'], {'final_3d_tracks': updates})
+
+        # Actually save
         combined_df.to_hdf(df_fname, key='df_with_missing')
 
         df_fname = Path(df_fname).with_suffix('.csv')
         combined_df.to_csv(df_fname)
+
