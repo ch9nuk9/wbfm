@@ -1,6 +1,11 @@
+import os
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
+
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
 
 def calc_dlc_to_tracklet_distances(dlc_tracks, df_tracklet, dlc_name, all_covering_ind, min_overlap=5,
@@ -34,7 +39,7 @@ def calc_dlc_to_tracklet_distances(dlc_tracks, df_tracklet, dlc_name, all_coveri
     return all_dist
 
 
-def calc_covering_from_distances(all_dist, df_tracklet, all_covering_ind, d_max=5):
+def calc_covering_from_distances(all_dist, df_tracklet, all_covering_ind, d_max=5, verbose=0):
     """Given distances between a dlc track and all tracklets, make a time-unique covering from the tracklets"""
     all_meds = list(map(np.nanmedian, all_dist))
     ind = np.argsort(all_meds)
@@ -66,7 +71,8 @@ def calc_covering_from_distances(all_dist, df_tracklet, all_covering_ind, d_max=
         covering_ind.append(i)
         these_dist[new_t] = all_dist[i][new_t]
     #         these_dist.append(all_dist[i])
-    print(f"Covering of length {len(covering_time_points)} made from {len(covering_ind)} tracklets")
+    if verbose >= 1:
+        print(f"Covering of length {len(covering_time_points)} made from {len(covering_ind)} tracklets")
 
     return covering_time_points, covering_ind, these_dist
 
@@ -83,13 +89,22 @@ def combine_one_dlc_and_tracklet_covering(these_tracklet_ind, neuron_name, df_tr
     coords = ['z', 'x', 'y', 'likelihood']
     all_arrs = []
     for c in coords:
-        all_arrs.append(np.nansum([new_df[name][c] for name in these_tracklet_names], axis=0))
+        this_column = np.nansum([new_df[name][c] for name in these_tracklet_names], axis=0)
+        # My trackler often does not track the very last frames
+        if len(this_column) < len(dlc_tracks):
+            tmp = np.zeros(len(dlc_tracks) - len(this_column))
+            tmp[:] = np.nan
+            this_column = np.hstack([this_column, tmp])
+
+        all_arrs.append(this_column)
     summed_tracklet_array = np.stack(all_arrs, axis=1)
+
 
     # Morph to DLC format
     cols = [[neuron_name], coords]
     cols = pd.MultiIndex.from_product(cols)
     summed_tracklet_df = pd.DataFrame(data=summed_tracklet_array, columns=cols)
+
 
     return summed_tracklet_df
 
@@ -120,3 +135,62 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tr
     # final_track_df = pd.concat(all_df, axis=1)
 
     return final_track_df, new_tracklet_df
+
+
+def combine_all_dlc_and_tracklet_coverings_from_config(project_path, DEBUG=False):
+    """
+    Improves tracking by combining DLC neurons with my short tracklets
+
+    Parameters
+    ----------
+    project_path
+    DEBUG
+
+    Returns
+    -------
+
+    """
+
+    # LOAD
+    project_cfg = load_config(project_path)
+    track_fname = project_cfg['subfolder_configs']['tracking']
+    project_dir = Path(project_path).parent
+
+    with safe_cd(project_dir):
+        track_cfg = load_config(track_fname)
+
+        tracklet_fname = os.path.join('2-training_data', 'all_tracklets.h5')
+        dlc_fname = track_cfg['final_3d_tracks']['df_fname']
+
+        df_tracklet = pd.read_hdf(tracklet_fname)
+        dlc_tracks = pd.read_hdf(dlc_fname)
+        dlc_tracks.replace(0, np.NaN, inplace=True)
+
+    # Match tracklets to DLC neurons
+    all_dlc_names = list(dlc_tracks.columns.levels[0])
+    # all_covering_dist = []
+    # all_covering_time_points = []
+    all_covering_ind = []
+    for i, dlc_name in enumerate(tqdm(all_dlc_names)):
+        dist = calc_dlc_to_tracklet_distances(dlc_tracks, df_tracklet, dlc_name, all_covering_ind)
+        out = calc_covering_from_distances(dist, df_tracklet, all_covering_ind, d_max=5)
+        # covering_time_points, covering_ind, these_dist = out
+        _, covering_ind, _ = out
+
+        # all_covering_dist.append(these_dist)
+        # all_covering_time_points.append(covering_time_points)
+        all_covering_ind.append(covering_ind)
+
+        if DEBUG:
+            break
+
+    # Combine and save
+    combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tracks,
+                                                                          verbose=0)
+
+    with safe_cd(project_dir):
+        df_fname = os.path.join('3-tracking', 'postprocessing', 'combined_3d_tracks.h5')
+        combined_df.to_hdf(df_fname, key='df_with_missing')
+
+        df_fname = Path(df_fname).with_suffix('.csv')
+        combined_df.to_csv(df_fname)
