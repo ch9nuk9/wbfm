@@ -312,9 +312,16 @@ def segment_and_save3d(i, i_volume, masks_zarr,
     masks_zarr[i, :, :, :] = final_masks
 
 
-def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
+def segment_and_save2d(i,
+                       i_volume,
+                       masks_zarr,
+                       opt_postprocessing,
                        zero_out_borders,
-                       sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
+                       sd_model,
+                       verbose,
+                       video_dat,
+                       keras_lock=None,
+                       read_lock=None):
     volume = video_dat[i_volume, ...]
     if keras_lock is None:
         segmented_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
