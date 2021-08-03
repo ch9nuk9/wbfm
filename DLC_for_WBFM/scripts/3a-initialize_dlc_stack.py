@@ -4,6 +4,8 @@ The top level function for initializing a stack of DLC projects
 
 from pathlib import Path
 # main function
+from sacred.observers import TinyDbObserver
+
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_dlc_training_from_tracklets
 # Experiment tracking
@@ -22,12 +24,14 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path):
     # Manually load yaml files
     project_cfg = load_config(project_path)
-    project_dir = Path(project_path).parent
+    project_dir = str(Path(project_path).parent)
 
     with safe_cd(project_dir):
-        tracking_fname = Path(project_cfg['subfolder_configs']['tracking'])
+        tracking_fname = str(Path(project_cfg['subfolder_configs']['tracking']))
         tracking_cfg = dict(load_config(tracking_fname))
 
+    log_dir = str(Path(project_dir).joinpath('log'))
+    ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def initialize_dlc_stack(_config, _run):

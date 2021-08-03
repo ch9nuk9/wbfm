@@ -4,6 +4,8 @@ The top level function for producing training data via feature-based tracking
 
 from pathlib import Path
 # main function
+from sacred.observers import TinyDbObserver
+
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd, synchronize_train_config
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 # Experiment tracking
@@ -20,15 +22,17 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path):
     # Manually load yaml files
     project_cfg = load_config(project_path)
-    project_dir = Path(project_path).parent
+    project_dir = str(Path(project_path).parent)
 
     with safe_cd(project_dir):
-        train_fname = Path(project_cfg['subfolder_configs']['training_data'])
+        train_fname = str(Path(project_cfg['subfolder_configs']['training_data']))
         train_cfg = dict(load_config(train_fname))
 
         train_cfg = synchronize_train_config(Path(project_path).name)
         edit_config(train_fname, train_cfg)
 
+    log_dir = str(Path(project_dir).joinpath('log'))
+    ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def produce_training_data(_config, _run):

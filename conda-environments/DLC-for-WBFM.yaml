@@ -45,3 +45,6 @@ dependencies:
     - pyqt5-tools
     - napari[all]
     - easydict
+    - tinydb==3.15.2
+    - tinydb-serialization
+    - hashfs

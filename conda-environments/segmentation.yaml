@@ -31,3 +31,6 @@ dependencies:
     - stardist
     - sacred
     - zarr
+    - tinydb==3.15.2
+    - tinydb-serialization
+    - hashfs

@@ -8,6 +8,8 @@ To be used with Niklas' Stardist-based segmentation package
 import os
 from pathlib import Path
 # main function
+from sacred.observers import TinyDbObserver
+
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, synchronize_segment_config, safe_cd
 from segmentation.util.utils_pipeline import segment_video_using_config_2d, segment_video_using_config_3d
 # Experiment tracking
@@ -26,14 +28,17 @@ ex.add_config(project_path=None, continue_from_frame=None, DEBUG=False)
 def cfg(project_path):
     # Manually load yaml files
     project_cfg = load_config(project_path)
-    segment_fname = Path(project_cfg['subfolder_configs']['segmentation'])
-    project_dir = Path(project_path).parent
-    segment_fname = Path(project_dir).joinpath(segment_fname)
+    segment_fname = str(Path(project_cfg['subfolder_configs']['segmentation']))
+    project_dir = str(Path(project_path).parent)
+    segment_fname = str(Path(project_dir).joinpath(segment_fname))
     segment_cfg = dict(load_config(segment_fname))
 
     # Sync filename in segmentation config from project_cfg
     segment_cfg = synchronize_segment_config(project_path, segment_cfg)
     edit_config(segment_fname, segment_cfg)
+
+    log_dir = str(Path(project_dir).joinpath('log'))
+    ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain
