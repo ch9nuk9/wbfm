@@ -42,16 +42,8 @@ subfolder_configs:
   tracking: 3-tracking/tracking_config.yaml
   traces: 4-traces/traces_config.yaml
 
-current_status:
-  segmentation: false
-  training_data_3d: false
-  training_data_2d: false
-  dlc_networks: false
-  traces: false
-
 ###################
 # Other
 ###################
 other:
   verbose: 2
-  DEBUG: false
