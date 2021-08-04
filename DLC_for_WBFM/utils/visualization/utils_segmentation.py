@@ -14,14 +14,14 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_fro
     get_or_recalculate_which_frames
 
 
-def reindex_segmentation_using_config(this_config, DEBUG=False):
+def reindex_segmentation_using_config(trace_and_seg_cfg, DEBUG=False):
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
     """
-    trace_cfg = this_config['traces_cfg']
-    seg_cfg = this_config['segment_cfg']
+    trace_cfg = trace_and_seg_cfg['traces_cfg']
+    seg_cfg = trace_and_seg_cfg['segment_cfg']
 
-    with safe_cd(Path(this_config['project_path']).parent):
+    with safe_cd(Path(trace_and_seg_cfg['project_dir'])):
         # Get original segmentation
         seg_fname = seg_cfg['output']['masks']
         seg_masks = zarr.open(seg_fname)
@@ -36,6 +36,11 @@ def reindex_segmentation_using_config(this_config, DEBUG=False):
         # Format: dict with i_volume -> Nx3 array of [dlc_ind, segmentation_ind, confidence] triplets
 
     all_lut = all_matches_to_lookup_tables(all_matches)
+    all_lut_keys = all_lut.keys()
+
+    if DEBUG:
+        all_lut_keys = [0, 1]
+        print("DEBUG mode: only doing first 2 volumes")
 
     # Apply lookup tables to each volume
     # Also see link for ways to speed this up:
@@ -52,7 +57,7 @@ def reindex_segmentation_using_config(this_config, DEBUG=False):
             new_masks[i, ...] = lut[seg_masks[i, ...]]
         with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
             # executor.map(parallel_func, range(len(all_lut)))
-            future_results = {executor.submit(parallel_func, i): i for i in range(len(all_lut))}
+            future_results = {executor.submit(parallel_func, i): i for i in all_lut_keys}
             for future in concurrent.futures.as_completed(future_results):
                 # _ = future_results[future]
                 _ = future.result()
@@ -156,7 +161,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
     # blosc.use_threads = None
 
 
-def all_matches_to_lookup_tables(all_matches):
+def all_matches_to_lookup_tables(all_matches: dict) -> dict:
     """
     Convert a dictionary of match arrays into a lookup table
 
@@ -176,7 +181,7 @@ def all_matches_to_lookup_tables(all_matches):
             # TODO: are the matches always the same length?
             dlc_ind = np.array(match)[:, 0].astype(int)
             seg_ind = np.array(match)[:, 1].astype(int)
-            lut = np.zeros(np.max(seg_ind)+2, dtype=int)  # TODO: Should be more than the maximum local index
+            lut = np.zeros(1000, dtype=int)  # TODO: Should be more than the maximum local index
             lut[seg_ind] = dlc_ind  # Raw indices of the lut should match the local index
             # if np.max(seg_ind) > 1000:
             #     raise ValueError("Lookup-table size is too small; increase this (in code) or fix it!")
