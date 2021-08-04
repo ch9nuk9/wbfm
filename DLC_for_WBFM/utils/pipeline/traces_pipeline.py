@@ -1,3 +1,4 @@
+import concurrent
 import pickle
 from collections import defaultdict
 from pathlib import Path
@@ -73,44 +74,31 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     with safe_cd(project_cfg['project_dir']):
         reindexed_masks = zarr.open(fname)
 
-    all_green_dfs = []
-    all_red_dfs = []
-    for i_mask_ind, name in enumerate(tqdm(new_neuron_names)):
-    # for i_dlc, i_seg, c in matches:
-    #     i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
-        all_green_dfs_one_neuron = []
-        all_red_dfs_one_neuron = []
-        for i_volume in tqdm(frame_list, leave=False):
-            # Prepare matches and locations
-            # matches = all_matches[i_volume]
-            # if len(matches) == 0:
-            #     continue
-            # mdat = segmentation_metadata[i_volume]
-            # all_seg_names = list(mdat['centroids'].keys())
-            all_zxy_dlc = _get_dlc_zxy(i_volume)
-            # Prepare mask (segmentation)
-            i_mask = i_volume - params_start_volume
-            # this_mask_volume = mask_array[i_mask, ...]
-            this_mask_volume = reindexed_masks[i_mask, ...]
-            this_green_volume = green_video[i_volume, ...]
-            this_red_volume = red_video[i_volume, ...]
-            # Green then red
-            df_green_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc, i_mask_ind,
-                                                 i_volume,
-                                                 is_mirrored, this_green_volume, this_mask_volume)
-            df_red_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc, i_mask_ind,
-                                                 i_volume,
-                                                 False, this_red_volume, this_mask_volume)
-            all_green_dfs_one_neuron.append(df_green_one_frame)
-            all_red_dfs_one_neuron.append(df_red_one_frame)
+    def parallel_func(i_and_name):
+        i, name = i_and_name
+        return calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video,
+                                                                                 i, is_mirrored, name,
+                                                                                 params_start_volume, red_video,
+                                                                                 reindexed_masks)
 
-        df_green_one_neuron = pd.concat(all_green_dfs_one_neuron, axis=1)
-        df_red_one_neuron = pd.concat(all_red_dfs_one_neuron, axis=1)
-        all_green_dfs.append(df_green_one_neuron)
-        all_red_dfs.append(df_red_one_neuron)
+    with tqdm(total=len(new_neuron_names)) as pbar:
 
-    df_green = pd.concat(all_green_dfs, axis=0, ignore_index=True)
-    df_red = pd.concat(all_red_dfs, axis=0, ignore_index=True)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in enumerate(new_neuron_names)}
+            results = []
+            for future in concurrent.futures.as_completed(futures):
+                results.append(future.result())
+                pbar.update(1)
+
+    all_green_dfs = [r[0] for r in results]
+    all_red_dfs = [r[1] for r in results]
+    # for i_and_name in enumerate(tqdm(new_neuron_names)):
+    #     df_green_one_neuron, df_red_one_neuron = parallel_func(i_and_name)
+    #     all_green_dfs.append(df_green_one_neuron)
+    #     all_red_dfs.append(df_red_one_neuron)
+
+    df_green = pd.concat(all_green_dfs, axis=1)
+    df_red = pd.concat(all_red_dfs, axis=1)
 
     # all_matches, all_neuron_names, green_dat, red_dat = get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_video,
     #                                                                               is_mirrored, mask_array, max_dist,
@@ -125,17 +113,44 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     _save_traces_as_hdf_and_update_configs(new_neuron_names, df_green, df_red, traces_cfg)
 
 
+def calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, i, is_mirrored, name, params_start_volume,
+                                    red_video, reindexed_masks):
+    all_green_dfs_one_neuron = []
+    all_red_dfs_one_neuron = []
+    i_mask_ind = i + 1
+    for i_volume in frame_list:
+        all_zxy_dlc = _get_dlc_zxy(i_volume)
+        # Prepare mask (segmentation)
+        i_mask = i_volume - params_start_volume
+        # this_mask_volume = mask_array[i_mask, ...]
+        this_mask_volume = reindexed_masks[i_mask, ...]
+        this_green_volume = green_video[i_volume, ...]
+        this_red_volume = red_video[i_volume, ...]
+        # Green then red
+        df_green_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc, i_mask_ind,
+                                                                  i_volume,
+                                                                  is_mirrored, this_green_volume, this_mask_volume)
+        df_red_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc, i_mask_ind,
+                                                                i_volume,
+                                                                False, this_red_volume, this_mask_volume)
+        all_green_dfs_one_neuron.append(df_green_one_frame)
+        all_red_dfs_one_neuron.append(df_red_one_frame)
+    df_green_one_neuron = pd.concat(all_green_dfs_one_neuron, axis=0)
+    df_red_one_neuron = pd.concat(all_red_dfs_one_neuron, axis=0)
+    return df_green_one_neuron, df_red_one_neuron
+
+
 def _save_traces_as_hdf_and_update_configs(new_neuron_names: list,
-                                           green_dat: pd.DataFrame, red_dat: pd.DataFrame, traces_cfg: dict) -> None:
+                                           df_green: pd.DataFrame, df_red: pd.DataFrame, traces_cfg: dict) -> None:
     # Save traces (red and green) and neuron names
     # csv doesn't work well when some entries are lists
     red_fname = Path('4-traces').joinpath('red_traces.h5')
-    red_dat.to_hdf(red_fname, "df_with_missing")
+    df_red.to_hdf(red_fname, "df_with_missing")
     # red_fname2 = red_fname.with_suffix('.csv')
     # red_dat.to_csv(red_fname2)
 
     green_fname = Path('4-traces').joinpath('green_traces.h5')
-    green_dat.to_hdf(green_fname, "df_with_missing")
+    df_green.to_hdf(green_fname, "df_with_missing")
     # green_fname2 = green_fname.with_suffix('.csv')
     # green_dat.to_csv(green_fname2)
     # Save the output filenames
@@ -261,7 +276,7 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
         # Save
         # all_matches[i_volume] = np.hstack([matches, conf])
         # NOTE: need to offset by 1, because the background is 0
-        all_matches[i_volume] = np.array([[m[0] + 1, m[1] + 1, c] for m, c in zip(matches, conf)])
+        all_matches[i_volume] = np.array([[m[0] + 1, m[1] + 1, c[0]] for m, c in zip(matches, conf)])
 
 
 def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
@@ -312,12 +327,9 @@ def extract_traces_using_reindexed_masks(d_name: str, all_zxy_dlc: np.ndarray,
                                          i_mask: int, i_volume: int,
                                          is_mirrored: bool, video_volume: np.ndarray,
                                          this_mask_volume: np.ndarray, confidence: float = 0.0) -> pd.DataFrame:
-    # For conversion between lists
-    # i_dlc, i_seg = int(i_dlc), int(i_seg)
-    # s_name = int(all_seg_names[i_seg])
+
     i = i_volume
     # Get brightness from green volume and mask
-    # this_mask_neuron = (this_mask_volume == s_name)
     # Use reindexed mask instead of original index mask
     this_mask_neuron = (this_mask_volume == i_mask)
     if is_mirrored:
@@ -326,7 +338,7 @@ def extract_traces_using_reindexed_masks(d_name: str, all_zxy_dlc: np.ndarray,
     all_values = video_volume[this_mask_neuron]
     brightness = np.sum(all_values)
 
-    df = _initialize_dataframe([d_name], [i_volume])
+    df = _initialize_dataframe([d_name], [i])
 
     # Save in dataframe
     df[(d_name, 'brightness')].loc[i] = brightness
