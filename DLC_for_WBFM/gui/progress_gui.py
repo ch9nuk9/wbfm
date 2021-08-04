@@ -20,7 +20,7 @@ from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_project_of_substep
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
-from DLC_for_WBFM.gui import trace_explorer_gui
+from DLC_for_WBFM.gui import OLD_trace_explorer_gui
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_training_data, napari_of_full_data
 
 
@@ -283,7 +283,7 @@ class Ui_MainWindow(object):
     def open_traces_gui(self):
 
         self.traces_gui = QtWidgets.QMainWindow()
-        self.ui2 = trace_explorer_gui.Ui_MainWindow()
+        self.ui2 = OLD_trace_explorer_gui.Ui_MainWindow()
         # Actually build window
         # traces_config = self.cfg['subfolder_configs']['traces']
         # other_project = get_project_of_substep(traces_config)

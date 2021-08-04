@@ -50,8 +50,13 @@ def _save_traces_as_hdf_and_update_configs(all_matches: defaultdict, all_neuron_
     # Save traces (red and green) and neuron names
     red_fname = Path('4-traces').joinpath('red_traces.h5')
     red_dat.to_hdf(red_fname, "df_with_missing")
+    red_fname2 = red_fname.with_suffix('.csv')
+    red_dat.to_csv(red_fname2)
+
     green_fname = Path('4-traces').joinpath('green_traces.h5')
     green_dat.to_hdf(green_fname, "df_with_missing")
+    green_fname2 = green_fname.with_suffix('.csv')
+    green_dat.to_csv(green_fname2)
     # Also save matches as a separate file
     # ENHANCE: save as part of the dataframes?
     matches_fname = Path('4-traces').joinpath('all_matches.pickle')

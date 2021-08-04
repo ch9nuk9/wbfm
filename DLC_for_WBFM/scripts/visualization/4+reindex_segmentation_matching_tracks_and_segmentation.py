@@ -11,7 +11,7 @@ from pathlib import Path
 # Initialize sacred experiment
 
 ex = Experiment()
-ex.add_config(project_path=None, out_fname=None)
+ex.add_config(project_path=None, out_fname=None, DEBUG=False)
 
 
 @ex.config
@@ -36,5 +36,6 @@ def main(_config, _run):
 
     this_config = _config.copy()
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
+    this_config['project_dir'] = _config['project_dir']
 
-    reindex_segmentation_using_config(this_config)
+    reindex_segmentation_using_config(this_config, _config['DEBUG'])

@@ -5,6 +5,8 @@
 import os
 from pathlib import Path
 
+from sacred.observers import TinyDbObserver
+
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
 # Experiment tracking
@@ -27,13 +29,16 @@ ex.add_config(project_path=None,
 def cfg(project_path):
     # Manually load yaml files
     cfg = load_config(project_path)
-    project_dir = Path(project_path).parent
+    project_dir = str(Path(project_path).parent)
 
-    fname = Path(resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname']))
+    fname = str(Path(resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])))
     out_fname_red = fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr')
 
-    fname = Path(resolve_mounted_path_in_current_os(cfg['green_bigtiff_fname']))
+    fname = str(Path(resolve_mounted_path_in_current_os(cfg['green_bigtiff_fname'])))
     out_fname_green = fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr')
+
+    log_dir = str(Path(project_dir).joinpath('log'))
+    ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain

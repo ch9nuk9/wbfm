@@ -51,7 +51,7 @@ def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
     """
 
     # Convert tracks to napari style
-    neuron_names = df.columns.levels[0]
+    neuron_names = df.columns.remove_unused_levels().levels[0]
     # 5 columns:
     # track_id, t, z, y, x
     coords = ['z', 'y', 'x']
@@ -59,12 +59,12 @@ def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
     for i, name in enumerate(neuron_names):
         zxy_array = np.array(df[name][coords])
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
+
         # Remove low likelihood
         if 'likelihood' in df[name]:
             to_keep = df[name]['likelihood'] > likelihood_thresh
             zxy_array = zxy_array[to_keep, :]
             t_array = t_array[to_keep, :]
-
         id_array = np.ones_like(t_array) * i
 
         all_tracks_list.append(np.hstack([id_array, t_array, zxy_array]))

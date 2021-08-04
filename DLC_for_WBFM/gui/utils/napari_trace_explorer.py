@@ -221,11 +221,11 @@ def build_napari_trace_explorer(project_config):
 
     # Build Napari and add widgets
     print("Finished loading data, starting napari...")
-    viewer.add_image(ui.dat.red_data, name="Red data", opacity=0.5)
-    viewer.add_image(ui.dat.green_data, name="Green data", opacity=0.5)
-    viewer.add_labels(ui.dat.raw_segmentation, name="Raw segmentation", opacity=0.5)
+    viewer.add_image(ui.dat.red_data, name="Red data", opacity=0.5, colormap='red', visible=False)
+    viewer.add_image(ui.dat.green_data, name="Green data", opacity=0.5, colormap='green')
+    viewer.add_labels(ui.dat.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
     if ui.dat.segmentation is not None:
-        viewer.add_labels(ui.dat.segmentation, name="Colored segmentation")
+        viewer.add_labels(ui.dat.segmentation, name="Colored segmentation", opacity=0.4)
 
     # Actually dock my additional gui elements
     ui.setupUi(viewer)

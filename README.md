@@ -184,5 +184,5 @@ I made a gui for this purpose, with everything in the gui/ folder. Read the READ
 
 Command:
 ```bash
-python gui/trace_explorer_gui.py PATH-TO-YOUR-PROJECT
+python gui/OLD_trace_explorer_gui.py PATH-TO-YOUR-PROJECT
 ```

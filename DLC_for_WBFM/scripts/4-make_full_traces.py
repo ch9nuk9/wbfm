@@ -4,6 +4,8 @@ The top level function for getting final traces from 3d tracks and neuron masks
 
 from pathlib import Path
 # main function
+from sacred.observers import TinyDbObserver
+
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks_using_config
 # Experiment tracking
@@ -22,16 +24,18 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path):
     # Manually load yaml files
     project_cfg = load_config(project_path)
-    project_dir = Path(project_path).parent
+    project_dir = str(Path(project_path).parent)
 
     with safe_cd(project_dir):
-        trace_fname = Path(project_cfg['subfolder_configs']['traces'])
+        trace_fname = str(Path(project_cfg['subfolder_configs']['traces']))
         trace_cfg = dict(load_config(trace_fname))
-        track_fname = Path(project_cfg['subfolder_configs']['tracking'])
+        track_fname = str(Path(project_cfg['subfolder_configs']['tracking']))
         track_cfg = dict(load_config(track_fname))
-        seg_fname = Path(project_cfg['subfolder_configs']['segmentation'])
+        seg_fname = str(Path(project_cfg['subfolder_configs']['segmentation']))
         seg_cfg = dict(load_config(seg_fname))
 
+    log_dir = str(Path(project_dir).joinpath('log'))
+    ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def make_full_tracks(_config, _run):
