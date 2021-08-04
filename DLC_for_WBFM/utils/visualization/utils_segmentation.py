@@ -18,30 +18,17 @@ def reindex_segmentation_using_config(trace_and_seg_cfg, DEBUG=False):
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
     """
-    trace_cfg = trace_and_seg_cfg['traces_cfg']
-    seg_cfg = trace_and_seg_cfg['segment_cfg']
+    all_matches, raw_seg_masks, new_masks = _unpack_config_reindexing(trace_and_seg_cfg)
 
-    with safe_cd(Path(trace_and_seg_cfg['project_dir'])):
-        # Get original segmentation
-        seg_fname = seg_cfg['output']['masks']
-        seg_masks = zarr.open(seg_fname)
+    reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks)
 
-        out_fname = os.path.join("4-traces", "reindexed_masks.zarr")
-        print(f"Saving masks at {out_fname}")
-        new_masks = zarr.open_like(seg_masks, path=out_fname)
 
-        # Get tracking (dataframe) with neuron names
-        matches_fname = Path(trace_cfg['all_matches'])
-        all_matches = pd.read_pickle(matches_fname)
-        # Format: dict with i_volume -> Nx3 array of [dlc_ind, segmentation_ind, confidence] triplets
-
+def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks):
     all_lut = all_matches_to_lookup_tables(all_matches)
     all_lut_keys = all_lut.keys()
-
     if DEBUG:
         all_lut_keys = [0, 1]
         print("DEBUG mode: only doing first 2 volumes")
-
     # Apply lookup tables to each volume
     # Also see link for ways to speed this up:
     # https://stackoverflow.com/questions/14448763/is-there-a-convenient-way-to-apply-a-lookup-table-to-a-large-array-in-numpy
@@ -50,11 +37,11 @@ def reindex_segmentation_using_config(trace_and_seg_cfg, DEBUG=False):
     #     if DEBUG:
     #         print("DEBUG mode; quitting after first volume")
     #         break
-
     with tqdm(total=len(all_lut)) as pbar:
         def parallel_func(i):
             lut = all_lut[i]
             new_masks[i, ...] = lut[seg_masks[i, ...]]
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
             # executor.map(parallel_func, range(len(all_lut)))
             future_results = {executor.submit(parallel_func, i): i for i in all_lut_keys}
@@ -62,6 +49,25 @@ def reindex_segmentation_using_config(trace_and_seg_cfg, DEBUG=False):
                 # _ = future_results[future]
                 _ = future.result()
                 pbar.update(1)
+
+
+def _unpack_config_reindexing(trace_and_seg_cfg):
+    trace_cfg = trace_and_seg_cfg['traces_cfg']
+    seg_cfg = trace_and_seg_cfg['segment_cfg']
+    with safe_cd(Path(trace_and_seg_cfg['project_dir'])):
+        # Get original segmentation
+        seg_fname = seg_cfg['output']['masks']
+        raw_seg_masks = zarr.open(seg_fname)
+
+        out_fname = trace_cfg['reindexed_masks']
+        print(f"Saving masks at {out_fname}")
+        new_masks = zarr.open_like(raw_seg_masks, path=out_fname)
+
+        # Get tracking (dataframe) with neuron names
+        matches_fname = Path(trace_cfg['all_matches'])
+        all_matches = pd.read_pickle(matches_fname)
+        # Format: dict with i_volume -> Nx3 array of [dlc_ind, segmentation_ind, confidence] triplets
+    return all_matches, raw_seg_masks, new_masks
 
 
 def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
