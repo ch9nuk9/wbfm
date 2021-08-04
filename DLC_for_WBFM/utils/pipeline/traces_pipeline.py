@@ -32,13 +32,14 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     red_video = zarr.open(red_fname)
 
     # Match -> Reindex -> Get traces
-    all_neuron_names = list(dlc_tracks.columns.levels[0])
-    # RENAME
+    old_dlc_names = list(dlc_tracks.columns.levels[0])
+    # New: RENAME
+    new_neuron_names = [f"neuron{i+1}" for i in range(len(old_dlc_names))]
 
     def _get_dlc_zxy(t, dlc_tracks=dlc_tracks):
-        all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
+        all_dlc_zxy = np.zeros((len(old_dlc_names), 3))
         coords = ['z', 'y', 'x']
-        for i, name in enumerate(all_neuron_names):
+        for i, name in enumerate(old_dlc_names):
             all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
         return all_dlc_zxy
 
@@ -46,7 +47,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     # Also: get connected red brightness and mask
     # Initialize multi-index dataframe for data
     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
-    df_green, df_red = _initialize_dataframes(all_neuron_names, frame_list)
+    df_green, df_red = _initialize_dataframes(new_neuron_names, frame_list)
     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
     print("Matching segmentation and DLC tracking...")
     if DEBUG:
@@ -87,10 +88,10 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
         for i_dlc, i_seg, c in matches:
             i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
             # Green then red
-            extract_traces_using_reindexed_masks(all_neuron_names, all_seg_names, all_zxy_dlc, df_green, i_dlc, i_seg,
+            extract_traces_using_reindexed_masks(new_neuron_names, all_seg_names, all_zxy_dlc, df_green, i_dlc, i_seg,
                                                  i_volume,
                                                  is_mirrored, mdat, this_green_volume, this_mask_volume, c)
-            extract_traces_using_reindexed_masks(all_neuron_names, all_seg_names, all_zxy_dlc, df_red, i_dlc, i_seg,
+            extract_traces_using_reindexed_masks(new_neuron_names, all_seg_names, all_zxy_dlc, df_red, i_dlc, i_seg,
                                                  i_volume,
                                                  False, mdat, this_red_volume, this_mask_volume, c)
 
@@ -104,10 +105,10 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
         print("Single pass-through successful")
         # return
 
-    _save_traces_as_hdf_and_update_configs(all_matches, all_neuron_names, df_green, df_red, traces_cfg)
+    _save_traces_as_hdf_and_update_configs(new_neuron_names, df_green, df_red, traces_cfg)
 
 
-def _save_traces_as_hdf_and_update_configs(all_matches: defaultdict, all_neuron_names: list,
+def _save_traces_as_hdf_and_update_configs(new_neuron_names: list,
                                            green_dat: pd.DataFrame, red_dat: pd.DataFrame, traces_cfg: dict) -> None:
     # Save traces (red and green) and neuron names
     # csv doesn't work well when some entries are lists
@@ -123,7 +124,7 @@ def _save_traces_as_hdf_and_update_configs(all_matches: defaultdict, all_neuron_
     # Save the output filenames
     traces_cfg['traces']['green'] = str(green_fname)
     traces_cfg['traces']['red'] = str(red_fname)
-    traces_cfg['traces']['neuron_names'] = all_neuron_names
+    traces_cfg['traces']['neuron_names'] = new_neuron_names
     edit_config(traces_cfg['self_path'], traces_cfg)
 
 
