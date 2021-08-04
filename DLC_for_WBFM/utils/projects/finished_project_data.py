@@ -72,7 +72,7 @@ class finished_project_data:
             behavior_annotations = pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
         # TODO: do not hardcode
-        background_per_pixel = 15
+        background_per_pixel = 14
 
         start = cfg['dataset_params']['start_volume']
         end = start + cfg['dataset_params']['num_frames']
@@ -103,3 +103,28 @@ class finished_project_data:
             return project_path
         else:
             raise TypeError("Must path pathlike or already loaded project data")
+
+    def calculate_traces(self, trace_mode: str, neuron_name: str):
+        assert (trace_mode in ['green', 'red', 'ratio']), f"Unknown trace mode {trace_mode}"
+
+        if trace_mode in ['red', 'green']:
+            if trace_mode is 'red':
+                df = self.red_traces
+            else:
+                df = self.green_traces
+
+            def get_y_raw(i):
+                y_raw = df[i]['brightness']
+                return y_raw - self.background_per_pixel * df[i]['volume']
+
+        else:
+            df_red = self.red_traces
+            df_green = self.green_traces
+
+            def get_y_raw(i):
+                red_raw = df_red[i]['brightness']
+                green_raw = df_green[i]['brightness']
+                vol = df_green[i]['volume']  # Same for both
+                return (green_raw - vol * self.background_per_pixel) / (red_raw - vol * self.background_per_pixel)
+
+        return get_y_raw(neuron_name)
