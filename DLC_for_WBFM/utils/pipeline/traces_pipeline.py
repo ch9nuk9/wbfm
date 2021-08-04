@@ -47,7 +47,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     # Also: get connected red brightness and mask
     # Initialize multi-index dataframe for data
     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
-    df_green, df_red = _initialize_dataframes(new_neuron_names, frame_list)
+    df_red = _initialize_dataframe(new_neuron_names, frame_list)
+    df_green = df_red.copy()
     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
     print("Matching segmentation and DLC tracking...")
     if DEBUG:
@@ -71,29 +72,45 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     fname = traces_cfg['reindexed_masks']
     with safe_cd(project_cfg['project_dir']):
         reindexed_masks = zarr.open(fname)
-    for i_volume in tqdm(frame_list):
-        # Prepare matches and locations
-        matches = all_matches[i_volume]
-        if len(matches) == 0:
-            continue
-        mdat = segmentation_metadata[i_volume]
-        all_seg_names = list(mdat['centroids'].keys())
-        all_zxy_dlc = _get_dlc_zxy(i_volume)
-        # Prepare mask (segmentation)
-        i_mask = i_volume - params_start_volume
-        # this_mask_volume = mask_array[i_mask, ...]
-        this_mask_volume = reindexed_masks[i_mask, ...]
-        this_green_volume = green_video[i_volume, ...]
-        this_red_volume = red_video[i_volume, ...]
-        for i_dlc, i_seg, c in matches:
-            i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
+
+    all_green_dfs = []
+    all_red_dfs = []
+    for i_mask_ind, name in enumerate(tqdm(new_neuron_names)):
+    # for i_dlc, i_seg, c in matches:
+    #     i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
+        all_green_dfs_one_neuron = []
+        all_red_dfs_one_neuron = []
+        for i_volume in tqdm(frame_list, leave=False):
+            # Prepare matches and locations
+            # matches = all_matches[i_volume]
+            # if len(matches) == 0:
+            #     continue
+            # mdat = segmentation_metadata[i_volume]
+            # all_seg_names = list(mdat['centroids'].keys())
+            all_zxy_dlc = _get_dlc_zxy(i_volume)
+            # Prepare mask (segmentation)
+            i_mask = i_volume - params_start_volume
+            # this_mask_volume = mask_array[i_mask, ...]
+            this_mask_volume = reindexed_masks[i_mask, ...]
+            this_green_volume = green_video[i_volume, ...]
+            this_red_volume = red_video[i_volume, ...]
             # Green then red
-            extract_traces_using_reindexed_masks(new_neuron_names, all_seg_names, all_zxy_dlc, df_green, i_dlc, i_seg,
+            df_green_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc, i_mask_ind,
                                                  i_volume,
-                                                 is_mirrored, mdat, this_green_volume, this_mask_volume, c)
-            extract_traces_using_reindexed_masks(new_neuron_names, all_seg_names, all_zxy_dlc, df_red, i_dlc, i_seg,
+                                                 is_mirrored, this_green_volume, this_mask_volume)
+            df_red_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc, i_mask_ind,
                                                  i_volume,
-                                                 False, mdat, this_red_volume, this_mask_volume, c)
+                                                 False, this_red_volume, this_mask_volume)
+            all_green_dfs_one_neuron.append(df_green_one_frame)
+            all_red_dfs_one_neuron.append(df_red_one_frame)
+
+        df_green_one_neuron = pd.concat(all_green_dfs_one_neuron, axis=1)
+        df_red_one_neuron = pd.concat(all_red_dfs_one_neuron, axis=1)
+        all_green_dfs.append(df_green_one_neuron)
+        all_red_dfs.append(df_red_one_neuron)
+
+    df_green = pd.concat(all_green_dfs, axis=0, ignore_index=True)
+    df_red = pd.concat(all_red_dfs, axis=0, ignore_index=True)
 
     # all_matches, all_neuron_names, green_dat, red_dat = get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_video,
     #                                                                               is_mirrored, mask_array, max_dist,
@@ -146,7 +163,8 @@ def get_traces_from_3d_tracks(DEBUG: bool, dlc_tracks: pd.DataFrame, green_video
     # Also: get connected red brightness and mask
     # Initialize multi-index dataframe for data
     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
-    green_dat, red_dat = _initialize_dataframes(all_neuron_names, frame_list)
+    green_dat = _initialize_dataframe(all_neuron_names, frame_list)
+    red_dat = green_dat.copy()
     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
     print("Matching segmentation and DLC tracking...")
     if DEBUG:
@@ -216,8 +234,8 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
         # TODO: the distance function doesn't produce the correct reindexed segmentations
         # out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
-        if DEBUG:
-            visualize_tracks(zxy0, zxy1, matches)
+        # if DEBUG:
+        #     visualize_tracks(zxy0, zxy1, matches)
         # Use metadata to get red traces
         # OPTIMIZE: minimum confidence?
         # mdat = segmentation_metadata[i_volume]
@@ -266,7 +284,7 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     return dlc_tracks, green_fname, red_fname, is_mirrored, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio
 
 
-def _initialize_dataframes(all_neuron_names: List[str], frame_list: List[str]) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) -> pd.DataFrame:
     save_names = ['brightness', 'volume',
                   'all_values',
                   'centroid_ind',
@@ -280,25 +298,54 @@ def _initialize_dataframes(all_neuron_names: List[str], frame_list: List[str]) -
     sz = (len(frame_list), len(m_index))
     empty_dat = np.empty(sz)
     empty_dat[:] = np.nan
-    red_dat = pd.DataFrame(empty_dat,
+    df_red = pd.DataFrame(empty_dat,
                            columns=m_index,
                            index=frame_list)
     for name in all_neuron_names:
         # Allow saving numpy arrays in the column
-        red_dat[(name, 'all_values')] = red_dat[(name, 'all_values')].astype('object')
-    green_dat = red_dat.copy()
-    return green_dat, red_dat
+        df_red[(name, 'all_values')] = df_red[(name, 'all_values')].astype('object')
+    return df_red
 
 
-def extract_traces_using_reindexed_masks(all_neuron_names: List[str], all_seg_names: list, all_zxy_dlc: np.ndarray,
-                                         df: pd.DataFrame, i_dlc: int, i_seg: int, i_volume: int,
-                                         is_mirrored: bool, mdat: dict, video_volume: np.ndarray,
-                                         this_mask_volume: np.ndarray, confidence: float) -> None:
+
+def extract_traces_using_reindexed_masks(d_name: str, all_zxy_dlc: np.ndarray,
+                                         i_mask: int, i_volume: int,
+                                         is_mirrored: bool, video_volume: np.ndarray,
+                                         this_mask_volume: np.ndarray, confidence: float = 0.0) -> pd.DataFrame:
     # For conversion between lists
-    i_dlc, i_seg = int(i_dlc), int(i_seg)
-    i_mask = i_dlc + 1  # Zero is the background!
-    d_name = all_neuron_names[i_dlc]  # output name
-    s_name = int(all_seg_names[i_seg])
+    # i_dlc, i_seg = int(i_dlc), int(i_seg)
+    # s_name = int(all_seg_names[i_seg])
+    i = i_volume
+    # Get brightness from green volume and mask
+    # this_mask_neuron = (this_mask_volume == s_name)
+    # Use reindexed mask instead of original index mask
+    this_mask_neuron = (this_mask_volume == i_mask)
+    if is_mirrored:
+        this_mask_neuron = np.flip(this_mask_neuron, axis=2)
+    volume = np.count_nonzero(this_mask_neuron)
+    all_values = video_volume[this_mask_neuron]
+    brightness = np.sum(all_values)
+
+    df = _initialize_dataframe([d_name], [i_volume])
+
+    # Save in dataframe
+    df[(d_name, 'brightness')].loc[i] = brightness
+    df[(d_name, 'volume')].loc[i] = volume
+    df[(d_name, 'all_values')].loc[i] = all_values
+    df[(d_name, 'i_reindexed_segmentation')].loc[i] = i_mask
+    zxy_dlc = all_zxy_dlc[i_mask-1]
+    _save_locations_in_df(d_name, df, i, zxy_dlc, confidence)
+
+    return df
+
+
+def OLD_extract_traces_using_reindexed_masks(d_name: List[str], all_zxy_dlc: np.ndarray,
+                                         df: pd.DataFrame, i_mask: int, i_volume: int,
+                                         is_mirrored: bool, video_volume: np.ndarray,
+                                         this_mask_volume: np.ndarray, confidence: float = 0.0):
+    # For conversion between lists
+    # i_dlc, i_seg = int(i_dlc), int(i_seg)
+    # s_name = int(all_seg_names[i_seg])
     i = i_volume
     # Get brightness from green volume and mask
     # this_mask_neuron = (this_mask_volume == s_name)
@@ -312,18 +359,18 @@ def extract_traces_using_reindexed_masks(all_neuron_names: List[str], all_seg_na
     # Save in dataframe
     df[(d_name, 'brightness')].loc[i] = brightness
     df[(d_name, 'volume')].loc[i] = volume
-    df[(d_name, 'centroid_ind')].loc[i] = s_name
+    # df[(d_name, 'centroid_ind')].loc[i] = s_name
     df[(d_name, 'all_values')].loc[i] = all_values
     df[(d_name, 'i_reindexed_segmentation')].loc[i] = i_mask
-    zxy_seg = mdat['centroids'][s_name]
-    zxy_dlc = all_zxy_dlc[i_dlc]
-    _save_locations_in_df(d_name, df, i, zxy_dlc, zxy_seg, confidence)
+    # zxy_seg = mdat['centroids'][s_name]
+    zxy_dlc = all_zxy_dlc[i_mask-1]
+    _save_locations_in_df(d_name, df, i, zxy_dlc, confidence)
 
 
-def _save_locations_in_df(d_name, df, i, zxy_dlc, zxy_seg, conf):
-    df[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
-    df[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
-    df[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
+def _save_locations_in_df(d_name, df, i, zxy_dlc, conf):
+    # df[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
+    # df[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
+    # df[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
     df[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
     df[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
     df[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
