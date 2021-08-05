@@ -55,7 +55,7 @@ def write_data_subset_from_config(cfg: dict,
 
 def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr,
                                    use_preprocessed_data, vid_fname):
-    verbose = cfg['other']['verbose']
+    verbose = cfg['verbose']
     project_dir = cfg['project_dir']
     # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
     if use_preprocessed_data:
@@ -110,7 +110,7 @@ def segment_local_data_subset(project_config, out_fname=None):
     metadata_fname = os.path.join("1-segmentation", "metadata_subset.pickle")
 
     video_path = "data_subset.tiff"
-    verbose = cfg['other']['verbose']
+    verbose = cfg['verbose']
     num_slices = cfg['dataset_params']['num_slices']
     num_frames = cfg['dataset_params']['num_frames']
     preprocessing_settings = None
