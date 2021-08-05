@@ -39,7 +39,7 @@ def initialize_dlc_stack(_config, _run):
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     opt = {}
-    opt['verbose'] = _config['project_cfg']['other']['verbose']
+    opt['verbose'] = _config['project_cfg']['verbose']
     opt['DEBUG'] = _config['DEBUG']
 
     with safe_cd(_config['project_dir']):

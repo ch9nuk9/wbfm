@@ -15,5 +15,4 @@ tracker_params: # OPTIMIZE
   add_gp_to_candidates: true
   external_detections: null # Will be synchronized with segmentation
 
-raw_3d_tracks:
-  df_fname: 2-training_data/all_tracklets.h5
+df_raw_3d_tracks: 2-training_data/all_tracklets.h5
