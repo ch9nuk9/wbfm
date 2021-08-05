@@ -1,5 +1,79 @@
 import os
+from dataclasses import dataclass
+from json import JSONEncoder
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import Tuple
+import json
+
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
+
+
+@dataclass
+class config_file_with_project_context:
+    """
+    Configuration file (loaded from .yaml) that knows the project it should be executed in
+    """
+
+    config: dict
+    project_dir: str
+
+    def get(self, key, is_relative_path=False):
+        val = self.config.get(key, None)
+        if is_relative_path:
+            val = os.path.join(self.project_dir, val)
+        return val
+
+    def set(self, key, val):
+        self.config[key] = val
+
+    def update_on_disk(self):
+        with safe_cd(self.project_dir):
+            edit_config(self.config['self_path'], self.config)
+
+    def to_json(self):
+        return json.dumps(vars(self))
+
+@dataclass
+class modular_project_config:
+    """
+    Add functionality to get individual config files using the main project config filepath
+
+    Returns config_file_with_project_context objects, instead of raw dictionaries for the subconfig files
+    """
+
+    project_path: str
+    config: dict = None
+
+    def __post_init__(self):
+        self.config = load_config(self.project_path)
+
+    def get_segmentation_config(self):
+        fname = Path(self.config['subfolder_configs']['segmentation'])
+        return config_file_with_project_context(*self._check_abs_and_load_config(fname))
+
+    def get_training_config(self):
+        fname = Path(self.config['subfolder_configs']['training_data'])
+        return config_file_with_project_context(*self._check_abs_and_load_config(fname))
+
+    def get_tracking_config(self):
+        fname = Path(self.config['subfolder_configs']['tracking'])
+        return config_file_with_project_context(*self._check_abs_and_load_config(fname))
+
+    def get_traces_config(self):
+        fname = Path(self.config['subfolder_configs']['traces'])
+        return config_file_with_project_context(*self._check_abs_and_load_config(fname))
+
+    def _check_abs_and_load_config(self, fname: Path) -> Tuple[dict, str]:
+        if fname.is_absolute():
+            project_dir = fname.parent.parent
+        else:
+            project_dir = Path(self.project_path).parent
+        with safe_cd(project_dir):
+            cfg = load_config(fname)
+        return cfg, str(project_dir)
+
+    def to_json(self):
+        return json.dumps(vars(self))
 
 
 def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
