@@ -109,7 +109,7 @@ def combine_one_dlc_and_tracklet_covering(these_tracklet_ind, neuron_name, df_tr
     return summed_tracklet_df
 
 
-def combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tracks, verbose=0):
+def combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tracks, rename_neurons=False, verbose=0):
     """Combines coverings of all tracklets and DLC-tracked neurons"""
     all_df = []
     if verbose >= 1:
@@ -129,10 +129,13 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tr
     # Note: needs a loop because combine_first() doesn't work for multiindexes
     new_tracklet_df.replace(0, np.NaN, inplace=True)
     final_track_df = new_tracklet_df.copy()
-    all_neuron_names = new_tracklet_df.columns.levels[0]
+    all_neuron_names = list(new_tracklet_df.columns.levels[0])
     for name in all_neuron_names:
         final_track_df[name] = new_tracklet_df[name].combine_first(dlc_tracks[name])
     # final_track_df = pd.concat(all_df, axis=1)
+    if rename_neurons:
+        new_neuron_names = {name: f'neuron{i+1}' for i, name in enumerate(all_neuron_names)}
+        final_track_df.rename(columns=new_neuron_names, inplace=True)
 
     return final_track_df, new_tracklet_df
 
@@ -181,7 +184,10 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config, DEBUG=False
 
     # Combine and save
     combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklets, df_dlc_tracks,
-                                                                          verbose=0)
+                                                                          rename_neurons=True, verbose=0)
+
+    # Rename to be sequential, like the reindexed segmentation
+
 
     df_fname = os.path.join('3-tracking', 'postprocessing', 'combined_3d_tracks.h5')
 
@@ -196,4 +202,3 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config, DEBUG=False
 
         df_fname = Path(df_fname).with_suffix('.csv')
         combined_df.to_csv(df_fname)
-
