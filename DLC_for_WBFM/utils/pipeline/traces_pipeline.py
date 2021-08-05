@@ -303,11 +303,16 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
 def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) -> pd.DataFrame:
     save_names = ['brightness', 'volume',
                   'all_values',
-                  'centroid_ind',
                   'i_reindexed_segmentation',
-                  'z_seg', 'x_seg', 'y_seg',
                   'z_dlc', 'x_dlc', 'y_dlc',
                   'match_confidence']
+    # save_names = ['brightness', 'volume',
+    #               'all_values',
+    #               'centroid_ind',
+    #               'i_reindexed_segmentation',
+    #               'z_seg', 'x_seg', 'y_seg',
+    #               'z_dlc', 'x_dlc', 'y_dlc',
+    #               'match_confidence']
     m_index = pd.MultiIndex.from_product([all_neuron_names,
                                           save_names],
                                          names=['neurons', 'data'])
@@ -333,8 +338,13 @@ def extract_traces_using_reindexed_masks(d_name: str, all_zxy_dlc: np.ndarray,
     # Get brightness from green volume and mask
     # Use reindexed mask instead of original index mask
     volume = np.count_nonzero(this_mask_neuron)
-    all_values = video_volume[this_mask_neuron]
-    brightness = np.sum(all_values)
+    if volume > 0:
+        all_values = video_volume[this_mask_neuron]
+        brightness = np.sum(all_values)
+    else:
+        brightness = np.nan
+        volume = np.nan
+        all_values = []
 
     df = _initialize_dataframe([d_name], [i])
 
