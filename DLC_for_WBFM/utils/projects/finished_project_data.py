@@ -19,7 +19,7 @@ class finished_project_data:
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
 
-    dlc_raw: pd.DataFrame
+    final_tracks: pd.DataFrame
 
     raw_segmentation: zarr.Array
     segmentation: zarr.Array
@@ -44,7 +44,7 @@ class finished_project_data:
         green_dat_fname = cfg['preprocessed_green']
         red_traces_fname = traces_cfg['traces']['red']
         green_traces_fname = traces_cfg['traces']['green']
-        dlc_raw_fname = tracking_cfg['final_3d_tracks']['df_fname']
+        final_tracks_fname = tracking_cfg['final_3d_tracks']['df_fname']
         seg_fname_raw = segment_cfg['output']['masks']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 
@@ -56,7 +56,7 @@ class finished_project_data:
         with safe_cd(project_dir):
             red_traces = pd.read_hdf(red_traces_fname)
             green_traces = pd.read_hdf(green_traces_fname)
-            dlc_raw = pd.read_hdf(dlc_raw_fname)
+            dlc_raw = pd.read_hdf(final_tracks_fname)
 
             # Segmentation
             if '.zarr' in seg_fname_raw:
