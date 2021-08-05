@@ -3,10 +3,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
+import numpy as np
 import pandas as pd
 import zarr
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
 
 @dataclass
@@ -19,7 +21,7 @@ class finished_project_data:
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
 
-    dlc_raw: pd.DataFrame
+    final_tracks: pd.DataFrame
 
     raw_segmentation: zarr.Array
     segmentation: zarr.Array
@@ -44,11 +46,11 @@ class finished_project_data:
         green_dat_fname = cfg['preprocessed_green']
         red_traces_fname = traces_cfg['traces']['red']
         green_traces_fname = traces_cfg['traces']['green']
-        dlc_raw_fname = tracking_cfg['final_3d_tracks']['df_fname']
+        final_tracks_fname = tracking_cfg['final_3d_tracks']['df_fname']
         seg_fname_raw = segment_cfg['output']['masks']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 
-        fname = r"3-tracking\postprocessing\manual_behavior_annotation.xlsx"  # TODO
+        fname = r"3-tracking\postprocessing\manual_behavior_annotation.xlsx"  # TODO: do not hardcode
 
         red_data = zarr.open(red_dat_fname)
         green_data = zarr.open(green_dat_fname)
@@ -56,7 +58,7 @@ class finished_project_data:
         with safe_cd(project_dir):
             red_traces = pd.read_hdf(red_traces_fname)
             green_traces = pd.read_hdf(green_traces_fname)
-            dlc_raw = pd.read_hdf(dlc_raw_fname)
+            final_tracks = pd.read_hdf(final_tracks_fname)
 
             # Segmentation
             if '.zarr' in seg_fname_raw:
@@ -72,7 +74,7 @@ class finished_project_data:
             behavior_annotations = pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
         # TODO: do not hardcode
-        background_per_pixel = 15
+        background_per_pixel = 14
 
         start = cfg['dataset_params']['start_volume']
         end = start + cfg['dataset_params']['num_frames']
@@ -85,7 +87,7 @@ class finished_project_data:
             green_data,
             red_traces,
             green_traces,
-            dlc_raw,
+            final_tracks,
             raw_segmentation,
             segmentation,
             behavior_annotations,
@@ -95,7 +97,7 @@ class finished_project_data:
         return obj
 
     @staticmethod
-    def load_all_project_data_from_config(project_path):
+    def load_final_project_data_from_config(project_path):
         if isinstance(project_path, (str, os.PathLike)):
             args = finished_project_data.unpack_config_file(project_path)
             return finished_project_data.load_data_from_configs(*args)
@@ -103,3 +105,49 @@ class finished_project_data:
             return project_path
         else:
             raise TypeError("Must path pathlike or already loaded project data")
+
+    def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str):
+        assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
+
+        # Way to process a single dataframe
+        if calculation_mode is 'integration':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['brightness']
+                return y_raw - self.background_per_pixel * df_tmp[i]['volume']
+        elif calculation_mode is 'max':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['all_values']
+                return np.max(y_raw) - self.background_per_pixel
+        elif calculation_mode is 'mean':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['brightness']
+                return y_raw / df_tmp[i]['volume'] - self.background_per_pixel
+        elif calculation_mode is 'quantile90':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['all_values']
+                return np.quantile(y_raw, 0.9) - self.background_per_pixel
+        elif calculation_mode is 'quantile50':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['all_values']
+                return np.quantile(y_raw, 0.5) - self.background_per_pixel
+        else:
+            raise ValueError(f"Unknown calculation mode {calculation_mode}")
+
+        # How to combine channels, or which channel to choose
+        if channel_mode in ['red', 'green']:
+            if channel_mode is 'red':
+                df = self.red_traces
+            else:
+                df = self.green_traces
+            def calc_y(i):
+                calc_single_trace(i, df)
+        else:
+            df_red = self.red_traces
+            df_green = self.green_traces
+            def calc_y(i):
+                return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
+
+        return calc_y(neuron_name)
+
+    def shade_current_axes_using_behavior(self):
+        shade_using_behavior(self.behavior_annotations)

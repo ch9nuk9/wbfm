@@ -134,7 +134,7 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
     # out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=10*distance_ratio)
     out = calc_icp_matches(xyz0, xyz1, max_dist=10*distance_ratio)
     all_matches, all_conf, all_candidate_matches = out
-    matches_with_conf = [(m[0], m[1], c) for m, c in zip(all_matches, all_conf)]
+    matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(all_matches, all_conf)]
 
     return matches_with_conf, all_candidate_matches, xyz0
 

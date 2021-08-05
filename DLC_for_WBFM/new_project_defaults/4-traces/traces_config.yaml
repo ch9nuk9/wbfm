@@ -7,6 +7,8 @@ self_path: 4-traces/traces_config.yaml
 # Data files
 #########################
 
+reindexed_masks: 4-traces/reindexed_masks.zarr
+
 traces:
   red: null
   green: null
@@ -14,4 +16,4 @@ traces:
     - dummy0
     - dummy1
 
-all_matches: null
+all_matches: 4-traces\all_matches.pickle

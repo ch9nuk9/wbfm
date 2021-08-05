@@ -23,11 +23,13 @@ def shade_using_behavior(bh, DEBUG=False):
             2: 'red'}
 
     block_start = 0
+    ax = plt.gca()
     for val, block_end in zip(block_values, block_final_indices):
         color = cmap[val]
         if DEBUG:
             print(color, val, block_start, block_end)
         if color is not None:
-            plt.axvspan(block_start, block_end, alpha=0.5, color=color)
+            ax.axvspan(block_start, block_end, alpha=0.5, color=color)
+            # plt.axvspan(block_start, block_end, alpha=0.5, color=color)
 
         block_start = block_end + 1

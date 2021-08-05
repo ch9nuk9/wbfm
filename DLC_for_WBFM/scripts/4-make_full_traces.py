@@ -21,7 +21,7 @@ ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
-def cfg(project_path):
+def cfg(project_path, DEBUG):
     # Manually load yaml files
     project_cfg = load_config(project_path)
     project_dir = str(Path(project_path).parent)
@@ -34,8 +34,9 @@ def cfg(project_path):
         seg_fname = str(Path(project_cfg['subfolder_configs']['segmentation']))
         seg_cfg = dict(load_config(seg_fname))
 
-    log_dir = str(Path(project_dir).joinpath('log'))
-    ex.observers.append(TinyDbObserver(log_dir))
+    if not DEBUG:
+        log_dir = str(Path(project_dir).joinpath('log'))
+        ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def make_full_tracks(_config, _run):

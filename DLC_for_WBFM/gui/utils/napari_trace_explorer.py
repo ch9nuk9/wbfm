@@ -22,13 +22,13 @@ class napari_trace_explorer(QtWidgets.QWidget):
         ########################
         # Load Configs
         ########################
-        self.dat = finished_project_data.load_all_project_data_from_config(project_path)
+        self.dat = finished_project_data.load_final_project_data_from_config(project_path)
 
     def setupUi(self, viewer: napari.Viewer):
 
         # Load dataframe and path to outputs
         self.viewer = viewer
-        neuron_names = list(self.dat.dlc_raw.columns.levels[0])
+        neuron_names = list(self.dat.final_tracks.columns.levels[0])
         self.current_name = neuron_names[0]
 
         # Change neurons (dropdown)
@@ -37,6 +37,13 @@ class napari_trace_explorer(QtWidgets.QWidget):
         self.changeNeuronsDropdown.setItemText(0, self.current_name)
         self.changeNeuronsDropdown.currentIndexChanged.connect(self.change_neurons)
         self.verticalLayout.addWidget(self.changeNeuronsDropdown)
+
+        # Change traces (dropdown)
+        self.changeTraceModeDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.changeTraceModeDropdown.addItems(['red', 'green', 'ratio'])
+        # self.changeTraceModeDropdown.setItemText(0, 'green')
+        self.changeTraceModeDropdown.currentIndexChanged.connect(self.update_trace_subplot)
+        self.verticalLayout.addWidget(self.changeTraceModeDropdown)
 
         # Save annotations (button)
         # self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
@@ -55,33 +62,33 @@ class napari_trace_explorer(QtWidgets.QWidget):
 
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
-        self.viewer.layers['deeplabcut_track'].data = point_layer_data
+        self.viewer.layers['final_track'].data = point_layer_data
         self.viewer.layers['track_of_point'].data = track_layer_data
 
-        zoom_using_viewer(self.viewer, layer_name='deeplabcut_track')
+        zoom_using_viewer(self.viewer, layer_name='final_track')
 
     def initialize_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
 
         points_opt = dict(face_color='blue', size=4)
-        self.viewer.add_points(point_layer_data, name="deeplabcut_track", n_dimensional=True, symbol='cross', **points_opt)
+        self.viewer.add_points(point_layer_data, name="final_track", n_dimensional=True, symbol='cross', **points_opt)
 
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
 
-        zoom_using_viewer(self.viewer, layer_name='deeplabcut_track', zoom=10)
+        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=10)
 
     def initialize_shortcuts(self):
         viewer = self.viewer
 
         @viewer.bind_key('.', overwrite=True)
         def zoom_next(viewer):
-            change_viewer_time_point(viewer, dt=1, a_max=len(self.dat.dlc_raw) - 1)
-            zoom_using_viewer(viewer, layer_name='deeplabcut_track', zoom=None)
+            change_viewer_time_point(viewer, dt=1, a_max=len(self.dat.final_tracks) - 1)
+            zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
 
         @viewer.bind_key(',', overwrite=True)
         def zoom_previous(viewer):
-            change_viewer_time_point(viewer, dt=-1, a_max=len(self.dat.dlc_raw) - 1)
-            zoom_using_viewer(viewer, layer_name='deeplabcut_track', zoom=None)
+            change_viewer_time_point(viewer, dt=-1, a_max=len(self.dat.final_tracks) - 1)
+            zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
 
     def initialize_trace_subplot(self):
         self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
@@ -128,18 +135,10 @@ class napari_trace_explorer(QtWidgets.QWidget):
 
     def calculate_trace(self):
         # i = self.changeNeuronsDropdown.currentIndex()
-        i = self.current_name
+        name = self.current_name
+        trace_mode = self.changeTraceModeDropdown.currentText()
+        y = self.dat.calculate_traces(trace_mode, name)
 
-        g = self.dat.green_traces
-        r = self.dat.red_traces
-        # print(df)
-        g_raw = g[i]['brightness']
-        r_raw = r[i]['brightness']
-        bg = self.dat.background_per_pixel * g[i]['volume']
-
-        smoothing_func = lambda x: x
-        # y = smoothing_func((g_raw - bg)/(r_raw - bg))
-        y = smoothing_func(g_raw - bg)
         self.y = y
         return y
 
@@ -169,15 +168,15 @@ class napari_trace_explorer(QtWidgets.QWidget):
         # Note: this allows for manual changing of the points
         new_df = self.build_df_of_current_points()
 
-        self.dat.dlc_raw = self.dat.dlc_raw.drop(columns=self.current_name, level=0)
-        self.dat.dlc_raw = pd.concat([self.dat.dlc_raw, new_df], axis=1)
+        self.dat.final_tracks = self.dat.final_tracks.drop(columns=self.current_name, level=0)
+        self.dat.final_tracks = pd.concat([self.dat.final_tracks, new_df], axis=1)
 
     def build_df_of_current_points(self) -> pd.DataFrame:
         name = self.current_name
-        new_points = self.viewer.layers['deeplabcut_track'].data
+        new_points = self.viewer.layers['final_track'].data
 
         col = pd.MultiIndex.from_product([[self.current_name], ['z', 'x', 'y', 'likelihood']])
-        df_new = pd.DataFrame(columns=col, index=self.dat.dlc_raw.index)
+        df_new = pd.DataFrame(columns=col, index=self.dat.final_tracks.index)
 
         # df_new[(name, 't')] = new_points[:, 0]
         df_new[(name, 'z')] = new_points[:, 1]
@@ -194,11 +193,11 @@ class napari_trace_explorer(QtWidgets.QWidget):
         coords = ['z', 'y', 'x']
         all_tracks_list = []
         likelihood_thresh = 0.4
-        zxy_array = np.array(self.dat.dlc_raw[self.current_name][coords])
+        zxy_array = np.array(self.dat.final_tracks[self.current_name][coords])
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
         # Remove low likelihood
-        if 'likelihood' in self.dat.dlc_raw[self.current_name]:
-            to_remove = self.dat.dlc_raw[self.current_name]['likelihood'] < likelihood_thresh
+        if 'likelihood' in self.dat.final_tracks[self.current_name]:
+            to_remove = self.dat.final_tracks[self.current_name]['likelihood'] < likelihood_thresh
         else:
             to_remove = np.zeros_like(zxy_array[:, 0], dtype=bool)
         zxy_array[to_remove, :] = 0
@@ -235,19 +234,3 @@ def build_napari_trace_explorer(project_config):
     print("Finished GUI setup")
 
     napari.run()
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='Build GUI with a project')
-    parser.add_argument('--project_path', default=None,
-                        help='path to config file')
-    parser.add_argument('--DEBUG', default=False,
-                        help='')
-    args = parser.parse_args()
-    project_path = args.project_path
-    DEBUG = args.DEBUG
-
-    print("Starting trace explorer GUI, may take a while to load...")
-
-    build_napari_trace_explorer(project_path)
