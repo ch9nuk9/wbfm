@@ -4,14 +4,52 @@ from matplotlib.ticker import NullFormatter
 from matplotlib import transforms
 from tqdm.auto import tqdm
 from pathlib import Path
+from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
+from DLC_for_WBFM.utils.visualization.utils_plot_traces import build_trace_factory, check_default_names, set_big_font
+
 
 ##
 ## New functions for use with project_config files
 ##
-from DLC_for_WBFM.utils.visualization.utils_plot_traces import build_trace_factory, check_default_names, set_big_font
+
+def make_grid_plot_from_project(project_data: finished_project_data,
+                                channel_mode: str,
+                                calculation_mode: str,
+                                color_using_behavior=True):
+
+    neuron_names = list(set(project_data.green_traces.columns.get_level_values(0)))
+    # Guess a good shape for subplots
+    neuron_names.sort()
+
+    num_neurons = len(neuron_names)
+    num_columns = 4
+    num_rows = num_neurons//num_columns + 1
+    print(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
+
+    # Loop through neurons and plot
+    fig, axes = plt.subplots(num_rows, num_columns, figsize=(45, 15), sharex=True, sharey=False)
+
+    opt = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
+    for ax, neuron_name in tqdm(zip(fig.axes, neuron_names)):
+        y = project_data.calculate_traces(neuron_name=neuron_name, **opt)
+        ax.plot(y, label=neuron_name)
+        ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
+        ax.set_frame_on(False)
+        ax.set_axis_off()
+
+    # Save final figure
+    plt.subplots_adjust(left=0,
+                        bottom=0,
+                        right=1,
+                        top=1,
+                        wspace=0.0,
+                        hspace=0.0)
+
+    out_fname = Path(project_data).joinpath('traces').joinpath(f"{channel_mode}_{calculation_mode}_grid_plot.png")
+    plt.savefig(out_fname, bbox_inches='tight', pad_inches=0)
 
 
-def make_grid_plot_from_project(traces_config,
+def OLD_make_grid_plot_from_project(traces_config,
                                 trace_mode=None, do_df_over_f0=False, smoothing_func=None,
                                 color_using_behavior=True,
                                 background_per_pixel=15):
@@ -213,13 +251,13 @@ def visualize_all_traces(all_traces,
 ##
 
 
-def plot2d_with_max(dat, t, max_ind, max_vals, vmin=100, vmax=400):
-    plt.imshow(dat[:,:,0,t], vmin=vmin, vmax=vmax)
-    plt.colorbar()
-    x, y = max_ind[t,1], max_ind[t,0]
-    if z == max_ind[t,2]:
-        plt.scatter(x, y, marker='x', c='r')
-    plt.title(f"Max for t={t} is {max_vals[t]} xy={x},{y}")
+# def plot2d_with_max(dat, t, max_ind, max_vals, vmin=100, vmax=400):
+#     plt.imshow(dat[:,:,0,t], vmin=vmin, vmax=vmax)
+#     plt.colorbar()
+#     x, y = max_ind[t,1], max_ind[t,0]
+#     if z == max_ind[t,2]:
+#         plt.scatter(x, y, marker='x', c='r')
+#     plt.title(f"Max for t={t} is {max_vals[t]} xy={x},{y}")
 
 def plot3d_with_max(dat, z, t, max_ind, vmin=100, vmax=400):
     plt.imshow(dat[:,:,z,t], vmin=vmin, vmax=vmax)

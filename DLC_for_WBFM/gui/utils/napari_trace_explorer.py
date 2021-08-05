@@ -22,7 +22,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
         ########################
         # Load Configs
         ########################
-        self.dat = finished_project_data.load_all_project_data_from_config(project_path)
+        self.dat = finished_project_data.load_final_project_data_from_config(project_path)
 
     def setupUi(self, viewer: napari.Viewer):
 

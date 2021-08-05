@@ -8,6 +8,7 @@ import pandas as pd
 import zarr
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
 
 @dataclass
@@ -49,7 +50,7 @@ class finished_project_data:
         seg_fname_raw = segment_cfg['output']['masks']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 
-        fname = r"3-tracking\postprocessing\manual_behavior_annotation.xlsx"  # TODO
+        fname = r"3-tracking\postprocessing\manual_behavior_annotation.xlsx"  # TODO: do not hardcode
 
         red_data = zarr.open(red_dat_fname)
         green_data = zarr.open(green_dat_fname)
@@ -96,7 +97,7 @@ class finished_project_data:
         return obj
 
     @staticmethod
-    def load_all_project_data_from_config(project_path):
+    def load_final_project_data_from_config(project_path):
         if isinstance(project_path, (str, os.PathLike)):
             args = finished_project_data.unpack_config_file(project_path)
             return finished_project_data.load_data_from_configs(*args)
@@ -147,3 +148,6 @@ class finished_project_data:
                 return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
 
         return calc_y(neuron_name)
+
+    def shade_current_axes_using_behavior(self):
+        shade_using_behavior(self.behavior_annotations)
