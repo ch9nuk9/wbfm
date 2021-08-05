@@ -83,7 +83,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
 
     with tqdm(total=len(new_neuron_names)) as pbar:
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
             futures = {executor.submit(parallel_func, i): i for i in enumerate(new_neuron_names)}
             results = []
             for future in concurrent.futures.as_completed(futures):
@@ -129,11 +129,11 @@ def calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, red_v
         # Green then red
         this_green_volume = green_video[i_volume, ...]
         df_green_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc,
-                                                                  i_volume,
+                                                                  i_mask_ind, i_volume,
                                                                   this_green_volume, this_mask_neuron)
         this_red_volume = red_video[i_volume, ...]
         df_red_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc,
-                                                                i_volume,
+                                                                i_mask_ind, i_volume,
                                                                 this_red_volume, this_mask_neuron)
         all_green_dfs_one_neuron.append(df_green_one_frame)
         all_red_dfs_one_neuron.append(df_red_one_frame)
@@ -301,6 +301,20 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
 
 
 def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) -> pd.DataFrame:
+    m_index = _get_multiindex(all_neuron_names)
+    sz = (len(frame_list), len(m_index))
+    empty_dat = np.empty(sz)
+    empty_dat[:] = np.nan
+    df_red = pd.DataFrame(empty_dat,
+                           columns=m_index,
+                           index=frame_list)
+    for name in all_neuron_names:
+        # Allow saving numpy arrays in the column
+        df_red[(name, 'all_values')] = df_red[(name, 'all_values')].astype('object')
+    return df_red
+
+
+def _get_multiindex(all_neuron_names: List[str]) -> pd.MultiIndex:
     save_names = ['brightness', 'volume',
                   'all_values',
                   'i_reindexed_segmentation',
@@ -316,17 +330,7 @@ def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) ->
     m_index = pd.MultiIndex.from_product([all_neuron_names,
                                           save_names],
                                          names=['neurons', 'data'])
-    sz = (len(frame_list), len(m_index))
-    empty_dat = np.empty(sz)
-    empty_dat[:] = np.nan
-    df_red = pd.DataFrame(empty_dat,
-                           columns=m_index,
-                           index=frame_list)
-    for name in all_neuron_names:
-        # Allow saving numpy arrays in the column
-        df_red[(name, 'all_values')] = df_red[(name, 'all_values')].astype('object')
-    return df_red
-
+    return m_index
 
 
 def extract_traces_using_reindexed_masks(d_name: str, all_zxy_dlc: np.ndarray,
@@ -346,15 +350,32 @@ def extract_traces_using_reindexed_masks(d_name: str, all_zxy_dlc: np.ndarray,
         volume = np.nan
         all_values = []
 
-    df = _initialize_dataframe([d_name], [i])
 
     # Save in dataframe
-    df[(d_name, 'brightness')].loc[i] = brightness
-    df[(d_name, 'volume')].loc[i] = volume
-    df[(d_name, 'all_values')].loc[i] = all_values
-    df[(d_name, 'i_reindexed_segmentation')].loc[i] = i_mask
     zxy_dlc = all_zxy_dlc[i_mask-1]
-    _save_locations_in_df(d_name, df, i, zxy_dlc, confidence)
+    df_as_dict = {
+        (d_name, 'brightness'): brightness,
+        (d_name, 'volume'): volume,
+        (d_name, 'all_values'): [all_values],
+        (d_name, 'i_reindexed_segmentation'): i_mask,
+        (d_name, 'z_dlc'): zxy_dlc[0],
+        (d_name, 'x_dlc'): zxy_dlc[1],
+        (d_name, 'y_dlc'): zxy_dlc[2],
+        (d_name, 'match_confidence'): confidence,
+    }
+
+    df = pd.DataFrame(df_as_dict, index=[i])
+
+    # df = _initialize_dataframe([d_name], [i])
+    # df[(d_name, 'brightness')].loc[i] = brightness
+    # df[(d_name, 'volume')].loc[i] = volume
+    # df[(d_name, 'all_values')].loc[i] = all_values
+    # df[(d_name, 'i_reindexed_segmentation')].loc[i] = i_mask
+    # zxy_dlc = all_zxy_dlc[i_mask-1]
+    # df[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
+    # df[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
+    # df[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
+    # df[(d_name, 'match_confidence')].loc[i] = confidence
 
     return df
 
