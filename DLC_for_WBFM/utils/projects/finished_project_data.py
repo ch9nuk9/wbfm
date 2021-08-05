@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
+import numpy as np
 import pandas as pd
 import zarr
 
@@ -56,7 +57,7 @@ class finished_project_data:
         with safe_cd(project_dir):
             red_traces = pd.read_hdf(red_traces_fname)
             green_traces = pd.read_hdf(green_traces_fname)
-            dlc_raw = pd.read_hdf(final_tracks_fname)
+            final_tracks = pd.read_hdf(final_tracks_fname)
 
             # Segmentation
             if '.zarr' in seg_fname_raw:
@@ -85,7 +86,7 @@ class finished_project_data:
             green_data,
             red_traces,
             green_traces,
-            dlc_raw,
+            final_tracks,
             raw_segmentation,
             segmentation,
             behavior_annotations,
@@ -104,27 +105,45 @@ class finished_project_data:
         else:
             raise TypeError("Must path pathlike or already loaded project data")
 
-    def calculate_traces(self, trace_mode: str, neuron_name: str):
-        assert (trace_mode in ['green', 'red', 'ratio']), f"Unknown trace mode {trace_mode}"
+    def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str):
+        assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
 
-        if trace_mode in ['red', 'green']:
-            if trace_mode is 'red':
+        # Way to process a single dataframe
+        if calculation_mode is 'integration':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['brightness']
+                return y_raw - self.background_per_pixel * df_tmp[i]['volume']
+        elif calculation_mode is 'max':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['all_values']
+                return np.max(y_raw) - self.background_per_pixel
+        elif calculation_mode is 'mean':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['brightness']
+                return y_raw / df_tmp[i]['volume'] - self.background_per_pixel
+        elif calculation_mode is 'quantile90':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['all_values']
+                return np.quantile(y_raw, 0.9) - self.background_per_pixel
+        elif calculation_mode is 'quantile50':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['all_values']
+                return np.quantile(y_raw, 0.5) - self.background_per_pixel
+        else:
+            raise ValueError(f"Unknown calculation mode {calculation_mode}")
+
+        # How to combine channels, or which channel to choose
+        if channel_mode in ['red', 'green']:
+            if channel_mode is 'red':
                 df = self.red_traces
             else:
                 df = self.green_traces
-
-            def get_y_raw(i):
-                y_raw = df[i]['brightness']
-                return y_raw - self.background_per_pixel * df[i]['volume']
-
+            def calc_y(i):
+                calc_single_trace(i, df)
         else:
             df_red = self.red_traces
             df_green = self.green_traces
+            def calc_y(i):
+                return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
 
-            def get_y_raw(i):
-                red_raw = df_red[i]['brightness']
-                green_raw = df_green[i]['brightness']
-                vol = df_green[i]['volume']  # Same for both
-                return (green_raw - vol * self.background_per_pixel) / (red_raw - vol * self.background_per_pixel)
-
-        return get_y_raw(neuron_name)
+        return calc_y(neuron_name)

@@ -139,16 +139,6 @@ class napari_trace_explorer(QtWidgets.QWidget):
         trace_mode = self.changeTraceModeDropdown.currentText()
         y = self.dat.calculate_traces(trace_mode, name)
 
-        # g = self.dat.green_traces
-        # r = self.dat.red_traces
-        # # print(df)
-        # g_raw = g[i]['brightness']
-        # r_raw = r[i]['brightness']
-        # bg = self.dat.background_per_pixel * g[i]['volume']
-        #
-        # smoothing_func = lambda x: x
-        # # y = smoothing_func((g_raw - bg)/(r_raw - bg))
-        # y = smoothing_func(g_raw - bg)
         self.y = y
         return y
 
