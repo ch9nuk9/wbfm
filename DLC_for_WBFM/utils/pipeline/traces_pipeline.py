@@ -25,7 +25,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
 
     Get both red and green traces for each neuron
     """
-    dlc_tracks, green_fname, red_fname, is_mirrored, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio = _unpack_configs_for_traces(
+    dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio = _unpack_configs_for_traces(
         project_cfg, segment_cfg, track_cfg)
 
     # DEPRECATE preprocessing; video must already be preprocessed
@@ -76,10 +76,10 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
 
     def parallel_func(i_and_name):
         i, name = i_and_name
-        return calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video,
-                                                                                 i, is_mirrored, name,
-                                                                                 params_start_volume, red_video,
-                                                                                 reindexed_masks)
+        return calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, red_video,
+                                               i, name,
+                                               params_start_volume,
+                                               reindexed_masks)
 
     with tqdm(total=len(new_neuron_names)) as pbar:
 
@@ -113,8 +113,9 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     _save_traces_as_hdf_and_update_configs(new_neuron_names, df_green, df_red, traces_cfg)
 
 
-def calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, i, is_mirrored, name, params_start_volume,
-                                    red_video, reindexed_masks):
+def calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, red_video,
+                                    i, name, params_start_volume,
+                                    reindexed_masks):
     all_green_dfs_one_neuron = []
     all_red_dfs_one_neuron = []
     i_mask_ind = i + 1
@@ -122,17 +123,18 @@ def calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, i, is
         all_zxy_dlc = _get_dlc_zxy(i_volume)
         # Prepare mask (segmentation)
         i_mask = i_volume - params_start_volume
-        # this_mask_volume = mask_array[i_mask, ...]
         this_mask_volume = reindexed_masks[i_mask, ...]
-        this_green_volume = green_video[i_volume, ...]
-        this_red_volume = red_video[i_volume, ...]
+        this_mask_neuron = (this_mask_volume == i_mask_ind)
+
         # Green then red
-        df_green_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc, i_mask_ind,
+        this_green_volume = green_video[i_volume, ...]
+        df_green_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc,
                                                                   i_volume,
-                                                                  is_mirrored, this_green_volume, this_mask_volume)
-        df_red_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc, i_mask_ind,
+                                                                  this_green_volume, this_mask_neuron)
+        this_red_volume = red_video[i_volume, ...]
+        df_red_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc,
                                                                 i_volume,
-                                                                False, this_red_volume, this_mask_volume)
+                                                                this_red_volume, this_mask_neuron)
         all_green_dfs_one_neuron.append(df_green_one_frame)
         all_red_dfs_one_neuron.append(df_red_one_frame)
     df_green_one_neuron = pd.concat(all_green_dfs_one_neuron, axis=0)
@@ -292,11 +294,10 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     z_to_xy_ratio = project_cfg['dataset_params']['z_to_xy_ratio']
     green_fname = project_cfg['preprocessed_green']
     red_fname = project_cfg['preprocessed_red']
-    is_mirrored = project_cfg['dataset_params']['red_and_green_mirrored']
 
     dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
 
-    return dlc_tracks, green_fname, red_fname, is_mirrored, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio
+    return dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio
 
 
 def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) -> pd.DataFrame:
@@ -325,15 +326,12 @@ def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) ->
 
 def extract_traces_using_reindexed_masks(d_name: str, all_zxy_dlc: np.ndarray,
                                          i_mask: int, i_volume: int,
-                                         is_mirrored: bool, video_volume: np.ndarray,
-                                         this_mask_volume: np.ndarray, confidence: float = 0.0) -> pd.DataFrame:
+                                         video_volume: np.ndarray,
+                                         this_mask_neuron: np.ndarray, confidence: float = 0.0) -> pd.DataFrame:
 
     i = i_volume
     # Get brightness from green volume and mask
     # Use reindexed mask instead of original index mask
-    this_mask_neuron = (this_mask_volume == i_mask)
-    if is_mirrored:
-        this_mask_neuron = np.flip(this_mask_neuron, axis=2)
     volume = np.count_nonzero(this_mask_neuron)
     all_values = video_volume[this_mask_neuron]
     brightness = np.sum(all_values)
