@@ -119,7 +119,7 @@ def calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, red_v
     all_green_dfs_one_neuron = []
     all_red_dfs_one_neuron = []
     i_mask_ind = i + 1
-    for i_volume in frame_list:
+    for i_volume in tqdm(frame_list, leave=False):
         all_zxy_dlc = _get_dlc_zxy(i_volume)
         # Prepare mask (segmentation)
         i_mask = i_volume - params_start_volume
