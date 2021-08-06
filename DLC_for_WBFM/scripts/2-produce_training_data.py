@@ -41,8 +41,8 @@ def produce_training_data(_config, _run):
     DEBUG = _config['DEBUG']
     # vid_fname = _config['project_cfg']['red_bigtiff_fname']
     # vid_fname = _config['cfg'].config['preprocessed_red']
-    training_config = _config['train_cfg'].copy()
-    project_config = _config['cfg'].copy()
+    training_config = _config['train_cfg']
+    project_config = _config['cfg']
     # training_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     with safe_cd(_config['project_dir']):
