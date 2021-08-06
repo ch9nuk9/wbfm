@@ -2,7 +2,7 @@
 
 
 # Use the project config file
-from DLC_for_WBFM.config.class_configuration import *
+# from DLC_for_WBFM.config.class_configuration import *
 from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_from_ometiff_virtual, _get_crop_from_avi
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 # from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import

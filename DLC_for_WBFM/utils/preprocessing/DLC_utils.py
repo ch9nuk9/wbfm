@@ -1,7 +1,7 @@
 import deeplabcut
 import numpy as np
 from deeplabcut.utils import auxiliaryfunctions
-from DLC_for_WBFM.config.class_configuration import load_config, DLCForWBFMTracking, save_config
+# from DLC_for_WBFM.config.class_configuration import load_config, DLCForWBFMTracking, save_config
 from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
     build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC

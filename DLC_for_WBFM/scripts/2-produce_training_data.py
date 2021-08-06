@@ -45,5 +45,4 @@ def produce_training_data(_config, _run):
     project_config = _config['cfg']
     # training_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
-    with safe_cd(_config['project_dir']):
-        partial_track_video_using_config(project_config, training_config, DEBUG=DEBUG)
+    partial_track_video_using_config(project_config, training_config, DEBUG=DEBUG)

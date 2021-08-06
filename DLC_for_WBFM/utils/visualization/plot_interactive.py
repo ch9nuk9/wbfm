@@ -2,7 +2,7 @@ import ipywidgets as widgets
 from ipywidgets import interact
 import matplotlib.pyplot as plt
 import numpy as np
-from DLC_for_WBFM.config.class_configuration import *
+# from DLC_for_WBFM.config.class_configuration import *
 from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_from_ometiff_virtual
 
 

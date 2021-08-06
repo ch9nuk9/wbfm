@@ -31,6 +31,7 @@ class config_file_with_project_context:
     def to_json(self):
         return json.dumps(vars(self))
 
+
 @dataclass
 class modular_project_config:
     """

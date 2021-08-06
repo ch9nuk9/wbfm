@@ -61,11 +61,10 @@ def segment2d(_config, _run):
     if _config['DEBUG']:
         project_cfg.config['dataset_params']['num_frames'] = 3
 
-    with safe_cd(_config['project_dir']):
-        mode = segment_cfg.config['segmentation_type']
-        if mode == "3d":
-            segment_video_using_config_3d(segment_cfg, project_cfg, _config['continue_from_frame'])
-        elif mode == "2d":
-            segment_video_using_config_2d(segment_cfg, project_cfg, _config['continue_from_frame'])
-        else:
-            raise ValueError(f"Unknown segmentation_type; expected '2d' or '3d' instead of {mode}")
+    mode = segment_cfg.config['segmentation_type']
+    if mode == "3d":
+        segment_video_using_config_3d(segment_cfg, project_cfg, _config['continue_from_frame'])
+    elif mode == "2d":
+        segment_video_using_config_2d(segment_cfg, project_cfg, _config['continue_from_frame'])
+    else:
+        raise ValueError(f"Unknown segmentation_type; expected '2d' or '3d' instead of {mode}")

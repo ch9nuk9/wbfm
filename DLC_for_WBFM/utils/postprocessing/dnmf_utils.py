@@ -4,7 +4,7 @@ import h5py
 import pandas as pd
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
-from DLC_for_WBFM.config.class_configuration import *
+# from DLC_for_WBFM.config.class_configuration import *
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 ##

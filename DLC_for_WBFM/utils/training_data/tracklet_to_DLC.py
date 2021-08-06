@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
+
 
 def best_tracklet_covering(df, num_frames_needed, num_frames,
                            verbose=0):
@@ -290,16 +292,16 @@ def build_subset_df_from_3dDLC(dlc3d_dlc: pd.DataFrame,
     return dlc3d_dlc[names_to_keep].copy()
 
 
-def get_or_recalculate_which_frames(DEBUG, df, this_config):
-    try:
-        which_frames = this_config['track_cfg']['training_data_3d']['which_frames']
-    except KeyError:
-        which_frames = None
+def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
+                                    tracking_config: config_file_with_project_context):
+    # which_frames = this_config['track_cfg']['training_data_3d']['which_frames']
+    which_frames = tracking_config.config['training_data_3d'].get('which_frames', None)
+
     if which_frames is None:
         # Choose a subset of frames with enough tracklets
-        num_frames_needed = this_config['track_cfg']['training_data_3d']['num_training_frames']
+        num_frames_needed = tracking_config.config['training_data_3d']['num_training_frames']
         tracklet_opt = {'num_frames_needed': num_frames_needed,
-                        'num_frames': this_config['dataset_params']['num_frames'],
+                        'num_frames': num_frames,
                         'verbose': 1}
         if DEBUG:
             tracklet_opt['num_frames_needed'] = 2
