@@ -34,8 +34,6 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
 
     # Match -> Reindex -> Get traces
     old_dlc_names = list(dlc_tracks.columns.levels[0])
-    # New: RENAME
-    new_neuron_names = [f"neuron{i+1}" for i in range(len(old_dlc_names))]
 
     def _get_dlc_zxy(t, dlc_tracks=dlc_tracks):
         all_dlc_zxy = np.zeros((len(old_dlc_names), 3))
@@ -48,8 +46,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     # Also: get connected red brightness and mask
     # Initialize multi-index dataframe for data
     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
-    df_red = _initialize_dataframe(new_neuron_names, frame_list)
-    df_green = df_red.copy()
+    # df_red = _initialize_dataframe(new_neuron_names, frame_list)
+    # df_green = df_red.copy()
     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
     print("Matching segmentation and DLC tracking...")
     if DEBUG:
@@ -69,21 +67,29 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     reindex_segmentation_using_config(trace_and_seg_cfg)
 
     print("Extracting red and green traces using matches...")
-    # Note: can't parallelize because the data is appended to dataframes...
     fname = traces_cfg['reindexed_masks']
     with safe_cd(project_cfg['project_dir']):
         reindexed_masks = zarr.open(fname)
 
+    # New: RENAME
+    new_neuron_names = [f"neuron{i + 1}" for i in range(len(old_dlc_names))]
+    dlc_name_mapping = dict(zip(old_dlc_names, new_neuron_names))
+
+    def _get_dlc_zxy_one_neuron(t, new_name):
+        old_name = dlc_name_mapping[new_name]
+        coords = ['z', 'y', 'x']
+        all_dlc_zxy = np.asarray(dlc_tracks[old_name][coords].loc[t])
+        return all_dlc_zxy
+
     def parallel_func(i_and_name):
-        i, name = i_and_name
-        return calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, red_video,
-                                               i, name,
+        i, new_name = i_and_name
+        return calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_video, red_video,
+                                               i, new_name,
                                                params_start_volume,
                                                reindexed_masks)
 
     with tqdm(total=len(new_neuron_names)) as pbar:
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
             futures = {executor.submit(parallel_func, i): i for i in enumerate(new_neuron_names)}
             results = []
             for future in concurrent.futures.as_completed(futures):
@@ -113,14 +119,14 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
     _save_traces_as_hdf_and_update_configs(new_neuron_names, df_green, df_red, traces_cfg)
 
 
-def calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, red_video,
-                                    i, name, params_start_volume,
+def calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_video, red_video,
+                                    i, new_name, params_start_volume,
                                     reindexed_masks):
     all_green_dfs_one_neuron = []
     all_red_dfs_one_neuron = []
     i_mask_ind = i + 1
     for i_volume in tqdm(frame_list, leave=False):
-        all_zxy_dlc = _get_dlc_zxy(i_volume)
+        this_zxy_dlc = _get_dlc_zxy_one_neuron(i_volume, new_name)
         # Prepare mask (segmentation)
         i_mask = i_volume - params_start_volume
         this_mask_volume = reindexed_masks[i_mask, ...]
@@ -128,11 +134,11 @@ def calc_trace_from_mask_one_neuron(_get_dlc_zxy, frame_list, green_video, red_v
 
         # Green then red
         this_green_volume = green_video[i_volume, ...]
-        df_green_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc,
+        df_green_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
                                                                   i_mask_ind, i_volume,
                                                                   this_green_volume, this_mask_neuron)
         this_red_volume = red_video[i_volume, ...]
-        df_red_one_frame = extract_traces_using_reindexed_masks(name, all_zxy_dlc,
+        df_red_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
                                                                 i_mask_ind, i_volume,
                                                                 this_red_volume, this_mask_neuron)
         all_green_dfs_one_neuron.append(df_green_one_frame)
@@ -162,53 +168,53 @@ def _save_traces_as_hdf_and_update_configs(new_neuron_names: list,
     edit_config(traces_cfg['self_path'], traces_cfg)
 
 
-def get_traces_from_3d_tracks(DEBUG: bool, dlc_tracks: pd.DataFrame, green_video: zarr.Array, is_mirrored: bool,
-                              mask_array: zarr.Array, max_dist: float, num_frames: int,
-                              params_start_volume: int, segmentation_metadata: dict,
-                              z_to_xy_ratio: float) -> Tuple[defaultdict, list, pd.DataFrame, pd.DataFrame]:
-    # Convert DLC dataframe to array
-    all_neuron_names = list(dlc_tracks.columns.levels[0])
-
-    def _get_dlc_zxy(t, dlc_tracks=dlc_tracks):
-        all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
-        coords = ['z', 'y', 'x']
-        for i, name in enumerate(all_neuron_names):
-            all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
-        return all_dlc_zxy
-
-    # Main loop: Match segmentations to tracks
-    # Also: get connected red brightness and mask
-    # Initialize multi-index dataframe for data
-    frame_list = list(range(params_start_volume, num_frames + params_start_volume))
-    green_dat = _initialize_dataframe(all_neuron_names, frame_list)
-    red_dat = green_dat.copy()
-    all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
-    print("Matching segmentation and DLC tracking...")
-    if DEBUG:
-        frame_list = frame_list[:2]
-    calculate_segmentation_and_dlc_matches(_get_dlc_zxy, all_matches, frame_list, max_dist,
-                                           segmentation_metadata, z_to_xy_ratio, DEBUG=DEBUG)
-
-    print("Extracting green traces using matches...")
-    for i_volume in tqdm(frame_list):
-        # Prepare matches and locations
-        matches = all_matches[i_volume]
-        if len(matches) == 0:
-            continue
-        mdat = segmentation_metadata[i_volume]
-        all_seg_names = list(mdat['centroids'].keys())
-        all_zxy_dlc = _get_dlc_zxy(i_volume)
-        # Prepare mask (segmentation)
-        i_mask = i_volume - params_start_volume
-        this_mask_volume = mask_array[i_mask, ...]
-        this_green_volume = green_video[i_volume, ...]
-        for i_dlc, i_seg, c in matches:
-            i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
-            extract_traces_using_reindexed_masks(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg,
-                                                 i_volume,
-                                                 is_mirrored, mdat, this_green_volume, this_mask_volume, c)
-
-    return all_matches, all_neuron_names, green_dat, red_dat
+# def get_traces_from_3d_tracks(DEBUG: bool, dlc_tracks: pd.DataFrame, green_video: zarr.Array, is_mirrored: bool,
+#                               mask_array: zarr.Array, max_dist: float, num_frames: int,
+#                               params_start_volume: int, segmentation_metadata: dict,
+#                               z_to_xy_ratio: float) -> Tuple[defaultdict, list, pd.DataFrame, pd.DataFrame]:
+#     # Convert DLC dataframe to array
+#     all_neuron_names = list(dlc_tracks.columns.levels[0])
+#
+#     def _get_dlc_zxy(t, dlc_tracks=dlc_tracks):
+#         all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
+#         coords = ['z', 'y', 'x']
+#         for i, name in enumerate(all_neuron_names):
+#             all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
+#         return all_dlc_zxy
+#
+#     # Main loop: Match segmentations to tracks
+#     # Also: get connected red brightness and mask
+#     # Initialize multi-index dataframe for data
+#     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
+#     green_dat = _initialize_dataframe(all_neuron_names, frame_list)
+#     red_dat = green_dat.copy()
+#     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
+#     print("Matching segmentation and DLC tracking...")
+#     if DEBUG:
+#         frame_list = frame_list[:2]
+#     calculate_segmentation_and_dlc_matches(_get_dlc_zxy, all_matches, frame_list, max_dist,
+#                                            segmentation_metadata, z_to_xy_ratio, DEBUG=DEBUG)
+#
+#     print("Extracting green traces using matches...")
+#     for i_volume in tqdm(frame_list):
+#         # Prepare matches and locations
+#         matches = all_matches[i_volume]
+#         if len(matches) == 0:
+#             continue
+#         mdat = segmentation_metadata[i_volume]
+#         all_seg_names = list(mdat['centroids'].keys())
+#         all_zxy_dlc = _get_dlc_zxy(i_volume)
+#         # Prepare mask (segmentation)
+#         i_mask = i_volume - params_start_volume
+#         this_mask_volume = mask_array[i_mask, ...]
+#         this_green_volume = green_video[i_volume, ...]
+#         for i_dlc, i_seg, c in matches:
+#             i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
+#             extract_traces_using_reindexed_masks(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg,
+#                                                  i_volume,
+#                                                  is_mirrored, mdat, this_green_volume, this_mask_volume, c)
+#
+#     return all_matches, all_neuron_names, green_dat, red_dat
 
 
 def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
@@ -333,7 +339,7 @@ def _get_multiindex(all_neuron_names: List[str]) -> pd.MultiIndex:
     return m_index
 
 
-def extract_traces_using_reindexed_masks(d_name: str, all_zxy_dlc: np.ndarray,
+def extract_traces_using_reindexed_masks(d_name: str, zxy_dlc: np.ndarray,
                                          i_mask: int, i_volume: int,
                                          video_volume: np.ndarray,
                                          this_mask_neuron: np.ndarray, confidence: float = 0.0) -> pd.DataFrame:
@@ -352,7 +358,6 @@ def extract_traces_using_reindexed_masks(d_name: str, all_zxy_dlc: np.ndarray,
 
 
     # Save in dataframe
-    zxy_dlc = all_zxy_dlc[i_mask-1]
     df_as_dict = {
         (d_name, 'brightness'): brightness,
         (d_name, 'volume'): volume,
