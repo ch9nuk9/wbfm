@@ -48,7 +48,6 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
 
     """
 
-    new_df = None
     all_dfs = []
 
     for ind, row in tqdm(df.iterrows()):
@@ -70,7 +69,6 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
                                                names=['bodyparts', 'coords'])
         frame = pd.DataFrame(coords, columns=index, index=which_frames)
         all_dfs.append(frame)
-        # new_df = pd.concat([new_df, frame], axis=1)
     new_df = pd.concat(all_dfs, axis=1)
 
     return new_df
