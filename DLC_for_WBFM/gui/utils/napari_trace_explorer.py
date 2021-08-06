@@ -98,7 +98,8 @@ class napari_trace_explorer(QtWidgets.QWidget):
     def initialize_trace_subplot(self):
         self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         self.static_ax = self.mpl_widget.figure.subplots()
-        self.trace_line = self.static_ax.plot(self.calculate_trace())[0]
+        self.update_stored_time_series()
+        self.trace_line = self.static_ax.plot(self.y)[0]
         self.dat.shade_axis_using_behavior(self.static_ax)
         # self.time_line = self.static_ax.vlines(*self.calculate_time_line())
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
@@ -108,15 +109,22 @@ class napari_trace_explorer(QtWidgets.QWidget):
         self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
 
     def update_trace_subplot(self):
-        self.trace_line.set_ydata(self.calculate_trace())
+        self.update_stored_time_series()
+        self.trace_line.set_ydata(self.y)
         self.dat.shade_axis_using_behavior(self.static_ax)
         # t, y0, y1, _ = self.calculate_time_line()
         # self.time_line.set_segments(np.array([[t, y0], [t, y1]]))
         self.time_line.set_data(self.calculate_time_line()[:2])
         self.color_using_behavior()
+        title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
+        self.static_ax.set_title(title)
+
+        # y = self.y
+        # ymin, ymax = np.min(y), np.max(y)
+        # self.static_ax.set_ylim([ymin, ymax])
+        # self.mpl_widget.draw()
         self.static_ax.relim()
         self.static_ax.autoscale_view()
-
         self.mpl_widget.draw()
 
     def connect_time_line_callback(self):
@@ -134,16 +142,16 @@ class napari_trace_explorer(QtWidgets.QWidget):
         if not self.tracking_lost:
             # z, x, y = self.current_centroid
             # title = f"{current_neuron}: {mode} trace at ({z:.1f}, {x:.0f}, {y:.0f})"
-            line_color = 'b'
+            line_color = 'k'
         else:
             # title = "Tracking lost!"
-            line_color = 'r'
+            line_color = 'k'
         # print(f"Calculated vertical line for t={t}")
         return [t, t], [ymin, ymax], line_color
         # return t, ymin, ymax, line_color
         # self.time_line.update_line(t, ymin, ymax, line_color)
 
-    def calculate_trace(self):
+    def update_stored_time_series(self):
         # i = self.changeNeuronsDropdown.currentIndex()
         name = self.current_name
         channel = self.changeChannelDropdown.currentText()
@@ -151,7 +159,6 @@ class napari_trace_explorer(QtWidgets.QWidget):
         y = self.dat.calculate_traces(channel, calc_mode, name)
 
         self.y = y
-        return y
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsDropdown.currentText()
@@ -203,10 +210,13 @@ class napari_trace_explorer(QtWidgets.QWidget):
         # Just visualize one neuron for now
         # 5 columns:
         # track_id, t, z, y, x
-        coords = ['z', 'y', 'x']
+        # coords = ['z', 'y', 'x']
+        coords = ['z_dlc', 'x_dlc', 'y_dlc']
+        # zxy_array = np.array(self.dat.final_tracks[self.current_name][coords])
+        zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
+
         all_tracks_list = []
         likelihood_thresh = 0.4
-        zxy_array = np.array(self.dat.final_tracks[self.current_name][coords])
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
         # Remove low likelihood
         if 'likelihood' in self.dat.final_tracks[self.current_name]:
