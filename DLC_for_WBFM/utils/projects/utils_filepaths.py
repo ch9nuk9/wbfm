@@ -17,14 +17,13 @@ class config_file_with_project_context:
     config: dict
     project_dir: str
 
-    def get(self, key, is_relative_path=False):
+    def resolve_relative_path(self, key):
         val = self.config.get(key, None)
-        if is_relative_path:
-            val = os.path.join(self.project_dir, val)
+        val = os.path.join(self.project_dir, val)
         return val
 
-    def set(self, key, val):
-        self.config[key] = val
+    # def set(self, key, val):
+    #     self.config[key] = val
 
     def update_on_disk(self):
         with safe_cd(self.project_dir):
@@ -43,9 +42,11 @@ class modular_project_config:
 
     project_path: str
     config: dict = None
+    project_dir: str = None
 
     def __post_init__(self):
         self.config = load_config(self.project_path)
+        self.project_dir = str(Path(self.project_path).parent)
 
     def get_segmentation_config(self):
         fname = Path(self.config['subfolder_configs']['segmentation'])

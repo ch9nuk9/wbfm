@@ -8,6 +8,7 @@ from ruamel.yaml import YAML
 from contextlib import contextmanager
 import os
 # import concurrent.futures
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 
 
 def build_project_structure(_config: dict) -> None:
@@ -131,30 +132,17 @@ def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
     return segment_cfg
 
 
-def synchronize_train_config(project_path: str) -> dict:
+def update_path_to_segmentation_in_config(cfg: modular_project_config) -> config_file_with_project_context:
     # For now, does NOT overwrite anything on disk
-    project_cfg = load_config(project_path)
 
-    # Previous step, which produced needed files
-    segment_cfg = load_config(project_cfg['subfolder_configs']['segmentation'])
-    # This step; to update
-    train_cfg = load_config(project_cfg['subfolder_configs']['training_data'])
+    segment_cfg = cfg.get_segmentation_config()
+    train_cfg = cfg.get_training_config()
 
+    metadata_path = segment_cfg.resolve_relative_path('output_metadata')
     # Add external detections
-    external_detections = segment_cfg['output']['metadata']
-    if not os.path.exists(external_detections):
+    if not os.path.exists(metadata_path):
         raise FileNotFoundError("Could not find external annotations")
-    # external_detections = segment_cfg['output_params']['output_folder']
-    # Assume the detections are named normally, i.e. starting with 'metadata'
-    # for file in os.listdir(external_detections):
-    #     if fnmatch.fnmatch(file, 'metadata*'):
-    #         external_detections = osp.join(external_detections, file)
-    #         break
-    # else:
-    #     raise FileNotFoundError("Could not find external annotations")
-
-    updates = {'external_detections': external_detections}
-    train_cfg['tracker_params'].update(updates)
+    train_cfg.config['tracker_params']['external_detections'] = metadata_path
 
     return train_cfg
 
