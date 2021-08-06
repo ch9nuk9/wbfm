@@ -29,6 +29,8 @@ class finished_project_data:
     behavior_annotations: pd.DataFrame
     background_per_pixel: float
 
+    verbose: int = 2
+
     @staticmethod
     def unpack_config_file(project_path):
         project_dir = Path(project_path).parent
@@ -41,7 +43,7 @@ class finished_project_data:
         return cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir
 
     @staticmethod
-    def load_data_from_configs(cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir):
+    def _load_data_from_configs(cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir):
         red_dat_fname = cfg['preprocessed_red']
         green_dat_fname = cfg['preprocessed_green']
         red_traces_fname = traces_cfg['traces']['red']
@@ -100,7 +102,7 @@ class finished_project_data:
     def load_final_project_data_from_config(project_path):
         if isinstance(project_path, (str, os.PathLike)):
             args = finished_project_data.unpack_config_file(project_path)
-            return finished_project_data.load_data_from_configs(*args)
+            return finished_project_data._load_data_from_configs(*args)
         elif isinstance(project_path, finished_project_data):
             return project_path
         else:
@@ -108,6 +110,9 @@ class finished_project_data:
 
     def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str):
         assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
+
+        if self.verbose >= 1:
+            print(f"Calculating {channel_mode} trace for {neuron_name} for {calculation_mode} mode")
 
         # Way to process a single dataframe
         if calculation_mode == 'integration':
@@ -123,14 +128,15 @@ class finished_project_data:
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['brightness']
                 return y_raw / df_tmp[i]['volume'] - self.background_per_pixel
-        elif calculation_mode == 'quantile90':
-            def calc_single_trace(i, df_tmp):
-                y_raw = df_tmp[i]['all_values']
-                return np.quantile(y_raw, 0.9) - self.background_per_pixel
-        elif calculation_mode == 'quantile50':
-            def calc_single_trace(i, df_tmp):
-                y_raw = df_tmp[i]['all_values']
-                return np.quantile(y_raw, 0.5) - self.background_per_pixel
+        # elif calculation_mode == 'quantile90':
+        #     def calc_single_trace(i, df_tmp):
+        #         y_raw = df_tmp[i]['all_values']
+        #         return np.quantile(y_raw, 0.9) - self.background_per_pixel
+        # elif calculation_mode == 'quantile50':
+        #     def calc_single_trace(i, df_tmp):
+        #         y_raw = df_tmp[i]['all_values']
+        #         f = lambda x: np.quantile(x, initial=np.nan)
+        #         return np.quantile(y_raw, 0.5) - self.background_per_pixel
         elif calculation_mode == 'volume':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['volume']
@@ -144,7 +150,7 @@ class finished_project_data:
 
         # How to combine channels, or which channel to choose
         if channel_mode in ['red', 'green']:
-            if channel_mode is 'red':
+            if channel_mode == 'red':
                 df = self.red_traces
             else:
                 df = self.green_traces
