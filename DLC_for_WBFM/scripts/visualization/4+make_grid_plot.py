@@ -22,14 +22,15 @@ ex.add_config(project_path=None, channel_mode='green', calculation_mode='integra
 def cfg(project_path):
     project_dir = str(Path(project_path).parent)
     proj_dat = finished_project_data.load_final_project_data_from_config(project_path)
+    proj_dat.verbose = 0
     # project_cfg = load_config(project_path)
 
     # traces_fname = Path(project_cfg['subfolder_configs']['traces'])
     # traces_fname = str(Path(project_dir).joinpath(traces_fname))
     # traces_cfg = dict(load_config(traces_fname))
 
-    log_dir = str(Path(project_dir).joinpath('log'))
-    ex.observers.append(TinyDbObserver(log_dir))
+    # log_dir = str(Path(project_dir).joinpath('log'))
+    # ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def make_dlc_labeled_videos(_config, _run):

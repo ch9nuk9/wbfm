@@ -8,6 +8,7 @@ segmentation_type: 3d
 # Segmentation
 segmentation_params:
   stardist_model_name: charlie_3d
+  zero_out_borders: true
 
 # Postprocessing
 postprocessing_params:
@@ -18,10 +19,9 @@ postprocessing_params:
   to_remove_dim_slices: true
 
 # Output
-output:
-  folder: 1-segmentation # Only used for initial writing
-  masks: 1-segmentation/masks.btf
-  metadata: 1-segmentation/metadata.pickle
+output_folder: 1-segmentation # Only used for initial writing
+output_masks: 1-segmentation/masks.btf
+output_metadata: 1-segmentation/metadata.pickle
 
 # Printing
 verbose: 1

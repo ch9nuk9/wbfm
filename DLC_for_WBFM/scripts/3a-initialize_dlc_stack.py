@@ -5,6 +5,8 @@ The top level function for initializing a stack of DLC projects
 from pathlib import Path
 # main function
 from sacred.observers import TinyDbObserver
+import DLC_for_WBFM.utils.projects.monkeypatch_json
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_dlc_training_from_tracklets
@@ -21,30 +23,29 @@ ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
-def cfg(project_path):
-    # Manually load yaml files
-    project_cfg = load_config(project_path)
-    project_dir = str(Path(project_path).parent)
+def cfg(project_path, DEBUG):
+    cfg = modular_project_config(project_path)
+    project_dir = cfg.project_dir
 
-    with safe_cd(project_dir):
-        tracking_fname = str(Path(project_cfg['subfolder_configs']['tracking']))
-        tracking_cfg = dict(load_config(tracking_fname))
+    training_cfg = cfg.get_training_config()
+    tracking_cfg = cfg.get_tracking_config()
 
-    log_dir = str(Path(project_dir).joinpath('log'))
-    ex.observers.append(TinyDbObserver(log_dir))
+    # if not DEBUG:
+    #     log_dir = str(Path(project_dir).joinpath('log'))
+    #     ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def initialize_dlc_stack(_config, _run):
     sacred.commands.print_config(_run)
 
     # vid_fname = _config['project_cfg']['red_bigtiff_fname']
-    vid_fname = _config['project_cfg']['preprocessed_red']
-    this_config = _config['tracking_cfg'].copy()
-    this_config['project_dir'] = str(_config['project_dir'])
-    this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
+    tracking_config = _config['tracking_cfg']
+    training_cfg = _config['training_cfg']
+    project_config = _config['cfg']
+    # tracking_config['project_dir'] = str(_config['project_dir'])
+    # tracking_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
-    opt = {'scorer': _config['project_cfg']['experimenter'], 'task_name': _config['project_cfg']['experimenter'],
+    opt = {'scorer': project_config.config['experimenter'], 'task_name': project_config.config['experimenter'],
            'DEBUG': _config['DEBUG']}
 
-    with safe_cd(_config['project_dir']):
-        create_dlc_training_from_tracklets(vid_fname, this_config, **opt)
+    create_dlc_training_from_tracklets(project_config, training_cfg, tracking_config, **opt)

@@ -15,8 +15,10 @@ from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_
     create_dlc_project, get_annotations_matching_video_in_folder, training_data_from_3dDLC_annotations
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _get_video_options
-from DLC_for_WBFM.utils.projects.utils_project import edit_config
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering_from_my_matches, \
+    get_or_recalculate_which_frames, calculate_best_covering_from_tracklets
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 
 
@@ -49,13 +51,15 @@ def create_only_videos(vid_fname, config, verbose=1, DEBUG=False):
     return all_avi_fnames
 
 
-def create_dlc_training_from_tracklets(vid_fname: str,
-                                       config: dict,
+def create_dlc_training_from_tracklets(project_config: modular_project_config,
+                                       training_config: config_file_with_project_context,
+                                       tracking_config: config_file_with_project_context,
                                        scorer: str = None,
                                        task_name: str = None,
                                        DEBUG: bool = False) -> None:
 
-    df_fname = config['training_data_3d']['annotation_fname']
+
+    df_fname = training_config.resolve_relative_path('df_raw_3d_tracks')
     if df_fname.endswith(".pickle"):
         raise DeprecationWarning("Creating training data from raw pickle not supported; convert to 3d DLC dataframe")
         # df = pd.read_pickle(df_fname)
@@ -63,21 +67,26 @@ def create_dlc_training_from_tracklets(vid_fname: str,
         assert df_fname.endswith(".h5")
         df = pd.read_hdf(df_fname)
 
-    all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, config)
-    edit_config(config['self_path'], config)
+    all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, df, tracking_config)
+    # edit_config(config['self_path'], config)
+    tracking_config.update_on_disk()
 
-    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, config, vid_fname)
+    vid_cfg = tracking_config.config
+    vid_cfg['dataset_params'] = project_config.config['dataset_params']
+    vid_fname = project_config.config['preprocessed_red']
+    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, vid_cfg, vid_fname)
 
-    dlc_opt, net_opt, png_opt = _define_project_options(config, df, scorer, task_name)
+    dlc_opt, net_opt, png_opt = _define_project_options(vid_cfg, df, scorer, task_name)
     # Actually make projects
     # all_dlc_configs = []
-    for i, center in enumerate(all_center_slices):
-        try:
-            this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
-                                         preprocessed_dat, vid_opt, video_exists, config)
-            # all_dlc_configs.append(this_dlc_config)
-        except FileExistsError:
-            print("Found existing folder, skipping")
+    with safe_cd(project_config.project_dir):
+        for i, center in enumerate(all_center_slices):
+            try:
+                this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
+                                             preprocessed_dat, vid_opt, video_exists, tracking_config.config)
+                # all_dlc_configs.append(this_dlc_config)
+            except FileExistsError:
+                print("Found existing folder, skipping")
 
     # def parallel_func(i_center):
     #     i, center = i_center
@@ -94,7 +103,7 @@ def create_dlc_training_from_tracklets(vid_fname: str,
 
     # Save list of dlc config names
     all_dlc_configs = []
-    base_dir = Path(os.path.join(config['project_dir'], '3-tracking'))
+    base_dir = Path(os.path.join(project_config.project_dir, '3-tracking'))
     for fname in tqdm(base_dir.iterdir()):
         if fname.is_dir():
             # Check for DLC project
@@ -103,8 +112,9 @@ def create_dlc_training_from_tracklets(vid_fname: str,
                 all_dlc_configs.append(str(dlc_name))
     print(f"Found config files: {all_dlc_configs}")
 
-    config['dlc_projects']['all_configs'] = all_dlc_configs
-    edit_config(config['self_path'], config)
+    tracking_config.config['dlc_projects']['all_configs'] = all_dlc_configs
+    tracking_config.update_on_disk()
+    # edit_config(config['self_path'], config)
 
 
 def _prep_videos_for_dlc(all_center_slices: List[int], config: dict,
@@ -159,7 +169,7 @@ def _define_project_options(config: dict, df: pd.DataFrame, scorer: str, task_na
 
 
 def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
-                                 preprocessed_dat, vid_opt, video_exists, project_config):
+                                 preprocessed_dat, vid_opt, video_exists, tracking_config):
     this_avi_fname = _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video_exists)
     # Make dlc project
     dlc_opt['label'] = f"-c{center}"
@@ -175,7 +185,7 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
         csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2, to_add_skeleton=True)
         # Format the training data
         deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
-        update_pose_config(this_dlc_config, project_config)
+        update_pose_config(this_dlc_config, tracking_config)
         # Save to list
         return this_dlc_config
     else:
@@ -201,11 +211,16 @@ def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video
     return this_avi_fname
 
 
-def _get_frames_for_dlc_training(DEBUG: bool, config: dict):
+def _get_frames_for_dlc_training(DEBUG: bool, df: pd.DataFrame,
+                                 tracking_config: config_file_with_project_context):
     # Choose a subset of frames with enough tracklets
-    if 'which_frames' not in config['training_data_3d']:
-        # which_frames = get_or_recalculate_which_frames(DEBUG, df, this_config)
-        raise DeprecationWarning("Calculating which frames at this point is deprecated; calculate before calling this")
+    which_frames = tracking_config.config['training_data_3d'].get('which_frames', None)
+
+    if which_frames is None:
+        num_training_frames = tracking_config.config['training_data_3d']['num_training_frames']
+        which_frames, _ = calculate_best_covering_from_tracklets(df, num_training_frames)
+        # which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_config)
+        # raise DeprecationWarning("Calculating which frames at this point is deprecated; calculate before calling this")
         # num_frames_needed = config['training_data_3d']['num_training_frames']
         # tracklet_opt = {'num_frames_needed': num_frames_needed,
         #                 'num_frames': config['dataset_params']['num_frames'],
@@ -213,15 +228,16 @@ def _get_frames_for_dlc_training(DEBUG: bool, config: dict):
         # if DEBUG:
         #     tracklet_opt['num_frames_needed'] = 2
         # which_frames, _ = best_tracklet_covering(df, **tracklet_opt)
-    else:
-        which_frames = config['training_data_3d']['which_frames']
-        if which_frames is None:
-            raise DeprecationWarning(
-                "Calculating which frames at this point is deprecated; calculate before calling this")
+    # else:
+    #     which_frames = config['training_data_3d']['which_frames']
+    #     if which_frames is None:
+    #         raise DeprecationWarning(
+    #             "Calculating which frames at this point is deprecated; calculate before calling this")
     # Also save these chosen frames
     updates = {'which_frames': which_frames}
-    config['training_data_3d'].update(updates)
-    all_center_slices = config['training_data_2d']['all_center_slices']
+    tracking_config.config['training_data_3d'].update(updates)
+
+    all_center_slices = tracking_config.config['training_data_2d']['all_center_slices']
     if DEBUG:
         all_center_slices = [all_center_slices[0]]
     return all_center_slices, which_frames
@@ -271,7 +287,7 @@ def make_3d_tracks_from_stack(track_cfg: dict, use_dlc_project_videos: bool = Tr
     """
 
     all_dlc_configs = track_cfg['dlc_projects']['all_configs']
-    use_filtered = track_cfg['final_3d_tracks'].get('use_filtered', False)
+    use_filtered = track_cfg['final_track'].get('use_filtered', False)
 
     # Apply networks
     all_dfs = []

@@ -31,11 +31,14 @@ def make_grid_plot_from_project(project_data: finished_project_data,
 
     opt = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
     for ax, neuron_name in tqdm(zip(fig.axes, neuron_names)):
-        y = project_data.calculate_traces(neuron_name=neuron_name, **opt)
+        opt['neuron_name'] = neuron_name
+        y = project_data.calculate_traces(**opt)
         ax.plot(y, label=neuron_name)
         ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
         ax.set_frame_on(False)
         ax.set_axis_off()
+        if color_using_behavior:
+            project_data.shade_axis_using_behavior(ax)
 
     # Save final figure
     plt.subplots_adjust(left=0,
@@ -45,7 +48,8 @@ def make_grid_plot_from_project(project_data: finished_project_data,
                         wspace=0.0,
                         hspace=0.0)
 
-    out_fname = Path(project_data).joinpath('traces').joinpath(f"{channel_mode}_{calculation_mode}_grid_plot.png")
+    fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
+    out_fname = Path(project_data.project_dir).joinpath('4-traces').joinpath(fname)
     plt.savefig(out_fname, bbox_inches='tight', pad_inches=0)
 
 

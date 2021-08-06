@@ -19,8 +19,6 @@ training_data_2d:
   max_z_dist_for_traces: 2 # CHANGE ME z-dist for neuron centroids
   is_color: true # CHANGE ME to use z information as color for the DLC training videos
 
-preprocessing_config: 2-training_data/preprocessing_config.yaml # Reuse from 3d tracking
-
 #########################
 # Stacked DeepLabCut
 #########################

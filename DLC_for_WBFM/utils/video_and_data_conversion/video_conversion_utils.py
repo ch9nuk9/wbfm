@@ -2,7 +2,7 @@ import numpy as np
 import tifffile
 import os
 import cv2
-from DLC_for_WBFM.config.class_configuration import load_config, build_avi_fnames
+# from DLC_for_WBFM.config.class_configuration import load_config, build_avi_fnames
 
 import warnings
 

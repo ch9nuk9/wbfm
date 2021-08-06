@@ -265,10 +265,10 @@
 #
 #     return config
 #
-#
-# ##
-# ## Filename builders
-# ##
+
+##
+## Filename builders
+##
 #
 # def build_project_name(config):
 #     """

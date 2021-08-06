@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def shade_using_behavior(bh, DEBUG=False):
+def shade_using_behavior(bh, ax=None, DEBUG=False):
     """
     Shades current plot using a 3-code behavioral annotation:
         0 - FWD (no shade)
@@ -10,6 +10,8 @@ def shade_using_behavior(bh, DEBUG=False):
         2 - Turn (red)
     """
 
+    if ax is None:
+        ax = plt.gca()
     bh = np.array(bh)
 
     block_final_indices = np.where(np.diff(bh))[0]
@@ -23,7 +25,6 @@ def shade_using_behavior(bh, DEBUG=False):
             2: 'red'}
 
     block_start = 0
-    ax = plt.gca()
     for val, block_end in zip(block_values, block_final_indices):
         color = cmap[val]
         if DEBUG:

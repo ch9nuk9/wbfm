@@ -5,9 +5,11 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 
-def best_tracklet_covering(df, num_frames_needed, num_frames,
-                           verbose=0):
+
+def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
+                                           verbose=0):
     """
     Given a partially tracked video, choose a series of frames with enough
     tracklets, to be saved in DLC format
@@ -17,7 +19,7 @@ def best_tracklet_covering(df, num_frames_needed, num_frames,
     """
 
     def make_window(start_frame):
-        return list(range(start_frame,start_frame+num_frames_needed+1))
+        return list(range(start_frame, start_frame + num_frames_needed + 1))
 
     x = list(range(num_frames-num_frames_needed))
     y = np.zeros_like(x)
@@ -37,6 +39,26 @@ def best_tracklet_covering(df, num_frames_needed, num_frames,
     return make_window(best_covering), y
 
 
+def calculate_best_covering_from_tracklets(dlc_df: pd.DataFrame, num_training_frames: int):
+    sz = dlc_df.shape
+    # Only need one column from each neuron
+    missing_vals = np.isnan(dlc_df.values)[:, range(0, sz[1], 4)]
+
+    # Get number of rows without any missing values
+    num_not_missing_per_window = []
+    for i in tqdm(range(sz[0] - num_training_frames + 1)):
+        start, stop = i, i + num_training_frames
+        have_missing = np.apply_along_axis(any, 0, missing_vals[start:stop, :])
+        num_not_missing_per_window.append(sum(~have_missing))
+
+    # Get best, and convert to correct format
+    y = np.array(num_not_missing_per_window)
+    start_frame = np.argmax(y)
+
+    best_window = list(range(start_frame, start_frame + num_training_frames))
+    return best_window, y
+
+
 def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
     """
     Converts a dataframe of my tracklets to DLC format
@@ -48,7 +70,6 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
 
     """
 
-    new_df = None
     all_dfs = []
 
     for ind, row in tqdm(df.iterrows()):
@@ -70,7 +91,6 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
                                                names=['bodyparts', 'coords'])
         frame = pd.DataFrame(coords, columns=index, index=which_frames)
         all_dfs.append(frame)
-        # new_df = pd.concat([new_df, frame], axis=1)
     new_df = pd.concat(all_dfs, axis=1)
 
     return new_df
@@ -292,20 +312,20 @@ def build_subset_df_from_3dDLC(dlc3d_dlc: pd.DataFrame,
     return dlc3d_dlc[names_to_keep].copy()
 
 
-def get_or_recalculate_which_frames(DEBUG, df, this_config):
-    try:
-        which_frames = this_config['track_cfg']['training_data_3d']['which_frames']
-    except KeyError:
-        which_frames = None
+def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
+                                    tracking_config: config_file_with_project_context):
+    # which_frames = this_config['track_cfg']['training_data_3d']['which_frames']
+    which_frames = tracking_config.config['training_data_3d'].get('which_frames', None)
+
     if which_frames is None:
         # Choose a subset of frames with enough tracklets
-        num_frames_needed = this_config['track_cfg']['training_data_3d']['num_training_frames']
+        num_frames_needed = tracking_config.config['training_data_3d']['num_training_frames']
         tracklet_opt = {'num_frames_needed': num_frames_needed,
-                        'num_frames': this_config['dataset_params']['num_frames'],
+                        'num_frames': num_frames,
                         'verbose': 1}
         if DEBUG:
             tracklet_opt['num_frames_needed'] = 2
-        which_frames, _ = best_tracklet_covering(df, **tracklet_opt)
+        which_frames, _ = best_tracklet_covering_from_my_matches(df, **tracklet_opt)
     return which_frames
 
 
