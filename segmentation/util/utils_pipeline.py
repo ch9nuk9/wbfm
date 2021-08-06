@@ -3,6 +3,8 @@ from multiprocessing import Manager
 
 import stardist.models
 import tifffile
+from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project_context
+
 import segmentation.util.utils_postprocessing as post
 import numpy as np
 from tqdm import tqdm
@@ -21,7 +23,9 @@ from segmentation.util.utils_model import get_stardist_model
 import concurrent.futures
 
 
-def segment_video_using_config_3d(_config: dict, continue_from_frame: int =None) -> None:
+def segment_video_using_config_3d(segment_cfg: config_file_with_project_context,
+                                  project_cfg: dict,
+                                  continue_from_frame: int =None) -> None:
     """
 
     Parameters
@@ -38,7 +42,7 @@ def segment_video_using_config_3d(_config: dict, continue_from_frame: int =None)
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
-        _config)
+        segment_cfg, project_cfg)
 
     # Open the file
     if not video_path.endswith('.zarr'):
@@ -64,8 +68,13 @@ def segment_video_using_config_3d(_config: dict, continue_from_frame: int =None)
         continue_from_frame += 1
         print(f"Continuing from frame {continue_from_frame}")
 
-    _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
+    _segment_full_video_3d(frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
+
+    if segment_cfg.config.get('self_path', None) is not None:
+        segment_cfg.update_on_disk()
+    if verbose >= 1:
+        print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
 
@@ -111,7 +120,7 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
         pickle.dump(metadata, meta_save)
 
 
-def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num_frames: int, verbose: int,
+def _segment_full_video_3d(frame_list: list, mask_fname: str, num_frames: int, verbose: int,
                            video_dat: zarr.Array,
                            opt: dict, continue_from_frame: int) -> None:
     # with tifffile.TiffFile(video_path) as video_stream:
@@ -134,27 +143,22 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
                 future.result()
                 pbar.update(1)
 
-    if _config.get('self_path', None) is not None:
-        edit_config(_config['self_path'], _config)
-    if verbose >= 1:
-        print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
-
-def _unpack_config_file(_config):
+def _unpack_config_file(segment_cfg, project_cfg):
+    cfg = project_cfg.config
     # Initializing variables
-    start_volume = _config['dataset_params']['start_volume']
-    num_frames = _config['dataset_params']['num_frames']
-    if _config['DEBUG']:
-        num_frames = 1
-    num_slices = _config['dataset_params']['num_slices']
+    start_volume = cfg['dataset_params']['start_volume']
+    num_frames = cfg['dataset_params']['num_frames']
+    num_slices = cfg['dataset_params']['num_slices']
     frame_list = list(range(start_volume, start_volume + num_frames))
-    video_path = _config['video_path']
-    mask_fname, metadata_fname = get_output_fnames(video_path, _config)
+    video_path = segment_cfg.config['video_path']
+    output_folder = segment_cfg.resolve_relative_path('output_folder')
+    mask_fname, metadata_fname = get_output_fnames(video_path, num_frames, output_folder=output_folder)
     # Save settings
-    _config['output']['masks'] = mask_fname
-    _config['output']['metadata'] = metadata_fname
-    verbose = _config['verbose']
-    stardist_model_name = _config['segmentation_params']['stardist_model_name']
-    zero_out_borders = _config['segmentation_params']['zero_out_borders']
+    segment_cfg.config['output_masks'] = mask_fname
+    segment_cfg.config['output_metadata'] = metadata_fname
+    verbose = cfg['verbose']
+    stardist_model_name = segment_cfg.config['segmentation_params']['stardist_model_name']
+    zero_out_borders = segment_cfg.config['segmentation_params']['zero_out_borders']
     return frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders
 
 
@@ -162,7 +166,9 @@ def _unpack_config_file(_config):
 ## 2d pipeline (stitch to get 3d)
 ##
 
-def segment_video_using_config_2d(_config: dict, continue_from_frame: int =None) -> None:
+def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
+                                  project_cfg: dict,
+                                  continue_from_frame: int =None) -> None:
     """
     Full pipeline based on only a config file
 
@@ -171,7 +177,7 @@ def segment_video_using_config_2d(_config: dict, continue_from_frame: int =None)
     
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders = _unpack_config_file(
-        _config)
+        segment_cfg, project_cfg)
 
 
     # Open the file
@@ -185,7 +191,7 @@ def segment_video_using_config_2d(_config: dict, continue_from_frame: int =None)
     # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
     sd_model.keras_model.make_predict_function()
     # Do first volume outside the parallelization loop to initialize keras and zarr
-    opt_postprocessing = _config['postprocessing_params']  # Unique to 2d
+    opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
     if verbose > 1:
         print("Postprocessing settings: ")
         print(opt_postprocessing)
@@ -204,14 +210,19 @@ def segment_video_using_config_2d(_config: dict, continue_from_frame: int =None)
         continue_from_frame += 1
         print(f"Continuing from frame {continue_from_frame}")
 
-    _segment_full_video_2d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
+    _segment_full_video_2d(frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
+
+    if segment_cfg.config.get('self_path', None) is not None:
+        segment_cfg.update_on_disk()
+    if verbose >= 1:
+        print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
     # Same 2d and 3d
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
 
 
-def _segment_full_video_2d(_config: dict, frame_list: list, mask_fname: str, num_frames: int, verbose: int,
+def _segment_full_video_2d(frame_list: list, mask_fname: str, num_frames: int, verbose: int,
                            video_dat: zarr.Array,
                            opt: dict, continue_from_frame: int) -> None:
 
@@ -231,11 +242,6 @@ def _segment_full_video_2d(_config: dict, frame_list: list, mask_fname: str, num
             for future in concurrent.futures.as_completed(futures):
                 future.result()
                 pbar.update(1)
-
-    if _config.get('self_path', None) is not None:
-        edit_config(_config['self_path'], _config)
-    if verbose >= 1:
-        print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
 
 def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_slices: int,
@@ -507,7 +513,9 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
 ## Also just for metadata calculation
 ##
 
-def recalculate_metadata_from_config(_config, DEBUG=False):
+def recalculate_metadata_from_config(segment_cfg: config_file_with_project_context,
+                                     project_cfg: dict,
+                                     DEBUG=False):
     """
 
     Given a project that contains a segmentation, recalculate the metadata
@@ -526,9 +534,9 @@ def recalculate_metadata_from_config(_config, DEBUG=False):
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
-        _config)
+        segment_cfg, project_cfg)
 
-    masks_zarr = zarr.open(_config['output']['masks'])
+    masks_zarr = zarr.open(segment_cfg.get('output_masks', True))
     video_dat = zarr.open(video_path)
 
     if DEBUG:
