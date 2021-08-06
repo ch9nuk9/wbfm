@@ -9,3 +9,7 @@ def test_tracking_part_a():
     config_updates = {'project_path': project_path, 'DEBUG': False}
 
     mod.ex.run(config_updates=config_updates)
+
+
+if __name__ == "__main__":
+    test_tracking_part_a()

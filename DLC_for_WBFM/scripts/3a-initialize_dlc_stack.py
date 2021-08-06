@@ -30,9 +30,9 @@ def cfg(project_path, DEBUG):
     training_cfg = cfg.get_training_config()
     tracking_cfg = cfg.get_tracking_config()
 
-    if not DEBUG:
-        log_dir = str(Path(project_dir).joinpath('log'))
-        ex.observers.append(TinyDbObserver(log_dir))
+    # if not DEBUG:
+    #     log_dir = str(Path(project_dir).joinpath('log'))
+    #     ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def initialize_dlc_stack(_config, _run):

@@ -218,7 +218,7 @@ def _get_frames_for_dlc_training(DEBUG: bool, df: pd.DataFrame,
 
     if which_frames is None:
         num_training_frames = tracking_config.config['training_data_3d']['num_training_frames']
-        which_frames = calculate_best_covering_from_tracklets(df, num_training_frames)
+        which_frames, _ = calculate_best_covering_from_tracklets(df, num_training_frames)
         # which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_config)
         # raise DeprecationWarning("Calculating which frames at this point is deprecated; calculate before calling this")
         # num_frames_needed = config['training_data_3d']['num_training_frames']
@@ -287,7 +287,7 @@ def make_3d_tracks_from_stack(track_cfg: dict, use_dlc_project_videos: bool = Tr
     """
 
     all_dlc_configs = track_cfg['dlc_projects']['all_configs']
-    use_filtered = track_cfg['final_3d_tracks'].get('use_filtered', False)
+    use_filtered = track_cfg['final_track'].get('use_filtered', False)
 
     # Apply networks
     all_dfs = []

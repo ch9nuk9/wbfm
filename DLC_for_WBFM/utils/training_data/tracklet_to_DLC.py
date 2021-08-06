@@ -46,7 +46,7 @@ def calculate_best_covering_from_tracklets(dlc_df: pd.DataFrame, num_training_fr
 
     # Get number of rows without any missing values
     num_not_missing_per_window = []
-    for i in tqdm(range(sz[0] - num_training_frames)):
+    for i in tqdm(range(sz[0] - num_training_frames + 1)):
         start, stop = i, i + num_training_frames
         have_missing = np.apply_along_axis(any, 0, missing_vals[start:stop, :])
         num_not_missing_per_window.append(sum(~have_missing))

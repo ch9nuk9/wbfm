@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import zarr
 
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
@@ -33,23 +34,29 @@ class finished_project_data:
 
     @staticmethod
     def unpack_config_file(project_path):
-        project_dir = Path(project_path).parent
-        cfg = load_config(project_path)
-        with safe_cd(project_dir):
-            traces_cfg = load_config(cfg['subfolder_configs']['traces'])
-            segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
-            tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
+        cfg = modular_project_config(project_path)
+        project_dir = cfg.project_dir
+
+        segment_cfg = cfg.get_segmentation_config()
+        tracking_cfg = cfg.get_tracking_config()
+        traces_cfg = cfg.get_traces_config()
+        # # project_dir = Path(project_path).parent
+        # cfg = load_config(project_path)
+        # with safe_cd(project_dir):
+        #     traces_cfg = load_config(cfg['subfolder_configs']['traces'])
+        #     segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
+        #     tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
 
         return cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir
 
     @staticmethod
     def _load_data_from_configs(cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir):
-        red_dat_fname = cfg['preprocessed_red']
-        green_dat_fname = cfg['preprocessed_green']
-        red_traces_fname = traces_cfg['traces']['red']
-        green_traces_fname = traces_cfg['traces']['green']
-        final_tracks_fname = tracking_cfg['final_3d_tracks']['df_fname']
-        seg_fname_raw = segment_cfg['output']['masks']
+        red_dat_fname = cfg.config['preprocessed_red']
+        green_dat_fname = cfg.config['preprocessed_green']
+        red_traces_fname = traces_cfg.config['traces']['red']
+        green_traces_fname = traces_cfg.config['traces']['green']
+        final_tracks_fname = tracking_cfg.config['final_3d_tracks']['df_fname']
+        seg_fname_raw = segment_cfg.config['output']['masks']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 
         fname = r"3-tracking\postprocessing\manual_behavior_annotation.xlsx"  # TODO: do not hardcode
@@ -78,8 +85,8 @@ class finished_project_data:
         # TODO: do not hardcode
         background_per_pixel = 14
 
-        start = cfg['dataset_params']['start_volume']
-        end = start + cfg['dataset_params']['num_frames']
+        start = cfg.config['dataset_params']['start_volume']
+        end = start + cfg.config['dataset_params']['num_frames']
         x = list(range(start, end))
 
         # Return a full object

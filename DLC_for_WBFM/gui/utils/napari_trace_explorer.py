@@ -46,7 +46,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
 
         # Change traces (dropdown)
         self.changeTraceCalculationDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
-        self.changeTraceCalculationDropdown.addItems(['integration', 'max', 'mean', 'quantile90', 'z', 'volume'])
+        self.changeTraceCalculationDropdown.addItems(['integration', 'max', 'mean', 'z', 'volume'])
         self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.verticalLayout.addWidget(self.changeTraceCalculationDropdown)
 
