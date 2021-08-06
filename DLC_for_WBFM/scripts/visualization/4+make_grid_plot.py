@@ -28,8 +28,8 @@ def cfg(project_path):
     # traces_fname = str(Path(project_dir).joinpath(traces_fname))
     # traces_cfg = dict(load_config(traces_fname))
 
-    log_dir = str(Path(project_dir).joinpath('log'))
-    ex.observers.append(TinyDbObserver(log_dir))
+    # log_dir = str(Path(project_dir).joinpath('log'))
+    # ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def make_dlc_labeled_videos(_config, _run):

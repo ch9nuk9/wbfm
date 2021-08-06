@@ -39,11 +39,16 @@ class napari_trace_explorer(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.changeNeuronsDropdown)
 
         # Change traces (dropdown)
-        self.changeTraceModeDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
-        self.changeTraceModeDropdown.addItems(['red', 'green', 'ratio'])
-        # self.changeTraceModeDropdown.setItemText(0, 'green')
-        self.changeTraceModeDropdown.currentIndexChanged.connect(self.update_trace_subplot)
-        self.verticalLayout.addWidget(self.changeTraceModeDropdown)
+        self.changeChannelDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.changeChannelDropdown.addItems(['green', 'red', 'ratio'])
+        self.changeChannelDropdown.currentIndexChanged.connect(self.update_trace_subplot)
+        self.verticalLayout.addWidget(self.changeChannelDropdown)
+
+        # Change traces (dropdown)
+        self.changeTraceCalculationDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.changeTraceCalculationDropdown.addItems(['integration', 'max', 'mean', 'quantile90', 'z', 'volume'])
+        self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
+        self.verticalLayout.addWidget(self.changeTraceCalculationDropdown)
 
         # Save annotations (button)
         # self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
@@ -94,6 +99,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
         self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         self.static_ax = self.mpl_widget.figure.subplots()
         self.trace_line = self.static_ax.plot(self.calculate_trace())[0]
+        self.dat.shade_axis_using_behavior(self.static_ax)
         # self.time_line = self.static_ax.vlines(*self.calculate_time_line())
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.color_using_behavior()
@@ -103,10 +109,14 @@ class napari_trace_explorer(QtWidgets.QWidget):
 
     def update_trace_subplot(self):
         self.trace_line.set_ydata(self.calculate_trace())
+        self.dat.shade_axis_using_behavior(self.static_ax)
         # t, y0, y1, _ = self.calculate_time_line()
         # self.time_line.set_segments(np.array([[t, y0], [t, y1]]))
         self.time_line.set_data(self.calculate_time_line()[:2])
         self.color_using_behavior()
+        self.static_ax.relim()
+        self.static_ax.autoscale_view()
+
         self.mpl_widget.draw()
 
     def connect_time_line_callback(self):
@@ -136,8 +146,9 @@ class napari_trace_explorer(QtWidgets.QWidget):
     def calculate_trace(self):
         # i = self.changeNeuronsDropdown.currentIndex()
         name = self.current_name
-        trace_mode = self.changeTraceModeDropdown.currentText()
-        y = self.dat.calculate_traces(trace_mode, name)
+        channel = self.changeChannelDropdown.currentText()
+        calc_mode = self.changeTraceCalculationDropdown.currentText()
+        y = self.dat.calculate_traces(channel, calc_mode, name)
 
         self.y = y
         return y
@@ -180,8 +191,10 @@ class napari_trace_explorer(QtWidgets.QWidget):
 
         # df_new[(name, 't')] = new_points[:, 0]
         df_new[(name, 'z')] = new_points[:, 1]
-        df_new[(name, 'y')] = new_points[:, 2]
-        df_new[(name, 'x')] = new_points[:, 3]
+        # df_new[(name, 'y')] = new_points[:, 2]
+        # df_new[(name, 'x')] = new_points[:, 3]
+        df_new[(name, 'x')] = new_points[:, 2]
+        df_new[(name, 'y')] = new_points[:, 3]
         df_new[(name, 'likelihood')] = np.ones(new_points.shape[0])
 
         return df_new

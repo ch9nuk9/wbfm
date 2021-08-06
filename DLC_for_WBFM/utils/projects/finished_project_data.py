@@ -110,26 +110,35 @@ class finished_project_data:
         assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
 
         # Way to process a single dataframe
-        if calculation_mode is 'integration':
+        if calculation_mode == 'integration':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['brightness']
                 return y_raw - self.background_per_pixel * df_tmp[i]['volume']
-        elif calculation_mode is 'max':
+        elif calculation_mode == 'max':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['all_values']
-                return np.max(y_raw) - self.background_per_pixel
-        elif calculation_mode is 'mean':
+                f = lambda x: np.max(x, initial=np.nan)
+                return y_raw.apply(f) - self.background_per_pixel
+        elif calculation_mode == 'mean':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['brightness']
                 return y_raw / df_tmp[i]['volume'] - self.background_per_pixel
-        elif calculation_mode is 'quantile90':
+        elif calculation_mode == 'quantile90':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['all_values']
                 return np.quantile(y_raw, 0.9) - self.background_per_pixel
-        elif calculation_mode is 'quantile50':
+        elif calculation_mode == 'quantile50':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['all_values']
                 return np.quantile(y_raw, 0.5) - self.background_per_pixel
+        elif calculation_mode == 'volume':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['volume']
+                return y_raw
+        elif calculation_mode == 'z':
+            def calc_single_trace(i, df_tmp):
+                y_raw = df_tmp[i]['z_dlc']
+                return y_raw
         else:
             raise ValueError(f"Unknown calculation mode {calculation_mode}")
 
@@ -140,7 +149,7 @@ class finished_project_data:
             else:
                 df = self.green_traces
             def calc_y(i):
-                calc_single_trace(i, df)
+                return calc_single_trace(i, df)
         else:
             df_red = self.red_traces
             df_green = self.green_traces
@@ -149,5 +158,5 @@ class finished_project_data:
 
         return calc_y(neuron_name)
 
-    def shade_current_axes_using_behavior(self):
-        shade_using_behavior(self.behavior_annotations)
+    def shade_axis_using_behavior(self, ax):
+        shade_using_behavior(self.behavior_annotations, ax)
