@@ -1,6 +1,5 @@
 import os
 from dataclasses import dataclass
-from json import JSONEncoder
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Tuple
 import json
@@ -121,3 +120,34 @@ def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
     if verbose >= 1:
         print(f"Resolved path to {path}")
     return path
+
+
+def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
+    # For now, does NOT overwrite anything on disk
+    project_cfg = load_config(project_path)
+
+    if 'preprocessed_red' not in project_cfg:
+        raise ValueError("Must preprocess data before the segmentation step")
+    updates = {'video_path': project_cfg['preprocessed_red']}
+    segment_cfg.update(updates)
+
+    # segment_folder = get_absname(project_path, 'segmentation')
+    # updates = {'output_folder': segment_folder}
+    # segment_cfg['output_params'].update(updates)
+
+    return segment_cfg
+
+
+def update_path_to_segmentation_in_config(cfg: modular_project_config) -> config_file_with_project_context:
+    # For now, does NOT overwrite anything on disk
+
+    segment_cfg = cfg.get_segmentation_config()
+    train_cfg = cfg.get_training_config()
+
+    metadata_path = segment_cfg.resolve_relative_path('output_metadata')
+    # Add external detections
+    if not os.path.exists(metadata_path):
+        raise FileNotFoundError("Could not find external annotations")
+    train_cfg.config['tracker_params']['external_detections'] = metadata_path
+
+    return train_cfg
