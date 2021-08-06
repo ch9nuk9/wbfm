@@ -30,7 +30,7 @@ ex.add_config(project_path=None, continue_from_frame=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = modular_project_config(project_path)
-    project_dir = str(Path(project_path).parent)
+    project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()
 
