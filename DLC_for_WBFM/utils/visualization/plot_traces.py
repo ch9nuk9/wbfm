@@ -31,7 +31,8 @@ def make_grid_plot_from_project(project_data: finished_project_data,
 
     opt = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
     for ax, neuron_name in tqdm(zip(fig.axes, neuron_names)):
-        y = project_data.calculate_traces(neuron_name=neuron_name, **opt)
+        opt['neuron_name'] = neuron_name
+        y = project_data.calculate_traces(**opt)
         ax.plot(y, label=neuron_name)
         ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
         ax.set_frame_on(False)
