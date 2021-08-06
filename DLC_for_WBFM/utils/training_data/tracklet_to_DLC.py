@@ -8,8 +8,8 @@ from tqdm import tqdm
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 
 
-def best_tracklet_covering(df, num_frames_needed, num_frames,
-                           verbose=0):
+def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
+                                           verbose=0):
     """
     Given a partially tracked video, choose a series of frames with enough
     tracklets, to be saved in DLC format
@@ -19,7 +19,7 @@ def best_tracklet_covering(df, num_frames_needed, num_frames,
     """
 
     def make_window(start_frame):
-        return list(range(start_frame,start_frame+num_frames_needed+1))
+        return list(range(start_frame, start_frame + num_frames_needed + 1))
 
     x = list(range(num_frames-num_frames_needed))
     y = np.zeros_like(x)
@@ -37,6 +37,26 @@ def best_tracklet_covering(df, num_frames_needed, num_frames,
         print(f"Best covering starts at volume {best_covering} with {np.max(y)} tracklets")
 
     return make_window(best_covering), y
+
+
+def calculate_best_covering_from_tracklets(dlc_df: pd.DataFrame, num_training_frames: int):
+    sz = dlc_df.shape
+    # Only need one column from each neuron
+    missing_vals = np.isnan(dlc_df.values)[:, range(0, sz[1], 4)]
+
+    # Get number of rows without any missing values
+    num_not_missing_per_window = []
+    for i in tqdm(range(sz[0] - num_training_frames)):
+        start, stop = i, i + num_training_frames
+        have_missing = np.apply_along_axis(any, 0, missing_vals[start:stop, :])
+        num_not_missing_per_window.append(sum(~have_missing))
+
+    # Get best, and convert to correct format
+    y = np.array(num_not_missing_per_window)
+    start_frame = np.argmax(y)
+
+    best_window = list(range(start_frame, start_frame + num_training_frames))
+    return best_window, y
 
 
 def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
@@ -305,7 +325,7 @@ def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
                         'verbose': 1}
         if DEBUG:
             tracklet_opt['num_frames_needed'] = 2
-        which_frames, _ = best_tracklet_covering(df, **tracklet_opt)
+        which_frames, _ = best_tracklet_covering_from_my_matches(df, **tracklet_opt)
     return which_frames
 
 

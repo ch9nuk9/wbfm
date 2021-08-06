@@ -17,7 +17,8 @@ from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import c
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _get_video_options
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering, get_or_recalculate_which_frames
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering_from_my_matches, \
+    get_or_recalculate_which_frames, calculate_best_covering_from_tracklets
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 
 
@@ -66,8 +67,7 @@ def create_dlc_training_from_tracklets(project_config: modular_project_config,
         assert df_fname.endswith(".h5")
         df = pd.read_hdf(df_fname)
 
-    num_frames = project_config.config['dataset_params']['num_frames']
-    all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, df, num_frames, tracking_config)
+    all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, df, tracking_config)
     # edit_config(config['self_path'], config)
     tracking_config.update_on_disk()
 
@@ -211,13 +211,15 @@ def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video
     return this_avi_fname
 
 
-def _get_frames_for_dlc_training(DEBUG: bool, df: pd.DataFrame, num_frames: int,
+def _get_frames_for_dlc_training(DEBUG: bool, df: pd.DataFrame,
                                  tracking_config: config_file_with_project_context):
     # Choose a subset of frames with enough tracklets
     which_frames = tracking_config.config['training_data_3d'].get('which_frames', None)
 
     if which_frames is None:
-        which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_config)
+        num_training_frames = tracking_config.config['training_data_3d']['num_training_frames']
+        which_frames = calculate_best_covering_from_tracklets(df, num_training_frames)
+        # which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_config)
         # raise DeprecationWarning("Calculating which frames at this point is deprecated; calculate before calling this")
         # num_frames_needed = config['training_data_3d']['num_training_frames']
         # tracklet_opt = {'num_frames_needed': num_frames_needed,
