@@ -70,3 +70,30 @@ def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
         all_tracks_list.append(np.hstack([id_array, t_array, zxy_array]))
 
     return np.vstack(all_tracks_list)
+
+
+def create_text_labels_for_napari(df):
+    all_neurons = list(df.columns.levels[0])
+    i_name = 'i_reindexed_segmentation'
+    zxy_names = ['z_dlc', 'x_dlc', 'y_dlc']
+    t_vec = np.expand_dims(np.array(list(df.index), dtype=int), axis=1)
+    label_vec = np.ones(len(df.index), dtype=int)
+    pts = np.array([[0, 0, 0, 0]], dtype=int)
+    properties = {'label': []}
+    for n in all_neurons:
+        zxy = df[n][zxy_names].to_numpy(dtype=int)
+        t_zxy = np.hstack([t_vec, zxy])
+        label_vec[:] = df[n][i_name]
+
+        pts = np.vstack([pts, t_zxy])
+        properties['label'].extend(label_vec)
+    pts = np.where(pts < 0, np.nan, pts)  # Some points are negative instead of nan
+    to_keep = ~np.isnan(pts).any(axis=1)
+    pts = pts[to_keep, :]
+    pts = pts[1:, :]
+    properties['label'] = [p for p, good in zip(properties['label'], to_keep[1:]) if good]
+
+    opt = {'data': pts, 'face_color': 'transparent', 'edge_color': 'transparent', 'text': 'label',
+           'properties': properties, 'name': 'Neuron IDs'}
+
+    return opt

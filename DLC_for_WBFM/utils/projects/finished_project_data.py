@@ -171,8 +171,8 @@ class finished_project_data:
 
         return calc_y(neuron_name)
 
-    def shade_axis_using_behavior(self, ax):
-        shade_using_behavior(self.behavior_annotations, ax)
+    def shade_axis_using_behavior(self, ax, behaviors_to_ignore='none'):
+        shade_using_behavior(self.behavior_annotations, ax, behaviors_to_ignore)
 
     def __repr__(self):
         return f"=======================================\n\

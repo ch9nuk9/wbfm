@@ -1,5 +1,3 @@
-import argparse
-
 import napari
 import numpy as np
 import pandas as pd
@@ -9,6 +7,7 @@ from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
 from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
+from DLC_for_WBFM.utils.visualization.napari_from_config import create_text_labels_for_napari
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
 
@@ -249,6 +248,12 @@ def build_napari_trace_explorer(project_config):
     if ui.dat.segmentation is not None:
         viewer.add_labels(ui.dat.segmentation, name="Colored segmentation", opacity=0.4)
 
+    # Add a text overlay
+    df = ui.dat.red_traces
+    opt = create_text_labels_for_napari(df)
+
+    viewer.add_points(**opt)
+
     # Actually dock my additional gui elements
     ui.setupUi(viewer)
     viewer.window.add_dock_widget(ui)
@@ -257,3 +262,5 @@ def build_napari_trace_explorer(project_config):
     print("Finished GUI setup")
 
     napari.run()
+
+
