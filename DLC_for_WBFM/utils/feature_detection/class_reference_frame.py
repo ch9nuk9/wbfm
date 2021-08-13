@@ -77,7 +77,7 @@ class ReferenceFrame:
                 Number of neurons: {len(self.neuron_locs)} \n"
 
     def __repr__(self):
-        return f"Number of neurons: {len(self.neuron_locs)} \n"
+        return f"ReferenceFrame with {len(self.neuron_locs)} neurons \n"
 
 ##
 ## Class for Set of reference frames
