@@ -20,7 +20,9 @@ from segmentation.util.utils_model import get_stardist_model
 import concurrent.futures
 
 
-def segment_video_using_config_3d(_config: dict, continue_from_frame: int =None) -> None:
+def segment_video_using_config_3d(segment_cfg: config_file_with_project_context,
+                                  project_cfg: modular_project_config,
+                                  continue_from_frame: int =None) -> None:
     """
 
     Parameters
@@ -37,18 +39,14 @@ def segment_video_using_config_3d(_config: dict, continue_from_frame: int =None)
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
-        _config)
+        segment_cfg, project_cfg)
 
     # Open the file
     if not video_path.endswith('.zarr'):
         raise ValueError("Non-zarr usage has been deprecated")
     video_dat = zarr.open(video_path)
 
-    sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
-    # Not fully working for multithreaded scenario
-    # Discussion about finalizing: https://stackoverflow.com/questions/40850089/is-keras-thread-safe/43393252#43393252
-    # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
-    sd_model.keras_model.make_predict_function()
+    sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
     masks_zarr = _do_first_volume3d(frame_list, mask_fname, num_frames, num_slices,
                                     sd_model, verbose, video_dat, continue_from_frame)
@@ -63,7 +61,7 @@ def segment_video_using_config_3d(_config: dict, continue_from_frame: int =None)
         continue_from_frame += 1
         print(f"Continuing from frame {continue_from_frame}")
 
-    _segment_full_video_3d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
+    _segment_full_video_3d(segment_cfg, frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
 
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
@@ -180,11 +178,7 @@ def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
         raise ValueError("Non-zarr usage has been deprecated")
     video_dat = zarr.open(video_path)
 
-    sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
-    # Not fully working for multithreaded scenario
-    # Discussion about finalizing: https://stackoverflow.com/questions/40850089/is-keras-thread-safe/43393252#43393252
-    # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
-    sd_model.keras_model.make_predict_function()
+    sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
     opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
     if verbose > 1:
@@ -205,21 +199,20 @@ def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
         continue_from_frame += 1
         print(f"Continuing from frame {continue_from_frame}")
 
-    _segment_full_video_2d(_config, frame_list, mask_fname, num_frames, verbose, video_dat,
+    _segment_full_video_2d(segment_cfg, frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
 
     # Same 2d and 3d
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
 
-    # frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices, preprocessing_settings, stardist_model_name, verbose, video_path = _unpack_config_file(
-    #     _config)
-    #
-    #
-    # # get stardist model object
-    # _segment_full_video_2d(_config, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
-    #                        opt_postprocessing, preprocessing_settings, stardist_model_name, verbose, video_path)
-    #
-    # _calc_metadata_full_video_2d(frame_list, masks_zarr, metadata, num_slices, preprocessing_settings, video_path)
+
+def initialize_stardist_model(stardist_model_name, verbose):
+    sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
+    # Not fully working for multithreaded scenario
+    # Discussion about finalizing: https://stackoverflow.com/questions/40850089/is-keras-thread-safe/43393252#43393252
+    # Dicussion about making the predict function: https://github.com/jaromiru/AI-blog/issues/2
+    sd_model.keras_model.make_predict_function()
+    return sd_model
 
 
 def _segment_full_video_2d(segment_cfg: config_file_with_project_context,
