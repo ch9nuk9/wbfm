@@ -10,15 +10,16 @@ from tqdm import tqdm
 import zarr
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, \
     calc_icp_matches
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation, reindex_segmentation_using_config
 from DLC_for_WBFM.utils.visualization.visualization_tracks import visualize_tracks
 
 
-def get_traces_from_3d_tracks_using_config(segment_cfg: dict,
-                                           track_cfg: dict,
-                                           traces_cfg: dict,
-                                           project_cfg: dict,
+def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project_context,
+                                           track_cfg: config_file_with_project_context,
+                                           traces_cfg: config_file_with_project_context,
+                                           project_cfg: modular_project_config,
                                            DEBUG: bool = False) -> None:
     """
     Connect the 3d traces to previously segmented masks
@@ -289,11 +290,11 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
 
 def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     # Settings
-    max_dist = track_cfg['final_3d_tracks']['max_dist_to_segmentation']
-    params_start_volume = project_cfg['dataset_params']['start_volume']
-    num_frames = project_cfg['dataset_params']['num_frames']
+    max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
+    params_start_volume = project_cfg.config['dataset_params']['start_volume']
+    num_frames = project_cfg.config['dataset_params']['num_frames']
     # Get previous annotations
-    segmentation_fname = segment_cfg['output']['metadata']
+    segmentation_fname = segment_cfg['output_metadata']
     with open(segmentation_fname, 'rb') as f:
         segmentation_metadata = pickle.load(f)
     dlc_fname = track_cfg['final_3d_tracks_df']

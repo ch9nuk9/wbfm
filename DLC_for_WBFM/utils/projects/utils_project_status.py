@@ -23,7 +23,7 @@ def check_segmentation(project_path):
             with safe_cd(other_project):
                 all_to_check = [
                     this_cfg['output']['masks'],
-                    this_cfg['output']['metadata']
+                    this_cfg['output_metadata']
                 ]
                 all_exist = map(osp.exists, all_to_check)
 

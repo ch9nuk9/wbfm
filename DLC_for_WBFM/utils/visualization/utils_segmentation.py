@@ -219,7 +219,7 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
                       'verbose': 1}
         subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
 
-        fname = this_config['segment_cfg']['output']['metadata']
+        fname = this_config['segment_cfg']['output_metadata']
         with open(fname, 'rb') as f:
             segmentation_metadata = pickle.load(f)
 
