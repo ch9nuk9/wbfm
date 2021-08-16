@@ -3,18 +3,14 @@ from datetime import datetime
 from pathlib import Path
 
 
-def get_output_fnames(video_path, _config):
-    if _config['output']['folder'] is None:
+def get_output_fnames(video_path, output_folder, num_frames):
+    if output_folder is None:
         output_folder = osp.split(video_path)[0]
-        # Make a subfolder
         subfolder = datetime.now().strftime("%Y_%m_%d-%I_%M_%p")
         output_folder = osp.join(output_folder, subfolder)
         Path(output_folder).mkdir(parents=True, exist_ok=True)
     else:
-        output_folder = _config['output']['folder']
-
-    # Make a suffix
-    num_frames = _config['dataset_params']['num_frames']
+        output_folder = output_folder
 
     # Actual masks
     fname = f'masks_{num_frames}.zarr'
