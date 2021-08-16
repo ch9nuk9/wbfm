@@ -5,9 +5,10 @@ The top level function for getting final traces from 3d tracks and neuron masks
 from pathlib import Path
 # main function
 from sacred.observers import TinyDbObserver
+import DLC_for_WBFM.utils.projects.monkeypatch_json
 
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks_using_config
 # Experiment tracking
 import sacred

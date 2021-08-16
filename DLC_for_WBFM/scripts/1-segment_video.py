@@ -12,7 +12,6 @@ from sacred.observers import TinyDbObserver
 import DLC_for_WBFM.utils.projects.monkeypatch_json
 
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, synchronize_segment_config
-from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd
 from segmentation.util.utils_pipeline import segment_video_using_config_2d, segment_video_using_config_3d
 # Experiment tracking
 import sacred
