@@ -9,3 +9,5 @@ segmentation/dat/
 *.tif
 segmentation/runs/
 *.tiff
+
+*.PCW-IMP-96

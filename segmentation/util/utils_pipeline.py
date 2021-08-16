@@ -2,6 +2,7 @@ import threading
 from multiprocessing import Manager
 
 import stardist.models
+from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project_context
 import segmentation.util.utils_postprocessing as post
 import numpy as np
 from tqdm import tqdm
@@ -61,8 +62,13 @@ def segment_video_using_config_3d(segment_cfg: config_file_with_project_context,
         continue_from_frame += 1
         print(f"Continuing from frame {continue_from_frame}")
 
-    _segment_full_video_3d(segment_cfg, frame_list, mask_fname, num_frames, verbose, video_dat,
+    _segment_full_video_3d(frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
+
+    if segment_cfg.config.get('self_path', None) is not None:
+        segment_cfg.update_on_disk()
+    if verbose >= 1:
+        print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
 
@@ -108,7 +114,7 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
         pickle.dump(metadata, meta_save)
 
 
-def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num_frames: int, verbose: int,
+def _segment_full_video_3d(frame_list: list, mask_fname: str, num_frames: int, verbose: int,
                            video_dat: zarr.Array,
                            opt: dict, continue_from_frame: int) -> None:
     # with tifffile.TiffFile(video_path) as video_stream:
@@ -131,25 +137,24 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
                 future.result()
                 pbar.update(1)
 
-    if _config.get('self_path', None) is not None:
-        edit_config(_config['self_path'], _config)
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
+
 def _unpack_config_file(segment_cfg, project_cfg):
+    cfg = project_cfg.config
     # Initializing variables
-    start_volume = project_cfg.config['dataset_params']['start_volume']
-    num_frames = project_cfg.config['dataset_params']['num_frames']
-    if project_cfg.config['DEBUG']:
-        num_frames = 1
-    num_slices = project_cfg.config['dataset_params']['num_slices']
+    start_volume = cfg['dataset_params']['start_volume']
+    num_frames = cfg['dataset_params']['num_frames']
+    num_slices = cfg['dataset_params']['num_slices']
     frame_list = list(range(start_volume, start_volume + num_frames))
     video_path = segment_cfg.config['video_path']
-    mask_fname, metadata_fname = get_output_fnames(video_path, segment_cfg.config['output_folder'], num_frames)
+    output_folder = segment_cfg.resolve_relative_path('output_folder')
+    mask_fname, metadata_fname = get_output_fnames(video_path, num_frames, output_folder=output_folder)
     # Save settings
     segment_cfg.config['output_masks'] = mask_fname
     segment_cfg.config['output_metadata'] = metadata_fname
-    verbose = project_cfg.config['verbose']
+    verbose = cfg['verbose']
     stardist_model_name = segment_cfg.config['segmentation_params']['stardist_model_name']
     zero_out_borders = segment_cfg.config['segmentation_params']['zero_out_borders']
     return frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders
@@ -199,8 +204,13 @@ def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
         continue_from_frame += 1
         print(f"Continuing from frame {continue_from_frame}")
 
-    _segment_full_video_2d(segment_cfg, frame_list, mask_fname, num_frames, verbose, video_dat,
+    _segment_full_video_2d(frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
+
+    if segment_cfg.config.get('self_path', None) is not None:
+        segment_cfg.update_on_disk()
+    if verbose >= 1:
+        print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
     # Same 2d and 3d
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
@@ -215,8 +225,7 @@ def initialize_stardist_model(stardist_model_name, verbose):
     return sd_model
 
 
-def _segment_full_video_2d(segment_cfg: config_file_with_project_context,
-                           frame_list: list, mask_fname: str, num_frames: int, verbose: int,
+def _segment_full_video_2d(frame_list: list, mask_fname: str, num_frames: int, verbose: int,
                            video_dat: zarr.Array,
                            opt: dict, continue_from_frame: int) -> None:
 
@@ -236,10 +245,6 @@ def _segment_full_video_2d(segment_cfg: config_file_with_project_context,
             for future in concurrent.futures.as_completed(futures):
                 future.result()
                 pbar.update(1)
-
-    segment_cfg.update_on_disk()
-    if verbose >= 1:
-        print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
 
 def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_slices: int,
@@ -315,9 +320,16 @@ def segment_and_save3d(i, i_volume, masks_zarr,
     masks_zarr[i, :, :, :] = final_masks
 
 
-def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
+def segment_and_save2d(i,
+                       i_volume,
+                       masks_zarr,
+                       opt_postprocessing,
                        zero_out_borders,
-                       sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
+                       sd_model,
+                       verbose,
+                       video_dat,
+                       keras_lock=None,
+                       read_lock=None):
     volume = video_dat[i_volume, ...]
     if keras_lock is None:
         segmented_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
@@ -329,19 +341,7 @@ def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
                                              volume,
                                              **opt_postprocessing,
                                              verbose=verbose - 1)
-    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
     masks_zarr[i, :, :, :] = final_masks
-
-    # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
-    # with keras_lock:  # Keras is not thread-safe in the end
-    #     segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
-    # # process masks: remove large areas, stitch, split long neurons, remove short neurons
-    # final_masks = perform_post_processing_2d(segmented_masks,
-    #                                          volume,
-    #                                          **opt_postprocessing,
-    #                                          verbose=verbose - 1)
-    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
-    # # masks_zarr[i, :, :, :] = final_masks
 
 
 def _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path, read_lock=None):
@@ -515,7 +515,9 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
 ## Also just for metadata calculation
 ##
 
-def recalculate_metadata_from_config(_config, DEBUG=False):
+def recalculate_metadata_from_config(segment_cfg: config_file_with_project_context,
+                                     project_cfg: dict,
+                                     DEBUG=False):
     """
 
     Given a project that contains a segmentation, recalculate the metadata
@@ -534,9 +536,9 @@ def recalculate_metadata_from_config(_config, DEBUG=False):
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
-        _config)
+        segment_cfg, project_cfg)
 
-    masks_zarr = zarr.open(_config['output']['masks'])
+    masks_zarr = zarr.open(segment_cfg.get('output_masks', True))
     video_dat = zarr.open(video_path)
 
     if DEBUG:

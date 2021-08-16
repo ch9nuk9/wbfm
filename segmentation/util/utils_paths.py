@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def get_output_fnames(video_path, output_folder, num_frames):
+def get_output_fnames(video_path, num_frames, output_folder):
     if output_folder is None:
         output_folder = osp.split(video_path)[0]
         subfolder = datetime.now().strftime("%Y_%m_%d-%I_%M_%p")
