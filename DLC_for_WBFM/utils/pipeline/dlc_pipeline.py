@@ -58,44 +58,22 @@ def create_dlc_training_from_tracklets(project_config: modular_project_config,
                                        task_name: str = None,
                                        DEBUG: bool = False) -> None:
 
+    all_center_slices, dlc_opt, net_opt, png_opt, vid_cfg, vid_fname = unpack_configs_dlc_projects(DEBUG,
+                                                                                                   project_config,
+                                                                                                   scorer, task_name,
+                                                                                                   tracking_config,
+                                                                                                   training_config)
 
-    df_fname = training_config.resolve_relative_path('df_raw_3d_tracks')
-    if df_fname.endswith(".pickle"):
-        raise DeprecationWarning("Creating training data from raw pickle not supported; convert to 3d DLC dataframe")
-    else:
-        assert df_fname.endswith(".h5")
-        df: pd.DataFrame = pd.read_hdf(df_fname)
-
-    all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, df, tracking_config)
-    tracking_config.update_on_disk()
-
-    vid_cfg = tracking_config.config
-    vid_cfg['dataset_params'] = project_config.config['dataset_params']
-    vid_fname = project_config.config['preprocessed_red']
-    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, vid_cfg, vid_fname)
-
-    dlc_opt, net_opt, png_opt = _define_project_options(vid_cfg, df, scorer, task_name)
-    # Actually make projects
-    # all_dlc_configs = []
     with safe_cd(project_config.project_dir):
-        for i, center in enumerate(all_center_slices):
-            try:
-                this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
-                                             preprocessed_dat, vid_opt, video_exists, tracking_config.config)
-                # all_dlc_configs.append(this_dlc_config)
-            except FileExistsError:
-                print("Found existing folder, skipping")
+        all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, vid_cfg, vid_fname)
 
-    # def parallel_func(i_center):
-    #     i, center = i_center
-    #     _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
-    #                                  preprocessed_dat, vid_opt, video_exists, config)
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
-    #     futures = {executor.submit(parallel_func, i): i for i in enumerate(all_center_slices)}
-    #     all_dlc_configs = [f.result() for f in concurrent.futures.as_completed(futures)]
-        # futures = executor.map(parallel_func, enumerate(all_center_slices))
-        # all_dlc_configs = [f.result() for f in futures]
+    _make_all_projects(all_avi_fnames, all_center_slices, dlc_opt, net_opt, png_opt, preprocessed_dat, project_config,
+                       tracking_config, vid_opt, video_exists)
 
+    _update_tracking_config_with_project_names(project_config, tracking_config)
+
+
+def _update_tracking_config_with_project_names(project_config, tracking_config):
     # Save list of dlc config names
     all_dlc_configs = []
     base_dir = Path(os.path.join(project_config.project_dir, '3-tracking'))
@@ -106,10 +84,48 @@ def create_dlc_training_from_tracklets(project_config: modular_project_config,
             if dlc_name.exists():
                 all_dlc_configs.append(str(dlc_name))
     print(f"Found config files: {all_dlc_configs}")
-
     tracking_config.config['dlc_projects']['all_configs'] = all_dlc_configs
     tracking_config.update_on_disk()
     # edit_config(config['self_path'], config)
+
+
+def _make_all_projects(all_avi_fnames, all_center_slices, dlc_opt, net_opt, png_opt, preprocessed_dat, project_config,
+                       tracking_config, vid_opt, video_exists):
+    # all_dlc_configs = []
+    with safe_cd(project_config.project_dir):
+        for i, center in enumerate(all_center_slices):
+            try:
+                this_dlc_config = _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
+                                                               preprocessed_dat, vid_opt, video_exists,
+                                                               tracking_config.config)
+                # all_dlc_configs.append(this_dlc_config)
+            except FileExistsError:
+                print("Found existing folder, skipping")
+    # def parallel_func(i_center):
+    #     i, center = i_center
+    #     _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, png_opt,
+    #                                  preprocessed_dat, vid_opt, video_exists, config)
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_center_slices)) as executor:
+    #     futures = {executor.submit(parallel_func, i): i for i in enumerate(all_center_slices)}
+    #     all_dlc_configs = [f.result() for f in concurrent.futures.as_completed(futures)]
+    # futures = executor.map(parallel_func, enumerate(all_center_slices))
+    # all_dlc_configs = [f.result() for f in futures]
+
+
+def unpack_configs_dlc_projects(DEBUG, project_config, scorer, task_name, tracking_config, training_config):
+    df_fname = training_config.resolve_relative_path('df_raw_3d_tracks')
+    if df_fname.endswith(".pickle"):
+        raise DeprecationWarning("Creating training data from raw pickle not supported; convert to 3d DLC dataframe")
+    else:
+        assert df_fname.endswith(".h5")
+        df: pd.DataFrame = pd.read_hdf(df_fname)
+    all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, df, tracking_config)
+    tracking_config.update_on_disk()
+    vid_cfg = tracking_config.config
+    vid_cfg['dataset_params'] = project_config.config['dataset_params']
+    vid_fname = project_config.config['preprocessed_red']
+    dlc_opt, net_opt, png_opt = _define_project_options(vid_cfg, df, scorer, task_name)
+    return all_center_slices, dlc_opt, net_opt, png_opt, vid_cfg, vid_fname
 
 
 def _prep_videos_for_dlc(all_center_slices: List[int], config: dict,

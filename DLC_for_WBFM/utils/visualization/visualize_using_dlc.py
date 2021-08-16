@@ -315,14 +315,14 @@ def build_tif_training_data(c, which_frames, preprocessing_settings=None, verbos
     return relative_imagenames, full_subfolder_name
 
 
-def training_data_3d_from_annotations(config,
-                                   df_fname,
-                                   which_frames,
-                                   scorer=None,
-                                   total_num_frames=500,
-                                   coord_names=['x','y','likelihood'],
-                                   preprocessing_settings=None,
-                                   verbose=0):
+def OLD_training_data_3d_from_annotations(config,
+                                          df_fname,
+                                          which_frames,
+                                          scorer=None,
+                                          total_num_frames=500,
+                                          coord_names=['x','y','likelihood'],
+                                          preprocessing_settings=None,
+                                          verbose=0):
     """
     Creates a set of training frames or volumes starting from a saved dataframe of tracklets
 
