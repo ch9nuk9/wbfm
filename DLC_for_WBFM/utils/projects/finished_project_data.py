@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import zarr
 
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
@@ -29,25 +30,33 @@ class finished_project_data:
     behavior_annotations: pd.DataFrame
     background_per_pixel: float
 
+    verbose: int = 2
+
     @staticmethod
     def unpack_config_file(project_path):
-        project_dir = Path(project_path).parent
-        cfg = load_config(project_path)
-        with safe_cd(project_dir):
-            traces_cfg = load_config(cfg['subfolder_configs']['traces'])
-            segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
-            tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
+        cfg = modular_project_config(project_path)
+        project_dir = cfg.project_dir
+
+        segment_cfg = cfg.get_segmentation_config()
+        tracking_cfg = cfg.get_tracking_config()
+        traces_cfg = cfg.get_traces_config()
+        # # project_dir = Path(project_path).parent
+        # cfg = load_config(project_path)
+        # with safe_cd(project_dir):
+        #     traces_cfg = load_config(cfg['subfolder_configs']['traces'])
+        #     segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
+        #     tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
 
         return cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir
 
     @staticmethod
-    def load_data_from_configs(cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir):
-        red_dat_fname = cfg['preprocessed_red']
-        green_dat_fname = cfg['preprocessed_green']
-        red_traces_fname = traces_cfg['traces']['red']
-        green_traces_fname = traces_cfg['traces']['green']
-        final_tracks_fname = tracking_cfg['final_3d_tracks']['df_fname']
-        seg_fname_raw = segment_cfg['output']['masks']
+    def _load_data_from_configs(cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir):
+        red_dat_fname = cfg.config['preprocessed_red']
+        green_dat_fname = cfg.config['preprocessed_green']
+        red_traces_fname = traces_cfg.config['traces']['red']
+        green_traces_fname = traces_cfg.config['traces']['green']
+        final_tracks_fname = tracking_cfg.config['final_3d_tracks']['df_fname']
+        seg_fname_raw = segment_cfg.config['output']['masks']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 
         fname = r"3-tracking\postprocessing\manual_behavior_annotation.xlsx"  # TODO: do not hardcode
@@ -76,8 +85,8 @@ class finished_project_data:
         # TODO: do not hardcode
         background_per_pixel = 14
 
-        start = cfg['dataset_params']['start_volume']
-        end = start + cfg['dataset_params']['num_frames']
+        start = cfg.config['dataset_params']['start_volume']
+        end = start + cfg.config['dataset_params']['num_frames']
         x = list(range(start, end))
 
         # Return a full object
@@ -100,7 +109,7 @@ class finished_project_data:
     def load_final_project_data_from_config(project_path):
         if isinstance(project_path, (str, os.PathLike)):
             args = finished_project_data.unpack_config_file(project_path)
-            return finished_project_data.load_data_from_configs(*args)
+            return finished_project_data._load_data_from_configs(*args)
         elif isinstance(project_path, finished_project_data):
             return project_path
         else:
@@ -109,38 +118,51 @@ class finished_project_data:
     def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str):
         assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
 
+        if self.verbose >= 1:
+            print(f"Calculating {channel_mode} trace for {neuron_name} for {calculation_mode} mode")
+
         # Way to process a single dataframe
-        if calculation_mode is 'integration':
+        if calculation_mode == 'integration':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['brightness']
                 return y_raw - self.background_per_pixel * df_tmp[i]['volume']
-        elif calculation_mode is 'max':
+        elif calculation_mode == 'max':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['all_values']
-                return np.max(y_raw) - self.background_per_pixel
-        elif calculation_mode is 'mean':
+                f = lambda x: np.max(x, initial=np.nan)
+                return y_raw.apply(f) - self.background_per_pixel
+        elif calculation_mode == 'mean':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['brightness']
                 return y_raw / df_tmp[i]['volume'] - self.background_per_pixel
-        elif calculation_mode is 'quantile90':
+        # elif calculation_mode == 'quantile90':
+        #     def calc_single_trace(i, df_tmp):
+        #         y_raw = df_tmp[i]['all_values']
+        #         return np.quantile(y_raw, 0.9) - self.background_per_pixel
+        # elif calculation_mode == 'quantile50':
+        #     def calc_single_trace(i, df_tmp):
+        #         y_raw = df_tmp[i]['all_values']
+        #         f = lambda x: np.quantile(x, initial=np.nan)
+        #         return np.quantile(y_raw, 0.5) - self.background_per_pixel
+        elif calculation_mode == 'volume':
             def calc_single_trace(i, df_tmp):
-                y_raw = df_tmp[i]['all_values']
-                return np.quantile(y_raw, 0.9) - self.background_per_pixel
-        elif calculation_mode is 'quantile50':
+                y_raw = df_tmp[i]['volume']
+                return y_raw
+        elif calculation_mode == 'z':
             def calc_single_trace(i, df_tmp):
-                y_raw = df_tmp[i]['all_values']
-                return np.quantile(y_raw, 0.5) - self.background_per_pixel
+                y_raw = df_tmp[i]['z_dlc']
+                return y_raw
         else:
             raise ValueError(f"Unknown calculation mode {calculation_mode}")
 
         # How to combine channels, or which channel to choose
         if channel_mode in ['red', 'green']:
-            if channel_mode is 'red':
+            if channel_mode == 'red':
                 df = self.red_traces
             else:
                 df = self.green_traces
             def calc_y(i):
-                calc_single_trace(i, df)
+                return calc_single_trace(i, df)
         else:
             df_red = self.red_traces
             df_green = self.green_traces
@@ -149,5 +171,20 @@ class finished_project_data:
 
         return calc_y(neuron_name)
 
-    def shade_current_axes_using_behavior(self):
-        shade_using_behavior(self.behavior_annotations)
+    def shade_axis_using_behavior(self, ax, behaviors_to_ignore='none'):
+        shade_using_behavior(self.behavior_annotations, ax, behaviors_to_ignore)
+
+    def __repr__(self):
+        return f"=======================================\n\
+Project data:\n\
+project_dir: {self.project_dir} \n\
+=======================================\n\
+Found data:\n\
+red_data: {self.red_data is not None}\n\
+green_data: {self.green_data is not None}\n\
+red_traces: {self.red_traces is not None}\n\
+green_traces: {self.green_traces is not None}\n\
+final_tracks: {self.final_tracks is not None}\n\
+raw_segmentation: {self.raw_segmentation is not None}\n\
+segmentation: {self.segmentation is not None}\n\
+behavior_annotations: {self.behavior_annotations is not None}\n"

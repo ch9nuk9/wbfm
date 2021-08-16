@@ -115,50 +115,6 @@ def load_config(config_fname: typing.Union[str, pathlib.Path]) -> dict:
 #####################
 
 
-def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
-    # For now, does NOT overwrite anything on disk
-    project_cfg = load_config(project_path)
-
-    if 'preprocessed_red' not in project_cfg:
-        raise ValueError("Must preprocess data before the segmentation step")
-    updates = {'video_path': project_cfg['preprocessed_red']}
-    segment_cfg.update(updates)
-
-    # segment_folder = get_absname(project_path, 'segmentation')
-    # updates = {'output_folder': segment_folder}
-    # segment_cfg['output_params'].update(updates)
-
-    return segment_cfg
-
-
-def synchronize_train_config(project_path: str) -> dict:
-    # For now, does NOT overwrite anything on disk
-    project_cfg = load_config(project_path)
-
-    # Previous step, which produced needed files
-    segment_cfg = load_config(project_cfg['subfolder_configs']['segmentation'])
-    # This step; to update
-    train_cfg = load_config(project_cfg['subfolder_configs']['training_data'])
-
-    # Add external detections
-    external_detections = segment_cfg['output']['metadata']
-    if not os.path.exists(external_detections):
-        raise FileNotFoundError("Could not find external annotations")
-    # external_detections = segment_cfg['output_params']['output_folder']
-    # Assume the detections are named normally, i.e. starting with 'metadata'
-    # for file in os.listdir(external_detections):
-    #     if fnmatch.fnmatch(file, 'metadata*'):
-    #         external_detections = osp.join(external_detections, file)
-    #         break
-    # else:
-    #     raise FileNotFoundError("Could not find external annotations")
-
-    updates = {'external_detections': external_detections}
-    train_cfg['tracker_params'].update(updates)
-
-    return train_cfg
-
-
 def get_subfolder(project_path, subfolder):
     project_cfg = load_config(project_path)
     return Path(project_cfg['subfolder_configs'][subfolder]).parent

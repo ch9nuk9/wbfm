@@ -31,11 +31,13 @@ def cfg(project_path):
     cfg = load_config(project_path)
     project_dir = str(Path(project_path).parent)
 
-    fname = str(Path(resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname'])))
-    out_fname_red = fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr')
+    fname = Path(resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname']))
+    out_fname_red = str(fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr'))
 
-    fname = str(Path(resolve_mounted_path_in_current_os(cfg['green_bigtiff_fname'])))
-    out_fname_green = fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr')
+    fname = Path(resolve_mounted_path_in_current_os(cfg['green_bigtiff_fname']))
+    out_fname_green = str(fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr'))
+
+    fname = str(fname)  # For pickling
 
     log_dir = str(Path(project_dir).joinpath('log'))
     ex.observers.append(TinyDbObserver(log_dir))
@@ -64,9 +66,6 @@ def main(_config, _run):
         red_name = Path(opt['out_fname'])
         fname = red_name.parent / (red_name.stem + "_preprocessed.pickle")
         preprocessing_settings.path_to_previous_warp_matrices = fname
-
-        # print(fname)
-        # print(opt['out_fname'])
 
         if not (Path(opt['out_fname']).exists() and fname.exists()):
             print("Preprocessing red...")

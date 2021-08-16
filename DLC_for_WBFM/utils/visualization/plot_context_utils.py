@@ -6,7 +6,7 @@ from DLC_for_WBFM.utils.visualization.plot_traces import get_tracking_channel, g
 from DLC_for_WBFM.utils.visualization.utils_plot_traces import set_big_font
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual
 from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_from_ometiff_virtual
-from DLC_for_WBFM.config.class_configuration import *
+# from DLC_for_WBFM.config.class_configuration import *
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
