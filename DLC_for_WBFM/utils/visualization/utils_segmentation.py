@@ -6,6 +6,7 @@ from pathlib import Path
 
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project_context, modular_project_config
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 import pandas as pd
 import numpy as np
@@ -14,11 +15,14 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_fro
     get_or_recalculate_which_frames
 
 
-def reindex_segmentation_using_config(trace_and_seg_cfg, DEBUG=False):
+def reindex_segmentation_using_config(traces_cfg: config_file_with_project_context,
+                                      segment_cfg: config_file_with_project_context,
+                                      project_cfg: modular_project_config,
+                                      DEBUG=False):
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
     """
-    all_matches, raw_seg_masks, new_masks = _unpack_config_reindexing(trace_and_seg_cfg)
+    all_matches, raw_seg_masks, new_masks = _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg)
 
     reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks)
 
@@ -51,12 +55,10 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks):
                 pbar.update(1)
 
 
-def _unpack_config_reindexing(trace_and_seg_cfg):
-    trace_cfg = trace_and_seg_cfg['traces_cfg']
-    seg_cfg = trace_and_seg_cfg['segment_cfg']
+def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     with safe_cd(Path(trace_and_seg_cfg['project_dir'])):
         # Get original segmentation
-        seg_fname = seg_cfg['output']['masks']
+        seg_fname = seg_cfg['output_masks']
         raw_seg_masks = zarr.open(seg_fname)
 
         out_fname = trace_cfg['reindexed_masks']
@@ -83,7 +85,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
 
     with safe_cd(Path(this_config['project_path']).parent):
         # Get original segmentation, just for shaping
-        seg_fname = seg_cfg['output']['masks']
+        seg_fname = seg_cfg['output_masks']
         seg_masks = zarr.open(seg_fname)
 
         # Initialize the masks at 0
@@ -223,7 +225,7 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
         with open(fname, 'rb') as f:
             segmentation_metadata = pickle.load(f)
 
-        fname = this_config['segment_cfg']['output']['masks']
+        fname = this_config['segment_cfg']['output_masks']
         masks = zarr.open(fname)
 
     # Convert dataframe to matches per frame

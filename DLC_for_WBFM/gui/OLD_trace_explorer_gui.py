@@ -51,7 +51,7 @@ class Ui_MainWindow(object):
             self.green_traces = pd.read_hdf(green_traces_fname)
             self.dlc_raw = pd.read_hdf(dlc_raw_fname)
 
-            seg_fname = self.segment_cfg['output']['masks']
+            seg_fname = self.segment_cfg['output_masks']
             if '.zarr' in seg_fname:
                 seg_fname = os.path.join(self.project_dir, seg_fname)
                 # print(f"Opening zarr segmentation at: {seg_fname}")
@@ -392,7 +392,7 @@ class Ui_MainWindow(object):
         return get_cropped_frame(fname, t, num_slices, zxy, sz, to_flip)
 
     def seg_frame_factory(self, t, zxy):
-        fname = self.segment_cfg['output']['masks']
+        fname = self.segment_cfg['output_masks']
         num_slices = self.cfg['dataset_params']['num_slices']
         t -= self.cfg['dataset_params']['start_volume']
         if '.zarr' not in fname:

@@ -248,7 +248,7 @@ class Ui_MainWindow(object):
         # The segmentation path may be different from the overall folder
         other_project = get_project_of_substep(segment_fname)
         with safe_cd(other_project):
-            seg_path = self.segment_cfg['output']['masks']
+            seg_path = self.segment_cfg['output_masks']
             self.segment_zarr = zarr.open(seg_path)
         self.tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
         self.traces_cfg = load_config(cfg['subfolder_configs']['traces'])

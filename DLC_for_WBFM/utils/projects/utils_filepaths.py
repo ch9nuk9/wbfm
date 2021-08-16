@@ -1,4 +1,5 @@
 import os
+import pickle
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Tuple
@@ -20,9 +21,6 @@ class config_file_with_project_context:
         val = self.config.get(key, None)
         val = os.path.join(self.project_dir, val)
         return val
-
-    # def set(self, key, val):
-    #     self.config[key] = val
 
     def update_on_disk(self):
         with safe_cd(self.project_dir):
@@ -78,6 +76,11 @@ class modular_project_config:
 
     def get_log_dir(self):
         return str(Path(self.project_dir).joinpath('log'))
+
+    def save_in_local_project(self, data, relative_path):
+        abs_path = Path(self.project_path).joinpath(relative_path)
+        with open(abs_path, 'wb') as f:
+            pickle.dump(data, f)
 
 
 def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:

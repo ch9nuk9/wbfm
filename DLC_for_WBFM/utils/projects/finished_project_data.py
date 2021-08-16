@@ -56,7 +56,7 @@ class finished_project_data:
         red_traces_fname = traces_cfg.config['traces']['red']
         green_traces_fname = traces_cfg.config['traces']['green']
         final_tracks_fname = tracking_cfg.config['final_3d_tracks_df']
-        seg_fname_raw = segment_cfg.config['output']['masks']
+        seg_fname_raw = segment_cfg.config['output_masks']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 
         fname = r"3-tracking\postprocessing\manual_behavior_annotation.xlsx"  # TODO: do not hardcode

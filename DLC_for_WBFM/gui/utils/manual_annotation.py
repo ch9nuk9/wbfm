@@ -199,7 +199,7 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_
         which_frames = list(get_or_recalculate_which_frames(DEBUG, df, this_config))
 
         # Import segmentation
-        fname = this_config['segment_cfg']['output']['masks']
+        fname = this_config['segment_cfg']['output_masks']
         raw_segmentation = zarr.open(fname)
 
         fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
