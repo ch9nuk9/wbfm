@@ -76,6 +76,9 @@ class modular_project_config:
     def to_json(self):
         return json.dumps(vars(self))
 
+    def get_log_dir(self):
+        return str(Path(self.project_dir).joinpath('log'))
+
 
 def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
     """

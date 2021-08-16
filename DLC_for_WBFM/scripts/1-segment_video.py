@@ -33,18 +33,11 @@ def cfg(project_path, DEBUG):
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()
-
-    # project_cfg = load_config(project_path)
-    # segment_fname = str(Path(project_cfg['subfolder_configs']['segmentation']))
-    # segment_fname = str(Path(project_dir).joinpath(segment_fname))
-    # segment_cfg = dict(load_config(segment_fname))
-
-    # Sync filename in segmentation config from project_cfg
     segment_cfg.config = synchronize_segment_config(project_path, segment_cfg.config)
     segment_cfg.update_on_disk()
 
     if not DEBUG:
-        log_dir = str(Path(project_dir).joinpath('log'))
+        log_dir = cfg.get_log_dir()
         ex.observers.append(TinyDbObserver(log_dir))
 
 

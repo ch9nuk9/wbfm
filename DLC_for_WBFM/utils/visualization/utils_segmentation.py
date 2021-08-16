@@ -94,7 +94,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
         mask_sz = new_masks.shape
 
         # Get the 3d DLC tracks
-        df_fname = track_cfg['final_3d_tracks']['df_fname']
+        df_fname = track_cfg['final_3d_tracks_df']
         df = pd.read_hdf(df_fname)
 
     neuron_names = df.columns.levels[0]

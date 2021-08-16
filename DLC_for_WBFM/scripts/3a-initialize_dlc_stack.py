@@ -31,19 +31,16 @@ def cfg(project_path, DEBUG):
     tracking_cfg = cfg.get_tracking_config()
 
     # if not DEBUG:
-    #     log_dir = str(Path(project_dir).joinpath('log'))
+    #     log_dir = cfg.get_log_dir()
     #     ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def initialize_dlc_stack(_config, _run):
     sacred.commands.print_config(_run)
 
-    # vid_fname = _config['project_cfg']['red_bigtiff_fname']
     tracking_config = _config['tracking_cfg']
     training_cfg = _config['training_cfg']
     project_config = _config['cfg']
-    # tracking_config['project_dir'] = str(_config['project_dir'])
-    # tracking_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     opt = {'scorer': project_config.config['experimenter'], 'task_name': project_config.config['experimenter'],
            'DEBUG': _config['DEBUG']}

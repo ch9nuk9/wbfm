@@ -25,8 +25,9 @@ training_data_2d:
 dlc_projects:
   all_configs: null # See 3a-initialize_dlc_stack.py
 
+final_3d_tracks_df: null # See 3c-make_full_tracks.py
+
 final_3d_tracks:
-  df_fname: null # See 3c-make_full_tracks.py
   max_dist: 5.0 # CHANGE ME
   max_dist_to_segmentation: 20.0 # CHANGE ME
   use_filtered: False # See postprocessing/3b+filter_dlc_predictions

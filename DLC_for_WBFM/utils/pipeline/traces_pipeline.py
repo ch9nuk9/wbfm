@@ -296,7 +296,7 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     segmentation_fname = segment_cfg['output']['metadata']
     with open(segmentation_fname, 'rb') as f:
         segmentation_metadata = pickle.load(f)
-    dlc_fname = track_cfg['final_3d_tracks']['df_fname']
+    dlc_fname = track_cfg['final_3d_tracks_df']
     z_to_xy_ratio = project_cfg['dataset_params']['z_to_xy_ratio']
     green_fname = project_cfg['preprocessed_green']
     red_fname = project_cfg['preprocessed_red']

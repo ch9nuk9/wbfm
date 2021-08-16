@@ -62,13 +62,11 @@ def create_dlc_training_from_tracklets(project_config: modular_project_config,
     df_fname = training_config.resolve_relative_path('df_raw_3d_tracks')
     if df_fname.endswith(".pickle"):
         raise DeprecationWarning("Creating training data from raw pickle not supported; convert to 3d DLC dataframe")
-        # df = pd.read_pickle(df_fname)
     else:
         assert df_fname.endswith(".h5")
-        df = pd.read_hdf(df_fname)
+        df: pd.DataFrame = pd.read_hdf(df_fname)
 
     all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, df, tracking_config)
-    # edit_config(config['self_path'], config)
     tracking_config.update_on_disk()
 
     vid_cfg = tracking_config.config
@@ -98,9 +96,6 @@ def create_dlc_training_from_tracklets(project_config: modular_project_config,
         # futures = executor.map(parallel_func, enumerate(all_center_slices))
         # all_dlc_configs = [f.result() for f in futures]
 
-    # Then delete the created avis because they are copied into the DLC folder
-    # [os.remove(f) for f in all_avi_fnames]
-
     # Save list of dlc config names
     all_dlc_configs = []
     base_dir = Path(os.path.join(project_config.project_dir, '3-tracking'))
@@ -120,14 +115,11 @@ def create_dlc_training_from_tracklets(project_config: modular_project_config,
 def _prep_videos_for_dlc(all_center_slices: List[int], config: dict,
                          vid_fname: str) -> Tuple[List[str], zarr.Array, dict, List[bool]]:
     all_avi_fnames, video_exists = _get_and_check_avi_filename(all_center_slices, subfolder="3-tracking")
-    # IF videos are required, then prep the data
     _, vid_opt = _get_video_options(config, vid_fname)
     if all(video_exists):
         print("All required videos exist; no preprocessing necessary")
         preprocessed_dat = []
     else:
-        # DEPRECATE PREPROCESSING
-        # preprocessed_dat, vid_opt = preprocess_all_frames_using_config(DEBUG, config, verbose, vid_fname, which_frames)
         preprocessed_dat = zarr.open(vid_fname)
     return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
 
@@ -253,13 +245,13 @@ def _make_avi_name(center):
     return fname
 
 
-def train_all_dlc_from_config(config: dict) -> None:
+def train_all_dlc_from_config(tracking_cfg: config_file_with_project_context) -> None:
     """
     Simple multi-network wrapper around:
     deeplabcut.train_network()
     """
     from tensorflow.errors import CancelledError
-    all_dlc_configs = config['dlc_projects']['all_configs']
+    all_dlc_configs = tracking_cfg['dlc_projects']['all_configs']
 
     print(f"Found {len(all_dlc_configs)} networks; beginning training")
     for dlc_config in all_dlc_configs:
@@ -278,7 +270,8 @@ def train_all_dlc_from_config(config: dict) -> None:
             pass
 
 
-def make_3d_tracks_from_stack(track_cfg: dict, use_dlc_project_videos: bool = True,
+def make_3d_tracks_from_stack(track_cfg: config_file_with_project_context,
+                              use_dlc_project_videos: bool = True,
                               DEBUG: bool = False) -> pd.DataFrame:
     """
     Applies trained DLC networks to full 2d videos and collects into 3d track
@@ -286,8 +279,8 @@ def make_3d_tracks_from_stack(track_cfg: dict, use_dlc_project_videos: bool = Tr
     Can be used with the videos from the DLC projects, or external ones
     """
 
-    all_dlc_configs = track_cfg['dlc_projects']['all_configs']
-    use_filtered = track_cfg['final_track'].get('use_filtered', False)
+    all_dlc_configs = track_cfg.config['dlc_projects']['all_configs']
+    use_filtered = track_cfg.config['final_track'].get('use_filtered', False)
 
     # Apply networks
     all_dfs = []
@@ -296,7 +289,7 @@ def make_3d_tracks_from_stack(track_cfg: dict, use_dlc_project_videos: bool = Tr
     if use_dlc_project_videos:
         external_videos = [None for _ in all_dlc_configs]
     else:
-        all_center_slices = track_cfg['training_data_2d']['all_center_slices']
+        all_center_slices = track_cfg.config['training_data_2d']['all_center_slices']
         external_videos, videos_exist = _get_and_check_avi_filename(all_center_slices)
         if not all(videos_exist):
             print(list(zip(external_videos, videos_exist)))
@@ -324,9 +317,10 @@ def make_3d_tracks_from_stack(track_cfg: dict, use_dlc_project_videos: bool = Tr
     final_df.to_csv(fname)
 
     # Save only df_fname in yaml; don't overwrite other fields
-    updates = track_cfg['final_3d_tracks']
-    updates['df_fname'] = df_fname
-    edit_config(track_cfg['self_path'], {'final_3d_tracks': updates})
+    updates = dict(final_3d_tracks_df=df_fname)
+    track_cfg.config.update(updates)
+    track_cfg.update_on_disk()
+    # edit_config(track_cfg['self_path'], {'final_3d_tracks': updates})
 
     return final_df
 

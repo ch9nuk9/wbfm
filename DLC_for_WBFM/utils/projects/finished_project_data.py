@@ -55,7 +55,7 @@ class finished_project_data:
         green_dat_fname = cfg.config['preprocessed_green']
         red_traces_fname = traces_cfg.config['traces']['red']
         green_traces_fname = traces_cfg.config['traces']['green']
-        final_tracks_fname = tracking_cfg.config['final_3d_tracks']['df_fname']
+        final_tracks_fname = tracking_cfg.config['final_3d_tracks_df']
         seg_fname_raw = segment_cfg.config['output']['masks']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 

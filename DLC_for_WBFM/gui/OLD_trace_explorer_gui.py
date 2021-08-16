@@ -45,7 +45,7 @@ class Ui_MainWindow(object):
         # For matplotlib
         red_traces_fname = traces_cfg['traces']['red']
         green_traces_fname = traces_cfg['traces']['green']
-        dlc_raw_fname = tracking_cfg['final_3d_tracks']['df_fname']
+        dlc_raw_fname = tracking_cfg['final_3d_tracks_df']
         if not DEBUG:
             self.red_traces = pd.read_hdf(red_traces_fname)
             self.green_traces = pd.read_hdf(green_traces_fname)

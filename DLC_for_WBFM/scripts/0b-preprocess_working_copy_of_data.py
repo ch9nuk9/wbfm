@@ -14,7 +14,7 @@ import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os
+from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os, modular_project_config
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
@@ -28,8 +28,8 @@ ex.add_config(project_path=None,
 @ex.config
 def cfg(project_path):
     # Manually load yaml files
-    cfg = load_config(project_path)
-    project_dir = str(Path(project_path).parent)
+    cfg = modular_project_config(project_path)
+    project_dir = cfg.project_dir
 
     fname = Path(resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname']))
     out_fname_red = str(fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr'))
@@ -37,9 +37,9 @@ def cfg(project_path):
     fname = Path(resolve_mounted_path_in_current_os(cfg['green_bigtiff_fname']))
     out_fname_green = str(fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr'))
 
-    fname = str(fname)  # For pickling
+    fname = str(fname)  # For pickling in tinydb
 
-    log_dir = str(Path(project_dir).joinpath('log'))
+    log_dir = cfg.get_log_dir()
     ex.observers.append(TinyDbObserver(log_dir))
 
 

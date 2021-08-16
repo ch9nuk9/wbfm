@@ -30,7 +30,7 @@ def cfg(project_path, DEBUG):
     train_cfg.update_on_disk()
 
     if not DEBUG:
-        log_dir = str(Path(project_dir).joinpath('log'))
+        log_dir = cfg.get_log_dir()
         ex.observers.append(TinyDbObserver(log_dir))
 
 
@@ -39,10 +39,7 @@ def produce_training_data(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    # vid_fname = _config['project_cfg']['red_bigtiff_fname']
-    # vid_fname = _config['cfg'].config['preprocessed_red']
     training_config = _config['train_cfg']
     project_config = _config['cfg']
-    # training_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
     partial_track_video_using_config(project_config, training_config, DEBUG=DEBUG)

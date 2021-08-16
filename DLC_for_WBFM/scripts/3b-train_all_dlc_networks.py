@@ -6,6 +6,7 @@ from pathlib import Path
 # main function
 from sacred.observers import TinyDbObserver
 
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import train_all_dlc_from_config
 # Experiment tracking
@@ -23,20 +24,16 @@ ex.add_config(project_path=None, DEBUG=False)
 @ex.config
 def cfg(project_path):
     # Manually load yaml files
-    project_cfg = load_config(project_path)
-    project_dir = str(Path(project_path).parent)
+    cfg = modular_project_config(project_path)
 
-    with safe_cd(project_dir):
-        tracking_fname = str(Path(project_cfg['subfolder_configs']['tracking']))
-        tracking_cfg = dict(load_config(tracking_fname))
+    tracking_cfg = cfg.get_tracking_config()
 
-    log_dir = str(Path(project_dir).joinpath('log'))
+    log_dir = cfg.get_log_dir()
     ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def initialize_dlc_stack(_config, _run):
     sacred.commands.print_config(_run)
 
-    this_config = _config['tracking_cfg'].copy()
-    with safe_cd(_config['project_dir']):
-        train_all_dlc_from_config(this_config)
+    tracking_cfg = _config['tracking_cfg']
+    train_all_dlc_from_config(tracking_cfg)

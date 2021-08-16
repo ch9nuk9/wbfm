@@ -6,6 +6,7 @@ from pathlib import Path
 # main function
 from sacred.observers import TinyDbObserver
 
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import make_3d_tracks_from_stack
 # Experiment tracking
@@ -23,14 +24,11 @@ ex.add_config(project_path=None, DEBUG=False)
 @ex.config
 def cfg(project_path):
     # Manually load yaml files
-    project_cfg = load_config(project_path)
-    project_dir = str(Path(project_path).parent)
+    cfg = modular_project_config(project_path)
 
-    with safe_cd(project_dir):
-        track_fname = str(Path(project_cfg['subfolder_configs']['tracking']))
-        track_cfg = dict(load_config(track_fname))
+    tracking_cfg = cfg.get_tracking_config()
 
-    log_dir = str(Path(project_dir).joinpath('log'))
+    log_dir = cfg.get_log_dir()
     ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
@@ -38,7 +36,6 @@ def make_full_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    this_config = _config['track_cfg'].copy()
+    tracking_cfg = _config['tracking_cfg'].copy()
 
-    with safe_cd(_config['project_dir']):
-        make_3d_tracks_from_stack(this_config, DEBUG=DEBUG)
+    make_3d_tracks_from_stack(tracking_cfg, DEBUG=DEBUG)

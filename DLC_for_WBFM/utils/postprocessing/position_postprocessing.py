@@ -24,7 +24,7 @@ def impute_missing_values_using_config(tracking_config, DEBUG=False):
 
     # Unpack config
     project_dir = tracking_config['project_dir']
-    df_fname = tracking_config['final_3d_tracks']['df_fname']
+    df_fname = tracking_config['final_3d_tracks_df']
 
     #
     with safe_cd(project_dir):
