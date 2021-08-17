@@ -171,5 +171,20 @@ class finished_project_data:
 
         return calc_y(neuron_name)
 
-    def shade_axis_using_behavior(self, ax):
-        shade_using_behavior(self.behavior_annotations, ax)
+    def shade_axis_using_behavior(self, ax, behaviors_to_ignore='none'):
+        shade_using_behavior(self.behavior_annotations, ax, behaviors_to_ignore)
+
+    def __repr__(self):
+        return f"=======================================\n\
+Project data:\n\
+project_dir: {self.project_dir} \n\
+=======================================\n\
+Found data:\n\
+red_data: {self.red_data is not None}\n\
+green_data: {self.green_data is not None}\n\
+red_traces: {self.red_traces is not None}\n\
+green_traces: {self.green_traces is not None}\n\
+final_tracks: {self.final_tracks is not None}\n\
+raw_segmentation: {self.raw_segmentation is not None}\n\
+segmentation: {self.segmentation is not None}\n\
+behavior_annotations: {self.behavior_annotations is not None}\n"

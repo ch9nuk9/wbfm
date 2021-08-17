@@ -34,6 +34,7 @@ dependencies:
   - pip:
     - sacred
     - tables
+    - openpyxl
     - zarr
     - open3d
     - ruamel.yaml

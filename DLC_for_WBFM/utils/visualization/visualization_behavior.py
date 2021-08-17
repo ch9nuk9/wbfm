@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def shade_using_behavior(bh, ax=None, DEBUG=False):
+def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none', DEBUG=False):
     """
     Shades current plot using a 3-code behavioral annotation:
         0 - FWD (no shade)
@@ -23,6 +23,9 @@ def shade_using_behavior(bh, ax=None, DEBUG=False):
     cmap = {0: None,
             1: 'gray',
             2: 'red'}
+    if behaviors_to_ignore != 'none':
+        for b in behaviors_to_ignore:
+            cmap[b] = None
 
     block_start = 0
     for val, block_end in zip(block_values, block_final_indices):

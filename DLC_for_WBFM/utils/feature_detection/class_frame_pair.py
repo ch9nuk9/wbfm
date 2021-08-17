@@ -21,6 +21,13 @@ class FramePair:
     # Original keypoints
     keypoint_matches: list = None
 
+    # Convinience
+    # f0_to_f1_matches: dict = None
+    # f1_to_f0_matches: dict = None
+
+    # def __post_init__(self):
+    #     self.f0_to_f1_matches =
+
     @property
     def all_candidate_matches(self):
         all_matches = self.feature_matches.copy()
@@ -32,3 +39,8 @@ class FramePair:
         matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches)
         self.final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
         return self.final_matches
+
+    # def get_neuron_match(self):
+
+    def __repr__(self):
+        return f"FramePair with {len(self.final_matches)} matches \n"
