@@ -30,3 +30,4 @@ old/example-feature-workflow/feature_alignment/CollectedData_feature_tracker.h5
 old/example-feature-workflow/feature_alignment/embedding.emb
 .idea/
 old/example-feature-workflow/feature_alignment/Extract_traces.ipynb
+*.eps
