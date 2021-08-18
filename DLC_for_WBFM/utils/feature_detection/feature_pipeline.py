@@ -8,7 +8,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_a
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import build_reference_frame, add_all_good_components, \
-    is_ordered_subset, calc_2frame_matches_using_class, build_reference_frame_encoding
+    is_ordered_subset, calc_FramePair_from_Frames, build_reference_frame_encoding
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, \
@@ -320,7 +320,7 @@ def register_all_reference_frames(ref_frames,
             key = (i0, i1)
             if key[1] == key[0] and key not in pairwise_matches_dict:
                 continue
-            out = calc_2frame_matches_using_class(frame0, frame1, **match_opt)
+            out = calc_FramePair_from_Frames(frame0, frame1, **match_opt)
             raise ValueError("Needs refactor with FramePair")
             match, conf, feature_matches, candidate_matches = out
             pairwise_matches_dict[key] = match
@@ -426,7 +426,7 @@ def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
     for ref_frame_ind, ref in reference_set.reference_frames.items():
         # Get matches (coordinates are local to this reference frame)
         # OPTMIZE: only attempt to check the subset of reference neurons
-        local_matches, conf, _, _ = calc_2frame_matches_using_class(this_frame, ref)
+        local_matches, conf, _, _ = calc_FramePair_from_Frames(this_frame, ref)
         # Convert to global coordinates
         global_matches = []
         global_conf = []
@@ -555,7 +555,7 @@ def track_neurons_full_video(video_fname: str,
                  'add_gp_to_candidates': add_gp_to_candidates}
     for i_frame in tqdm(frame_range):
         frame1 = _build_frame(i_frame)
-        this_pair = calc_2frame_matches_using_class(frame0, frame1, **match_opt)
+        this_pair = calc_FramePair_from_Frames(frame0, frame1, **match_opt)
 
         key = (i_frame - 1, i_frame)
         all_frame_pairs[key] = this_pair
@@ -714,7 +714,7 @@ def track_neurons_full_video_window(video_fname,
                 next_frame = local_build_frame(i_next_frame)
                 all_frame_dict[i_next_frame] = next_frame
 
-            out = calc_2frame_matches_using_class(base_frame, next_frame, **match_opt)
+            out = calc_FramePair_from_Frames(base_frame, next_frame, **match_opt)
             raise ValueError("Needs refactor with FramePair")
             match, conf, fm, candidates = out
             # Save to dictionaries
@@ -849,7 +849,7 @@ def stitch_tracklets(clust_df,
                 # Otherwise, calculate from scratch
                 if verbose >= 3:
                     print(f"Calculating new matches between frames {key}")
-                out = calc_2frame_matches_using_class(frame0, frame1)
+                out = calc_FramePair_from_Frames(frame0, frame1)
                 raise ValueError("Needs refactor with FramePair")
                 matches, conf = out[0], out[1]
                 # Save for future

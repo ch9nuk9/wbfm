@@ -1,13 +1,18 @@
 import open3d as o3d
 import cv2
 import numpy as np
+from typing import Dict
+
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree, build_neuron_tree
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, calc_icp_matches
 from tqdm import tqdm
 
 
-
-def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
+def propagate_via_affine_model(which_neuron: int,
+                               f0: ReferenceFrame,
+                               f1: ReferenceFrame,
+                               all_feature_matches: Dict[int],
                                radius=10.0,
                                min_matches=100,
                                no_match_mode='negative_position',
@@ -22,7 +27,8 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
     (this keeps the indices of the pushed point cloud aligned with the original)
     """
 
-    ## Get a neuron, then get the features around it
+    # Get a neuron, then get the features around it
+    global close_features, pts0, pts1
     this_neuron = f0.neuron_locs[which_neuron]
 
     num_features, pc0, tree_features0 = build_feature_tree(f0.keypoint_locs)
@@ -34,7 +40,7 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
         nn_opt = {'radius': radius, 'max_nn': 5000}
         [_, close_features, _] = tree_features0.search_hybrid_vector_3d(np.asarray(this_neuron), **nn_opt)
 
-        ## Get the next-frame-matches of the features in this cloud
+        # Get the next-frame-matches of the features in this cloud
         # Get just these points, and align two lists
         pts0, pts1 = [], []
         for match in all_feature_matches:
@@ -45,7 +51,7 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
         pts0, pts1 = np.array(pts0), np.array(pts1)
 
         if len(pts0) < min_matches:
-            radius = radius*1.5
+            radius = radius * 1.5
         else:
             break
 
@@ -64,7 +70,7 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
 
         if h is not None:
             # And translate the neuron itself
-            neuron_matrix = f0.neuron_locs[which_neuron:which_neuron+1]
+            neuron_matrix = f0.neuron_locs[which_neuron:which_neuron + 1]
             neuron0_trans = cv2.transform(np.array([neuron_matrix]), h)[0]
 
             success = True
@@ -75,7 +81,7 @@ def propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches,
     return success, neuron0_trans
 
 
-def propagate_all_neurons(f0, f1, all_feature_matches,
+def propagate_all_neurons(f0: ReferenceFrame, f1: ReferenceFrame, all_feature_matches,
                           radius=10.0,
                           min_matches=100,
                           verbose=0):
@@ -85,9 +91,8 @@ def propagate_all_neurons(f0, f1, all_feature_matches,
     """
     all_propagated = None
 
-    options = {'f0':f0, 'f1':f1, 'all_feature_matches':all_feature_matches,
-           'radius':radius, 'min_matches':min_matches}
-    # for which_neuron in tqdm(range(len(f0.neuron_locs))):
+    options = {'f0': f0, 'f1': f1, 'all_feature_matches': all_feature_matches,
+               'radius': radius, 'min_matches': min_matches}
     for which_neuron in range(len(f0.neuron_locs)):
         success, n0_propagated = propagate_via_affine_model(which_neuron, **options)
         # Note: needs the failed neurons to keep the indices aligned
@@ -104,11 +109,10 @@ def propagate_all_neurons(f0, f1, all_feature_matches,
     return all_propagated
 
 
-
 def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
                                           radius=10.0,
                                           min_matches=100,
-                                          distance_ratio=1.5,
+                                          maximum_distance=15.0,
                                           verbose=0,
                                           DEBUG=False):
     """
@@ -121,8 +125,8 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
     """
 
     all_propagated = propagate_all_neurons(f0, f1, all_feature_matches,
-                              radius=radius,
-                              min_matches=min_matches)
+                                           radius=radius,
+                                           min_matches=min_matches)
 
     # Loop over locations of pushed v0 neurons
     # out = calc_matches_using_2nn(all_propagated, f1.neuron_locs, distance_ratio=distance_ratio)
@@ -132,7 +136,8 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
     xyz1 = f1.neuron_locs
 
     # out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=10*distance_ratio)
-    out = calc_icp_matches(xyz0, xyz1, max_dist=10*distance_ratio)
+    # TODO: Better max distance
+    out = calc_icp_matches(xyz0, xyz1, max_dist=maximum_distance)
     all_matches, all_conf, all_candidate_matches = out
     matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(all_matches, all_conf)]
 
@@ -150,25 +155,25 @@ def calc_matches_using_2nn(all_propagated, n1_locs, max_dist=5.0):
     # Build tree to query v1 neurons
     num_n, _, tree_n1 = build_neuron_tree(n1_locs, to_mirror=False)
 
-    all_matches = [] # Without confidence
+    all_matches = []  # Without confidence
     all_conf = []
     all_candidate_matches = []
-    nn_opt = { 'radius':max_dist, 'max_nn':1}
-    conf_func = lambda dist : 1.0 / (dist/10+1.0)
+    nn_opt = {'radius': max_dist, 'max_nn': 1}
+    conf_func = lambda dist: 1.0 / (dist / 10 + 1.0)
     for i, neuron in enumerate(np.array(all_propagated.points)):
         [k, two_neighbors, two_dist] = tree_n1.search_hybrid_vector_3d(neuron, **nn_opt)
         # For some reason this function seems to allow points that are too far away
-        if k==0 or (two_dist[0] > nn_opt['radius']):
+        if k == 0 or (two_dist[0] > nn_opt['radius']):
             continue
 
-        if k==1:
+        if k == 1:
             dist = two_dist[0]
             i_match = two_neighbors[0]
         else:
-            if two_dist[0]/two_dist[1] > distance_ratio:
+            if two_dist[0] / two_dist[1] > distance_ratio:
                 dist = two_dist[1]
                 i_match = two_neighbors[1]
-            elif two_dist[1]/two_dist[0] > distance_ratio:
+            elif two_dist[1] / two_dist[0] > distance_ratio:
                 dist = two_dist[1]
                 i_match = two_neighbors[1]
             else:
@@ -196,20 +201,20 @@ def create_affine_visualizations(which_neuron, f0, f1, neuron0_trans):
     # Original neurons
     pc0_neuron = o3d.geometry.PointCloud()
     pc0_neuron.points = o3d.utility.Vector3dVector(f0.neuron_locs)
-    pc0_neuron.paint_uniform_color([0.5,0.5,0.5])
+    pc0_neuron.paint_uniform_color([0.5, 0.5, 0.5])
     np.asarray(pc0_neuron.colors)[which_neuron, :] = [1, 0, 0]
 
     # Visualize the correspondence
     pc1_trans = o3d.geometry.PointCloud()
     pc1_trans.points = o3d.utility.Vector3dVector(neuron0_trans)
-    pc1_trans.paint_uniform_color([0,1,0])
+    pc1_trans.paint_uniform_color([0, 1, 0])
 
-    corr = [(which_neuron,0)]
+    corr = [(which_neuron, 0)]
     line = o3d.geometry.LineSet.create_from_point_cloud_correspondences(pc0_neuron, pc1_trans, corr)
 
     # Visualize this neuron with the new neurons as well
     pc1_neuron = o3d.geometry.PointCloud()
     pc1_neuron.points = o3d.utility.Vector3dVector(f1.neuron_locs)
-    pc1_neuron.paint_uniform_color([0,0,1])
+    pc1_neuron.paint_uniform_color([0, 0, 1])
 
     return pc0_neuron, pc1_trans, pc1_neuron, line

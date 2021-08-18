@@ -316,13 +316,13 @@ def calc_matches_using_feature_voting(frame0, frame1,
     return matches_with_conf, all_candidate_matches, []
 
 
-def calc_2frame_matches_using_class(frame0: ReferenceFrame,
-                                    frame1: ReferenceFrame,
-                                    verbose: int = 1,
-                                    use_affine_matching: bool = False,  # DEPRECATED
-                                    add_affine_to_candidates: bool = False,
-                                    add_gp_to_candidates: bool = False,
-                                    DEBUG: bool = False) -> FramePair:
+def calc_FramePair_from_Frames(frame0: ReferenceFrame,
+                               frame1: ReferenceFrame,
+                               verbose: int = 1,
+                               use_affine_matching: bool = False,  # DEPRECATED
+                               add_affine_to_candidates: bool = False,
+                               add_gp_to_candidates: bool = False,
+                               DEBUG: bool = False) -> FramePair:
     """
     Similar to older function, but this doesn't assume the features are
     already matched
