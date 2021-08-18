@@ -114,7 +114,7 @@ def _plot_video_crop_trace(config_file,
 
 
 
-def plot_video_crop_trace(vid_fname,
+def plot_video_crop_trace(video_fname,
                           gcamp_fname,
                           mcherry_fname,
                           annotation_fname,
@@ -136,7 +136,7 @@ def plot_video_crop_trace(vid_fname,
     """
 
     # Read in video
-    video_reader = imageio.get_reader(vid_fname)
+    video_reader = imageio.get_reader(video_fname)
     video_dat = []
     for im in video_reader:
         video_dat.append(im)

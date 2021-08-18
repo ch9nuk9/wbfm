@@ -336,12 +336,12 @@ def write_numpy_as_avi(data,
 
     # Set up the video writer
     # writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=isColor)
-    opt = {'fourcc': 0,
+    options = {'fourcc': 0,
            'fps': fps,
            'isColor': is_color,
            'frameSize': (frame_width, frame_height)}
     try:
-        writer = cv2.VideoWriter(out_fname, **opt)
+        writer = cv2.VideoWriter(out_fname, **options)
         for i_frame in range(data.shape[0]):
             f = data[i_frame, ...].astype('uint8')
             writer.write(f)

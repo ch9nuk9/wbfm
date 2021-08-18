@@ -149,11 +149,11 @@
 #             fname = self.datafiles.red_bigtiff_fname
 #         else:
 #             fname = self.datafiles.green_bigtiff_fname
-#         opt = {'alpha':self.preprocessing.alpha,
+#         options = {'alpha':self.preprocessing.alpha,
 #                'num_slices':self.preprocessing.num_total_slices}
 #         if offset_start_frame:
 #             which_vol = which_vol + self.preprocessing.start_volume
-#         return get_single_volume(fname, which_vol, **opt)
+#         return get_single_volume(fname, which_vol, **options)
 #
 #     def get_dirname(self):
 #         return os.path.dirname(self.config_filename)

@@ -93,7 +93,7 @@ def create_text_labels_for_napari(df):
     pts = pts[1:, :]
     properties['label'] = [p for p, good in zip(properties['label'], to_keep[1:]) if good]
 
-    opt = {'data': pts, 'face_color': 'transparent', 'edge_color': 'transparent', 'text': 'label',
+    options = {'data': pts, 'face_color': 'transparent', 'edge_color': 'transparent', 'text': 'label',
            'properties': properties, 'name': 'Neuron IDs'}
 
-    return opt
+    return options

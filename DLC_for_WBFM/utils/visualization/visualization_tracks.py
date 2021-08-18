@@ -266,18 +266,18 @@ def plot_matched_point_clouds(all_frames,
 
 def plot_three_point_clouds(all_frames, neuron_matches, ind=(0, 1, 2)):
     """See also plot_matched_point_clouds"""
-    opt = {'all_frames': all_frames,
+    options = {'all_frames': all_frames,
            'neuron_matches': neuron_matches,
            'actually_draw': False}
     if type(ind) == int:
         ind = (ind, ind + 1, ind + 2)
 
     k = (ind[0], ind[1])
-    lines01 = plot_matched_point_clouds(which_pair=k, color=[1, 0, 0], **opt)
+    lines01 = plot_matched_point_clouds(which_pair=k, color=[1, 0, 0], **options)
     k = (ind[0], ind[2])
-    lines02 = plot_matched_point_clouds(which_pair=k, color=[0, 1, 0], **opt)
+    lines02 = plot_matched_point_clouds(which_pair=k, color=[0, 1, 0], **options)
     k = (ind[1], ind[2])
-    lines12 = plot_matched_point_clouds(which_pair=k, color=[0, 0, 1], **opt)
+    lines12 = plot_matched_point_clouds(which_pair=k, color=[0, 0, 1], **options)
 
     to_draw = list(lines01)
     to_draw.extend(lines02)

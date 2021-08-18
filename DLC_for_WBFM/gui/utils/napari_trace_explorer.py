@@ -250,9 +250,9 @@ def build_napari_trace_explorer(project_config):
 
     # Add a text overlay
     df = ui.dat.red_traces
-    opt = create_text_labels_for_napari(df)
+    options = create_text_labels_for_napari(df)
 
-    viewer.add_points(**opt)
+    viewer.add_points(**options)
 
     # Actually dock my additional gui elements
     ui.setupUi(viewer)

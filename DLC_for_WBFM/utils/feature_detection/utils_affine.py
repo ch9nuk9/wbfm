@@ -85,11 +85,11 @@ def propagate_all_neurons(f0, f1, all_feature_matches,
     """
     all_propagated = None
 
-    opt = {'f0':f0, 'f1':f1, 'all_feature_matches':all_feature_matches,
+    options = {'f0':f0, 'f1':f1, 'all_feature_matches':all_feature_matches,
            'radius':radius, 'min_matches':min_matches}
     # for which_neuron in tqdm(range(len(f0.neuron_locs))):
     for which_neuron in range(len(f0.neuron_locs)):
-        success, n0_propagated = propagate_via_affine_model(which_neuron, **opt)
+        success, n0_propagated = propagate_via_affine_model(which_neuron, **options)
         # Note: needs the failed neurons to keep the indices aligned
         # if not success:
         #     continue

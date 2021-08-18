@@ -99,13 +99,13 @@ def match_2vol_BCPD(neurons0, neurons1,
     """
 
     # Build pointclouds with normalized coordinates
-    opt = {'to_mirror':False}
+    options = {'to_mirror':False}
     if not do_zscore:
         f = lambda this_n : pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
     else:
         f = lambda this_n : scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
-    _, pc0, _ = build_neuron_tree(f(neurons0), **opt)
-    _, pc1, _ = build_neuron_tree(f(neurons1), **opt)
+    _, pc0, _ = build_neuron_tree(f(neurons0), **options)
+    _, pc1, _ = build_neuron_tree(f(neurons1), **options)
     if DEBUG:
         pc0.paint_uniform_color([0.5,0.5,0.5])
         pc1.paint_uniform_color([0,0,0])
@@ -116,8 +116,8 @@ def match_2vol_BCPD(neurons0, neurons1,
         pc0 = pc0.voxel_down_sample(voxel_size=voxel_size)
         pc1 = pc1.voxel_down_sample(voxel_size=voxel_size)
     # Do BCPD
-    opt = {'w':w,'maxiter':500, 'tol':1e-8}
-    tf_param = bcpd.registration_bcpd(pc0, pc1, **opt, **bcpd_kwargs)
+    options = {'w':w,'maxiter':500, 'tol':1e-8}
+    tf_param = bcpd.registration_bcpd(pc0, pc1, **options, **bcpd_kwargs)
 
     ## Convert into pairwise matches
     all_matches, all_conf = correspondence_from_transform(tf_param, pc0, pc1)
@@ -140,13 +140,13 @@ def match_2vol_rigid(neurons0, neurons1,
     """
 
     # Build pointclouds with normalized coordinates
-    opt = {'to_mirror':False}
+    options = {'to_mirror':False}
     if not do_zscore:
         f = lambda this_n : pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
     else:
         f = lambda this_n : scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
-    _, pc0, _ = build_neuron_tree(f(neurons0), **opt)
-    _, pc1, _ = build_neuron_tree(f(neurons1), **opt)
+    _, pc0, _ = build_neuron_tree(f(neurons0), **options)
+    _, pc1, _ = build_neuron_tree(f(neurons1), **options)
 
     if voxel_size is not None:
         pc0 = pc0.voxel_down_sample(voxel_size=voxel_size)

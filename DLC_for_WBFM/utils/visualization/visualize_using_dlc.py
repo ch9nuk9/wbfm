@@ -120,8 +120,8 @@ def synchronize_config_files(c, build_dlc_name,
     annotation_fname = build_dlc_name(".h5")
     annotation_fname = os.path.join(project_folder, annotation_fname)
 
-    vid_fname = c.datafiles.red_avi_fname
-    tracking = DLCForWBFMTracking(dlc_config, vid_fname, annotation_fname)
+    video_fname = c.datafiles.red_avi_fname
+    tracking = DLCForWBFMTracking(dlc_config, video_fname, annotation_fname)
 
     c.tracking = tracking
     save_config(c)
@@ -137,7 +137,7 @@ def synchronize_config_files(c, build_dlc_name,
     nocrop = {"crop": "0, 0, 0, 0"}
     vid_dict = {}
     if dummy_subfolder is None:
-        vid_dict[vid_fname] = nocrop
+        vid_dict[video_fname] = nocrop
     else:
         # Note: do NOT want a filesep here
         dummy_fname = dummy_subfolder+".tif"
@@ -174,10 +174,10 @@ def create_video_from_annotations(config, df_fname,
     clust_df = pd.read_pickle(df_fname)
     # with open(df_fname, 'rb') as f:
         # clust_df = pickle.load(f)
-    opt = {'min_length':min_track_length, 'num_frames':total_num_frames,
+    options = {'min_length':min_track_length, 'num_frames':total_num_frames,
            'coord_names':coord_names,
            'verbose':verbose}
-    new_dlc_df = build_dlc_annotation_from_tracklets(clust_df, **opt)
+    new_dlc_df = build_dlc_annotation_from_tracklets(clust_df, **options)
     if new_dlc_df is None:
         print("Found no tracks long enough; aborting")
         return None
@@ -188,8 +188,8 @@ def create_video_from_annotations(config, df_fname,
 
     # Finally, make the video
     dlc_config = c.tracking.DLC_config_fname
-    vid_fname = c.datafiles.red_avi_fname
-    make_labeled_video_custom_annotations(dlc_config, vid_fname, new_dlc_df)
+    video_fname = c.datafiles.red_avi_fname
+    make_labeled_video_custom_annotations(dlc_config, video_fname, new_dlc_df)
 
     return new_dlc_df
 
@@ -213,14 +213,14 @@ def create_many_videos_from_annotations(config, df_fname,
     clust_df = pd.read_pickle(df_fname)
     # with open(df_fname, 'rb') as f:
         # clust_df = pickle.load(f)
-    opt = {'min_length':min_track_length, 'num_frames':total_num_frames, 'verbose':0}
+    options = {'min_length':min_track_length, 'num_frames':total_num_frames, 'verbose':0}
     # Loop through tracklets, and make a video for each
     all_bodyparts = np.asarray(clust_df['clust_ind'])
 
     neuron_ind = 1 # Only for video indices
-    opt['neuron_ind'] = 1
+    options['neuron_ind'] = 1
     for _, row in clust_df.iterrows():
-        this_dlc_df = build_dlc_annotation_one_tracklet(row, all_bodyparts, **opt)
+        this_dlc_df = build_dlc_annotation_one_tracklet(row, all_bodyparts, **options)
         if this_dlc_df is None:
             continue
         else:
@@ -242,8 +242,8 @@ def create_many_videos_from_annotations(config, df_fname,
 
         # Finally, make the video
         dlc_config = c.tracking.DLC_config_fname
-        vid_fname = c.datafiles.red_avi_fname
-        make_labeled_video_custom_annotations(dlc_config, vid_fname, this_dlc_df,
+        video_fname = c.datafiles.red_avi_fname
+        make_labeled_video_custom_annotations(dlc_config, video_fname, this_dlc_df,
                                               video_suffix=scorer)
 
         # Clean up by deleting the temporary .h5/.csv/.pickle files
@@ -342,19 +342,19 @@ def OLD_training_data_3d_from_annotations(config,
     relative_imagenames, full_subfolder_name = out
 
     # Cast the dataframe in DLC format
-    opt = {'min_length':0, 'num_frames':total_num_frames,
+    options = {'min_length':0, 'num_frames':total_num_frames,
            'coord_names':coord_names,
            'verbose':verbose,
            'relative_imagenames':relative_imagenames,
            'which_frame_subset':which_frames}
-    new_dlc_df = build_dlc_annotation_from_tracklets(subset_df, **opt)
+    new_dlc_df = build_dlc_annotation_from_tracklets(subset_df, **options)
     if new_dlc_df is None:
         print("Found no tracks long enough; aborting")
         return None
 
     # Save annotations using DLC-style names, and update the config files
-    opt = {'project_folder':full_subfolder_name}
-    out = save_dlc_annotations(scorer, df_fname, c, new_dlc_df, **opt)[0]
+    options = {'project_folder':full_subfolder_name}
+    out = save_dlc_annotations(scorer, df_fname, c, new_dlc_df, **options)[0]
     build_dlc_name = out
     synchronize_config_files(c, build_dlc_name,
                              dummy_subfolder=full_subfolder_name,
@@ -365,7 +365,7 @@ def OLD_training_data_3d_from_annotations(config,
 
     # # Finally, make the video
     # dlc_config = c.tracking.DLC_config_fname
-    # vid_fname = c.datafiles.red_avi_fname
-    # make_labeled_video_custom_annotations(dlc_config, vid_fname, new_dlc_df)
+    # video_fname = c.datafiles.red_avi_fname
+    # make_labeled_video_custom_annotations(dlc_config, video_fname, new_dlc_df)
 
     return new_dlc_df

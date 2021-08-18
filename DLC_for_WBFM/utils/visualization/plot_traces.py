@@ -29,10 +29,10 @@ def make_grid_plot_from_project(project_data: finished_project_data,
     # Loop through neurons and plot
     fig, axes = plt.subplots(num_rows, num_columns, figsize=(45, 15), sharex=True, sharey=False)
 
-    opt = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
+    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
     for ax, neuron_name in tqdm(zip(fig.axes, neuron_names)):
-        opt['neuron_name'] = neuron_name
-        y = project_data.calculate_traces(**opt)
+        options['neuron_name'] = neuron_name
+        y = project_data.calculate_traces(**options)
         ax.plot(y, label=neuron_name)
         ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
         ax.set_frame_on(False)

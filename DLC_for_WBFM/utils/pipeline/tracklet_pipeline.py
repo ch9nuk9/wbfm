@@ -18,7 +18,7 @@ import pickle
 ###
 
 
-# def partial_track_video_using_config(vid_fname: str, config: dict, DEBUG: bool = False) -> None:
+# def partial_track_video_using_config(video_fname: str, config: dict, DEBUG: bool = False) -> None:
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_all_tracklets_as_dlc_format, \
     convert_training_dataframe_to_dlc_format
 
@@ -34,15 +34,22 @@ def partial_track_video_using_config(project_config: modular_project_config,
     See also track_neurons_full_video()
     """
 
-    vid_fname, opt = _unpack_config_partial_tracking(DEBUG, project_config, training_config)
-    all_frame_pairs, all_frame_dict = track_neurons_full_video(vid_fname, **opt)
+    video_fname, options = _unpack_config_partial_tracking(DEBUG, project_config, training_config)
+    all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)
 
+    df = _postprocess_frame_matches(all_frame_dict, all_frame_pairs)
+    save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, training_config)
+
+
+def _postprocess_frame_matches(all_frame_dict, all_frame_pairs):
     # Also updates the matches of the object
     all_matches = {k: pair.calc_final_matches_using_bipartite_matching() for k, pair in all_frame_pairs.items()}
-
     all_xyz = {k: f.neuron_locs for k, f in all_frame_dict.items()}
     df = build_tracklets_dfs(all_matches, all_xyz)
+    return df
 
+
+def save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, training_config):
     with safe_cd(project_config.project_dir):
         # Intermediate products
         _save_matches_and_frames(all_frame_dict, all_frame_pairs, df)
@@ -61,24 +68,24 @@ def partial_track_video_using_config(project_config: modular_project_config,
 def _unpack_config_partial_tracking(DEBUG, project_config, training_config):
     # Make tracklets
     # Get options
-    opt = training_config.config['tracker_params'].copy()
+    options = training_config.config['tracker_params'].copy()
     if 'num_frames' in training_config.config['tracker_params']:
-        opt['num_frames'] = training_config.config['tracker_params']['num_frames']
+        options['num_frames'] = training_config.config['tracker_params']['num_frames']
     else:
-        opt['num_frames'] = project_config.config['dataset_params']['num_frames']
+        options['num_frames'] = project_config.config['dataset_params']['num_frames']
     if DEBUG:
-        opt['num_frames'] = 5
+        options['num_frames'] = 5
     if 'start_volume' in training_config.config['tracker_params']:
-        opt['start_volume'] = training_config.config['tracker_params']['start_volume']
+        options['start_volume'] = training_config.config['tracker_params']['start_volume']
     else:
-        opt['start_volume'] = project_config.config['dataset_params']['start_volume']
-    opt['num_slices'] = project_config.config['dataset_params']['num_slices']
+        options['start_volume'] = project_config.config['dataset_params']['start_volume']
+    options['num_slices'] = project_config.config['dataset_params']['num_slices']
 
-    opt['preprocessing_settings'] = None
+    options['preprocessing_settings'] = None
 
-    vid_fname = project_config.config['preprocessed_red']
+    video_fname = project_config.config['preprocessed_red']
 
-    return vid_fname, opt
+    return video_fname, options
 
 
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict, df: pd.DataFrame) -> None:

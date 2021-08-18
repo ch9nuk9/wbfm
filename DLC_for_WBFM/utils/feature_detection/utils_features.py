@@ -28,8 +28,8 @@ def detect_features(im1, max_features,
 
     im1Gray = convert_to_grayscale(im1)
     if use_sift:
-        opt = {'hessianThreshold':0.1}
-        detector = cv2.xfeatures2d.SURF_create(**opt)
+        options = {'hessianThreshold':0.1}
+        detector = cv2.xfeatures2d.SURF_create(**options)
     else:
         detector = cv2.ORB_create(max_features)#, WTA_K=3)
         if setFastThreshold:
@@ -58,12 +58,12 @@ def match_known_features(descriptors1, descriptors2,
         matches = matcher.match(descriptors1, descriptors2)
 
     if use_GMS:
-        opt = {'keypoints1': keypoints1,
+        options = {'keypoints1': keypoints1,
                'keypoints2': keypoints2,
                'matches1to2': matches,
                'withRotation': False,
                'thresholdFactor': 6.0}
-        matches = cv2.xfeatures2d.matchGMS(im1_shape, im2_shape, **opt)
+        matches = cv2.xfeatures2d.matchGMS(im1_shape, im2_shape, **options)
 
     if matches_to_keep < 1.0:
         # Sort matches by score

@@ -47,12 +47,12 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     kernel = DotProduct(sigma_0=1.0, sigma_0_bounds=(1e-3, 100)) + \
         RBF(length_scale=0.5, length_scale_bounds=(1e-08, 10.0))
 
-    opt = {'n_restarts_optimizer': 10, 'alpha': noise}
-    gpx = GaussianProcessRegressor(kernel=kernel, **opt)
+    options = {'n_restarts_optimizer': 10, 'alpha': noise}
+    gpx = GaussianProcessRegressor(kernel=kernel, **options)
     gpx.fit(xyz_scaled[:, 1:], dat_scaled[:, 1])
-    gpy = GaussianProcessRegressor(kernel=kernel, **opt)
+    gpy = GaussianProcessRegressor(kernel=kernel, **options)
     gpy.fit(xyz_scaled[:, 1:], dat_scaled[:, 2])
-    gpz = GaussianProcessRegressor(kernel=kernel, **opt)
+    gpz = GaussianProcessRegressor(kernel=kernel, **options)
     gpz.fit(xyz_scaled[:, 1:], dat_scaled[:, 0])
 
     x_predict = gpx.predict(xyz_unmatched_scaled[:, 1:])

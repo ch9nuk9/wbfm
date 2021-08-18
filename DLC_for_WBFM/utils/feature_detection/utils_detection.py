@@ -82,12 +82,12 @@ def build_point_clouds_for_volume(dat,
 
 
 def build_correspondence_icp(all_keypoints_pcs,
-                             opt=None,
+                             options=None,
                              verbose=0):
     # Build correspondence between each pair of planes
 
-    if opt is None:
-        opt = {'max_correspondence_distance': 4.0}
+    if options is None:
+        options = {'max_correspondence_distance': 4.0}
     all_icp = []
 
     for i in range(len(all_keypoints_pcs)-1):
@@ -96,7 +96,7 @@ def build_correspondence_icp(all_keypoints_pcs,
         this_pc = all_keypoints_pcs[i]
         next_pc = all_keypoints_pcs[i+1]
 
-        reg = o3d.pipelines.registration.registration_icp(this_pc, next_pc, **opt)
+        reg = o3d.pipelines.registration.registration_icp(this_pc, next_pc, **options)
 
         all_icp.append(reg)
 

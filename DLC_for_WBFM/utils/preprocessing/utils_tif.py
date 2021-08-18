@@ -126,7 +126,7 @@ def perform_preprocessing(dat_raw: np.ndarray,
     return dat_raw
 
 
-def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, vid_fname: str,
+def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, video_fname: str,
                                        preprocessing_settings: PreprocessingSettings = None,
                                        which_frames: list = None) -> Tuple[zarr.Array, dict]:
     """
@@ -144,13 +144,13 @@ def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, 
         p = preprocessing_settings
         
     num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config, verbose,
-                                                                                                   vid_fname)
-    return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, vid_fname, vid_opt,
+                                                                                                   video_fname)
+    return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, video_fname, vid_opt,
                                  which_frames)
 
 
 def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p: PreprocessingSettings,
-                          start_volume: int, sz: Tuple, vid_fname: str, vid_opt: dict,
+                          start_volume: int, sz: Tuple, video_fname: str, vid_opt: dict,
                           which_frames: list) -> Tuple[zarr.Array, dict]:
     if DEBUG:
         # Make a much shorter video
@@ -168,7 +168,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     read_lock = threading.Lock()
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
-    with tifffile.TiffFile(vid_fname) as vid_stream:
+    with tifffile.TiffFile(video_fname) as vid_stream:
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
                 # print("Applying preprocessing:")
@@ -184,8 +184,8 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     return preprocessed_dat, vid_opt
 
 
-def _preprocess_all_frames_unpack_config(config, verbose, vid_fname):
-    sz, vid_opt = _get_video_options(config, vid_fname)
+def _preprocess_all_frames_unpack_config(config, verbose, video_fname):
+    sz, vid_opt = _get_video_options(config, video_fname)
     if verbose >= 1:
         print("Preprocessing data, this could take a while...")
     start_volume = config['dataset_params']['start_volume']
@@ -194,12 +194,12 @@ def _preprocess_all_frames_unpack_config(config, verbose, vid_fname):
     return num_slices, num_total_frames, start_volume, sz, vid_opt
 
 
-def _get_video_options(config, vid_fname):
-    if vid_fname.endswith('.tif') or vid_fname.endswith('.btf'):
-        with tifffile.TiffFile(vid_fname) as tif:
+def _get_video_options(config, video_fname):
+    if video_fname.endswith('.tif') or video_fname.endswith('.btf'):
+        with tifffile.TiffFile(video_fname) as tif:
             sz = tif.pages[0].shape
-    elif vid_fname.endswith('.zarr'):
-        sz = zarr.open(vid_fname).shape[2:]
+    elif video_fname.endswith('.zarr'):
+        sz = zarr.open(video_fname).shape[2:]
     else:
         raise FileNotFoundError("Must pass .zarr or .tif or .btf file")
     vid_opt = {'fps': config['dataset_params']['fps'],
@@ -211,12 +211,12 @@ def _get_video_options(config, vid_fname):
     return sz, vid_opt
 
 
-def get_and_preprocess(i, num_slices, p, start_volume, vid_fname, read_lock=None):
+def get_and_preprocess(i, num_slices, p, start_volume, video_fname, read_lock=None):
     if read_lock is None:
-        dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
+        dat_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
     else:
         with read_lock:
-            dat_raw = get_single_volume(vid_fname, i, num_slices, dtype='uint16')
+            dat_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
         # print("Applying preprocessing:")

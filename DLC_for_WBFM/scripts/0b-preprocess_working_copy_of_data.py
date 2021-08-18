@@ -47,7 +47,7 @@ def cfg(project_path):
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    opt = {'tiff_not_zarr': False,
+    options = {'tiff_not_zarr': False,
            'pad_to_align_with_original': False,
            'use_preprocessed_data': False,
            'DEBUG': _config['DEBUG']}
@@ -60,30 +60,30 @@ def main(_config, _run):
         preprocessing_fname = cfg['preprocessing_config']
         preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_fname)
 
-        opt['out_fname'] = _config['out_fname_red']
-        opt['save_fname_in_red_not_green'] = True
+        options['out_fname'] = _config['out_fname_red']
+        options['save_fname_in_red_not_green'] = True
         # The preprocessing will be calculated based off the red channel, and will be saved to disk
-        red_name = Path(opt['out_fname'])
+        red_name = Path(options['out_fname'])
         fname = red_name.parent / (red_name.stem + "_preprocessed.pickle")
         preprocessing_settings.path_to_previous_warp_matrices = fname
 
-        if not (Path(opt['out_fname']).exists() and fname.exists()):
+        if not (Path(options['out_fname']).exists() and fname.exists()):
             print("Preprocessing red...")
             preprocessing_settings.do_mirroring = False
             assert preprocessing_settings.to_save_warp_matrices
-            write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
+            write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **options)
         else:
             print("Preprocessed red already exists; skipping to green")
 
         # Now the green channel will read the artifact as saved above
         print("Preprocessing green...")
-        opt['out_fname'] = _config['out_fname_green']
-        opt['save_fname_in_red_not_green'] = False
+        options['out_fname'] = _config['out_fname_green']
+        options['save_fname_in_red_not_green'] = False
         preprocessing_settings.to_use_previous_warp_matrices = True
         # preprocessing_settings.do_mirroring = False
         if cfg['dataset_params']['red_and_green_mirrored']:
             preprocessing_settings.do_mirroring = True
-        write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **opt)
+        write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **options)
 
         # Save the warp matrices to disk if needed further
         preprocessing_settings.save_all_warp_matrices()

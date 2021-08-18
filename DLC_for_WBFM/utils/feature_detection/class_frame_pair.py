@@ -40,7 +40,11 @@ class FramePair:
         self.final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
         return self.final_matches
 
-    # def get_neuron_match(self):
+    def get_f0_to_f1_dict(self):
+        return {n0: n1 for n0, n1, _ in self.final_matches}
+
+    def get_f1_to_f0_dict(self):
+        return {n1: n0 for n0, n1, _ in self.final_matches}
 
     def __repr__(self):
         return f"FramePair with {len(self.final_matches)} matches \n"

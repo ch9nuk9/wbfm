@@ -33,14 +33,14 @@ def cfg(project_path):
 def initialize_dlc_stack(_config, _run):
     sacred.commands.print_config(_run)
 
-    # vid_fname = _config['project_cfg']['red_bigtiff_fname']
-    vid_fname = _config['project_cfg']['preprocessed_red']
+    # video_fname = _config['project_cfg']['red_bigtiff_fname']
+    video_fname = _config['project_cfg']['preprocessed_red']
     this_config = _config['tracking_cfg'].copy()
     this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
-    opt = {}
-    opt['verbose'] = _config['project_cfg']['verbose']
-    opt['DEBUG'] = _config['DEBUG']
+    options = {}
+    options['verbose'] = _config['project_cfg']['verbose']
+    options['DEBUG'] = _config['DEBUG']
 
     with safe_cd(_config['project_dir']):
-        create_only_videos(vid_fname, this_config, **opt)
+        create_only_videos(video_fname, this_config, **options)

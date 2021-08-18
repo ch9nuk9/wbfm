@@ -57,7 +57,7 @@ def cfg(project_path, do_only_training_data, out_fname, copy_locally, tiff_not_z
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    opt = {'out_fname': _config['out_fname'],
+    options = {'out_fname': _config['out_fname'],
            'tiff_not_zarr': _config['tiff_not_zarr'],
            'pad_to_align_with_original': _config['pad_to_align_with_original'],
            'use_preprocessed_data': _config['use_preprocessed_data'],
@@ -65,4 +65,4 @@ def main(_config, _run):
     cfg = _config['cfg']
     cfg['project_dir'] = _config['project_dir']
     with safe_cd(_config['project_dir']):
-        write_data_subset_from_config(cfg, **opt)
+        write_data_subset_from_config(cfg, **options)

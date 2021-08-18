@@ -431,7 +431,7 @@ def build_dlc_annotation_from_tracklets(clust_df: pd.DataFrame,
     # all_bodyparts = np.asarray(clust_df['clust_ind'])
 
     neuron_ind = 1
-    opt = {'min_length': min_length,
+    options = {'min_length': min_length,
            'num_frames': num_frames,
            'coord_names': coord_names,
            'relative_imagenames': relative_imagenames,
@@ -439,10 +439,10 @@ def build_dlc_annotation_from_tracklets(clust_df: pd.DataFrame,
            'scorer': scorer,
            'verbose': verbose-1}
     for i, row in tqdm(clust_df.iterrows(), total=clust_df.shape[0]):
-        opt['neuron_ind'] = neuron_ind
+        options['neuron_ind'] = neuron_ind
         ind = row['clust_ind']
         bodypart = f'neuron{ind}'
-        frame = build_dlc_annotation_one_tracklet(row, bodypart, **opt)
+        frame = build_dlc_annotation_one_tracklet(row, bodypart, **options)
         if frame is not None:
             new_dlc_df = pd.concat([new_dlc_df, frame], axis=1)
             neuron_ind = neuron_ind + 1
@@ -483,7 +483,7 @@ def build_dlc_annotation_from_3dDLC(subset_df: pd.DataFrame,
         coord_names = ['x', 'y', 'likelihood']
 
     neuron_ind = 1
-    opt = {'min_length': min_length,
+    options = {'min_length': min_length,
            'num_frames': num_frames,
            'coord_names': coord_names,
            'relative_imagenames': relative_imagenames,
@@ -496,7 +496,7 @@ def build_dlc_annotation_from_3dDLC(subset_df: pd.DataFrame,
 
     for name in tqdm(neuron_names):
         bodypart = name  # Keep original neuron name
-        frame = build_dlc_annotation_one_dlc3d_subset(subset_df[name], bodypart, **opt)
+        frame = build_dlc_annotation_one_dlc3d_subset(subset_df[name], bodypart, **options)
         if frame is not None:
             new_dlc_df = pd.concat([new_dlc_df, frame], axis=1)
             neuron_ind = neuron_ind + 1

@@ -23,12 +23,12 @@ class TestSequentialPipeline(unittest.TestCase):
 
 
     def test_dataset(self):
-        opt = {'num_slices':self.num_slices, 'alpha':self.preprocessing_settings.alpha}
-        vol0 = get_single_volume(self.fname, 0, **opt)
+        options = {'num_slices':self.num_slices, 'alpha':self.preprocessing_settings.alpha}
+        vol0 = get_single_volume(self.fname, 0, **options)
 
         # Detect neurons
-        opt = {'num_slices':self.num_slices, 'alpha':1.0, 'verbose':1}
-        self.neurons0 = detect_neurons_using_ICP(vol0, **opt)[0]
+        options = {'num_slices':self.num_slices, 'alpha':1.0, 'verbose':1}
+        self.neurons0 = detect_neurons_using_ICP(vol0, **options)[0]
 
 
     def test_full_function(self):

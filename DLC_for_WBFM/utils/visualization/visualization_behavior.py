@@ -22,7 +22,7 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none', DEBUG=False):
         print(block_final_indices)
 
     cmap = {0: None,
-            1: 'gray',
+            1: 'darkgray',
             2: 'red'}
     if behaviors_to_ignore != 'none':
         for b in behaviors_to_ignore:

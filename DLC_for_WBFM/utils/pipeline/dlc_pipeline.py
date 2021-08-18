@@ -26,7 +26,7 @@ from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import 
 ### For use with training a stack of DLC (step 3 of pipeline)
 ###
 
-def create_only_videos(vid_fname, config, verbose=1, DEBUG=False):
+def create_only_videos(video_fname, config, verbose=1, DEBUG=False):
     """
     Shortened version of create_dlc_training_from_tracklets() that only creates the videos
 
@@ -34,7 +34,7 @@ def create_only_videos(vid_fname, config, verbose=1, DEBUG=False):
     """
 
     all_center_slices = config['training_data_2d']['all_center_slices']
-    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, config, vid_fname)
+    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, config, video_fname)
 
     def parallel_func(i_center):
         i, center = i_center
@@ -58,14 +58,14 @@ def create_dlc_training_from_tracklets(project_config: modular_project_config,
                                        task_name: str = None,
                                        DEBUG: bool = False) -> None:
 
-    all_center_slices, dlc_opt, net_opt, png_opt, vid_cfg, vid_fname = unpack_configs_dlc_projects(DEBUG,
+    all_center_slices, dlc_opt, net_opt, png_opt, vid_cfg, video_fname = unpack_configs_dlc_projects(DEBUG,
                                                                                                    project_config,
                                                                                                    scorer, task_name,
                                                                                                    tracking_config,
                                                                                                    training_config)
 
     with safe_cd(project_config.project_dir):
-        all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, vid_cfg, vid_fname)
+        all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, vid_cfg, video_fname)
 
     _make_all_projects(all_avi_fnames, all_center_slices, dlc_opt, net_opt, png_opt, preprocessed_dat, project_config,
                        tracking_config, vid_opt, video_exists)
@@ -123,20 +123,20 @@ def unpack_configs_dlc_projects(DEBUG, project_config, scorer, task_name, tracki
     tracking_config.update_on_disk()
     vid_cfg = tracking_config.config
     vid_cfg['dataset_params'] = project_config.config['dataset_params']
-    vid_fname = project_config.config['preprocessed_red']
+    video_fname = project_config.config['preprocessed_red']
     dlc_opt, net_opt, png_opt = _define_project_options(vid_cfg, df, scorer, task_name)
-    return all_center_slices, dlc_opt, net_opt, png_opt, vid_cfg, vid_fname
+    return all_center_slices, dlc_opt, net_opt, png_opt, vid_cfg, video_fname
 
 
 def _prep_videos_for_dlc(all_center_slices: List[int], config: dict,
-                         vid_fname: str) -> Tuple[List[str], zarr.Array, dict, List[bool]]:
+                         video_fname: str) -> Tuple[List[str], zarr.Array, dict, List[bool]]:
     all_avi_fnames, video_exists = _get_and_check_avi_filename(all_center_slices, subfolder="3-tracking")
-    _, vid_opt = _get_video_options(config, vid_fname)
+    _, vid_opt = _get_video_options(config, video_fname)
     if all(video_exists):
         print("All required videos exist; no preprocessing necessary")
         preprocessed_dat = []
     else:
-        preprocessed_dat = zarr.open(vid_fname)
+        preprocessed_dat = zarr.open(video_fname)
     return all_avi_fnames, preprocessed_dat, vid_opt, video_exists
 
 
@@ -186,7 +186,7 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
     # Training frame extraction
     png_opt['which_z'] = center
     png_opt['dlc_config_fname'] = this_dlc_config
-    png_opt['vid_fname'] = this_avi_fname
+    png_opt['video_fname'] = this_avi_fname
     ann_fname = training_data_from_3dDLC_annotations(**png_opt)[1]
     if ann_fname is not None:
         # Synchronize the dlc_config with the annotations

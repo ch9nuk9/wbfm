@@ -177,7 +177,7 @@ def imsave_all_frames(cap, output_path, which_frames):
 #     return relative_imagenames, full_subfolder_name
 
 
-def training_data_from_tracklet_annotations(vid_fname,
+def training_data_from_tracklet_annotations(video_fname,
                                             df_fname,
                                             which_frames,
                                             which_z,
@@ -194,13 +194,13 @@ def training_data_from_tracklet_annotations(vid_fname,
 
     Parameters
     =================
-    vid_fname: str
+    video_fname: str
         Path of the 2d avi video corresponding, from which frames will be taken
     df_fname: str or pd.DataFrame
         Path or object (DataFrame) with 3d annotations
         Frame indices correspond to original btf
     which_frames: list
-        List of indices that will be take from vid_fname as training frames
+        List of indices that will be take from video_fname as training frames
     which_z: int
         Which z-slice corresponding to this video
     dlc_config_fname: str
@@ -252,23 +252,23 @@ def training_data_from_tracklet_annotations(vid_fname,
 
     # Cast the dataframe in DLC format
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
-    opt = {'min_length': 0,
+    options = {'min_length': 0,
            'num_frames': total_num_frames,
            'coord_names': coord_names,
            'verbose': verbose,
            'relative_imagenames': relative_imagenames,
            'which_frame_subset': which_frames,
            'scorer': cfg['scorer']}
-    new_dlc_df = build_dlc_annotation_from_tracklets(subset_df, **opt)
+    new_dlc_df = build_dlc_annotation_from_tracklets(subset_df, **options)
     if new_dlc_df is None:
         print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
         return None, None
 
     # Save annotations using DLC-style names
     data_dir = Path(dlc_config_fname).parent.joinpath('labeled-data')
-    img_subfolder_name = data_dir.joinpath(Path(vid_fname).stem)
-    opt = {'project_folder': str(img_subfolder_name)}
-    out = save_dlc_annotations(cfg['scorer'], df_fname, new_dlc_df, **opt)
+    img_subfolder_name = data_dir.joinpath(Path(video_fname).stem)
+    options = {'project_folder': str(img_subfolder_name)}
+    out = save_dlc_annotations(cfg['scorer'], df_fname, new_dlc_df, **options)
     annotation_fname = out[1][1]
 
     # Optional: plot the annotations on top of the frames
@@ -277,7 +277,7 @@ def training_data_from_tracklet_annotations(vid_fname,
     return new_dlc_df, annotation_fname
 
 
-def training_data_from_3dDLC_annotations(vid_fname,
+def training_data_from_3dDLC_annotations(video_fname,
                                          df_fname,
                                          which_frames,
                                          which_z,
@@ -293,7 +293,7 @@ def training_data_from_3dDLC_annotations(vid_fname,
 
     Parameters
     =================
-    vid_fname: str
+    video_fname: str
         Path of the 2d avi video corresponding, from which frames will be taken
     df_fname: str or pd.DataFrame
         Path or object (DataFrame) with 3d annotations
@@ -361,23 +361,23 @@ def training_data_from_3dDLC_annotations(vid_fname,
 
     # Cast the dataframe in DLC format
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
-    opt = {'min_length': 0,
+    options = {'min_length': 0,
            'num_frames': total_num_frames,
            'coord_names': coord_names,
            'verbose': verbose,
            'relative_imagenames': relative_imagenames,
            'which_frame_subset': which_frames,
            'scorer': cfg['scorer']}
-    new_dlc_df = build_dlc_annotation_from_3dDLC(subset_df, **opt)
+    new_dlc_df = build_dlc_annotation_from_3dDLC(subset_df, **options)
     if new_dlc_df is None:
         print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
         return None, None
 
     # Save annotations using DLC-style names
     data_dir = Path(dlc_config_fname).parent.joinpath('labeled-data')
-    img_subfolder_name = data_dir.joinpath(Path(vid_fname).stem)
-    opt = {'project_folder': str(img_subfolder_name)}
-    out = save_dlc_annotations(cfg['scorer'], df_fname, new_dlc_df, **opt)
+    img_subfolder_name = data_dir.joinpath(Path(video_fname).stem)
+    options = {'project_folder': str(img_subfolder_name)}
+    out = save_dlc_annotations(cfg['scorer'], df_fname, new_dlc_df, **options)
     annotation_fname = out[1][1]
 
     # Optional: plot the annotations on top of the frames

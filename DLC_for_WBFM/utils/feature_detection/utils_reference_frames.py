@@ -349,8 +349,8 @@ def calc_2frame_matches_using_class(frame0: ReferenceFrame,
 
     # Add additional candidates, if used
     if add_affine_to_candidates:
-        opt = {'all_feature_matches': keypoint_matches}
-        matches_with_conf, _, affine_pushed = calc_matches_using_affine_propagation(frame0, frame1, **opt)
+        options = {'all_feature_matches': keypoint_matches}
+        matches_with_conf, _, affine_pushed = calc_matches_using_affine_propagation(frame0, frame1, **options)
         frame_pair.affine_matches = matches_with_conf
         frame_pair.affine_pushed_locations = affine_pushed
 
@@ -362,8 +362,8 @@ def calc_2frame_matches_using_class(frame0: ReferenceFrame,
         n0[:, 0] *= 5
         n1[:, 0] *= 5
         # Actually match
-        opt = {'matches_with_conf': matches_with_conf}
-        matches_with_conf, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **opt)
+        options = {'matches_with_conf': matches_with_conf}
+        matches_with_conf, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)
         frame_pair.gp_matches = matches_with_conf
         frame_pair.all_gps = all_gps
         frame_pair.gp_pushed_locations = gp_pushed

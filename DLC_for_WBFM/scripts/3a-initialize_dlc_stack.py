@@ -42,7 +42,7 @@ def initialize_dlc_stack(_config, _run):
     training_cfg = _config['training_cfg']
     project_config = _config['cfg']
 
-    opt = {'scorer': project_config.config['experimenter'], 'task_name': project_config.config['experimenter'],
+    options = {'scorer': project_config.config['experimenter'], 'task_name': project_config.config['experimenter'],
            'DEBUG': _config['DEBUG']}
 
-    create_dlc_training_from_tracklets(project_config, training_cfg, tracking_config, **opt)
+    create_dlc_training_from_tracklets(project_config, training_cfg, tracking_config, **options)

@@ -44,25 +44,25 @@ def track_neurons_two_volumes(dat0,
     Can use previously detected neurons, if passed
     """
     # Detect neurons, then features for each volume
-    opt = {'num_slices': num_slices,
+    options = {'num_slices': num_slices,
            'alpha': 1.0,  # Already multiplied when imported
            'verbose': verbose - 1,
            'min_detections': 5}
     if neurons0 is None:
-        neurons0, _, _, _ = detect_neurons_using_ICP(dat0, **opt)
+        neurons0, _, _, _ = detect_neurons_using_ICP(dat0, **options)
     if neurons1 is None:
-        neurons1, _, _, _ = detect_neurons_using_ICP(dat1, **opt)
+        neurons1, _, _, _ = detect_neurons_using_ICP(dat1, **options)
 
-    opt = {'verbose': verbose - 1,
+    options = {'verbose': verbose - 1,
            'matches_to_keep': 0.2,
            'num_features_per_plane': 10000,
            'detect_keypoints': True,
            'kp0': neurons0,
            'kp1': neurons1}
-    all_f0, all_f1, _, _, _ = build_features_and_match_2volumes(dat0, dat1, **opt)
+    all_f0, all_f1, _, _, _ = build_features_and_match_2volumes(dat0, dat1, **options)
 
     # Now, match the neurons using feature space
-    opt = {'radius': 8,
+    options = {'radius': 8,
            'max_nn': 50,
            'min_features_needed': 5,
            'verbose': verbose - 1,
@@ -71,7 +71,7 @@ def track_neurons_two_volumes(dat0,
                                                           np.array(neurons1),
                                                           all_f0,
                                                           all_f1,
-                                                          **opt)
+                                                          **options)
     return all_matches, all_conf, neurons0, neurons1
 
 
@@ -80,7 +80,7 @@ def track_neurons_two_volumes(dat0,
 ##
 
 def build_all_reference_frames(num_reference_frames,
-                               vid_fname,
+                               video_fname,
                                start_frame,
                                num_frames,
                                num_slices,
@@ -116,12 +116,12 @@ def build_all_reference_frames(num_reference_frames,
     if verbose >= 1:
         print("Building reference frames...")
     for ind in tqdm(ref_ind, total=len(ref_ind)):
-        dat = get_single_volume(vid_fname, ind, **video_opt)
+        dat = get_single_volume(video_fname, ind, **video_opt)
         ref_dat.append(dat)
 
         metadata = {'frame_ind': ind,
                     'vol_shape': dat.shape,
-                    'video_fname': vid_fname}
+                    'video_fname': video_fname}
         if recalculate_reference_frames:
             f = build_reference_frame(dat, num_slices, neuron_feature_radius,
                                       start_slice=start_slice,
@@ -166,8 +166,8 @@ def neuron_global_id_from_multiple_matches_thresholds(matches, conf, total_frame
     reference_ind = 0
 
     for t in edge_threshs:
-        opt = {'reference_ind': reference_ind, 'total_frames': total_frames, 'thresh': t}
-        g2l, l2g, reference_ind, G = add_all_good_components(G, **opt)
+        options = {'reference_ind': reference_ind, 'total_frames': total_frames, 'thresh': t}
+        g2l, l2g, reference_ind, G = add_all_good_components(G, **options)
         global2local.update(g2l)
         local2global.update(l2g)
 
@@ -457,7 +457,7 @@ def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
 
 
 def match_all_to_reference_frames(reference_set,
-                                  vid_fname,
+                                  video_fname,
                                   other_ind,
                                   video_opt,
                                   metadata,
@@ -474,7 +474,7 @@ def match_all_to_reference_frames(reference_set,
     all_other_frames = []
 
     for ind in tqdm(other_ind, total=len(other_ind)):
-        dat = get_single_volume(vid_fname, ind, **video_opt)
+        dat = get_single_volume(video_fname, ind, **video_opt)
         metadata['frame_ind'] = ind
 
         f = build_reference_frame(dat, num_slices, neuron_feature_radius,
@@ -498,7 +498,7 @@ def match_all_to_reference_frames(reference_set,
 ##
 
 
-def track_neurons_full_video(vid_fname: str,
+def track_neurons_full_video(video_fname: str,
                              start_volume: int = 0,
                              num_frames: int = 10,
                              num_slices: int = 33,
@@ -527,16 +527,13 @@ def track_neurons_full_video(vid_fname: str,
                   'alpha': 1.0,
                   'dtype': dtype}
     ref_opt = {'z_depth': neuron_feature_radius}  # TODO: rename this parameter
-
-    # Open the zarr file
-    vid_dat = zarr.open(vid_fname)
+    vid_dat = zarr.open(video_fname)
 
     def _build_frame(frame_ind: int) -> ReferenceFrame:
-        # dat = get_single_volume(vid_fname, frame_ind, **import_opt)
         dat = vid_dat[frame_ind, ...]
         metadata = {'frame_ind': frame_ind,
                     'vol_shape': dat.shape,
-                    'video_fname': vid_fname}
+                    'video_fname': video_fname}
 
         f = build_reference_frame_encoding(dat,
                                            num_slices=import_opt['num_slices'],
@@ -549,7 +546,6 @@ def track_neurons_full_video(vid_fname: str,
         print("Building initial frame...")
     frame0 = _build_frame(start_volume)
 
-    # Loop through all pairs
     all_frame_pairs = {}
     all_frame_dict = {start_volume: frame0}
     end_frame = start_volume + num_frames
@@ -560,7 +556,7 @@ def track_neurons_full_video(vid_fname: str,
     for i_frame in tqdm(frame_range):
         frame1 = _build_frame(i_frame)
         this_pair = calc_2frame_matches_using_class(frame0, frame1, **match_opt)
-        # Save in output objects
+
         key = (i_frame - 1, i_frame)
         all_frame_pairs[key] = this_pair
         all_frame_dict[i_frame] = frame1
@@ -570,7 +566,7 @@ def track_neurons_full_video(vid_fname: str,
     return all_frame_pairs, all_frame_dict
 
 
-def track_via_reference_frames(vid_fname,
+def track_via_reference_frames(video_fname,
                                start_frame=0,
                                num_frames=10,
                                num_slices=33,
@@ -591,7 +587,7 @@ def track_via_reference_frames(vid_fname,
     # First, analyze the reference frames
     if verbose >= 1:
         print("Loading reference frames...")
-    video_opt = {'vid_fname': vid_fname,
+    video_opt = {'video_fname': video_fname,
                  'start_frame': start_frame,
                  'num_frames': num_frames,
                  'num_slices': num_slices,
@@ -634,7 +630,7 @@ def track_via_reference_frames(vid_fname,
     metadata = ref_frames[i_tmp].get_metadata()
     all_matches, all_other_frames = match_all_to_reference_frames(
         reference_set,
-        vid_fname,
+        video_fname,
         other_ind,
         video_opt,
         metadata,
@@ -648,7 +644,7 @@ def track_via_reference_frames(vid_fname,
     return all_matches, all_other_frames, reference_set
 
 
-def track_neurons_full_video_window(vid_fname,
+def track_neurons_full_video_window(video_fname,
                                     start_frame=0,
                                     num_frames=10,
                                     num_slices=33,
@@ -674,14 +670,14 @@ def track_neurons_full_video_window(vid_fname,
     ref_opt = {'neuron_feature_radius': neuron_feature_radius}
 
     def local_build_frame(frame_ind,
-                          vid_fname=vid_fname,
+                          video_fname=video_fname,
                           import_opt=import_opt,
                           ref_opt=ref_opt,
                           external_detections=external_detections):
-        dat = get_single_volume(vid_fname, frame_ind, **import_opt)
+        dat = get_single_volume(video_fname, frame_ind, **import_opt)
         metadata = {'frame_ind': frame_ind,
                     'vol_shape': dat.shape,
-                    'video_fname': vid_fname}
+                    'video_fname': video_fname}
         f = build_reference_frame(dat,
                                   num_slices=import_opt['num_slices'],
                                   **ref_opt,
@@ -731,7 +727,7 @@ def track_neurons_full_video_window(vid_fname,
     return pairwise_matches_dict, pairwise_conf_dict, all_frame_dict, pairwise_candidates_dict
 
 
-def track_via_sequence_consensus(vid_fname,
+def track_via_sequence_consensus(video_fname,
                                  start_frame=0,
                                  num_frames=10,
                                  num_slices=33,
@@ -750,7 +746,7 @@ def track_via_sequence_consensus(vid_fname,
     # Initial frame calculations
 
     # Build a reference set of the first n-1 frames
-    video_opt = {'vid_fname': vid_fname,
+    video_opt = {'video_fname': video_fname,
                  'start_frame': start_frame,
                  'num_frames': num_frames,
                  'num_slices': num_slices,
@@ -772,7 +768,7 @@ def track_via_sequence_consensus(vid_fname,
     for i_frame in tqdm(ind, total=len(ind)):
         # Build the next frame
         metadata['frame_ind'] = i_frame
-        dat = get_single_volume(vid_fname, i_frame, **frame_video_opt)
+        dat = get_single_volume(video_fname, i_frame, **frame_video_opt)
         next_frame = build_reference_frame(dat, num_slices, neuron_feature_radius,
                                            metadata=metadata,
                                            preprocessing_settings=preprocessing_settings)
