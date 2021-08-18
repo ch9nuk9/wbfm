@@ -17,10 +17,6 @@ class napari_trace_explorer(QtWidgets.QWidget):
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-
-        ########################
-        # Load Configs
-        ########################
         self.dat = finished_project_data.load_final_project_data_from_config(project_path)
 
     def setupUi(self, viewer: napari.Viewer):
@@ -100,7 +96,6 @@ class napari_trace_explorer(QtWidgets.QWidget):
         self.update_stored_time_series()
         self.trace_line = self.static_ax.plot(self.y)[0]
         self.dat.shade_axis_using_behavior(self.static_ax)
-        # self.time_line = self.static_ax.vlines(*self.calculate_time_line())
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.color_using_behavior()
         self.connect_time_line_callback()
@@ -111,17 +106,11 @@ class napari_trace_explorer(QtWidgets.QWidget):
         self.update_stored_time_series()
         self.trace_line.set_ydata(self.y)
         self.dat.shade_axis_using_behavior(self.static_ax)
-        # t, y0, y1, _ = self.calculate_time_line()
-        # self.time_line.set_segments(np.array([[t, y0], [t, y1]]))
         self.time_line.set_data(self.calculate_time_line()[:2])
         self.color_using_behavior()
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
         self.static_ax.set_title(title)
 
-        # y = self.y
-        # ymin, ymax = np.min(y), np.max(y)
-        # self.static_ax.set_ylim([ymin, ymax])
-        # self.mpl_widget.draw()
         self.static_ax.relim()
         self.static_ax.autoscale_view()
         self.mpl_widget.draw()
@@ -145,10 +134,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
         else:
             # title = "Tracking lost!"
             line_color = 'k'
-        # print(f"Calculated vertical line for t={t}")
         return [t, t], [ymin, ymax], line_color
-        # return t, ymin, ymax, line_color
-        # self.time_line.update_line(t, ymin, ymax, line_color)
 
     def update_stored_time_series(self):
         # i = self.changeNeuronsDropdown.currentIndex()
@@ -195,10 +181,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
         col = pd.MultiIndex.from_product([[self.current_name], ['z', 'x', 'y', 'likelihood']])
         df_new = pd.DataFrame(columns=col, index=self.dat.final_tracks.index)
 
-        # df_new[(name, 't')] = new_points[:, 0]
         df_new[(name, 'z')] = new_points[:, 1]
-        # df_new[(name, 'y')] = new_points[:, 2]
-        # df_new[(name, 'x')] = new_points[:, 3]
         df_new[(name, 'x')] = new_points[:, 2]
         df_new[(name, 'y')] = new_points[:, 3]
         df_new[(name, 'likelihood')] = np.ones(new_points.shape[0])
@@ -209,15 +192,13 @@ class napari_trace_explorer(QtWidgets.QWidget):
         # Just visualize one neuron for now
         # 5 columns:
         # track_id, t, z, y, x
-        # coords = ['z', 'y', 'x']
         coords = ['z_dlc', 'x_dlc', 'y_dlc']
-        # zxy_array = np.array(self.dat.final_tracks[self.current_name][coords])
         zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
 
         all_tracks_list = []
         likelihood_thresh = 0.4
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
-        # Remove low likelihood
+
         if 'likelihood' in self.dat.final_tracks[self.current_name]:
             to_remove = self.dat.final_tracks[self.current_name]['likelihood'] < likelihood_thresh
         else:
@@ -251,7 +232,6 @@ def build_napari_trace_explorer(project_config):
     # Add a text overlay
     df = ui.dat.red_traces
     options = create_text_labels_for_napari(df)
-
     viewer.add_points(**options)
 
     # Actually dock my additional gui elements
