@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 
 from DLC_for_WBFM.gui.utils.manual_annotation import create_manual_correction_gui
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
 
 
@@ -24,20 +25,16 @@ if __name__ == "__main__":
 
     print("Starting manual annotation GUI, may take a while to load...")
 
-    project_cfg = load_config(project_path)
-    project_dir = Path(project_path).parent
+    cfg = modular_project_config(project_path)
+    project_dir = cfg.project_dir
+
+    segment_cfg = cfg.get_segmentation_config()
+    training_cfg = cfg.get_training_config()
+    tracking_cfg = cfg.get_tracking_config()
 
     with safe_cd(project_dir):
-        trace_fname = Path(project_cfg['subfolder_configs']['traces'])
-        trace_cfg = dict(load_config(trace_fname))
-        track_fname = Path(project_cfg['subfolder_configs']['tracking'])
-        track_cfg = dict(load_config(track_fname))
-        seg_fname = Path(project_cfg['subfolder_configs']['segmentation'])
-        segment_cfg = dict(load_config(seg_fname))
-
-    this_config = {'track_cfg': track_cfg, 'segment_cfg': segment_cfg, 'project_cfg': project_cfg,
-                   'dataset_params': project_cfg['dataset_params'].copy(),
-                   'project_dir': project_dir}
-
-    with safe_cd(project_dir):
-        create_manual_correction_gui(this_config, corrector_name, initial_annotation_name, DEBUG=DEBUG)
+        create_manual_correction_gui(cfg,
+                                     segment_cfg,
+                                     training_cfg,
+                                     tracking_cfg,
+                                     corrector_name, initial_annotation_name, DEBUG=DEBUG)

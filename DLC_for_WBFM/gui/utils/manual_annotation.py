@@ -8,6 +8,7 @@ import zarr
 from PyQt5 import QtWidgets
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_which_frames
 
@@ -178,13 +179,17 @@ class manual_annotation_widget(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_annotation_name=None, DEBUG=False):
+def create_manual_correction_gui(cfg: modular_project_config,
+                                 segment_cfg: config_file_with_project_context,
+                                 training_cfg: config_file_with_project_context,
+                                 tracking_cfg: config_file_with_project_context,
+                                 corrector_name='Charlie', initial_annotation_name=None, DEBUG=False):
     """
     Creates a napari-based gui for correcting tracks
 
     For now, only works with training data
     """
-    project_dir = this_config['project_dir']
+    project_dir = cfg.project_dir
 
     annotation_output_name = os.path.join(project_dir, '2-training_data', 'manual_tracking', f'corrected_tracks-{corrector_name}.h5')
     if Path(annotation_output_name).exists():
@@ -193,13 +198,13 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_
     with safe_cd(project_dir):
 
         fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
-        df = pd.read_pickle(fname)
+        df_raw_matches = pd.read_pickle(fname)
 
         # Get the frames chosen as training data, or recalculate
-        which_frames = list(get_or_recalculate_which_frames(DEBUG, df, this_config))
+        which_frames = list(get_or_recalculate_which_frames(DEBUG, df_raw_matches, cfg.config['dataset_params']['num_frames'], tracking_cfg))
 
         # Import segmentation
-        fname = this_config['segment_cfg']['output_masks']
+        fname = segment_cfg.config['output_masks']
         raw_segmentation = zarr.open(fname)
 
         fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
@@ -210,15 +215,17 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_
 
         if initial_annotation_name is None:
             # Use the output of my tracker
-            fname = os.path.join('2-training_data', 'training_data_tracks.h5')
+            fname = training_cfg.resolve_relative_path('df_raw_3d_tracks')
+            df_initial_annotations = pd.read_hdf(fname)
+            # fname = os.path.join('2-training_data', 'training_data_tracks.h5')
             # TODO: not hardcoded experimenter
-            df = pd.read_hdf(fname)['Charlie'].copy()
+            # df = pd.read_hdf(fname)['Charlie'].copy()
         else:
             # Use partially manually annotated tracking
-            df = pd.read_hdf(initial_annotation_name)
+            df_initial_annotations = pd.read_hdf(initial_annotation_name)
 
         # Import raw data
-        fname = this_config['project_cfg']['preprocessed_red']
+        fname = cfg.config['preprocessed_red']
         red_data = zarr.open(fname)
 
     print("Finished loading data, starting napari...")
@@ -231,7 +238,7 @@ def create_manual_correction_gui(this_config, corrector_name='Charlie', initial_
 
     output_dir = os.path.join("2-training_data", "manual_tracking")
     ui = manual_annotation_widget()
-    ui.setupUi(df, output_dir, viewer, annotation_output_name)
+    ui.setupUi(df_initial_annotations, output_dir, viewer, annotation_output_name)
 
     # Actually dock
     viewer.window.add_dock_widget(ui)
