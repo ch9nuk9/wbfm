@@ -12,7 +12,7 @@ from tqdm import tqdm
 def propagate_via_affine_model(which_neuron: int,
                                f0: ReferenceFrame,
                                f1: ReferenceFrame,
-                               all_feature_matches: Dict[int],
+                               all_feature_matches: Dict,
                                radius=10.0,
                                min_matches=100,
                                no_match_mode='negative_position',

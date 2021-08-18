@@ -1,6 +1,8 @@
+from typing import Tuple
+
 import cv2
 
-from DLC_for_WBFM.utils.external.utils_cv2 import match_object_to_array
+from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, \
@@ -89,8 +91,6 @@ def build_reference_frame_encoding(dat_raw,
 
     See: build_reference_frame
     """
-    # DEPRECATE PREPROCESSING
-    # dat = perform_preprocessing(dat_raw, preprocessing_settings)
     if metadata is None:
         metadata = {}
     dat = dat_raw
@@ -107,11 +107,10 @@ def build_reference_frame_encoding(dat_raw,
     return f
 
 
-def encode_all_neurons(locs_zxy, im_3d, z_depth):
+def encode_all_neurons(locs_zxy: list, im_3d: np.ndarray, z_depth: int) -> Tuple[np.ndarray, list]:
     """
     Builds a feature vector for each neuron (zxy location) in a 3d volume
     Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
-
     """
     im_3d_gray = [convert_to_grayscale(xy) for xy in im_3d]
     all_embeddings = []
@@ -341,7 +340,7 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
                                             use_GMS=False)
 
     # With neuron embeddings, the keypoints are the neurons
-    matches_with_conf = match_object_to_array(keypoint_matches, gamma=1.0)
+    matches_with_conf = cast_matches_as_array(keypoint_matches, gamma=1.0)
 
     # Create convenience object to store matches
     frame_pair = FramePair(matches_with_conf, matches_with_conf)

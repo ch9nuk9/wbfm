@@ -52,7 +52,7 @@ def get_keypoints_from_3dseg(kp0, i=None, sz=31.0, neuron_height=None):
 #     return frame
 
 
-def match_object_to_array(matches, gamma=1.0):
+def cast_matches_as_array(matches: list, gamma: object = 1.0) -> list:
     """
     Reformats a cv2 match object to a list of 3-element matches with a confidence score
 
