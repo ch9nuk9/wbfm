@@ -1,18 +1,17 @@
 """
 The top level function for producing training data via feature-based tracking
 """
-
-from pathlib import Path
+import os
 # main function
 from sacred.observers import TinyDbObserver
 import DLC_for_WBFM.utils.projects.monkeypatch_json
 
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
-from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 # Experiment tracking
 import sacred
 from sacred import Experiment
+import logging
 
 # Initialize sacred experiment
 ex = Experiment()
@@ -29,8 +28,12 @@ def cfg(project_path, DEBUG):
     train_cfg = update_path_to_segmentation_in_config(cfg)
     train_cfg.update_on_disk()
 
+    log_dir = cfg.get_log_dir()
+    log_fname = os.path.join(log_dir, '2-training_data_warnings.log')
+    logging.basicConfig(format='%(message)s %(asctime)s',
+                        filename=log_fname, level=logging.DEBUG)
+    logging.warning('Starting run at: ')
     if not DEBUG:
-        log_dir = cfg.get_log_dir()
         ex.observers.append(TinyDbObserver(log_dir))
 
 

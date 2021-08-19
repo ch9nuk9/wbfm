@@ -1,3 +1,4 @@
+import logging
 from typing import Tuple, List
 import open3d as o3d
 import numpy as np
@@ -97,9 +98,6 @@ def build_digraph_from_matches(pairwise_matches,
 
     return DG
 
-
-
-
 ##
 ## Alternate, non-networkx way to get bipartite matches
 ##
@@ -133,6 +131,9 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e
     to_keep = conf > min_conf
     matches = matches[to_keep]
     conf = conf[to_keep]
+
+    if len(matches) == 0:
+        logging.warning(f'Bipartite matching removed all {len(all_candidate_matches)} candidates')
 
     return matches, conf, matches
 
