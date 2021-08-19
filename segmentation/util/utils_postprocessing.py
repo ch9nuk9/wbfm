@@ -10,6 +10,7 @@ from scipy.optimize import curve_fit
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
+from tqdm import tqdm
 
 
 def remove_large_areas(arr, threshold=1000, verbose=0):
@@ -32,6 +33,8 @@ def remove_large_areas(arr, threshold=1000, verbose=0):
     arr : 2D or 3D numpy array
         array with removed areas. Same shape as input
     """
+
+    # TODO: use skimage.morphology.remove_small_objects
     global new_arr
     if verbose >= 1:
         print('Removing large areas in all planes')
@@ -631,3 +634,42 @@ def remove_border(masks, border=100):
     masks[:, :, (y_sz - border):] = 0
 
     return masks
+
+
+def remove_dim_pixels_using_quantile(seg_dat_raw: np.ndarray, red_dat: np.ndarray, quantile_threshold: float = 0.25):
+    """
+    Loops through labels in an array, removing pixels that are dim based on a quantile calculation
+
+    If the array is a volume, assumes the labels are reindexed correctly
+
+    Parameters
+    ----------
+    seg_dat_raw
+    red_dat
+    quantile_threshold
+
+    Returns
+    -------
+    filtered_array
+
+    """
+
+    set_zero_func = np.frompyfunc(lambda x: 0, 1, 1)
+
+    seg_dat = seg_dat_raw.copy()
+    vals = np.unique(seg_dat)
+    vals_no_background = vals[1:]
+    for v in vals_no_background:
+        mask = seg_dat == v
+        # if len(np.nonzero(mask)) == 0:
+        #     continue
+        brightnesses = red_dat[mask]
+
+        threshold = np.quantile(brightnesses, quantile_threshold)
+        dim_pixels = brightnesses < threshold
+
+        linear_ind = np.ravel_multi_index(np.where(mask), mask.shape)
+        ind_to_zero = np.unravel_index(linear_ind[dim_pixels], mask.shape)
+        set_zero_func.at(seg_dat, ind_to_zero)
+
+    return seg_dat

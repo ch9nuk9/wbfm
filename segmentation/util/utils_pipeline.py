@@ -1,6 +1,7 @@
 import threading
 from multiprocessing import Manager
 
+import skimage
 import stardist.models
 from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project_context
 import segmentation.util.utils_postprocessing as post
@@ -176,7 +177,7 @@ def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders = _unpack_config_file(
         segment_cfg, project_cfg)
-
+    opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
 
     # Open the file
     if not video_path.endswith('.zarr'):
@@ -185,7 +186,6 @@ def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
-    opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
     if verbose > 1:
         print("Postprocessing settings: ")
         print(opt_postprocessing)
@@ -368,6 +368,9 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
                                upper_length_threshold=12, lower_length_threshold=3,
                                to_remove_dim_slices=False,
                                stitch_via_watershed=False,
+                               to_remove_dim_pixels=False,
+                               quantile_threshold=0.5,
+                               minimum_object_size=30,
                                verbose=0):
     """
     Performs some post-processing steps including: Splitting long neurons, removing short neurons and
@@ -442,6 +445,12 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         if verbose >= 1:
             print("Stitching using watershed")
         final_masks = post.stitch_via_watershed(masks, img_volume)
+
+    if to_remove_dim_pixels:
+        final_masks = post.remove_dim_pixels_using_quantile(final_masks, img_volume,
+                                                            quantile_threshold=quantile_threshold)
+        final_masks = skimage.morphology.remove_small_objects(final_masks, minimum_object_size, connectivity=1)
+        final_masks = skimage.morphology.label(final_masks)
 
     if to_remove_border is True:
         final_masks = post.remove_border(final_masks, border_width_to_remove)
