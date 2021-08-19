@@ -16,17 +16,12 @@ class FramePair:
     gp_matches: list = None
     gp_pushed_locations: list = None
 
-    all_gps: list = None  # The actual gaussian processes
+    all_gps: list = None  # The actual gaussian processes; may get warning from scipy versioning
 
     # Original keypoints
     keypoint_matches: list = None
 
-    # Convinience
-    # f0_to_f1_matches: dict = None
-    # f1_to_f0_matches: dict = None
-
-    # def __post_init__(self):
-    #     self.f0_to_f1_matches =
+    min_confidence: float = 0.001
 
     @property
     def all_candidate_matches(self):
@@ -36,7 +31,9 @@ class FramePair:
         return all_matches
 
     def calc_final_matches_using_bipartite_matching(self) -> list:
-        matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches)
+        assert len(self.all_candidate_matches) > 0, "No candidate matches!"
+
+        matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches, min_conf=self.min_confidence)
         self.final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
         return self.final_matches
 

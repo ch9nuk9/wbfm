@@ -404,8 +404,11 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
     """
     Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
 
-    Expects DICT for all_matches
+    Expects DICT for pairwise_matches_dict
     """
+    assert len(pairwise_matches_dict) > 0, "No matches found"
+    assert len(list(pairwise_matches_dict.keys())) == 2, "Dictionary should be indexed by a tuple of frames"
+    assert len(list(pairwise_matches_dict.values())) >= 2, "Dictionary should contain match indices, confidence optional"
 
     # Make everything a dictionary
     dict_of_match_dicts = {k: dict([m0[:2] for m0 in m]) for k, m in pairwise_matches_dict.items()}
