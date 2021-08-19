@@ -3,6 +3,8 @@ The top level function for producing training data via feature-based tracking
 """
 import os
 # main function
+from datetime import date
+
 from sacred.observers import TinyDbObserver
 import DLC_for_WBFM.utils.projects.monkeypatch_json
 
@@ -30,9 +32,8 @@ def cfg(project_path, DEBUG):
 
     log_dir = cfg.get_log_dir()
     log_fname = os.path.join(log_dir, '2-training_data_warnings.log')
-    logging.basicConfig(format='%(message)s %(asctime)s',
-                        filename=log_fname, level=logging.DEBUG)
-    logging.warning('Starting run at: ')
+    logging.basicConfig(filename=log_fname, level=logging.DEBUG)
+    logging.warning(f'Starting run at: {date.today().strftime("%Y/%m/%d %H:%M:%S")}')
     if not DEBUG:
         ex.observers.append(TinyDbObserver(log_dir))
 

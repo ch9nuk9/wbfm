@@ -1,3 +1,4 @@
+import logging
 from typing import Tuple, Dict
 
 import zarr as zarr
@@ -553,6 +554,7 @@ def track_neurons_full_video(video_fname: str,
     match_opt = {'use_affine_matching': use_affine_matching,
                  'add_affine_to_candidates': add_affine_to_candidates,
                  'add_gp_to_candidates': add_gp_to_candidates}
+    logging.info(f"Calculating Frame objects for frames: {frame_range}")
     for i_frame in tqdm(frame_range):
         frame1 = _build_frame(i_frame)
         this_pair = calc_FramePair_from_Frames(frame0, frame1, **match_opt)

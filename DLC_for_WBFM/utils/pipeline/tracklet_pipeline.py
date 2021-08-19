@@ -37,6 +37,9 @@ def partial_track_video_using_config(project_config: modular_project_config,
     video_fname, options = _unpack_config_partial_tracking(DEBUG, project_config, training_config)
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)
 
+    msg = "Incorrect number of frame pairs"
+    assert len(all_frame_pairs) == project_config.config['dataset_params']['num_frames'] - 1, msg
+
     df = _postprocess_frame_matches(all_frame_dict, all_frame_pairs)
     save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, training_config)
 

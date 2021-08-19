@@ -407,7 +407,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
     Expects DICT for pairwise_matches_dict
     """
     assert len(pairwise_matches_dict) > 0, "No matches found"
-    assert len(list(pairwise_matches_dict.keys())) == 2, "Dictionary should be indexed by a tuple of frames"
+    assert len(list(pairwise_matches_dict.keys())[0]) == 2, "Dictionary should be indexed by a tuple"
     assert len(list(pairwise_matches_dict.values())) >= 2, "Dictionary should contain match indices, confidence optional"
 
     # Make everything a dictionary
