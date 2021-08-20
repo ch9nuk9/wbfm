@@ -7,7 +7,7 @@ from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair, cal
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, \
     match_centroids_using_tree
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
-from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
+from DLC_for_WBFM.utils.feature_detection.legacy_neuron_detection import detect_neurons_using_ICP
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import build_reference_frame, add_all_good_components, \
     is_ordered_subset
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
@@ -552,8 +552,7 @@ def track_neurons_full_video(video_fname: str,
     all_frame_dict = {start_volume: frame0}
     end_frame = start_volume + num_frames
     frame_range = range(start_volume + 1, end_frame)
-    match_opt = {'use_affine_matching': use_affine_matching,
-                 'add_affine_to_candidates': add_affine_to_candidates,
+    match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
                  'add_gp_to_candidates': add_gp_to_candidates}
     logging.info(f"Calculating Frame objects for frames: {frame_range}")
     for i_frame in tqdm(frame_range):

@@ -2,7 +2,7 @@ import unittest
 
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
-from DLC_for_WBFM.utils.feature_detection.utils_detection import *
+from DLC_for_WBFM.utils.feature_detection.legacy_neuron_detection import detect_neurons_using_ICP
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import *
 
 

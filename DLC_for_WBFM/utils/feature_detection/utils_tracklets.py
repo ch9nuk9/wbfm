@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 import copy
 from collections import defaultdict
 
@@ -9,6 +7,8 @@ from collections import defaultdict
 ##
 ## Helper functions for tracks
 ##
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
+
 
 def create_new_track(i0, i1,
                      i0_xyz,
@@ -108,205 +108,6 @@ def append_to_track(row, i, clust_df, which_slice, i1, i1_global,
 ##
 ## Main function
 ##
-
-def build_tracklets_from_matches(all_neurons,
-                                 all_matches,
-                                 all_likelihoods=None,
-                                 verbose=0):
-    """
-    Builds tracklets from an array of pairwise matches
-
-    Parameters
-    ===============
-    all_neurons : list
-        List of lists, with integers for all neurons present in a frame
-    all_matches : list
-        Matches between adjacent frames in the coordinates local to each frame
-    all_likelihoods : list
-        Same as all_matches, but for the confidence of the matchs
-
-    See build_tracklets_from_classes() if using ReferenceFrame class
-    """
-
-    if type(all_neurons[0]) == ReferenceFrame:
-        print("===============")
-        print("Found type ReferenceFrame")
-        print("Did you mean to call build_tracklets_from_classes()?")
-        raise ValueError
-
-    if all_likelihoods is None:
-        all_likelihoods = [np.ones(len(m)) for m in all_matches]
-
-    # Use registration results to build a combined and colored pointcloud
-    columns = ['clust_ind', 'all_ind_local', 'all_ind_global', 'all_xyz',
-               'all_prob',
-               'slice_ind', 'extended_this_slice', 'not_finished']
-    clust_df = pd.DataFrame(columns=columns)
-
-    next_clust_ind = 0
-    this_point_cloud_offset = 0
-    next_point_cloud_offset = 0
-
-    # for i_match, match in tqdm(enumerate(all_matches), total=len(all_matches)):
-    for i_match, match in enumerate(all_matches):
-        if verbose >= 2:
-            print("==============================================================")
-            print(f"{i_match} / {len(all_matches)}")
-            print(f"Found {len(match)} matches")
-        # Get transform to global coordinates
-        these_neurons = all_neurons[i_match]
-        this_xyz = np.asarray(these_neurons)
-        next_neurons = all_neurons[i_match + 1]
-        next_xyz = np.asarray(next_neurons)
-        next_point_cloud_offset = next_point_cloud_offset + len(these_neurons)
-
-        # Get the probabilities as well
-        this_prob = all_likelihoods[i_match]
-        this_prob = np.asarray(this_prob)
-        # next_prob = all_likelihoods[i_match+1]
-        # next_prob = np.asarray(next_prob)
-
-        offsets = {'next_point_cloud_offset': next_point_cloud_offset,
-                   'this_point_cloud_offset': this_point_cloud_offset,
-                   'which_slice': i_match}
-
-        pairs = np.asarray(match)
-        # Initialize ALL as to-be-finished
-        clust_df['extended_this_slice'] = False
-
-        all_new_tracks = []
-        for i_pair, (i0, i1) in enumerate(pairs):
-            next_point = {'i1': i1,
-                          'i1_xyz': next_xyz[i1, :],
-                          'i1_prob': this_prob[i_pair],  # Probability is attached to the pair
-                          'i1_global': next_point_cloud_offset + i1}
-            current_point = {'i0': i0,
-                             'i0_xyz': this_xyz[i0, :],
-                             'next_clust_ind': next_clust_ind}
-            # If no tracks, initialize
-            ind_to_check = clust_df['not_finished'] & ~clust_df['extended_this_slice']
-
-            if verbose >= 2:
-                print(f"Clusters available to check: {np.where(ind_to_check)}")
-            if len(ind_to_check) == 0:
-                next_clust_ind, new_track = create_new_track(**current_point, **next_point, **offsets)
-                all_new_tracks.append(new_track)
-                continue
-            # Add to previous track if possible
-            for i, row in clust_df[ind_to_check].iterrows():
-                if verbose >= 2:
-                    print(f"pair: {i0}, {i1}, trying cluster: {i}")
-                if i0 == row['all_ind_local'][-1]:
-                    clust_df = append_to_track(row, i, clust_df, i_match, **next_point)
-                    break
-            else:
-                # Create new track
-                next_clust_ind, new_track = create_new_track(**current_point, **next_point, **offsets)
-                all_new_tracks.append(new_track)
-
-        # Actually add the tracks to the dataframe
-        for t in all_new_tracks:
-            clust_df = clust_df.append(t, ignore_index=True)
-
-        # Finalize tracks that didn't get a new point this loop
-        to_finish = ~clust_df['extended_this_slice'].astype(bool)
-        if len(np.where(to_finish)[0]) > 0 and verbose >= 1:
-            print(f"Finished tracks {np.where(to_finish)[0]}")
-        clust_df.loc[to_finish, 'not_finished'] = False
-
-        if verbose >= 3 and len(pairs) > 0:
-            print("WIP")
-            # visualize_tracks_simple(this_pc, next_pc, pairs)
-
-        this_point_cloud_offset = next_point_cloud_offset
-
-    clust_df['all_xyz'] = clust_df['all_xyz'].apply(np.array)
-
-    return clust_df
-
-
-def build_tracklets_from_classes(all_frames,
-                                 all_matches_dict,
-                                 all_likelihoods_dict=None,
-                                 verbose=0):
-    """
-    Build tracklets starting from a different format
-
-    Parameters
-    ===========================
-    all_frames - list
-        Simple list of ReferenceFrame objects
-    all_matches_dict - dict
-        Dictionary of matches, which are lists of local neuron indices
-        all_matches_dict[(0,1)] = list(list())
-    all_likelihoods_dict - dict
-        Same format as all_matches_dict
-
-    See also: build_tracklets_from_matches
-    """
-
-    if type(all_matches_dict) != dict:
-        print("Expected dictionary of pairwise matches")
-        print("Did you mean to call build_tracklets_from_matches()?")
-        raise ValueError
-
-    # Input of build_tracklets_from_matches:
-    #   1. List of all pairwise matches
-    #   2. List of all neuron 3d locations
-    # if type(all_frames)==dict:
-    # BUG: make the below loops work for dict
-    # all_frames = list(all_frames.values())
-    # print("If this is a dict, then the indices are probably off.")
-    # raise ValueError
-    try:
-        all_neurons = [all_frames[0].neuron_locs]
-        final_frame_ind = len(all_frames)
-        start_frame_ind = 0
-    except:
-        k = list(all_frames)
-        all_neurons = [all_frames[k[0]].neuron_locs]
-        start_frame_ind = min(k)
-        final_frame_ind = max(k)
-    all_matches = []
-    if all_likelihoods_dict is None:
-        all_likelihoods = None
-    else:
-        all_likelihoods = []
-
-    if verbose > 1:
-        print("Casting class data in list form...")
-    nonzero_matches = 0
-    for i in range(1, final_frame_ind):
-        # Pad the initials with empties if this is a dict
-        # for key, i in zip(all_matches_dict, all_frames):
-        # Get matches and conf
-        key = (i - 1, i)
-        if key in all_matches_dict:
-            all_matches.append(all_matches_dict[key])
-            nonzero_matches += 1
-        else:
-            all_matches.append([])
-        if all_likelihoods is not None:
-            all_likelihoods.append(all_likelihoods_dict[key])
-
-        if i < start_frame_ind:
-            all_neurons.append([])
-        else:
-            all_neurons.append(all_frames[i].neuron_locs)
-        # all_neurons.append(frame.neuron_locs)
-    if verbose > 1:
-        print(f"Found {nonzero_matches} nonzero matches")
-    if nonzero_matches == 0:
-        print("Found no matches; is the dictionary in the proper format?")
-        return None
-
-    # Call old function
-    if verbose > 1:
-        print("Calling build_tracklets_from_matches()")
-    return build_tracklets_from_matches(all_neurons,
-                                        all_matches,
-                                        all_likelihoods,
-                                        verbose=verbose)
 
 
 def build_tracklets_simple(all_matches, verbose=0):
@@ -484,5 +285,121 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
 
         clust_df = clust_df.append(df, ignore_index=True)
         clust_ind += 1
+
+    return clust_df
+
+
+def build_tracklets_from_matches(all_neurons,
+                                 all_matches,
+                                 all_likelihoods=None,
+                                 verbose=0):
+    """
+    Builds tracklets from an array of pairwise matches
+
+    Parameters
+    ===============
+    all_neurons : list
+        List of lists, with integers for all neurons present in a frame
+    all_matches : list
+        Matches between adjacent frames in the coordinates local to each frame
+    all_likelihoods : list
+        Same as all_matches, but for the confidence of the matchs
+
+    See build_tracklets_from_classes() if using ReferenceFrame class
+    """
+
+    if type(all_neurons[0]) == ReferenceFrame:
+        print("===============")
+        print("Found type ReferenceFrame")
+        print("Did you mean to call build_tracklets_from_classes()?")
+        raise ValueError
+
+    if all_likelihoods is None:
+        all_likelihoods = [np.ones(len(m)) for m in all_matches]
+
+    # Use registration results to build a combined and colored pointcloud
+    columns = ['clust_ind', 'all_ind_local', 'all_ind_global', 'all_xyz',
+               'all_prob',
+               'slice_ind', 'extended_this_slice', 'not_finished']
+    clust_df = pd.DataFrame(columns=columns)
+
+    next_clust_ind = 0
+    this_point_cloud_offset = 0
+    next_point_cloud_offset = 0
+
+    # for i_match, match in tqdm(enumerate(all_matches), total=len(all_matches)):
+    for i_match, match in enumerate(all_matches):
+        if verbose >= 2:
+            print("==============================================================")
+            print(f"{i_match} / {len(all_matches)}")
+            print(f"Found {len(match)} matches")
+        # Get transform to global coordinates
+        these_neurons = all_neurons[i_match]
+        this_xyz = np.asarray(these_neurons)
+        next_neurons = all_neurons[i_match + 1]
+        next_xyz = np.asarray(next_neurons)
+        next_point_cloud_offset = next_point_cloud_offset + len(these_neurons)
+
+        # Get the probabilities as well
+        this_prob = all_likelihoods[i_match]
+        this_prob = np.asarray(this_prob)
+        # next_prob = all_likelihoods[i_match+1]
+        # next_prob = np.asarray(next_prob)
+
+        offsets = {'next_point_cloud_offset': next_point_cloud_offset,
+                   'this_point_cloud_offset': this_point_cloud_offset,
+                   'which_slice': i_match}
+
+        pairs = np.asarray(match)
+        # Initialize ALL as to-be-finished
+        clust_df['extended_this_slice'] = False
+
+        all_new_tracks = []
+        for i_pair, (i0, i1) in enumerate(pairs):
+            next_point = {'i1': i1,
+                          'i1_xyz': next_xyz[i1, :],
+                          'i1_prob': this_prob[i_pair],  # Probability is attached to the pair
+                          'i1_global': next_point_cloud_offset + i1}
+            current_point = {'i0': i0,
+                             'i0_xyz': this_xyz[i0, :],
+                             'next_clust_ind': next_clust_ind}
+            # If no tracks, initialize
+            ind_to_check = clust_df['not_finished'] & ~clust_df['extended_this_slice']
+
+            if verbose >= 2:
+                print(f"Clusters available to check: {np.where(ind_to_check)}")
+            if len(ind_to_check) == 0:
+                next_clust_ind, new_track = create_new_track(**current_point, **next_point, **offsets)
+                all_new_tracks.append(new_track)
+                continue
+            # Add to previous track if possible
+            for i, row in clust_df[ind_to_check].iterrows():
+                if verbose >= 2:
+                    print(f"pair: {i0}, {i1}, trying cluster: {i}")
+                if i0 == row['all_ind_local'][-1]:
+                    clust_df = append_to_track(row, i, clust_df, i_match, **next_point)
+                    break
+            else:
+                # Create new track
+                next_clust_ind, new_track = create_new_track(**current_point, **next_point, **offsets)
+                all_new_tracks.append(new_track)
+
+        # Actually add the tracks to the dataframe
+        for t in all_new_tracks:
+            clust_df = clust_df.append(t, ignore_index=True)
+
+        # Finalize tracks that didn't get a new point this loop
+        to_finish = ~clust_df['extended_this_slice'].astype(bool)
+        if len(np.where(to_finish)[0]) > 0 and verbose >= 1:
+            print(f"Finished tracks {np.where(to_finish)[0]}")
+        clust_df.loc[to_finish, 'not_finished'] = False
+
+        if verbose >= 3 and len(pairs) > 0:
+            print("WIP")
+            # visualize_tracks_simple(this_pc, next_pc, pairs)
+
+        this_point_cloud_offset = next_point_cloud_offset
+
+    clust_df['all_xyz'] = clust_df['all_xyz'].apply(np.array)
 
     return clust_df

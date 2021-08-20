@@ -16,6 +16,7 @@ def _load_training_data() -> pd.DataFrame:
     df_tracks = pd.read_hdf(fname)
     return df_tracks
 
+
 def test_training_data():
     # Run the sacred experiment from the actual script
     mod = importlib.import_module("DLC_for_WBFM.scripts.2-produce_training_data", package="DLC_for_WBFM")
@@ -41,6 +42,7 @@ def test_training_data_finds_matches():
     assert df.shape[1] > minimum_expected_matches
 
 
+@pytest.mark.xfail(reason="Known incorrect segmentation leads to unreasonable z changes")
 def test_training_data_reasonable_z():
     df = _load_training_data()
 

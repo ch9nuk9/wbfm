@@ -2,7 +2,7 @@ from typing import Tuple
 
 import cv2
 
-from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP, detect_neurons_from_file
+from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_from_file
 from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
@@ -122,6 +122,7 @@ class RegisteredReferenceFrames():
 def _detect_or_import_neurons(dat: list, external_detections: str, metadata: dict, num_slices: int,
                               start_slice: int) -> list:
     if external_detections is None:
+        from DLC_for_WBFM.utils.feature_detection.legacy_neuron_detection import detect_neurons_using_ICP
         neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
                                                         num_slices=num_slices,
                                                         alpha=1.0,
