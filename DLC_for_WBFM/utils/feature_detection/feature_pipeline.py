@@ -3,13 +3,13 @@ from typing import Tuple, Dict
 
 import zarr as zarr
 
-from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
+from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair, calc_FramePair_from_Frames
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, \
     match_centroids_using_tree
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import build_reference_frame, add_all_good_components, \
-    is_ordered_subset, calc_FramePair_from_Frames, build_reference_frame_encoding
+    is_ordered_subset, build_reference_frame_encoding
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, \
