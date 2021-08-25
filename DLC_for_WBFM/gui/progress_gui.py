@@ -15,7 +15,6 @@ import napari
 import zarr
 from PyQt5 import QtCore, QtWidgets
 
-from DLC_for_WBFM.gui import OLD_trace_explorer_gui
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_project_of_substep
@@ -280,13 +279,14 @@ class Ui_MainWindow(object):
     def open_traces_gui(self):
 
         self.traces_gui = QtWidgets.QMainWindow()
-        self.ui2 = OLD_trace_explorer_gui.Ui_MainWindow()
+        # self.ui2 = OLD_trace_explorer_gui.Ui_MainWindow()
+        raise NotImplementedError("TODO: connect to new gui")
         # Actually build window
         # traces_config = self.cfg['subfolder_configs']['traces']
         # other_project = get_project_of_substep(traces_config)
-        with safe_cd(self.project_dir):
-            self.ui2.setupUi(self.traces_gui, self.project_file, False)
-            self.traces_gui.show()
+        # with safe_cd(self.project_dir):
+        #     self.ui2.setupUi(self.traces_gui, self.project_file, False)
+        #     self.traces_gui.show()
 
 
 if __name__ == "__main__":
