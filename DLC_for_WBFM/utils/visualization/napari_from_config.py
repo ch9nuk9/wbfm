@@ -1,9 +1,9 @@
 import os
-from typing import Union
 
+import napari
 import numpy as np
 import zarr
-import napari
+
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 
