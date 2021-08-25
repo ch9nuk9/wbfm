@@ -7,9 +7,7 @@ from ipywidgets import interact
 
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_from_avi
-from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_from_ometiff_virtual
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual
-from DLC_for_WBFM.utils.visualization.plot_traces import get_tracking_channel, get_measurement_channel
 from DLC_for_WBFM.utils.visualization.utils_plot_traces import set_big_font
 
 
@@ -56,65 +54,6 @@ def interact_box_around_track(video_fname_mcherry,
 ##
 ## Function for syncing videos and traces
 ##
-
-
-# def _plot_video_crop_trace(config_file,
-#                            which_neuron,
-#                            num_frames,
-#                            video_data=None,
-#                            green_data=None,
-#                            red_data=None,
-#                            trace_data=None,
-#                            which_field='ratio'):
-#     """
-#     Convenience function for plotting using a config file directly
-#
-#     See also: plot_video_crop_trace
-#     """
-#
-#     config = load_config(config_file)
-#
-#     # Read traces
-#     if trace_data is None:
-#         trace_data = pickle.load(open(config.traces.traces_fname, 'rb'))
-#         try:
-#             trace_data = np.array(trace_data[which_neuron][which_field])
-#         except:
-#             if which_field == 'ratio':
-#                 r = get_tracking_channel(trace_data[which_neuron])
-#                 g = get_measurement_channel(trace_data[which_neuron])
-#                 trace_data = g / r
-#
-#     if video_data is None:
-#         video_reader = imageio.get_reader(config.tracking.labeled_video_fname)
-#         video_data = []
-#         for im in video_reader:
-#             video_data.append(im)
-#
-#     if green_data is None:
-#         green_data = _get_crop_from_ometiff_virtual(config,
-#                                                     which_neuron,
-#                                                     num_frames,
-#                                                     use_red_channel=False)
-#     if red_data is None:
-#         red_data = _get_crop_from_ometiff_virtual(config,
-#                                                   which_neuron,
-#                                                   num_frames)
-#
-#     # Widget for interaction
-#     crop_sz = config.traces.crop_sz
-#
-#     f = lambda t, z: \
-#         plot_video_crop_trace_frame(t, z,
-#                                     video_data,
-#                                     red_data,
-#                                     green_data,
-#                                     trace_data)
-#     args = {'t': (0, num_frames - 1), 'z': (0, crop_sz[-1] - 1)}
-#
-#     return interact(f, **args)
-
-
 def plot_video_crop_trace(video_fname,
                           gcamp_fname,
                           mcherry_fname,

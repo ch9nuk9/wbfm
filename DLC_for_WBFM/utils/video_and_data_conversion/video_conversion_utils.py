@@ -175,47 +175,6 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
 
 
 ## For use with config files
-# def write_minimax_projection_from_btf(config_file):
-#     """
-#     Note: writes videos to the same folder as the config file
-#
-#     See also: write_video_projection_from_ome_file_subset
-#     """
-#
-#     c = load_config(config_file)
-#     # Make sure the target filenames exist
-#     c = build_avi_fnames(c)
-#
-#     # Get preprocessing settings
-#     frame_height, frame_width = c.datafiles.get_frame_size()
-#
-#     params = dict(which_slices=c.preprocessing.which_slices(),
-#                   start_volume=c.preprocessing.start_volume,
-#                   num_frames=c.preprocessing.num_frames,
-#                   frame_width=frame_width,
-#                   frame_height=frame_height,
-#                   num_slices=c.preprocessing.num_total_slices,
-#                   alpha=c.preprocessing.alpha)
-#
-#     # Do red (tracking) channel
-#     video_fname = c.datafiles.red_bigtiff_fname
-#     out_fname = c.datafiles.red_avi_fname
-#
-#     write_video_projection_from_ome_file_subset(video_fname,
-#                                                 out_fname,
-#                                                 **params)
-#
-#     # Do green (measurement) channel
-#     video_fname = c.datafiles.green_bigtiff_fname
-#     out_fname = c.datafiles.green_avi_fname
-#
-#     write_video_projection_from_ome_file_subset(video_fname,
-#                                                 out_fname,
-#                                                 **params)
-#
-#     return c
-
-
 def write_video_projection_from_ome_file_subset(video_fname,
                                                 out_fname,
                                                 out_dtype='uint16',
@@ -331,7 +290,6 @@ def write_numpy_as_avi(data,
         print("Writing to {}".format(out_fname))
 
     # Set up the video writer
-    # writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=isColor)
     options = {'fourcc': 0,
                'fps': fps,
                'isColor': is_color,
