@@ -1,13 +1,9 @@
-import copy
+import logging
 import logging
 import random
-import time
 from collections import defaultdict
 from typing import Tuple, Dict
 
-import cv2
-import matplotlib.pyplot as plt
-import networkx as nx
 import numpy as np
 import zarr as zarr
 from tqdm import tqdm
@@ -16,7 +12,7 @@ from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair, cal
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame, \
     build_reference_frame_encoding
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, \
-    calc_all_bipartite_matches, community_to_matches, calc_neuron_using_voronoi
+    calc_all_bipartite_matches, calc_neuron_using_voronoi
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, \
     match_centroids_using_tree

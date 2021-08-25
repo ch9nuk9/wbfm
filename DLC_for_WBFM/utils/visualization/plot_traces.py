@@ -317,7 +317,7 @@ def plot3d_with_max_and_hist(dat, z, t, max_ind):
 def get_tracking_channel(t_dict):
     try:
         dat = t_dict['mcherry']
-    except:
+    except KeyError:
         dat = t_dict['red']
     return dat
 
@@ -325,7 +325,7 @@ def get_tracking_channel(t_dict):
 def get_measurement_channel(t_dict):
     try:
         dat = t_dict['gcamp']
-    except:
+    except KeyError:
         dat = t_dict['green']
     return dat
 

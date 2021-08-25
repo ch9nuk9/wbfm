@@ -2,19 +2,17 @@ import concurrent
 import pickle
 from collections import defaultdict
 from pathlib import Path
-from typing import Tuple, Callable, Dict, List
+from typing import Callable, Dict, List
 
 import numpy as np
 import pandas as pd
 import zarr
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, \
-    calc_icp_matches
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
-from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation, reindex_segmentation_using_config
-from DLC_for_WBFM.utils.visualization.visualization_tracks import visualize_tracks
+from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
 
 
 def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project_context,
@@ -61,7 +59,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     # Saves the masks to disk
     trace_and_seg_cfg = {'traces_cfg': traces_cfg, 'segment_cfg': segment_cfg, 'project_dir': project_cfg.project_dir}
     # reindex_segmentation_using_config(trace_and_seg_cfg)
-    reindex_segmentation_using_config(traces_cfg, segment_cfg, project_dir)
+    reindex_segmentation_using_config(traces_cfg, segment_cfg, project_cfg.project_dir)
 
     print("Extracting red and green traces using matches...")
     fname = traces_cfg.resolve_relative_path('reindexed_masks')

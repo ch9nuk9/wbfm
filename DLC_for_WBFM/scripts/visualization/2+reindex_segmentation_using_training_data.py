@@ -8,7 +8,6 @@ from pathlib import Path
 import sacred
 from sacred import Experiment
 
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import make_all_dlc_labeled_videos
 # main function
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 # Initialize sacred experiment

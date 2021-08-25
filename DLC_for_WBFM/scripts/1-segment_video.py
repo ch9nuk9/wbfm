@@ -5,7 +5,6 @@ To be used with Niklas' Stardist-based segmentation package
 """
 
 import os
-from pathlib import Path
 
 # Experiment tracking
 import sacred

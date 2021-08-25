@@ -15,7 +15,7 @@ print(frame_range)
 def sequential_read():
     with tifffile.TiffFile(fname) as video_stream:
         for i in frame_range:
-            dat = get_single_volume(video_stream, i, **import_opt)
+            _ = get_single_volume(video_stream, i, **import_opt)
             # print(f"Got volume {i}")
 
 
@@ -35,7 +35,7 @@ def filehandle_parallel():
     with tifffile.TiffFile(fname) as video_stream:
         def parallel_func(i):
             with lock:
-                dat = get_single_volume(video_stream, i, **import_opt)
+                _ = get_single_volume(video_stream, i, **import_opt)
                 # print(f"Got volume {i}")
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:

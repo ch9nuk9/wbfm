@@ -2,8 +2,6 @@
 The top level function for getting final traces from 3d tracks and neuron masks
 """
 
-from pathlib import Path
-
 # Experiment tracking
 import sacred
 from sacred import Experiment

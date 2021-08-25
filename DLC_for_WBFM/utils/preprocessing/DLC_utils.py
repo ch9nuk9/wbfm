@@ -1,7 +1,6 @@
 import os
 import re
 from pathlib import Path
-
 import deeplabcut
 import numpy as np
 import pandas as pd
@@ -9,10 +8,8 @@ from deeplabcut.utils import auxiliaryfunctions
 from skimage import io
 from skimage.util import img_as_ubyte
 
-from DLC_for_WBFM.utils.projects.utils_project import load_config
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
     build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC
-# from DLC_for_WBFM.config.class_configuration import load_config, DLCForWBFMTracking, save_config
 from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
 
 
@@ -20,29 +17,29 @@ from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annota
 ## Functions for building DLC projects using config class
 ##
 
-def create_dlc_project_from_config(config, label='', copy_videos=True):
-    """
-    Creates a DLC subproject within a parent folder defined by config
-
-    Note: copy_videos is required on Windows
-    """
-
-    c = load_config(config)
-
-    # Force shorter name
-    dlc_opt = {'project': c.task_name[0] + label,
-               'experimenter': c.experimenter[:4],
-               'videos': [c.datafiles.red_avi_fname],
-               'copy_videos': copy_videos,
-               'working_directory': c.get_dirname()}
-
-    dlc_config_fname = deeplabcut.create_new_project(**dlc_opt)
-
-    tracking = DLCForWBFMTracking(dlc_config_fname)
-    c.tracking = tracking
-    save_config(c)
-
-    return dlc_config_fname
+# def create_dlc_project_from_config(config, label='', copy_videos=True):
+#     """
+#     Creates a DLC subproject within a parent folder defined by config
+#
+#     Note: copy_videos is required on Windows
+#     """
+#
+#     c = load_config(config)
+#
+#     # Force shorter name
+#     dlc_opt = {'project': c.task_name[0] + label,
+#                'experimenter': c.experimenter[:4],
+#                'videos': [c.datafiles.red_avi_fname],
+#                'copy_videos': copy_videos,
+#                'working_directory': c.get_dirname()}
+#
+#     dlc_config_fname = deeplabcut.create_new_project(**dlc_opt)
+#
+#     tracking = DLCForWBFMTracking(dlc_config_fname)
+#     c.tracking = tracking
+#     save_config(c)
+#
+#     return dlc_config_fname
 
 
 def create_dlc_project(task_name,

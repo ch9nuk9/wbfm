@@ -2,8 +2,6 @@
 The top level function for initializing a stack of DLC projects
 """
 
-from pathlib import Path
-
 # Experiment tracking
 import sacred
 from sacred import Experiment
@@ -14,7 +12,6 @@ from sacred.observers import TinyDbObserver
 import DLC_for_WBFM.utils.projects.monkeypatch_json
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import train_all_dlc_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

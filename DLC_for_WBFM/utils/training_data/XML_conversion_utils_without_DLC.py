@@ -1,11 +1,6 @@
 import os
-import pathlib
-
-import numpy as np
 import pandas as pd
 from lxml import etree as ET
-
-from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels
 
 
 ##

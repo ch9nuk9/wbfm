@@ -2,8 +2,10 @@ import collections
 
 import networkx as nx
 import numpy as np
+from matplotlib import pyplot as plt
 
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame, _detect_or_import_neurons
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame, _detect_or_import_neurons, \
+    RegisteredReferenceFrames
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, \
     build_neuron_tree, build_f2n_map, add_neuron_match
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name, is_one_neuron_per_frame

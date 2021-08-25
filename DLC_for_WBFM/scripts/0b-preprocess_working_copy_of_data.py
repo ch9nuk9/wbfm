@@ -2,7 +2,6 @@
 """
 
 # main function
-import os
 from pathlib import Path
 
 # Experiment tracking
@@ -14,11 +13,11 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os, modular_project_config
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
 ex = Experiment()
 ex.add_config(project_path=None,
@@ -87,6 +86,5 @@ def main(_config, _run):
 
         # Save the warp matrices to disk if needed further
         preprocessing_settings.save_all_warp_matrices()
-        # preprocessing_settings.write_to_yaml(preprocessing_fname)
 
         print("Finished.")

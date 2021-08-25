@@ -1,5 +1,3 @@
-import os.path as osp
-
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS

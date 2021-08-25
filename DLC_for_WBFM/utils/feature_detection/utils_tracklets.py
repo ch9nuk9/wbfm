@@ -3,7 +3,6 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 
@@ -264,7 +263,7 @@ def build_tracklets_from_classes(all_frames,
         all_neurons = [all_frames[0].neuron_locs]
         final_frame_ind = len(all_frames)
         start_frame_ind = 0
-    except:
+    except KeyError:
         k = list(all_frames)
         all_neurons = [all_frames[k[0]].neuron_locs]
         start_frame_ind = min(k)

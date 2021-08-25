@@ -1,10 +1,7 @@
 import os
 from math import ceil
-
 import cv2
 import numpy as np
-
-from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 
 
 def get_crop_coords(center, sz=(28, 28)):
@@ -41,7 +38,7 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28, 28), start_frame=0):
         try:
             cropped = gray[:, x_ind][y_ind]
             cropped_dat[i - start_frame, 0, :, :] = cropped
-        except:
+        except IndexError:
             continue
 
     cap.release()

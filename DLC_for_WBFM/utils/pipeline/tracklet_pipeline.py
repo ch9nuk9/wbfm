@@ -2,20 +2,13 @@ import os
 import os.path as osp
 import pickle
 from pathlib import Path
-
-import numpy as np
 import pandas as pd
 
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video
-from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import fix_candidates_without_confidences, \
-    calc_all_bipartite_matches
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_classes, build_tracklets_dfs
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename, safe_cd
-# def partial_track_video_using_config(video_fname: str, config: dict, DEBUG: bool = False) -> None:
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_all_tracklets_as_dlc_format, \
-    convert_training_dataframe_to_dlc_format
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_dlc_format
 
 
 ###

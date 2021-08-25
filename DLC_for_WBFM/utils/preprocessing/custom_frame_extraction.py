@@ -5,7 +5,6 @@
 import os
 import platform
 from pathlib import Path
-
 import tifffile
 from deeplabcut.utils import auxiliaryfunctions
 
@@ -15,7 +14,7 @@ def extract_volumes_from_many_files(path_config_file, which_vol=None):
     Assumes a folder of many different volumes, and copies some in the folder given by 'out_folder'
     """
 
-    if platform.system() is 'Windows':
+    if platform.system() == 'Windows':
         is_windows = True
     else:
         is_windows = False
@@ -57,7 +56,7 @@ def extract_volumes_from_MATLAB_output(path_config_file, which_vol=None):
     Takes a video filename, which is a large ome-tiff file, and saves a volume in the folder given by 'out_folder'
     """
 
-    if platform.system() is 'Windows':
+    if platform.system() == 'Windows':
         is_windows = True
     else:
         is_windows = False

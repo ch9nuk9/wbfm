@@ -213,7 +213,7 @@ def build_subset_df_from_tracklets(clust_df,
         for i in this_ind_dict:
             try:
                 new_ind.append(old_ind[i])
-            except:
+            except KeyError:
                 continue
         return new_ind
 
@@ -384,7 +384,7 @@ def build_dlc_annotation_one_tracklet(row,
                 # is non-spatial, i.e. likelihood
                 try:
                     coords[this_slice, -1] = this_prob
-                except:
+                except IndexError:
                     coords[this_slice, -1] = 0.0
                     pass
     if which_frame_subset is not None:

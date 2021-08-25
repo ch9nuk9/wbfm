@@ -11,14 +11,13 @@ from scipy.spatial.distance import pdist
 from tqdm import tqdm
 
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
-    update_pose_config, training_data_from_tracklet_annotations, \
-    create_dlc_project, get_annotations_matching_video_in_folder, training_data_from_3dDLC_annotations
+    update_pose_config, create_dlc_project, get_annotations_matching_video_in_folder, \
+    training_data_from_3dDLC_annotations
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _get_video_options
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
-from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering_from_my_matches, \
-    get_or_recalculate_which_frames, calculate_best_covering_from_tracklets
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import calculate_best_covering_from_tracklets
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 
 

@@ -1,9 +1,8 @@
 import argparse
-from pathlib import Path
 
 from DLC_for_WBFM.gui.utils.manual_annotation import create_manual_correction_gui
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')

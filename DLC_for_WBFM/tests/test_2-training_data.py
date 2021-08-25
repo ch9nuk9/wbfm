@@ -1,9 +1,6 @@
 import importlib
-
 import numpy as np
 import pandas as pd
-import pytest
-
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 
 project_path = r"C:/dlc_stacks/Test_project/project_config.yaml"

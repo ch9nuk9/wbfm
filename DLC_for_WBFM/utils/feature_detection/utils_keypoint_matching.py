@@ -1,8 +1,5 @@
-import pickle
-
 import numpy as np
 import open3d as o3d
-import pandas as pd
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
@@ -208,7 +205,7 @@ def match_tracklets_using_features(all_tracklet_features,
             dist = np.nanmin(r)
             if dist < max_distance:
                 edges[(i_row, np.nanargmin(r))] = dist
-        except:
+        except KeyError:
             pass
 
     # Postprocess matches
@@ -216,7 +213,7 @@ def match_tracklets_using_features(all_tracklet_features,
         to_remove = []
         for k, v in edges.items():
             opposite = (k[1], k[0])
-            if not opposite in edges:
+            if not (opposite in edges):
                 to_remove.append(k)
         for k in to_remove:
             del edges[k]
@@ -324,7 +321,8 @@ def get_index_overlap_list(all_i, verbose=1):
 
 def visualize_tracklet_in_body(i_tracklet, i_frame,
                                tracklet_df, kp_df, all_frames,
-                               to_plot=False):
+                               to_plot=False,
+                               to_error=True):
     if type(i_tracklet) != list:
         i_tracklet = [i_tracklet]
 
@@ -339,7 +337,7 @@ def visualize_tracklet_in_body(i_tracklet, i_frame,
         try:
             local_ind = tracklet_df['slice_ind'].iloc[i_t].index(i_frame)
             tracklet_xyz.append(tracklet_df['all_xyz'].iloc[i_t][local_ind])
-        except:
+        except IndexError:
             print(f"{i_frame} not in tracklet {i_t}")
             if to_error:
                 raise ValueError

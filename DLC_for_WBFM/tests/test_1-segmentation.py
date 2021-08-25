@@ -1,8 +1,5 @@
 import importlib
 
-import pytest
-
-
 def test_segmentation():
     # Run the sacred experiment from the actual script
     mod = importlib.import_module("DLC_for_WBFM.scripts.1-segment_video", package="DLC_for_WBFM")

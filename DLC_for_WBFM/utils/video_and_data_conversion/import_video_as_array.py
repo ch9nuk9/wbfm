@@ -1,8 +1,5 @@
-import os
 import typing
 from pathlib import Path
-
-import cv2
 import numpy as np
 import tifffile
 
@@ -26,7 +23,8 @@ def get_video_from_ome_file_subset(video_fname,
         for i, page in enumerate(tif.pages):
             if i % 100 == 0:
                 print(f'Page {i}/{i_max}')
-            if i > i_max: break
+            if i > i_max:
+                break
 
             # These pages are a single z slice
             img = page.asarray()

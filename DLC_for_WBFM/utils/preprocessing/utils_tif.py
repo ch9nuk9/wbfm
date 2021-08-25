@@ -2,11 +2,9 @@ import concurrent
 import dataclasses
 import pickle
 import threading
-import typing
 from dataclasses import dataclass
 from dataclasses import field
 from typing import List, Tuple
-
 import numpy as np
 import scipy.ndimage as ndi
 import tifffile

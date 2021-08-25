@@ -1,5 +1,4 @@
 # Use classical methods for building and matching features
-import os
 
 import cv2
 import numpy as np
@@ -296,7 +295,7 @@ def keep_best_match(all_matches, all_confidences, verbose=0):
         # Get highest confidence value, and keep it
         best_match = np.argmax(np.array(all_confidences)[these_duplicates])
         if verbose >= 2:
-            print(f"Keeping best match {best_match} among confidences {np.array(all_conf)[these_duplicates]}")
+            print(f"Keeping best match {best_match}")
         these_duplicates = np.delete(these_duplicates, best_match)
 
         to_remove.extend(these_duplicates)
@@ -422,23 +421,21 @@ def calc_2frame_matches(neurons0,
             this_neuron = np.asarray(pc_n0.points)[i]
         [_, this_f0, _] = tree_features0.search_hybrid_vector_3d(this_neuron, **nn_opt)
 
-        if verbose >= 3:
-            pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
-
-            one_point = o3d.geometry.PointCloud()
-            one_point.points = o3d.utility.Vector3dVector([this_neuron])
-            one_point.paint_uniform_color([1, 0, 0])
-
-            np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
-
-            #             print("Visualize the point cloud.")
-            o3d.visualization.draw_geometries([one_point, pc_f0])
+        # if verbose >= 3:
+        #     pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
+        #
+        #     one_point = o3d.geometry.PointCloud()
+        #     one_point.points = o3d.utility.Vector3dVector([this_neuron])
+        #     one_point.paint_uniform_color([1, 0, 0])
+        #
+        #     np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
+        #
+        #     #             print("Visualize the point cloud.")
+        #     o3d.visualization.draw_geometries([one_point, pc_f0])
 
         # Get the corresponding neurons in vol1, and vote
-        # this_n1 = features_to_neurons1[this_f0]
         f2n = features_to_neurons1
         this_n1 = [f2n[f1] for f1 in this_f0 if f1 in f2n]
-        # this_n1 = [features_to_neurons1[f] for f in this_f0]
 
         all_matches, all_confidences, _ = add_neuron_match(
             all_matches,

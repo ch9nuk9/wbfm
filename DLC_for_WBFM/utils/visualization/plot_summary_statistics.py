@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import tifffile
 
@@ -20,9 +18,11 @@ def apply_function_to_pages(video_fname,
             num_pages = len(tif.pages)
         for i, page in enumerate(tif.pages):
 
-            if i >= num_pages: break
+            if i >= num_pages:
+                break
 
-            if i % 100 == 0: print(f'Page {i}/{num_pages}')
+            if i % 100 == 0:
+                print(f'Page {i}/{num_pages}')
             dat.append(func(page.asarray()))
 
     return np.array(dat)

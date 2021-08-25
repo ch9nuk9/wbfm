@@ -19,13 +19,13 @@ def xy_from_dlc_dat(fname, which_neuron=0, num_frames=100):
             this_prob = []
             this_xy.extend([this_frame[1][xy_ind] for this_frame in dlc_table[which_frames]])
             this_prob.extend([this_frame[1][prob_ind] for this_frame in dlc_table[which_frames]])
-    except:
+    except KeyError:
+        # TODO: check if I need the above
         dlc_table = pd.read_hdf(fname)
         scorer = 'feature_tracker'  # WARNING: SHOULDN'T BE HARD CODED
         neuron_names = dlc_table[scorer].columns.levels[0]
         name = neuron_names[which_neuron]
 
-        # which_frames = range(num_frames)
         this_xy = np.array(dlc_table[scorer][name].iloc[:, :2])
         this_prob = np.array(dlc_table[scorer][name].iloc[:, -1])
 
@@ -41,7 +41,7 @@ def get_number_of_annotations(annotation_fname):
             num_neurons = len(dlc_table[0][1]) // 3
             which_neurons = range(num_neurons)
             num_frames = len(dlc_table)
-    except:
+    except KeyError:
         dlc_table = pd.read_hdf(annotation_fname)
         num_neurons = len(dlc_table.columns) // 3
         which_neurons = range(num_neurons)

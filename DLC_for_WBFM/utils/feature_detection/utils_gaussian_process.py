@@ -1,11 +1,10 @@
 import numpy as np
-import open3d as o3d
 from sklearn import preprocessing
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, WhiteKernel, DotProduct
+from sklearn.gaussian_process.kernels import RBF, DotProduct
 
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, calc_icp_matches
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
 
 
 def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
@@ -45,8 +44,9 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
 
     # Fit 3 GPs for x, y, and z
     # Do each coordinate independently
-    kernel = DotProduct(sigma_0=1.0, sigma_0_bounds=(1e-3, 100)) + \
-             RBF(length_scale=0.5, length_scale_bounds=(1e-08, 10.0))
+    k0 = DotProduct(sigma_0=1.0, sigma_0_bounds=(1e-3, 100))
+    k1 = RBF(length_scale=0.5, length_scale_bounds=(1e-08, 10.0))
+    kernel = k0 + k1
 
     options = {'n_restarts_optimizer': 10, 'alpha': noise}
     gpx = GaussianProcessRegressor(kernel=kernel, **options)
@@ -70,7 +70,6 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
 
     # New: get matches using bipartite matching on distances
     xyz0, xyz1 = pc_pushed.points, pc_target.points
-    # out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=max_dist)
     out = calc_icp_matches(xyz0, xyz1, max_dist=max_dist)
     matches, conf, _ = out
 

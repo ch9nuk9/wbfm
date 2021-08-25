@@ -9,7 +9,7 @@ from PyQt5 import QtWidgets
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_which_frames
 
 

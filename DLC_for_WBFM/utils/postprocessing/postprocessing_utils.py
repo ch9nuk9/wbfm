@@ -1,21 +1,14 @@
-import os
-import time
 import warnings
 from itertools import product
 
-import cv2
 # from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 import tifffile
-from ipywidgets import interact
-from matplotlib import transforms
-from matplotlib.ticker import NullFormatter
 from scipy import ndimage as ndi
 
-from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
-from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d, get_crop_coords
 
 
 ##
@@ -23,7 +16,6 @@ from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
 ##
 
 def subtract_background_4d(video, sz=None):
-    #     backSub = cv.createBackgroundSubtractorKNN()
     if sz is None:
         sz = (np.array(video[0, 0, ...].shape) / 4).astype('int')
         sz = tuple(sz)
@@ -31,7 +23,6 @@ def subtract_background_4d(video, sz=None):
     print("Subtracting background...")
     for t, z in product(range(video.shape[0]), range(video.shape[1])):
         frame = video[t, z, :, :]
-        #         video[t,z,:,:] = frame - cv2.blur(frame, sz)
         video[t, z, :, :] = frame - np.mean(frame)
     print("Done")
 
@@ -256,7 +247,7 @@ def get_crop_from_ometiff_virtual(fname, this_xy, this_prob,
 ## Finding local maxima
 ##
 
-def local_maxima_3D(data, order=1):
+def local_maxima_3d(data, order=1):
     """From: https://stackoverflow.com/questions/55453110/how-to-find-local-maxima-of-3d-array-in-python
 
     Detects local maxima in a 3D array
@@ -286,7 +277,7 @@ def local_maxima_3D(data, order=1):
     return coords, values
 
 
-def local_maxima_2D(data):
+def local_maxima_2d(data):
     """
     Data should be 3d, XYT
     """
