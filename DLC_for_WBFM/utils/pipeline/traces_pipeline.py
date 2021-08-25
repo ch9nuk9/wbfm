@@ -6,8 +6,9 @@ from typing import Tuple, Callable, Dict, List
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import zarr
+from tqdm import tqdm
+
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, \
     calc_icp_matches
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
@@ -308,8 +309,8 @@ def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) ->
     empty_dat = np.empty(sz)
     empty_dat[:] = np.nan
     df_red = pd.DataFrame(empty_dat,
-                           columns=m_index,
-                           index=frame_list)
+                          columns=m_index,
+                          index=frame_list)
     for name in all_neuron_names:
         # Allow saving numpy arrays in the column
         df_red[(name, 'all_values')] = df_red[(name, 'all_values')].astype('object')
@@ -339,7 +340,6 @@ def extract_traces_using_reindexed_masks(d_name: str, zxy_dlc: np.ndarray,
                                          i_mask: int, i_volume: int,
                                          video_volume: np.ndarray,
                                          this_mask_neuron: np.ndarray, confidence: float = 0.0) -> pd.DataFrame:
-
     i = i_volume
     # Get brightness from green volume and mask
     # Use reindexed mask instead of original index mask
@@ -351,7 +351,6 @@ def extract_traces_using_reindexed_masks(d_name: str, zxy_dlc: np.ndarray,
         brightness = np.nan
         volume = np.nan
         all_values = []
-
 
     # Save in dataframe
     df_as_dict = {
@@ -382,9 +381,9 @@ def extract_traces_using_reindexed_masks(d_name: str, zxy_dlc: np.ndarray,
 
 
 def OLD_extract_traces_using_reindexed_masks(d_name: List[str], all_zxy_dlc: np.ndarray,
-                                         df: pd.DataFrame, i_mask: int, i_volume: int,
-                                         is_mirrored: bool, video_volume: np.ndarray,
-                                         this_mask_volume: np.ndarray, confidence: float = 0.0):
+                                             df: pd.DataFrame, i_mask: int, i_volume: int,
+                                             is_mirrored: bool, video_volume: np.ndarray,
+                                             this_mask_volume: np.ndarray, confidence: float = 0.0):
     # For conversion between lists
     # i_dlc, i_seg = int(i_dlc), int(i_seg)
     # s_name = int(all_seg_names[i_seg])
@@ -405,7 +404,7 @@ def OLD_extract_traces_using_reindexed_masks(d_name: List[str], all_zxy_dlc: np.
     df[(d_name, 'all_values')].loc[i] = all_values
     df[(d_name, 'i_reindexed_segmentation')].loc[i] = i_mask
     # zxy_seg = mdat['centroids'][s_name]
-    zxy_dlc = all_zxy_dlc[i_mask-1]
+    zxy_dlc = all_zxy_dlc[i_mask - 1]
     _save_locations_in_df(d_name, df, i, zxy_dlc, confidence)
 
 

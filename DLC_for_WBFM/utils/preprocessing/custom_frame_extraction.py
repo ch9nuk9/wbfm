@@ -1,14 +1,14 @@
-
-
 #
 # Basically this is a custom extract_frames() function
 #
 
-from pathlib import Path
-from deeplabcut.utils import auxiliaryfunctions
-import tifffile
-import platform
 import os
+import platform
+from pathlib import Path
+
+import tifffile
+from deeplabcut.utils import auxiliaryfunctions
+
 
 def extract_volumes_from_many_files(path_config_file, which_vol=None):
     """
@@ -45,11 +45,12 @@ def extract_volumes_from_many_files(path_config_file, which_vol=None):
 
         # Save in output folder
         fname = Path(video_fnames[0])
-        output_path = os.path.join(Path(path_config_file).parents[0],'labeled-data',fname.stem)
+        output_path = os.path.join(Path(path_config_file).parents[0], 'labeled-data', fname.stem)
 
-        tifffile.imsave(os.path.join(str(output_path),output_name), this_volume)
+        tifffile.imsave(os.path.join(str(output_path), output_name), this_volume)
 
         print('Saved volume to {}\\{}'.format(output_path, output_name))
+
 
 def extract_volumes_from_MATLAB_output(path_config_file, which_vol=None):
     """
@@ -65,12 +66,12 @@ def extract_volumes_from_MATLAB_output(path_config_file, which_vol=None):
     cfg = auxiliaryfunctions.read_config(config_file)
     print("Config file read successfully.")
 
-    video_fname = [i for i in cfg['video_sets'].keys()][0] # Assume one video for now (will be giant, ~3GB)
+    video_fname = [i for i in cfg['video_sets'].keys()][0]  # Assume one video for now (will be giant, ~3GB)
     print(video_fname)
 
     # Read basic metadata to get 'nz' and 'nt'
     with tifffile.TiffFile(video_fname) as vid:
-        #print(tifffile.xml2dict(vid.ome_metadata))
+        # print(tifffile.xml2dict(vid.ome_metadata))
         print(vid.ome_metadata)
         ome_metadata = vid.ome_metadata
         if isinstance(ome_metadata, str):
@@ -89,7 +90,7 @@ def extract_volumes_from_MATLAB_output(path_config_file, which_vol=None):
 
         # Convert scalar volume label to the sequential frames
         # Note: this may change for future input videos!
-        vol_indices = list(range(i_vol*nz, i_vol*nz + nz))
+        vol_indices = list(range(i_vol * nz, i_vol * nz + nz))
 
         # Read and make output name
         this_volume = tifffile.imread(video_fname, key=vol_indices)
@@ -97,9 +98,9 @@ def extract_volumes_from_MATLAB_output(path_config_file, which_vol=None):
 
         # Save in output folder
         fname = Path(video_fname)
-        output_path = os.path.join(Path(path_config_file).parents[0],'labeled-data',fname.stem)
+        output_path = os.path.join(Path(path_config_file).parents[0], 'labeled-data', fname.stem)
 
-        tifffile.imsave(os.path.join(str(output_path),output_name), this_volume)
+        tifffile.imsave(os.path.join(str(output_path), output_name), this_volume)
 
         print('Saved volume to {}\\{}'.format(output_path, output_name))
 
@@ -130,9 +131,9 @@ def extract_volume_from_tiff_in_dlc_project(path_config_file, nz,
     cfg = auxiliaryfunctions.read_config(config_file)
     print("Config file read successfully.")
 
-    dlc_video_fname = [i for i in cfg['video_sets'].keys()][0] # Assume one video for now (will be giant, ~3GB)
+    dlc_video_fname = [i for i in cfg['video_sets'].keys()][0]  # Assume one video for now (will be giant, ~3GB)
     if video_fname is None:
-        video_fname = dlc_video_fname # Otherwise use custom video location
+        video_fname = dlc_video_fname  # Otherwise use custom video location
     # print(video_fname)
 
     # Get volume indices to save
@@ -140,15 +141,16 @@ def extract_volume_from_tiff_in_dlc_project(path_config_file, nz,
         which_vol = [0]
 
     for i_vol in which_vol:
-        print("Reading {} {}/{}".format(saving_str, i_vol, len(which_vol)-1))
+        print("Reading {} {}/{}".format(saving_str, i_vol, len(which_vol) - 1))
 
         # Convert scalar volume label to the sequential frames
         # Note: this may change for future input videos!
         if which_slice is None:
-            vol_indices = list(range(i_vol*nz, i_vol*nz + nz))
+            vol_indices = list(range(i_vol * nz, i_vol * nz + nz))
         else:
-            vol_indices = list(range(i_vol*nz + which_slice, i_vol*nz + 1 + which_slice))
-        print("Converted {} indices: {} to {} (not including last frame)".format(saving_str, vol_indices[0], vol_indices[-1]))
+            vol_indices = list(range(i_vol * nz + which_slice, i_vol * nz + 1 + which_slice))
+        print("Converted {} indices: {} to {} (not including last frame)".format(saving_str, vol_indices[0],
+                                                                                 vol_indices[-1]))
 
         # Read and make output name
         if actually_write:
@@ -157,9 +159,9 @@ def extract_volume_from_tiff_in_dlc_project(path_config_file, nz,
 
         # Save in output folder
         fname = Path(dlc_video_fname)
-        output_path = os.path.join(Path(path_config_file).parents[0],'labeled-data',fname.stem)
+        output_path = os.path.join(Path(path_config_file).parents[0], 'labeled-data', fname.stem)
 
         if actually_write:
-            tifffile.imsave(os.path.join(str(output_path),output_name), this_volume)
+            tifffile.imsave(os.path.join(str(output_path), output_name), this_volume)
 
         print('Saved {} to {}'.format(saving_str, os.path.join(output_path, output_name)))

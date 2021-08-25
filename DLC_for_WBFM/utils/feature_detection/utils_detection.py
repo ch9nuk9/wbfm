@@ -1,15 +1,17 @@
+import pickle
+
 import cv2
 import numpy as np
 import open3d as o3d
+
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
-import pickle
 
 
 def detect_blobs(im1_raw):
     """
     Detects neuron-like blobs in a 2d image
     """
-    im1 = cv2.GaussianBlur(im1_raw,(5,5),0)
+    im1 = cv2.GaussianBlur(im1_raw, (5, 5), 0)
     # im1 = cv2.bilateralFilter(im1_raw, 5, 0, 3)
 
     im1 = cv2.bitwise_not(im1)
@@ -42,7 +44,7 @@ def detect_blobs(im1_raw):
     params.minInertiaRatio = 0.01
 
     # Create a detector with the parameters
-    #detector = cv2.SimpleBlobDetector(params)
+    # detector = cv2.SimpleBlobDetector(params)
     detector = cv2.SimpleBlobDetector_create(params)
 
     # Detect blobs.
@@ -62,7 +64,7 @@ def build_point_clouds_for_volume(dat,
 
     all_keypoints_pcs = []
 
-    f = lambda dat, which_slice : (alpha*dat[which_slice]).astype('uint8')
+    f = lambda dat, which_slice: (alpha * dat[which_slice]).astype('uint8')
 
     for i in range(num_slices):
         if i < start_slice:
@@ -90,11 +92,11 @@ def build_correspondence_icp(all_keypoints_pcs,
         options = {'max_correspondence_distance': 4.0}
     all_icp = []
 
-    for i in range(len(all_keypoints_pcs)-1):
+    for i in range(len(all_keypoints_pcs) - 1):
         if verbose >= 1:
             print(f"{i} / {len(all_keypoints_pcs)}")
         this_pc = all_keypoints_pcs[i]
-        next_pc = all_keypoints_pcs[i+1]
+        next_pc = all_keypoints_pcs[i + 1]
 
         reg = o3d.pipelines.registration.registration_icp(this_pc, next_pc, **options)
 
@@ -105,14 +107,14 @@ def build_correspondence_icp(all_keypoints_pcs,
 
 def get_centroids_from_df(clust_df, min_detections=3, verbose=0):
     # Remove clusters that aren't long enough
-    f = lambda x : (len(x) > min_detections)
+    f = lambda x: (len(x) > min_detections)
     valid_detections = clust_df['all_ind_local'].apply(f)
     if verbose >= 1:
         num_not_valid = len(np.where(~valid_detections))
         print(f"Removing {num_not_valid} detections of length < {min_detections}")
 
-    f = lambda x : np.mean(x, axis=0)
-    centroids = clust_df.loc[valid_detections,'all_xyz'].apply(f)
+    f = lambda x: np.mean(x, axis=0)
+    centroids = clust_df.loc[valid_detections, 'all_xyz'].apply(f)
 
     return centroids
 
@@ -134,23 +136,23 @@ def detect_neurons_using_ICP(dat,
     # Build point clouds for each plane
     # ENHANCE: Remove alpha from this function
     all_keypoints_pcs = build_point_clouds_for_volume(dat,
-                                                  num_slices,
-                                                  alpha,
-                                                  start_slice=start_slice,
-                                                  verbose=verbose)
+                                                      num_slices,
+                                                      alpha,
+                                                      start_slice=start_slice,
+                                                      verbose=verbose)
     if verbose >= 1:
         print("Building pairwise correspondence...")
     all_icp = build_correspondence_icp(all_keypoints_pcs,
-                                       verbose=verbose-1)
+                                       verbose=verbose - 1)
     if verbose >= 1:
         print("Building clusters...")
     all_neurons = [np.asarray(k.points) for k in all_keypoints_pcs]
     all_matches = [np.asarray(ic.correspondence_set) for ic in all_icp]
     clust_df = build_tracklets_from_matches(all_neurons,
                                             all_matches,
-                                            verbose=verbose-1)
+                                            verbose=verbose - 1)
 
-    centroids = get_centroids_from_df(clust_df, min_detections, verbose=verbose-1)
+    centroids = get_centroids_from_df(clust_df, min_detections, verbose=verbose - 1)
     if verbose >= 1:
         print("Finished ID'ing neurons")
 

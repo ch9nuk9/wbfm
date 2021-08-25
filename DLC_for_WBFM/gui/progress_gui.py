@@ -15,12 +15,12 @@ import napari
 import zarr
 from PyQt5 import QtCore, QtWidgets
 
+from DLC_for_WBFM.gui import OLD_trace_explorer_gui
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_project_of_substep
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
-from DLC_for_WBFM.gui import OLD_trace_explorer_gui
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_training_data, napari_of_full_data
 
 
@@ -188,7 +188,6 @@ class Ui_MainWindow(object):
 
         self.project_file = os.path.join(self.ex.project_foldername, "project_config.yaml")
 
-
     @property
     def project_file(self):
         return self._project_file
@@ -239,7 +238,6 @@ class Ui_MainWindow(object):
         else:
             self.tracesProgress.setValue(0)
 
-
     def _load_config_files(self, project_path):
         cfg = load_config(project_path)
         self.cfg = cfg
@@ -263,7 +261,6 @@ class Ui_MainWindow(object):
             self.preprocessed_green = zarr.open(fname)
         else:
             self.preprocessed_green = None
-
 
     def napari_for_masks(self):
         """Open napari window for segmentation before tracking"""
@@ -293,7 +290,6 @@ class Ui_MainWindow(object):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description='Build GUI with a project')
     parser.add_argument('--project_path', default=None,
                         help='path to config file')

@@ -1,7 +1,7 @@
 import unittest
 
-from DLC_for_WBFM.utils.feature_detection.feature_pipeline import *
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import *
+from DLC_for_WBFM.utils.feature_detection.feature_pipeline import *
 from DLC_for_WBFM.utils.feature_detection.utils_detection import *
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import *
 
@@ -21,15 +21,13 @@ class TestSequentialPipeline(unittest.TestCase):
 
         print("Finished setting up.")
 
-
     def test_dataset(self):
-        options = {'num_slices':self.num_slices, 'alpha':self.preprocessing_settings.alpha}
+        options = {'num_slices': self.num_slices, 'alpha': self.preprocessing_settings.alpha}
         vol0 = get_single_volume(self.fname, 0, **options)
 
         # Detect neurons
-        options = {'num_slices':self.num_slices, 'alpha':1.0, 'verbose':1}
+        options = {'num_slices': self.num_slices, 'alpha': 1.0, 'verbose': 1}
         self.neurons0 = detect_neurons_using_ICP(vol0, **options)[0]
-
 
     def test_full_function(self):
         all_matches, all_conf, all_neurons = track_neurons_full_video(self.fname,

@@ -1,5 +1,6 @@
-import pytest
 import importlib
+
+import pytest
 
 
 def test_segmentation():

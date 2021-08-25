@@ -2,6 +2,8 @@
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_from_avi
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual
+
+
 # from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
 
 
@@ -9,13 +11,12 @@ def _get_crop_from_avi(config_file,
                        which_neuron,
                        num_frames,
                        use_red_channel=True):
-
     c = load_config(config_file)
 
     # Get track
     this_xy, this_prob = xy_from_dlc_dat(c.tracking.annotation_fname,
-                                        which_neuron=which_neuron,
-                                        num_frames=num_frames)
+                                         which_neuron=which_neuron,
+                                         num_frames=num_frames)
     # Get data
     if use_red_channel:
         fname = c.datafiles.red_avi_fname
@@ -33,8 +34,6 @@ def _get_crop_from_avi(config_file,
                                     start_frame)
 
     return cropped_dat
-
-
 
 
 def _get_crop_from_ometiff_virtual(config_file,

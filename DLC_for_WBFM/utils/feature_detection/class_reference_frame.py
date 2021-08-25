@@ -1,14 +1,14 @@
+from dataclasses import dataclass
 from typing import Tuple
 
 import cv2
+import numpy as np
 
+from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP, detect_neurons_from_file
 from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-from dataclasses import dataclass
-import numpy as np
+from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 
 ##
@@ -22,7 +22,7 @@ class ReferenceFrame:
     # Data for registration
     neuron_locs: list
     keypoints: list
-    keypoint_locs: list # Includes the z coordinate
+    keypoint_locs: list  # Includes the z coordinate
     all_features: np.array
     features_to_neurons: dict
 
@@ -34,12 +34,12 @@ class ReferenceFrame:
     preprocessing_settings: PreprocessingSettings = None
 
     # To be finished with a set of other registered frames
-    neuron_ids: list = None # global neuron index
+    neuron_ids: list = None  # global neuron index
 
     def get_metadata(self):
-        return {'frame_ind':self.frame_ind,
-                'video_fname':self.video_fname,
-                'vol_shape':self.vol_shape}
+        return {'frame_ind': self.frame_ind,
+                'video_fname': self.video_fname,
+                'vol_shape': self.vol_shape}
 
     def iter_neurons(self):
         # Practice with yield
@@ -63,8 +63,6 @@ class ReferenceFrame:
         """Deletes the cv2.Keypoints (the locations are stored though)"""
         self.keypoints = []
 
-
-
     def rebuild_keypoints(self):
         """
         Rebuilds keypoints from keypoint_locs
@@ -75,7 +73,6 @@ class ReferenceFrame:
         k = get_keypoints_from_3dseg(self.keypoint_locs)
         self.keypoints = k
 
-
     def __str__(self):
         return f"=======================================\n\
                 ReferenceFrame:\n\
@@ -84,6 +81,7 @@ class ReferenceFrame:
 
     def __repr__(self):
         return f"ReferenceFrame with {len(self.neuron_locs)} neurons \n"
+
 
 ##
 ## Class for Set of reference frames
@@ -94,20 +92,20 @@ class RegisteredReferenceFrames():
     """Data for matched reference frames"""
 
     # Intermediate products
-    reference_frames : list = None
-    pairwise_matches : dict = None
-    pairwise_conf : dict = None
+    reference_frames: list = None
+    pairwise_matches: dict = None
+    pairwise_conf: dict = None
 
     # More detailed intermediates and alternate matchings
-    feature_matches : dict = None
-    bipartite_matches : list = None
+    feature_matches: dict = None
+    bipartite_matches: list = None
 
     # Global neuron coordinate system
-    neuron_cluster_mode : str = None
-    global2local : dict = None
-    local2global : dict = None
+    neuron_cluster_mode: str = None
+    global2local: dict = None
+    local2global: dict = None
 
-    verbose : int = 0
+    verbose: int = 0
 
     def __str__(self):
         return f"RegisteredReferenceFrames with {len(self.reference_frames)} Frames \n"
@@ -180,7 +178,7 @@ def encode_all_neurons(locs_zxy: list, im_3d: np.ndarray, z_depth: int) -> Tuple
 
         z = int(z)
         all_slices = np.arange(z - z_depth, z + z_depth + 1)
-        all_slices = np.clip(all_slices, 0, len(im_3d_gray)-1)
+        all_slices = np.clip(all_slices, 0, len(im_3d_gray) - 1)
         # Generate features on neighboring z slices as well
         # Repeat slices if near the edge
         ds = []

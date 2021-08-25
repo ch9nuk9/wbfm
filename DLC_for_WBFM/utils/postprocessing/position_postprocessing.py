@@ -1,9 +1,10 @@
-from sklearn.preprocessing import StandardScaler
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from ppca import PPCA
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from ppca import PPCA
+from sklearn.preprocessing import StandardScaler
 
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 

@@ -1,45 +1,48 @@
-import numpy as np
-import cv2
-import tifffile
 import os
-import matplotlib.pyplot as plt
-from ipywidgets import interact
-from scipy import ndimage as ndi
-from itertools import product
-from matplotlib.ticker import NullFormatter
-from matplotlib import transforms
 import time
 import warnings
+from itertools import product
 
+import cv2
 # from matplotlib_scalebar.scalebar import ScaleBar
 import matplotlib.animation as animation
-from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
+import matplotlib.pyplot as plt
+import numpy as np
+import tifffile
+from ipywidgets import interact
+from matplotlib import transforms
+from matplotlib.ticker import NullFormatter
+from scipy import ndimage as ndi
+
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
+
 
 ##
 ## Background subtraction
 ##
 
 def subtract_background_4d(video, sz=None):
-#     backSub = cv.createBackgroundSubtractorKNN()
+    #     backSub = cv.createBackgroundSubtractorKNN()
     if sz is None:
-        sz = (np.array(video[0,0,...].shape)/4).astype('int')
+        sz = (np.array(video[0, 0, ...].shape) / 4).astype('int')
         sz = tuple(sz)
 
     print("Subtracting background...")
     for t, z in product(range(video.shape[0]), range(video.shape[1])):
-        frame = video[t,z,:,:]
-#         video[t,z,:,:] = frame - cv2.blur(frame, sz)
-        video[t,z,:,:]  = frame - np.mean(frame)
+        frame = video[t, z, :, :]
+        #         video[t,z,:,:] = frame - cv2.blur(frame, sz)
+        video[t, z, :, :] = frame - np.mean(frame)
     print("Done")
 
     return video
+
 
 ##
 ## Building cropped videos
 ##
 
-def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28,28,10), sz_4d=(100,39)):
+def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28, 28, 10), sz_4d=(100, 39)):
     """
     There is a lot of switching with 'xy' and the rows and columns of the video
 
@@ -67,21 +70,21 @@ def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28,28,10
     """
 
     # Pre-allocate in proper size for future
-    cropped_dat = np.zeros(crop_sz+(num_frames,))
+    cropped_dat = np.zeros(crop_sz + (num_frames,))
     all_dat = []
 
     print("Reading video...")
     video = tifffile.imread(fname)
     print(f"Read video of shape {video.shape}")
 
-#     video = subtract_background_4d(video)
+    #     video = subtract_background_4d(video)
 
     if len(video.shape) == 3:
         print("Found 2+1d video; was expecting 3+1d. Attempting to reshape using sz_4d...")
         video = np.reshape(video, sz_4d + video.shape[1:])
         print("Successfully reshaped.")
-#     elif len(video.shape) == 4:
-        # Format is already TZXY
+    #     elif len(video.shape) == 4:
+    # Format is already TZXY
 
     tmp = video.shape[1:]
     video_sz_yxz = (tmp[1], tmp[2], tmp[0])
@@ -90,11 +93,11 @@ def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28,28,10
     for i in range(num_frames):
 
         xyz = np.append(this_xy[i], which_z)
-        print(f"Reading frame {i}/{num_frames-1} at position {xyz}")
+        print(f"Reading frame {i}/{num_frames - 1} at position {xyz}")
         x_ind, y_ind, z_ind = get_crop_coords3d(xyz, crop_sz=crop_sz, clip_sz=video_sz_xyz)
-        tmp = np.transpose(video[i,:,:,:][z_ind,:,:][:, y_ind,:][:,:, x_ind], axes=(2,1,0))
+        tmp = np.transpose(video[i, :, :, :][z_ind, :, :][:, y_ind, :][:, :, x_ind], axes=(2, 1, 0))
         if tmp.shape == crop_sz:
-            cropped_dat[:,:,:,i] = tmp
+            cropped_dat[:, :, :, i] = tmp
         else:
             print(f"Skipping frame {i}; too close to edge")
             print(f"Was size {tmp.shape}; should be size {crop_sz}")
@@ -105,7 +108,7 @@ def get_crop_from_ometiff(fname, this_xy, which_z, num_frames, crop_sz=(28,28,10
 
 def get_crop_from_ometiff_virtual(fname, this_xy, this_prob,
                                   which_z, num_frames,
-                                  crop_sz=(28,28,10),
+                                  crop_sz=(28, 28, 10),
                                   num_slices=None,
                                   flip_x=False,
                                   start_volume=0,
@@ -180,13 +183,13 @@ def get_crop_from_ometiff_virtual(fname, this_xy, this_prob,
         """Translate crop coordinates to image variables"""
         # Convert crop_sz to list for format compatibility
         if actually_crop:
-            start_of_each_frame = int(np.floor(which_z - crop_sz[2]/2))
-            end_of_each_frame = int(np.floor(which_z + crop_sz[2]/2))
+            start_of_each_frame = int(np.floor(which_z - crop_sz[2] / 2))
+            end_of_each_frame = int(np.floor(which_z + crop_sz[2] / 2))
         else:
             start_of_each_frame = 0
             end_of_each_frame = num_slices
         which_slices = list(range(start_of_each_frame, end_of_each_frame))
-        end_of_each_frame = end_of_each_frame-1
+        end_of_each_frame = end_of_each_frame - 1
 
         frame_height, frame_width = crop_sz[0:2]
         # Format: TZYX
@@ -197,13 +200,13 @@ def get_crop_from_ometiff_virtual(fname, this_xy, this_prob,
             warnings.warn("As of 14.10.2020, the first several frames are very bad! Do you really mean to use these?")
 
         if verbose >= 1:
-            print(f'Cropping {len(which_slices)} slices, starting at {start_of_each_frame}' )
+            print(f'Cropping {len(which_slices)} slices, starting at {start_of_each_frame}')
 
         return start_of_each_frame, end_of_each_frame, which_slices, \
-            final_cropped_video
+               final_cropped_video
 
     start_of_each_frame, end_of_each_frame, which_slices, \
-        final_cropped_video = build_sz_vars(crop_sz)
+    final_cropped_video = build_sz_vars(crop_sz)
 
     # Initialize time index and tracking location
     start_volume = start_volume * num_slices
@@ -228,16 +231,17 @@ def get_crop_from_ometiff_virtual(fname, this_xy, this_prob,
             # Skip if tracking is below confidence
             if this_prob[i_rel_volume] > prob_threshold:
                 if verbose >= 2:
-                    print(f'Page {i}/{num_frames*num_slices}; volume {i_rel_volume}/{num_frames} to cropped array slice {this_rel_slice}')
+                    print(
+                        f'Page {i}/{num_frames * num_slices}; volume {i_rel_volume}/{num_frames} to cropped array slice {this_rel_slice}')
 
-                tmp = (alpha*page.asarray()).astype('uint8')
+                tmp = (alpha * page.asarray()).astype('uint8')
                 if flip_x:
-                    tmp = np.flip(tmp,axis=1)
+                    tmp = np.flip(tmp, axis=1)
 
                 if actually_crop:
-                    final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp[:,x_ind][y_ind]
+                    final_cropped_video[i_rel_volume, this_rel_slice, ...] = tmp[:, x_ind][y_ind]
                 else:
-                    final_cropped_video[i_rel_volume, this_rel_slice,...] = tmp
+                    final_cropped_video[i_rel_volume, this_rel_slice, ...] = tmp
 
             # Update time index and tracking location
             if this_abs_slice == end_of_each_frame:
@@ -245,8 +249,8 @@ def get_crop_from_ometiff_virtual(fname, this_xy, this_prob,
                 if num_frames is not None and i_rel_volume >= num_frames: break
                 x_ind, y_ind = update_ind(i_rel_volume, crop_sz)
 
-
     return final_cropped_video
+
 
 ##
 ## Finding local maxima
@@ -287,12 +291,12 @@ def local_maxima_2D(data):
     Data should be 3d, XYT
     """
     t = np.shape(data)[2]
-    coords = np.zeros((t,1))
-    values = np.zeros((t,1))
+    coords = np.zeros((t, 1))
+    values = np.zeros((t, 1))
 
     for i in range(t):
-        coords[i] = np.argmax(data[...,i])
-        values[i] = np.amax(data[...,i])
+        coords[i] = np.argmax(data[..., i])
+        values[i] = np.amax(data[..., i])
 
     return coords, values
 
@@ -306,12 +310,12 @@ def mean_of_top_percentile(data, percentile=10):
     Data should be 3d, XYT
     """
     t = np.shape(data)[2]
-    values = np.zeros((t,1))
+    values = np.zeros((t, 1))
 
     for i in range(t):
-        tmp = data[...,i]
+        tmp = data[..., i]
         thresh = np.percentile(tmp, percentile)
-        values[i] = np.mean(tmp[np.where(tmp>thresh)])
+        values[i] = np.mean(tmp[np.where(tmp > thresh)])
 
     return values
 
@@ -324,21 +328,23 @@ def save_video4d(file, video4d, fontsize=20):
 
     Takes a 4d video with t in the last dimension, animates it and saves
     """
-    fig, ax = plt.subplots(figsize=(10,10))
-    im = ax.imshow(np.max(video4d[:,:,:,0],axis=2))
+    fig, ax = plt.subplots(figsize=(10, 10))
+    im = ax.imshow(np.max(video4d[:, :, :, 0], axis=2))
 
-    time_text = fig.text(0.5, 0.03,'Frame = 0',horizontalalignment='center',verticalalignment='top',fontsize=fontsize)
+    time_text = fig.text(0.5, 0.03, 'Frame = 0', horizontalalignment='center', verticalalignment='top',
+                         fontsize=fontsize)
 
     ax.axis('off')
-#     scalebar = ScaleBar(self.scale[0],'um')
-#     ax.add_artist(scalebar)
+
+    #     scalebar = ScaleBar(self.scale[0],'um')
+    #     ax.add_artist(scalebar)
 
     def init():
-        im.set_data(np.max(video4d[:,:,:,0],axis=2))
+        im.set_data(np.max(video4d[:, :, :, 0], axis=2))
         return (im,)
 
     def animate(t):
-        data_slice = np.max(video4d[:,:,:,t],axis=2)
+        data_slice = np.max(video4d[:, :, :, t], axis=2)
         im.set_data(data_slice)
 
         time_text.set_text('Frame = ' + str(t))
@@ -346,11 +352,11 @@ def save_video4d(file, video4d, fontsize=20):
         return (im,)
 
     anim = animation.FuncAnimation(fig, animate, init_func=init,
-                                       frames=video4d.shape[3], interval=200, blit=True)
+                                   frames=video4d.shape[3], interval=200, blit=True)
 
     Writer = animation.writers['ffmpeg']
     writer = Writer(fps=10, metadata=dict(artist='Me'), bitrate=1800)
-    anim.save(file+'-raw.mp4', writer=writer)
+    anim.save(file + '-raw.mp4', writer=writer)
 
     plt.close('all')
 

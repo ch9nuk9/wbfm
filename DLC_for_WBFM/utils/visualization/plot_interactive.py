@@ -1,7 +1,8 @@
 import ipywidgets as widgets
-from ipywidgets import interact
 import matplotlib.pyplot as plt
 import numpy as np
+from ipywidgets import interact
+
 # from DLC_for_WBFM.config.class_configuration import *
 from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_from_ometiff_virtual
 
@@ -11,10 +12,11 @@ from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_fr
 ##
 
 def update_line(t, z):
-    plt.vlines(t, 0,2)
+    plt.vlines(t, 0, 2)
     # line.set_data([t,t], [0,2])
     print("Updating line...")
     plt.show()
+
 
 def external_update(obj, t, z):
     print("Updating all")
@@ -48,12 +50,12 @@ class InteractiveConfig():
         print(f"Loading video data for {len(self.which_neurons)} neurons...")
         for which_neuron in self.which_neurons:
             g = _get_crop_from_ometiff_virtual(config,
-                                                        which_neuron,
-                                                        self.num_frames,
-                                                        use_red_channel=False)
+                                               which_neuron,
+                                               self.num_frames,
+                                               use_red_channel=False)
             r = _get_crop_from_ometiff_virtual(config,
-                                                      which_neuron,
-                                                      self.num_frames)
+                                               which_neuron,
+                                               self.num_frames)
             self.green_data.append(g)
             self.red_data.append(r)
         print("Finished loading video data")
@@ -62,7 +64,6 @@ class InteractiveConfig():
         t_slider = widgets.IntSlider(value=0, min=0, max=self.num_frames)
         z_slider = widgets.IntSlider(value=0, min=0, max=c.traces.crop_sz[-1])
         self.all_sliders = [t_slider, z_slider]
-
 
     def reset_panels(self):
         self.panel_updaters = []
@@ -73,7 +74,6 @@ class InteractiveConfig():
         print("Updating all")
         for update, objs in zip(self.panel_updaters, self.panel_objs):
             update(t, z, objs)
-
 
     def get_trace_data(self, which_field='red'):
         # Read traces
@@ -110,11 +110,10 @@ class InteractiveConfig():
         # seg_new = [np.array([[t, ymin], [t, ymax]])]
         # print(seg_new)
         # line.set_segments(seg_new)
-        plt.vlines(t, 0,2)
+        plt.vlines(t, 0, 2)
         # line.set_data([t,t], [0,2])
         print("Updating line...")
         plt.show()
-
 
     def build_widget(self):
 
@@ -131,7 +130,7 @@ class InteractiveConfig():
             init()
 
         # Add data and sliders
-        args = {'t':(0,self.num_frames-1), 'z':(0,self.c.traces.crop_sz[-1]-1)}
+        args = {'t': (0, self.num_frames - 1), 'z': (0, self.c.traces.crop_sz[-1] - 1)}
         f = lambda t, z: [f(t, z) for f in self.panel_updaters]
         return interact(f, **args)
         # f = lambda t, z: external_update(self, t, z)

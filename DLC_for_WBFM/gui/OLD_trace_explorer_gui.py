@@ -1,23 +1,25 @@
 # -*- coding: utf-8 -*-
 
+import argparse
+import concurrent.futures
 # Form implementation generated from reading ui file 'gui_raw.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.2
 import os
-
-import zarr
-from PyQt5 import QtCore, QtWidgets
-import argparse
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.gui.utils.utils_gui import get_cropped_frame, get_crop_from_zarr
-import pandas as pd
 import sys
 from pathlib import Path
+
 import matplotlib
+import numpy as np
+import pandas as pd
+import zarr
+from PyQt5 import QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-import numpy as np
-import concurrent.futures
+
+from DLC_for_WBFM.gui.utils.utils_gui import get_cropped_frame, get_crop_from_zarr
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+
 matplotlib.use('Qt5Agg')
 
 
@@ -228,7 +230,6 @@ class Ui_MainWindow(object):
         self.x = list(range(start, end))
         return cfg, traces_cfg, tracking_cfg
 
-
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
@@ -404,7 +405,6 @@ class Ui_MainWindow(object):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description='Build GUI with a project')
     parser.add_argument('project_config',
                         help='path to config file')

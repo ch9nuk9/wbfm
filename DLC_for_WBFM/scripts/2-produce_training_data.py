@@ -1,19 +1,19 @@
 """
 The top level function for producing training data via feature-based tracking
 """
+import logging
 import os
 # main function
 from datetime import date
 
-from sacred.observers import TinyDbObserver
-import DLC_for_WBFM.utils.projects.monkeypatch_json
-
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
-from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 # Experiment tracking
 import sacred
 from sacred import Experiment
-import logging
+from sacred.observers import TinyDbObserver
+
+import DLC_for_WBFM.utils.projects.monkeypatch_json
+from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
 
 # Initialize sacred experiment
 ex = Experiment()

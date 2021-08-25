@@ -5,12 +5,12 @@
 import os
 from pathlib import Path
 
-from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
 # Experiment tracking
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 
+from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
@@ -27,6 +27,7 @@ ex.add_config(project_path=None,
               copy_locally=True,
               use_preprocessed_data=True,
               DEBUG=False)
+
 
 @ex.config
 def cfg(project_path, do_only_training_data, out_fname, copy_locally, tiff_not_zarr):
@@ -58,10 +59,10 @@ def main(_config, _run):
     sacred.commands.print_config(_run)
 
     options = {'out_fname': _config['out_fname'],
-           'tiff_not_zarr': _config['tiff_not_zarr'],
-           'pad_to_align_with_original': _config['pad_to_align_with_original'],
-           'use_preprocessed_data': _config['use_preprocessed_data'],
-           'DEBUG': _config['DEBUG']}
+               'tiff_not_zarr': _config['tiff_not_zarr'],
+               'pad_to_align_with_original': _config['pad_to_align_with_original'],
+               'use_preprocessed_data': _config['use_preprocessed_data'],
+               'DEBUG': _config['DEBUG']}
     cfg = _config['cfg']
     cfg['project_dir'] = _config['project_dir']
     with safe_cd(_config['project_dir']):

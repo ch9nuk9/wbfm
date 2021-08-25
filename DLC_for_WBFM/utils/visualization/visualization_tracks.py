@@ -1,11 +1,13 @@
-import open3d as o3d
-from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
-import numpy as np
-import matplotlib.pyplot as plt
 import copy
-import pandas as pd
-import cv2
 from collections import defaultdict
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import open3d as o3d
+import pandas as pd
+
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False, to_plot=True):
@@ -267,8 +269,8 @@ def plot_matched_point_clouds(all_frames,
 def plot_three_point_clouds(all_frames, neuron_matches, ind=(0, 1, 2)):
     """See also plot_matched_point_clouds"""
     options = {'all_frames': all_frames,
-           'neuron_matches': neuron_matches,
-           'actually_draw': False}
+               'neuron_matches': neuron_matches,
+               'actually_draw': False}
     if type(ind) == int:
         ind = (ind, ind + 1, ind + 2)
 

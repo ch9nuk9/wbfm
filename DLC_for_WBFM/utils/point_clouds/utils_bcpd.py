@@ -1,19 +1,21 @@
+import copy
+import glob
+import os
+import re
+
 import numpy as np
 import open3d as o3d
-#import transformations as trans
-from probreg import bcpd, cpd
-from probreg import callbacks
-import copy
-import os
-
 # My imports
 import pandas as pd
-from sklearn.neighbors import NearestNeighbors
-import glob
-import re
-from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels, pixels_to_bcpd
-from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 import scipy
+# import transformations as trans
+from probreg import bcpd, cpd
+from probreg import callbacks
+from sklearn.neighbors import NearestNeighbors
+
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
+from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels, pixels_to_bcpd
+
 
 ##
 ## Helper functions based on importing keypoints
@@ -99,40 +101,39 @@ def match_2vol_BCPD(neurons0, neurons1,
     """
 
     # Build pointclouds with normalized coordinates
-    options = {'to_mirror':False}
+    options = {'to_mirror': False}
     if not do_zscore:
-        f = lambda this_n : pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
+        f = lambda this_n: pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
     else:
-        f = lambda this_n : scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
+        f = lambda this_n: scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
     _, pc0, _ = build_neuron_tree(f(neurons0), **options)
     _, pc1, _ = build_neuron_tree(f(neurons1), **options)
     if DEBUG:
-        pc0.paint_uniform_color([0.5,0.5,0.5])
-        pc1.paint_uniform_color([0,0,0])
+        pc0.paint_uniform_color([0.5, 0.5, 0.5])
+        pc1.paint_uniform_color([0, 0, 0])
         o3d.visualization.draw_geometries([pc0, pc1])
-        #print("Points of pc0: ", np.asarray(pc0.points))
+        # print("Points of pc0: ", np.asarray(pc0.points))
 
     if voxel_size is not None:
         pc0 = pc0.voxel_down_sample(voxel_size=voxel_size)
         pc1 = pc1.voxel_down_sample(voxel_size=voxel_size)
     # Do BCPD
-    options = {'w':w,'maxiter':500, 'tol':1e-8}
+    options = {'w': w, 'maxiter': 500, 'tol': 1e-8}
     tf_param = bcpd.registration_bcpd(pc0, pc1, **options, **bcpd_kwargs)
 
     ## Convert into pairwise matches
     all_matches, all_conf = correspondence_from_transform(tf_param, pc0, pc1)
-    all_matches = np.array([[i,val[0]] for i,val in enumerate(all_matches)])
+    all_matches = np.array([[i, val[0]] for i, val in enumerate(all_matches)])
 
     return all_matches, all_conf
 
 
-
 def match_2vol_rigid(neurons0, neurons1,
-                    w=0.0,
-                    do_zscore=False,
-                    voxel_size=None,
-                    tf_type_name='rigid',
-                    DEBUG=False):
+                     w=0.0,
+                     do_zscore=False,
+                     voxel_size=None,
+                     tf_type_name='rigid',
+                     DEBUG=False):
     """
     Matches using RIGID Coherent Point drift
 
@@ -140,11 +141,11 @@ def match_2vol_rigid(neurons0, neurons1,
     """
 
     # Build pointclouds with normalized coordinates
-    options = {'to_mirror':False}
+    options = {'to_mirror': False}
     if not do_zscore:
-        f = lambda this_n : pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
+        f = lambda this_n: pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
     else:
-        f = lambda this_n : scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
+        f = lambda this_n: scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
     _, pc0, _ = build_neuron_tree(f(neurons0), **options)
     _, pc1, _ = build_neuron_tree(f(neurons1), **options)
 
@@ -170,7 +171,7 @@ def match_2vol_rigid(neurons0, neurons1,
 
     ## Convert into pairwise matches
     all_matches, all_conf = correspondence_from_transform(tf_param, pc0, pc1)
-    all_matches = np.array([[i,val[0]] for i,val in enumerate(all_matches)])
+    all_matches = np.array([[i, val[0]] for i, val in enumerate(all_matches)])
 
     return all_matches, all_conf
 
@@ -182,7 +183,7 @@ def match_2vol_rigid(neurons0, neurons1,
 def save_indices(indices, fname=None):
     """ Saves indices (csv) using a standard format """
 
-    df = pd.DataFrame({'indices':np.ndarray.flatten(indices)})
+    df = pd.DataFrame({'indices': np.ndarray.flatten(indices)})
     # df = pd.DataFrame.from_records({'indices':indices})
     if fname is None:
         fname = 'test_bcpd_indices.csv'
@@ -220,15 +221,15 @@ def save_indices_DLC(indices,
             centroid_dfs.append(pd.read_csv(fname, sep=' ', names=names))
 
     dataFrame = None
-    coords = np.empty((len(centroid_dfs),3,))
+    coords = np.empty((len(centroid_dfs), 3,))
 
-    output_path='.'
+    output_path = '.'
     # Get list of images
     #  Instead of looking at all image files, only parse the processed centroids
     # imlist=[]
     # imlist.extend([fn for fn in glob.glob(os.path.join(output_path,'*.csv')) if ('Statistics' in fn)])
 
-    if len(centroid_fnames)==0:
+    if len(centroid_fnames) == 0:
         print("No images found; aborting")
         return
     else:
@@ -241,11 +242,11 @@ def save_indices_DLC(indices,
     # Note: only works for single-digit indexed images
 
     # Define output for DLC on cluster
-    subfoldername = 'test_100frames.ome'# COMBAK
+    subfoldername = 'test_100frames.ome'  # COMBAK
     # WARNING: hardcode linux filesep
     # Use the numbers from the centroid files
     print(centroid_nums)
-    relativeimagenames=['/'.join(('labeled-data',subfoldername,'img{}.tif'.format(i))) for i in centroid_nums]
+    relativeimagenames = ['/'.join(('labeled-data', subfoldername, 'img{}.tif'.format(i))) for i in centroid_nums]
     print(relativeimagenames)
 
     # Build correctly DLC-formatted dataframe
@@ -262,21 +263,22 @@ def save_indices_DLC(indices,
         # Get xyz coordinates for one neuron, for all files
 
         for i_source, df in enumerate(centroid_dfs):
-            i_target = ind_in_files[i_source] # The neuron index for this file
+            i_target = ind_in_files[i_source]  # The neuron index for this file
             x, y, z = [df['X'][i_target], df['Y'][i_target], df['Z'][i_target]]
-            z, x, y = bcpd_to_pixels([z, x, y]) # Convert back to pixel space
-            coords[i_source,:] = np.array([x, y, z])
+            z, x, y = bcpd_to_pixels([z, x, y])  # Convert back to pixel space
+            coords[i_source, :] = np.array([x, y, z])
             # print("Coordinates for neuron {}, file {}".format(i, i2), coords[i2,:])
 
         index = pd.MultiIndex.from_product([[scorer], [bodypart],
                                             ['x', 'y', 'z']],
-                                            names=['scorer', 'bodyparts', 'coords'])
+                                           names=['scorer', 'bodyparts', 'coords'])
 
-        frame = pd.DataFrame(coords, columns = index, index = relativeimagenames)
-        dataFrame = pd.concat([dataFrame, frame],axis=1)
+        frame = pd.DataFrame(coords, columns=index, index=relativeimagenames)
+        dataFrame = pd.concat([dataFrame, frame], axis=1)
 
-    dataFrame.to_csv(os.path.join(output_path,"CollectedData_" + scorer + ".csv"))
-    dataFrame.to_hdf(os.path.join(output_path,"CollectedData_" + scorer + '.h5'),'df_with_missing',format='table', mode='w')
+    dataFrame.to_csv(os.path.join(output_path, "CollectedData_" + scorer + ".csv"))
+    dataFrame.to_hdf(os.path.join(output_path, "CollectedData_" + scorer + '.h5'), 'df_with_missing', format='table',
+                     mode='w')
 
     return output_path, dataFrame
 
@@ -290,9 +292,9 @@ if __name__ == "__main__":
     to_plot = False
 
     # Get list of processed frames in folder
-    output_path='.'
+    output_path = '.'
     # target_fnames=[]
-    target_fnames = [fn for fn in glob.glob(os.path.join(output_path,'*.csv')) if ('Statistics' in fn)]
+    target_fnames = [fn for fn in glob.glob(os.path.join(output_path, '*.csv')) if ('Statistics' in fn)]
 
     # Choose a source frame; the rest are targets
     source_index = 3
@@ -314,7 +316,7 @@ if __name__ == "__main__":
         # Do BCPD
         print("Note: the value of w may need to be tweaked")
         tf_param = bcpd.registration_bcpd(source, target, w=1e-12,
-                                          #gamma=10.0, #lmd=0.2, #k = 1e2,
+                                          # gamma=10.0, #lmd=0.2, #k = 1e2,
                                           maxiter=100,
                                           callbacks=cbs)
         # Compute correspondence
@@ -326,7 +328,6 @@ if __name__ == "__main__":
             # print(all_indices.shape)
             # print(indices.shape)
             np.hstack((all_indices, indices))
-
 
     ## directly output in DLC format
     all_fnames = [source_fname].extend(target_fnames)

@@ -3,6 +3,7 @@ import unittest
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import *
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import *
 
+
 class TestReferencePipeline(unittest.TestCase):
 
     def setUp(self):
@@ -19,5 +20,5 @@ class TestReferencePipeline(unittest.TestCase):
 
     def test_pipeline(self):
         track_via_reference_frames(self.fname,
-                                    num_slices = self.num_slices,
-                                    num_reference_frames=3)
+                                   num_slices=self.num_slices,
+                                   num_reference_frames=3)

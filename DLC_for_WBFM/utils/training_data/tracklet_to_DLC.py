@@ -21,10 +21,11 @@ def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
     def make_window(start_frame):
         return list(range(start_frame, start_frame + num_frames_needed + 1))
 
-    x = list(range(num_frames-num_frames_needed))
+    x = list(range(num_frames - num_frames_needed))
     y = np.zeros_like(x)
     for i in x:
         which_frames = make_window(i)
+
         def check_for_full_covering(vals, which_frames=which_frames):
             vals = set(vals)
             return all([f in vals for f in which_frames])
@@ -183,8 +184,8 @@ def build_subset_df_from_tracklets(clust_df,
             Note that this uses the MEAN centroid, not the min or max
         """
         this_z = np.mean(np.atleast_2d(np.array(test_zxy))[:, 0])
-        too_high = this_z >= (which_z+max_z_dist)
-        too_low = this_z <= (which_z-max_z_dist)
+        too_high = this_z >= (which_z + max_z_dist)
+        too_low = this_z <= (which_z - max_z_dist)
         if too_high or too_low:
             to_keep = False
         else:
@@ -218,7 +219,6 @@ def build_subset_df_from_tracklets(clust_df,
 
     def rename_slices(this_ind_dict):
         return list(this_ind_dict.keys())
-
 
     ####################
     # Get indices of tracklets to keep
@@ -368,7 +368,7 @@ def build_dlc_annotation_one_tracklet(row,
 
     # Build a dataframe for one neuron across all frames
     # Will be zeros if not detected in a given frame
-    coords = np.zeros((num_frames, len(coord_names), ))
+    coords = np.zeros((num_frames, len(coord_names),))
     # This should zip through all_xyz, but all_prob might be empty
     slice_ind, all_xyz, all_prob = row['slice_ind'], row['all_xyz'], row['all_prob']
     if len(all_prob) < len(all_xyz):
@@ -392,7 +392,7 @@ def build_dlc_annotation_one_tracklet(row,
         coords = coords[which_frame_subset, :]
 
     m_index = pd.MultiIndex.from_product([[scorer], [bodypart],
-                                         coord_names],
+                                          coord_names],
                                          names=['scorer', 'bodyparts', 'coords'])
     frame = pd.DataFrame(coords, columns=m_index, index=index)
 
@@ -432,12 +432,12 @@ def build_dlc_annotation_from_tracklets(clust_df: pd.DataFrame,
 
     neuron_ind = 1
     options = {'min_length': min_length,
-           'num_frames': num_frames,
-           'coord_names': coord_names,
-           'relative_imagenames': relative_imagenames,
-           'which_frame_subset': which_frame_subset,
-           'scorer': scorer,
-           'verbose': verbose-1}
+               'num_frames': num_frames,
+               'coord_names': coord_names,
+               'relative_imagenames': relative_imagenames,
+               'which_frame_subset': which_frame_subset,
+               'scorer': scorer,
+               'verbose': verbose - 1}
     for i, row in tqdm(clust_df.iterrows(), total=clust_df.shape[0]):
         options['neuron_ind'] = neuron_ind
         ind = row['clust_ind']
@@ -447,7 +447,7 @@ def build_dlc_annotation_from_tracklets(clust_df: pd.DataFrame,
             new_dlc_df = pd.concat([new_dlc_df, frame], axis=1)
             neuron_ind = neuron_ind + 1
     if verbose >= 1 and new_dlc_df is not None:
-        print(f"Found {len(new_dlc_df.columns)/len(coord_names)} tracks of length >{min_length}")
+        print(f"Found {len(new_dlc_df.columns) / len(coord_names)} tracks of length >{min_length}")
 
     return new_dlc_df
 
@@ -484,12 +484,12 @@ def build_dlc_annotation_from_3dDLC(subset_df: pd.DataFrame,
 
     neuron_ind = 1
     options = {'min_length': min_length,
-           'num_frames': num_frames,
-           'coord_names': coord_names,
-           'relative_imagenames': relative_imagenames,
-           'which_frame_subset': which_frame_subset,
-           'scorer': scorer,
-           'verbose': verbose-1}
+               'num_frames': num_frames,
+               'coord_names': coord_names,
+               'relative_imagenames': relative_imagenames,
+               'which_frame_subset': which_frame_subset,
+               'scorer': scorer,
+               'verbose': verbose - 1}
 
     neuron_names = list(subset_df.columns.levels[0])  # This returns columns that no longer exist
     neuron_names = [n for n in neuron_names if n in subset_df]
@@ -501,7 +501,7 @@ def build_dlc_annotation_from_3dDLC(subset_df: pd.DataFrame,
             new_dlc_df = pd.concat([new_dlc_df, frame], axis=1)
             neuron_ind = neuron_ind + 1
     if verbose >= 1 and new_dlc_df is not None:
-        print(f"Found {len(new_dlc_df.columns)/len(coord_names)} tracks of length >{min_length}")
+        print(f"Found {len(new_dlc_df.columns) / len(coord_names)} tracks of length >{min_length}")
 
     # print("New dataframe written:")
     # print(new_dlc_df)
@@ -570,7 +570,7 @@ def build_dlc_annotation_one_dlc3d_subset(row,
     coords = row[coord_names].to_numpy()
 
     m_index = pd.MultiIndex.from_product([[scorer], [bodypart],
-                                         coord_names],
+                                          coord_names],
                                          names=['scorer', 'bodyparts', 'coords'])
     frame = pd.DataFrame(coords, columns=m_index, index=index)
 

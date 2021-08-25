@@ -161,11 +161,13 @@ class finished_project_data:
                 df = self.red_traces
             else:
                 df = self.green_traces
+
             def calc_y(i):
                 return calc_single_trace(i, df)
         else:
             df_red = self.red_traces
             df_green = self.green_traces
+
             def calc_y(i):
                 return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
 

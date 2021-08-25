@@ -5,15 +5,14 @@
 import os
 from pathlib import Path
 
-from sacred.observers import TinyDbObserver
-
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
 # Experiment tracking
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
+from sacred.observers import TinyDbObserver
 
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
+from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os, modular_project_config
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
@@ -24,6 +23,7 @@ from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 ex = Experiment()
 ex.add_config(project_path=None,
               DEBUG=False)
+
 
 @ex.config
 def cfg(project_path):
@@ -48,9 +48,9 @@ def main(_config, _run):
     sacred.commands.print_config(_run)
 
     options = {'tiff_not_zarr': False,
-           'pad_to_align_with_original': False,
-           'use_preprocessed_data': False,
-           'DEBUG': _config['DEBUG']}
+               'pad_to_align_with_original': False,
+               'use_preprocessed_data': False,
+               'DEBUG': _config['DEBUG']}
     cfg = _config['cfg']
     cfg['project_dir'] = _config['project_dir']
     cfg['project_path'] = _config['project_path']

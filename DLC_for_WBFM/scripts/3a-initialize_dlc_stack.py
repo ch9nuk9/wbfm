@@ -3,17 +3,19 @@ The top level function for initializing a stack of DLC projects
 """
 
 from pathlib import Path
-# main function
-from sacred.observers import TinyDbObserver
-import DLC_for_WBFM.utils.projects.monkeypatch_json
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_dlc_training_from_tracklets
 # Experiment tracking
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
+# main function
+from sacred.observers import TinyDbObserver
+
+import DLC_for_WBFM.utils.projects.monkeypatch_json
+from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_dlc_training_from_tracklets
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
@@ -34,6 +36,7 @@ def cfg(project_path, DEBUG):
     #     log_dir = cfg.get_log_dir()
     #     ex.observers.append(TinyDbObserver(log_dir))
 
+
 @ex.automain
 def initialize_dlc_stack(_config, _run):
     sacred.commands.print_config(_run)
@@ -43,6 +46,6 @@ def initialize_dlc_stack(_config, _run):
     project_config = _config['cfg']
 
     options = {'scorer': project_config.config['experimenter'], 'task_name': project_config.config['experimenter'],
-           'DEBUG': _config['DEBUG']}
+               'DEBUG': _config['DEBUG']}
 
     create_dlc_training_from_tracklets(project_config, training_cfg, tracking_config, **options)

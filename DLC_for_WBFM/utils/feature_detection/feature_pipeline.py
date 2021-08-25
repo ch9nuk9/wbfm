@@ -1,32 +1,32 @@
+import copy
 import logging
+import random
+import time
+from collections import defaultdict
 from typing import Tuple, Dict
 
+import cv2
+import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
 import zarr as zarr
+from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair, calc_FramePair_from_Frames
-from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, \
-    match_centroids_using_tree
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
-from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
-from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import build_reference_frame, add_all_good_components, \
-    is_ordered_subset
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame, \
     build_reference_frame_encoding
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, \
     calc_all_bipartite_matches, community_to_matches, calc_neuron_using_voronoi
+from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, \
+    match_centroids_using_tree
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name, \
     calc_bipartite_matches
+from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import build_reference_frame, add_all_good_components, \
+    is_ordered_subset
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-import copy
-import numpy as np
-import time
-from tqdm import tqdm
-import random
-import matplotlib.pyplot as plt
-import cv2
-import networkx as nx
-from collections import defaultdict
 
 
 ##
@@ -47,28 +47,28 @@ def track_neurons_two_volumes(dat0,
     """
     # Detect neurons, then features for each volume
     options = {'num_slices': num_slices,
-           'alpha': 1.0,  # Already multiplied when imported
-           'verbose': verbose - 1,
-           'min_detections': 5}
+               'alpha': 1.0,  # Already multiplied when imported
+               'verbose': verbose - 1,
+               'min_detections': 5}
     if neurons0 is None:
         neurons0, _, _, _ = detect_neurons_using_ICP(dat0, **options)
     if neurons1 is None:
         neurons1, _, _, _ = detect_neurons_using_ICP(dat1, **options)
 
     options = {'verbose': verbose - 1,
-           'matches_to_keep': 0.2,
-           'num_features_per_plane': 10000,
-           'detect_keypoints': True,
-           'kp0': neurons0,
-           'kp1': neurons1}
+               'matches_to_keep': 0.2,
+               'num_features_per_plane': 10000,
+               'detect_keypoints': True,
+               'kp0': neurons0,
+               'kp1': neurons1}
     all_f0, all_f1, _, _, _ = build_features_and_match_2volumes(dat0, dat1, **options)
 
     # Now, match the neurons using feature space
     options = {'radius': 8,
-           'max_nn': 50,
-           'min_features_needed': 5,
-           'verbose': verbose - 1,
-           'to_mirror': False}
+               'max_nn': 50,
+               'min_features_needed': 5,
+               'verbose': verbose - 1,
+               'to_mirror': False}
     all_matches, _, all_conf = match_centroids_using_tree(np.array(neurons0),
                                                           np.array(neurons1),
                                                           all_f0,

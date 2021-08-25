@@ -3,20 +3,19 @@ import dataclasses
 import pickle
 import threading
 import typing
-
-import numpy as np
-import tifffile
-import zarr
-
-from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack, \
-    align_stack_using_previous_results
-import scipy.ndimage as ndi
 from dataclasses import dataclass
 from dataclasses import field
 from typing import List, Tuple
+
+import numpy as np
+import scipy.ndimage as ndi
+import tifffile
 import yaml
+import zarr
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.feature_detection.utils_rigid_alignment import align_stack, filter_stack, \
+    align_stack_using_previous_results
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
@@ -121,7 +120,7 @@ def perform_preprocessing(dat_raw: np.ndarray,
         mini_max_size = s.mini_max_size
         dat_raw = ndi.maximum_filter(dat_raw, size=(mini_max_size, 1, 1))
 
-    dat_raw = (dat_raw*s.alpha).astype(s.final_dtype)
+    dat_raw = (dat_raw * s.alpha).astype(s.final_dtype)
 
     return dat_raw
 
@@ -142,7 +141,7 @@ def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, 
         p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
     else:
         p = preprocessing_settings
-        
+
     num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config, verbose,
                                                                                                    video_fname)
     return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, video_fname, vid_opt,
@@ -174,6 +173,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
                 # print("Applying preprocessing:")
                 # print(p)
                 preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in frame_list}
                 for future in concurrent.futures.as_completed(futures):

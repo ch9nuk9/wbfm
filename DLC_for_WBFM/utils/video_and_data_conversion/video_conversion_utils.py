@@ -1,18 +1,21 @@
+import os
+import warnings
+
+import cv2
 import numpy as np
 import tifffile
-import os
-import cv2
+
+
 # from DLC_for_WBFM.config.class_configuration import load_config, build_avi_fnames
 
-import warnings
 
 ##
 ## OME-TIFF
 ##
 
 def write_video_from_ome_folder(num_frames, folder_name, out_fname,
-                               out_dtype='uint8',
-                               which_slice=None):
+                                out_dtype='uint8',
+                                which_slice=None):
     """
     Write a video from a folder of ome-tiff files, where each one is a single volume
 
@@ -27,35 +30,34 @@ def write_video_from_ome_folder(num_frames, folder_name, out_fname,
 
     # Load all into memory via appending, writing at the end
     for i, this_fname in enumerate(all_fnames):
-        if i > num_frames-1:
+        if i > num_frames - 1:
             print("Finished writing {} files".format(num_frames))
             break
 
-        full_fname = os.path.join(folder_name,this_fname)
+        full_fname = os.path.join(folder_name, this_fname)
         if i == 0:
             if which_slice is None:
                 tmp = tifffile.imread(full_fname)
             else:
-                tmp = tifffile.imread(full_fname)[which_slice,...]
+                tmp = tifffile.imread(full_fname)[which_slice, ...]
             new_shape = [num_frames]
             new_shape.extend(list(tmp.shape))
             dat = np.zeros(new_shape, dtype=out_dtype)
             print("Final shape should be: ", new_shape)
-            dat[i,...] = tmp
+            dat[i, ...] = tmp
         elif which_slice is None:
-            dat[i,...] = tifffile.imread(full_fname)
+            dat[i, ...] = tifffile.imread(full_fname)
         else:
-            dat[i,...] = tifffile.imread(full_fname)[which_slice,...]
-        print("Reading frame {}/{}: ".format(i+1,num_frames))
+            dat[i, ...] = tifffile.imread(full_fname)[which_slice, ...]
+        print("Reading frame {}/{}: ".format(i + 1, num_frames))
 
     tifffile.imsave(out_fname, dat, dtype=out_dtype)
 
     return dat
 
 
-
 def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uint16', which_slice=None,
-                             img_format="TZXY"):
+                              img_format="TZXY"):
     """
     Takes a video filename, which is a single large ome-tiff file, and saves a smaller file in the folder given by 'out_fname'
         Note: Reads the metadata first... which may take a long time
@@ -74,7 +76,7 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
             if isinstance(ome_metadata, str):
                 # Appears to be a bug that just returns a string... can fix manually though
                 ome_metadata = tifffile.xml2dict(ome_metadata)['OME']
-#             print(ome_metadata.keys())
+            #             print(ome_metadata.keys())
             mdat = ome_metadata['Image']['Pixels']
             nz, nt = mdat['SizeZ'], mdat['SizeT']
         else:
@@ -85,15 +87,15 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
                 raise Exception
 
     for i_vol in range(num_frames):
-        if i_vol%10 == 0:
+        if i_vol % 10 == 0:
             print("Read volume {}/{}".format(i_vol, num_frames))
 
         # Convert scalar volume label to the sequential frames
         # Note: this may change for future input videos!
         if which_slice is None:
-            vol_indices = list(range(i_vol*nz, i_vol*nz + nz))
+            vol_indices = list(range(i_vol * nz, i_vol * nz + nz))
         else:
-            vol_indices = i_vol*nz + which_slice
+            vol_indices = i_vol * nz + which_slice
 
         # Actually read
         if i_vol == 0:
@@ -105,26 +107,25 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
             new_shape.extend(list(tmp.shape))
             dat = np.zeros(new_shape, dtype=out_dtype)
             print("Final shape should be: ", new_shape)
-            dat[i_vol,...] = tmp
+            dat[i_vol, ...] = tmp
         elif which_slice is None:
-            dat[i_vol,...] = tifffile.imread(video_fname, key=vol_indices)
+            dat[i_vol, ...] = tifffile.imread(video_fname, key=vol_indices)
         else:
-            dat[i_vol,...] = tifffile.imread(video_fname, key=vol_indices)
+            dat[i_vol, ...] = tifffile.imread(video_fname, key=vol_indices)
 
         # Read and make output name
-#         this_volume = tifffile.imread(video_fname, key=vol_indices)
+    #         this_volume = tifffile.imread(video_fname, key=vol_indices)
 
     # Save in output folder
-    output_name = os.path.join('.',out_fname)
+    output_name = os.path.join('.', out_fname)
 
     tifffile.imsave(output_name, dat, dtype=out_dtype)
 
     return dat
 
 
-
 def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None,
-                                     num_frames = None, fps=10, frame_width = None, frame_height = None,
+                                     num_frames=None, fps=10, frame_width=None, frame_height=None,
                                      num_slices=33,
                                      alpha=None,
                                      actually_write=True):
@@ -151,16 +152,17 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
             frame_height, frame_width = tif.pages[0].shape
             print(f'Read shape of (H,W) = ({frame_height}, {frame_width})')
             if alpha is None:
-                alpha =  0.9 * 255.0 / np.max(tif.pages[0].asarray())
+                alpha = 0.9 * 255.0 / np.max(tif.pages[0].asarray())
                 print(f'Calculated alpha as {alpha}')
         # Future: also get the number of z-slices
 
     if alpha is None:
         alpha = 1.0
     # Set up the video writer
-    #ALSO NOT WORKKING: , FRWA, FRWD, IRAW, LAGS, LCW2, PIMJ, ASLC "-1",
-    fourcc=0
-    video_out = cv2.VideoWriter(output_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
+    # ALSO NOT WORKKING: , FRWA, FRWD, IRAW, LAGS, LCW2, PIMJ, ASLC "-1",
+    fourcc = 0
+    video_out = cv2.VideoWriter(output_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width, frame_height),
+                                isColor=False)
 
     with tifffile.TiffFile(input_fname, multifile=False) as tif:
         for i, page in enumerate(tif.pages):
@@ -170,12 +172,11 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
             # Bottleneck line
             img = page.asarray()
             # Convert to proper format, and write single frame
-            img = (alpha*img).astype('uint8')
+            img = (alpha * img).astype('uint8')
             if actually_write:
                 video_out.write(img)
             if num_frames is not None and i > num_frames: break
     video_out.release()
-
 
 
 ## For use with config files
@@ -194,12 +195,12 @@ def write_minimax_projection_from_btf(config_file):
     frame_height, frame_width = c.datafiles.get_frame_size()
 
     params = dict(which_slices=c.preprocessing.which_slices(),
-                start_volume=c.preprocessing.start_volume,
-                num_frames=c.preprocessing.num_frames,
-                frame_width=frame_width,
-                frame_height=frame_height,
-                num_slices=c.preprocessing.num_total_slices,
-                alpha=c.preprocessing.alpha)
+                  start_volume=c.preprocessing.start_volume,
+                  num_frames=c.preprocessing.num_frames,
+                  frame_width=frame_width,
+                  frame_height=frame_height,
+                  num_slices=c.preprocessing.num_total_slices,
+                  alpha=c.preprocessing.alpha)
 
     # Do red (tracking) channel
     video_fname = c.datafiles.red_bigtiff_fname
@@ -218,7 +219,6 @@ def write_minimax_projection_from_btf(config_file):
                                                 **params)
 
     return c
-
 
 
 def write_video_projection_from_ome_file_subset(video_fname,
@@ -248,10 +248,10 @@ def write_video_projection_from_ome_file_subset(video_fname,
         ome.tiff -> .avi
     """
     # Set up the video writer
-    fourcc=0
-    video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width,frame_height), isColor=False)
+    fourcc = 0
+    video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width, frame_height), isColor=False)
 
-    assert num_slices%2==1, f"num_slices must be odd; was {num_slices}"
+    assert num_slices % 2 == 1, f"num_slices must be odd; was {num_slices}"
 
     # By default skip the first volume
     if start_volume is None:
@@ -271,7 +271,7 @@ def write_video_projection_from_ome_file_subset(video_fname,
     img_tmp = np.zeros((len(which_slices), frame_height, frame_width))
 
     if verbose >= 2:
-        print(f'Taking a max of {len(which_slices)} slices, starting at {start_of_each_frame}' )
+        print(f'Taking a max of {len(which_slices)} slices, starting at {start_of_each_frame}')
 
     with tifffile.TiffFile(video_fname, multifile=False) as tif:
         for i_page, page in enumerate(tif.pages):
@@ -281,9 +281,10 @@ def write_video_projection_from_ome_file_subset(video_fname,
             if (i_page < start_volume) or (i_slice_raw not in which_slices):
                 continue
             if verbose >= 2:
-                print(f'Page {i_page}/{num_frames*num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {i_slice_tmp}')
+                print(
+                    f'Page {i_page}/{num_frames * num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {i_slice_tmp}')
 
-            img_tmp[i_slice_tmp,...] = page.asarray()
+            img_tmp[i_slice_tmp, ...] = page.asarray()
 
             if i_slice_raw == end_of_each_frame:
                 # Take a mini-max projection
@@ -337,9 +338,9 @@ def write_numpy_as_avi(data,
     # Set up the video writer
     # writer = cv2.VideoWriter(fname,cv2.VideoWriter_fourcc(*"MJPG"), fps,(sz[2],sz[1]), isColor=isColor)
     options = {'fourcc': 0,
-           'fps': fps,
-           'isColor': is_color,
-           'frameSize': (frame_width, frame_height)}
+               'fps': fps,
+               'isColor': is_color,
+               'frameSize': (frame_width, frame_height)}
     try:
         writer = cv2.VideoWriter(out_fname, **options)
         for i_frame in range(data.shape[0]):

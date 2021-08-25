@@ -3,12 +3,14 @@ The top level function for producing dlc tracks in 3d
 """
 
 from pathlib import Path
-# main function
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import filter_all_dlc_tracks
+
 # Experiment tracking
 import sacred
 from sacred import Experiment
+
+from DLC_for_WBFM.utils.pipeline.dlc_pipeline import filter_all_dlc_tracks
+# main function
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
 # Initialize sacred experiment
 ex = Experiment()
@@ -43,4 +45,5 @@ def make_dlc_labeled_videos(_config, _run):
         use_dlc_project_videos = True
 
     with safe_cd(_config['project_dir']):
-        filter_all_dlc_tracks(this_config, use_dlc_project_videos=use_dlc_project_videos, filter_mode=filter_mode, DEBUG=DEBUG)
+        filter_all_dlc_tracks(this_config, use_dlc_project_videos=use_dlc_project_videos, filter_mode=filter_mode,
+                              DEBUG=DEBUG)

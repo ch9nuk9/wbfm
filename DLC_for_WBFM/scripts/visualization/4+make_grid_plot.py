@@ -3,14 +3,16 @@ The top level function for producing dlc tracks in 3d
 """
 
 from pathlib import Path
+
+# Experiment tracking
+import sacred
+from sacred import Experiment
+from sacred.observers import TinyDbObserver
+
 # main function
 from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-# Experiment tracking
-import sacred
 from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_project
-from sacred import Experiment
-from sacred.observers import TinyDbObserver
 
 # Initialize sacred experiment
 ex = Experiment()
@@ -31,6 +33,7 @@ def cfg(project_path):
 
     # log_dir = str(Path(project_dir).joinpath('log'))
     # ex.observers.append(TinyDbObserver(log_dir))
+
 
 @ex.automain
 def make_dlc_labeled_videos(_config, _run):

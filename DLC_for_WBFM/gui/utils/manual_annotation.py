@@ -21,7 +21,6 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
 
     def setupUi(self, df: pd.DataFrame, output_dir: str, viewer: napari.Viewer, annotation_output_name: str):
-
         # Load dataframe and path to outputs
         self.annotation_output_name = annotation_output_name
         self.viewer = viewer
@@ -61,7 +60,8 @@ class manual_annotation_widget(QtWidgets.QWidget):
         point_layer_data, track_layer_data = self.get_track_data()
 
         points_opt = dict(face_color='blue', size=4)
-        self.viewer.add_points(point_layer_data, name="pts_with_future_and_past", n_dimensional=True, symbol='cross', **points_opt)
+        self.viewer.add_points(point_layer_data, name="pts_with_future_and_past", n_dimensional=True, symbol='cross',
+                               **points_opt)
 
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
 
@@ -87,6 +87,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         # @viewer.bind_key(',', overwrite=True)
         # def zoom_previous(dummy):
         #     self.zoom_and_change_time(-1)
+
     #
     # def zoom_and_change_time(self, dt=0):
     #     viewer = self.viewer
@@ -191,7 +192,8 @@ def create_manual_correction_gui(cfg: modular_project_config,
     """
     project_dir = cfg.project_dir
 
-    annotation_output_name = os.path.join(project_dir, '2-training_data', 'manual_tracking', f'corrected_tracks-{corrector_name}.h5')
+    annotation_output_name = os.path.join(project_dir, '2-training_data', 'manual_tracking',
+                                          f'corrected_tracks-{corrector_name}.h5')
     if Path(annotation_output_name).exists():
         raise FileExistsError(f"File already {annotation_output_name} exists! Please rename or delete")
 
@@ -201,7 +203,9 @@ def create_manual_correction_gui(cfg: modular_project_config,
         df_raw_matches = pd.read_pickle(fname)
 
         # Get the frames chosen as training data, or recalculate
-        which_frames = list(get_or_recalculate_which_frames(DEBUG, df_raw_matches, cfg.config['dataset_params']['num_frames'], tracking_cfg))
+        which_frames = list(
+            get_or_recalculate_which_frames(DEBUG, df_raw_matches, cfg.config['dataset_params']['num_frames'],
+                                            tracking_cfg))
 
         # Import segmentation
         fname = segment_cfg.config['output_masks']
@@ -231,8 +235,9 @@ def create_manual_correction_gui(cfg: modular_project_config,
     print("Finished loading data, starting napari...")
 
     # Build Napari and add widgets
-    viewer = napari.view_image(red_data[which_frames[0]:which_frames[-1]+1, ...], name="Red data", ndisplay=2, opacity=0.5)
-    viewer.add_labels(raw_segmentation[which_frames[0]:which_frames[-1]+1, ...], name="Raw segmentation", opacity=0.5)
+    viewer = napari.view_image(red_data[which_frames[0]:which_frames[-1] + 1, ...], name="Red data", ndisplay=2,
+                               opacity=0.5)
+    viewer.add_labels(raw_segmentation[which_frames[0]:which_frames[-1] + 1, ...], name="Raw segmentation", opacity=0.5)
     if colored_segmentation is not None:
         viewer.add_labels(colored_segmentation)
 

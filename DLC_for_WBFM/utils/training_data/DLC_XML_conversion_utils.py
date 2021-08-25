@@ -1,10 +1,12 @@
-from lxml import etree as ET
-import pandas as pd
+import csv
 import os
 import pathlib
-import numpy as np
+
 import deeplabcut
-import csv
+import numpy as np
+import pandas as pd
+from lxml import etree as ET
+
 
 ##
 ## Convert from Icy .xml files to DLC .h5 and .csv files
@@ -47,7 +49,7 @@ def icy_xml_to_dlc(path_config_file,
 
         scorer = df_original.columns.levels[0][0]
 
-        relativeimagenames=df_original.index
+        relativeimagenames = df_original.index
 
     # Get folder with annotations
     project_folder, xml_folder, xml_filename, png_fnames = find_xml_in_project(path_config_file)
@@ -65,7 +67,7 @@ def icy_xml_to_dlc(path_config_file,
         relativeimagenames = []
         xml_name = os.path.basename(xml_folder)
         for f in png_fnames:
-            relativeimagenames.append(os.path.sep.join(['labeled-data',xml_name,f]))
+            relativeimagenames.append(os.path.sep.join(['labeled-data', xml_name, f]))
         # relativeimagenames = ['/'.join((folder_1, folder_2, fname_template.format(i))).replace(' ', '0') for i in range(num_files)]
     print("Relative image names:")
     print(relativeimagenames)
@@ -75,21 +77,21 @@ def icy_xml_to_dlc(path_config_file,
     # Build correctly DLC-formatted dataframe
     for i_trackgroup in range(num_trackgroups):
 
-        i_xml = i_trackgroup + 1 # The first entry in the xml file is the 'trackfile' class
+        i_xml = i_trackgroup + 1  # The first entry in the xml file is the 'trackfile' class
         for this_detection in et2[i_xml]:
             bodypart = 'neuron{}'.format(i_neuron_name)
             frame = add_detection_to_df(this_detection,
                                         relativeimagenames, save_z_coordinate,
                                         scorer, bodypart, coord_names)
             if frame is not None:
-                dataFrame = pd.concat([dataFrame, frame],axis=1)
+                dataFrame = pd.concat([dataFrame, frame], axis=1)
                 i_neuron_name = i_neuron_name + 1
 
     # Last: save
     # scorer = "Charlie"
     # scorer = "test"
     output_path = os.path.join(project_folder, 'labeled-data', xml_folder)
-    dataFrame.to_csv(os.path.join(output_path,"CollectedData_" + scorer + ".csv"))
+    dataFrame.to_csv(os.path.join(output_path, "CollectedData_" + scorer + ".csv"))
     deeplabcut.convertcsv2h5(path_config_file, userfeedback=False)
     # dataFrame.to_hdf(os.path.join(output_path,"CollectedData_" + scorer + '.h5'),'df_with_missing',format='table', mode='w')
 
@@ -109,7 +111,7 @@ def add_detection_to_df(this_detections,
                         relativeimagenames, save_z_coordinate,
                         scorer, bodypart, coord_names):
     # Get xyz or xy coordinates for one neuron, for all files
-    coords = np.empty((len(relativeimagenames),len(coord_names),))
+    coords = np.empty((len(relativeimagenames), len(coord_names),))
     for i2 in range(len(relativeimagenames)):
         try:
             this_track = this_detections[i2]
@@ -121,19 +123,19 @@ def add_detection_to_df(this_detections,
         # if include_which_z_slices is not None and this_z not in include_which_z_slices:
         #     continue
         if save_z_coordinate:
-            coords[i2,:] = np.array([int(float(this_track.get('x'))),
-                                     int(float(this_track.get('y'))),
-                                     this_z ])
+            coords[i2, :] = np.array([int(float(this_track.get('x'))),
+                                      int(float(this_track.get('y'))),
+                                      this_z])
         else:
-            coords[i2,:] = np.array([int(float(this_track.get('x'))),
-                                     int(float(this_track.get('y')))])
+            coords[i2, :] = np.array([int(float(this_track.get('x'))),
+                                      int(float(this_track.get('y')))])
 
     # Then, append to the dataframe (write at the end)
     index = pd.MultiIndex.from_product([[scorer], [bodypart],
                                         coord_names],
-                                        names=['scorer', 'bodyparts', 'coords'])
+                                       names=['scorer', 'bodyparts', 'coords'])
 
-    frame = pd.DataFrame(coords, columns = index, index = relativeimagenames)
+    frame = pd.DataFrame(coords, columns=index, index=relativeimagenames)
 
     return frame
 
@@ -150,7 +152,7 @@ def find_xml_in_project(path_config_file):
         png_fnames = []
         for f in all_files:
             if '.xml' in f:
-                xml_fname = f # Assume only one
+                xml_fname = f  # Assume only one
             elif '.png' in f:
                 png_fnames.append(f)
 
@@ -219,11 +221,10 @@ def find_xml_in_project(path_config_file):
 
 
 def get_annotations_converted_from_xml(path_config_file):
-
     project_folder, xml_folder, _, _ = find_xml_in_project(path_config_file)
     config_file = pathlib.Path(path_config_file).resolve()
     cfg = deeplabcut.auxiliaryfunctions.read_config(config_file)
     scorer = cfg['scorer']
     output_path = os.path.join(project_folder, 'labeled-data', xml_folder)
 
-    return os.path.join(output_path,"CollectedData_" + scorer + ".csv")
+    return os.path.join(output_path, "CollectedData_" + scorer + ".csv")

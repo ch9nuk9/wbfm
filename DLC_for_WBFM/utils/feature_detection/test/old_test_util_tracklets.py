@@ -5,18 +5,17 @@ import pandas as pd
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import *
 
 
-
 class TestTrackletStitching(unittest.TestCase):
 
     def setUp(self):
         print("Setting up...")
 
-        dummy_opt = {'i0_xyz':[0,0,0],
-                    'i1_xyz':[1,0,0],
-                    'i1_prob':[0.9],
-                    'this_point_cloud_offset':2,
-                    'next_point_cloud_offset':5,
-                    'i1_global':10}
+        dummy_opt = {'i0_xyz': [0, 0, 0],
+                     'i1_xyz': [1, 0, 0],
+                     'i1_prob': [0.9],
+                     'this_point_cloud_offset': 2,
+                     'next_point_cloud_offset': 5,
+                     'i1_global': 10}
 
         next_ind, t0 = create_new_track(i0=0, i1=1,
                                         which_slice=0,
@@ -35,9 +34,8 @@ class TestTrackletStitching(unittest.TestCase):
 
         self.df_test = t0.append(t1, ignore_index=True).append(t2, ignore_index=True)
 
-
     def test_single_match(self):
-        matches = [[0,1]]
+        matches = [[0, 1]]
 
         df_stitched = consolidate_tracklets(self.df_test, matches)
 
@@ -46,9 +44,8 @@ class TestTrackletStitching(unittest.TestCase):
 
         self.helper_check_total_length(df_stitched)
 
-
     def test_two_matches(self):
-        matches = [[0,1], [1,2]]
+        matches = [[0, 1], [1, 2]]
 
         df_stitched = consolidate_tracklets(self.df_test, matches)
 
@@ -56,7 +53,6 @@ class TestTrackletStitching(unittest.TestCase):
         self.assertEqual(df_stitched['slice_ind'].loc[0], [0, 1, 2, 3, 5, 6])
 
         self.helper_check_total_length(df_stitched)
-
 
     def helper_check_total_length(self, new_df):
         len0 = sum(self.df_test['slice_ind'].apply(len))

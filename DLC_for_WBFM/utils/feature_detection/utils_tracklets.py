@@ -1,9 +1,11 @@
-import pandas as pd
-import numpy as np
-from tqdm import tqdm
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 import copy
 from collections import defaultdict
+
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 
 
 ##
@@ -408,7 +410,8 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
     """
     assert len(pairwise_matches_dict) > 0, "No matches found"
     assert len(list(pairwise_matches_dict.keys())[0]) == 2, "Dictionary should be indexed by a tuple"
-    assert len(list(pairwise_matches_dict.values())) >= 2, "Dictionary should contain match indices, confidence optional"
+    assert len(
+        list(pairwise_matches_dict.values())) >= 2, "Dictionary should contain match indices, confidence optional"
 
     # Make everything a dictionary
     dict_of_match_dicts = {k: dict([m0[:2] for m0 in m]) for k, m in pairwise_matches_dict.items()}
@@ -421,7 +424,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
         # Note: match_dicts will progressively have entries deleted
         for i in pair_range:
             # Make sure order is respected
-            match_key = (i, i+1)
+            match_key = (i, i + 1)
             match_dict = match_dicts.get(match_key, [])
             if len(match_dict) == 0:
                 continue
@@ -458,7 +461,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
         # DFS for this starting point
         remaining_pairs = range(match_key[1], pair_range[-1])
         for i_pair in remaining_pairs:
-            next_match_key = (i_pair, i_pair+1)
+            next_match_key = (i_pair, i_pair + 1)
             next_match_dict = dict_of_match_dicts.get(next_match_key, {})
             # next_match_dict = dict_of_match_dicts[next_match_key]
             if i1 in next_match_dict:

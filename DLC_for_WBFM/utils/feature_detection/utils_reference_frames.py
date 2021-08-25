@@ -1,11 +1,13 @@
+import collections
+
+import networkx as nx
+import numpy as np
+
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame, _detect_or_import_neurons
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, \
     build_neuron_tree, build_f2n_map, add_neuron_match
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame, _detect_or_import_neurons
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name, is_one_neuron_per_frame
-import numpy as np
-import networkx as nx
-import collections
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 
 
 ##
@@ -224,5 +226,3 @@ def calc_matches_using_feature_voting(frame0, frame1,
     matches_with_conf = [(m[0], m[1], c) for m, c in zip(all_neuron_matches, all_confidences)]
     # Empty list to match other signatures
     return matches_with_conf, all_candidate_matches, []
-
-

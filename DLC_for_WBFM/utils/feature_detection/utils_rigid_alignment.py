@@ -18,21 +18,21 @@ def filter_image(img_to_filter, high_freq, low_freq):
     avr = min
     if x > y:
         tmp_img = np.full((x, x), avr)
-        tmp_img[:,int((x-y)/2):y+int((x-y)/2)] = img_to_filter
+        tmp_img[:, int((x - y) / 2):y + int((x - y) / 2)] = img_to_filter
         size = x
     elif y > x:
         tmp_img = np.full((y, y), avr)
-        tmp_img[int((y-x)/2):x+int((y-x)/2)] = img_to_filter
+        tmp_img[int((y - x) / 2):x + int((y - x) / 2)] = img_to_filter
         size = y
     else:
         tmp_img = img_to_filter
         size = x
     # set filter values
-    rhigh = high_freq # how narrower the window is
-    rlow = low_freq # how broad the window is
+    rhigh = high_freq  # how narrower the window is
+    rlow = low_freq  # how broad the window is
     # function to generate the mask (window)
-    ham = np.hamming(size)[:,None] # 1D hamming
-    ham2dhigh = np.sqrt(np.dot(ham, ham.T)) ** rhigh # expand to 2D hamming
+    ham = np.hamming(size)[:, None]  # 1D hamming
+    ham2dhigh = np.sqrt(np.dot(ham, ham.T)) ** rhigh  # expand to 2D hamming
     ham2dlow = np.sqrt(np.dot(ham, ham.T)) ** rlow
     ham2d = ham2dhigh - ham2dlow
     # the mask determines the filter in frequency space.
@@ -42,7 +42,7 @@ def filter_image(img_to_filter, high_freq, low_freq):
     f = cv2.dft(tmp_img.astype('float32'), flags=cv2.DFT_COMPLEX_OUTPUT)
     # reorder result quarters (the 4 quardrants are in wrong order)
     f_shifted = np.fft.fftshift(f)
-    f_complex = f_shifted[:,:,0]*1j + f_shifted[:,:,1]
+    f_complex = f_shifted[:, :, 0] * 1j + f_shifted[:, :, 1]
     # apply filter mask
     f_filtered = ham2d * f_complex
     # reorder result
@@ -53,9 +53,9 @@ def filter_image(img_to_filter, high_freq, low_freq):
     filtered_img = np.abs(inv_img)
     # return result
     if x > y:
-        return filtered_img[:,int((x-y)/2):y+int((x-y)/2)]
+        return filtered_img[:, int((x - y) / 2):y + int((x - y) / 2)]
     if y > x:
-        return filtered_img[int((y-x)/2):x+int((y-x)/2)]
+        return filtered_img[int((y - x) / 2):x + int((y - x) / 2)]
 
     filtered_img = cv2.bilateralFilter(filtered_img.astype('float32'), d=9, sigmaColor=50, sigmaSpace=3).astype('uint8')
     return filtered_img
@@ -86,13 +86,13 @@ def merge_matrices(mat1, mat2):
     (x, y) = mat1.shape
     affine = True
     if x < 3:
-        firstMul[0:2,:] = mat1
+        firstMul[0:2, :] = mat1
     else:
         affine = False
         firstMul = mat1
     (x, y) = mat2.shape
     if x < 3:
-        secondMul[0:2,:] = mat2
+        secondMul[0:2, :] = mat2
     else:
         affine = False
         firstMul = mat2
@@ -100,7 +100,7 @@ def merge_matrices(mat1, mat2):
     mat_combine = secondMul.dot(firstMul)
     # return the affine matrix
     if affine:
-        return mat_combine[0:2,:]
+        return mat_combine[0:2, :]
     # return the homography matrix
     return mat_combine
 
@@ -112,6 +112,7 @@ def get_warp_mat(im_prev, im_next, warp_mat):
     #     warp_new = np.identity(3)[0:2,:]
 
     return merge_matrices(warp_mat, warp_new)
+
 
 ##
 ## Alignment
@@ -149,22 +150,24 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
     # (as function parameter)
 
     # Define termination criteria
-    criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations,  termination_eps)
+    criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations, termination_eps)
 
     # Run the ECC algorithm. The results are stored in warp_matrix.
     # Depends on version of cv2
     try:
-        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix, warp_mode, criteria, None)
+        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix,
+                                                 warp_mode, criteria, None)
     except TypeError:
-        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1)
+        (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix,
+                                                 warp_mode, criteria, inputMask=None, gaussFiltSize=1)
 
     # example to execute the transformation
-    #if warp_mode == cv2.MOTION_HOMOGRAPHY :
-        # Use warpPerspective for Homography
-        #im2_aligned = cv2.warpPerspective (im2_gray, warp_matrix, (sz[1],sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
-    #else :
-        # Use warpAffine for Translation, Euclidean and Affine
-        #im2_aligned = cv2.warpAffine(im2_gray, warp_matrix, (sz[1],sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
+    # if warp_mode == cv2.MOTION_HOMOGRAPHY :
+    # Use warpPerspective for Homography
+    # im2_aligned = cv2.warpPerspective (im2_gray, warp_matrix, (sz[1],sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
+    # else :
+    # Use warpAffine for Translation, Euclidean and Affine
+    # im2_aligned = cv2.warpAffine(im2_gray, warp_matrix, (sz[1],sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
 
     return warp_matrix
 
@@ -178,7 +181,7 @@ def align_stack(stack_to_align, hide_progress=True):
     sz = (sz[1], sz[0])
     flags = cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
     # align volumes, starting from the center
-    i_center_plane = int(stack_to_align.shape[0]/2)
+    i_center_plane = int(stack_to_align.shape[0] / 2)
     stack_aligned = np.empty_like(stack_to_align)
     stack_aligned[i_center_plane] = stack_to_align[i_center_plane]
     warp_matrices = {}  # (i_prev, i_next) -> matrix
@@ -187,18 +190,18 @@ def align_stack(stack_to_align, hide_progress=True):
     # Calculates the matrix per plane, and cumulatively multiplies them
     warp_mat = np.identity(3)[0:2, :]
     for i in tqdm(range(i_center_plane, 0, -1), disable=hide_progress):
-        im_next, im_prev = stack_to_align[i-1], stack_to_align[i]
+        im_next, im_prev = stack_to_align[i - 1], stack_to_align[i]
         warp_mat = get_warp_mat(im_prev, im_next, warp_mat)
-        warp_matrices[(i, i-1)] = warp_mat.copy()
-        stack_aligned[i-1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
+        warp_matrices[(i, i - 1)] = warp_mat.copy()
+        stack_aligned[i - 1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     # From i_center_plane to end (usually 33)
     warp_mat = np.identity(3)[0:2, :]
-    for i in tqdm(range(i_center_plane, (stack_to_align.shape[0]-1)), disable=hide_progress):
-        im_prev, im_next = stack_to_align[i], stack_to_align[i+1]
+    for i in tqdm(range(i_center_plane, (stack_to_align.shape[0] - 1)), disable=hide_progress):
+        im_prev, im_next = stack_to_align[i], stack_to_align[i + 1]
         warp_mat = get_warp_mat(im_prev, im_next, warp_mat)
-        warp_matrices[(i, i+1)] = warp_mat.copy()
-        stack_aligned[i+1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
+        warp_matrices[(i, i + 1)] = warp_mat.copy()
+        stack_aligned[i + 1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     return stack_aligned, warp_matrices
 
@@ -212,21 +215,21 @@ def align_stack_using_previous_results(stack_to_align, previous_warp_matrices, h
     sz = (sz[1], sz[0])
     flags = cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
     # align volumes, starting from the center
-    i_center_plane = int(stack_to_align.shape[0]/2)
+    i_center_plane = int(stack_to_align.shape[0] / 2)
     stack_aligned = np.empty_like(stack_to_align)
     stack_aligned[i_center_plane] = stack_to_align[i_center_plane]
 
     # From i_center_plane to 0
     # Calculates the matrix per plane, and cumulatively multiplies them
     for i in tqdm(range(i_center_plane, 0, -1), disable=hide_progress):
-        im_next = stack_to_align[i-1]
-        warp_mat = previous_warp_matrices[(i, i-1)]
-        stack_aligned[i-1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
+        im_next = stack_to_align[i - 1]
+        warp_mat = previous_warp_matrices[(i, i - 1)]
+        stack_aligned[i - 1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     # From i_center_plane to end (usually 33)
-    for i in tqdm(range(i_center_plane, (stack_to_align.shape[0]-1)), disable=hide_progress):
-        im_next = stack_to_align[i+1]
-        warp_mat = previous_warp_matrices[(i, i+1)]
-        stack_aligned[i+1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
+    for i in tqdm(range(i_center_plane, (stack_to_align.shape[0] - 1)), disable=hide_progress):
+        im_next = stack_to_align[i + 1]
+        warp_mat = previous_warp_matrices[(i, i + 1)]
+        stack_aligned[i + 1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     return stack_aligned

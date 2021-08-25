@@ -99,12 +99,10 @@ def combine_one_dlc_and_tracklet_covering(these_tracklet_ind, neuron_name, df_tr
         all_arrs.append(this_column)
     summed_tracklet_array = np.stack(all_arrs, axis=1)
 
-
     # Morph to DLC format
     cols = [[neuron_name], coords]
     cols = pd.MultiIndex.from_product(cols)
     summed_tracklet_df = pd.DataFrame(data=summed_tracklet_array, columns=cols)
-
 
     return summed_tracklet_df
 
@@ -134,7 +132,7 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tr
         final_track_df[name] = new_tracklet_df[name].combine_first(dlc_tracks[name])
     # final_track_df = pd.concat(all_df, axis=1)
     if rename_neurons:
-        new_neuron_names = {name: f'neuron{i+1}' for i, name in enumerate(all_neuron_names)}
+        new_neuron_names = {name: f'neuron{i + 1}' for i, name in enumerate(all_neuron_names)}
         final_track_df.rename(columns=new_neuron_names, inplace=True)
 
     return final_track_df, new_tracklet_df
@@ -187,7 +185,6 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config, DEBUG=False
                                                                           rename_neurons=True, verbose=0)
 
     # Rename to be sequential, like the reindexed segmentation
-
 
     df_fname = os.path.join('3-tracking', 'postprocessing', 'combined_3d_tracks.h5')
 

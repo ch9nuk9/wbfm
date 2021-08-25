@@ -1,8 +1,10 @@
 import napari
-from PyQt5 import QtGui
-from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume, get_single_volume_specific_slices
 import numpy as np
+from PyQt5 import QtGui
+
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d
+from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume, \
+    get_single_volume_specific_slices
 
 
 def get_cropped_frame(fname, t, num_slices, zxy, crop_sz, to_flip=False):

@@ -1,11 +1,13 @@
-from dNMF.Demix.dNMF import dNMF
-import torch
 import h5py
 import pandas as pd
-from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
-from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
+import torch
+from dNMF.Demix.dNMF import dNMF
+
 # from DLC_for_WBFM.config.class_configuration import *
 from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
+from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import *
+from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
+
 
 ##
 ## Full workflow
@@ -62,22 +64,22 @@ def _extract_all_traces(config_file,
     # Save configuration
     # WARNING: overwrite old
     traces_config = DLCForWBFMTraces(is_3d,
-                                        crop_sz,
-                                        trace_fname,
-                                        which_neurons)
+                                     crop_sz,
+                                     trace_fname,
+                                     which_neurons)
     c.traces = traces_config
     save_config(config_file)
 
     # Actually get traces
     all_traces = extract_all_traces(annotation_fname,
-                           video_fname_red,
-                           video_fname_green,
-                           which_neurons,
-                           num_frames,
-                           crop_sz,
-                           params,
-                           is_3d,
-                           z_params)
+                                    video_fname_red,
+                                    video_fname_green,
+                                    which_neurons,
+                                    num_frames,
+                                    crop_sz,
+                                    params,
+                                    is_3d,
+                                    z_params)
 
     # Save traces
     pickle.dump(all_traces, open(trace_fname, 'wb'))
@@ -93,14 +95,14 @@ def get_defaults_from_dlc(annotation_fname, num_frames, which_neurons):
             dlc_table = dlc_dat['df_with_missing']['table']
             # Each table entry has: x, y, probability
             if which_neurons is None:
-                num_neurons = len(dlc_table[0][1])//3
+                num_neurons = len(dlc_table[0][1]) // 3
                 which_neurons = range(num_neurons)
             if num_frames is None:
                 num_frames = len(dlc_table)
     except:
         dlc_table = pd.read_hdf(annotation_fname)
         if which_neurons is None:
-            num_neurons = len(dlc_table.columns)//3
+            num_neurons = len(dlc_table.columns) // 3
             which_neurons = range(num_neurons)
         if num_frames is None:
             num_frames = len(dlc_table)
@@ -114,7 +116,7 @@ def extract_all_traces(annotation_fname,
                        video_fname_gcamp,
                        which_neurons=None,
                        num_frames=None,
-                       crop_sz=(19,19),
+                       crop_sz=(19, 19),
                        params=None,
                        is_3d=False,
                        z_params=None):
@@ -169,28 +171,28 @@ def extract_all_traces(annotation_fname,
     for which_neuron in which_neurons:
         print(f'Starting analysis of neuron {which_neuron}/{len(which_neurons)}...')
         mcherry_dat = extract_single_trace(annotation_fname,
-                                 video_fname_mcherry,
-                                 which_neuron=which_neuron,
-                                 num_frames=num_frames,
-                                 crop_sz=crop_sz,
-                                 params=params,
-                                 is_3d=is_3d,
-                                 z_params=z_params)
+                                           video_fname_mcherry,
+                                           which_neuron=which_neuron,
+                                           num_frames=num_frames,
+                                           crop_sz=crop_sz,
+                                           params=params,
+                                           is_3d=is_3d,
+                                           z_params=z_params)
         print('Finished extracting mCherry')
         gcamp_dat = extract_single_trace(annotation_fname,
-                                  video_fname_gcamp,
-                                  which_neuron=which_neuron,
-                                  num_frames=num_frames,
-                                  crop_sz=crop_sz,
-                                  params=params,
-                                  is_3d=is_3d,
-                                  flip_x=True, # OPTIMIZE: needed as of 09.11.2020
-                                  z_params=z_params)
+                                         video_fname_gcamp,
+                                         which_neuron=which_neuron,
+                                         num_frames=num_frames,
+                                         crop_sz=crop_sz,
+                                         params=params,
+                                         is_3d=is_3d,
+                                         flip_x=True,  # OPTIMIZE: needed as of 09.11.2020
+                                         z_params=z_params)
         print('Finished extracting GCaMP')
-        all_traces.append({'mcherry':mcherry_dat,
-                           'gcamp':gcamp_dat})
+        all_traces.append({'mcherry': mcherry_dat,
+                           'gcamp': gcamp_dat})
     end = time.time()
-    print('Finished in ' + str(end-start) + ' seconds')
+    print('Finished in ' + str(end - start) + ' seconds')
 
     return all_traces
 
@@ -199,7 +201,7 @@ def extract_single_trace(annotation_fname,
                          video_fname,
                          which_neuron=0,
                          num_frames=500,
-                         crop_sz=(19,19),
+                         crop_sz=(19, 19),
                          params=None,
                          is_3d=False,
                          flip_x=False,
@@ -252,7 +254,7 @@ def extract_single_trace(annotation_fname,
                                         num_frames,
                                         sz=crop_sz)
     else:
-        assert len(crop_sz)==3, "Crop must be 3d"
+        assert len(crop_sz) == 3, "Crop must be 3d"
         which_z, num_slices, alpha, start_volume = z_params
         cropped_dat = get_crop_from_ometiff_virtual(video_fname,
                                                     this_xy,
@@ -264,16 +266,13 @@ def extract_single_trace(annotation_fname,
                                                     alpha=alpha,
                                                     flip_x=flip_x,
                                                     start_volume=start_volume)
-        cropped_dat = np.transpose(cropped_dat, axes=(2,3,1,0))
-
+        cropped_dat = np.transpose(cropped_dat, axes=(2, 3, 1, 0))
 
     # Get parameters and run dNMF
     dnmf_obj = dNMF_default_from_DLC(cropped_dat, crop_sz, params, is_3d)
-    dnmf_obj.optimize(lr=1e-4,n_iter=20,n_iter_c=2)
+    dnmf_obj.optimize(lr=1e-4, n_iter=20, n_iter_c=2)
 
-    return dnmf_obj.C[0,:]
-
-
+    return dnmf_obj.C[0, :]
 
 
 def dNMF_default_from_DLC(dat, crop_sz, params=None, is_3d=False):
@@ -282,11 +281,10 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None, is_3d=False):
     """
     # Defaults that work decently
     if params is None:
-        params = {'n_trials':5, 'noise_level':1e-2, 'sigma_inv':.2,
-                  'radius':10, 'step_S':.1, 'gamma':0, 'stride_factor':2, 'density':.1, 'varfact':5,
-                  'traj_means':[.0,.0,.0], 'traj_variances':[2e-4,2e-4,1e-5], 'sz':[20,20,1],
-                  'K':20, 'T':100, 'roi_window':[4,4,0]}
-
+        params = {'n_trials': 5, 'noise_level': 1e-2, 'sigma_inv': .2,
+                  'radius': 10, 'step_S': .1, 'gamma': 0, 'stride_factor': 2, 'density': .1, 'varfact': 5,
+                  'traj_means': [.0, .0, .0], 'traj_variances': [2e-4, 2e-4, 1e-5], 'sz': [20, 20, 1],
+                  'K': 20, 'T': 100, 'roi_window': [4, 4, 0]}
 
     # Convert the data
     dat_torch = torch.tensor(dat).float()
@@ -294,21 +292,21 @@ def dNMF_default_from_DLC(dat, crop_sz, params=None, is_3d=False):
     # Finalize the parameters
     if not is_3d:
         # Build position and convert to pytorch
-        positions =[list(crop_sz + (0,)),[1, 1, 0]] # Add a dummy position
-        positions = np.expand_dims(positions,2)/2.0 # Return the center of the crop
-        positions =  torch.tensor(positions).float()
-        params = {'positions':positions[:,:,0][:,:,np.newaxis],\
-                  'radius':params['radius'],'step_S':params['step_S'],'gamma':params['gamma'],\
-                  'use_gpu':False,'initial_p':positions[:,:,0],'sigma_inv':params['sigma_inv'],\
-                  'method':'1->t', 'verbose':False}
+        positions = [list(crop_sz + (0,)), [1, 1, 0]]  # Add a dummy position
+        positions = np.expand_dims(positions, 2) / 2.0  # Return the center of the crop
+        positions = torch.tensor(positions).float()
+        params = {'positions': positions[:, :, 0][:, :, np.newaxis], \
+                  'radius': params['radius'], 'step_S': params['step_S'], 'gamma': params['gamma'], \
+                  'use_gpu': False, 'initial_p': positions[:, :, 0], 'sigma_inv': params['sigma_inv'], \
+                  'method': '1->t', 'verbose': False}
     else:
-        positions =[list(crop_sz),[1, 1, 0]] # Add a dummy position
-        positions = np.expand_dims(positions,2)/2.0 # Return the center of the crop
-        positions =  torch.tensor(positions).float()
-        params = {'positions':positions,\
-                  'radius':params['radius'],'step_S':params['step_S'],'gamma':params['gamma'],\
-                  'use_gpu':False,'initial_p':positions[:,:,0],'sigma_inv':params['sigma_inv'],\
-                  'method':'1->t', 'verbose':False}
+        positions = [list(crop_sz), [1, 1, 0]]  # Add a dummy position
+        positions = np.expand_dims(positions, 2) / 2.0  # Return the center of the crop
+        positions = torch.tensor(positions).float()
+        params = {'positions': positions, \
+                  'radius': params['radius'], 'step_S': params['step_S'], 'gamma': params['gamma'], \
+                  'use_gpu': False, 'initial_p': positions[:, :, 0], 'sigma_inv': params['sigma_inv'], \
+                  'method': '1->t', 'verbose': False}
 
     # Finally, create the analysis object
     dnmf_obj = dNMF(dat_torch, params=params)

@@ -1,12 +1,13 @@
-import open3d as o3d
+from typing import Dict
+
 import cv2
 import numpy as np
-from typing import Dict
+import open3d as o3d
+from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree, build_neuron_tree
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, calc_icp_matches
-from tqdm import tqdm
 
 
 def propagate_via_affine_model(which_neuron: int,

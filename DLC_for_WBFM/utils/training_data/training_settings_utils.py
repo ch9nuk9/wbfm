@@ -1,6 +1,7 @@
-import deeplabcut
 import os
 import pathlib
+
+import deeplabcut
 
 ##
 ## Helper functions for good defaults

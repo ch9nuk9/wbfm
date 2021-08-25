@@ -1,10 +1,11 @@
 import numpy as np
+import open3d as o3d
+from sklearn import preprocessing
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, WhiteKernel, DotProduct
-from sklearn import preprocessing
+
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, calc_icp_matches
-import open3d as o3d
 
 
 def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
@@ -24,16 +25,16 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     if len(matches_with_conf) == 0:
         return [], (None, None, None), np.array([])
     # Build regression vectors and z-score
-    xyz = np.zeros((len(matches_with_conf), 3), dtype=np.float32) # Start point
-    dat = np.zeros((len(matches_with_conf), 3), dtype=np.float32) # Difference vector
-    noise = np.zeros(len(matches_with_conf), dtype=np.float32) # Heuristic noise
+    xyz = np.zeros((len(matches_with_conf), 3), dtype=np.float32)  # Start point
+    dat = np.zeros((len(matches_with_conf), 3), dtype=np.float32)  # Difference vector
+    noise = np.zeros(len(matches_with_conf), dtype=np.float32)  # Heuristic noise
     for m, (match_and_conf) in enumerate(matches_with_conf):
         v0 = n0_unmatched[match_and_conf[0]]
         v1 = n1_unmatched[match_and_conf[1]]
         xyz[m, :] = v0
         dat[m, :] = v1 - v0
-        noise[m] = np.exp((1-match_and_conf[2])/1e-1) + 1e-10 # Maximum confidence should be 1.0
-    noise /= 1e4*np.max(noise)
+        noise[m] = np.exp((1 - match_and_conf[2]) / 1e-1) + 1e-10  # Maximum confidence should be 1.0
+    noise /= 1e4 * np.max(noise)
 
     scaler = preprocessing.StandardScaler().fit(xyz)
     xyz_scaled = scaler.transform(xyz)
@@ -45,7 +46,7 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     # Fit 3 GPs for x, y, and z
     # Do each coordinate independently
     kernel = DotProduct(sigma_0=1.0, sigma_0_bounds=(1e-3, 100)) + \
-        RBF(length_scale=0.5, length_scale_bounds=(1e-08, 10.0))
+             RBF(length_scale=0.5, length_scale_bounds=(1e-08, 10.0))
 
     options = {'n_restarts_optimizer': 10, 'alpha': noise}
     gpx = GaussianProcessRegressor(kernel=kernel, **options)
@@ -64,7 +65,7 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     zxy_predict = scaler2.inverse_transform(zxy_predict)
 
     # Point cloud for the pushed and target neurons
-    pc_pushed = build_neuron_tree(n0_unmatched+zxy_predict, False)[1]
+    pc_pushed = build_neuron_tree(n0_unmatched + zxy_predict, False)[1]
     pc_target = build_neuron_tree(n1_unmatched, False)[1]
 
     # New: get matches using bipartite matching on distances

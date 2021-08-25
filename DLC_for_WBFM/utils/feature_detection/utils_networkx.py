@@ -1,10 +1,11 @@
 import logging
 from typing import Tuple, List
-import open3d as o3d
+
+import networkx as nx
 import numpy as np
+import open3d as o3d
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
-import networkx as nx
 
 
 ##
@@ -24,19 +25,19 @@ def calc_bipartite_matches(all_candidate_matches, verbose=0):
     for candidate in all_candidate_matches:
         candidate = list(candidate)
         candidate[1] = get_node_name(1, candidate[1])
-        #candidate[2] = 1/candidate[2]
+        # candidate[2] = 1/candidate[2]
         # Otherwise the sets are unordered
         G.add_node(candidate[0], bipartite=0)
         G.add_node(candidate[1], bipartite=1)
         # Default weight
-        if len(candidate)==2:
+        if len(candidate) == 2:
             candidate.append(1)
         G.add_weighted_edges_from([candidate])
     if verbose >= 2:
         print("Performing bipartite matching")
-    #set0 = [n for n, d in G.nodes(data=True) if d['bipartite'] == 0]
+    # set0 = [n for n, d in G.nodes(data=True) if d['bipartite'] == 0]
     tmp_bp_matches = nx.max_weight_matching(G, maxcardinality=True)
-    #all_bp_dict = nx.bipartite.minimum_weight_full_matching(G, set0)
+    # all_bp_dict = nx.bipartite.minimum_weight_full_matching(G, set0)
     # Translate back into neuron index space
     # all_bp_matches = []
     # for neur0,v in all_bp_dict.items():
@@ -44,7 +45,7 @@ def calc_bipartite_matches(all_candidate_matches, verbose=0):
     #     all_bp_matches.append([neur0, neur1])
     all_bp_matches = []
     for m in tmp_bp_matches:
-        m = list(m) # unordered by default
+        m = list(m)  # unordered by default
         m.sort()
         m[1] = unpack_node_name(m[1])[1]
         all_bp_matches.append(m)
@@ -58,7 +59,8 @@ def calc_bipartite_matches(all_candidate_matches, verbose=0):
 
 def get_node_name(frame_ind, neuron_ind):
     """The graph is indexed by integer, so all neurons must be unique"""
-    return frame_ind*10000 + neuron_ind
+    return frame_ind * 10000 + neuron_ind
+
 
 def unpack_node_name(node_name):
     """Inverse of get_node_name"""
@@ -66,12 +68,11 @@ def unpack_node_name(node_name):
     try:
         return divmod(node_name, 10000)
     except:
-        if type(node_name)==tuple:
+        if type(node_name) == tuple:
             return node_name
         else:
             print("Must pass integer or, trivially, a tuple")
             raise ValueError
-
 
 
 def build_digraph_from_matches(pairwise_matches,
@@ -87,7 +88,7 @@ def build_digraph_from_matches(pairwise_matches,
         if pairwise_conf is not None:
             all_conf = pairwise_conf[frames]
         else:
-            all_conf = np.ones_like(np.array(all_neurons)[:,0])
+            all_conf = np.ones_like(np.array(all_neurons)[:, 0])
         for neuron_pair, this_conf in zip(all_neurons, all_conf):
             if this_conf < min_conf:
                 continue
@@ -97,6 +98,7 @@ def build_digraph_from_matches(pairwise_matches,
             DG.add_weighted_edges_from([e])
 
     return DG
+
 
 ##
 ## Alternate, non-networkx way to get bipartite matches

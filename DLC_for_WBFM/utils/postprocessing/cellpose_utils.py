@@ -1,14 +1,15 @@
 ## Utilities for trace extraction via cellpose-based segmentation
 
 
+# from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import
+from cellpose import models
+from scipy.ndimage import center_of_mass
+
+from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import *
 # Use the project config file
 # from DLC_for_WBFM.config.class_configuration import *
 from DLC_for_WBFM.utils.postprocessing.config_cropping_utils import _get_crop_from_ometiff_virtual, _get_crop_from_avi
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import *
-# from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import
-from cellpose import models
-from scipy.ndimage import center_of_mass
-from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import *
 
 
 ##
@@ -72,13 +73,13 @@ def extract_all_traces_cp(config_file,
     all_traces = []
     all_masks = []
     for neuron in which_neurons:
-        t, m = extract_single_trace_cp(c,which_neuron=neuron,num_frames=num_frames)
+        t, m = extract_single_trace_cp(c, which_neuron=neuron, num_frames=num_frames)
         all_traces.append(t)
         all_masks.append(m)
 
     end = time.time()
     if c.verbose >= 1:
-        print('Finished in ' + str(end-start) + ' seconds')
+        print('Finished in ' + str(end - start) + ' seconds')
 
     # Save traces
     pickle.dump(all_traces, open(trace_fname, 'wb'))
@@ -90,7 +91,7 @@ def extract_all_traces_cp(config_file,
 def extract_single_trace_cp(config_filename,
                             which_neuron=None,
                             num_frames=100,
-                            cellpose_opt={'diameter':8}):
+                            cellpose_opt={'diameter': 8}):
     """
     Extracts single trace of a single neuron via cellpose segmentation
 
@@ -124,15 +125,14 @@ def extract_single_trace_cp(config_filename,
                                                num_frames=num_frames,
                                                use_red_channel=False)
 
-
     # Do the segmentation on red only
-    channels = [0,0]
+    channels = [0, 0]
     model = models.Cellpose(gpu=False, model_type='nuclei')
     # Get time series of segmentations
     all_masks = []
 
     for i in range(num_frames):
-        this_vol = np.squeeze(cropped_dat_red[i,...])
+        this_vol = np.squeeze(cropped_dat_red[i, ...])
         m, f, s, d = model.eval(this_vol,
                                 channels=channels,
                                 do_3D=is_3d,
@@ -149,7 +149,7 @@ def extract_single_trace_cp(config_filename,
     # Link segmentations in time
     # For now, discard all but the center neuron
     initial_neuron, _ = calc_center_neuron(all_masks[0])
-    _, _, this_neuron_masks = calc_all_overlaps(initial_neuron,all_masks)
+    _, _, this_neuron_masks = calc_all_overlaps(initial_neuron, all_masks)
 
     # Finally, get traces
     trace_red = np.zeros(num_frames)
@@ -157,8 +157,8 @@ def extract_single_trace_cp(config_filename,
     num_pixels = np.zeros(num_frames)
 
     for i, m in enumerate(this_neuron_masks):
-        this_vol_red = np.squeeze(cropped_dat_red[i,...])
-        this_vol_green = np.squeeze(cropped_dat_green[i,...])
+        this_vol_red = np.squeeze(cropped_dat_red[i, ...])
+        this_vol_green = np.squeeze(cropped_dat_green[i, ...])
         # WARNING: Assume there is only one neuron detected
         trace_red[i] = brightness_from_roi(this_vol_red, m, 1)
         trace_green[i] = brightness_from_roi(this_vol_green, m, 1)
@@ -177,7 +177,7 @@ def brightness_from_roi(img, all_masks, which_neuron):
 
     OPTIMIZE: better determination of brightness
     """
-    mask = all_masks==which_neuron
+    mask = all_masks == which_neuron
     return np.mean(img[mask])
 
 
@@ -186,7 +186,7 @@ def brightness_from_roi(img, all_masks, which_neuron):
 ##
 
 
-def calc_best_overlap(mask_v0, # Only one mask
+def calc_best_overlap(mask_v0,  # Only one mask
                       masks_v1,
                       verbose=1):
     """
@@ -205,11 +205,11 @@ def calc_best_overlap(mask_v0, # Only one mask
     best_ind = None
     best_mask = np.zeros_like(masks_v1)
     all_vals = np.unique(masks_v1)
-    for i,val in enumerate(all_vals):
+    for i, val in enumerate(all_vals):
         if val == 0:
             continue
-        this_neuron_mask = masks_v1==val
-        overlap = np.count_nonzero(mask_v0*this_neuron_mask)
+        this_neuron_mask = masks_v1 == val
+        overlap = np.count_nonzero(mask_v0 * this_neuron_mask)
         if overlap > best_overlap:
             best_overlap = overlap
             best_ind = i
@@ -245,14 +245,14 @@ def calc_all_overlaps(start_neuron,
 
     has_track = True
     for i, masks_v1 in enumerate(all_multi_masks):
-        if i==0:
+        if i == 0:
             continue
         if has_track:
             # Retain the last successful mask
-            prev_mask = all_multi_masks[i-1] == all_neurons[i-1]
+            prev_mask = all_multi_masks[i - 1] == all_neurons[i - 1]
 
         all_neurons[i], all_overlaps[i], this_mask = calc_best_overlap(prev_mask, masks_v1)
-        if all_overlaps[i]==0:
+        if all_overlaps[i] == 0:
             if verbose >= 1:
                 print("Lost neuron tracking, attempting to find...")
             all_neurons[i], this_mask, has_track = attempt_to_refind_neuron(prev_mask, masks_v1)
@@ -275,10 +275,10 @@ def calc_center_neuron(initial_mask,
     closest_neuron = 0
     best_dist = np.inf
     for i in all_vals:
-        if i==0:
+        if i == 0:
             continue
-        this_center = center_of_mass(initial_mask==i)
-        dist = np.linalg.norm(this_center-center_point)
+        this_center = center_of_mass(initial_mask == i)
+        dist = np.linalg.norm(this_center - center_point)
         if dist < best_dist:
             closest_neuron = i
             best_dist = dist
@@ -296,17 +296,17 @@ def attempt_to_refind_neuron(prev_mask, masks_v1, verbose=1):
     # First: are there any objects detected?
     # If so, Get the object closest to center
     closest_neuron, best_dist = calc_center_neuron(masks_v1)
-    if closest_neuron==0:
+    if closest_neuron == 0:
         if verbose >= 1:
             print("No neurons detected, hopefully the tracking will succeed later")
         return 0, np.zeros_like(masks_v1), False
     else:
-        this_mask = masks_v1==closest_neuron
+        this_mask = masks_v1 == closest_neuron
 
     # OPTIMIZE: Confirm if it is a similar size
     sz0 = np.count_nonzero(prev_mask)
     sz1 = np.count_nonzero(this_mask)
-    if (sz0 < 2*sz1) and (sz0 > sz1/2):
+    if (sz0 < 2 * sz1) and (sz0 > sz1 / 2):
         if verbose >= 1:
             print("Re-found neuron!")
         return closest_neuron, this_mask, True

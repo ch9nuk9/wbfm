@@ -1,8 +1,10 @@
-from lxml import etree as ET
-import pandas as pd
 import os
 import pathlib
+
 import numpy as np
+import pandas as pd
+from lxml import etree as ET
+
 from DLC_for_WBFM.utils.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels
 
 
@@ -20,7 +22,7 @@ def icy_xml_to_dlc(dlc_annotation_fname,
     df = df[experimenter]
 
     # Sort
-    df = df.sort_index() # Filenames may be a different order
+    df = df.sort_index()  # Filenames may be a different order
 
     all_neurons = df.columns.levels[0]
     all_files = df.index
@@ -45,7 +47,7 @@ def icy_xml_to_dlc(dlc_annotation_fname,
                           color=str(i),
                           t=str(i_t),
                           type="1",
-                          x=y, y=x, z=z) # WARNING: switch x and y
+                          x=y, y=x, z=z)  # WARNING: switch x and y
 
     # SAVE
     tree = ET.ElementTree(xm)

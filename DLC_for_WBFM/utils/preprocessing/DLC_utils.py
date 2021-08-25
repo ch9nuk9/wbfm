@@ -1,17 +1,19 @@
+import os
+import re
+from pathlib import Path
+
 import deeplabcut
 import numpy as np
-from deeplabcut.utils import auxiliaryfunctions
-# from DLC_for_WBFM.config.class_configuration import load_config, DLCForWBFMTracking, save_config
-from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
-    build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC
-from DLC_for_WBFM.utils.projects.utils_project import load_config
 import pandas as pd
-from pathlib import Path
-import re
+from deeplabcut.utils import auxiliaryfunctions
 from skimage import io
 from skimage.util import img_as_ubyte
-import os
+
+from DLC_for_WBFM.utils.projects.utils_project import load_config
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
+    build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC
+# from DLC_for_WBFM.config.class_configuration import load_config, DLCForWBFMTracking, save_config
+from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
 
 
 ##
@@ -253,12 +255,12 @@ def training_data_from_tracklet_annotations(video_fname,
     # Cast the dataframe in DLC format
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
     options = {'min_length': 0,
-           'num_frames': total_num_frames,
-           'coord_names': coord_names,
-           'verbose': verbose,
-           'relative_imagenames': relative_imagenames,
-           'which_frame_subset': which_frames,
-           'scorer': cfg['scorer']}
+               'num_frames': total_num_frames,
+               'coord_names': coord_names,
+               'verbose': verbose,
+               'relative_imagenames': relative_imagenames,
+               'which_frame_subset': which_frames,
+               'scorer': cfg['scorer']}
     new_dlc_df = build_dlc_annotation_from_tracklets(subset_df, **options)
     if new_dlc_df is None:
         print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
@@ -362,12 +364,12 @@ def training_data_from_3dDLC_annotations(video_fname,
     # Cast the dataframe in DLC format
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
     options = {'min_length': 0,
-           'num_frames': total_num_frames,
-           'coord_names': coord_names,
-           'verbose': verbose,
-           'relative_imagenames': relative_imagenames,
-           'which_frame_subset': which_frames,
-           'scorer': cfg['scorer']}
+               'num_frames': total_num_frames,
+               'coord_names': coord_names,
+               'verbose': verbose,
+               'relative_imagenames': relative_imagenames,
+               'which_frame_subset': which_frames,
+               'scorer': cfg['scorer']}
     new_dlc_df = build_dlc_annotation_from_3dDLC(subset_df, **options)
     if new_dlc_df is None:
         print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")

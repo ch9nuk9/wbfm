@@ -4,20 +4,20 @@ The top level functions for segmenting a full (WBFM) recording.
 To be used with Niklas' Stardist-based segmentation package
 """
 
-
 import os
 from pathlib import Path
-# main function
-from sacred.observers import TinyDbObserver
-import DLC_for_WBFM.utils.projects.monkeypatch_json
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, synchronize_segment_config
-from segmentation.util.utils_pipeline import segment_video_using_config_2d, segment_video_using_config_3d
 # Experiment tracking
 import sacred
 from sacred import Experiment
-
 from sacred import SETTINGS
+# main function
+from sacred.observers import TinyDbObserver
+from segmentation.util.utils_pipeline import segment_video_using_config_2d, segment_video_using_config_3d
+
+import DLC_for_WBFM.utils.projects.monkeypatch_json
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, synchronize_segment_config
+
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 ex = Experiment()
