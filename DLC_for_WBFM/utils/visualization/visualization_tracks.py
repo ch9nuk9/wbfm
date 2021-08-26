@@ -1,11 +1,13 @@
-import open3d as o3d
-from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
-import numpy as np
-import matplotlib.pyplot as plt
 import copy
-import pandas as pd
-import cv2
 from collections import defaultdict
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import open3d as o3d
+import pandas as pd
+
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False, to_plot=True):
@@ -109,7 +111,7 @@ def build_line_set_from_matches(pc0, pc1, matches=None, color=None):
         # If point clouds are passed
         points = np.vstack((pc0.points, pc1.points))
         n0 = len(pc0.points)
-    except:
+    except AttributeError:
         # If numpy arrays are passed
         points = np.vstack((pc0, pc1))
         n0 = pc0.shape[0]
@@ -267,8 +269,8 @@ def plot_matched_point_clouds(all_frames,
 def plot_three_point_clouds(all_frames, neuron_matches, ind=(0, 1, 2)):
     """See also plot_matched_point_clouds"""
     options = {'all_frames': all_frames,
-           'neuron_matches': neuron_matches,
-           'actually_draw': False}
+               'neuron_matches': neuron_matches,
+               'actually_draw': False}
     if type(ind) == int:
         ind = (ind, ind + 1, ind + 2)
 
@@ -396,7 +398,7 @@ def plot_full_tracklet_covering(clust_df, window_len=20, num_frames=500):
     for i in x:
         which_frames = list(range(i, i + window_len + 1))
 
-        def check_frames(vals, which_frames=which_frames):
+        def check_frames(vals):
             vals = set(vals)
             return all([f in vals for f in which_frames])
 

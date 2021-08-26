@@ -9,7 +9,7 @@ import sacred
 from sacred import Experiment
 
 # main function
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 # Initialize sacred experiment
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_all_tracklets_as_dlc_format
 

@@ -2,18 +2,18 @@
 The top level function for getting final traces from 3d tracks and neuron masks
 """
 
-from pathlib import Path
-# main function
-from sacred.observers import TinyDbObserver
-import DLC_for_WBFM.utils.projects.monkeypatch_json
-
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks_using_config
 # Experiment tracking
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
+# main function
+from sacred.observers import TinyDbObserver
+
+import DLC_for_WBFM.utils.projects.monkeypatch_json
+from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks_using_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
@@ -35,6 +35,7 @@ def cfg(project_path, DEBUG):
     if not DEBUG:
         log_dir = cfg.get_log_dir()
         ex.observers.append(TinyDbObserver(log_dir))
+
 
 @ex.automain
 def make_full_tracks(_config, _run):

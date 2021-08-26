@@ -1,12 +1,10 @@
+import importlib
 import numpy as np
 import pandas as pd
-import pytest
-import importlib
-
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 
-
 project_path = r"C:/dlc_stacks/Test_project/project_config.yaml"
+
 
 def _load_training_data() -> pd.DataFrame:
     cfg = modular_project_config(project_path)
@@ -53,4 +51,3 @@ def test_training_data_reasonable_z():
     for n in all_neurons:
         z_delta_series = df_delta[n]['z']
         assert all(np.abs(z_delta_series < max_z_delta))
-

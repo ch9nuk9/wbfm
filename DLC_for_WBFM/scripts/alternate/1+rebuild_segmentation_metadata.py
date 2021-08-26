@@ -1,13 +1,14 @@
-
-
 # main function
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from segmentation.util.utils_pipeline import recalculate_metadata_from_config
+from pathlib import Path
+
 # Experiment tracking
 import sacred
 from sacred import Experiment
-from pathlib import Path
 from sacred import SETTINGS
+from segmentation.util.utils_pipeline import recalculate_metadata_from_config
+
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
@@ -27,7 +28,6 @@ def cfg(project_path):
 
 @ex.automain
 def main(_config, _run):
-
     sacred.commands.print_config(_run)
 
     this_config = _config['segment_cfg'].copy()

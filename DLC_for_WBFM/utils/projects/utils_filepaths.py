@@ -1,9 +1,9 @@
+import json
 import os
 import pickle
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Tuple
-import json
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 

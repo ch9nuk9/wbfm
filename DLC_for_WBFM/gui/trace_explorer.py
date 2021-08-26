@@ -2,9 +2,7 @@ import argparse
 
 from DLC_for_WBFM.gui.utils.napari_trace_explorer import build_napari_trace_explorer
 
-
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description='Build GUI with a project')
     parser.add_argument('--project_path', default=None,
                         help='path to config file')

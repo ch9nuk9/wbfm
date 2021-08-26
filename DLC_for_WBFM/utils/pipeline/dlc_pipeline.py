@@ -11,14 +11,13 @@ from scipy.spatial.distance import pdist
 from tqdm import tqdm
 
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
-    update_pose_config, training_data_from_tracklet_annotations, \
-    create_dlc_project, get_annotations_matching_video_in_folder, training_data_from_3dDLC_annotations
+    update_pose_config, create_dlc_project, get_annotations_matching_video_in_folder, \
+    training_data_from_3dDLC_annotations
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _get_video_options
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
-from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import best_tracklet_covering_from_my_matches, \
-    get_or_recalculate_which_frames, calculate_best_covering_from_tracklets
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import calculate_best_covering_from_tracklets
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 
 
@@ -34,7 +33,8 @@ def create_only_videos(video_fname, config, verbose=1, DEBUG=False):
     """
 
     all_center_slices = config['training_data_2d']['all_center_slices']
-    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, config, video_fname)
+    all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, config,
+                                                                                   video_fname)
 
     def parallel_func(i_center):
         i, center = i_center
@@ -57,15 +57,15 @@ def create_dlc_training_from_tracklets(project_config: modular_project_config,
                                        scorer: str = None,
                                        task_name: str = None,
                                        DEBUG: bool = False) -> None:
-
     all_center_slices, dlc_opt, net_opt, png_opt, vid_cfg, video_fname = unpack_configs_dlc_projects(DEBUG,
-                                                                                                   project_config,
-                                                                                                   scorer, task_name,
-                                                                                                   tracking_config,
-                                                                                                   training_config)
+                                                                                                     project_config,
+                                                                                                     scorer, task_name,
+                                                                                                     tracking_config,
+                                                                                                     training_config)
 
     with safe_cd(project_config.project_dir):
-        all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, vid_cfg, video_fname)
+        all_avi_fnames, preprocessed_dat, vid_opt, video_exists = _prep_videos_for_dlc(all_center_slices, vid_cfg,
+                                                                                       video_fname)
 
     _make_all_projects(all_avi_fnames, all_center_slices, dlc_opt, net_opt, png_opt, preprocessed_dat, project_config,
                        tracking_config, vid_opt, video_exists)
@@ -212,7 +212,7 @@ def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video
         if not vid_opt.get('is_color', False):
             avi_data = preprocessed_dat[:, center, ...]
         else:
-            z_range = np.clip([center-1, center, center+1], 0, preprocessed_dat.shape[1])
+            z_range = np.clip([center - 1, center, center + 1], 0, preprocessed_dat.shape[1])
             avi_data = np.stack([preprocessed_dat[:, i, ...] for i in z_range], axis=-1)
 
         write_numpy_as_avi(avi_data, **vid_opt)
@@ -354,7 +354,7 @@ def _process_duplicates_to_final_df(all_dfs: List[pd.DataFrame], verbose: bool =
         this_df = df_with_duplicates[name]
         if verbose >= 2:
             print(f"Found {len(this_df.columns) // 3} duplicates for neuron {name}")
-        new_xy_conf = consolidate_duplicates(this_df, verbose=verbose-2)
+        new_xy_conf = consolidate_duplicates(this_df, verbose=verbose - 2)
         # Align with DLC formatting
         xy_conf_dict = {
             (name, 'x'): new_xy_conf[:, 0],
@@ -467,7 +467,7 @@ def filter_all_dlc_tracks(track_cfg, filter_mode='arima', use_dlc_project_videos
         external_videos = _get_dlc_video_names_from_config(track_cfg)
 
     def parallel_func(vid_and_cfg, DEBUG=DEBUG, filter_mode=filter_mode):
-    # for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
+        # for ext_video, dlc_config in zip(external_videos, all_dlc_configs):
         ext_video, dlc_config = vid_and_cfg
         dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
         if ext_video is None:
@@ -481,7 +481,6 @@ def filter_all_dlc_tracks(track_cfg, filter_mode='arima', use_dlc_project_videos
     with futures.ThreadPoolExecutor(max_workers=32) as executor:
         results_iter = executor.map(parallel_func, zip(external_videos, all_dlc_configs))
         results = [result for result in results_iter]
-
 
 
 ##

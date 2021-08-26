@@ -1,11 +1,13 @@
+import os
+from pathlib import Path
+
+import numpy as np
+import tifffile
+import zarr
+
 from DLC_for_WBFM.utils.preprocessing.utils_tif import preprocess_all_frames_using_config, PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
-import tifffile
-import numpy as np
-import os
-from pathlib import Path
-import zarr
 
 
 def write_data_subset_from_config(cfg: dict,
@@ -39,9 +41,9 @@ def write_data_subset_from_config(cfg: dict,
         out_dat = np.expand_dims(preprocessed_dat, 2).astype('uint16')
         tifffile.imwrite(out_fname, out_dat, imagej=True, metadata={'axes': 'TZCYX'})
     else:
-        chunk_sz = (1, ) + preprocessed_dat.shape[1:]
+        chunk_sz = (1,) + preprocessed_dat.shape[1:]
         print(f"Chunk size: {chunk_sz}")
-        out_dat = np.array(preprocessed_dat)#.astype('uint16')
+        out_dat = np.array(preprocessed_dat)  # .astype('uint16')
         zarr.save_array(out_fname, out_dat, chunks=chunk_sz)
 
     # Save this name in the config file itself
@@ -118,7 +120,7 @@ def segment_local_data_subset(project_config, out_fname=None):
     metadata = {}
 
     model_type = segment_cfg['segmentation_type']
-    if model_type=='3d':
+    if model_type == '3d':
         stardist_model_name = "charlie_3d"
         with safe_cd(project_dir):
             _segment_full_video_3d(cfg, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
@@ -129,4 +131,3 @@ def segment_local_data_subset(project_config, out_fname=None):
         with safe_cd(project_dir):
             _segment_full_video_2d(cfg, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
                                    opt_postprocessing, preprocessing_settings, stardist_model_name, verbose, video_path)
-

@@ -1,9 +1,10 @@
 import concurrent
-import tifffile
-import timeit
 import threading
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
+import timeit
 
+import tifffile
+
+from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 fname = r'D:\freely_immobilized\ZIM2051_trial_21_HEAD_mcherry_FULL_bigtiff.btf'
 import_opt = {'num_slices': 33, 'alpha': 1.0, 'dtype': 'uint16'}
@@ -14,7 +15,7 @@ print(frame_range)
 def sequential_read():
     with tifffile.TiffFile(fname) as video_stream:
         for i in frame_range:
-            dat = get_single_volume(video_stream, i, **import_opt)
+            _ = get_single_volume(video_stream, i, **import_opt)
             # print(f"Got volume {i}")
 
 
@@ -22,6 +23,7 @@ def simple_parallel():
     def parallel_func(i):
         get_single_volume(fname, i, **import_opt)
         # print(f"Got volume {i}")
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         futures = {executor.submit(parallel_func, i) for i in frame_range}
         for future in concurrent.futures.as_completed(futures):
@@ -33,13 +35,14 @@ def filehandle_parallel():
     with tifffile.TiffFile(fname) as video_stream:
         def parallel_func(i):
             with lock:
-                dat = get_single_volume(video_stream, i, **import_opt)
+                _ = get_single_volume(video_stream, i, **import_opt)
                 # print(f"Got volume {i}")
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = {executor.submit(parallel_func, i) for i in frame_range}
             for future in concurrent.futures.as_completed(futures):
                 future.result()
+
 
 print("Sequential read")
 print(timeit.timeit('sequential_read()', globals=globals(), number=10))

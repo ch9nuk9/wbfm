@@ -26,11 +26,10 @@ def get_keypoints_from_3dseg(kp0, i=None, sz=31.0, neuron_height=None):
     """
     kp_cv2 = []
     for z, x, y in kp0:
-        if i is None or abs(z-i) < neuron_height:
+        if i is None or abs(z - i) < neuron_height:
             kp_cv2.append(cv2.KeyPoint(y, x, sz))
 
     return kp_cv2
-
 
 
 # def encode_all_neurons_in_frame(frame, volume, z_depth):
@@ -58,6 +57,8 @@ def cast_matches_as_array(matches: list, gamma: object = 1.0) -> list:
 
     confidence = sigma(gamma / match.distance)
     """
+
     def conf(dist):
         return np.tanh(gamma / (dist + 1e-9 * gamma))
+
     return [(m.queryIdx, m.trainIdx, conf(m.distance)) for m in matches]

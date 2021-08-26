@@ -15,7 +15,7 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none', DEBUG=False):
     bh = np.array(bh)
 
     block_final_indices = np.where(np.diff(bh))[0]
-    block_final_indices = np.concatenate([block_final_indices, np.array([len(bh)-1])])
+    block_final_indices = np.concatenate([block_final_indices, np.array([len(bh) - 1])])
     block_values = bh[block_final_indices]
     if DEBUG:
         print(block_values)

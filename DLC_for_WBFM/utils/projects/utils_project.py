@@ -1,17 +1,19 @@
+import os
 import os.path as osp
 import pathlib
 import typing
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from shutil import copytree
+
 from ruamel.yaml import YAML
-from contextlib import contextmanager
-import os
+
+
 # import concurrent.futures
 
 
 def build_project_structure(_config: dict) -> None:
-
     # parent_folder = Path(_config['project_dir']).resolve()
     parent_folder = _config['project_dir']
     rel_dir_name = get_project_name(_config)
@@ -78,6 +80,7 @@ def safe_cd(newdir: typing.Union[str, pathlib.Path]) -> None:
     finally:
         os.chdir(prevdir)
 
+
 #####################
 # config utils
 #####################
@@ -109,6 +112,7 @@ def load_config(config_fname: typing.Union[str, pathlib.Path]) -> dict:
         cfg = YAML().load(f)
 
     return cfg
+
 
 #####################
 # Synchronizing config files

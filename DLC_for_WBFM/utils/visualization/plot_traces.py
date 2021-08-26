@@ -1,9 +1,11 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import NullFormatter
 from matplotlib import transforms
+from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
-from pathlib import Path
+
 from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
 from DLC_for_WBFM.utils.visualization.utils_plot_traces import build_trace_factory, check_default_names, set_big_font
 
@@ -16,14 +18,13 @@ def make_grid_plot_from_project(project_data: finished_project_data,
                                 channel_mode: str,
                                 calculation_mode: str,
                                 color_using_behavior=True):
-
     neuron_names = list(set(project_data.green_traces.columns.get_level_values(0)))
     # Guess a good shape for subplots
     neuron_names.sort()
 
     num_neurons = len(neuron_names)
     num_columns = 4
-    num_rows = num_neurons//num_columns + 1
+    num_rows = num_neurons // num_columns + 1
     print(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
 
     # Loop through neurons and plot
@@ -54,9 +55,9 @@ def make_grid_plot_from_project(project_data: finished_project_data,
 
 
 def OLD_make_grid_plot_from_project(traces_config,
-                                trace_mode=None, do_df_over_f0=False, smoothing_func=None,
-                                color_using_behavior=True,
-                                background_per_pixel=15):
+                                    trace_mode=None, do_df_over_f0=False, smoothing_func=None,
+                                    color_using_behavior=True,
+                                    background_per_pixel=15):
     """
     Should be run within a project folder
     """
@@ -87,7 +88,7 @@ def OLD_make_grid_plot_from_project(traces_config,
 
     num_neurons = len(neuron_names)
     num_columns = 4
-    num_rows = num_neurons//num_columns + 1
+    num_rows = num_neurons // num_columns + 1
     print(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
 
     # Get axes
@@ -157,15 +158,15 @@ def visualize_mcherry_and_gcamp(t_dict,
                                 which_neuron,
                                 make_new_fig=True,
                                 make_new_title=True,
-                                ax1 = None,
-                                ax2 = None,
+                                ax1=None,
+                                ax2=None,
                                 to_normalize=False,
                                 preprocess_func=None):
     """
     NOTE: preprocess_func is nonfunctional
     """
     if make_new_fig:
-        plt.figure(figsize=(35,5))#, fontsize=12)
+        plt.figure(figsize=(35, 5))  # , fontsize=12)
 
     if make_new_fig:
         ax1 = plt.subplot(121)
@@ -200,15 +201,14 @@ def visualize_ratio(t_dict,
                     name,
                     which_neuron,
                     tspan=None,
-                    background=[0,0],
-                    ylim=[0,1],
+                    background=[0, 0],
+                    ylim=[0, 1],
                     preprocess_func=None):
     """
     Divides the green by the red channel to produce a normalized time series
         Optionally subtracts a background value
     """
-    plt.figure(figsize=(35,5))
-
+    plt.figure(figsize=(35, 5))
 
     red = get_tracking_channel(t_dict)
     green = get_measurement_channel(t_dict)
@@ -217,7 +217,7 @@ def visualize_ratio(t_dict,
         red = preprocess_func(red, which_neuron)
         green = preprocess_func(green, which_neuron)
 
-    dat = (green-background[0]) / (red-background[1])
+    dat = (green - background[0]) / (red - background[1])
     if tspan is None:
         plt.plot(dat)
     else:
@@ -264,21 +264,20 @@ def visualize_all_traces(all_traces,
 #     plt.title(f"Max for t={t} is {max_vals[t]} xy={x},{y}")
 
 def plot3d_with_max(dat, z, t, max_ind, vmin=100, vmax=400):
-    plt.imshow(dat[:,:,z,t], vmin=vmin, vmax=vmax)
+    plt.imshow(dat[:, :, z, t], vmin=vmin, vmax=vmax)
     plt.colorbar()
-    x, y = max_ind[t,1], max_ind[t,0]
-    if z == max_ind[t,2]:
+    x, y = max_ind[t, 1], max_ind[t, 0]
+    if z == max_ind[t, 2]:
         plt.scatter(x, y, marker='x', c='r')
-    plt.title(f"Max for t={t} is on z={max_ind[t,2]}, xy={x},{y}")
+    plt.title(f"Max for t={t} is on z={max_ind[t, 2]}, xy={x},{y}")
 
 
 def plot3d_with_max_and_hist(dat, z, t, max_ind):
     # From: https://matplotlib.org/2.0.2/examples/pylab_examples/scatter_hist.html
     rot = transforms.Affine2D().rotate_deg(90)
-    nullfmt = NullFormatter()         # no labels
+    nullfmt = NullFormatter()  # no labels
 
     plt.figure(1, figsize=(8, 8))
-
 
     # definitions for the axes
     left, width = 0.1, 0.65
@@ -297,18 +296,17 @@ def plot3d_with_max_and_hist(dat, z, t, max_ind):
     axHisty.yaxis.set_major_formatter(nullfmt)
 
     # Actually display
-    frame = dat[:,:,z,t]
+    frame = dat[:, :, z, t]
     axIm.imshow(frame, vmin=0, vmax=400)
-    x, y = max_ind[t,1], max_ind[t,0]
-#     if z == max_ind[t,2]:
-#         plt.scatter(x, y, marker='x', c='r')
-#     plt.title(f"Max for t={t} is on z={max_ind[t,2]}, xy={x},{y}")
+    x, y = max_ind[t, 1], max_ind[t, 0]
+    #     if z == max_ind[t,2]:
+    #         plt.scatter(x, y, marker='x', c='r')
+    #     plt.title(f"Max for t={t} is on z={max_ind[t,2]}, xy={x},{y}")
 
     axHistx.plot(np.max(frame, axis=0))
 
-#     base = plt.gca().transData
-    axHisty.plot(np.flip(np.max(frame, axis=1)), range(frame.shape[0]))#, transform=base+rot)
-
+    #     base = plt.gca().transData
+    axHisty.plot(np.flip(np.max(frame, axis=1)), range(frame.shape[0]))  # , transform=base+rot)
 
 
 ##
@@ -319,14 +317,15 @@ def plot3d_with_max_and_hist(dat, z, t, max_ind):
 def get_tracking_channel(t_dict):
     try:
         dat = t_dict['mcherry']
-    except:
+    except KeyError:
         dat = t_dict['red']
     return dat
+
 
 def get_measurement_channel(t_dict):
     try:
         dat = t_dict['gcamp']
-    except:
+    except KeyError:
         dat = t_dict['green']
     return dat
 

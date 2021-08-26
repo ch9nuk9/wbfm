@@ -20,7 +20,6 @@ from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_project_of_substep
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
-from DLC_for_WBFM.gui import OLD_trace_explorer_gui
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_training_data, napari_of_full_data
 
 
@@ -188,7 +187,6 @@ class Ui_MainWindow(object):
 
         self.project_file = os.path.join(self.ex.project_foldername, "project_config.yaml")
 
-
     @property
     def project_file(self):
         return self._project_file
@@ -239,7 +237,6 @@ class Ui_MainWindow(object):
         else:
             self.tracesProgress.setValue(0)
 
-
     def _load_config_files(self, project_path):
         cfg = load_config(project_path)
         self.cfg = cfg
@@ -264,7 +261,6 @@ class Ui_MainWindow(object):
         else:
             self.preprocessed_green = None
 
-
     def napari_for_masks(self):
         """Open napari window for segmentation before tracking"""
         self.viewer = napari.view_labels(self.segment_zarr, ndisplay=3)
@@ -283,17 +279,17 @@ class Ui_MainWindow(object):
     def open_traces_gui(self):
 
         self.traces_gui = QtWidgets.QMainWindow()
-        self.ui2 = OLD_trace_explorer_gui.Ui_MainWindow()
+        # self.ui2 = OLD_trace_explorer_gui.Ui_MainWindow()
+        raise NotImplementedError("TODO: connect to new gui")
         # Actually build window
         # traces_config = self.cfg['subfolder_configs']['traces']
         # other_project = get_project_of_substep(traces_config)
-        with safe_cd(self.project_dir):
-            self.ui2.setupUi(self.traces_gui, self.project_file, False)
-            self.traces_gui.show()
+        # with safe_cd(self.project_dir):
+        #     self.ui2.setupUi(self.traces_gui, self.project_file, False)
+        #     self.traces_gui.show()
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description='Build GUI with a project')
     parser.add_argument('--project_path', default=None,
                         help='path to config file')

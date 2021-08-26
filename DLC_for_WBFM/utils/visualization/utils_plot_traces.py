@@ -2,7 +2,6 @@ import pandas as pd
 
 
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
-
     if trace_mode in ['red', 'green']:
         fname = base_trace_fname.with_name(f"{trace_mode}_traces.h5")
         df = pd.read_hdf(fname)
@@ -39,6 +38,6 @@ def set_big_font(size=22):
     # From: https://stackoverflow.com/questions/3899980/how-to-change-the-font-size-on-a-matplotlib-plot
     import matplotlib
 
-    font = {'weight' : 'bold',
-            'size'   : size}
+    font = {'weight': 'bold',
+            'size': size}
     matplotlib.rc('font', **font)

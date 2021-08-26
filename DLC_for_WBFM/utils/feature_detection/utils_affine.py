@@ -1,12 +1,12 @@
-import open3d as o3d
+from typing import Dict
+
 import cv2
 import numpy as np
-from typing import Dict
+import open3d as o3d
 
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree, build_neuron_tree
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_distance, calc_icp_matches
-from tqdm import tqdm
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
 
 
 def propagate_via_affine_model(which_neuron: int,
@@ -142,56 +142,6 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
     matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(all_matches, all_conf)]
 
     return matches_with_conf, all_candidate_matches, xyz0
-
-
-def calc_matches_using_2nn(all_propagated, n1_locs, max_dist=5.0):
-    """
-    Custom function to calculate matches based on 2 nearest neighbors
-        DEPRECATED
-
-    See: calc_bipartite_from_distance
-    """
-
-    # Build tree to query v1 neurons
-    num_n, _, tree_n1 = build_neuron_tree(n1_locs, to_mirror=False)
-
-    all_matches = []  # Without confidence
-    all_conf = []
-    all_candidate_matches = []
-    nn_opt = {'radius': max_dist, 'max_nn': 1}
-    conf_func = lambda dist: 1.0 / (dist / 10 + 1.0)
-    for i, neuron in enumerate(np.array(all_propagated.points)):
-        [k, two_neighbors, two_dist] = tree_n1.search_hybrid_vector_3d(neuron, **nn_opt)
-        # For some reason this function seems to allow points that are too far away
-        if k == 0 or (two_dist[0] > nn_opt['radius']):
-            continue
-
-        if k == 1:
-            dist = two_dist[0]
-            i_match = two_neighbors[0]
-        else:
-            if two_dist[0] / two_dist[1] > distance_ratio:
-                dist = two_dist[1]
-                i_match = two_neighbors[1]
-            elif two_dist[1] / two_dist[0] > distance_ratio:
-                dist = two_dist[1]
-                i_match = two_neighbors[1]
-            else:
-                if verbose >= 2:
-                    print(f"Neuron {i} has two close neighbors")
-                continue
-
-        if verbose >= 2:
-            print(f"Found good match for neuron {i}")
-        all_matches.append([i, i_match])
-        all_conf.append(conf_func(dist))
-
-        # todo: clean this up
-        all_m = [(i, n, conf_func(dist)) for n, dist in zip(two_neighbors, two_dist)]
-        all_candidate_matches.extend(all_m)
-
-    return all_matches, all_conf, all_candidate_matches
-
 
 ##
 ## Visualization

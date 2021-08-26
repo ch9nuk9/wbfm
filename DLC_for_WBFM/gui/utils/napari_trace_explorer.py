@@ -117,6 +117,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
 
     def connect_time_line_callback(self):
         viewer = self.viewer
+
         @viewer.dims.events.current_step.connect
         def update_time_line(event):
             self.time_line.set_data(self.calculate_time_line()[:2])
@@ -215,7 +216,6 @@ class napari_trace_explorer(QtWidgets.QWidget):
 
 
 def build_napari_trace_explorer(project_config):
-
     viewer = napari.Viewer(ndisplay=2)
 
     # Build object that has all the data
@@ -242,5 +242,3 @@ def build_napari_trace_explorer(project_config):
     print("Finished GUI setup")
 
     napari.run()
-
-

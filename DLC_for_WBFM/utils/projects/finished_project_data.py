@@ -1,14 +1,11 @@
 import os
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Union
-
 import numpy as np
 import pandas as pd
 import zarr
 
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
 
@@ -161,11 +158,13 @@ class finished_project_data:
                 df = self.red_traces
             else:
                 df = self.green_traces
+
             def calc_y(i):
                 return calc_single_trace(i, df)
         else:
             df_red = self.red_traces
             df_green = self.green_traces
+
             def calc_y(i):
                 return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
 

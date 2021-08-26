@@ -4,13 +4,13 @@ import pickle
 from collections import defaultdict
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+import zarr
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project_context, modular_project_config
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-import pandas as pd
-import numpy as np
-import zarr
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames
 
@@ -93,7 +93,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
         out_fname = os.path.join("3-tracking", "segmentation_from_tracking.zarr")
         print(f"Saving masks at {out_fname}")
         new_masks = zarr.open_like(seg_masks, path=out_fname,
-                           synchronizer=zarr.ThreadSynchronizer())
+                                   synchronizer=zarr.ThreadSynchronizer())
         mask_sz = new_masks.shape
 
         # Get the 3d DLC tracks
@@ -127,7 +127,8 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
 
         with tqdm(total=num_frames, leave=False) as pbar:
             with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
-                future_results = {executor.submit(parallel_func, i, ind_neuron=ind_neuron, this_df=df[neuron]): i for i in range(num_frames)}
+                future_results = {executor.submit(parallel_func, i, ind_neuron=ind_neuron, this_df=df[neuron]): i for i
+                                  in range(num_frames)}
                 for future in concurrent.futures.as_completed(future_results):
                     _ = future.result()
                     pbar.update(1)
@@ -254,5 +255,3 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
         new_masks[i, ...] = lut[masks[i_volume, ...]]
 
     # Note: automatically saves
-
-

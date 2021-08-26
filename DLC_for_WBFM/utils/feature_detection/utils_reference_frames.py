@@ -1,12 +1,15 @@
+import collections
+
+import networkx as nx
+import numpy as np
+from matplotlib import pyplot as plt
+
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame, _detect_or_import_neurons, \
+    RegisteredReferenceFrames
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, \
     build_neuron_tree, build_f2n_map, add_neuron_match
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame, _detect_or_import_neurons
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name, is_one_neuron_per_frame
-import numpy as np
-import networkx as nx
-import collections
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
 
 
 ##
@@ -225,87 +228,3 @@ def calc_matches_using_feature_voting(frame0, frame1,
     matches_with_conf = [(m[0], m[1], c) for m, c in zip(all_neuron_matches, all_confidences)]
     # Empty list to match other signatures
     return matches_with_conf, all_candidate_matches, []
-
-
-def build_tracklets_from_classes(all_frames,
-                                 all_matches_dict,
-                                 all_likelihoods_dict=None,
-                                 verbose=0):
-    """
-    Build tracklets starting from a different format
-
-    Parameters
-    ===========================
-    all_frames - list
-        Simple list of ReferenceFrame objects
-    all_matches_dict - dict
-        Dictionary of matches, which are lists of local neuron indices
-        all_matches_dict[(0,1)] = list(list())
-    all_likelihoods_dict - dict
-        Same format as all_matches_dict
-
-    See also: build_tracklets_from_matches
-    """
-
-    if type(all_matches_dict) != dict:
-        print("Expected dictionary of pairwise matches")
-        print("Did you mean to call build_tracklets_from_matches()?")
-        raise ValueError
-
-    # Input of build_tracklets_from_matches:
-    #   1. List of all pairwise matches
-    #   2. List of all neuron 3d locations
-    # if type(all_frames)==dict:
-    # BUG: make the below loops work for dict
-    # all_frames = list(all_frames.values())
-    # print("If this is a dict, then the indices are probably off.")
-    # raise ValueError
-    try:
-        all_neurons = [all_frames[0].neuron_locs]
-        final_frame_ind = len(all_frames)
-        start_frame_ind = 0
-    except:
-        k = list(all_frames)
-        all_neurons = [all_frames[k[0]].neuron_locs]
-        start_frame_ind = min(k)
-        final_frame_ind = max(k)
-    all_matches = []
-    if all_likelihoods_dict is None:
-        all_likelihoods = None
-    else:
-        all_likelihoods = []
-
-    if verbose > 1:
-        print("Casting class data in list form...")
-    nonzero_matches = 0
-    for i in range(1, final_frame_ind):
-        # Pad the initials with empties if this is a dict
-        # for key, i in zip(all_matches_dict, all_frames):
-        # Get matches and conf
-        key = (i - 1, i)
-        if key in all_matches_dict:
-            all_matches.append(all_matches_dict[key])
-            nonzero_matches += 1
-        else:
-            all_matches.append([])
-        if all_likelihoods is not None:
-            all_likelihoods.append(all_likelihoods_dict[key])
-
-        if i < start_frame_ind:
-            all_neurons.append([])
-        else:
-            all_neurons.append(all_frames[i].neuron_locs)
-        # all_neurons.append(frame.neuron_locs)
-    if verbose > 1:
-        print(f"Found {nonzero_matches} nonzero matches")
-    if nonzero_matches == 0:
-        print("Found no matches; is the dictionary in the proper format?")
-        return None
-
-    # Call old function
-    if verbose > 1:
-        print("Calling build_tracklets_from_matches()")
-    return build_tracklets_from_matches(all_neurons,
-                                        all_matches,
-                                        all_likelihoods,
-                                        verbose=verbose)

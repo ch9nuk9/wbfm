@@ -134,17 +134,19 @@ class CreateProjectDialog(QDialog):
 
     def create_project(self):
         if self.red_filename is not None and \
-            self.green_filename is not None and \
-            self.project_foldername is not None:
+                self.green_filename is not None and \
+                self.project_foldername is not None:
             # TODO: don't just call python from python!
             COMMAND = "scripts/0a-create_new_project.py"
             EXPERIMENTER = self.experimenterTextEdit.toPlainText()
             TASK = self.taskTextEdit.toPlainText()
-            subprocess.run(f"python {COMMAND} with project_dir={self.project_foldername} red_bigtiff_fname={self.red_filename} green_bigtiff_fname={self.green_filename} experimenter={EXPERIMENTER} task_name={TASK}")
+            subprocess.run(
+                f"python {COMMAND} with project_dir={self.project_foldername} red_bigtiff_fname={self.red_filename} green_bigtiff_fname={self.green_filename} experimenter={EXPERIMENTER} task_name={TASK}")
 
             self.finishButton.setText("Create new project; Close the window if finished")
         else:
             print("Fill out required fields first!")
+
 
 if __name__ == '__main__':
     # Basic setup

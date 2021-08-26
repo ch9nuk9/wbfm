@@ -1,14 +1,15 @@
-import pandas as pd
-import numpy as np
 import copy
 from collections import defaultdict
+
+import numpy as np
+import pandas as pd
+
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 
 
 ##
 ## Helper functions for tracks
 ##
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
-
 
 def create_new_track(i0, i1,
                      i0_xyz,
@@ -108,186 +109,6 @@ def append_to_track(row, i, clust_df, which_slice, i1, i1_global,
 ##
 ## Main function
 ##
-
-
-def build_tracklets_simple(all_matches, verbose=0):
-    """
-    Build tracklets without requiring other data
-        Especially neuron position
-
-    See also: build_tracklets_from_matches
-    """
-
-    num_neurons = 0
-    for m in all_matches:
-        max_neuron = np.max(np.array(m))
-        num_neurons = max(num_neurons, max_neuron)
-
-    def dummy_xyz_factory(num_neurons=num_neurons):
-        return np.zeros((num_neurons, 3))
-
-    all_neurons = defaultdict(dummy_xyz_factory)
-
-    # Call old function
-    return build_tracklets_from_matches(all_neurons,
-                                        all_matches,
-                                        None,
-                                        verbose=verbose)
-
-
-##
-## Postprocessing: stitching tracklets together
-##
-
-def consolidate_tracklets(df_raw, tracklet_matches, verbose=0):
-    """Consolidate tracklets using matches
-
-    Note: assumes that the indices in tracklet_matches correspond to the clust_ind column
-    """
-    base_of_dropped_rows = {}
-    rows_to_drop = set()
-    df = copy.deepcopy(df_raw)
-    for row0_ind, row1_ind in tracklet_matches:
-        # If we have two matches: (0,1) and later (1,10), add directly to track 0
-        # BUG: what if the matches are out of order?
-        if row0_ind in rows_to_drop:
-            row0_ind = base_of_dropped_rows[row0_ind]
-        base_row = df.loc[row0_ind].copy(deep=True)
-        row_to_add = df.loc[row1_ind].copy(deep=True)
-        if verbose >= 2:
-            print(f"Adding track {row1_ind} to track {row0_ind}")
-
-        df = append_to_track(base_row,
-                             row0_ind,
-                             df,
-                             row_to_add['slice_ind'][:],
-                             row_to_add['all_ind_local'][:],
-                             row_to_add['all_ind_global'][:],
-                             row_to_add['all_xyz'][:],
-                             row_to_add['all_prob'][:],
-                             append_or_extend=list.extend)
-        base_of_dropped_rows[row1_ind] = row0_ind
-        rows_to_drop.add(row1_ind)
-
-    if verbose >= 1:
-        print(f"Extended and dropped {len(rows_to_drop)}/{df.shape[0]} rows")
-
-    return df.drop(rows_to_drop, axis=0)
-
-
-##
-## API functions
-##
-
-def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
-    # Convert from dict and Frame objects to just lists
-    all_matches, all_conf = [], []
-    all_neurons = []
-    for i in range(len(tmp_matches) - 1):
-        # Assume keys describe pairwise matches
-        k = (i, i + 1)
-        all_matches.append(tmp_matches[k])
-        all_conf.append(tmp_conf[k])
-        # This is a ReferenceFrame object
-        all_neurons.append(tmp_neurons[i].neuron_locs)
-    # This list is one element longer
-    all_neurons.append(tmp_neurons[-1].neuron_locs)
-
-    return all_matches, all_conf, all_neurons
-
-
-##
-## Massive simplification / refactor
-##
-
-def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: list = None,
-                        slice_offset: int = 0) -> pd.DataFrame:
-    """
-    Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
-
-    Expects DICT for pairwise_matches_dict
-    """
-    assert len(pairwise_matches_dict) > 0, "No matches found"
-    assert len(list(pairwise_matches_dict.keys())[0]) == 2, "Dictionary should be indexed by a tuple"
-    assert len(list(pairwise_matches_dict.values())) >= 2, "Dictionary should contain match indices, confidence optional"
-
-    # Make everything a dictionary
-    dict_of_match_dicts = {k: dict([m0[:2] for m0 in m]) for k, m in pairwise_matches_dict.items()}
-
-    min_pair = min([k[0] for k in pairwise_matches_dict.keys()])
-    max_pair = max([k[0] for k in pairwise_matches_dict.keys()])
-    pair_range = list(range(min_pair, max_pair))
-
-    def get_start_match(match_dicts):
-        # Note: match_dicts will progressively have entries deleted
-        for i in pair_range:
-            # Make sure order is respected
-            match_key = (i, i+1)
-            match_dict = match_dicts.get(match_key, [])
-            if len(match_dict) == 0:
-                continue
-            for k, v in match_dict.items():
-                # Order doesn't matter in this dict
-                return match_key, k, v
-        return None, None, None
-
-    # Main storage, with fewer columns
-    columns = ['clust_ind', 'all_ind_local', 'all_xyz',
-               'all_prob', 'slice_ind']
-    clust_df = pd.DataFrame(columns=columns)
-
-    # Individual tracks
-    clust_ind = 0
-    while True:
-        # Choose a starting point, and initialize lists
-        match_key, i0, i1 = get_start_match(dict_of_match_dicts)
-        if match_key is None:
-            break
-        i_frame0, i_frame1 = match_key
-
-        all_ind_local = [i0, i1]
-        if xyz_per_neuron_per_frame is not None:
-            all_xyz = [xyz_per_neuron_per_frame[i_frame0][i0], xyz_per_neuron_per_frame[i_frame1][i1]]
-        else:
-            all_xyz = [[], []]
-        slice_ind = [i_frame0, i_frame1]
-        all_prob = []
-
-        # Remove match
-        del dict_of_match_dicts[match_key][i0]
-
-        # DFS for this starting point
-        remaining_pairs = range(match_key[1], pair_range[-1])
-        for i_pair in remaining_pairs:
-            next_match_key = (i_pair, i_pair+1)
-            next_match_dict = dict_of_match_dicts.get(next_match_key, {})
-            # next_match_dict = dict_of_match_dicts[next_match_key]
-            if i1 in next_match_dict:
-                i0, i1 = i1, next_match_dict[i1]
-                i_frame = next_match_key[1]
-
-                all_ind_local.append(i1)
-                if xyz_per_neuron_per_frame is not None:
-                    all_xyz.append(xyz_per_neuron_per_frame[i_frame][i1])
-                else:
-                    all_xyz.append([])
-                slice_ind.append(i_frame)
-
-                del dict_of_match_dicts[next_match_key][i0]
-
-            else:
-                break
-
-        # Save these lists in the dataframe
-        slice_ind = [s + slice_offset for s in slice_ind]
-        df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_xyz],
-                               all_prob=[all_prob], slice_ind=[slice_ind]))
-
-        clust_df = clust_df.append(df, ignore_index=True)
-        clust_ind += 1
-
-    return clust_df
-
 
 def build_tracklets_from_matches(all_neurons,
                                  all_matches,
@@ -401,5 +222,269 @@ def build_tracklets_from_matches(all_neurons,
         this_point_cloud_offset = next_point_cloud_offset
 
     clust_df['all_xyz'] = clust_df['all_xyz'].apply(np.array)
+
+    return clust_df
+
+
+def build_tracklets_from_classes(all_frames,
+                                 all_matches_dict,
+                                 all_likelihoods_dict=None,
+                                 verbose=0):
+    """
+    Build tracklets starting from a different format
+
+    Parameters
+    ===========================
+    all_frames - list
+        Simple list of ReferenceFrame objects
+    all_matches_dict - dict
+        Dictionary of matches, which are lists of local neuron indices
+        all_matches_dict[(0,1)] = list(list())
+    all_likelihoods_dict - dict
+        Same format as all_matches_dict
+
+    See also: build_tracklets_from_matches
+    """
+
+    if type(all_matches_dict) != dict:
+        print("Expected dictionary of pairwise matches")
+        print("Did you mean to call build_tracklets_from_matches()?")
+        raise ValueError
+
+    # Input of build_tracklets_from_matches:
+    #   1. List of all pairwise matches
+    #   2. List of all neuron 3d locations
+    # if type(all_frames)==dict:
+    # BUG: make the below loops work for dict
+    # all_frames = list(all_frames.values())
+    # print("If this is a dict, then the indices are probably off.")
+    # raise ValueError
+    try:
+        all_neurons = [all_frames[0].neuron_locs]
+        final_frame_ind = len(all_frames)
+        start_frame_ind = 0
+    except KeyError:
+        k = list(all_frames)
+        all_neurons = [all_frames[k[0]].neuron_locs]
+        start_frame_ind = min(k)
+        final_frame_ind = max(k)
+    all_matches = []
+    if all_likelihoods_dict is None:
+        all_likelihoods = None
+    else:
+        all_likelihoods = []
+
+    if verbose > 1:
+        print("Casting class data in list form...")
+    nonzero_matches = 0
+    for i in range(1, final_frame_ind):
+        # Pad the initials with empties if this is a dict
+        # for key, i in zip(all_matches_dict, all_frames):
+        # Get matches and conf
+        key = (i - 1, i)
+        if key in all_matches_dict:
+            all_matches.append(all_matches_dict[key])
+            nonzero_matches += 1
+        else:
+            all_matches.append([])
+        if all_likelihoods is not None:
+            all_likelihoods.append(all_likelihoods_dict[key])
+
+        if i < start_frame_ind:
+            all_neurons.append([])
+        else:
+            all_neurons.append(all_frames[i].neuron_locs)
+        # all_neurons.append(frame.neuron_locs)
+    if verbose > 1:
+        print(f"Found {nonzero_matches} nonzero matches")
+    if nonzero_matches == 0:
+        print("Found no matches; is the dictionary in the proper format?")
+        return None
+
+    # Call old function
+    if verbose > 1:
+        print("Calling build_tracklets_from_matches()")
+    return build_tracklets_from_matches(all_neurons,
+                                        all_matches,
+                                        all_likelihoods,
+                                        verbose=verbose)
+
+
+def build_tracklets_simple(all_matches, verbose=0):
+    """
+    Build tracklets without requiring other data
+        Especially neuron position
+
+    See also: build_tracklets_from_matches
+    """
+
+    num_neurons = 0
+    for m in all_matches:
+        max_neuron = np.max(np.array(m))
+        num_neurons = max(num_neurons, max_neuron)
+
+    def dummy_xyz_factory(num_neurons=num_neurons):
+        return np.zeros((num_neurons, 3))
+
+    all_neurons = defaultdict(dummy_xyz_factory)
+
+    # Call old function
+    return build_tracklets_from_matches(all_neurons,
+                                        all_matches,
+                                        None,
+                                        verbose=verbose)
+
+
+##
+## Postprocessing: stitching tracklets together
+##
+
+def consolidate_tracklets(df_raw, tracklet_matches, verbose=0):
+    """Consolidate tracklets using matches
+
+    Note: assumes that the indices in tracklet_matches correspond to the clust_ind column
+    """
+    base_of_dropped_rows = {}
+    rows_to_drop = set()
+    df = copy.deepcopy(df_raw)
+    for row0_ind, row1_ind in tracklet_matches:
+        # If we have two matches: (0,1) and later (1,10), add directly to track 0
+        # BUG: what if the matches are out of order?
+        if row0_ind in rows_to_drop:
+            row0_ind = base_of_dropped_rows[row0_ind]
+        base_row = df.loc[row0_ind].copy(deep=True)
+        row_to_add = df.loc[row1_ind].copy(deep=True)
+        if verbose >= 2:
+            print(f"Adding track {row1_ind} to track {row0_ind}")
+
+        df = append_to_track(base_row,
+                             row0_ind,
+                             df,
+                             row_to_add['slice_ind'][:],
+                             row_to_add['all_ind_local'][:],
+                             row_to_add['all_ind_global'][:],
+                             row_to_add['all_xyz'][:],
+                             row_to_add['all_prob'][:],
+                             append_or_extend=list.extend)
+        base_of_dropped_rows[row1_ind] = row0_ind
+        rows_to_drop.add(row1_ind)
+
+    if verbose >= 1:
+        print(f"Extended and dropped {len(rows_to_drop)}/{df.shape[0]} rows")
+
+    return df.drop(rows_to_drop, axis=0)
+
+
+##
+## API functions
+##
+
+def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
+    # Convert from dict and Frame objects to just lists
+    all_matches, all_conf = [], []
+    all_neurons = []
+    for i in range(len(tmp_matches) - 1):
+        # Assume keys describe pairwise matches
+        k = (i, i + 1)
+        all_matches.append(tmp_matches[k])
+        all_conf.append(tmp_conf[k])
+        # This is a ReferenceFrame object
+        all_neurons.append(tmp_neurons[i].neuron_locs)
+    # This list is one element longer
+    all_neurons.append(tmp_neurons[-1].neuron_locs)
+
+    return all_matches, all_conf, all_neurons
+
+
+##
+## Massive simplification / refactor
+##
+
+def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: list = None,
+                        slice_offset: int = 0) -> pd.DataFrame:
+    """
+    Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
+
+    Expects DICT for pairwise_matches_dict
+    """
+    assert len(pairwise_matches_dict) > 0, "No matches found"
+    assert len(list(pairwise_matches_dict.keys())[0]) == 2, "Dictionary should be indexed by a tuple"
+    assert len(
+        list(pairwise_matches_dict.values())) >= 2, "Dictionary should contain match indices, confidence optional"
+
+    # Make everything a dictionary
+    dict_of_match_dicts = {k: dict([m0[:2] for m0 in m]) for k, m in pairwise_matches_dict.items()}
+
+    min_pair = min([k[0] for k in pairwise_matches_dict.keys()])
+    max_pair = max([k[0] for k in pairwise_matches_dict.keys()])
+    pair_range = list(range(min_pair, max_pair))
+
+    def get_start_match(match_dicts):
+        # Note: match_dicts will progressively have entries deleted
+        for i in pair_range:
+            # Make sure order is respected
+            match_key = (i, i + 1)
+            match_dict = match_dicts.get(match_key, [])
+            if len(match_dict) == 0:
+                continue
+            for k, v in match_dict.items():
+                # Order doesn't matter in this dict
+                return match_key, k, v
+        return None, None, None
+
+    # Main storage, with fewer columns
+    columns = ['clust_ind', 'all_ind_local', 'all_xyz',
+               'all_prob', 'slice_ind']
+    clust_df = pd.DataFrame(columns=columns)
+
+    # Individual tracks
+    clust_ind = 0
+    while True:
+        # Choose a starting point, and initialize lists
+        match_key, i0, i1 = get_start_match(dict_of_match_dicts)
+        if match_key is None:
+            break
+        i_frame0, i_frame1 = match_key
+
+        all_ind_local = [i0, i1]
+        if xyz_per_neuron_per_frame is not None:
+            all_xyz = [xyz_per_neuron_per_frame[i_frame0][i0], xyz_per_neuron_per_frame[i_frame1][i1]]
+        else:
+            all_xyz = [[], []]
+        slice_ind = [i_frame0, i_frame1]
+        all_prob = []
+
+        # Remove match
+        del dict_of_match_dicts[match_key][i0]
+
+        # DFS for this starting point
+        remaining_pairs = range(match_key[1], pair_range[-1])
+        for i_pair in remaining_pairs:
+            next_match_key = (i_pair, i_pair + 1)
+            next_match_dict = dict_of_match_dicts.get(next_match_key, {})
+            # next_match_dict = dict_of_match_dicts[next_match_key]
+            if i1 in next_match_dict:
+                i0, i1 = i1, next_match_dict[i1]
+                i_frame = next_match_key[1]
+
+                all_ind_local.append(i1)
+                if xyz_per_neuron_per_frame is not None:
+                    all_xyz.append(xyz_per_neuron_per_frame[i_frame][i1])
+                else:
+                    all_xyz.append([])
+                slice_ind.append(i_frame)
+
+                del dict_of_match_dicts[next_match_key][i0]
+
+            else:
+                break
+
+        # Save these lists in the dataframe
+        slice_ind = [s + slice_offset for s in slice_ind]
+        df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_xyz],
+                               all_prob=[all_prob], slice_ind=[slice_ind]))
+
+        clust_df = clust_df.append(df, ignore_index=True)
+        clust_ind += 1
 
     return clust_df

@@ -1,8 +1,12 @@
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, unpack_node_name, is_one_neuron_per_frame
-from networkx.algorithms.community import k_clique_communities
-import networkx as nx
 from collections import defaultdict
+
+import networkx as nx
 import numpy as np
+from networkx.algorithms.community import k_clique_communities
+
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, \
+    unpack_node_name, is_one_neuron_per_frame
+
 
 ##
 ## Convinience function
@@ -18,7 +22,7 @@ def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):
     """
     bp_match_dict = {}
     for key in candidates:
-        these_candidates = [c for c in candidates[key] if c[-1]>min_edge_weight]
+        these_candidates = [c for c in candidates[key] if c[-1] > min_edge_weight]
         bp_matches = calc_bipartite_matches(these_candidates)
         bp_match_dict[key] = bp_matches
 
@@ -30,9 +34,9 @@ def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):
 ##
 
 def calc_neurons_using_k_cliques(all_matches,
-                                 k_values = [5,4,3],
-                                 list_min_sizes = [450, 400, 350, 300, 250],
-                                 max_size = 500,
+                                 k_values=[5, 4, 3],
+                                 list_min_sizes=[450, 400, 350, 300, 250],
+                                 max_size=500,
                                  min_conf=0.0,
                                  verbose=1):
     # Do a list of descending clique sizes
@@ -45,7 +49,7 @@ def calc_neurons_using_k_cliques(all_matches,
     # Multiple passes: take largest communities first
     for min_size in list_min_sizes:
         for k in k_values:
-            communities = list(k_clique_communities(G, k=k))#, cliques=all_cliques))
+            communities = list(k_clique_communities(G, k=k))  # , cliques=all_cliques))
             nodes_to_remove = []
             for c in communities:
                 if len(c) > min_size and len(c) < max_size:
@@ -74,8 +78,8 @@ def calc_neuron_using_voronoi(all_matches,
     global2local = {}
     global_current_ind = 0
     if target_size_vec is None:
-        stop_size = max(1, int(total_frames/2))
-        target_size_vec = list(range(total_frames,stop_size,-1))
+        stop_size = max(1, int(total_frames / 2))
+        target_size_vec = list(range(total_frames, stop_size, -1))
 
     for target_size in target_size_vec:
         for start_vol in unique_nodes:
@@ -85,7 +89,7 @@ def calc_neuron_using_voronoi(all_matches,
                 frame_ind, _ = unpack_node_name(n)
                 if frame_ind == start_vol:
                     center_nodes.append(n)
-            if len(center_nodes)==0:
+            if len(center_nodes) == 0:
                 continue
             cells = nx.voronoi_cells(DG, center_nodes)
 
@@ -103,6 +107,7 @@ def calc_neuron_using_voronoi(all_matches,
             print(f"Found {global_current_ind} neurons of size at least {target_size}")
 
     return global2local
+
 
 ##
 ## Utilities
@@ -131,7 +136,7 @@ def convert_labels_to_matches(labels, offset=None, max_frames=None, DEBUG=False)
         # Get nodes of this class
         these_ind = []
         for node_ind, lab in labels.items():
-            if lab!=name:
+            if lab != name:
                 continue
             frame_ind, local_ind = unpack_node_name(node_ind)
             these_ind.append((frame_ind, local_ind))
@@ -140,14 +145,14 @@ def convert_labels_to_matches(labels, offset=None, max_frames=None, DEBUG=False)
         # Build matches that know the starting frame
         for i_f0, i_l0 in these_ind:
             for i_f1, i_l1 in these_ind:
-                if i_l0 == i_l1 and i_f0==i_f1:
+                if i_l0 == i_l1 and i_f0 == i_f1:
                     continue
                 if offset is not None:
-                    k = (i_f0-offset, i_f1-offset)
+                    k = (i_f0 - offset, i_f1 - offset)
                 else:
                     k = (i_f0, i_f1)
                 if max_frames is not None:
-                    if k[0]>=max_frames or k[1]>=max_frames:
+                    if k[0] >= max_frames or k[1] >= max_frames:
                         continue
                 match_dict[k].append([i_l0, i_l1])
 
@@ -161,7 +166,7 @@ def community_to_matches(all_communities):
     for i, c in enumerate(all_communities):
         name = f"neuron_{i}"
         for neuron in c:
-            community_dict[neuron]=name
+            community_dict[neuron] = name
     clique_matches = convert_labels_to_matches(community_dict, offset=50, max_frames=500)
 
     return clique_matches
@@ -177,7 +182,7 @@ def fix_candidates_without_confidences(candidates):
     for k, these_matches in candidates.items():
         new_matches = []
         for m in these_matches:
-            if len(m)==3:
+            if len(m) == 3:
                 m = (int(m[0]), int(m[1]), m[2])
             else:
                 m = (int(m[0]), int(m[1]), 1.0)

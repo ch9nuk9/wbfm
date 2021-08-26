@@ -1,6 +1,4 @@
-import pytest
 import importlib
-
 
 def test_segmentation():
     # Run the sacred experiment from the actual script

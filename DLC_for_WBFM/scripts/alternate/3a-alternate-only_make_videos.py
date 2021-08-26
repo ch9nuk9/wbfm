@@ -3,13 +3,16 @@ The top level function for initializing a stack of DLC projects
 """
 
 from pathlib import Path
-# main function
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_only_videos
+
 # Experiment tracking
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
+
+from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_only_videos
+# main function
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment

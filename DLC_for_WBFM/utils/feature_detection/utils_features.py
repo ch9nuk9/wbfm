@@ -1,13 +1,14 @@
 # Use classical methods for building and matching features
-import os
-import numpy as np
+
 import cv2
+import numpy as np
 import open3d as o3d
 from matplotlib import pyplot as plt
 from scipy import stats
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
+
 
 ##
 ## First, extract features and match
@@ -28,10 +29,10 @@ def detect_features(im1, max_features,
 
     im1Gray = convert_to_grayscale(im1)
     if use_sift:
-        options = {'hessianThreshold':0.1}
+        options = {'hessianThreshold': 0.1}
         detector = cv2.xfeatures2d.SURF_create(**options)
     else:
-        detector = cv2.ORB_create(max_features)#, WTA_K=3)
+        detector = cv2.ORB_create(max_features)  # , WTA_K=3)
         if setFastThreshold:
             detector.setFastThreshold(0)
     kp1, d1 = detector.detectAndCompute(im1Gray, None)
@@ -59,10 +60,10 @@ def match_known_features(descriptors1, descriptors2,
 
     if use_GMS:
         options = {'keypoints1': keypoints1,
-               'keypoints2': keypoints2,
-               'matches1to2': matches,
-               'withRotation': False,
-               'thresholdFactor': 6.0}
+                   'keypoints2': keypoints2,
+                   'matches1to2': matches,
+                   'withRotation': False,
+                   'thresholdFactor': 6.0}
         matches = cv2.xfeatures2d.matchGMS(im1_shape, im2_shape, **options)
 
     if matches_to_keep < 1.0:
@@ -137,30 +138,30 @@ def match_using_known_keypoints(im1, kp1, im2, kp2, max_features=1000, use_flann
         sift = cv2.SIFT()
 
         # use the keypoints to find descriptors with SIFT
-        _, descriptors1 = sift.compute(im1,kp1)
-        _, descriptors2 = sift.compute(im2,kp2)
+        _, descriptors1 = sift.compute(im1, kp1)
+        _, descriptors2 = sift.compute(im2, kp2)
         # FLANN parameters
         FLANN_INDEX_KDTREE = 0
-        index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-        search_params = dict(checks=50)   # or pass empty dictionary
+        index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+        search_params = dict(checks=50)  # or pass empty dictionary
 
-        flann = cv2.FlannBasedMatcher(index_params,search_params)
-        matches = flann.knnMatch(descriptors1,descriptors2,k=1)
+        flann = cv2.FlannBasedMatcher(index_params, search_params)
+        matches = flann.knnMatch(descriptors1, descriptors2, k=1)
 
     else:
         orb = cv2.ORB_create(max_features)
         _, descriptors1 = orb.compute(im1, kp1)
         _, descriptors2 = orb.compute(im2, kp2)
         matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
-    #     matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_FLANNBASED)
+        #     matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_FLANNBASED)
         matches = matcher.match(descriptors1, descriptors2, None)
 
     # Sort matches by score
     matches.sort(key=lambda x: x.distance, reverse=False)
 
     # Remove not so good matches
-#     numGoodMatches = int(len(matches) * GOOD_MATCH_PERCENT)
-#     matches = matches[:numGoodMatches]
+    #     numGoodMatches = int(len(matches) * GOOD_MATCH_PERCENT)
+    #     matches = matches[:numGoodMatches]
 
     return kp1, kp2, matches
 
@@ -194,7 +195,8 @@ def keep_top_matches_per_neuron(keypoint_matches, frame, matches_to_keep=0.5):
     # OPTIMIZE: this requires sz loops over all keypoints
     for neuron in range(sz):
         these_keypoints = set(frame.get_features_of_neuron(neuron))
-        global_ind_and_dist = [(i, kp.distance) for i, kp in enumerate(keypoint_matches) if kp.queryIdx in these_keypoints]
+        global_ind_and_dist = [(i, kp.distance) for i, kp in enumerate(keypoint_matches) if
+                               kp.queryIdx in these_keypoints]
         if len(global_ind_and_dist) == 0:
             continue
         local_sort_idx = np.argsort(np.array(global_ind_and_dist)[:, 1])
@@ -240,11 +242,11 @@ def build_neuron_tree(neurons, to_mirror=True):
     pc = o3d.geometry.PointCloud()
 
     num_neurons = neurons.shape[0]
-    if len(neurons.shape)==1:
-        neurons = np.expand_dims(neurons,0)
+    if len(neurons.shape) == 1:
+        neurons = np.expand_dims(neurons, 0)
     # the segmentations are mirrored
     if to_mirror:
-        flip = lambda n : np.array([n[0], n[2], n[1]])
+        flip = lambda n: np.array([n[0], n[2], n[1]])
         neurons = np.array([flip(row) for row in neurons])
 
     # Build point cloud and tree
@@ -265,7 +267,7 @@ def build_feature_tree(features, which_slice=None):
     num_features = features.shape[0]
 
     # Add 3rd dimension to the features
-    if len(features[0])==2:
+    if len(features[0]) == 2:
         if which_slice is None:
             print("Must pass z slice information if features are 2d")
             raise ValueError
@@ -283,18 +285,18 @@ def build_feature_tree(features, which_slice=None):
 def keep_best_match(all_matches, all_confidences, verbose=0):
     # Get duplicates
     match_array = np.array(all_matches)
-    vals, counts = np.unique(match_array[:,1], return_counts=True)
-    duplicate_vals = vals[counts>1]
+    vals, counts = np.unique(match_array[:, 1], return_counts=True)
+    duplicate_vals = vals[counts > 1]
 
     to_remove = []
     for val in duplicate_vals:
         # Find duplicate matches
-        these_duplicates = np.where(match_array[:,1]==val)[0]
+        these_duplicates = np.where(match_array[:, 1] == val)[0]
         # Get highest confidence value, and keep it
         best_match = np.argmax(np.array(all_confidences)[these_duplicates])
         if verbose >= 2:
-            print(f"Keeping best match {best_match} among confidences {np.array(all_conf)[these_duplicates]}")
-        these_duplicates = np.delete(these_duplicates,best_match)
+            print(f"Keeping best match {best_match}")
+        these_duplicates = np.delete(these_duplicates, best_match)
 
         to_remove.extend(these_duplicates)
 
@@ -309,19 +311,19 @@ def keep_best_match(all_matches, all_confidences, verbose=0):
 
 
 def build_f2n_map(features1,
-                   num_features1,
-                   pc_f1,
-                   radius,
-                   tree_n1,
-                   verbose=0):
+                  num_features1,
+                  pc_f1,
+                  radius,
+                  tree_n1,
+                  verbose=0):
     features_to_neurons1 = dict()
-    nn_opt = { 'radius':5*radius, 'max_nn':1}
+    nn_opt = {'radius': 5 * radius, 'max_nn': 1}
     for i in range(num_features1):
         # Get features of this neuron and save
         this_feature = np.asarray(pc_f1.points)[i]
         [k, this_fn1, _] = tree_n1.search_hybrid_vector_3d(this_feature, **nn_opt)
 
-        if k>0:
+        if k > 0:
             features_to_neurons1[i] = this_fn1[0]
 
             if verbose >= 4:
@@ -331,23 +333,23 @@ def build_f2n_map(features1,
                 # Current feature being queried
                 one_point = o3d.geometry.PointCloud()
                 one_point.points = o3d.utility.Vector3dVector([this_feature])
-                #one_point.points = o3d.utility.Vector3dVector(this_neighbor)
-                one_point.paint_uniform_color([0,0,1])
+                # one_point.points = o3d.utility.Vector3dVector(this_neighbor)
+                one_point.paint_uniform_color([0, 0, 1])
                 # Found closest neuron
                 np.asarray(pc_f1.colors)[this_fn1[1:], :] = [0, 1, 0]
 
-                o3d.visualization.draw_geometries([one_point,pc_f1])
+                o3d.visualization.draw_geometries([one_point, pc_f1])
 
     return features_to_neurons1
 
 
 def add_neuron_match(all_best_matches,
-                    all_confidences,
-                    i,
-                    min_features_needed,
-                    this_n1,
-                    verbose=0,
-                    all_candidate_matches=None):
+                     all_confidences,
+                     i,
+                     min_features_needed,
+                     this_n1,
+                     verbose=0,
+                     all_candidate_matches=None):
     """
     Processes an array of neuron matches into a neuron match
 
@@ -369,8 +371,8 @@ def add_neuron_match(all_best_matches,
     this_n1 = np.array(this_n1)
 
     n = len(this_n1)
-    get_num_matches = lambda this_match : np.count_nonzero(abs(this_n1-this_match)<0.1)
-    get_conf = lambda num_matches : num_matches / (1+n)
+    get_num_matches = lambda this_match: np.count_nonzero(abs(this_n1 - this_match) < 0.1)
+    get_conf = lambda num_matches: num_matches / (1 + n)
     if n >= min_features_needed:
         # Simple plurality voting
         best_match = int(stats.mode(this_n1)[0][0])
@@ -385,8 +387,8 @@ def add_neuron_match(all_best_matches,
         # if verbose >= 1:
         #     print(f"Matched neuron {i} to {this_match} based on {len(this_n1)} matches")
     else:
-        #all_matches.append([i, np.nan])
-        #all_confidences.append(0)
+        # all_matches.append([i, np.nan])
+        # all_confidences.append(0)
         if verbose >= 1:
             print(f"Could not match neuron {i}")
 
@@ -406,7 +408,7 @@ def calc_2frame_matches(neurons0,
     neuron space
     """
 
-    nn_opt = {'radius':radius, 'max_nn':max_nn}
+    nn_opt = {'radius': radius, 'max_nn': max_nn}
 
     all_matches = []
     all_confidences = []
@@ -419,23 +421,21 @@ def calc_2frame_matches(neurons0,
             this_neuron = np.asarray(pc_n0.points)[i]
         [_, this_f0, _] = tree_features0.search_hybrid_vector_3d(this_neuron, **nn_opt)
 
-        if verbose >= 3:
-            pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
-
-            one_point = o3d.geometry.PointCloud()
-            one_point.points = o3d.utility.Vector3dVector([this_neuron])
-            one_point.paint_uniform_color([1,0,0])
-
-            np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
-
-#             print("Visualize the point cloud.")
-            o3d.visualization.draw_geometries([one_point, pc_f0])
+        # if verbose >= 3:
+        #     pc_f0.paint_uniform_color([0.5, 0.5, 0.5])
+        #
+        #     one_point = o3d.geometry.PointCloud()
+        #     one_point.points = o3d.utility.Vector3dVector([this_neuron])
+        #     one_point.paint_uniform_color([1, 0, 0])
+        #
+        #     np.asarray(pc_f0.colors)[this_f0[1:], :] = [0, 1, 0]
+        #
+        #     #             print("Visualize the point cloud.")
+        #     o3d.visualization.draw_geometries([one_point, pc_f0])
 
         # Get the corresponding neurons in vol1, and vote
-        #this_n1 = features_to_neurons1[this_f0]
         f2n = features_to_neurons1
         this_n1 = [f2n[f1] for f1 in this_f0 if f1 in f2n]
-        #this_n1 = [features_to_neurons1[f] for f in this_f0]
 
         all_matches, all_confidences, _ = add_neuron_match(
             all_matches,
@@ -477,21 +477,21 @@ def match_centroids_using_tree(neurons0,
 
     # First, build array to translate features to neurons
     features_to_neurons1 = build_f2n_map(features1,
-                                           num_features1,
-                                           pc_f1,
-                                           radius,
-                                           tree_neurons1,
-                                           verbose=0)
+                                         num_features1,
+                                         pc_f1,
+                                         radius,
+                                         tree_neurons1,
+                                         verbose=0)
 
     # Second, loop through neurons of first frame and match
     all_matches, all_confidences = calc_2frame_matches(neurons0,
-                                                        tree_features0,
-                                                        features_to_neurons1,
-                                                        radius,
-                                                        max_nn,
-                                                        min_features_needed,
-                                                        pc_n0=pc_n0,
-                                                        verbose=0)
+                                                       tree_features0,
+                                                       features_to_neurons1,
+                                                       radius,
+                                                       max_nn,
+                                                       min_features_needed,
+                                                       pc_n0=pc_n0,
+                                                       verbose=0)
 
     if only_keep_best_match:
         all_matches, all_confidences, _ = keep_best_match(all_matches, all_confidences, verbose=verbose)
@@ -509,7 +509,6 @@ def build_features_1volume(dat,
                            num_features_per_plane=1000,
                            start_plane=0,
                            verbose=0):
-
     all_features = []
     all_locs = []
     all_kps = []
@@ -530,15 +529,15 @@ def build_features_1volume(dat,
 
 
 def build_features_and_match_2volumes(dat0, dat1,
-                                verbose=1, start_plane=10,
-                                detect_keypoints=True,
-                                kp0=None,
-                                kp1=None,
-                                sz=31.0,
-                                num_features_per_plane=1000,
-                                matches_to_keep=0.5,
-                                use_GMS=True,
-                                dat_foldername = r'..\point_cloud_alignment'):
+                                      verbose=1, start_plane=10,
+                                      detect_keypoints=True,
+                                      kp0=None,
+                                      kp1=None,
+                                      sz=31.0,
+                                      num_features_per_plane=1000,
+                                      matches_to_keep=0.5,
+                                      use_GMS=True,
+                                      dat_foldername=r'..\point_cloud_alignment'):
     """
     Multi-plane wrapper around: detect_features_and_match
     """
@@ -556,8 +555,9 @@ def build_features_and_match_2volumes(dat0, dat1,
         im0 = np.squeeze(dat0[i, ...])
         im1 = np.squeeze(dat1[i, ...])
         if detect_keypoints:
-            #keypoints0, _, keypoints1, _ = detect_features(im1, im2, num_features_per_plane)
-            keypoints0, keypoints1, matches = detect_features_and_match(im0, im1, num_features_per_plane, matches_to_keep, use_GMS)
+            # keypoints0, _, keypoints1, _ = detect_features(im1, im2, num_features_per_plane)
+            keypoints0, keypoints1, matches = detect_features_and_match(im0, im1, num_features_per_plane,
+                                                                        matches_to_keep, use_GMS)
             if len(matches) == 0:
                 continue
         else:

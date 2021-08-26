@@ -1,12 +1,12 @@
-
-
 # main function
-from DLC_for_WBFM.utils.projects.utils_project import load_config
-from DLC_for_WBFM.utils.visualization.utils_segmentation import create_spherical_segmentation
+from pathlib import Path
+
 # Experiment tracking
 import sacred
 from sacred import Experiment
-from pathlib import Path
+
+from DLC_for_WBFM.utils.projects.utils_project import load_config
+from DLC_for_WBFM.utils.visualization.utils_segmentation import create_spherical_segmentation
 
 # Initialize sacred experiment
 
@@ -32,7 +32,6 @@ def cfg(project_path):
 
 @ex.automain
 def main(_config, _run):
-
     sacred.commands.print_config(_run)
 
     this_config = _config.copy()

@@ -3,13 +3,15 @@ The top level function for producing dlc tracks in 3d
 """
 
 from pathlib import Path
+
+# Experiment tracking
+import sacred
+from sacred import Experiment
+
 # main function
 from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
     combine_all_dlc_and_tracklet_coverings_from_config
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-# Experiment tracking
-import sacred
-from sacred import Experiment
 
 # Initialize sacred experiment
 ex = Experiment()
