@@ -32,8 +32,10 @@ class FramePair:
     @property
     def all_candidate_matches(self):
         all_matches = self.feature_matches.copy()
-        all_matches.extend(self.affine_matches)
-        all_matches.extend(self.gp_matches)
+        if self.affine_matches is not None:
+            all_matches.extend(self.affine_matches)
+        if self.gp_matches is not None:
+            all_matches.extend(self.gp_matches)
         return all_matches
 
     def calc_final_matches_using_bipartite_matching(self) -> list:
