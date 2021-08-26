@@ -392,6 +392,7 @@ def add_neuron_match(all_best_matches,
 
     return all_best_matches, all_confidences, all_candidate_matches
 
+
 def calc_2frame_matches(neurons0,
                         tree_features0,
                         features_to_neurons1,
@@ -526,7 +527,6 @@ def build_features_1volume(dat,
         all_locs.extend(locs_3d)
 
     return all_kps, np.array(all_locs), np.array(all_features)
-
 
 
 def build_features_and_match_2volumes(dat0, dat1,

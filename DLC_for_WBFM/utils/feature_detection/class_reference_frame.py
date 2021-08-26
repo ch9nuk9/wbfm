@@ -22,7 +22,7 @@ class ReferenceFrame:
     # Data for registration
     neuron_locs: list
     keypoints: list
-    keypoint_locs: list # Includes the z coordinate
+    keypoint_locs: list  # Includes the z coordinate
     all_features: np.array
     features_to_neurons: dict
 
@@ -34,7 +34,7 @@ class ReferenceFrame:
     preprocessing_settings: PreprocessingSettings = None
 
     # To be finished with a set of other registered frames
-    neuron_ids: list = None # global neuron index
+    neuron_ids: list = None  # global neuron index
 
     def get_metadata(self):
         return {'frame_ind':self.frame_ind,
@@ -142,6 +142,7 @@ def build_reference_frame_encoding(dat_raw,
                                    start_slice=None,
                                    metadata=None,
                                    external_detections=None,
+                                   to_add_orb_keypoints=False,
                                    verbose=0):
     """
     New pipeline that directly builds an embedding for each neuron, instead of detecting keypoints
