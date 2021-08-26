@@ -10,8 +10,8 @@ from datetime import date
 import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
+from DLC_for_WBFM.utils.external_libraries import monkeypatch_json
 
-import DLC_for_WBFM.utils.projects.monkeypatch_json
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
 

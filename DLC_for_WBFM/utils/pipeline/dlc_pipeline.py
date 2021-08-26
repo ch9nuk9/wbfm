@@ -292,7 +292,7 @@ def make_3d_tracks_from_stack(track_cfg: config_file_with_project_context,
     """
     Applies trained DLC networks to full 2d videos and collects into 3d track
 
-    Can be used with the videos from the DLC projects, or external ones
+    Can be used with the videos from the DLC projects, or external_libraries ones
     """
 
     all_dlc_configs = track_cfg.config['dlc_projects']['all_configs']
