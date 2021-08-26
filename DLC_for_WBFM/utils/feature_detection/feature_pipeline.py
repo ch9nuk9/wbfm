@@ -552,7 +552,8 @@ def track_neurons_full_video(video_fname: str,
     all_frame_dict = {start_volume: frame0}
     end_frame = start_volume + num_frames
     frame_range = range(start_volume + 1, end_frame)
-    match_opt = {'add_gp_to_candidates': add_gp_to_candidates}
+    match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
+                 'add_gp_to_candidates': add_gp_to_candidates}
     logging.info(f"Calculating Frame objects for frames: {frame_range}")
     for i_frame in tqdm(frame_range):
         frame1 = _build_frame(i_frame)
