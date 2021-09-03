@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, Union
 
 import cv2
 import numpy as np
@@ -20,18 +20,18 @@ class ReferenceFrame:
     """ Information for registered reference frames"""
 
     # Data for registration
-    neuron_locs: list
-    keypoints: list
-    keypoint_locs: list  # Includes the z coordinate
-    all_features: np.array
-    features_to_neurons: dict
+    neuron_locs: list = None
+    keypoints: list = None
+    keypoint_locs: list = None  # Includes the z coordinate
+    all_features: np.array = None
+    features_to_neurons: dict = None
 
     # Metadata
     frame_ind: int = None
     video_fname: str = None
     vol_shape: tuple = None
 
-    preprocessing_settings: PreprocessingSettings = None
+    preprocessing_settings: Union[PreprocessingSettings, None] = None
 
     # To be finished with a set of other registered frames
     neuron_ids: list = None  # global neuron index
@@ -53,11 +53,78 @@ class ReferenceFrame:
     def num_neurons(self):
         return self.neuron_locs.shape[0]
 
-    def get_data(self):
+    def get_raw_data(self):
         return get_single_volume(self.video_fname,
                                  self.frame_ind,
                                  num_slices=self.vol_shape[0],
                                  alpha=self.preprocessing_settings.alpha)
+
+    def detect_or_import_neurons(self, dat: list, external_detections: str, metadata: dict, num_slices: int,
+                                 start_slice: int) -> list:
+        if external_detections is None:
+            from DLC_for_WBFM.utils.feature_detection.legacy_neuron_detection import detect_neurons_using_ICP
+            neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
+                                                            num_slices=num_slices,
+                                                            alpha=1.0,
+                                                            min_detections=3,
+                                                            start_slice=start_slice,
+                                                            verbose=0)
+            neuron_locs = np.array([n for n in neuron_locs])
+        else:
+            i = metadata['frame_ind']
+            neuron_locs = detect_neurons_from_file(external_detections, i)
+
+        self.neuron_locs = neuron_locs
+        self.keypoint_locs = neuron_locs
+
+        return neuron_locs
+
+    def encode_all_neurons(self, im_3d: np.ndarray, z_depth: int,
+                           encoder=None) -> Tuple[np.ndarray, list]:
+        """
+        Builds a feature vector for each neuron (zxy location) in a 3d volume
+        Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
+        """
+        locs_zxy = self.neuron_locs
+
+        im_3d_gray = [convert_to_grayscale(xy) for xy in im_3d]
+        all_embeddings = []
+        all_keypoints = []
+        if encoder is None:
+            encoder = cv2.xfeatures2d.VGG_create()
+
+        # Loop per neuron
+        for loc in locs_zxy:
+            z, x, y = loc
+            kp = cv2.KeyPoint(x, y, 31.0)
+
+            z = int(z)
+            all_slices = np.arange(z - z_depth, z + z_depth + 1)
+            all_slices = np.clip(all_slices, 0, len(im_3d_gray) - 1)
+            # Generate features on neighboring z slices as well
+            # Repeat slices if near the edge
+            ds = []
+            for i in all_slices:
+                im_2d = im_3d_gray[int(i)].astype('uint8')
+                _, this_ds = encoder.compute(im_2d, [kp])
+                ds.append(this_ds)
+
+            ds = np.hstack(ds)
+            all_embeddings.extend(ds)
+            all_keypoints.append(kp)
+
+        all_embeddings = np.array(all_embeddings)
+
+        self.all_features = all_embeddings
+        self.keypoints = all_keypoints
+
+        return all_embeddings, all_keypoints
+
+    def build_feature_to_neuron_mapping(self):
+        # This is now just a trivial mapping
+        f2n_map = {i: i for i in range(len(self.neuron_locs))}
+        self.features_to_neurons = f2n_map
+        return f2n_map
 
     def prep_for_pickle(self):
         """Deletes the cv2.Keypoints (the locations are stored though)"""
@@ -117,21 +184,6 @@ class RegisteredReferenceFrames():
                 Number of frames: {len(self.reference_frames)} \n"
 
 
-def _detect_or_import_neurons(dat: list, external_detections: str, metadata: dict, num_slices: int,
-                              start_slice: int) -> list:
-    if external_detections is None:
-        from DLC_for_WBFM.utils.feature_detection.legacy_neuron_detection import detect_neurons_using_ICP
-        neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
-                                                        num_slices=num_slices,
-                                                        alpha=1.0,
-                                                        min_detections=3,
-                                                        start_slice=start_slice,
-                                                        verbose=0)
-        neuron_locs = np.array([n for n in neuron_locs])
-    else:
-        i = metadata['frame_ind']
-        neuron_locs = detect_neurons_from_file(external_detections, i)
-    return neuron_locs
 
 
 def build_reference_frame_encoding(dat_raw,
@@ -149,48 +201,31 @@ def build_reference_frame_encoding(dat_raw,
     """
     if metadata is None:
         metadata = {}
-    dat = dat_raw
-    neuron_zxy = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
 
-    embeddings, keypoints = encode_all_neurons(neuron_zxy, dat, z_depth)
+    # Initialize class
+    frame = ReferenceFrame(**metadata, preprocessing_settings=None)
 
-    # This is now just a trivial mapping
-    f2n_map = {i: i for i in range(len(neuron_zxy))}
-    f = ReferenceFrame(neuron_zxy, keypoints, neuron_zxy, embeddings, f2n_map,
-                       **metadata,
-                       preprocessing_settings=None)
+    # Build keypoints (in this case, neurons directly)
+    frame.detect_or_import_neurons(dat_raw, external_detections, metadata, num_slices, start_slice)
+
+    # Calculate encodings
+    frame.encode_all_neurons(dat_raw, z_depth)
+
+    # Set up mapping between neurons and keypoints
+    frame.build_feature_to_neuron_mapping()
+    #
+    #
+    # dat = dat_raw
+    # neuron_zxy = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
+    #
+    # embeddings, keypoints = encode_all_neurons(neuron_zxy, dat, z_depth)
+    #
+    # # This is now just a trivial mapping
+    # f2n_map = {i: i for i in range(len(neuron_zxy))}
+    # f = ReferenceFrame(neuron_zxy, keypoints, neuron_zxy, embeddings, f2n_map,
+    #                    **metadata,
+    #                    preprocessing_settings=None)
 
     return f
 
 
-def encode_all_neurons(locs_zxy: list, im_3d: np.ndarray, z_depth: int) -> Tuple[np.ndarray, list]:
-    """
-    Builds a feature vector for each neuron (zxy location) in a 3d volume
-    Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
-    """
-    im_3d_gray = [convert_to_grayscale(xy) for xy in im_3d]
-    all_embeddings = []
-    all_keypoints = []
-    encoder = cv2.xfeatures2d.VGG_create()
-
-    # Loop per neuron
-    for loc in locs_zxy:
-        z, x, y = loc
-        kp = cv2.KeyPoint(x, y, 31.0)
-
-        z = int(z)
-        all_slices = np.arange(z - z_depth, z + z_depth + 1)
-        all_slices = np.clip(all_slices, 0, len(im_3d_gray) - 1)
-        # Generate features on neighboring z slices as well
-        # Repeat slices if near the edge
-        ds = []
-        for i in all_slices:
-            im_2d = im_3d_gray[int(i)].astype('uint8')
-            _, this_ds = encoder.compute(im_2d, [kp])
-            ds.append(this_ds)
-
-        ds = np.hstack(ds)
-        all_embeddings.extend(ds)
-        all_keypoints.append(kp)
-
-    return np.array(all_embeddings), all_keypoints

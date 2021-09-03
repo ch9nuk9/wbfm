@@ -213,8 +213,8 @@ def plot_match_example(all_frames,
     # Get frame objects and data
     frame0 = all_frames[which_frame_pair[0]]
     frame1 = all_frames[which_frame_pair[1]]
-    img0 = frame0.get_data()[which_slice, ...]
-    img1 = frame1.get_data()[which_slice, ...]
+    img0 = frame0.get_raw_data()[which_slice, ...]
+    img1 = frame1.get_raw_data()[which_slice, ...]
     # Get the matching neuron in frame1, and the relevant indices
     this_match = np.array(neuron_matches[which_frame_pair])
     neuron1 = this_match[this_match[:, 0] == neuron0, 1]
