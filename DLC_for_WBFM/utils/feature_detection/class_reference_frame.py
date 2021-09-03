@@ -226,6 +226,6 @@ def build_reference_frame_encoding(dat_raw,
     #                    **metadata,
     #                    preprocessing_settings=None)
 
-    return f
+    return frame
 
 
