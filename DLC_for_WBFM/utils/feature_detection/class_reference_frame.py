@@ -6,7 +6,8 @@ import numpy as np
 
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_from_file
-from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale
+from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale, detect_features, \
+    build_feature_tree, build_neuron_tree, build_f2n_map
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
@@ -61,6 +62,21 @@ class ReferenceFrame:
 
     def detect_or_import_neurons(self, dat: list, external_detections: str, metadata: dict, num_slices: int,
                                  start_slice: int) -> list:
+        """
+
+        Parameters
+        ----------
+        dat
+        external_detections
+        metadata
+        num_slices
+        start_slice
+
+        Returns
+        -------
+        neuron_locs - also saved as self.neuron_locs and self.keypoint_locs
+
+        """
         if external_detections is None:
             from DLC_for_WBFM.utils.feature_detection.legacy_neuron_detection import detect_neurons_using_ICP
             neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
@@ -74,10 +90,65 @@ class ReferenceFrame:
             i = metadata['frame_ind']
             neuron_locs = detect_neurons_from_file(external_detections, i)
 
+        if len(neuron_locs) == 0:
+            print("No neurons detected... check data settings")
+            # TODO: do not just raise an error, but skip rest of analysis
+            raise ValueError
+
         self.neuron_locs = neuron_locs
-        self.keypoint_locs = neuron_locs
 
         return neuron_locs
+
+    def copy_neurons_to_keypoints(self):
+        """ Explicitly a different method for backwards compatibility"""
+        self.keypoint_locs = self.neuron_locs.copy()
+
+    def detect_keypoints_and_build_features(self,
+                                            dat,
+                                            num_features_per_plane=1000,
+                                            start_plane=0,
+                                            verbose=0):
+        all_features = []
+        all_locs = []
+        all_kps = []
+        for i in range(dat.shape[0]):
+            if i < start_plane:
+                continue
+            im = np.squeeze(dat[i, ...])
+            kp, features = detect_features(im, num_features_per_plane)
+
+            if features is None:
+                continue
+            all_features.extend(features)
+            all_kps.extend(kp)
+            locs_3d = np.array([np.hstack((i, row.pt)) for row in kp])
+            all_locs.extend(locs_3d)
+
+        all_locs, all_features = np.array(all_locs), np.array(all_features)
+
+        self.keypoints = all_kps
+        self.keypoint_locs = all_locs
+        self.all_features = all_features
+
+        return all_kps, all_locs, all_features
+
+    def build_nontrivial_feature_to_neuron_mapping(self, neuron_feature_radius):
+
+        kp_3d_locs, neuron_locs = self.keypoint_locs, self.neuron_locs
+
+        # Requires some open3d subfunctions; may not work on a cluster
+        num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
+        _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
+        f2n_map = build_f2n_map(kp_3d_locs,
+                                num_f,
+                                pc_f,
+                                neuron_feature_radius,
+                                tree_neurons,
+                                verbose=0)
+
+        self.features_to_neurons = f2n_map
+
+        return f2n_map
 
     def encode_all_neurons(self, im_3d: np.ndarray, z_depth: int,
                            encoder=None) -> Tuple[np.ndarray, list]:
@@ -120,7 +191,7 @@ class ReferenceFrame:
 
         return all_embeddings, all_keypoints
 
-    def build_feature_to_neuron_mapping(self):
+    def build_trivial_feature_to_neuron_mapping(self):
         # This is now just a trivial mapping
         f2n_map = {i: i for i in range(len(self.neuron_locs))}
         self.features_to_neurons = f2n_map
@@ -207,12 +278,13 @@ def build_reference_frame_encoding(dat_raw,
 
     # Build keypoints (in this case, neurons directly)
     frame.detect_or_import_neurons(dat_raw, external_detections, metadata, num_slices, start_slice)
+    frame.copy_neurons_to_keypoints()
 
     # Calculate encodings
     frame.encode_all_neurons(dat_raw, z_depth)
 
     # Set up mapping between neurons and keypoints
-    frame.build_feature_to_neuron_mapping()
+    frame.build_trivial_feature_to_neuron_mapping()
     #
     #
     # dat = dat_raw
@@ -229,3 +301,49 @@ def build_reference_frame_encoding(dat_raw,
     return frame
 
 
+def build_reference_frame(dat: np.ndarray,
+                          num_slices: int,
+                          neuron_feature_radius: float,
+                          preprocessing_settings: PreprocessingSettings = None,
+                          start_slice: int = 2,
+                          metadata: dict = None,
+                          external_detections: str = None,
+                          verbose: int = 0) -> ReferenceFrame:
+    """Main convenience constructor for ReferenceFrame class"""
+    if metadata is None:
+        metadata = {}
+
+    # Initialize class
+    frame = ReferenceFrame(**metadata, preprocessing_settings=None)
+
+    # Build neurons and keypoints
+    frame.detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
+
+    feature_opt = {'num_features_per_plane': 1000, 'start_plane': 5}
+    frame.detect_keypoints_and_build_features(dat, **feature_opt)
+
+    # Set up mapping between neurons and keypoints
+    frame.build_trivial_feature_to_neuron_mapping(neuron_feature_radius)
+
+    # Get neurons and features, and a map between them
+    # neuron_locs = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
+    # if len(neuron_locs) == 0:
+    #     print("No neurons detected... check data settings")
+    #     raise ValueError
+    # kps, kp_3d_locs, features = build_features_1volume(dat, **feature_opt)
+    #
+    # # The map requires some open3d subfunctions; may not work on a cluster
+    # num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
+    # _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
+    # f2n_map = build_f2n_map(kp_3d_locs,
+    #                         num_f,
+    #                         pc_f,
+    #                         neuron_feature_radius,
+    #                         tree_neurons,
+    #                         verbose=verbose - 1)
+    #
+    # # Finally, my summary class
+    # f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map,
+    #                    **metadata,
+    #                    preprocessing_settings=preprocessing_settings)
+    return f

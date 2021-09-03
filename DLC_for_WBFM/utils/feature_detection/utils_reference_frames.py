@@ -4,55 +4,9 @@ import networkx as nx
 import numpy as np
 from matplotlib import pyplot as plt
 
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame, _detect_or_import_neurons, \
-    RegisteredReferenceFrames
-from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_1volume, build_feature_tree, \
-    build_neuron_tree, build_f2n_map, add_neuron_match
+from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames
+from DLC_for_WBFM.utils.feature_detection.utils_features import add_neuron_match
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import unpack_node_name, is_one_neuron_per_frame
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings, perform_preprocessing
-
-
-##
-## Main convinience constructors
-##
-
-def build_reference_frame(dat_raw: np.ndarray,
-                          num_slices: int,
-                          neuron_feature_radius: float,
-                          preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
-                          start_slice: int = 2,
-                          metadata: dict = None,
-                          external_detections: str = None,
-                          verbose: int = 0) -> ReferenceFrame:
-    """Main convenience constructor for ReferenceFrame class"""
-    if metadata is None:
-        metadata = {}
-    dat = perform_preprocessing(dat_raw, preprocessing_settings)
-
-    # Get neurons and features, and a map between them
-    neuron_locs = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
-
-    if len(neuron_locs) == 0:
-        print("No neurons detected... check data settings")
-        raise ValueError
-    feature_opt = {'num_features_per_plane': 1000, 'start_plane': 5}
-    kps, kp_3d_locs, features = build_features_1volume(dat, **feature_opt)
-
-    # The map requires some open3d subfunctions
-    num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
-    _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
-    f2n_map = build_f2n_map(kp_3d_locs,
-                            num_f,
-                            pc_f,
-                            neuron_feature_radius,
-                            tree_neurons,
-                            verbose=verbose - 1)
-
-    # Finally, my summary class
-    f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map,
-                       **metadata,
-                       preprocessing_settings=preprocessing_settings)
-    return f
 
 
 ##
