@@ -92,7 +92,7 @@ class ReferenceFrame:
 
         if len(neuron_locs) == 0:
             print("No neurons detected... check data settings")
-            # TODO: do not just raise an error, but skip rest of analysis
+            # TODO: do not just raise an error, but instead skip rest of analysis
             raise ValueError
 
         self.neuron_locs = neuron_locs
@@ -132,23 +132,30 @@ class ReferenceFrame:
 
         return all_kps, all_locs, all_features
 
-    def build_nontrivial_feature_to_neuron_mapping(self, neuron_feature_radius):
+    def build_nontrivial_keypoint_to_neuron_mapping(self, neuron_feature_radius):
+        """
+        Matches keypoints and features based purely on distance (max=neuron_feature_radius)
+
+        Designed when the keypoints are detected separately from the neurons
+        Can also be used when the keypoints are a superset of neurons (e.g. ORB keypoints + neurons)
+
+        """
 
         kp_3d_locs, neuron_locs = self.keypoint_locs, self.neuron_locs
 
         # Requires some open3d subfunctions; may not work on a cluster
         num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
         _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
-        f2n_map = build_f2n_map(kp_3d_locs,
-                                num_f,
-                                pc_f,
-                                neuron_feature_radius,
-                                tree_neurons,
-                                verbose=0)
+        kp2n_map = build_f2n_map(kp_3d_locs,
+                                 num_f,
+                                 pc_f,
+                                 neuron_feature_radius,
+                                 tree_neurons,
+                                 verbose=0)
 
-        self.features_to_neurons = f2n_map
+        self.features_to_neurons = kp2n_map
 
-        return f2n_map
+        return kp2n_map
 
     def encode_all_neurons(self, im_3d: np.ndarray, z_depth: int,
                            encoder=None) -> Tuple[np.ndarray, list]:
@@ -191,11 +198,11 @@ class ReferenceFrame:
 
         return all_embeddings, all_keypoints
 
-    def build_trivial_feature_to_neuron_mapping(self):
+    def build_trivial_keypoint_to_neuron_mapping(self):
         # This is now just a trivial mapping
-        f2n_map = {i: i for i in range(len(self.neuron_locs))}
-        self.features_to_neurons = f2n_map
-        return f2n_map
+        kp2n_map = {i: i for i in range(len(self.neuron_locs))}
+        self.features_to_neurons = kp2n_map
+        return kp2n_map
 
     def prep_for_pickle(self):
         """Deletes the cv2.Keypoints (the locations are stored though)"""
@@ -284,7 +291,7 @@ def build_reference_frame_encoding(dat_raw,
     frame.encode_all_neurons(dat_raw, z_depth)
 
     # Set up mapping between neurons and keypoints
-    frame.build_trivial_feature_to_neuron_mapping()
+    frame.build_trivial_keypoint_to_neuron_mapping()
     #
     #
     # dat = dat_raw
@@ -323,7 +330,7 @@ def build_reference_frame(dat: np.ndarray,
     frame.detect_keypoints_and_build_features(dat, **feature_opt)
 
     # Set up mapping between neurons and keypoints
-    frame.build_trivial_feature_to_neuron_mapping(neuron_feature_radius)
+    frame.build_trivial_keypoint_to_neuron_mapping(neuron_feature_radius)
 
     # Get neurons and features, and a map between them
     # neuron_locs = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
