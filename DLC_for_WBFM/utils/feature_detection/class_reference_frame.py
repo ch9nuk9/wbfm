@@ -3,12 +3,14 @@ from typing import Tuple, Union
 
 import cv2
 import numpy as np
+from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
-from DLC_for_WBFM.utils.feature_detection.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError
+from DLC_for_WBFM.utils.feature_detection.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
+    AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_from_file
-from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale, detect_features, \
-    build_feature_tree, build_neuron_tree, build_f2n_map
+from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
+    build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
@@ -23,8 +25,8 @@ class ReferenceFrame:
     # Data for registration
     neuron_locs: list = None
     keypoints: list = None
-    keypoint_locs: list = None  # Includes the z coordinate
-    all_features: np.array = None
+    keypoint_locs: np.ndarray = None  # Includes the z coordinate
+    all_features: np.ndarray = None
     features_to_neurons: dict = None
 
     # Metadata
@@ -103,15 +105,47 @@ class ReferenceFrame:
         """ Explicitly a different method for backwards compatibility"""
         self.keypoint_locs = self.neuron_locs.copy()
 
+    def detect_non_neuron_keypoints(self,
+                                    dat,
+                                    num_features_per_plane=1000,
+                                    start_plane=0,
+                                    append_to_existing_keypoints=False,
+                                    verbose=0):
+        """ See: detect_keypoints_and_build_features"""
+        if not append_to_existing_keypoints:
+            if self.keypoints is not None:
+                raise OverwritePreviousAnalysisError('keypoints')
+
+        all_locs = []
+        all_kps = []
+        for i in range(dat.shape[0]):
+            if i < start_plane:
+                continue
+            im = np.squeeze(dat[i, ...])
+            kp = detect_only_keypoints(im, num_features_per_plane)
+
+            all_kps.extend(kp)
+            locs_3d = np.array([np.hstack((i, row.pt)) for row in kp])
+            all_locs.extend(locs_3d)
+
+        all_locs = np.array(all_locs)
+
+        if append_to_existing_keypoints:
+            self.keypoints.append(all_kps)
+            self.keypoint_locs = np.vstack([self.keypoint_locs, all_locs])
+        else:
+            self.keypoints = all_kps
+            self.keypoint_locs = all_locs
+
+        return all_kps, all_locs
+
     def detect_keypoints_and_build_features(self,
                                             dat,
                                             num_features_per_plane=1000,
                                             start_plane=0,
-                                            append_to_keypoints=False,
                                             verbose=0):
-        if not append_to_keypoints:
-            if self.keypoints is not None:
-                raise OverwritePreviousAnalysisError('keypoints')
+        if self.keypoints is not None:
+            raise OverwritePreviousAnalysisError('keypoints')
 
         all_features = []
         all_locs = []
@@ -120,7 +154,7 @@ class ReferenceFrame:
             if i < start_plane:
                 continue
             im = np.squeeze(dat[i, ...])
-            kp, features = detect_features(im, num_features_per_plane)
+            kp, features = detect_keypoints_and_features(im, num_features_per_plane)
 
             if features is None:
                 continue
@@ -131,14 +165,9 @@ class ReferenceFrame:
 
         all_locs, all_features = np.array(all_locs), np.array(all_features)
 
-        if not append_to_keypoints:
-            self.keypoints = all_kps
-            self.keypoint_locs = all_locs
-            self.all_features = all_features
-        else:
-            self.keypoints = all_kps
-            self.keypoint_locs = all_locs
-            self.all_features = all_features
+        self.keypoints = all_kps
+        self.keypoint_locs = all_locs
+        self.all_features = all_features
 
         return all_kps, all_locs, all_features
 
@@ -167,39 +196,37 @@ class ReferenceFrame:
 
         return kp2n_map
 
-    def encode_all_neurons(self, im_3d: np.ndarray, z_depth: int,
-                           encoder=None) -> Tuple[np.ndarray, list]:
+    def encode_all_keypoints(self, im_3d: np.ndarray, z_depth: int,
+                             base_2d_encoder=None) -> Tuple[np.ndarray, list]:
         """
         Builds a feature vector for each neuron (zxy location) in a 3d volume
         Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
 
-        Note: overwrites the keypoints using the neuron locations
+        Note: overwrites the keypoints using only the locations
         """
-        if self.all_features is not None:
-            raise OverwritePreviousAnalysisError('all_features')
 
-        locs_zxy = self.neuron_locs
+        locs_zxy = self.keypoint_locs
 
-        im_3d_gray = [convert_to_grayscale(xy) for xy in im_3d]
+        im_3d_gray = [convert_to_grayscale(xy).astype('uint8') for xy in im_3d]
         all_embeddings = []
         all_keypoints = []
-        if encoder is None:
-            encoder = cv2.xfeatures2d.VGG_create()
+        if base_2d_encoder is None:
+            base_2d_encoder = cv2.xfeatures2d.VGG_create()
 
-        # Loop per neuron
-        for loc in locs_zxy:
+        # Loop per plane, getting all keypoints for this plane
+        for loc in tqdm(locs_zxy, leave=False):
             z, x, y = loc
             kp = cv2.KeyPoint(x, y, 31.0)
 
             z = int(z)
-            all_slices = np.arange(z - z_depth, z + z_depth + 1)
-            all_slices = np.clip(all_slices, 0, len(im_3d_gray) - 1)
+            slices_around_keypoint = np.arange(z - z_depth, z + z_depth + 1)
+            slices_around_keypoint = np.clip(slices_around_keypoint, 0, len(im_3d_gray) - 1)
             # Generate features on neighboring z slices as well
             # Repeat slices if near the edge
             ds = []
-            for i in all_slices:
-                im_2d = im_3d_gray[int(i)].astype('uint8')
-                _, this_ds = encoder.compute(im_2d, [kp])
+            for i in slices_around_keypoint:
+                im_2d = im_3d_gray[int(i)]
+                _, this_ds = base_2d_encoder.compute(im_2d, [kp])
                 ds.append(this_ds)
 
             ds = np.hstack(ds)
@@ -315,7 +342,7 @@ def build_reference_frame_encoding(dat_raw,
     frame.copy_neurons_to_keypoints()
 
     # Calculate encodings
-    frame.encode_all_neurons(dat_raw, z_depth)
+    frame.encode_all_keypoints(dat_raw, z_depth)
 
     # Set up mapping between neurons and keypoints
     frame.build_trivial_keypoint_to_neuron_mapping()
