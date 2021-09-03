@@ -4,8 +4,6 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
-
 
 ##
 ## Helper functions for tracks
@@ -129,6 +127,7 @@ def build_tracklets_from_matches(all_neurons,
     See build_tracklets_from_classes() if using ReferenceFrame class
     """
 
+    from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
     if type(all_neurons[0]) == ReferenceFrame:
         print("===============")
         print("Found type ReferenceFrame")
