@@ -22,12 +22,29 @@ def convert_to_grayscale(im1):
     return im1Gray
 
 
-def detect_features(im1, max_features,
-                    setFastThreshold=True,
-                    use_sift=False):
-    # Assumes 2d images
-
+def detect_keypoints_and_features(im1, max_features,
+                                  setFastThreshold=True,
+                                  use_sift=False):
+    # Assumes 2d image
     im1Gray = convert_to_grayscale(im1)
+    detector = build_cv2_detector(max_features, setFastThreshold, use_sift)
+    kp1, d1 = detector.detectAndCompute(im1Gray, None)
+
+    return kp1, d1
+
+
+def detect_only_keypoints(im1, max_features,
+                          setFastThreshold=True,
+                          use_sift=False):
+    # Assumes 2d image
+    im1Gray = convert_to_grayscale(im1)
+    detector = build_cv2_detector(max_features, setFastThreshold, use_sift)
+    kp1 = detector.detect(im1Gray, None)
+
+    return kp1
+
+
+def build_cv2_detector(max_features, setFastThreshold, use_sift):
     if use_sift:
         options = {'hessianThreshold': 0.1}
         detector = cv2.xfeatures2d.SURF_create(**options)
@@ -35,9 +52,7 @@ def detect_features(im1, max_features,
         detector = cv2.ORB_create(max_features)  # , WTA_K=3)
         if setFastThreshold:
             detector.setFastThreshold(0)
-    kp1, d1 = detector.detectAndCompute(im1Gray, None)
-
-    return kp1, d1
+    return detector
 
 
 def match_known_features(descriptors1, descriptors2,
@@ -84,8 +99,8 @@ def detect_features_and_match(im1, im2,
     Uses orb to detect and match generic features
     """
 
-    keypoints1, descriptors1 = detect_features(im1, max_features)
-    keypoints2, descriptors2 = detect_features(im2, max_features)
+    keypoints1, descriptors1 = detect_keypoints_and_features(im1, max_features)
+    keypoints2, descriptors2 = detect_keypoints_and_features(im2, max_features)
     if len(keypoints1) == 0 or len(keypoints2) == 0:
         if verbose >= 1:
             print("Found no keypoints on at least one frame; skipping")

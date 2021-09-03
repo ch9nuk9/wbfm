@@ -2,10 +2,9 @@
 
 class AnalysisOutOfOrderError(Exception):
 
-    def __init__(self, required_step, attempted_step):
+    def __init__(self, required_step):
         self.required_step = required_step
-        self.attempted_step = attempted_step
-        self.message = f"Attempted step {attempted_step}, but this requires step {required_step} to be executed first"
+        self.message = f"The attempted analysis requires step {required_step} to be executed first"
 
         super().__init__(self.message)
 
