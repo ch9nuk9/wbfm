@@ -29,6 +29,10 @@ class FramePair:
 
     min_confidence: float = 0.001
 
+    # Frame classes
+    frame0: ReferenceFrame = None
+    frame1: ReferenceFrame = None
+
     @property
     def all_candidate_matches(self):
         all_matches = self.feature_matches.copy()
@@ -65,6 +69,8 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
     Similar to older function, but this doesn't assume the features are
     already matched
 
+    Main constructor for the class FramePair
+
     See also: calc_2frame_matches
     """
 
@@ -82,7 +88,8 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
     matches_with_conf = cast_matches_as_array(keypoint_matches, gamma=1.0)
 
     # Create convenience object to store matches
-    frame_pair = FramePair(matches_with_conf, matches_with_conf)
+    frame_pair = FramePair(matches_with_conf, matches_with_conf,
+                           frame0=frame0, frame1=frame1)
     frame_pair.keypoint_matches = matches_with_conf
 
     # Add additional candidates, if used
