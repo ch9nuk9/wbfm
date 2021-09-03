@@ -203,35 +203,51 @@ class ReferenceFrame:
         Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
 
         Note: overwrites the keypoints using only the locations
+
+        Creates feature vectors of length z_depth *
         """
 
         locs_zxy = self.keypoint_locs
 
         im_3d_gray = [convert_to_grayscale(xy).astype('uint8') for xy in im_3d]
         all_embeddings = []
-        all_keypoints = []
+        all_keypoints = [None] * len(locs_zxy)
         if base_2d_encoder is None:
             base_2d_encoder = cv2.xfeatures2d.VGG_create()
 
         # Loop per plane, getting all keypoints for this plane
+        for z in range(im_3d.shape[0]):
+            # Slice band
+            slices_around_keypoint = np.arange(z - z_depth, z + z_depth + 1)
+            slices_around_keypoint = np.clip(slices_around_keypoint, 0, len(im_3d_gray) - 1)
+
+            # Get all keypoints (not just this slice, but < z_depth away)
+            these_locs_ind = np.where(np.abs(locs_zxy[:, 0] - z <= z_depth))[0]
+            these_kp_2d = []
+
+            # Embed all keypoints
+
+            # Save
+
+
         for loc in tqdm(locs_zxy, leave=False):
             z, x, y = loc
-            kp = cv2.KeyPoint(x, y, 31.0)
+            kp_2d = cv2.KeyPoint(x, y, 31.0)
 
             z = int(z)
             slices_around_keypoint = np.arange(z - z_depth, z + z_depth + 1)
             slices_around_keypoint = np.clip(slices_around_keypoint, 0, len(im_3d_gray) - 1)
             # Generate features on neighboring z slices as well
             # Repeat slices if near the edge
-            ds = []
+            one_kp_embedding = []
             for i in slices_around_keypoint:
                 im_2d = im_3d_gray[int(i)]
-                _, this_ds = base_2d_encoder.compute(im_2d, [kp])
-                ds.append(this_ds)
+                _, this_ds = base_2d_encoder.compute(im_2d, [kp_2d])
+                one_kp_embedding.append(this_ds)
 
-            ds = np.hstack(ds)
-            all_embeddings.extend(ds)
-            all_keypoints.append(kp)
+            one_kp_embedding = np.hstack(one_kp_embedding)
+            all_embeddings.extend(one_kp_embedding)
+            all_keypoints.append(kp_2d)
 
         all_embeddings = np.array(all_embeddings)
 
