@@ -8,7 +8,6 @@ from sacred import Experiment
 from sacred import SETTINGS
 # main function
 from sacred.observers import TinyDbObserver
-from DLC_for_WBFM.utils.external_libraries import monkeypatch_json
 
 from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
