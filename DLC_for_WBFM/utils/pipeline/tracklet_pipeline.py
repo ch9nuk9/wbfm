@@ -60,6 +60,9 @@ def save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, trai
         out_fname = Path(out_fname).with_suffix(".csv")
         training_df.to_csv(out_fname)
 
+        out_fname = Path(out_fname).with_suffix(".xlxs")
+        training_df.to_excel(out_fname)
+
 
 def _unpack_config_partial_tracking(DEBUG, project_config, training_config):
     # Make tracklets
