@@ -5,12 +5,12 @@ import cv2
 import numpy as np
 
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
+from DLC_for_WBFM.utils.feature_detection.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_from_file
 from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale, detect_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-
 
 ##
 ## Basic class definition
@@ -107,7 +107,12 @@ class ReferenceFrame:
                                             dat,
                                             num_features_per_plane=1000,
                                             start_plane=0,
+                                            append_to_keypoints=False,
                                             verbose=0):
+        if not append_to_keypoints:
+            if self.keypoints is not None:
+                raise OverwritePreviousAnalysisError('keypoints')
+
         all_features = []
         all_locs = []
         all_kps = []
@@ -126,9 +131,14 @@ class ReferenceFrame:
 
         all_locs, all_features = np.array(all_locs), np.array(all_features)
 
-        self.keypoints = all_kps
-        self.keypoint_locs = all_locs
-        self.all_features = all_features
+        if not append_to_keypoints:
+            self.keypoints = all_kps
+            self.keypoint_locs = all_locs
+            self.all_features = all_features
+        else:
+            self.keypoints = all_kps
+            self.keypoint_locs = all_locs
+            self.all_features = all_features
 
         return all_kps, all_locs, all_features
 
@@ -162,7 +172,12 @@ class ReferenceFrame:
         """
         Builds a feature vector for each neuron (zxy location) in a 3d volume
         Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
+
+        Note: overwrites the keypoints using the neuron locations
         """
+        if self.all_features is not None:
+            raise OverwritePreviousAnalysisError('all_features')
+
         locs_zxy = self.neuron_locs
 
         im_3d_gray = [convert_to_grayscale(xy) for xy in im_3d]
@@ -200,12 +215,14 @@ class ReferenceFrame:
 
     def build_trivial_keypoint_to_neuron_mapping(self):
         # This is now just a trivial mapping
+        self.check_data_desyncing()
         kp2n_map = {i: i for i in range(len(self.neuron_locs))}
         self.features_to_neurons = kp2n_map
         return kp2n_map
 
     def prep_for_pickle(self):
         """Deletes the cv2.Keypoints (the locations are stored though)"""
+        self.check_data_desyncing()
         self.keypoints = []
 
     def rebuild_keypoints(self):
@@ -218,11 +235,21 @@ class ReferenceFrame:
         k = get_keypoints_from_3dseg(self.keypoint_locs)
         self.keypoints = k
 
+    def check_data_desyncing(self):
+        # Keypoints and locations
+        if len(self.keypoint_locs) != len(self.keypoints):
+            raise DataSynchronizationError('keypoint_locs', 'keypoints', 'rebuild_keypoints')
+
+        # Keypoints and features
+        if len(self.keypoint) != len(self.all_features):
+            raise DataSynchronizationError('all_features', 'keypoints')
+
     def __str__(self):
         return f"=======================================\n\
-                ReferenceFrame:\n\
-                Frame index: {self.frame_ind} \n\
-                Number of neurons: {len(self.neuron_locs)} \n"
+ReferenceFrame:\n\
+Frame index: {self.frame_ind} \n\
+Number of neurons: {len(self.neuron_locs)} \n\
+Number of keypoints: {len(self.keypoint_locs)} \n"
 
     def __repr__(self):
         return f"ReferenceFrame with {len(self.neuron_locs)} neurons \n"

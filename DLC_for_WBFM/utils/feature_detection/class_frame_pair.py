@@ -55,6 +55,9 @@ class FramePair:
     def get_f1_to_f0_dict(self):
         return {n1: n0 for n0, n1, _ in self.final_matches}
 
+    def calculate_additional_orb_keypoints_and_matches(self):
+        return False
+
     def __repr__(self):
         return f"FramePair with {len(self.final_matches)} matches \n"
 
@@ -73,6 +76,9 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
 
     See also: calc_2frame_matches
     """
+
+    frame0.check_data_desyncing()
+    frame1.check_data_desyncing()
 
     # First, get feature matches
     keypoint_matches = match_known_features(frame0.all_features,
