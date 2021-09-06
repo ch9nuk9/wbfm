@@ -7,7 +7,7 @@ from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
 from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
-from DLC_for_WBFM.utils.visualization.napari_from_config import create_text_labels_for_napari
+from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
 
@@ -231,7 +231,7 @@ def build_napari_trace_explorer(project_config):
 
     # Add a text overlay
     df = ui.dat.red_traces
-    options = create_text_labels_for_napari(df)
+    options = napari_labels_from_traces_dataframe(df)
     viewer.add_points(**options)
 
     # Actually dock my additional gui elements

@@ -1,4 +1,8 @@
+import os
 from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
 
 from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
@@ -48,6 +52,8 @@ class FramePair:
 
     @property
     def num_possible_matches(self):
+        if self.frame0 is None:
+            return np.nan
         return min(self.frame0.num_neurons(), self.frame1.num_neurons())
 
     def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None) -> list:
@@ -76,6 +82,14 @@ class FramePair:
     def get_metadata_dict(self):
         return {'add_affine_to_candidates': self.add_affine_to_candidates,
                 'add_gp_to_candidates': self.add_gp_to_candidates}
+
+    def save_matches_as_excel(self, target_dir='.'):
+        f0_ind = self.frame0.frame_ind
+        f1_ind = self.frame1.frame_ind
+        df = pd.DataFrame(self.final_matches, columns=[f'Neuron_in_f{f0_ind}', f'Neuron_in_f{f1_ind}', 'Confidence'])
+        fname = f'matches_f{f0_ind}_f{f1_ind}.xlsx'
+        fname = os.path.join(target_dir, fname)
+        df.to_excel(fname, index=False)
 
     def __repr__(self):
         return f"FramePair with {len(self.final_matches)}/{self.num_possible_matches} matches \n"
