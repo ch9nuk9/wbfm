@@ -124,6 +124,9 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e
     for i0, i1, conf in all_candidate_matches:
         conf_matrix[i0, i1] += conf
 
+    # Note: bipartite matching is very sensitive to outliers
+    conf_matrix = np.where(conf_matrix < min_conf, 0.0, conf_matrix)
+
     matches = linear_sum_assignment(conf_matrix, maximize=True)
     matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     # Apply sigmoid to summed confidence
