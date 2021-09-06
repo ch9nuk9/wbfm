@@ -33,6 +33,10 @@ class FramePair:
     frame0: ReferenceFrame = None
     frame1: ReferenceFrame = None
 
+    # Metadata
+    add_affine_to_candidates: bool = False
+    add_gp_to_candidates: bool = False
+
     @property
     def all_candidate_matches(self):
         all_matches = self.feature_matches.copy()
@@ -41,6 +45,10 @@ class FramePair:
         if self.gp_matches is not None:
             all_matches.extend(self.gp_matches)
         return all_matches
+
+    @property
+    def num_possible_matches(self):
+        return min(self.frame0.num_neurons(), self.frame1.num_neurons())
 
     def calc_final_matches_using_bipartite_matching(self) -> list:
         assert len(self.all_candidate_matches) > 0, "No candidate matches!"
@@ -55,11 +63,18 @@ class FramePair:
     def get_f1_to_f0_dict(self):
         return {n1: n0 for n0, n1, _ in self.final_matches}
 
-    def calculate_additional_orb_keypoints_and_matches(self):
-        return False
+    def get_pair_to_conf_dict(self):
+        return {(n0, n1): c for n0, n1, c in self.final_matches}
+
+    # def calculate_additional_orb_keypoints_and_matches(self):
+    #     return False
+
+    def get_metadata_dict(self):
+        return {'add_affine_to_candidates': self.add_affine_to_candidates,
+                'add_gp_to_candidates': self.add_gp_to_candidates}
 
     def __repr__(self):
-        return f"FramePair with {len(self.final_matches)} matches \n"
+        return f"FramePair with {len(self.final_matches)}/{self.num_possible_matches} matches \n"
 
 
 def calc_FramePair_from_Frames(frame0: ReferenceFrame,
@@ -95,7 +110,9 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
 
     # Create convenience object to store matches
     frame_pair = FramePair(matches_with_conf, matches_with_conf,
-                           frame0=frame0, frame1=frame1)
+                           frame0=frame0, frame1=frame1,
+                           add_affine_to_candidates=add_affine_to_candidates,
+                           add_gp_to_candidates=add_gp_to_candidates)
     frame_pair.keypoint_matches = matches_with_conf
 
     # Add additional candidates, if used
@@ -120,3 +137,31 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
         frame_pair.gp_pushed_locations = gp_pushed
 
     return frame_pair
+
+
+def calc_FramePair_like(pair: FramePair, frame0: ReferenceFrame = None, frame1: ReferenceFrame = None) -> FramePair:
+    """
+    Calculates a new frame pair using the metadata from the FramePair, and new frames (optional)
+
+    Parameters
+    ----------
+    pair
+    frame0
+    frame1
+
+    Returns
+    -------
+
+    """
+
+    metadata = pair.get_metadata_dict()
+
+    if frame0 is None:
+        frame0 = pair.frame0
+    if frame1 is None:
+        frame1 = pair.frame1
+
+    new_pair = calc_FramePair_from_Frames(frame0, frame1, **metadata)
+    new_pair.calc_final_matches_using_bipartite_matching()
+
+    return new_pair
