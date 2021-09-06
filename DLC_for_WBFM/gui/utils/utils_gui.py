@@ -69,10 +69,15 @@ def array2qt(img):
     return QtGui.QPixmap.fromImage(new_img)
 
 
-def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_past', zoom=None) -> None:
+def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_past', zoom=None,
+                      layer_is_single_neuron=True, ind_within_layer=None) -> None:
     # Get current point
     t = viewer.dims.current_step[0]
-    tzxy = viewer.layers[layer_name].data[t]
+    if layer_is_single_neuron:
+        tzxy = get_zxy_from_single_neuron_layer(viewer.layers[layer_name], t)
+    else:
+        tzxy = get_zxy_from_multi_neuron_layer(viewer.layers[layer_name], t, ind_within_layer)
+    # tzxy = viewer.layers[layer_name].data[t]
 
     # Data may be incorrect (but t should be good)
     is_positive = tzxy[2] > 0 and tzxy[3] > 0
@@ -87,6 +92,16 @@ def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_pas
     # Center around the neuron in z
     if is_positive and is_finite:
         viewer.dims.current_step = (t, tzxy[1], 0, 0)
+
+
+def get_zxy_from_single_neuron_layer(layer, t, ind_within_layer=None):
+    return layer.data[t]
+
+
+def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer):
+    # e.g. text labels, with all neurons in a time point in a row (thus t is no longer a direct index)
+    ind = layer.data[:, 0] == t
+    return layer.data[:, ind][ind_within_layer]
 
 
 def change_viewer_time_point(viewer: napari.Viewer, dt: int, a_max: int = None) -> None:

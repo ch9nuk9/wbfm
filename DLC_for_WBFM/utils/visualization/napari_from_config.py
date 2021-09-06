@@ -128,15 +128,16 @@ def napari_labels_from_frames(all_frames: dict, num_frames=1) -> dict:
 
     all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
     properties = {'label': []}
-    for i, frame in all_frames.items():
-        if i >= num_frames:
+    for i_frame, frame in all_frames.items():
+        if i_frame >= num_frames:
             break
         zxy = frame.neuron_locs
+        zxy = zxy[:, [0, 2, 1]]
         num_neurons = zxy.shape[0]
-        t_vec = np.ones((num_neurons, 1))
+        t_vec = np.ones((num_neurons, 1)) * i_frame
         t_zxy = np.hstack([t_vec, zxy])
 
-        label_vec = [f'{i}'] * num_neurons
+        label_vec = list(range(num_neurons))
 
         all_t_zxy = np.vstack([all_t_zxy, t_zxy])
         properties['label'].extend(label_vec)
