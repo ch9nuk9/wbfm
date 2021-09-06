@@ -50,10 +50,14 @@ class FramePair:
     def num_possible_matches(self):
         return min(self.frame0.num_neurons(), self.frame1.num_neurons())
 
-    def calc_final_matches_using_bipartite_matching(self) -> list:
+    def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None) -> list:
         assert len(self.all_candidate_matches) > 0, "No candidate matches!"
+        if min_confidence is None:
+            min_confidence = self.min_confidence
+        else:
+            self.min_confidence = min_confidence
 
-        matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches, min_conf=self.min_confidence)
+        matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches, min_conf=min_confidence)
         self.final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
         return self.final_matches
 
@@ -162,6 +166,6 @@ def calc_FramePair_like(pair: FramePair, frame0: ReferenceFrame = None, frame1: 
         frame1 = pair.frame1
 
     new_pair = calc_FramePair_from_Frames(frame0, frame1, **metadata)
-    new_pair.calc_final_matches_using_bipartite_matching()
+    new_pair.calc_final_matches_using_bipartite_matching(pair.min_confidence)
 
     return new_pair
