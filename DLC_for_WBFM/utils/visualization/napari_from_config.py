@@ -73,7 +73,23 @@ def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
     return np.vstack(all_tracks_list)
 
 
-def create_text_labels_for_napari(df, neuron_name_dict=None, DEBUG=False):
+def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
+    """
+    Expected napari-ready format:
+        A dict of options, with a nested dict 'properties' and a list 'data'
+        'properties' has one entry, 'labels' = long list with all points at all time
+        'dat' is a list of equal length with all the dimensions (tzxy)
+
+    Parameters
+    ----------
+    df
+    neuron_name_dict
+    DEBUG
+
+    Returns
+    -------
+
+    """
     if neuron_name_dict is None:
         neuron_name_dict = {}
     all_neurons = list(df.columns.levels[0])
@@ -81,7 +97,7 @@ def create_text_labels_for_napari(df, neuron_name_dict=None, DEBUG=False):
     zxy_names = ['z_dlc', 'x_dlc', 'y_dlc']
     t_vec = np.expand_dims(np.array(list(df.index), dtype=int), axis=1)
     # label_vec = np.ones(len(df.index), dtype=int)
-    pts = np.array([[0, 0, 0, 0]], dtype=int)
+    all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
     properties = {'label': []}
     for n in all_neurons:
         zxy = df[n][zxy_names].to_numpy(dtype=int)
@@ -94,15 +110,39 @@ def create_text_labels_for_napari(df, neuron_name_dict=None, DEBUG=False):
         else:
             label_vec = list(df[n][i_name])
 
-        pts = np.vstack([pts, t_zxy])
+        all_t_zxy = np.vstack([all_t_zxy, t_zxy])
         properties['label'].extend(label_vec)
-    pts = np.where(pts < 0, np.nan, pts)  # Some points are negative instead of nan
-    to_keep = ~np.isnan(pts).any(axis=1)
-    pts = pts[to_keep, :]
-    pts = pts[1:, :]
+    all_t_zxy = np.where(all_t_zxy < 0, np.nan, all_t_zxy)  # Some points are negative instead of nan
+    to_keep = ~np.isnan(all_t_zxy).any(axis=1)
+    all_t_zxy = all_t_zxy[to_keep, :]
+    all_t_zxy = all_t_zxy[1:, :]  # Remove dummy starter point
     properties['label'] = [p for p, good in zip(properties['label'], to_keep[1:]) if good]
 
-    options = {'data': pts, 'face_color': 'transparent', 'edge_color': 'transparent', 'text': 'label',
+    options = {'data': all_t_zxy, 'face_color': 'transparent', 'edge_color': 'transparent', 'text': 'label',
                'properties': properties, 'name': 'Neuron IDs'}
+
+    return options
+
+
+def napari_labels_from_frames(all_frames: dict, num_frames=1) -> dict:
+
+    all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
+    properties = {'label': []}
+    for i, frame in all_frames.items():
+        if i >= num_frames:
+            break
+        zxy = frame.neuron_locs
+        num_neurons = zxy.shape[0]
+        t_vec = np.ones((num_neurons, 1))
+        t_zxy = np.hstack([t_vec, zxy])
+
+        label_vec = [f'{i}'] * num_neurons
+
+        all_t_zxy = np.vstack([all_t_zxy, t_zxy])
+        properties['label'].extend(label_vec)
+
+    all_t_zxy = all_t_zxy[1:, :]  # Remove dummy starter point
+    options = {'data': all_t_zxy, 'face_color': 'transparent', 'edge_color': 'transparent', 'text': 'label',
+               'properties': properties, 'name': 'Raw IDs'}
 
     return options

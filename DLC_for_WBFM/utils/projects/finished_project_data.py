@@ -1,5 +1,8 @@
 import os
+import pickle
 from dataclasses import dataclass
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import zarr
@@ -29,6 +32,20 @@ class finished_project_data:
 
     verbose: int = 2
 
+    @property
+    def raw_frames(self):
+        fname = Path(self.project_dir).joinpath('2-training_data').joinpath('raw').joinpath('frame_dat.pickle')
+        with open(fname, 'rb') as f:
+            frames = pickle.load(f)
+        return frames
+
+    @property
+    def raw_matches(self):
+        fname = Path(self.project_dir).joinpath('2-training_data').joinpath('raw').joinpath('match_dat.pickle')
+        with open(fname, 'rb') as f:
+            matches = pickle.load(f)
+        return matches
+
     @staticmethod
     def unpack_config_file(project_path):
         cfg = modular_project_config(project_path)
@@ -37,12 +54,6 @@ class finished_project_data:
         segment_cfg = cfg.get_segmentation_config()
         tracking_cfg = cfg.get_tracking_config()
         traces_cfg = cfg.get_traces_config()
-        # # project_dir = Path(project_path).parent
-        # cfg = load_config(project_path)
-        # with safe_cd(project_dir):
-        #     traces_cfg = load_config(cfg['subfolder_configs']['traces'])
-        #     segment_cfg = load_config(cfg['subfolder_configs']['segmentation'])
-        #     tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
 
         return cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir
 
