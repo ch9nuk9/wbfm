@@ -39,6 +39,9 @@ class ReferenceFrame:
     # To be finished with a set of other registered frames
     neuron_ids: list = None  # global neuron index
 
+    # For adding new keypoints
+    base_2d_encoder: cv2.xfeatures2d_VGG = None
+
     def get_metadata(self):
         return {'frame_ind': self.frame_ind,
                 'video_fname': self.video_fname,
@@ -61,6 +64,10 @@ class ReferenceFrame:
                                  self.frame_ind,
                                  num_slices=self.vol_shape[0],
                                  alpha=self.preprocessing_settings.alpha)
+
+    def get_default_base_2d_encoder(self):
+        base_2d_encoder = cv2.xfeatures2d.VGG_create()
+        return base_2d_encoder
 
     def detect_or_import_neurons(self, dat: list, external_detections: str, metadata: dict, num_slices: int,
                                  start_slice: int) -> list:
@@ -143,24 +150,57 @@ class ReferenceFrame:
                                             dat,
                                             num_features_per_plane=1000,
                                             start_plane=0,
+                                            use_saved_detector=False,
                                             verbose=0):
+        """
+
+        Uses ORB features to match neurons, based on nearest neighbor association between neurons and keypoints
+
+        keypoint-neuron associate is performed elsewhere; see:
+            build_trivial_keypoint_to_neuron_mapping
+            build_nontrivial_keypoint_to_neuron_mapping
+
+        As of 06.06.2021, not part of main pipeline (only postprocessing)
+
+        Parameters
+        ----------
+        dat
+        num_features_per_plane
+        start_plane
+        verbose
+
+        Returns
+        -------
+        all_kps, all_locs, all_features
+        (also saved)
+
+        """
+
         if self.keypoints is not None:
             raise OverwritePreviousAnalysisError('keypoints')
+
+        if use_saved_detector:
+            detector = self.base_2d_encoder
+            if detector is None:
+                raise AnalysisOutOfOrderError('set detector')
+        else:
+            detector = self.get_default_base_2d_encoder()
+        self.base_2d_encoder = detector
 
         all_features = []
         all_locs = []
         all_kps = []
-        for i in range(dat.shape[0]):
-            if i < start_plane:
+        for i_z in range(dat.shape[0]):
+            if i_z < start_plane:
                 continue
-            im = np.squeeze(dat[i, ...])
-            kp, features = detect_keypoints_and_features(im, num_features_per_plane)
+            im = np.squeeze(dat[i_z, ...])
+            kp, features = detect_keypoints_and_features(im, num_features_per_plane, detector=detector)
 
             if features is None:
                 continue
             all_features.extend(features)
             all_kps.extend(kp)
-            locs_3d = np.array([np.hstack((i, row.pt)) for row in kp])
+            locs_3d = np.array([np.hstack((i_z, row.pt)) for row in kp])
             all_locs.extend(locs_3d)
 
         all_locs, all_features = np.array(all_locs), np.array(all_features)
@@ -204,6 +244,9 @@ class ReferenceFrame:
 
         Note: overwrites the keypoints using only the locations
 
+        Performance note: because this loops over keypoints, it only works for a small number, ~100-300
+            Designed to be used with detected neurons, not ORB keypoints (which could be >10000)
+
         Creates feature vectors of length z_depth *
         """
 
@@ -211,24 +254,24 @@ class ReferenceFrame:
 
         im_3d_gray = [convert_to_grayscale(xy).astype('uint8') for xy in im_3d]
         all_embeddings = []
-        all_keypoints = [None] * len(locs_zxy)
+        all_keypoints = []
+        # all_keypoints = [None] * len(locs_zxy)
         if base_2d_encoder is None:
-            base_2d_encoder = cv2.xfeatures2d.VGG_create()
+            base_2d_encoder = self.get_default_base_2d_encoder()
 
         # Loop per plane, getting all keypoints for this plane
-        for z in range(im_3d.shape[0]):
-            # Slice band
-            slices_around_keypoint = np.arange(z - z_depth, z + z_depth + 1)
-            slices_around_keypoint = np.clip(slices_around_keypoint, 0, len(im_3d_gray) - 1)
-
-            # Get all keypoints (not just this slice, but < z_depth away)
-            these_locs_ind = np.where(np.abs(locs_zxy[:, 0] - z <= z_depth))[0]
-            these_kp_2d = []
-
-            # Embed all keypoints
-
-            # Save
-
+        # for z in range(im_3d.shape[0]):
+        #     # Slice band
+        #     slices_around_keypoint = np.arange(z - z_depth, z + z_depth + 1)
+        #     slices_around_keypoint = np.clip(slices_around_keypoint, 0, len(im_3d_gray) - 1)
+        #
+        #     # Get all keypoints (not just this slice, but < z_depth away)
+        #     these_locs_ind = np.where(np.abs(locs_zxy[:, 0] - z <= z_depth))[0]
+        #     these_kp_2d = []
+        #
+        #     # Embed all keypoints
+        #
+        #     # Save
 
         for loc in tqdm(locs_zxy, leave=False):
             z, x, y = loc
@@ -253,6 +296,8 @@ class ReferenceFrame:
 
         self.all_features = all_embeddings
         self.keypoints = all_keypoints
+
+        self.base_2d_encoder = base_2d_encoder
 
         return all_embeddings, all_keypoints
 
@@ -284,7 +329,7 @@ class ReferenceFrame:
             raise DataSynchronizationError('keypoint_locs', 'keypoints', 'rebuild_keypoints')
 
         # Keypoints and features
-        if len(self.keypoint) != len(self.all_features):
+        if len(self.keypoints) != len(self.all_features):
             raise DataSynchronizationError('all_features', 'keypoints')
 
     def __str__(self):
@@ -423,4 +468,4 @@ def build_reference_frame(dat: np.ndarray,
     # f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map,
     #                    **metadata,
     #                    preprocessing_settings=preprocessing_settings)
-    return f
+    return frame

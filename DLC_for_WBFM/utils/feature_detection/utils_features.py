@@ -24,10 +24,12 @@ def convert_to_grayscale(im1):
 
 def detect_keypoints_and_features(im1, max_features,
                                   setFastThreshold=True,
-                                  use_sift=False):
+                                  use_sift=False,
+                                  detector=None):
     # Assumes 2d image
     im1Gray = convert_to_grayscale(im1)
-    detector = build_cv2_detector(max_features, setFastThreshold, use_sift)
+    if detector is None:
+        detector = build_cv2_detector(max_features, setFastThreshold, use_sift)
     kp1, d1 = detector.detectAndCompute(im1Gray, None)
 
     return kp1, d1
