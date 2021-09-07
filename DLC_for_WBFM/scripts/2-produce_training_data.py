@@ -3,7 +3,6 @@ The top level function for producing training data via feature-based tracking
 """
 import logging
 import os
-# main function
 from datetime import date
 
 # Experiment tracking

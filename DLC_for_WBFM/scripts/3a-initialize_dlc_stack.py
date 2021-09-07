@@ -6,9 +6,9 @@ The top level function for initializing a stack of DLC projects
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
-# main function
 from sacred.observers import TinyDbObserver
 
+from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_dlc_training_from_tracklets
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 
@@ -29,6 +29,7 @@ def cfg(project_path, DEBUG):
     tracking_cfg = cfg.get_tracking_config()
 
     if not DEBUG:
+        using_monkeypatch()
         log_dir = cfg.get_log_dir()
         ex.observers.append(TinyDbObserver(log_dir))
 

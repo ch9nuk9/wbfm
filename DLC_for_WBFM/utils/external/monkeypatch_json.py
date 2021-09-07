@@ -4,8 +4,12 @@ method and uses it to encode the object if found.
 
 https://stackoverflow.com/questions/18478287/making-object-json-serializable-with-regular-encoder/18561055
 """
-
+import logging
 from json import JSONEncoder
+
+
+def using_monkeypatch():
+    logging.info("Using a monkeypatch to allow my custom objects to be serializable")
 
 
 def _default(self, obj):
