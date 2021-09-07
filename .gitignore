@@ -31,3 +31,4 @@ old/example-feature-workflow/feature_alignment/embedding.emb
 .idea/
 old/example-feature-workflow/feature_alignment/Extract_traces.ipynb
 *.eps
+/DLC_for_WBFM/experiments/
