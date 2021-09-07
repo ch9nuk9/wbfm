@@ -1,8 +1,4 @@
-from pathlib import Path
-
 import napari
-import numpy as np
-import pandas as pd
 from PyQt5 import QtWidgets
 import win32com.client
 
@@ -10,7 +6,6 @@ from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_ti
 from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_traces_dataframe, \
     napari_labels_from_frames
-from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
 
 class napari_track_correction(QtWidgets.QWidget):
@@ -21,6 +16,7 @@ class napari_track_correction(QtWidgets.QWidget):
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.dat = finished_project_data.load_final_project_data_from_config(project_path)
+        self.frames = self.dat.raw_frames
         self.excel_path = excel_path
 
         # Create an instance of the Excel Application & make it visible.
@@ -31,11 +27,17 @@ class napari_track_correction(QtWidgets.QWidget):
 
     @property
     def zoom_opt(self):
+        if self.viewer.dims.current_step[0] == 0:
+            ind_within_layer = self.frame0NeuronDropdown.currentIndex()
+        elif self.viewer.dims.current_step[0] == 1:
+            ind_within_layer = self.frame1NeuronDropdown.currentIndex()
+        else:
+            raise IndexError("Only 2 frames loaded!")
         return dict(
             zoom=None,
             layer_is_single_neuron=False,
             layer_name='Raw IDs',
-            ind_within_layer=self.changeNeuronsDropdown.currentIndex()
+            ind_within_layer=ind_within_layer
         )
 
     def setupUi(self, viewer: napari.Viewer):
@@ -43,22 +45,31 @@ class napari_track_correction(QtWidgets.QWidget):
         # Load dataframe and path to outputs
         self.viewer = viewer
 
-        # Neuron selection
-        neuron_names = list(self.dat.final_tracks.columns.levels[0])
-        self.current_name = neuron_names[0]
+        # Neuron selection... will be different for different time points
+        neuron_ind = list(range(self.frames[0].num_neurons()))
+        neuron_names = [f'{i}' for i in neuron_ind]
+        self.frame0_name = neuron_names[0]
+        neuron_ind = list(range(self.frames[1].num_neurons()))
+        neuron_names = [f'{i}' for i in neuron_ind]
+        self.frame1_name = neuron_names[0]
 
-        # Change neurons (dropdown)
-        self.changeNeuronsDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
-        self.changeNeuronsDropdown.addItems(neuron_names)
-        self.changeNeuronsDropdown.setItemText(0, self.current_name)
-        self.changeNeuronsDropdown.currentIndexChanged.connect(self.change_neurons)
-        self.verticalLayout.addWidget(self.changeNeuronsDropdown)
+        # Change neurons (2 dropdowns, 1 per frame)
+        self.frame0NeuronDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.frame0NeuronDropdown.addItems(neuron_names)
+        self.frame0NeuronDropdown.setItemText(0, self.frame0_name)
+        self.frame0NeuronDropdown.currentIndexChanged.connect(self.change_neurons)
+        self.verticalLayout.addWidget(self.frame0NeuronDropdown)
+
+        self.frame1NeuronDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.frame1NeuronDropdown.addItems(neuron_names)
+        self.frame1NeuronDropdown.setItemText(0, self.frame1_name)
+        self.frame1NeuronDropdown.currentIndexChanged.connect(self.change_neurons)
+        self.verticalLayout.addWidget(self.frame1NeuronDropdown)
 
         self.initialize_shortcuts()
 
     def change_neurons(self):
-        zoom_using_viewer(self.viewer, layer_name='final_track')
-
+        zoom_using_viewer(self.viewer, **self.zoom_opt)
 
     def initialize_shortcuts(self):
         viewer = self.viewer
@@ -71,6 +82,10 @@ class napari_track_correction(QtWidgets.QWidget):
         @viewer.bind_key(',', overwrite=True)
         def zoom_previous(viewer):
             change_viewer_time_point(viewer, dt=-1, a_max=len(self.dat.final_tracks) - 1)
+            zoom_using_viewer(viewer, **self.zoom_opt)
+
+        @viewer.bind_key('/', overwrite=True)
+        def zoom_current(viewer):
             zoom_using_viewer(viewer, **self.zoom_opt)
 
     def closeEvent(self, event):

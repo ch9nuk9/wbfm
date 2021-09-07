@@ -101,7 +101,7 @@ def get_zxy_from_single_neuron_layer(layer, t, ind_within_layer=None):
 def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer):
     # e.g. text labels, with all neurons in a time point in a row (thus t is no longer a direct index)
     ind = layer.data[:, 0] == t
-    return layer.data[:, ind][ind_within_layer]
+    return layer.data[ind, :][ind_within_layer, :]
 
 
 def change_viewer_time_point(viewer: napari.Viewer, dt: int, a_max: int = None) -> None:
