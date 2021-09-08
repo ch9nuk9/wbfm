@@ -1,11 +1,10 @@
 from typing import Dict
-
 import cv2
 import numpy as np
 import open3d as o3d
 
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree, build_neuron_tree
+from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
 
 
@@ -142,29 +141,3 @@ def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
     matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(all_matches, all_conf)]
 
     return matches_with_conf, all_candidate_matches, xyz0
-
-##
-## Visualization
-##
-
-def create_affine_visualizations(which_neuron, f0, f1, neuron0_trans):
-    # Original neurons
-    pc0_neuron = o3d.geometry.PointCloud()
-    pc0_neuron.points = o3d.utility.Vector3dVector(f0.neuron_locs)
-    pc0_neuron.paint_uniform_color([0.5, 0.5, 0.5])
-    np.asarray(pc0_neuron.colors)[which_neuron, :] = [1, 0, 0]
-
-    # Visualize the correspondence
-    pc1_trans = o3d.geometry.PointCloud()
-    pc1_trans.points = o3d.utility.Vector3dVector(neuron0_trans)
-    pc1_trans.paint_uniform_color([0, 1, 0])
-
-    corr = [(which_neuron, 0)]
-    line = o3d.geometry.LineSet.create_from_point_cloud_correspondences(pc0_neuron, pc1_trans, corr)
-
-    # Visualize this neuron with the new neurons as well
-    pc1_neuron = o3d.geometry.PointCloud()
-    pc1_neuron.points = o3d.utility.Vector3dVector(f1.neuron_locs)
-    pc1_neuron.paint_uniform_color([0, 0, 1])
-
-    return pc0_neuron, pc1_trans, pc1_neuron, line

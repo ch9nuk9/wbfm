@@ -8,6 +8,7 @@ import open3d as o3d
 import pandas as pd
 
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
+from DLC_for_WBFM.utils.feature_detection.utils_keypoint_matching import get_indices_of_tracklet
 
 
 def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False, to_plot=True):
@@ -412,3 +413,74 @@ def plot_full_tracklet_covering(clust_df, window_len=20, num_frames=500):
     plt.show()
 
     return x, y
+
+
+def create_affine_visualizations(which_neuron, f0, f1, neuron0_trans):
+    # Original neurons
+    pc0_neuron = o3d.geometry.PointCloud()
+    pc0_neuron.points = o3d.utility.Vector3dVector(f0.neuron_locs)
+    pc0_neuron.paint_uniform_color([0.5, 0.5, 0.5])
+    np.asarray(pc0_neuron.colors)[which_neuron, :] = [1, 0, 0]
+
+    # Visualize the correspondence
+    pc1_trans = o3d.geometry.PointCloud()
+    pc1_trans.points = o3d.utility.Vector3dVector(neuron0_trans)
+    pc1_trans.paint_uniform_color([0, 1, 0])
+
+    corr = [(which_neuron, 0)]
+    line = o3d.geometry.LineSet.create_from_point_cloud_correspondences(pc0_neuron, pc1_trans, corr)
+
+    # Visualize this neuron with the new neurons as well
+    pc1_neuron = o3d.geometry.PointCloud()
+    pc1_neuron.points = o3d.utility.Vector3dVector(f1.neuron_locs)
+    pc1_neuron.paint_uniform_color([0, 0, 1])
+
+    return pc0_neuron, pc1_trans, pc1_neuron, line
+
+
+def visualize_tracklet_in_body(i_tracklet, i_frame,
+                               tracklet_df, kp_df, all_frames,
+                               to_plot=False,
+                               to_error=True):
+    if type(i_tracklet) != list:
+        i_tracklet = [i_tracklet]
+
+    for i_t in i_tracklet:
+        tracklet_ind = get_indices_of_tracklet(i_t, tracklet_df)
+        if not i_frame in tracklet_ind:
+            print(f"{i_frame} is not in tracklet; try one of {tracklet_ind}")
+
+    # Get this tracklet
+    tracklet_xyz = []
+    for i_t in i_tracklet:
+        try:
+            local_ind = tracklet_df['slice_ind'].iloc[i_t].index(i_frame)
+            tracklet_xyz.append(tracklet_df['all_xyz'].iloc[i_t][local_ind])
+        except IndexError:
+            print(f"{i_frame} not in tracklet {i_t}")
+            if to_error:
+                raise ValueError
+
+    # Get keypoints
+    kp_xyz = []
+    for i_kp in range(len(kp_df)):
+        local_ind = kp_df['slice_ind'].iloc[i_kp].index(i_frame)
+        kp_xyz.append(kp_df['all_xyz'].iloc[i_kp][local_ind])
+
+    # Get all other neurons
+    this_frame = all_frames[i_frame]
+    _, pc_neurons, pc_tree = build_neuron_tree(this_frame.neuron_locs, False)
+    pc_neurons.paint_uniform_color([0.5, 0.5, 0.5])
+
+    # Color the tracklet and keypoint neurons
+    for xyz in tracklet_xyz:
+        [k, idx, _] = pc_tree.search_knn_vector_3d(xyz, 1)
+        np.asarray(pc_neurons.colors)[idx[:], :] = [1, 0, 0]
+    for xyz in kp_xyz:
+        [k, idx, _] = pc_tree.search_knn_vector_3d(xyz, 1)
+        np.asarray(pc_neurons.colors)[idx[:], :] = [0, 0, 1]
+
+    if to_plot:
+        o3d.visualization.draw_geometries([pc_neurons])
+
+    return pc_neurons

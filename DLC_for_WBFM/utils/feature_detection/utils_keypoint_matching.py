@@ -1,9 +1,7 @@
 import numpy as np
-import open3d as o3d
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches
 
 
@@ -317,51 +315,3 @@ def get_index_overlap_list(all_i, verbose=1):
             if len(overlap) > 1 or verbose >= 1:
                 print(f"Overlap between {all_i[i0]} and {all_i[i1]}:")
                 print(overlap)
-
-
-def visualize_tracklet_in_body(i_tracklet, i_frame,
-                               tracklet_df, kp_df, all_frames,
-                               to_plot=False,
-                               to_error=True):
-    if type(i_tracklet) != list:
-        i_tracklet = [i_tracklet]
-
-    for i_t in i_tracklet:
-        tracklet_ind = get_indices_of_tracklet(i_t, tracklet_df)
-        if not i_frame in tracklet_ind:
-            print(f"{i_frame} is not in tracklet; try one of {tracklet_ind}")
-
-    # Get this tracklet
-    tracklet_xyz = []
-    for i_t in i_tracklet:
-        try:
-            local_ind = tracklet_df['slice_ind'].iloc[i_t].index(i_frame)
-            tracklet_xyz.append(tracklet_df['all_xyz'].iloc[i_t][local_ind])
-        except IndexError:
-            print(f"{i_frame} not in tracklet {i_t}")
-            if to_error:
-                raise ValueError
-
-    # Get keypoints
-    kp_xyz = []
-    for i_kp in range(len(kp_df)):
-        local_ind = kp_df['slice_ind'].iloc[i_kp].index(i_frame)
-        kp_xyz.append(kp_df['all_xyz'].iloc[i_kp][local_ind])
-
-    # Get all other neurons
-    this_frame = all_frames[i_frame]
-    _, pc_neurons, pc_tree = build_neuron_tree(this_frame.neuron_locs, False)
-    pc_neurons.paint_uniform_color([0.5, 0.5, 0.5])
-
-    # Color the tracklet and keypoint neurons
-    for xyz in tracklet_xyz:
-        [k, idx, _] = pc_tree.search_knn_vector_3d(xyz, 1)
-        np.asarray(pc_neurons.colors)[idx[:], :] = [1, 0, 0]
-    for xyz in kp_xyz:
-        [k, idx, _] = pc_tree.search_knn_vector_3d(xyz, 1)
-        np.asarray(pc_neurons.colors)[idx[:], :] = [0, 0, 1]
-
-    if to_plot:
-        o3d.visualization.draw_geometries([pc_neurons])
-
-    return pc_neurons
