@@ -10,8 +10,8 @@ import os
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
-# main function
 from sacred.observers import TinyDbObserver
+from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from segmentation.util.utils_pipeline import segment_video_using_config_2d, segment_video_using_config_3d
 
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, synchronize_segment_config
@@ -19,7 +19,6 @@ from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 ex = Experiment()
-# Add single variable so that the cfg() function works
 ex.add_config(project_path=None, continue_from_frame=None, DEBUG=False)
 
 
@@ -34,6 +33,7 @@ def cfg(project_path, DEBUG):
     segment_cfg.update_on_disk()
 
     if not DEBUG:
+        using_monkeypatch()
         log_dir = cfg.get_log_dir()
         ex.observers.append(TinyDbObserver(log_dir))
 
@@ -53,8 +53,8 @@ def segment2d(_config, _run):
 
     mode = segment_cfg.config['segmentation_type']
     if mode == "3d":
-        segment_video_using_config_3d(segment_cfg, project_cfg, _config['continue_from_frame'])
+        segment_video_using_config_3d(segment_cfg, project_cfg, _config['continue_from_frame'], DEBUG=_config['DEBUG'])
     elif mode == "2d":
-        segment_video_using_config_2d(segment_cfg, project_cfg, _config['continue_from_frame'])
+        segment_video_using_config_2d(segment_cfg, project_cfg, _config['continue_from_frame'], DEBUG=_config['DEBUG'])
     else:
         raise ValueError(f"Unknown segmentation_type; expected '2d' or '3d' instead of {mode}")
