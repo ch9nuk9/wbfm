@@ -1,4 +1,4 @@
-name: DLC-for-WBFM
+name: wbfm
 channels:
   - conda-forge
   - defaults
