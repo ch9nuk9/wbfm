@@ -22,7 +22,8 @@ import concurrent.futures
 
 def segment_video_using_config_3d(segment_cfg: config_file_with_project_context,
                                   project_cfg: modular_project_config,
-                                  continue_from_frame: int =None) -> None:
+                                  continue_from_frame: int =None,
+                                  DEBUG: bool = False) -> None:
     """
 
     Parameters
@@ -39,7 +40,7 @@ def segment_video_using_config_3d(segment_cfg: config_file_with_project_context,
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
-        segment_cfg, project_cfg)
+        segment_cfg, project_cfg, DEBUG)
 
     # Open the file
     if not video_path.endswith('.zarr'):
@@ -136,11 +137,11 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
-def _unpack_config_file(segment_cfg, project_cfg):
+def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     # Initializing variables
     start_volume = project_cfg.config['dataset_params']['start_volume']
     num_frames = project_cfg.config['dataset_params']['num_frames']
-    if project_cfg.config['DEBUG']:
+    if DEBUG:
         num_frames = 1
     num_slices = project_cfg.config['dataset_params']['num_slices']
     frame_list = list(range(start_volume, start_volume + num_frames))
@@ -161,7 +162,8 @@ def _unpack_config_file(segment_cfg, project_cfg):
 
 def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
                                   project_cfg: modular_project_config,
-                                  continue_from_frame: int =None) -> None:
+                                  continue_from_frame: int =None,
+                                  DEBUG: bool = False) -> None:
     """
     Full pipeline based on only a config file
 
@@ -170,7 +172,7 @@ def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
     
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders = _unpack_config_file(
-        segment_cfg, project_cfg)
+        segment_cfg, project_cfg, DEBUG)
 
 
     # Open the file
@@ -534,7 +536,7 @@ def recalculate_metadata_from_config(_config, DEBUG=False):
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
-        _config)
+        _config, DEBUG)
 
     masks_zarr = zarr.open(_config['output']['masks'])
     video_dat = zarr.open(video_path)
