@@ -2,8 +2,7 @@ import importlib
 import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
-
-project_path = r"C:/dlc_stacks/Test_project/project_config.yaml"
+from global_vars_for_tests import project_path
 
 
 def _load_training_data() -> pd.DataFrame:
