@@ -35,9 +35,9 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
     # all self-trained StarDist models reside in that folder. 'nt' for windows, when working locally
     if folder is None:
         if os.name == 'nt':
-            folder = Path(r'Y:\shared_projects\wbfm\TrainedStardist')
+            folder = Path(r'P:/neurobiology/zimmer/wbfm/TrainedStardist')
         else:
-            folder = Path('/groups/zimmer/shared_projects/wbfm/TrainedStardist')
+            folder = Path('/project/neurobiology/zimmer/wbfm/TrainedStardist')
 
     # available models' aliases
     sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d', 'charlie_3d_party']
