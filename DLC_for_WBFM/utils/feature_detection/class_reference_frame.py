@@ -310,8 +310,9 @@ class ReferenceFrame:
 
     def prep_for_pickle(self):
         """Deletes the cv2.Keypoints (the locations are stored though)"""
-        self.check_data_desyncing()
-        self.keypoints = []
+        if len(self.keypoints) > 0:
+            self.check_data_desyncing()
+            self.keypoints = []
 
     def rebuild_keypoints(self):
         """
