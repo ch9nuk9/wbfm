@@ -40,7 +40,11 @@ class ReferenceFrame:
     neuron_ids: list = None  # global neuron index
 
     # For adding new keypoints
-    base_2d_encoder: cv2.xfeatures2d_VGG = None
+    alternate_2d_encoder: callable = lambda x: None
+
+    def get_default_base_2d_encoder(self):
+        self.alternate_2d_encoder = self.get_default_base_2d_encoder
+        return cv2.xfeatures2d.VGG_create()
 
     def get_metadata(self):
         return {'frame_ind': self.frame_ind,
@@ -64,10 +68,6 @@ class ReferenceFrame:
                                  self.frame_ind,
                                  num_slices=self.vol_shape[0],
                                  alpha=self.preprocessing_settings.alpha)
-
-    def get_default_base_2d_encoder(self):
-        base_2d_encoder = cv2.xfeatures2d.VGG_create()
-        return base_2d_encoder
 
     def detect_or_import_neurons(self, dat: list, external_detections: str, metadata: dict, num_slices: int,
                                  start_slice: int) -> list:
@@ -180,12 +180,11 @@ class ReferenceFrame:
             raise OverwritePreviousAnalysisError('keypoints')
 
         if use_saved_detector:
-            detector = self.base_2d_encoder
+            detector = self.alternate_2d_encoder()
             if detector is None:
                 raise AnalysisOutOfOrderError('set detector')
         else:
             detector = self.get_default_base_2d_encoder()
-        self.base_2d_encoder = detector
 
         all_features = []
         all_locs = []
@@ -296,8 +295,6 @@ class ReferenceFrame:
 
         self.all_features = all_embeddings
         self.keypoints = all_keypoints
-
-        self.base_2d_encoder = base_2d_encoder
 
         return all_embeddings, all_keypoints
 

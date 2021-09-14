@@ -92,6 +92,8 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
                                                names=['bodyparts', 'coords'])
         frame = pd.DataFrame(coords, columns=index, index=which_frames)
         all_dfs.append(frame)
+    if len(all_dfs) == 0:
+        raise ParametersTooStringentError(min_length, 'min_length')
     new_df = pd.concat(all_dfs, axis=1)
 
     return new_df

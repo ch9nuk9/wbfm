@@ -2,16 +2,25 @@
 
 class AnalysisOutOfOrderError(Exception):
 
-    def __init__(self, required_step):
+    def __init__(self, required_step: str):
         self.required_step = required_step
         self.message = f"The attempted analysis requires step {required_step} to be executed first"
 
         super().__init__(self.message)
 
 
+class ParameterTooStringentError(Exception):
+
+    def __init__(self, parameter_val, parameter_name: str):
+        self.relevant_parameter = parameter_name
+        self.message = f"Insufficient data after processing; try changing {parameter_name} (current value={parameter_val})"
+
+        super().__init__(self.message)
+
+
 class OverwritePreviousAnalysisError(Exception):
 
-    def __init__(self, fieldname):
+    def __init__(self, fieldname: str):
         self.fieldname = fieldname
         self.message = f"Should not overwrite field {fieldname}; if this was intended, then set this field to 'None'"
 
@@ -20,7 +29,7 @@ class OverwritePreviousAnalysisError(Exception):
 
 class DataSynchronizationError(Exception):
 
-    def __init__(self, field1, field2, suggested_method=""):
+    def __init__(self, field1: str, field2: str, suggested_method=""):
         self.field1 = field1
         self.field2 = field2
         self.suggested_method = suggested_method
