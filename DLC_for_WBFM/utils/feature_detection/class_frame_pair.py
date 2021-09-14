@@ -56,6 +56,14 @@ class FramePair:
             return np.nan
         return min(self.frame0.num_neurons(), self.frame1.num_neurons())
 
+    def prep_for_pickle(self):
+        self.frame0.prep_for_pickle()
+        self.frame1.prep_for_pickle()
+
+    def rebuild_keypoints(self):
+        self.frame0.rebuild_keypoints()
+        self.frame1.rebuild_keypoints()
+
     def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None) -> list:
         assert len(self.all_candidate_matches) > 0, "No candidate matches!"
         if min_confidence is None:

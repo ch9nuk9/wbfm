@@ -95,6 +95,7 @@ def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict, df: pd
     with open(fname, 'wb') as f:
         pickle.dump(df, f)
     fname = osp.join(subfolder, 'match_dat.pickle')
+    [p.prep_for_pickle() for p in all_frame_pairs.values()]
     with open(fname, 'wb') as f:
         pickle.dump(all_frame_pairs, f)
     fname = osp.join(subfolder, 'frame_dat.pickle')
