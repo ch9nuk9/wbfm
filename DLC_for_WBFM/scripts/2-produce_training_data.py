@@ -9,6 +9,7 @@ from datetime import date
 import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
+from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
@@ -33,6 +34,7 @@ def cfg(project_path, DEBUG):
     logging.basicConfig(filename=log_fname, level=logging.DEBUG)
     logging.warning(f'Starting run at: {date.today().strftime("%Y/%m/%d %H:%M:%S")}')
     if not DEBUG:
+        using_monkeypatch()
         ex.observers.append(TinyDbObserver(log_dir))
 
 
