@@ -23,6 +23,8 @@ dependencies:
   - natsort
   - pip:
     - tifffile
+    - tables
+    - openpyxl
     - open3d
     - networkx
     - tensorflow
