@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 from global_vars_for_tests import project_path
+import pytest
 
 
 def _load_training_data() -> pd.DataFrame:
@@ -14,7 +15,7 @@ def _load_training_data() -> pd.DataFrame:
     return df_tracks
 
 
-def test_training_data():
+def test_pipeline_step():
     # Run the sacred experiment from the actual script
     mod = importlib.import_module("DLC_for_WBFM.scripts.2-produce_training_data", package="DLC_for_WBFM")
 
@@ -23,12 +24,12 @@ def test_training_data():
     mod.ex.run(config_updates=config_updates)
 
 
-def test_training_data_saved_properly():
+def test_saved_properly():
     df = _load_training_data()
     assert type(df) == pd.DataFrame
 
 
-def test_training_data_finds_matches():
+def test_finds_matches():
     cfg = modular_project_config(project_path)
     df = _load_training_data()
 
@@ -40,7 +41,7 @@ def test_training_data_finds_matches():
 
 
 @pytest.mark.xfail(reason="Known incorrect segmentation leads to unreasonable z changes")
-def test_training_data_reasonable_z():
+def test_reasonable_z():
     df = _load_training_data()
 
     df_delta = df.diff()[1:]
