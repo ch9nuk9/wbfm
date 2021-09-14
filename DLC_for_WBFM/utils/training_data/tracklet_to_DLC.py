@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 
 
@@ -54,6 +55,8 @@ def calculate_best_covering_from_tracklets(dlc_df: pd.DataFrame, num_training_fr
 
     # Get best, and convert to correct format
     y = np.array(num_not_missing_per_window)
+    if len(y) == 0:
+        raise ParameterTooStringentError(num_training_frames, 'num_training_frames')
     start_frame = np.argmax(y)
 
     best_window = list(range(start_frame, start_frame + num_training_frames))
