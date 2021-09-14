@@ -5,7 +5,7 @@ To be used with Niklas' Stardist-based segmentation package
 """
 
 import os
-
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 # Experiment tracking
 import sacred
 from sacred import Experiment
@@ -52,9 +52,10 @@ def segment2d(_config, _run):
         project_cfg.config['dataset_params']['num_frames'] = 3
 
     mode = segment_cfg.config['segmentation_type']
-    if mode == "3d":
-        segment_video_using_config_3d(segment_cfg, project_cfg, _config['continue_from_frame'], DEBUG=_config['DEBUG'])
-    elif mode == "2d":
-        segment_video_using_config_2d(segment_cfg, project_cfg, _config['continue_from_frame'], DEBUG=_config['DEBUG'])
-    else:
-        raise ValueError(f"Unknown segmentation_type; expected '2d' or '3d' instead of {mode}")
+    with safe_cd(project_cfg.project_dir):
+        if mode == "3d":
+            segment_video_using_config_3d(segment_cfg, project_cfg, _config['continue_from_frame'], DEBUG=_config['DEBUG'])
+        elif mode == "2d":
+            segment_video_using_config_2d(segment_cfg, project_cfg, _config['continue_from_frame'], DEBUG=_config['DEBUG'])
+        else:
+            raise ValueError(f"Unknown segmentation_type; expected '2d' or '3d' instead of {mode}")
