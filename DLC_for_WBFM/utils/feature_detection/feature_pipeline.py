@@ -306,8 +306,7 @@ def register_all_reference_frames(ref_frames,
         pairwise_conf_dict = previous_ref_set.pairwise_conf
         bp_matches_dict = previous_ref_set.bipartite_matches
 
-    match_opt = {'use_affine_matching': use_affine_matching,
-                 'add_affine_to_candidates': add_affine_to_candidates,
+    match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
                  'add_gp_to_candidates': add_gp_to_candidates}
     if verbose >= 1:
         print("Pairwise matching all reference frames...")
@@ -548,8 +547,7 @@ def track_neurons_full_video(video_fname: str,
     all_frame_dict = {start_volume: frame0}
     end_frame = start_volume + num_frames
     frame_range = range(start_volume + 1, end_frame)
-    match_opt = {'use_affine_matching': use_affine_matching,
-                 'add_affine_to_candidates': add_affine_to_candidates,
+    match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
                  'add_gp_to_candidates': add_gp_to_candidates}
     logging.info(f"Calculating Frame objects for frames: {frame_range}")
     for i_frame in tqdm(frame_range):
@@ -612,8 +610,7 @@ def track_via_reference_frames(video_fname,
 
     if verbose >= 1:
         print("Analyzing reference frames...")
-    match_opt = {'use_affine_matching': use_affine_matching,
-                 'add_affine_to_candidates': add_affine_to_candidates,
+    match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
                  'add_gp_to_candidates': add_gp_to_candidates,
                  'neuron_cluster_mode': neuron_cluster_mode,
                  'verbose': verbose - 1}
@@ -695,8 +692,7 @@ def track_neurons_full_video_window(video_fname,
     all_frame_dict = {}
     end_frame = start_frame + num_frames
     frame_range = list(range(start_frame, end_frame))
-    match_opt = {'use_affine_matching': use_affine_matching,
-                 'add_affine_to_candidates': add_affine_to_candidates,
+    match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
                  'add_gp_to_candidates': add_gp_to_candidates}
     for i_base_frame in tqdm(frame_range):
         # Check if we already built the frame
