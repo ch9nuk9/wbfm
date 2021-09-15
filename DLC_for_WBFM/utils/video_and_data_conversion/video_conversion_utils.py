@@ -8,11 +8,15 @@ import tifffile
 ## OME-TIFF
 ##
 
-def write_video_from_ome_folder(num_frames, folder_name, out_fname,
-                                out_dtype='uint8',
-                                which_slice=None):
+def write_video_from_ome_folder3d(num_frames: int,
+                                  folder_name: str,
+                                  out_fname: str,
+                                  out_dtype: str = 'uint8',
+                                  which_slice: np.array = None):
     """
     Write a video from a folder of ome-tiff files, where each one is a single volume
+
+    Assumes that the tiff files are 3d; which_slice allows a subset of slices to be written
 
     'out_fname' should have te file extension included. Recommended: .avi
 
@@ -45,6 +49,52 @@ def write_video_from_ome_folder(num_frames, folder_name, out_fname,
         else:
             dat[i, ...] = tifffile.imread(full_fname)[which_slice, ...]
         print("Reading frame {}/{}: ".format(i + 1, num_frames))
+
+    tifffile.imsave(out_fname, dat, dtype=out_dtype)
+
+    return dat
+
+
+def write_video_from_ome_folder2d(num_frames: int,
+                                  folder_name: str,
+                                  out_fname: str,
+                                  out_dtype: str = 'uint8',
+                                  verbose: int = 2):
+    """
+    Write a video from a folder of ome-tiff files, where each one is a single volume
+
+    Assumes that the tiff files are 2d
+
+    'out_fname' should have te file extension included. Recommended: .avi
+
+    Input-Output:
+        /*ome.tiff -> .avi
+    """
+
+    all_fnames = os.listdir(folder_name)
+    all_fnames = sorted(all_fnames)[1:]
+    if verbose >= 1:
+        print(f"Found {len(all_fnames)} files; assuming they are all ome.tiff")
+
+    # Load all into memory via appending, writing at the end
+    for i, this_fname in enumerate(all_fnames):
+        if i > num_frames - 1:
+            if verbose >= 1:
+                print("Finished writing {} files".format(num_frames))
+            break
+
+        full_fname = os.path.join(folder_name, this_fname)
+        if i == 0:
+            tmp = tifffile.imread(full_fname)
+            new_shape = [num_frames]
+            new_shape.extend(list(tmp.shape))
+            dat = np.zeros(new_shape, dtype=out_dtype)
+            print("Final shape should be: ", new_shape)
+            dat[i, ...] = tmp
+        else:
+            dat[i, ...] = tifffile.imread(full_fname)
+        if verbose >= 2:
+            print("Reading frame {}/{}: ".format(i + 1, num_frames))
 
     tifffile.imsave(out_fname, dat, dtype=out_dtype)
 
