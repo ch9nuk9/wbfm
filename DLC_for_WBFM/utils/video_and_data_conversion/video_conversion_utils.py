@@ -55,20 +55,24 @@ def write_video_from_ome_folder3d(num_frames: int,
     return dat
 
 
-def write_video_from_ome_folder2d(num_frames: int,
-                                  folder_name: str,
+def write_video_from_ome_folder2d(folder_name: str,
                                   out_fname: str,
+                                  num_frames: int = None,
                                   out_dtype: str = 'uint8',
                                   verbose: int = 2):
     """
-    Write a video from a folder of ome-tiff files, where each one is a single volume
-
-    Assumes that the tiff files are 2d
-
-    'out_fname' should have te file extension included. Recommended: .avi
+    Write a video from a folder of ome-tiff files, where each one is a single frame
 
     Input-Output:
         /*ome.tiff -> .avi
+
+    Parameters
+    ----------
+    folder_name - target folder; should have only 2d ome-tiff files
+    out_fname - output filename; should have the file extension included. Recommended: .avi
+    num_frames - number of frames to write; default writes all
+    out_dtype - output datatype; default is 'uint8', i.e. integers from 0-255
+    verbose - how much to print; 0, 1, or 2
     """
 
     all_fnames = os.listdir(folder_name)
@@ -89,12 +93,16 @@ def write_video_from_ome_folder2d(num_frames: int,
             new_shape = [num_frames]
             new_shape.extend(list(tmp.shape))
             dat = np.zeros(new_shape, dtype=out_dtype)
-            print("Final shape should be: ", new_shape)
+            if verbose >= 1:
+                print("Final shape should be: ", new_shape)
             dat[i, ...] = tmp
         else:
             dat[i, ...] = tifffile.imread(full_fname)
         if verbose >= 2:
             print("Reading frame {}/{}: ".format(i + 1, num_frames))
+    else:
+        if verbose >= 1:
+            print(f"Finished writing all frames")
 
     tifffile.imsave(out_fname, dat, dtype=out_dtype)
 
