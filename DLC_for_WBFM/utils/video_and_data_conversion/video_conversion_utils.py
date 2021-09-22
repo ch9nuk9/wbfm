@@ -233,7 +233,7 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
 
 
 ## For use with config files
-def write_video_projection_from_ome_file_subset(video_fname,
+def write_video_projection_from_ome_file_subset(bigtiff_input_fname,
                                                 out_fname,
                                                 out_dtype='uint16',
                                                 which_slices=None,
@@ -245,6 +245,7 @@ def write_video_projection_from_ome_file_subset(video_fname,
                                                 num_slices=33,
                                                 alpha=None,
                                                 flip_x=False,
+                                                fourcc='0',
                                                 verbose=0):
     """
     Writes a video from a single ome-tiff file that is incomplete, i.e. cannot be read using tifffile.imread()
@@ -254,23 +255,24 @@ def write_video_projection_from_ome_file_subset(video_fname,
 
     To get good output videos if the data is not uint8, 'alpha' will probably have to be set as max(data)/255.0
 
-    Note that I skip the first volume by default, because it is significantly different
-
     Input-Output:
         ome.tiff -> .avi
     """
     # Set up the video writer
-    fourcc = 0
-    video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps, frameSize=(frame_width, frame_height), isColor=False)
+    if fourcc == '0':
+        fourcc = 0
+    else:
+        fourcc = cv2.VideoWriter_fourcc(*fourcc)
+    video_out = cv2.VideoWriter(out_fname, fourcc=fourcc, fps=fps,
+                                frameSize=(frame_width, frame_height), isColor=False)
 
-    assert num_slices % 2 == 1, f"num_slices must be odd; was {num_slices}"
-
-    # By default skip the first volume
-    if start_volume is None:
-        start_volume = num_slices
     if verbose >= 2 & (start_volume % num_slices != 0):
         print(f'Converting volume index {start_volume} to frame index {start_volume * num_slices}')
         start_volume = start_volume * num_slices
+
+    if which_slices is None:
+        # Full max projection
+        which_slices = np.arange(num_slices)
 
     # Set up the counting indices
     start_of_each_frame = which_slices[0]
@@ -285,7 +287,7 @@ def write_video_projection_from_ome_file_subset(video_fname,
     if verbose >= 2:
         print(f'Taking a max of {len(which_slices)} slices, starting at {start_of_each_frame}')
 
-    with tifffile.TiffFile(video_fname, multifile=False) as tif:
+    with tifffile.TiffFile(bigtiff_input_fname, multifile=False) as tif:
         for i_page, page in enumerate(tif.pages):
             i_slice_raw = i_page % num_slices
             i_slice_tmp = i_slice_raw - start_of_each_frame
@@ -293,8 +295,9 @@ def write_video_projection_from_ome_file_subset(video_fname,
             if (i_page < start_volume) or (i_slice_raw not in which_slices):
                 continue
             if verbose >= 2:
-                print(
-                    f'Page {i_page}/{num_frames * num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {i_slice_tmp}')
+                if num_frames is not None:
+                    print(
+                        f'Page {i_page}/{num_frames * num_slices}; a portion of slice {i_frame_count}/{num_frames} to tmp array index {i_slice_tmp}')
 
             img_tmp[i_slice_tmp, ...] = page.asarray()
 

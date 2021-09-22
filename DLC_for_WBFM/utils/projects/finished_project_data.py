@@ -67,7 +67,7 @@ class finished_project_data:
         seg_fname_raw = segment_cfg.config['output_masks']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 
-        fname = r"3-tracking\postprocessing\manual_behavior_annotation.xlsx"  # TODO: do not hardcode
+        fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"  # TODO: do not hardcode
 
         red_data = zarr.open(red_dat_fname)
         green_data = zarr.open(green_dat_fname)
