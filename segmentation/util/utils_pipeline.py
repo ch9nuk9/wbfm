@@ -444,7 +444,7 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
 
     if DEBUG:
         from DLC_for_WBFM.utils.projects.utils_debugging import shelve_full_workspace
-        fname = 'shelve.out'
+        fname = 'stardist_2d_postprocessing.out'
         shelve_full_workspace(fname, list(dir()), locals())
 
     return final_masks

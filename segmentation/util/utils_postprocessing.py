@@ -10,6 +10,7 @@ from scipy.optimize import curve_fit
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
+from scipy.signal import find_peaks
 
 
 def remove_large_areas(arr, threshold=1000, verbose=0):
@@ -372,7 +373,7 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
     return brightness_dict, brightness_planes
 
 
-def calc_means_via_brightnesses(brightnesses, plots=0, verbose=0):
+def calc_split_point_via_brightnesses(brightnesses, plots=0, verbose=0) -> int:
     """
     calculates the means of 2 gaussians underlying the neuron brightness distributions.
     It tries to match exactly 2 gaussians onto the brightness distribution of a tentative neuron.
@@ -407,8 +408,17 @@ def calc_means_via_brightnesses(brightnesses, plots=0, verbose=0):
 
     # p0 is the initial guess for the fitting coefficients
     # initialize them differently so the optimization algorithm works better
-    height = len(y_data)/4
-    p0 = [np.mean(y_data), height, height, np.mean(y_data), height * 3, height]
+    sigma = 3.0
+    peaks, _ = find_peaks(y_data, distance=4)
+    if len(peaks) == 1:
+        peak0 = len(y_data) / 4.0
+        peak1 = peak0 * 3
+    elif len(peaks) == 2:
+        peak0, peak1 = peaks
+    else:
+        print("Peak initialization failed; aborting")
+        return None
+    p0 = [np.mean(y_data), peak0, sigma, np.mean(y_data), peak1, sigma]
 
     try:
         # optimize and in the end you will have 6 coeff (3 for each gaussian)
@@ -418,15 +428,27 @@ def calc_means_via_brightnesses(brightnesses, plots=0, verbose=0):
             print('Oh oh, could not fit')
         return None
 
-    means = [round(coeff[1]), round(coeff[4])]
+    peaks_of_gaussians = [round(coeff[1]), round(coeff[4])]
 
-    if any([x < 0 or x > len(brightnesses) for x in means]):
+    if any([x < 0 or x > len(y_data) for x in peaks_of_gaussians]):
         if verbose >= 1:
-            print(f'Error in brightness: Means = {means} length of brightness list = {len(brightnesses)}')
+            print(f'Error in brightness: Means = {peaks_of_gaussians} length of brightness list = {len(brightnesses)}')
+            print("Impossible location; returning None")
         return None
 
+    # Get the split point
+    # Plan a: find the peak between the gaussian blobs
+    inter_peak_brightnesses = np.array(y_data[peaks_of_gaussians[0]+1:peaks_of_gaussians[1]])
+    split_point, _ = find_peaks(-inter_peak_brightnesses)
+    if len(split_point) > 0:
+        split_point = int(split_point[0])
+        split_point += peaks_of_gaussians[0] + 1
+    else:
+        # Plan b: Just take the average
+        split_point = int(np.mean(peaks_of_gaussians))
+
     if plots >= 1:
-        # you can plot each gaussian separately using
+        # plot each gaussian separately
         pg1 = np.zeros_like(p0)
         pg1[0:3] = coeff[0:3]
         pg2 = np.zeros_like(p0)
@@ -439,7 +461,7 @@ def calc_means_via_brightnesses(brightnesses, plots=0, verbose=0):
         plt.plot(x_data, g1, label='Fit1')
         plt.plot(x_data, g2, label='Fit2')
 
-        plt.scatter(means, y_data[means], c='red')
+        plt.scatter(peaks_of_gaussians, y_data[peaks_of_gaussians], c='red')
 
         plt.title('brightness dist & underlying dists')
         plt.ylabel('brightness')
@@ -449,9 +471,9 @@ def calc_means_via_brightnesses(brightnesses, plots=0, verbose=0):
         plt.show()
         # plt.savefig(r'.\brightnesses_gaussian_fit.png')
 
-        return means, g1, g2
+        return split_point, peaks_of_gaussians, g1, g2
 
-    return means
+    return split_point
 
 
 def split_long_neurons(array,
@@ -519,15 +541,14 @@ def split_long_neurons(array,
         if neuron_len > maximum_length:
 
             try:
-                x_means = calc_means_via_brightnesses(neuron_brightnesses[neuron_id], verbose-1)
+                x_split = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id], verbose - 1)
             except (ValueError, TypeError):
                 if verbose >= 1:
                     print(f'! ValueError while splitting neuron {neuron_id}. Could not fit 2 Gaussians! Will continue.')
                 continue
 
             # if neuron can be split
-            if x_means:
-                x_split = round(sum(x_means) / 2)
+            if x_split:
                 # create new entry
                 global_current_neuron += 1
                 new_neuron_lengths[global_current_neuron] = neuron_lengths[neuron_id] - x_split - 1
