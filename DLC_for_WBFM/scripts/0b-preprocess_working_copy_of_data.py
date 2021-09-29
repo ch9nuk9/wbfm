@@ -9,6 +9,7 @@ import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
+from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
@@ -38,8 +39,10 @@ def cfg(project_path):
 
     fname = str(fname)  # For pickling in tinydb
 
-    log_dir = cfg.get_log_dir()
-    ex.observers.append(TinyDbObserver(log_dir))
+    if not DEBUG:
+        using_monkeypatch()
+        log_dir = cfg.get_log_dir()
+        ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain

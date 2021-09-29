@@ -2,6 +2,9 @@ import numpy as np
 from skimage import filters
 from skimage.measure import regionprops
 from skimage.draw import rectangle
+import pickle
+import zarr
+from tqdm.auto import tqdm
 
 
 def get_bounding_box_via_gaussian_blurring(vol, raw_thresh=18, sigma=8):
@@ -52,3 +55,23 @@ def bbox2ind(bbox):
     returns: row_ind, col_ind
     """
     return np.arange(bbox[0], bbox[2]), np.arange(bbox[1], bbox[3])
+
+
+## Optional main pipeline function
+def calculate_bounding_boxes_from_fnames(video_fname, bbox_fname):
+
+    video_4d = zarr.open(video_fname)
+    all_bboxes = calculate_bounding_boxes_full_video(video_4d)
+
+    with open(bbox_fname, 'wb') as f:
+        pickle.dump(all_bboxes, f)
+
+    return all_bboxes
+
+
+def calculate_bounding_boxes_full_video(video_4d):
+
+    f = get_bounding_box_via_gaussian_blurring
+    all_bboxes = [f(vol) for vol in tqdm(video_4d)]
+
+    return all_bboxes
