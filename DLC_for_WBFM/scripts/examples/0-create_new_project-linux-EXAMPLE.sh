@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#! /usr/bin/env bash
 
 # Get the experimenter name from the command line
 if [[ "$#" -eq 1 ]]; then
@@ -9,7 +9,7 @@ else
 fi
 
 # Hardcoded example locations
-PROJECT_DIR="/home/charles/dlc_stacks/"
+PROJECT_DIR="/scratch/zimmer/Charles/dlc_stacks/"
 RED_PATH="/project/neurobiology/zimmer/wbfm/dat/ZIM2051/2021-03-04_16-07-57_worm3_ZIM2051/2021-03-04_16-07-57_worm3_ZIM2051-channel-0-pco_camera1/2021-03-04_16-07-57_worm3_ZIM2051-channel-0-pco_camera1.btf"
 GREEN_PATH="/project/neurobiology/zimmer/wbfm/dat/ZIM2051/2021-03-04_16-07-57_worm3_ZIM2051/2021-03-04_16-07-57_worm3_ZIM2051-channel-0-pco_camera1/2021-03-04_16-07-57_worm3_ZIM2051-channel-0-pco_camera1.btf"
 
