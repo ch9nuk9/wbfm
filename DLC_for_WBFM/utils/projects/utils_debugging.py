@@ -26,6 +26,7 @@ def shelve_full_workspace(filename, var_keys, var_dict: dict):
     Saves shelf object to disk
 
     """
+    print(f"Saving workspace at: {filename}")
     my_shelf = shelve.open(filename, 'n')
 
     for key in var_keys:
