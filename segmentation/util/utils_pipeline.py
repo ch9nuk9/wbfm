@@ -132,8 +132,8 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
                 future.result()
                 pbar.update(1)
 
-    if _config.get('self_path', None) is not None:
-        edit_config(_config['self_path'], _config)
+    if _config.config.get('self_path', None) is not None:
+        edit_config(_config.config['self_path'], _config.config)
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
@@ -334,17 +334,6 @@ def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
     # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
     masks_zarr[i, :, :, :] = final_masks
 
-    # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
-    # with keras_lock:  # Keras is not thread-safe in the end
-    #     segmented_masks = segment_with_stardist_2d(volume, sd_model, verbose=verbose - 1)
-    # # process masks: remove large areas, stitch, split long neurons, remove short neurons
-    # final_masks = perform_post_processing_2d(segmented_masks,
-    #                                          volume,
-    #                                          **opt_postprocessing,
-    #                                          verbose=verbose - 1)
-    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
-    # # masks_zarr[i, :, :, :] = final_masks
-
 
 def _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path, read_lock=None):
     # use get single volume function from charlie
@@ -370,7 +359,8 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
                                upper_length_threshold=12, lower_length_threshold=3,
                                to_remove_dim_slices=False,
                                stitch_via_watershed=False,
-                               verbose=0):
+                               verbose=0,
+                               DEBUG=False):
     """
     Performs some post-processing steps including: Splitting long neurons, removing short neurons and
     removing too large areas
@@ -451,6 +441,11 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
     if verbose >= 1:
         print(f"After border removal: {len(np.unique(final_masks))}")
         print("Postprocessing finished")
+
+    if DEBUG:
+        from DLC_for_WBFM.utils.projects.utils_debugging import shelve_full_workspace
+        fname = 'shelve.out'
+        shelve_full_workspace(fname, list(dir()), locals())
 
     return final_masks
 
