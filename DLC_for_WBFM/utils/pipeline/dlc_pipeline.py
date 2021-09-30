@@ -228,10 +228,15 @@ def _get_frames_for_dlc_training(DEBUG: bool, df: pd.DataFrame,
                                  tracking_config: config_file_with_project_context):
     # Choose a subset of frames with enough tracklets
     which_frames = tracking_config.config['training_data_3d'].get('which_frames', None)
-
     if which_frames is None:
-        num_training_frames = tracking_config.config['training_data_3d']['num_training_frames']
-        which_frames, _ = calculate_best_covering_from_tracklets(df, num_training_frames)
+        raise AnalysisOutOfOrderError(
+            "Calculating which frames at this point is deprecated; calculate in step 2 (training data)")
+
+    print(f"Creating png training data for frames: {which_frames}")
+
+    # if which_frames is None:
+    #     num_training_frames = tracking_config.config['training_data_3d']['num_training_frames']
+    #     which_frames, _ = calculate_best_covering_from_tracklets(df, num_training_frames)
         # which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_config)
         # raise DeprecationWarning("Calculating which frames at this point is deprecated; calculate before calling this")
         # num_frames_needed = config['training_data_3d']['num_training_frames']
@@ -243,12 +248,9 @@ def _get_frames_for_dlc_training(DEBUG: bool, df: pd.DataFrame,
         # which_frames, _ = best_tracklet_covering(df, **tracklet_opt)
     # else:
     #     which_frames = config['training_data_3d']['which_frames']
-    #     if which_frames is None:
-    #         raise DeprecationWarning(
-    #             "Calculating which frames at this point is deprecated; calculate before calling this")
     # Also save these chosen frames
-    updates = {'which_frames': which_frames}
-    tracking_config.config['training_data_3d'].update(updates)
+    # updates = {'which_frames': which_frames}
+    # tracking_config.config['training_data_3d'].update(updates)
 
     all_center_slices = tracking_config.config['training_data_2d']['all_center_slices']
     if DEBUG:
@@ -262,7 +264,7 @@ def _make_avi_name(center):
         # BUG: fix required short filenames
         # Another function clips labeled-data/folder-name at 8 chars
         # But, that name must be the same as the video
-        raise ValueError(f"Bug if this is too long {fname}")
+        raise ValueError(f"Bug if this is too long: {fname}")
     return fname
 
 
