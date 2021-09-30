@@ -10,6 +10,7 @@ import zarr
 from scipy.spatial.distance import pdist
 from tqdm import tqdm
 
+from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
     update_pose_config, create_dlc_project, get_annotations_matching_video_in_folder, \
     training_data_from_3dDLC_annotations
@@ -232,8 +233,7 @@ def _get_frames_for_dlc_training(DEBUG: bool, df: pd.DataFrame,
     # Choose a subset of frames with enough tracklets
     which_frames = tracking_config.config['training_data_3d'].get('which_frames', None)
     if which_frames is None:
-        raise AnalysisOutOfOrderError(
-            "Calculating which frames at this point is deprecated; calculate in step 2 (training data)")
+        raise AnalysisOutOfOrderError("Calculate which_frames")
 
     print(f"Creating png training data for frames: {which_frames}")
 

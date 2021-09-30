@@ -7,7 +7,7 @@ import pandas as pd
 from deeplabcut.utils import auxiliaryfunctions
 from skimage import io
 from skimage.util import img_as_ubyte
-
+from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
     build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC
 from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
@@ -261,8 +261,8 @@ def training_data_from_3dDLC_annotations(video_fname,
         return None, None
 
     # TODO: Get which frames directly from dataframe?
-    if len(which_frames) !=  len(list(dlc3d_df.index)):
-        raise AnalysisOutOfOrderError(f"Dataframe should already be a subset in time: {df_fname}")
+    if len(which_frames) != len(list(dlc3d_df.index)):
+        raise AnalysisOutOfOrderError(f"Dataframe subset in time")
     which_frames = list(dlc3d_df.index)
     # which_frames = list(subset_df.index)
 
