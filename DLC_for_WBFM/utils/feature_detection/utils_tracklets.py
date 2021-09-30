@@ -399,8 +399,10 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
 ## Massive simplification / refactor
 ##
 
-def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: list = None,
-                        slice_offset: int = 0) -> pd.DataFrame:
+def build_tracklets_dfs(pairwise_matches_dict: dict,
+                        xyz_per_neuron_per_frame: list = None,
+                        slice_offset: int = 0,
+                        verbose = 0) -> pd.DataFrame:
     """
     Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
 
@@ -416,11 +418,11 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
 
     min_pair = min([k[0] for k in pairwise_matches_dict.keys()])
     max_pair = max([k[0] for k in pairwise_matches_dict.keys()])
-    pair_range = list(range(min_pair, max_pair))
+    tracklet_starting_indices = list(range(min_pair, max_pair))
 
     def get_start_match(match_dicts):
         # Note: match_dicts will progressively have entries deleted
-        for i in pair_range:
+        for i in tracklet_starting_indices:
             # Make sure order is respected
             match_key = (i, i + 1)
             match_dict = match_dicts.get(match_key, [])
@@ -442,7 +444,11 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
         # Choose a starting point, and initialize lists
         match_key, i0, i1 = get_start_match(dict_of_match_dicts)
         if match_key is None:
+            if verbose >= 1:
+                print(f"No matches left")
             break
+        if verbose >= 2:
+            print(f"Starting match: {match_key}, {i0}, {i1}")
         i_frame0, i_frame1 = match_key
 
         all_ind_local = [i0, i1]
@@ -457,8 +463,11 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
         del dict_of_match_dicts[match_key][i0]
 
         # DFS for this starting point
-        remaining_pairs = range(match_key[1], pair_range[-1])
-        for i_pair in remaining_pairs:
+        remaining_frame_pair_indices = list(range(match_key[1], tracklet_starting_indices[-1]+1))
+        if verbose >= 2:
+            # Note: even
+            print(f"Searching through {len(remaining_frame_pair_indices)} remaining pairs")
+        for i_pair in remaining_frame_pair_indices:
             next_match_key = (i_pair, i_pair + 1)
             next_match_dict = dict_of_match_dicts.get(next_match_key, {})
             # next_match_dict = dict_of_match_dicts[next_match_key]
@@ -474,12 +483,21 @@ def build_tracklets_dfs(pairwise_matches_dict: dict, xyz_per_neuron_per_frame: l
                 slice_ind.append(i_frame)
 
                 del dict_of_match_dicts[next_match_key][i0]
+                if verbose >= 3:
+                    print(f"Continued tracklet: {next_match_key}, {i0}")
 
             else:
+                if verbose >= 2:
+                    print(f"Tracklet ended on frame pair: {next_match_key}")
                 break
+        else:
+            if verbose >= 2:
+                print(f"Tracklet reached the end of the recording")
 
         # Save these lists in the dataframe
         slice_ind = [s + slice_offset for s in slice_ind]
+        if verbose >= 2:
+            print(f"Ended tracklet with length {len(slice_ind)}")
         df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_xyz],
                                all_prob=[all_prob], slice_ind=[slice_ind]))
 
