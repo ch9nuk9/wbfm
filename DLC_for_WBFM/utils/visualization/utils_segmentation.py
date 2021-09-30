@@ -202,19 +202,24 @@ def all_matches_to_lookup_tables(all_matches: dict) -> dict:
     return all_lut
 
 
-def reindex_segmentation_only_training_data(this_config, DEBUG=False):
+def reindex_segmentation_only_training_data(cfg: modular_project_config,
+                                            segment_cfg: config_file_with_project_context,
+                                            tracking_cfg: config_file_with_project_context,
+                                            DEBUG=False):
     """
     Using tracklets and full segmentation, produces a small video (zarr) with neurons colored by track
     """
 
+    num_frames = cfg.config['dataset_params']['num_frames']
+
     # Get ALL matches to the segmentation, then subset
-    # Also get segmentation metadata
-    with safe_cd(this_config['project_dir']):
+    with safe_cd(cfg.project_dir):
+        # TODO: not hardcoded
         fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
         df = pd.read_pickle(fname)
 
         # Get the frames chosen as training data, or recalculate
-        which_frames = get_or_recalculate_which_frames(DEBUG, df, this_config)
+        which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_cfg)
 
         # Build a sub-df with only the relevant neurons; all slices
         # Todo: connect up to actually tracked z slices?
@@ -223,11 +228,11 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
                       'verbose': 1}
         subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
 
-        fname = this_config['segment_cfg']['output_metadata']
+        fname = segment_cfg.config['output_metadata']
         with open(fname, 'rb') as f:
             segmentation_metadata = pickle.load(f)
 
-        fname = this_config['segment_cfg']['output_masks']
+        fname = segment_cfg.config['output_masks']
         masks = zarr.open(fname)
 
     # Convert dataframe to matches per frame
@@ -247,11 +252,11 @@ def reindex_segmentation_only_training_data(this_config, DEBUG=False):
     # Initialize new array
     new_sz = list(masks.shape)
     new_sz[0] = len(which_frames)
-    out_fname = os.path.join(this_config['project_dir'], '2-training_data', 'reindexed_masks.zarr')
+    out_fname = os.path.join(cfg.project_dir, '2-training_data', 'reindexed_masks.zarr')
     new_masks = zarr.open_like(masks, path=out_fname, shape=new_sz)
 
     # Reindex; this automatically writes to disk
     for i, (i_volume, lut) in tqdm(enumerate(all_lut.items())):
         new_masks[i, ...] = lut[masks[i_volume, ...]]
 
-    # Note: automatically saves
+    # Automatically saves

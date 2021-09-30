@@ -5,6 +5,9 @@ self_path: 1-segmentation/segment_config.yaml # for programmatic updating
 video_path: null
 segmentation_type: 3d
 
+# External preprocessing: bounding boxes
+bbox_fname: 1-segmentation/bounding_boxes.pickle
+
 # Segmentation
 segmentation_params:
   stardist_model_name: charlie_3d
@@ -17,6 +20,7 @@ postprocessing_params:
   to_remove_border: false
   border_width_to_remove: 0
   to_remove_dim_slices: true
+  min_separation: 6
 
 # Output
 output_folder: 1-segmentation # Only used for initial writing

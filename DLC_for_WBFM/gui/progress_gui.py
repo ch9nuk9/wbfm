@@ -14,7 +14,7 @@ from pathlib import Path
 import napari
 import zarr
 from PyQt5 import QtCore, QtWidgets
-
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_project_of_substep
@@ -238,17 +238,18 @@ class Ui_MainWindow(object):
             self.tracesProgress.setValue(0)
 
     def _load_config_files(self, project_path):
-        cfg = load_config(project_path)
+        cfg = modular_project_config(project_path)
         self.cfg = cfg
-        segment_fname = cfg['subfolder_configs']['segmentation']
-        self.segment_cfg = load_config(segment_fname)
-        # The segmentation path may be different from the overall folder
-        other_project = get_project_of_substep(segment_fname)
-        with safe_cd(other_project):
-            seg_path = self.segment_cfg['output_masks']
-            self.segment_zarr = zarr.open(seg_path)
-        self.tracking_cfg = load_config(cfg['subfolder_configs']['tracking'])
-        self.traces_cfg = load_config(cfg['subfolder_configs']['traces'])
+        self.segment_cfg = cfg.get_segmentation_config()
+        # TODO: The segmentation path may be different from the overall folder
+        seg_path = self.segment_cfg.config['output_masks']
+        self.segment_zarr = zarr.open(seg_path)
+        # other_project = get_project_of_substep(segment_fname)
+        # with safe_cd(other_project):
+        #     seg_path = self.segment_cfg['output_masks']
+        #     self.segment_zarr = zarr.open(seg_path)
+        self.tracking_cfg = cfg.get_tracking_config()
+        self.traces_cfg = cfg.get_traces_config()
 
         fname = cfg.get('preprocessed_red', None)
         if fname is not None:
@@ -274,7 +275,7 @@ class Ui_MainWindow(object):
 
     def napari_for_masks_training(self):
         """Open napari window for segmentation for just the training data"""
-        self.viewer = napari_of_training_data(self.project_dir)[0]
+        self.viewer = napari_of_training_data(self.cfg)[0]
 
     def open_traces_gui(self):
 
