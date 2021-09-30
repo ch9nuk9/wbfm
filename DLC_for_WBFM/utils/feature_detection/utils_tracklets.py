@@ -415,6 +415,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
     # Make everything a dictionary
     dict_of_match_dicts = {k: dict([m0[:2] for m0 in m]) for k, m in pairwise_matches_dict.items()}
+    dict_of_prob_dicts = {k: {m0[0]:m0[2] for m0 in m} for k, m in pairwise_matches_dict.items()}
 
     min_pair = min([k[0] for k in pairwise_matches_dict.keys()])
     max_pair = max([k[0] for k in pairwise_matches_dict.keys()])
@@ -457,7 +458,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
         else:
             all_xyz = [[], []]
         slice_ind = [i_frame0, i_frame1]
-        all_prob = []
+        all_prob = [dict_of_prob_dicts[match_key][i0]]
 
         # Remove match
         del dict_of_match_dicts[match_key][i0]
@@ -481,6 +482,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
                 else:
                     all_xyz.append([])
                 slice_ind.append(i_frame)
+                all_prob.append(dict_of_prob_dicts[next_match_key][i0])
 
                 del dict_of_match_dicts[next_match_key][i0]
                 if verbose >= 3:
@@ -496,6 +498,8 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
         # Save these lists in the dataframe
         slice_ind = [s + slice_offset for s in slice_ind]
+        # TODO: probability here means matches, not neuron detection... change?
+        all_prob.append(0)  # Make the probability match the zxy
         if verbose >= 2:
             print(f"Ended tracklet with length {len(slice_ind)}")
         df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_xyz],
