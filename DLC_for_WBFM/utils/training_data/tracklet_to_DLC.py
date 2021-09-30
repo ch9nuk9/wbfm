@@ -280,8 +280,12 @@ def build_subset_df_from_tracklets(clust_df,
     f1 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_xyz_old'])
     out_df['all_xyz'] = out_df.apply(f1, axis=1)
 
-    f2 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_prob_old'])
-    out_df['all_prob'] = out_df.apply(f2, axis=1)
+    try:
+        f2 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_prob_old'])
+        out_df['all_prob'] = out_df.apply(f2, axis=1)
+    except IndexError:
+        # Sometimes the probability was not saved at all
+        pass
 
     # Final one is slightly different
     # f3 = lambda df : rename_slices(which_neurons_dict[df['clust_ind']])
@@ -335,6 +339,10 @@ def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
         if DEBUG:
             tracklet_opt['num_frames_needed'] = 2
         which_frames, _ = best_tracklet_covering_from_my_matches(df, **tracklet_opt)
+
+        tracking_config.config['training_data_3d']['which_frames'] = which_frames
+        tracking_config.update_on_disk()
+
     return which_frames
 
 
