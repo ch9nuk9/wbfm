@@ -34,9 +34,13 @@ def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
         tracklets_that_cover = df['slice_ind'].apply(check_for_full_covering)
         y[i] = tracklets_that_cover.sum(axis=0)
 
+    if len(y) == 0:
+        raise ParameterTooStringentError(num_frames_needed, 'num_frames_needed')
     best_covering = np.argmax(y)
     if verbose >= 1:
         print(f"Best covering starts at volume {best_covering} with {np.max(y)} tracklets")
+    if np.max(y) == 0:
+        raise ParameterTooStringentError(num_frames_needed, 'num_frames_needed')
 
     return make_window(best_covering), y
 

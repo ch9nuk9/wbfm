@@ -14,6 +14,9 @@ from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmenta
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
 
+from sacred import SETTINGS
+SETTINGS.CAPTURE_MODE = 'sys' # Capture stdout
+
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works

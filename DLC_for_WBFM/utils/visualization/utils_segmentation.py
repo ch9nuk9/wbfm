@@ -220,6 +220,7 @@ def reindex_segmentation_only_training_data(cfg: modular_project_config,
 
         # Get the frames chosen as training data, or recalculate
         which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_cfg)
+        # logging.log(f"Which frames to use for training data: {which_frames}")
 
         # Build a sub-df with only the relevant neurons; all slices
         # Todo: connect up to actually tracked z slices?
