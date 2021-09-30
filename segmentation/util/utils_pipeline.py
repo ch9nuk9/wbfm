@@ -267,7 +267,7 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_s
         # Old file MUST exist in this case
         mode = 'r+'
     i_volume = frame_list[i]
-    volume = get_single_volume(all_bounding_boxes, i_volume, video_dat)
+    volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
 
     final_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
@@ -276,12 +276,11 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_s
                                              volume,
                                              **opt_postprocessing,
                                              verbose=verbose - 1)
-    # Add masks to zarr file; automatically saves
-    masks_zarr[i, :, :, :] = final_masks
+    save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr)
     return masks_zarr
 
 
-def get_single_volume(all_bounding_boxes, i_volume, video_dat):
+def get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat):
     if all_bounding_boxes is None:
         volume = video_dat[i_volume, ...]
     else:
@@ -341,7 +340,7 @@ def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
                        zero_out_borders,
                        all_bounding_boxes,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
-    volume = get_single_volume(all_bounding_boxes, i_volume, video_dat)
+    volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
     if keras_lock is None:
         segmented_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     else:
@@ -352,8 +351,15 @@ def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
                                              volume,
                                              **opt_postprocessing,
                                              verbose=verbose - 1)
-    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
-    masks_zarr[i, :, :, :] = final_masks
+    save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr)
+
+
+def save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr):
+    if all_bounding_boxes is None:
+        masks_zarr[i, :, :, :] = final_masks
+    else:
+        bbox = all_bounding_boxes[i_volume]
+        masks_zarr[i, :, bbox[0]:bbox[2], bbox[1]:bbox[3]] = final_masks
 
 
 def _get_and_prepare_volume(i, num_slices, preprocessing_settings, video_path, read_lock=None):

@@ -59,7 +59,10 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
     return model
 
 
-def segment_with_stardist_2d(vol, model=None, zero_out_borders=False, verbose=0) -> np.array:
+def segment_with_stardist_2d(vol: np.ndarray,
+                             model=None,
+                             zero_out_borders=False,
+                             verbose=0) -> np.array:
     """
     Segments slices of a 3D numpy array (input) and outputs their masks.
     Best model (so far) is Lukas' self-trained 2D model
