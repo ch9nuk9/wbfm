@@ -96,7 +96,7 @@ def imsave_all_frames(cap, output_path, which_frames):
     return all_img_names
 
 
-def training_data_from_tracklet_annotations(video_fname,
+def OLD_training_data_from_tracklet_annotations(video_fname,
                                             df_fname,
                                             which_frames,
                                             which_z,

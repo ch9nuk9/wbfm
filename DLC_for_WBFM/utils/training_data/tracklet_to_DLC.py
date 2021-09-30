@@ -106,7 +106,7 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
     return new_df
 
 
-def save_training_data_as_dlc_format(this_config, DEBUG=False):
+def save_training_data_as_dlc_format(tracking_config: config_file_with_project_context, DEBUG=False):
     """
     Takes my training data from my tracklet format and saves as a DLC dataframe
 
@@ -124,7 +124,8 @@ def save_training_data_as_dlc_format(this_config, DEBUG=False):
     df = pd.read_pickle(fname)
 
     # Get the frames chosen as training data, or recalculate
-    which_frames = list(get_or_recalculate_which_frames(DEBUG, df, this_config))
+    num_frames = len(df)
+    which_frames = list(get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_config))
 
     # Build a sub-df with only the relevant neurons; all slices
     # Todo: connect up to actually tracked z slices?
@@ -327,6 +328,19 @@ def build_subset_df_from_3dDLC(dlc3d_dlc: pd.DataFrame,
 
 def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
                                     tracking_config: config_file_with_project_context):
+    """
+
+    Parameters
+    ----------
+    DEBUG
+    df - custom tracklet dataframe
+    num_frames - total frames that are tracked via tracklets
+    tracking_config - config file for step 3, dlc tracking
+
+    Returns
+    -------
+
+    """
     # which_frames = this_config['track_cfg']['training_data_3d']['which_frames']
     which_frames = tracking_config.config['training_data_3d'].get('which_frames', None)
 
