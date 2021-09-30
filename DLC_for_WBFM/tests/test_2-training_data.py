@@ -2,7 +2,7 @@ import importlib
 import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
-from global_vars_for_tests import project_path
+from .global_vars_for_tests import project_path
 import pytest
 
 
