@@ -288,7 +288,7 @@ def build_subset_df_from_tracklets(clust_df,
     try:
         f2 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_prob_old'])
         out_df['all_prob'] = out_df.apply(f2, axis=1)
-    except IndexError:
+    except (IndexError, KeyError):
         # Sometimes the probability was not saved at all
         pass
 
