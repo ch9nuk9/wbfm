@@ -20,7 +20,7 @@ def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
     """
 
     def make_window(start_frame):
-        return list(range(start_frame, start_frame + num_frames_needed + 1))
+        return list(range(start_frame, start_frame + num_frames_needed))
 
     x = list(range(num_frames - num_frames_needed))
     y = np.zeros_like(x)
