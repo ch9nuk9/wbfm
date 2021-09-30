@@ -2,6 +2,8 @@ import threading
 from multiprocessing import Manager
 
 import stardist.models
+from DLC_for_WBFM.utils.preprocessing.bounding_boxes import bbox2ind
+
 import segmentation.util.utils_postprocessing as post
 import numpy as np
 from tqdm import tqdm
@@ -39,7 +41,7 @@ def segment_video_using_config_3d(segment_cfg: config_file_with_project_context,
 
     """
 
-    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
+    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _, all_bounding_boxes = _unpack_config_file(
         segment_cfg, project_cfg, DEBUG)
 
     # Open the file
@@ -153,7 +155,14 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     verbose = project_cfg.config['verbose']
     stardist_model_name = segment_cfg.config['segmentation_params']['stardist_model_name']
     zero_out_borders = segment_cfg.config['segmentation_params']['zero_out_borders']
-    return frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders
+    # Preprocessing information
+    bbox_fname = segment_cfg.config.get('bbox_fname', None)
+    if bbox_fname is not None:
+        with open(bbox_fname, 'rb') as f:
+            all_bounding_boxes = pickle.load(f)
+    else:
+        all_bounding_boxes = None
+    return frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes
 
 
 ##
@@ -169,11 +178,9 @@ def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
 
     See segment2d.py for parameter documentation
     """
-    
 
-    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders = _unpack_config_file(
+    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
         segment_cfg, project_cfg, DEBUG)
-
 
     # Open the file
     if not video_path.endswith('.zarr'):
@@ -188,11 +195,13 @@ def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
         print(opt_postprocessing)
     masks_zarr = _do_first_volume2d(frame_list, mask_fname, num_frames, num_slices,
                                     sd_model, verbose, video_dat, zero_out_borders,
+                                    all_bounding_boxes,
                                     continue_from_frame, opt_postprocessing)
 
     # Main function
     segmentation_options = {'masks_zarr': masks_zarr, 'opt_postprocessing': opt_postprocessing,
-                            'sd_model': sd_model, 'verbose': verbose, 'zero_out_borders': zero_out_borders}
+                            'sd_model': sd_model, 'verbose': verbose, 'zero_out_borders': zero_out_borders,
+                            'all_bounding_boxes': all_bounding_boxes}
 
     # Will always be at least continuing after the first frame
     if continue_from_frame is None:
@@ -247,6 +256,7 @@ def _segment_full_video_2d(segment_cfg: config_file_with_project_context,
 def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_slices: int,
                        sd_model: stardist.models.StarDist3D, verbose: int, video_dat: zarr.Array,
                        zero_out_borders: bool,
+                       all_bounding_boxes: list = None,
                        continue_from_frame: int = None, opt_postprocessing: dict = None) -> zarr.Array:
     # Do first loop to initialize the zarr data
     if continue_from_frame is None:
@@ -257,7 +267,8 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_s
         # Old file MUST exist in this case
         mode = 'r+'
     i_volume = frame_list[i]
-    volume = video_dat[i_volume, ...]
+    volume = get_single_volume(all_bounding_boxes, i_volume, video_dat)
+
     final_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     _, x_sz, y_sz = final_masks.shape
     masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
@@ -268,6 +279,15 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int, num_s
     # Add masks to zarr file; automatically saves
     masks_zarr[i, :, :, :] = final_masks
     return masks_zarr
+
+
+def get_single_volume(all_bounding_boxes, i_volume, video_dat):
+    if all_bounding_boxes is None:
+        volume = video_dat[i_volume, ...]
+    else:
+        bbox = all_bounding_boxes[i_volume]
+        volume = video_dat[i_volume, :, bbox[0]:bbox[2], bbox[1]:bbox[3]]
+    return volume
 
 
 def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int, num_slices: int,
@@ -319,8 +339,9 @@ def segment_and_save3d(i, i_volume, masks_zarr,
 
 def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
                        zero_out_borders,
+                       all_bounding_boxes,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
-    volume = video_dat[i_volume, ...]
+    volume = get_single_volume(all_bounding_boxes, i_volume, video_dat)
     if keras_lock is None:
         segmented_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     else:
