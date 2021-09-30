@@ -21,7 +21,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python
+  - python=3.7
   - pip
   - jupyter
   - nb_conda
