@@ -261,7 +261,9 @@ def training_data_from_3dDLC_annotations(video_fname,
         return None, None
 
     # TODO: Get which frames directly from dataframe?
-    # which_frames = list(dlc3d_df.index)
+    if len(which_frames) !=  len(list(dlc3d_df.index)):
+        raise AnalysisOutOfOrderError(f"Dataframe should already be a subset in time: {df_fname}")
+    which_frames = list(dlc3d_df.index)
     # which_frames = list(subset_df.index)
 
     # Save the individual png files
