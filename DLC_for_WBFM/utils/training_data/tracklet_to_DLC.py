@@ -85,7 +85,10 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
         if len(which_frames) < min_length:
             continue
         bodypart = f'neuron{ind}'
-        confidence = row['all_prob']
+        try:
+            confidence = row['all_prob']
+        except KeyError:
+            confidence = []
         zxy = row['all_xyz']
         if len(confidence) == 0:
             # Then I didn't save confidences, so just set to 1
