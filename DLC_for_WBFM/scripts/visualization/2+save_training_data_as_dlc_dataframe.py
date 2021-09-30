@@ -40,5 +40,5 @@ def save_training_data(_config, _run):
     # this_config['dataset_params'] = _config['project_cfg'].config['dataset_params'].copy()
 
     with safe_cd(_config['project_dir']):
-        save_training_data_as_dlc_format(_config['tracking_config'],
+        save_training_data_as_dlc_format(_config['tracking_cfg'],
                                          _config['training_cfg'], DEBUG=DEBUG)
