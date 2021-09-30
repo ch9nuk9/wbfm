@@ -161,10 +161,14 @@ def _get_and_check_avi_filename(all_center_slices: List[int],
 
 def _define_project_options(config: dict, df: pd.DataFrame, scorer: str, task_name: str) -> Tuple[dict, dict, dict]:
     # Get dlc project and naming options
+    if os.name == 'posix':
+        copy_videos = False
+    else:
+        copy_videos = True
     dlc_opt = {'task_name': task_name,
                'experimenter': scorer,
                'working_directory': '3-tracking',
-               'copy_videos': True}
+               'copy_videos': copy_videos}
     # Get a few frames as training data
     png_opt = {'df_fname': df, 'total_num_frames': config['dataset_params']['num_frames'], 'coord_names': ['x', 'y'],
                'which_frames': config['training_data_3d']['which_frames'],
