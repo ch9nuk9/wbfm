@@ -39,11 +39,11 @@ def partial_track_video_using_config(project_config: modular_project_config,
     save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, training_config)
 
 
-def _postprocess_frame_matches(all_frame_dict, all_frame_pairs):
+def _postprocess_frame_matches(all_frame_dict, all_frame_pairs, verbose=0):
     # Also updates the matches of the object
     all_matches = {k: pair.calc_final_matches_using_bipartite_matching() for k, pair in all_frame_pairs.items()}
     all_xyz = {k: f.neuron_locs for k, f in all_frame_dict.items()}
-    df = build_tracklets_dfs(all_matches, all_xyz)
+    df = build_tracklets_dfs(all_matches, all_xyz, verbose=verbose)
     return df
 
 
@@ -62,8 +62,9 @@ def save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, trai
         out_fname = Path(out_fname).with_suffix(".csv")
         training_df.to_csv(out_fname)
 
-        out_fname = Path(out_fname).with_suffix(".xlxs")
-        training_df.to_excel(out_fname)
+        # Tracklets are generally too large to save in excel...
+        # out_fname = Path(out_fname).with_suffix(".xlxs")
+        # training_df.to_excel(out_fname)
 
 
 def _unpack_config_partial_tracking(DEBUG, project_config, training_config):
