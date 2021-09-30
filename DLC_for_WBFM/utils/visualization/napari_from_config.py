@@ -11,7 +11,7 @@ def napari_of_training_data(cfg: modular_project_config):
     # TODO: read from config file, not project directory
     training_dat_fname = cfg.config['preprocessed_red']
     training_seg_fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
-    with safe_cd(project_dir):
+    with safe_cd(cfg.project_dir):
         z_dat = zarr.open_array(training_dat_fname)
         z_seg = zarr.open_array(training_seg_fname)
 

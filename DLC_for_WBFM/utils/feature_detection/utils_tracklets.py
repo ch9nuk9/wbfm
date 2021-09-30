@@ -500,6 +500,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
         slice_ind = [s + slice_offset for s in slice_ind]
         # TODO: probability here means matches, not neuron detection... change?
         all_prob.append(0)  # Make the probability match the zxy
+        all_prob = np.expand_dims(np.array(all_prob), axis=-1)
         if verbose >= 2:
             print(f"Ended tracklet with length {len(slice_ind)}")
         df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_xyz],

@@ -251,12 +251,12 @@ class Ui_MainWindow(object):
         self.tracking_cfg = cfg.get_tracking_config()
         self.traces_cfg = cfg.get_traces_config()
 
-        fname = cfg.get('preprocessed_red', None)
+        fname = cfg.config.get('preprocessed_red', None)
         if fname is not None:
             self.preprocessed_red = zarr.open(fname)
         else:
             self.preprocessed_red = None
-        fname = cfg.get('preprocessed_green', None)
+        fname = cfg.config.get('preprocessed_green', None)
         if fname is not None:
             self.preprocessed_green = zarr.open(fname)
         else:
