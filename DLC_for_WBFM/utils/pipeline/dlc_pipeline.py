@@ -193,6 +193,7 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
     png_opt['dlc_config_fname'] = this_dlc_config
     png_opt['video_fname'] = this_avi_fname
     print(f"Extracting annotations with settings: {png_opt}")
+    # TODO: Doesn't use which_frames as a parameter
     ann_fname = training_data_from_3dDLC_annotations(**png_opt)[1]
     if ann_fname is not None:
         # Synchronize the dlc_config with the annotations

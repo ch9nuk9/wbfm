@@ -261,7 +261,8 @@ def training_data_from_3dDLC_annotations(video_fname,
         return None, None
 
     # Get which frames directly from dataframe
-    which_frames = list(dlc3d_df.index)
+    # which_frames = list(dlc3d_df.index)
+    which_frames = list(subset_df.index)
 
     # Save the individual png files
     png_opt = {'dlc_config': dlc_config_fname,
