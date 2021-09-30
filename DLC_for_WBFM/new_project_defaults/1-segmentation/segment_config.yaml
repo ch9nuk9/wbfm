@@ -15,7 +15,7 @@ segmentation_params:
 
 # Postprocessing
 postprocessing_params:
-  upper_length_threshold: 12
+  upper_length_threshold: 10
   lower_length_threshold: 3
   to_remove_border: false
   border_width_to_remove: 0

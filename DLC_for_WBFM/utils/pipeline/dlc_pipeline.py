@@ -162,7 +162,8 @@ def _get_and_check_avi_filename(all_center_slices: List[int],
 def _define_project_options(config: dict, df: pd.DataFrame, scorer: str, task_name: str) -> Tuple[dict, dict, dict]:
     # Get dlc project and naming options
     if os.name == 'posix':
-        copy_videos = False
+        # Doesn't work on cluster...
+        copy_videos = True
     else:
         copy_videos = True
     dlc_opt = {'task_name': task_name,
