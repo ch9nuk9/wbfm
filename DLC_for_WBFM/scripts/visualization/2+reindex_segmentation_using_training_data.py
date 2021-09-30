@@ -26,7 +26,7 @@ def cfg(project_path):
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()
-    track_cfg = cfg.get_tracking_config()
+    tracking_cfg = cfg.get_tracking_config()
 
 
 @ex.automain
@@ -34,8 +34,11 @@ def make_dlc_labeled_videos(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    this_config = _config.copy()
-    this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
 
-    with safe_cd(_config['project_dir']):
-        reindex_segmentation_only_training_data(this_config, DEBUG=DEBUG)
+    # For manual correction and visualization
+    reindex_segmentation_only_training_data(
+        _config['cfg'],
+        _config['segment_cfg'],
+        _config['tracking_cfg'],
+        DEBUG = DEBUG
+    )

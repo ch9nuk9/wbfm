@@ -10,10 +10,16 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 def napari_of_training_data(cfg: modular_project_config):
     # TODO: read from config file, not project directory
     training_dat_fname = cfg.config['preprocessed_red']
-    training_seg_fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
-    with safe_cd(cfg.project_dir):
-        z_dat = zarr.open_array(training_dat_fname)
-        z_seg = zarr.open_array(training_seg_fname)
+    training_seg_fname = os.path.join(cfg.project_dir, '2-training_data', 'reindexed_masks.zarr')
+    z_dat = zarr.open_array(training_dat_fname)
+    z_seg = zarr.open_array(training_seg_fname)
+
+    # Training data doesn't usually start at i=0, so align
+    track_cfg = cfg.get_tracking_config()
+    num_frames = track_cfg.config['training_data_3d']['num_training_frames']
+    i_seg_start = track_cfg.config['training_data_3d']['which_frames'][0]
+    i_seg_end = i_seg_start + num_frames
+    z_dat = z_dat[i_seg_start:i_seg_end, ...]
 
     viewer = napari.view_labels(z_seg, ndisplay=3)
     viewer.add_image(z_dat)
