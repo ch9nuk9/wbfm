@@ -106,7 +106,8 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
     return new_df
 
 
-def save_training_data_as_dlc_format(tracking_config: config_file_with_project_context, DEBUG=False):
+def save_training_data_as_dlc_format(tracking_config: config_file_with_project_context,
+                                     training_config: config_file_with_project_context, DEBUG=False):
     """
     Takes my training data from my tracklet format and saves as a DLC dataframe
 
@@ -137,6 +138,9 @@ def save_training_data_as_dlc_format(tracking_config: config_file_with_project_c
 
     out_fname = os.path.join("2-training_data", "training_data_tracks.h5")
     training_df.to_hdf(out_fname, 'df_with_missing')
+
+    training_config.config['df_raw_3d_tracks'] = out_fname
+    training_config.update_on_disk()
 
     out_fname = Path(out_fname).with_suffix(".csv")
     training_df.to_csv(out_fname)
