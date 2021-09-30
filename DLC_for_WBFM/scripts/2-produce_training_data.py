@@ -10,7 +10,7 @@ import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-
+from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
 
