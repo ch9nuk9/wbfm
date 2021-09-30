@@ -351,6 +351,7 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
                 this_mask = slice == int(neuron)
 
                 # get the average brightness for that mask
+                # TODO: integrate instead of average
                 current_brightness = int(np.nanmean(original_array[i_slice, this_mask]))
 
                 # extend the brightness dict
@@ -373,7 +374,7 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
     return brightness_dict, brightness_planes
 
 
-def calc_split_point_via_brightnesses(brightnesses, plots=0, verbose=0) -> int:
+def calc_split_point_via_brightnesses(brightnesses, min_separation, plots=0, verbose=0) -> int:
     """
     calculates the means of 2 gaussians underlying the neuron brightness distributions.
     It tries to match exactly 2 gaussians onto the brightness distribution of a tentative neuron.
@@ -382,6 +383,8 @@ def calc_split_point_via_brightnesses(brightnesses, plots=0, verbose=0) -> int:
     ----------
     brightnesses : list
         List containing average brightness values of a tentative neuron
+    min_separation : int
+        Minimum separation between the peaks for them to count as "real"
     plots :
         flag for plotting
     verbose : int
@@ -430,15 +433,39 @@ def calc_split_point_via_brightnesses(brightnesses, plots=0, verbose=0) -> int:
 
     peaks_of_gaussians = [round(coeff[1]), round(coeff[4])]
 
+    peaks_of_gaussians = sanity_checks_on_peaks(brightnesses, peaks_of_gaussians, verbose, y_data, min_separation)
+
+    split_point = calc_split_point_from_gaussians(peaks_of_gaussians, y_data)
+
+    if plots >= 1:
+        # For debugging
+        g1, g2 = _plot_double_gaussian(coeff, gauss2, p0, peaks_of_gaussians, x_data, y_data)
+
+        return split_point, peaks_of_gaussians, g1, g2
+
+    return split_point
+
+
+def sanity_checks_on_peaks(brightnesses, peaks_of_gaussians, verbose, y_data, min_separation):
     if any([x < 0 or x > len(y_data) for x in peaks_of_gaussians]):
+        # Positions outside the neuron
         if verbose >= 1:
             print(f'Error in brightness: Means = {peaks_of_gaussians} length of brightness list = {len(brightnesses)}')
             print("Impossible location; returning None")
         return None
+    elif np.abs(peaks_of_gaussians[1] - peaks_of_gaussians[0]) < min_separation:
+        if verbose >= 1:
+            print(f'Peaks too close, aborting: Means = {peaks_of_gaussians}')
+        return None
+    else:
+        return peaks_of_gaussians
 
-    # Get the split point
+
+def calc_split_point_from_gaussians(peaks_of_gaussians, y_data):
+    if peaks_of_gaussians is None:
+        return None
     # Plan a: find the peak between the gaussian blobs
-    inter_peak_brightnesses = np.array(y_data[peaks_of_gaussians[0]+1:peaks_of_gaussians[1]])
+    inter_peak_brightnesses = np.array(y_data[peaks_of_gaussians[0] + 1:peaks_of_gaussians[1]])
     split_point, _ = find_peaks(-inter_peak_brightnesses)
     if len(split_point) > 0:
         split_point = int(split_point[0])
@@ -446,34 +473,29 @@ def calc_split_point_via_brightnesses(brightnesses, plots=0, verbose=0) -> int:
     else:
         # Plan b: Just take the average
         split_point = int(np.mean(peaks_of_gaussians))
-
-    if plots >= 1:
-        # plot each gaussian separately
-        pg1 = np.zeros_like(p0)
-        pg1[0:3] = coeff[0:3]
-        pg2 = np.zeros_like(p0)
-        pg2[0:3] = coeff[3:]
-
-        g1 = gauss2(x_data, *pg1)
-        g2 = gauss2(x_data, *pg2)
-        plt.figure()
-        plt.plot(x_data, y_data, label='Data')
-        plt.plot(x_data, g1, label='Fit1')
-        plt.plot(x_data, g2, label='Fit2')
-
-        plt.scatter(peaks_of_gaussians, y_data[peaks_of_gaussians], c='red')
-
-        plt.title('brightness dist & underlying dists')
-        plt.ylabel('brightness')
-        plt.xlabel('slice')
-        plt.legend(loc='upper right')
-
-        plt.show()
-        # plt.savefig(r'.\brightnesses_gaussian_fit.png')
-
-        return split_point, peaks_of_gaussians, g1, g2
-
     return split_point
+
+
+def _plot_double_gaussian(coeff, gauss2, p0, peaks_of_gaussians, x_data, y_data):
+    # plot each gaussian separately
+    pg1 = np.zeros_like(p0)
+    pg1[0:3] = coeff[0:3]
+    pg2 = np.zeros_like(p0)
+    pg2[0:3] = coeff[3:]
+    g1 = gauss2(x_data, *pg1)
+    g2 = gauss2(x_data, *pg2)
+    plt.figure()
+    plt.plot(x_data, y_data, label='Data')
+    plt.plot(x_data, g1, label='Fit1')
+    plt.plot(x_data, g2, label='Fit2')
+    plt.scatter(peaks_of_gaussians, y_data[peaks_of_gaussians], c='red')
+    plt.title('brightness dist & underlying dists')
+    plt.ylabel('brightness')
+    plt.xlabel('slice')
+    plt.legend(loc='upper right')
+    plt.show()
+    # plt.savefig(r'.\brightnesses_gaussian_fit.png')
+    return g1, g2
 
 
 def split_long_neurons(mask_array,
@@ -482,6 +504,7 @@ def split_long_neurons(mask_array,
                        global_current_neuron,
                        maximum_length,
                        neuron_z_planes: dict,
+                       min_separation: int,
                        verbose=0):
     """
     Splits neuron, which are too long (to our understanding) into 2 parts. The split-point is the midpoint between
@@ -540,7 +563,7 @@ def split_long_neurons(mask_array,
         if neuron_len > maximum_length:
 
             try:
-                x_split_local_coord = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id], verbose - 1)
+                x_split_local_coord = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id], min_separation, verbose=verbose - 1)
             except (ValueError, TypeError):
                 if verbose >= 1:
                     print(f'! ValueError while splitting neuron {neuron_id}. Could not fit 2 Gaussians! Will continue.')
