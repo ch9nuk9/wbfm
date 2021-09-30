@@ -192,11 +192,13 @@ def _initialize_project_from_btf(all_avi_fnames, center, dlc_opt, i, net_opt, pn
     png_opt['which_z'] = center
     png_opt['dlc_config_fname'] = this_dlc_config
     png_opt['video_fname'] = this_avi_fname
+    print(f"Extracting annotations with settings: {png_opt}")
     ann_fname = training_data_from_3dDLC_annotations(**png_opt)[1]
     if ann_fname is not None:
         # Synchronize the dlc_config with the annotations
         csv_annotations2config_names(this_dlc_config, ann_fname, num_dims=2, to_add_skeleton=True)
         # Format the training data
+        print(f"Creating training data with settings: {net_opt}")
         deeplabcut.create_training_dataset(this_dlc_config, **net_opt)
         update_pose_config(this_dlc_config, tracking_config)
         # Save to list
