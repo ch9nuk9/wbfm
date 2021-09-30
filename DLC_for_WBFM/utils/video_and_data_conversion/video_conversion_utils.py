@@ -134,7 +134,7 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
             nz, nt = mdat['SizeZ'], mdat['SizeT']
         else:
             # Just read it from the shape
-            if img_format is "TZXY":
+            if img_format == "TZXY":
                 nt, nz, nx, ny = vid.series[0].shape
             else:
                 raise Exception
