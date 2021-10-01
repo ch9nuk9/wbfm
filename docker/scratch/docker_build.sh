@@ -8,7 +8,7 @@ echo "Found ssh keys: $(ssh-add -L)"
 echo "$(ssh -T git@github.com)"
 
 # Main command
-sudo DOCKER_BUILDKIT=1 docker build--ssh default="${SSH_AUTH_SOCK}" .
+sudo DOCKER_BUILDKIT=1 docker build --progress=plain --ssh default="${SSH_AUTH_SOCK}" .
 
 # Clean up
 eval "$(ssh-agent -k)"

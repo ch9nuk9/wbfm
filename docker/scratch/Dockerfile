@@ -29,10 +29,10 @@ RUN --mount=type=ssh echo "$(ssh -T git@github.com)"
 
 # clone our private repositories
 RUN --mount=type=ssh git clone git@github.com:Zimmer-lab/dlc_for_wbfm.git dlc_for_wbfm
-RUN pip install --no-cache-dir --upgrade ./dlc_for_wbfm/setup.py
+RUN pip install --no-cache-dir --upgrade ./dlc_for_wbfm
 
-#RUN --mount=type=ssh git clone git@github.com:Zimmer-lab/segmentation.git segmentation
-#RUN pip install --no-cache-dir --upgrade /segmentation/setup.py
+RUN --mount=type=ssh git clone git@github.com:Zimmer-lab/segmentation.git segmentation
+RUN pip install --no-cache-dir --upgrade ./segmentation
 
 # Direct pip installation gives permission errors...
 #RUN --mount=type=ssh pip install git+ssh://git@github.com/Zimmer-lab/dlc_for_wbfm.git
