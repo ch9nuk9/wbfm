@@ -8,6 +8,7 @@ from sacred import Experiment
 from sacred import SETTINGS
 # main function
 from sacred.observers import TinyDbObserver
+from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import train_all_dlc_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
@@ -21,14 +22,16 @@ ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
-def cfg(project_path):
+def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = modular_project_config(project_path)
 
     tracking_cfg = cfg.get_tracking_config()
 
-    log_dir = cfg.get_log_dir()
-    ex.observers.append(TinyDbObserver(log_dir))
+    if not DEBUG:
+        using_monkeypatch
+        log_dir = cfg.get_log_dir()
+        ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain
