@@ -10,6 +10,7 @@ import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
@@ -64,3 +65,7 @@ def produce_training_data(_config, _run):
         _config['tracking_cfg'],
         DEBUG = DEBUG
     )
+
+    # For later analysis, i.e. don't use the raw dataframes directly
+    save_training_data_as_dlc_format(_config['tracking_cfg'],
+                                     _config['train_cfg'], DEBUG=DEBUG)
