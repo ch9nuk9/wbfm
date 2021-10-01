@@ -1,0 +1,12 @@
+sacred
+zarr
+ruamel.yaml
+easydict
+tinydb==3.15.2
+tinydb-serialization
+hashfs
+pytest
+deeplabcut>=2.2.0.2
+numpy==1.19.5
+decorator==4.4.2
+tensorflow==2.5.0
