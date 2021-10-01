@@ -11,7 +11,8 @@ from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrde
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
     build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC
 from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
-
+from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project_context
+from DLC_for_WBFM.utils.pipeline.paths_to_external_resources import get_pretrained_network_path
 
 ##
 ## Functions for building DLC projects using config class
@@ -339,9 +340,9 @@ def update_pose_config(dlc_config_fname,
     # pose_config['pairwise_predict'] = False  # Broken?
 
     # Reuse initial weights, and decrease the training time
-    if tracking_config.get('use_pretrained_dlc', False):
+    if tracking_config.config.get('use_pretrained_dlc', False):
         num_neurons = len(cfg['bodyparts'])
-        network_path = get_pretrained_network(num_neurons)
+        network_path = get_pretrained_network_path(num_neurons)
 
         if Path(network_path + ".meta").exists():
             print(f"Using pretrained network at {network_path}")
@@ -387,6 +388,7 @@ def update_all_pose_configs(tracking_config: config_file_with_project_context,
     for dlc_config_fname in all_dlc_configs:
 
         if updates is None:
+            # Use the defaults
             update_pose_config(dlc_config_fname, tracking_config)
         else:
             cfg = auxiliaryfunctions.read_config(dlc_config_fname)
