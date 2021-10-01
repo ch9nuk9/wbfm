@@ -28,18 +28,16 @@ RUN --mount=type=ssh echo "Using ssh keys: $(ssh-add -L)"
 RUN --mount=type=ssh echo "$(ssh -T git@github.com)"
 
 # clone our private repositories
-RUN --mount=type=ssh git clone git@github.com:Zimmer-lab/dlc_for_wbfm.git dlc_for_wbfm
-RUN pip install --no-cache-dir --upgrade ./dlc_for_wbfm
-
 RUN --mount=type=ssh git clone git@github.com:Zimmer-lab/segmentation.git segmentation
 RUN pip install --no-cache-dir --upgrade ./segmentation
+
+RUN --mount=type=ssh git clone git@github.com:Zimmer-lab/dlc_for_wbfm.git dlc_for_wbfm
+RUN pip install --no-cache-dir --upgrade ./dlc_for_wbfm
 
 # Direct pip installation gives permission errors...
 #RUN --mount=type=ssh pip install git+ssh://git@github.com/Zimmer-lab/dlc_for_wbfm.git
 #RUN --mount=type=ssh python3 -m pip install git+ssh://github.com/Zimmer-lab/segmentation.git
 
 # Run tests of the installation
-RUN ls ./dlc_for_wbfm/DLC_for_WBFM/tests
+#RUN ls ./dlc_for_wbfm/DLC_for_WBFM/tests
 RUN python3 -m pytest ./dlc_for_wbfm/DLC_for_WBFM/tests/test_0-installation.py
-
-

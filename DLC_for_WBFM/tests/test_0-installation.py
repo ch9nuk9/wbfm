@@ -31,7 +31,7 @@ def test_core_package_imports():
     print("Successfully imported everything! Your core environment is properly setup")
 
 
-@pytest.mark.skipif(os.environ['CONDA_DEFAULT_ENV'] != "segmentation", reason="incorrect conda env")
+@pytest.mark.skipif(os.environ.get('CONDA_DEFAULT_ENV', '') != "segmentation", reason="incorrect conda env")
 def test_segmentation_package_imports():
 
     print("import segmentation")
@@ -40,7 +40,7 @@ def test_segmentation_package_imports():
     print("Successfully imported everything! Your segmentation environment is properly setup")
 
 
-@pytest.mark.skipif(os.environ['CONDA_DEFAULT_ENV'] != "wbfm", reason="incorrect conda env")
+@pytest.mark.skipif(os.environ.get('CONDA_DEFAULT_ENV', '') != "wbfm", reason="incorrect conda env")
 def test_wbfm_package_imports():
     print("import deeplabcut")
     import deeplabcut
