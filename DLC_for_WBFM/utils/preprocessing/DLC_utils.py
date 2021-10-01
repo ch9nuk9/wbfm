@@ -300,14 +300,16 @@ def training_data_from_3dDLC_annotations(video_fname,
 
 
 #
-def update_pose_config(dlc_config_fname, tracking_config, DEBUG=False):
+def update_pose_config(dlc_config_fname,
+                       tracking_config: config_file_with_project_context,
+                       DEBUG=False):
     # Copied from: https://github.com/DeepLabCut/DeepLabCut/blob/master/examples/testscript.py
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
 
     posefile = posefile_from_dlc_cfg(cfg)
 
     # Copy settings from my global config file
-    updates_from_project = tracking_config['pose_config_updates']
+    updates_from_project = tracking_config.config['pose_config_updates']
 
     pose_config = auxiliaryfunctions.read_plainconfig(posefile)
     # These are mostly from the official recommendations:
@@ -333,15 +335,13 @@ def update_pose_config(dlc_config_fname, tracking_config, DEBUG=False):
                                      [1e-4, 1e4],
                                      [5e-5, 3e4],
                                      [1e-5, 5e4]]
-        # pose_config['multi_step'] = [[0.005, 7500], [5e-4, 2e4], [1e-4, 5e4]]
     pose_config['pos_dist_thresh'] = updates_from_project.get('pos_dist_thresh', 9)  # We have very small objects
     # pose_config['pairwise_predict'] = False  # Broken?
 
     # Reuse initial weights, and decrease the training time
     if tracking_config.get('use_pretrained_dlc', False):
         num_neurons = len(cfg['bodyparts'])
-        pretrained_dir = os.path.join('Y:/', 'shared_projects', 'wbfm', 'dlc_pretrained')
-        network_path = os.path.join(pretrained_dir, f"{num_neurons}", "snapshot-100000")
+        network_path = get_pretrained_network(num_neurons)
 
         if Path(network_path + ".meta").exists():
             print(f"Using pretrained network at {network_path}")
@@ -364,7 +364,8 @@ def update_pose_config(dlc_config_fname, tracking_config, DEBUG=False):
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
 
 
-def update_all_pose_configs(tracking_config, updates=None):
+def update_all_pose_configs(tracking_config: config_file_with_project_context,
+                            updates: dict =None):
     """
 
     Updates all DLC pose config files in a project
@@ -381,7 +382,7 @@ def update_all_pose_configs(tracking_config, updates=None):
     See also: update_pose_config
     """
 
-    all_dlc_configs = tracking_config['dlc_projects']['all_configs']
+    all_dlc_configs = tracking_config.config['dlc_projects']['all_configs']
 
     for dlc_config_fname in all_dlc_configs:
 

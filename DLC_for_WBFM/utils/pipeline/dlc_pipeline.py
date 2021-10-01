@@ -277,7 +277,7 @@ def train_all_dlc_from_config(tracking_cfg: config_file_with_project_context) ->
     deeplabcut.train_network()
     """
     from tensorflow.errors import CancelledError
-    all_dlc_configs = tracking_cfg['dlc_projects']['all_configs']
+    all_dlc_configs = tracking_cfg.config['dlc_projects']['all_configs']
 
     print(f"Found {len(all_dlc_configs)} networks; beginning training")
     for dlc_config in all_dlc_configs:
