@@ -5,6 +5,7 @@ import deeplabcut
 import numpy as np
 import pandas as pd
 from deeplabcut.utils import auxiliaryfunctions
+from tqdm.auto import tqdm
 from skimage import io
 from skimage.util import img_as_ubyte
 from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrderError
@@ -385,7 +386,7 @@ def update_all_pose_configs(tracking_config: config_file_with_project_context,
 
     all_dlc_configs = tracking_config.config['dlc_projects']['all_configs']
 
-    for dlc_config_fname in all_dlc_configs:
+    for dlc_config_fname in tqdm(all_dlc_configs):
 
         if updates is None:
             # Use the defaults

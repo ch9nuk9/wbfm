@@ -20,14 +20,15 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None, DEBUG=False)
+ex.add_config(project_path=None, update_key=None, update_val=None, DEBUG=False)
 
 
 @ex.config
-def cfg(project_path, DEBUG):
+def cfg(project_path, update_key, update_val, DEBUG):
     cfg = modular_project_config(project_path)
 
     tracking_cfg = cfg.get_tracking_config()
+    updates = {update_key: update_val}
 
     if not DEBUG:
         using_monkeypatch()
@@ -39,4 +40,4 @@ def cfg(project_path, DEBUG):
 def update_all_pose_configs_in_project(_config, _run):
     sacred.commands.print_config(_run)
 
-    update_all_pose_configs(_config['tracking_cfg'])
+    update_all_pose_configs(_config['tracking_cfg'], updates=_config['updates'])
