@@ -15,4 +15,4 @@ echo "Running on config file: $dlc_config"
 log_folder="$(dirname "$dlc_config")"
 log_fname="${log_folder}/dlc_training.log"
 
-python $CMD --dlc_config "$dlc_config" >> "$log_fname"
+python $CMD --dlc_config "$dlc_config" > "$log_fname"
