@@ -9,10 +9,8 @@ for f in "${TARGET_DIR}"/*; do
     if [ -d "$f" ]; then
         dlc_config="${f}/config.yaml"
 
-        # Using srun to not overload the GPU memory
-        srun --job-name=dlc_$i --output=dlc_$i.out train_single_dlc_network.sbatch $dlc_config
+        # Using --wait to not overload the GPU memory
+        sbatch --wait --job-name=dlc_$i --output=dlc_$i.out train_single_dlc_network.sbatch $dlc_config
         i=$((i+1))
-
-        sleep 1
     fi
 done
