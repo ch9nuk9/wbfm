@@ -7,7 +7,7 @@ echo "Running on parent directory: $TARGET_DIR"
 i=0
 for f in $TARGET_DIR; do
     if [ -d "$f" ]; then
-        dlc_config="$f/config.yaml"
+        dlc_config="${f}/config.yaml"
 
         sbatch --job-name=dlc_$i --output=dlc_$i.out train_single_dlc_network.sbatch $dlc_config
         i=$((i+1))
