@@ -38,6 +38,3 @@ RUN pip install --no-cache-dir --upgrade ./dlc_for_wbfm
 #RUN --mount=type=ssh pip install git+ssh://git@github.com/Zimmer-lab/dlc_for_wbfm.git
 #RUN --mount=type=ssh python3 -m pip install git+ssh://github.com/Zimmer-lab/segmentation.git
 
-# Run tests of the installation
-#RUN ls ./dlc_for_wbfm/DLC_for_WBFM/tests
-RUN python3 -m pytest ./dlc_for_wbfm/DLC_for_WBFM/tests/test_0-installation.py
