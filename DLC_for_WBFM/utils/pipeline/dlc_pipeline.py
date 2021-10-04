@@ -276,19 +276,23 @@ def train_all_dlc_from_config(tracking_cfg: config_file_with_project_context) ->
     Simple multi-network wrapper around:
     deeplabcut.train_network()
     """
-    from tensorflow.errors import CancelledError
     all_dlc_configs = tracking_cfg.config['dlc_projects']['all_configs']
 
     print(f"Found {len(all_dlc_configs)} networks; beginning training")
     for dlc_config in all_dlc_configs:
         # Check to see if already trained
-        try:
-            deeplabcut.evaluate_network(dlc_config)
-            print(f"Network for config {dlc_config} already trained; skipping")
-            continue
-        except FileNotFoundError:
-            # Not yet trained, so train it!
-            pass
+        train_single_dlc_network(dlc_config)
+
+
+def train_single_dlc_network(dlc_config):
+    from tensorflow.errors import CancelledError
+    try:
+        deeplabcut.evaluate_network(dlc_config)
+        print(f"Network for config {dlc_config} already trained; skipping")
+        need_to_train = False
+    except FileNotFoundError:
+        need_to_train = True
+    if need_to_train:
         try:
             deeplabcut.train_network(dlc_config)
         except CancelledError:
