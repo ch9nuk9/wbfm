@@ -8,7 +8,7 @@
 #SBATCH --time=12:00:00
 #SBATCH --partition=gpu
 #SBATCH --mem=16G
-#SBATCH --exclusive  # Tensorflow can easily run out of GPU memory if other jobs are running
+# # SBATCH --exclusive  # Tensorflow can easily run out of GPU memory if other jobs are running
 #SBATCH --gpu-bind=single:1
 # See: https://stackoverflow.com/questions/67091056/gpu-allocation-in-slurm-gres-vs-gpus-per-task-and-mpirun-vs-srun
 
