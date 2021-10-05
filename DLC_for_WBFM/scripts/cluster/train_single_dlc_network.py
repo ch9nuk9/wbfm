@@ -1,4 +1,6 @@
 import argparse
+import gc
+import tensorflow as tf
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import train_single_dlc_network
 import os
 # Might be necessary on tf 2.3.0 and the GPU on the cluster... see:
