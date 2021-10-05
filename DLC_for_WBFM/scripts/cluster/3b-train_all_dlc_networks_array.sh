@@ -25,7 +25,9 @@ pwd; hostname; date
 
 dir_array=($target_directory/*/)
 
-echo "Found sub folders $dir_array"
+for sub_dir in "${dir_array[@]}"; do
+  echo "Found sub folders $sub_dir"
+done
 
 # Set the number of runs that each SLURM task should do
 PER_TASK=${#dir_array[@]}/5
@@ -42,7 +44,7 @@ echo "This is task $SLURM_ARRAY_TASK_ID, which will do runs $START_NUM to $END_N
 # Run the loop of runs for this task.
 for (( run=$START_NUM; run<=$END_NUM; run++ )); do
   echo "This is SLURM task $SLURM_ARRAY_TASK_ID, run number $run"
-  dlc_config="${dir_array[run-1]}/config.yaml"
+  dlc_config="${dir_array[run-1]}config.yaml"
   full_command="$CMD --dlc_config dlc_config"
   echo "---------${dlc_config}----------"
   if [ "$is_dry_run" ]; then
