@@ -28,7 +28,7 @@ dir_array=($target_directory/*/)
 echo "Found sub folders $dir_array"
 
 # Set the number of runs that each SLURM task should do
-PER_TASK=${#dir_array/4}
+PER_TASK=${#dir_array[@]}/5
 
 # Calculate the starting and ending values for this task based
 # on the SLURM task and the number of runs per task.
