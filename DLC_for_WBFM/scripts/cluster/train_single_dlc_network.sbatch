@@ -7,6 +7,9 @@
 
 module load cudnn/7.6.5
 
+echo "Output of nvidia-smi:"
+eval "nvidia-smi"
+
 WBFM_DIR="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm"
 CMD="${WBFM_DIR}/DLC_for_WBFM/scripts/cluster/train_single_dlc_network.py"
 dlc_config=$1
