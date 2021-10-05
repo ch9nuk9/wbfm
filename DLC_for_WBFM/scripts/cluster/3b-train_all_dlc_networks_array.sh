@@ -31,6 +31,7 @@ done
 
 # Set the number of runs that each SLURM task should do
 PER_TASK=$(( ${#dir_array[@]} / 5 ))
+echo "Assigning $PER_TASK runs per task"
 
 # Calculate the starting and ending values for this task based
 # on the SLURM task and the number of runs per task.
