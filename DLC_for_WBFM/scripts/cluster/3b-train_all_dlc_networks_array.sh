@@ -23,6 +23,8 @@ done
 
 pwd; hostname; date
 
+module load cudnn/7.6.5
+
 dir_array=($target_directory/*/)
 
 for sub_dir in "${dir_array[@]}"; do
