@@ -30,7 +30,7 @@ for sub_dir in "${dir_array[@]}"; do
 done
 
 # Set the number of runs that each SLURM task should do
-PER_TASK=${#dir_array[@]}/5
+PER_TASK=$(( ${#dir_array[@]} / 5 ))
 
 # Calculate the starting and ending values for this task based
 # on the SLURM task and the number of runs per task.
