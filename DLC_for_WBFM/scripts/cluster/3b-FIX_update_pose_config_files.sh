@@ -7,7 +7,7 @@
 # First, reset all the paths to work for the cluster
 PROJECT="$1"
 INIT_WEIGHTS="/home/user/fieseler/.conda/envs/wbfm-cluster/lib/python3.8/site-packages/deeplabcut/pose_estimation_tensorflow/models/pretrained/resnet_v1_50.ckpt"
-CMD="/scratch/zimmer/Charles/dlc_for_wbfm/DLC_for_WBFM/scripts/alternate/3b-alternate-update_all_pose_configs.py"
+CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/alternate/3b-alternate-update_all_pose_configs.py"
 python $CMD with project_path=$PROJECT update_key=init_weights update_val=$INIT_WEIGHTS
 
 # Then, reset all the paths that can start from my pretrained networks
