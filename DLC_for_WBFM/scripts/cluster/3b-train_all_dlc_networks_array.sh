@@ -46,11 +46,11 @@ echo "This is task $SLURM_ARRAY_TASK_ID, which will do runs $START_NUM to $END_N
 for (( run=$START_NUM; run<=$END_NUM; run++ )); do
   echo "This is SLURM task $SLURM_ARRAY_TASK_ID, run number $run"
   dlc_config="${dir_array[run-1]}config.yaml"
-  full_command="$CMD --dlc_config $dlc_config"
   echo "---------${dlc_config}----------"
   if [ "$is_dry_run" ]; then
+    full_command="$CMD --dlc_config $dlc_config"
     echo "Dry run with command: $full_command"
   else
-    python "$full_command"
+    python $CMD --dlc_config "$dlc_config"
   fi
 done
