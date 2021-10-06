@@ -33,7 +33,7 @@ def cfg(project_path, DEBUG):
     tracking_cfg = cfg.get_tracking_config()
 
     if not DEBUG:
-        using_monkeypatch
+        using_monkeypatch()
         log_dir = cfg.get_log_dir()
         ex.observers.append(TinyDbObserver(log_dir))
 

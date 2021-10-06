@@ -57,16 +57,14 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
 
     print("Reindexing masks using matches...")
     # Saves the masks to disk
-    trace_and_seg_cfg = {'traces_cfg': traces_cfg, 'segment_cfg': segment_cfg, 'project_dir': project_cfg.project_dir}
-    # reindex_segmentation_using_config(trace_and_seg_cfg)
-    reindex_segmentation_using_config(traces_cfg, segment_cfg, project_cfg.project_dir)
+    reindex_segmentation_using_config(traces_cfg, segment_cfg, project_cfg)
 
     print("Extracting red and green traces using matches...")
     fname = traces_cfg.resolve_relative_path('reindexed_masks')
     with safe_cd(project_cfg.project_dir):
         reindexed_masks = zarr.open(fname)
 
-    # New: RENAME
+    # New: rename neurons to be same as segmentation indices
     new_neuron_names = [f"neuron{i + 1}" for i in range(len(old_dlc_names))]
     dlc_name_mapping = dict(zip(old_dlc_names, new_neuron_names))
 
@@ -93,23 +91,12 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
 
     all_green_dfs = [r[0] for r in results]
     all_red_dfs = [r[1] for r in results]
-    # for i_and_name in enumerate(tqdm(new_neuron_names)):
-    #     df_green_one_neuron, df_red_one_neuron = parallel_func(i_and_name)
-    #     all_green_dfs.append(df_green_one_neuron)
-    #     all_red_dfs.append(df_red_one_neuron)
 
     df_green = pd.concat(all_green_dfs, axis=1)
     df_red = pd.concat(all_red_dfs, axis=1)
 
-    # all_matches, all_neuron_names, green_dat, red_dat = get_traces_from_3d_tracks(DEBUG, dlc_tracks, green_video,
-    #                                                                               is_mirrored, mask_array, max_dist,
-    #                                                                               num_frames,
-    #                                                                               params_start_volume,
-    #                                                                               segmentation_metadata, z_to_xy_ratio)
-
     if DEBUG:
         print("Single pass-through successful")
-        # return
 
     _save_traces_as_hdf_and_update_configs(new_neuron_names, df_green, df_red, traces_cfg)
 
@@ -149,13 +136,10 @@ def _save_traces_as_hdf_and_update_configs(new_neuron_names: list,
     # csv doesn't work well when some entries are lists
     red_fname = Path('4-traces').joinpath('red_traces.h5')
     df_red.to_hdf(red_fname, "df_with_missing")
-    # red_fname2 = red_fname.with_suffix('.csv')
-    # red_dat.to_csv(red_fname2)
 
     green_fname = Path('4-traces').joinpath('green_traces.h5')
     df_green.to_hdf(green_fname, "df_with_missing")
-    # green_fname2 = green_fname.with_suffix('.csv')
-    # green_dat.to_csv(green_fname2)
+
     # Save the output filenames
     traces_cfg['traces']['green'] = str(green_fname)
     traces_cfg['traces']['red'] = str(red_fname)
