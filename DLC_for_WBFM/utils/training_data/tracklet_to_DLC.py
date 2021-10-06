@@ -140,6 +140,7 @@ def save_training_data_as_dlc_format(tracking_config: config_file_with_project_c
                                                            min_length=min_length_to_save, scorer=None)
 
     out_fname = os.path.join("2-training_data", "training_data_tracks.h5")
+    out_fname= training_config.resolve_relative_path(out_fname)
     training_df.to_hdf(out_fname, 'df_with_missing')
 
     training_config.config['df_raw_3d_tracks'] = out_fname
