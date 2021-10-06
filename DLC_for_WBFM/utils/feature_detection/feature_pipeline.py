@@ -499,7 +499,7 @@ def track_neurons_full_video(video_fname: str,
                              start_volume: int = 0,
                              num_frames: int = 10,
                              num_slices: int = 33,
-                             neuron_feature_radius: float = 5.0,
+                             z_depth_neuron_encoding: float = 5.0,
                              preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
                              use_affine_matching: bool = False,
                              add_affine_to_candidates: bool = False,
@@ -523,7 +523,7 @@ def track_neurons_full_video(video_fname: str,
     import_opt = {'num_slices': num_slices,
                   'alpha': 1.0,
                   'dtype': dtype}
-    ref_opt = {'z_depth': neuron_feature_radius}  # TODO: rename this parameter
+    ref_opt = {'z_depth': z_depth_neuron_encoding}
     vid_dat = zarr.open(video_fname)
 
     def _build_frame(frame_ind: int) -> ReferenceFrame:
@@ -539,26 +539,43 @@ def track_neurons_full_video(video_fname: str,
                                            external_detections=external_detections)
         return f
 
+
+    # Build all frames initially
+    end_volume = start_volume + num_frames
+    frame_range = range(start_volume, end_volume)
+
+    logging.info(f"Calculating Frame objects for frames: {start_volume}, {end_volume}")
+    with tqdm(total=len(frame_range)) as pbar:
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in frame_range}
+            for future in concurrent.futures.as_completed(futures):
+                i_frame = futures[future]
+                all_frame_dict[i_frame] = future.result()
+                pbar.update(1)
+    # Match
     if verbose >= 1:
         print("Building initial frame...")
-    frame0 = _build_frame(start_volume)
+    # frame0 = _build_frame(start_volume)
 
     all_frame_pairs = {}
-    all_frame_dict = {start_volume: frame0}
-    end_frame = start_volume + num_frames
-    frame_range = range(start_volume + 1, end_frame)
+    # all_frame_dict = {start_volume: frame0}
+    # end_frame = start_volume + num_frames
+    frame_range = range(start_volume + 1, end_volume)
     match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
                  'add_gp_to_candidates': add_gp_to_candidates}
-    logging.info(f"Calculating Frame objects for frames: {frame_range}")
+    logging.info(f"Calculating Frame pairs for frames:  {start_volume+1}, {end_volume}")
     for i_frame in tqdm(frame_range):
-        frame1 = _build_frame(i_frame)
+        # frame1 = _build_frame(i_frame)
+        key = (i_frame - 1, i_frame)
+        frame0, frame1 = all_frame_dict[key[0]], all_frame_dict[key[1]]
         this_pair = calc_FramePair_from_Frames(frame0, frame1, **match_opt)
 
-        key = (i_frame - 1, i_frame)
+        # key = (i_frame - 1, i_frame)
         all_frame_pairs[key] = this_pair
-        all_frame_dict[i_frame] = frame1
+        # all_frame_dict[i_frame] = frame1
 
-        frame0 = frame1
+        # frame0 = frame1
 
     return all_frame_pairs, all_frame_dict
 
