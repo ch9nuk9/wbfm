@@ -346,8 +346,12 @@ def make_3d_tracks_from_stack(track_cfg: config_file_with_project_context,
     fname = os.path.join(dest_folder, 'full_3d_tracks.csv')
     final_df.to_csv(fname)
 
-    fname = os.path.join(dest_folder, 'full_3d_tracks.xlxs')
-    final_df.to_excel(fname)
+    try:
+        fname = os.path.join(dest_folder, 'full_3d_tracks.xlxs')
+        final_df.to_excel(fname)
+    except ValueError:
+        # Probably
+        pass
 
     # Save only df_fname in yaml; don't overwrite other fields
     updates = dict(final_3d_tracks_df=df_fname)
