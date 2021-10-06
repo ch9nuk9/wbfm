@@ -179,7 +179,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
         # all_covering_time_points.append(covering_time_points)
         all_covering_ind.append(covering_ind)
 
-        if DEBUG and i > 1:
+        if DEBUG and i > 0:
             # Should do 2, so that the column concatenation is checked too
             break
 
@@ -199,6 +199,6 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
         combined_df.to_csv(df_fname)
 
         # Save only df_fname in yaml; don't overwrite other fields
-        updates = {'final_3d_tracks_df': df_fname}
+        updates = {'final_3d_tracks_df': str(df_fname)}
         track_config.config.update(updates)
         track_config.update_on_disk()
