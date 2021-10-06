@@ -46,7 +46,7 @@ def make_full_tracks(_config, _run):
     project_dir = _config['project_dir']
     DEBUG = _config['DEBUG']
 
-    with safe_cd('project_dir'):
+    with safe_cd(project_dir):
         make_3d_tracks_from_stack(track_cfg, DEBUG=DEBUG)
 
         # Necessary postprocessing step
