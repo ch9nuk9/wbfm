@@ -119,6 +119,8 @@ Output, in 2-training_data/raw:
 
 ### DeepLabCut
 
+Note: this step is being phased out
+
 #### Part 1/3
 
 Preparation:
@@ -148,6 +150,9 @@ Speed: LONG, but depends on network convergence and number of stacks; 1-2 days
 Output, in each DLC project folder:
 1. A trained network
 
+NOTE: can be run on the cluster; see scripts/cluster/3b-train_all_dlc_networks_array.sh.
+If using the cluster, the training time is reduced to ~12 hours
+
 #### Part 3/3
 
 Command:
@@ -155,11 +160,12 @@ Command:
 python scripts/3c-make_full_tracks.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
-Speed: Fast; <1 hour
+Speed: Fast if using GPU; <1 hour
 
 Output, in 3-tracking:
 1. full_3d_tracks.h5, a dataframe of the tracks combined into 3d from each 2d network
 
+NOTE: can be run on the cluster; see scripts/cluster/3c-make-full_tracks.sbatch
 
 ### Traces
 
@@ -170,7 +176,7 @@ Command:
 python scripts/4-make_full_traces.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
-Speed: Fast; <1 hour
+Speed: Medium; 1-3 hours
 
 Output, in 4-traces:
 1. all_matches.pickle, the matches between the DLC tracking and the original segmentation
@@ -184,5 +190,12 @@ I made a gui for this purpose, with everything in the gui/ folder. Read the READ
 
 Command:
 ```bash
-python gui/OLD_trace_explorer_gui.py PATH-TO-YOUR-PROJECT
+python gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
+```
+
+Visualization of other steps in the analysis is also possible, and they can be accessed via the progress gui:
+
+Command:
+```bash
+python gui/progress_gui.py --project_path PATH-TO-YOUR-PROJECT
 ```
