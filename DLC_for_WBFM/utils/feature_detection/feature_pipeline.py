@@ -504,6 +504,7 @@ def track_neurons_full_video(video_fname: str,
                              use_affine_matching: bool = False,
                              add_affine_to_candidates: bool = False,
                              add_gp_to_candidates: bool = False,
+                             min_confidence: float = 0.001,
                              external_detections: str = None,
                              verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
     """
@@ -539,7 +540,6 @@ def track_neurons_full_video(video_fname: str,
                                            external_detections=external_detections)
         return f
 
-
     # Build all frames initially
     end_volume = start_volume + num_frames
     frame_range = range(start_volume, end_volume)
@@ -563,7 +563,8 @@ def track_neurons_full_video(video_fname: str,
     # end_frame = start_volume + num_frames
     frame_range = range(start_volume + 1, end_volume)
     match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
-                 'add_gp_to_candidates': add_gp_to_candidates}
+                 'add_gp_to_candidates': add_gp_to_candidates,
+                 'min_confidence': min_confidence}
     logging.info(f"Calculating Frame pairs for frames:  {start_volume+1}, {end_volume}")
     for i_frame in tqdm(frame_range):
         # frame1 = _build_frame(i_frame)

@@ -108,6 +108,7 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
                                verbose: int = 1,
                                add_affine_to_candidates: bool = False,
                                add_gp_to_candidates: bool = False,
+                               min_confidence: float = 0.001,
                                DEBUG: bool = False) -> FramePair:
     """
     Similar to older function, but this doesn't assume the features are
@@ -138,7 +139,8 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
     frame_pair = FramePair(matches_with_conf, matches_with_conf,
                            frame0=frame0, frame1=frame1,
                            add_affine_to_candidates=add_affine_to_candidates,
-                           add_gp_to_candidates=add_gp_to_candidates)
+                           add_gp_to_candidates=add_gp_to_candidates,
+                           min_confidence=min_confidence)
     frame_pair.keypoint_matches = matches_with_conf
 
     # Add additional candidates, if used
