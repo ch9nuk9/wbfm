@@ -415,9 +415,11 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
     # Make everything a dictionary
     dict_of_match_dicts = {k: dict([m0[:2] for m0 in m]) for k, m in pairwise_matches_dict.items()}
-    has_probability = len(m[0]) == 3
-    if has_probability:
+    try:
         dict_of_prob_dicts = {k: {m0[0]:m0[2] for m0 in m} for k, m in pairwise_matches_dict.items()}
+        has_probability = True
+    except IndexError:
+        has_probability = False
 
     min_pair = min([k[0] for k in pairwise_matches_dict.keys()])
     max_pair = max([k[0] for k in pairwise_matches_dict.keys()])
