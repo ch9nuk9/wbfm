@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=dlc_array_%A-%a.out    # Standard output and error log
-#SBATCH --array=1-5                # Array range
+#SBATCH --array=1-6                # Array range
 #SBATCH --time=12:00:00
 #SBATCH --partition=gpu
 #SBATCH --mem=16G
@@ -44,8 +44,6 @@ echo "Assigning $PER_TASK runs per task"
 START_NUM=$(( ($SLURM_ARRAY_TASK_ID - 1) * $PER_TASK +1))
 END_NUM=$(( $SLURM_ARRAY_TASK_ID * $PER_TASK))
 CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/cluster/train_single_dlc_network.py"
-
-# Print the task and run range
 echo "This is task $SLURM_ARRAY_TASK_ID, which will do runs $START_NUM to $END_NUM"
 
 # Run the loop of runs for this task.

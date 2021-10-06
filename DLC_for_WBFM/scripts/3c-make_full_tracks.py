@@ -22,7 +22,7 @@ ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
-def cfg(project_path):
+def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = modular_project_config(project_path)
 
