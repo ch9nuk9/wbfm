@@ -158,7 +158,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
     with safe_cd(project_dir):
         # TODO: add the tracklet fname to the config file
         tracklet_fname = os.path.join('2-training_data', 'all_tracklets.h5')
-        dlc_fname = track_config['final_3d_tracks_df']
+        dlc_fname = track_config.config['final_3d_tracks_df']
 
         df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
