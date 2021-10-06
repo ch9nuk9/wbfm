@@ -10,6 +10,10 @@
 #SBATCH --mem=16G
 # # SBATCH --gpus-per-task=1
 
+pwd; hostname; date
+
+module load cudnn/7.6.5
+
 while getopts t:n: flag
 do
     case "${flag}" in
@@ -19,12 +23,10 @@ do
     esac
 done
 
-module load cudnn/7.6.5
-
-CMD="3c-make_full_tracks.sh"
+CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/3c-make_full_tracks.py"
 
 if [ "$is_dry_run" ]; then
-  echo "Dry run with command: $CMD $project_path"
+  echo "Dry run with command: $CMD with project_path=$project_path"
 else
-  sbatch $CMD "$project_path"
+  python $CMD with project_path="$project_path"
 fi
