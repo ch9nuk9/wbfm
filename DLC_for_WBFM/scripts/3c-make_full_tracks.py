@@ -14,6 +14,7 @@ from DLC_for_WBFM.utils.pipeline.dlc_pipeline import make_3d_tracks_from_stack
 from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
     combine_all_dlc_and_tracklet_coverings_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
@@ -45,8 +46,9 @@ def make_full_tracks(_config, _run):
     project_dir = _config['project_dir']
     DEBUG = _config['DEBUG']
 
-    make_3d_tracks_from_stack(track_cfg, DEBUG=DEBUG)
+    with safe_cd('project_dir'):
+        make_3d_tracks_from_stack(track_cfg, DEBUG=DEBUG)
 
-    # Necessary postprocessing step
-    combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, project_dir, DEBUG=DEBUG)
+        # Necessary postprocessing step
+        combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, project_dir, DEBUG=DEBUG)
 

@@ -395,6 +395,7 @@ def _process_duplicates_to_final_df(all_dfs: List[pd.DataFrame], verbose: bool =
 def _analyze_video_and_save_tracks(DEBUG: bool, all_dfs: List[pd.DataFrame], dlc_config: dict, i_neuron: int,
                                    neuron2z_dict: dict,
                                    use_filtered: bool = False, external_video_list: list = None) -> int:
+    # Works even if already analyzed; skips if empty
     dlc_cfg = deeplabcut.auxiliaryfunctions.read_config(dlc_config)
     if external_video_list[0] is None:
         video_list = list(dlc_cfg['video_sets'].keys())
@@ -402,7 +403,7 @@ def _analyze_video_and_save_tracks(DEBUG: bool, all_dfs: List[pd.DataFrame], dlc
     else:
         video_list = [str(Path(vid).resolve()) for vid in external_video_list]
         destfolder = str(Path("3-tracking").resolve())  # Force a local save
-    # Works even if already analyzed; skips if empty
+
     try:
         deeplabcut.analyze_videos(dlc_config, video_list, destfolder=destfolder)
     except IndexError:
