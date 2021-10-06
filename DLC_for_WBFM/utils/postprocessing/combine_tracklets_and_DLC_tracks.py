@@ -91,7 +91,7 @@ def combine_one_dlc_and_tracklet_covering(these_tracklet_ind, neuron_name, df_tr
     all_arrs = []
     for c in coords:
         this_column = np.nansum([new_df[name][c] for name in these_tracklet_names], axis=0)
-        # My trackler often does not track the very last frames
+        # My tracker often does not track the very last frames
         if len(this_column) < len(dlc_tracks):
             tmp = np.zeros(len(dlc_tracks) - len(this_column))
             tmp[:] = np.nan
@@ -191,17 +191,13 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
     df_fname = os.path.join('3-tracking', 'postprocessing', 'combined_3d_tracks.h5')
 
     with safe_cd(project_dir):
-        # Save only df_fname in yaml; don't overwrite other fields
-        updates = {'final_3d_tracks_df': df_fname}
-        track_config.config.update(updates)
-        track_config.update_on_disk()
-
-        # updates = track_config['final_3d_tracks']
-        # updates['df_fname'] = df_fname
-        # edit_config(track_config['self_path'], {'final_3d_tracks': updates})
-
         # Actually save
         combined_df.to_hdf(df_fname, key='df_with_missing')
 
         df_fname = Path(df_fname).with_suffix('.csv')
         combined_df.to_csv(df_fname)
+
+        # Save only df_fname in yaml; don't overwrite other fields
+        updates = {'final_3d_tracks_df': df_fname}
+        track_config.config.update(updates)
+        track_config.update_on_disk()
