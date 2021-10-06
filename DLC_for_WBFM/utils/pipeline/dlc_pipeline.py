@@ -310,7 +310,7 @@ def make_3d_tracks_from_stack(track_cfg: config_file_with_project_context,
     """
 
     all_dlc_configs = track_cfg.config['dlc_projects']['all_configs']
-    use_filtered = track_cfg.config['final_track'].get('use_filtered', False)
+    use_filtered = track_cfg.config['final_3d_tracks'].get('use_filtered', False)
 
     # Apply networks
     all_dfs = []
