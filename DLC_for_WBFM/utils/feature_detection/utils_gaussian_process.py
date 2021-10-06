@@ -53,12 +53,13 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     gpx.fit(xyz_scaled[:, 1:], dat_scaled[:, 1])
     gpy = GaussianProcessRegressor(kernel=kernel, **options)
     gpy.fit(xyz_scaled[:, 1:], dat_scaled[:, 2])
-    gpz = GaussianProcessRegressor(kernel=kernel, **options)
-    gpz.fit(xyz_scaled[:, 1:], dat_scaled[:, 0])
+    # gpz = GaussianProcessRegressor(kernel=kernel, **options)
+    # gpz.fit(xyz_scaled[:, 1:], dat_scaled[:, 0])
 
     x_predict = gpx.predict(xyz_unmatched_scaled[:, 1:])
     y_predict = gpy.predict(xyz_unmatched_scaled[:, 1:])
-    z_predict = gpz.predict(xyz_unmatched_scaled[:, 1:])
+    # z_predict = gpz.predict(xyz_unmatched_scaled[:, 1:])
+    z_predict = xyz_unmatched_scaled[:, [0]]  # DO NOT CHANGE Z
 
     # Get back to original space
     zxy_predict = np.vstack([z_predict, x_predict, y_predict]).T
@@ -75,4 +76,4 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
 
     matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(matches, conf)]
 
-    return matches_with_conf, (gpz, gpx, gpy), np.array(xyz0)
+    return matches_with_conf, (gpx, gpy), np.array(xyz0)
