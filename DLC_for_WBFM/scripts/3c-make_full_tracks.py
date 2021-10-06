@@ -29,7 +29,7 @@ def cfg(project_path, DEBUG):
     tracking_cfg = cfg.get_tracking_config()
 
     if not DEBUG:
-        using_monkeypatch
+        using_monkeypatch()
         log_dir = cfg.get_log_dir()
         ex.observers.append(TinyDbObserver(log_dir))
 
@@ -39,6 +39,4 @@ def make_full_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    tracking_cfg = _config['tracking_cfg'].copy()
-
-    make_3d_tracks_from_stack(tracking_cfg, DEBUG=DEBUG)
+    make_3d_tracks_from_stack(_config['tracking_cfg'], DEBUG=DEBUG)
