@@ -59,7 +59,7 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     x_predict = gpx.predict(xyz_unmatched_scaled[:, 1:])
     y_predict = gpy.predict(xyz_unmatched_scaled[:, 1:])
     # z_predict = gpz.predict(xyz_unmatched_scaled[:, 1:])
-    z_predict = xyz_unmatched_scaled[:, [0]]  # DO NOT CHANGE Z
+    z_predict = xyz_unmatched_scaled[:, 0]  # DO NOT CHANGE Z
 
     # Get back to original space
     zxy_predict = np.vstack([z_predict, x_predict, y_predict]).T
