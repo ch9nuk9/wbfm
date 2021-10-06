@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project_context
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 
 
@@ -138,13 +139,15 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tr
     return final_track_df, new_tracklet_df
 
 
-def combine_all_dlc_and_tracklet_coverings_from_config(track_config, DEBUG=False):
+def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file_with_project_context,
+                                                       project_dir, DEBUG=False):
     """
     Improves tracking by combining DLC neurons with my short tracklets
 
     Parameters
     ----------
-    project_path
+    track_config
+    project_dir
     DEBUG
 
     Returns
@@ -152,9 +155,8 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config, DEBUG=False
 
     """
 
-    project_dir = track_config['project_dir']
-
     with safe_cd(project_dir):
+        # TODO: add the tracklet fname to the config file
         tracklet_fname = os.path.join('2-training_data', 'all_tracklets.h5')
         dlc_fname = track_config['final_3d_tracks_df']
 
@@ -185,14 +187,18 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config, DEBUG=False
                                                                           rename_neurons=True, verbose=0)
 
     # Rename to be sequential, like the reindexed segmentation
-
+    # TODO: output name should be from a config file
     df_fname = os.path.join('3-tracking', 'postprocessing', 'combined_3d_tracks.h5')
 
     with safe_cd(project_dir):
         # Save only df_fname in yaml; don't overwrite other fields
-        updates = track_config['final_3d_tracks']
-        updates['df_fname'] = df_fname
-        edit_config(track_config['self_path'], {'final_3d_tracks': updates})
+        updates = {'final_3d_tracks_df': df_fname}
+        track_config.config.update(updates)
+        track_config.update_on_disk()
+
+        # updates = track_config['final_3d_tracks']
+        # updates['df_fname'] = df_fname
+        # edit_config(track_config['self_path'], {'final_3d_tracks': updates})
 
         # Actually save
         combined_df.to_hdf(df_fname, key='df_with_missing')

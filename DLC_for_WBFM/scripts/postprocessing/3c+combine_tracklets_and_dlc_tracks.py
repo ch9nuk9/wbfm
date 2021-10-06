@@ -9,25 +9,30 @@ import sacred
 from sacred import Experiment
 
 # main function
+from sacred.observers import TinyDbObserver
+
+from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
     combine_all_dlc_and_tracklet_coverings_from_config
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 
 # Initialize sacred experiment
 ex = Experiment()
-# Add single variable so that the cfg() function works
-ex.add_config(project_path=None, filter_mode='arima', DEBUG=False)
+ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
-def cfg(project_path):
+def cfg(project_path, DEBUG):
     # Manually load yaml files
-    project_cfg = load_config(project_path)
-    project_dir = Path(project_path).parent
+    cfg = modular_project_config(project_path)
+    project_dir = cfg.project_dir
 
-    with safe_cd(project_dir):
-        track_fname = Path(project_cfg['subfolder_configs']['tracking'])
-        track_cfg = dict(load_config(track_fname))
+    tracking_cfg = cfg.get_tracking_config()
+
+    if not DEBUG:
+        using_monkeypatch()
+        log_dir = cfg.get_log_dir()
+        ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain
@@ -35,8 +40,7 @@ def combine_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    this_config = _config['track_cfg'].copy()
-    this_config['project_dir'] = _config['project_dir']
+    track_cfg = _config['tracking_cfg']
+    project_dir = _config['project_dir']
 
-    with safe_cd(_config['project_dir']):
-        combine_all_dlc_and_tracklet_coverings_from_config(this_config, DEBUG=DEBUG)
+    combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, project_dir, DEBUG=DEBUG)
