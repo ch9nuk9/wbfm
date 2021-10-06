@@ -125,6 +125,7 @@ def save_training_data_as_dlc_format(tracking_config: config_file_with_project_c
     """
 
     fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
+    fname = training_config.resolve_relative_path(fname)
     df = pd.read_pickle(fname)
 
     # Get the frames chosen as training data, or recalculate

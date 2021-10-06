@@ -17,10 +17,12 @@ class config_file_with_project_context:
     config: dict
     project_dir: str
 
-    def resolve_relative_path(self, key):
+    def resolve_relative_path_from_config(self, key):
         val = self.config.get(key, None)
-        val = os.path.join(self.project_dir, val)
-        return val
+        return self.resolve_relative_path(val)
+
+    def resolve_relative_path(self, val: str):
+        return os.path.join(self.project_dir, val)
 
     def update_on_disk(self):
         with safe_cd(self.project_dir):
@@ -154,7 +156,7 @@ def update_path_to_segmentation_in_config(cfg: modular_project_config) -> config
     segment_cfg = cfg.get_segmentation_config()
     train_cfg = cfg.get_training_config()
 
-    metadata_path = segment_cfg.resolve_relative_path('output_metadata')
+    metadata_path = segment_cfg.resolve_relative_path_from_config('output_metadata')
     # Add external detections
     if not os.path.exists(metadata_path):
         raise FileNotFoundError("Could not find external annotations")

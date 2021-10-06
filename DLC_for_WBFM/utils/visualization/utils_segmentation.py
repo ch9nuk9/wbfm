@@ -57,7 +57,7 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks):
 
 def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     # Get original segmentation
-    seg_fname = segment_cfg.resolve_relative_path('output_masks')
+    seg_fname = segment_cfg.resolve_relative_path_from_config('output_masks')
     raw_seg_masks = zarr.open(seg_fname)
 
     relative_path = traces_cfg.config['reindexed_masks']
@@ -66,7 +66,7 @@ def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     new_masks = zarr.open_like(raw_seg_masks, path=out_fname)
 
     # Get tracking (dataframe) with neuron names
-    matches_fname = traces_cfg.resolve_relative_path('all_matches')
+    matches_fname = traces_cfg.resolve_relative_path_from_config('all_matches')
     all_matches = pd.read_pickle(matches_fname)
     # Format: dict with i_volume -> Nx3 array of [dlc_ind, segmentation_ind, confidence] triplets
 

@@ -60,7 +60,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     reindex_segmentation_using_config(traces_cfg, segment_cfg, project_cfg)
 
     print("Extracting red and green traces using matches...")
-    fname = traces_cfg.resolve_relative_path('reindexed_masks')
+    fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
     with safe_cd(project_cfg.project_dir):
         reindexed_masks = zarr.open(fname)
 
@@ -272,10 +272,10 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     params_start_volume = project_cfg.config['dataset_params']['start_volume']
     num_frames = project_cfg.config['dataset_params']['num_frames']
     # Get previous annotations
-    segmentation_fname = segment_cfg.resolve_relative_path('output_metadata')
+    segmentation_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
     with open(segmentation_fname, 'rb') as f:
         segmentation_metadata = pickle.load(f)
-    dlc_fname = track_cfg.resolve_relative_path('final_3d_tracks_df')
+    dlc_fname = track_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
     z_to_xy_ratio = project_cfg.config['dataset_params']['z_to_xy_ratio']
     green_fname = project_cfg.config['preprocessed_green']
     red_fname = project_cfg.config['preprocessed_red']
