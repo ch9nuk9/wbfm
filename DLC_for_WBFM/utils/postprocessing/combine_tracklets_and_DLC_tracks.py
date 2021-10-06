@@ -179,7 +179,8 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
         # all_covering_time_points.append(covering_time_points)
         all_covering_ind.append(covering_ind)
 
-        if DEBUG:
+        if DEBUG and i > 1:
+            # Should do 2, so that the column concatenation is checked too
             break
 
     # Combine and save
