@@ -19,6 +19,8 @@ do
     esac
 done
 
+module load cudnn/7.6.5
+
 CMD="3c-make_full_tracks.sh"
 
 if [ "$is_dry_run" ]; then
