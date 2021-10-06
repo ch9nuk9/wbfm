@@ -543,6 +543,7 @@ def track_neurons_full_video(video_fname: str,
     # Build all frames initially
     end_volume = start_volume + num_frames
     frame_range = range(start_volume, end_volume)
+    all_frame_dict = dict()
 
     logging.info(f"Calculating Frame objects for frames: {start_volume}, {end_volume}")
     with tqdm(total=len(frame_range)) as pbar:
