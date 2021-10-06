@@ -155,14 +155,8 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
 
     """
 
-    with safe_cd(project_dir):
-        # TODO: add the tracklet fname to the config file
-        tracklet_fname = os.path.join('2-training_data', 'all_tracklets.h5')
-        dlc_fname = track_config.config['final_3d_tracks_df']
-
-        df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
-        df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
-        df_dlc_tracks.replace(0, np.NaN, inplace=True)
+    d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, rename_neurons = _unpack_tracklets_for_combining(
+        project_dir, track_config)
 
     # Match tracklets to DLC neurons
     all_dlc_names = list(df_dlc_tracks.columns.levels[0])
@@ -170,8 +164,9 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
     # all_covering_time_points = []
     all_covering_ind = []
     for i, dlc_name in enumerate(tqdm(all_dlc_names)):
-        dist = calc_dlc_to_tracklet_distances(df_dlc_tracks, df_tracklets, dlc_name, all_covering_ind)
-        out = calc_covering_from_distances(dist, df_tracklets, all_covering_ind, d_max=5)
+        dist = calc_dlc_to_tracklet_distances(df_dlc_tracks, df_tracklets, dlc_name, all_covering_ind,
+                                              min_overlap=min_overlap)
+        out = calc_covering_from_distances(dist, df_tracklets, all_covering_ind, d_max=d_max)
         # covering_time_points, covering_ind, these_dist = out
         _, covering_ind, _ = out
 
@@ -185,20 +180,34 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
 
     # Combine and save
     combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklets, df_dlc_tracks,
-                                                                          rename_neurons=True, verbose=0)
+                                                                          rename_neurons=rename_neurons, verbose=0)
 
     # Rename to be sequential, like the reindexed segmentation
-    # TODO: output name should be from a config file
-    df_fname = os.path.join('3-tracking', 'postprocessing', 'combined_3d_tracks.h5')
-
     with safe_cd(project_dir):
         # Actually save
-        combined_df.to_hdf(df_fname, key='df_with_missing')
+        combined_df.to_hdf(output_df_fname, key='df_with_missing')
 
-        df_fname = Path(df_fname).with_suffix('.csv')
+        df_fname = Path(output_df_fname).with_suffix('.csv')
         combined_df.to_csv(df_fname)
 
         # Save only df_fname in yaml; don't overwrite other fields
-        updates = {'final_3d_tracks_df': str(df_fname)}
+        updates = {'final_3d_tracks_df': str(output_df_fname)}
         track_config.config.update(updates)
         track_config.update_on_disk()
+
+
+def _unpack_tracklets_for_combining(project_dir, track_config):
+    d_max = track_config.config['final_3d_postprocessing']['max_dist']
+    min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
+    min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
+    rename_neurons = track_config.config['final_3d_postprocessing']['rename_neurons']
+    output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
+    with safe_cd(project_dir):
+        # TODO: add the tracklet fname to the config file
+        tracklet_fname = os.path.join('2-training_data', 'all_tracklets.h5')
+        dlc_fname = track_config.config['final_3d_tracks_df']
+
+        df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
+        df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
+        df_dlc_tracks.replace(0, np.NaN, inplace=True)
+    return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, rename_neurons
