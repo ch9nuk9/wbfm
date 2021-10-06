@@ -548,7 +548,7 @@ def track_neurons_full_video(video_fname: str,
     with tqdm(total=len(frame_range)) as pbar:
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
-            futures = {executor.submit(parallel_func, i): i for i in frame_range}
+            futures = {executor.submit(_build_frame, i): i for i in frame_range}
             for future in concurrent.futures.as_completed(futures):
                 i_frame = futures[future]
                 all_frame_dict[i_frame] = future.result()
