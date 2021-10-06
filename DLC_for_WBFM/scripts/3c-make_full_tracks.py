@@ -11,6 +11,8 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import make_3d_tracks_from_stack
+from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
+    combine_all_dlc_and_tracklet_coverings_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
@@ -25,6 +27,7 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = modular_project_config(project_path)
+    project_dir = cfg.project_dir
 
     tracking_cfg = cfg.get_tracking_config()
 
@@ -38,5 +41,12 @@ def cfg(project_path, DEBUG):
 def make_full_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
+    track_cfg = _config['tracking_cfg']
+    project_dir = _config['project_dir']
     DEBUG = _config['DEBUG']
-    make_3d_tracks_from_stack(_config['tracking_cfg'], DEBUG=DEBUG)
+
+    make_3d_tracks_from_stack(track_cfg, DEBUG=DEBUG)
+
+    # Necessary postprocessing step
+    combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, project_dir, DEBUG=DEBUG)
+
