@@ -93,6 +93,9 @@ class modular_project_config:
     def resolve_path_relative_to_project(self, relative_path):
         return Path(self.project_path).joinpath(relative_path)
 
+    def resolve_mounted_path_in_current_os(self, key):
+        return Path(resolve_mounted_path_in_current_os(self.config[key]))
+
 
 def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
     """

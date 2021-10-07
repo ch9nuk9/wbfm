@@ -12,7 +12,7 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os, modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
@@ -30,10 +30,10 @@ def cfg(project_path, DEBUG):
     cfg = modular_project_config(project_path)
     project_dir = cfg.project_dir
 
-    fname = Path(resolve_mounted_path_in_current_os(cfg['red_bigtiff_fname']))
+    fname = cfg.resolve_mounted_path_in_current_os('red_bigtiff_fname')
     out_fname_red = str(fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr'))
 
-    fname = Path(resolve_mounted_path_in_current_os(cfg['green_bigtiff_fname']))
+    fname = cfg.resolve_mounted_path_in_current_os('green_bigtiff_fname')
     out_fname_green = str(fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr'))
 
     fname = str(fname)  # For pickling in tinydb
