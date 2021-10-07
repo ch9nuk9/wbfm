@@ -540,7 +540,7 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
 ## Also just for metadata calculation
 ##
 
-def recalculate_metadata_from_config(_config, DEBUG=False):
+def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
     """
 
     Given a project that contains a segmentation, recalculate the metadata
@@ -559,14 +559,12 @@ def recalculate_metadata_from_config(_config, DEBUG=False):
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
-        _config, DEBUG)
+        segment_cfg, project_cfg, DEBUG)
 
-    masks_zarr = zarr.open(_config['output']['masks'])
+    masks_zarr = zarr.open(segment_cfg.config['output_masks'])
     video_dat = zarr.open(video_path)
 
     if DEBUG:
         frame_list = frame_list[:2]
 
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
-
-
