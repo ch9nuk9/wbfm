@@ -175,10 +175,10 @@ class Ui_MainWindow(object):
         self.trainingVisButton.setText(_translate("MainWindow", "TrainingVis"))
         self.trackingVisButton.setText(_translate("MainWindow", "TrackingVis"))
         self.tracesVisButton.setText(_translate("MainWindow", "TracesVis"))
-        self.segmentationButton.setText(_translate("MainWindow", "TODO-Segment"))
-        self.trainingButton.setText(_translate("MainWindow", "TODO-Make Training"))
-        self.trackingButton.setText(_translate("MainWindow", "TODO-Track"))
-        self.tracesButton.setText(_translate("MainWindow", "TODO-Make Traces"))
+        self.segmentationButton.setText(_translate("MainWindow", "Segment"))
+        self.trainingButton.setText(_translate("MainWindow", "Make Training data"))
+        self.trackingButton.setText(_translate("MainWindow", "Track"))
+        self.tracesButton.setText(_translate("MainWindow", "Make Traces"))
 
     def do_segmentation(self):
         # Runs in a new process
