@@ -45,7 +45,7 @@ def test_reasonable_z():
     df = _load_training_data()
 
     df_delta = df.diff()[1:]
-    max_z_delta = 2
+    max_z_delta = 3
     all_neurons = list(df.columns.levels[0])
 
     for n in all_neurons:

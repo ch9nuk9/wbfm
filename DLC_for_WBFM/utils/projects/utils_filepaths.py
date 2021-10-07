@@ -6,6 +6,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Tuple
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
+from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 
 
 @dataclass
@@ -59,6 +60,11 @@ class modular_project_config:
     def get_tracking_config(self):
         fname = Path(self.config['subfolder_configs']['tracking'])
         return config_file_with_project_context(*self._check_abs_and_load_config(fname))
+
+    def get_preprocessing_config(self):
+        """Different: plain dict, which is only used at the very beginning"""
+        fname = Path(self.project_dir).joinpath('preprocessing_config.yaml')
+        return PreprocessingSettings.load_from_yaml(fname)
 
     def get_traces_config(self):
         fname = Path(self.config['subfolder_configs']['traces'])

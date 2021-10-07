@@ -516,7 +516,7 @@ def track_neurons_full_video(video_fname: str,
     """
     if preprocessing_settings is not None:
         dtype = preprocessing_settings.initial_dtype
-        raise DeprecationWarning("preprocessing on individual frames is deprecated")
+        raise DeprecationWarning("Preprocessing on individual frames is deprecated")
     else:
         # TODO: better way to get datatype
         dtype = 'uint8'
@@ -548,7 +548,7 @@ def track_neurons_full_video(video_fname: str,
     logging.info(f"Calculating Frame objects for frames: {start_volume}, {end_volume}")
     with tqdm(total=len(frame_range)) as pbar:
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
             futures = {executor.submit(_build_frame, i): i for i in frame_range}
             for future in concurrent.futures.as_completed(futures):
                 i_frame = futures[future]
