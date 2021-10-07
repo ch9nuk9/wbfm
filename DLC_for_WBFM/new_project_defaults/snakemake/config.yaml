@@ -9,34 +9,34 @@ code_path: "/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scrip
 # Step 1: segmentation
 # This is the beginning, with no required input
 input_1:
-  bbox: ../1-segmentation/bounding_boxes.pickle # Optional
+  - ../1-segmentation/bounding_boxes.pickle # Optional
 output_1:
-  masks: ../1-segmentation/masks.zarr
-  metadata: ../1-segmentation/metadata.zarr
+  - ../1-segmentation/masks.zarr
+  - ../1-segmentation/metadata.zarr
 
 # Step 2: tracklets
 input_2:
-  masks: ../1-segmentation/masks.zarr
-  metadata: ../1-segmentation/metadata.zarr
+  - ../1-segmentation/masks.zarr
+  - ../1-segmentation/metadata.zarr
 output_2:
-  training: ../2-training_data/training_data_tracks.h5
-  visualization: ../2-training_data/reindexed_masks.zarr
-  tracklets: ../2-training_data/all_tracklets.h5
+  - ../2-training_data/training_data_tracks.h5
+  - ../2-training_data/reindexed_masks.zarr
+  - ../2-training_data/all_tracklets.h5
 
 # Step 3: dlc... for now, just combine all steps
 # NOTE: should be done on cluster
 # However, the .avi videos should be created off the cluster...
 input_3:
-  cluster: ../3-tracking/ONCLUSTER.FAKE
-  training: ../2-training_data/training_data_tracks.h5
-  visualization: ../2-training_data/reindexed_masks.zarr
+  - ../3-tracking/ONCLUSTER.FAKE
+  - ../2-training_data/training_data_tracks.h5
+  - ../2-training_data/reindexed_masks.zarr
 output_3:
-  tracks: ../3-tracking/full_3d_tracks.h5
+  - ../3-tracking/full_3d_tracks.h5
 
 # Step 4: final traces
 input_4:
-  tracks: ../3-tracking/full_3d_tracks.h5
-  tracklets: ../2-training_data/all_tracklets.h5
+  - ../3-tracking/full_3d_tracks.h5
+  - ../2-training_data/all_tracklets.h5
 output_4:
-  traces_red: ../4-traces/red_traces.h5
-  traces_green: ../4-traces/green_traces.h5
+  - ../4-traces/red_traces.h5
+  - ../4-traces/green_traces.h5
