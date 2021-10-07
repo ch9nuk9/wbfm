@@ -419,7 +419,8 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation, plots=0, ver
     elif len(peaks) == 2:
         peak0, peak1 = peaks
     else:
-        print("Peak initialization failed; aborting")
+        if verbose >= 1:
+            print("Peak initialization failed; aborting")
         return None
     p0 = [np.mean(y_data), peak0, sigma, np.mean(y_data), peak1, sigma]
 
