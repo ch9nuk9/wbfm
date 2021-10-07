@@ -5,7 +5,10 @@ from pathlib import Path
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
+from sacred.observers import TinyDbObserver
+from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from segmentation.util.utils_pipeline import recalculate_metadata_from_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
@@ -17,21 +20,24 @@ ex.add_config(project_path=None, out_fname=None, DEBUG=False)
 
 
 @ex.config
-def cfg(project_path):
+def cfg(project_path, DEBUG):
     # Manually load yaml files
-    project_cfg = load_config(project_path)
-    segment_fname = Path(project_cfg['subfolder_configs']['segmentation'])
-    project_dir = Path(project_path).parent
-    segment_fname = Path(project_dir).joinpath(segment_fname)
-    segment_cfg = dict(load_config(segment_fname))
+    cfg = modular_project_config(project_path)
+    project_dir = cfg.project_dir
 
+    segment_cfg = cfg.get_segmentation_config()
+
+    if not DEBUG:
+        using_monkeypatch()
+        log_dir = cfg.get_log_dir()
+        ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    this_config = _config['segment_cfg'].copy()
-    this_config['dataset_params'] = _config['project_cfg']['dataset_params'].copy()
+    segment_cfg = _config['segment_cfg']
+    project_cfg = _config['cfg']
 
     with safe_cd(_config['project_dir']):
-        recalculate_metadata_from_config(this_config, _config['DEBUG'])
+        recalculate_metadata_from_config(segment_cfg, project_cfg, _config['DEBUG'])
