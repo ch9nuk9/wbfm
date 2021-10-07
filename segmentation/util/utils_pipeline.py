@@ -558,10 +558,10 @@ def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
 
     """
 
-    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
+    frame_list, mask_fname, metadata_fname, _, _, _, video_path, _, _ = _unpack_config_file(
         segment_cfg, project_cfg, DEBUG)
 
-    masks_zarr = zarr.open(segment_cfg.config['output_masks'])
+    masks_zarr = zarr.open(mask_fname)
     video_dat = zarr.open(video_path)
 
     if DEBUG:
