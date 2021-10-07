@@ -13,11 +13,11 @@ def get_output_fnames(video_path, output_folder, num_frames):
         output_folder = output_folder
 
     # Actual masks
-    fname = f'masks_{num_frames}.zarr'
+    fname = 'masks.zarr'
     mask_fname = osp.join(output_folder, fname)
 
     # Metadata
-    fname = f'metadata_{num_frames}.pickle'
+    fname = 'metadata.pickle'
     metadata_fname = osp.join(output_folder, fname)
 
     return mask_fname, metadata_fname
