@@ -58,7 +58,7 @@ def main(_config, _run):
 
     with safe_cd(_config['project_dir']):
 
-        preprocessing_settings = cfg.get_preprocessing_settings()
+        preprocessing_settings = cfg.get_preprocessing_config()
 
         options['out_fname'] = _config['out_fname_red']
         options['save_fname_in_red_not_green'] = True

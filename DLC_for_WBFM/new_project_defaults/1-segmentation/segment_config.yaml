@@ -3,14 +3,14 @@ self_path: 1-segmentation/segment_config.yaml # for programmatic updating
 
 # Project definitions
 video_path: null
-segmentation_type: 3d
+segmentation_type: 2d
 
 # External preprocessing: bounding boxes
 bbox_fname: 1-segmentation/bounding_boxes.pickle
 
 # Segmentation
 segmentation_params:
-  stardist_model_name: charlie_3d
+  stardist_model_name: lukas
   zero_out_borders: true
 
 # Postprocessing
