@@ -52,7 +52,11 @@ def get_metadata_dictionary(masks, original_vol):
         # vals, counts = np.unique(original_vals, return_counts=True)
 
         neuron_label = label(neuron_mask)
-        centroids = regionprops(neuron_label)[0].centroid_weighted
+        # NOTE: for skimage>0.19 this property changes name
+        try:
+            centroids = regionprops(neuron_label, intensity_image=original_vol)[0].weighted_centroid
+        except AttributeError:
+            centroids = regionprops(neuron_label, intensity_image=original_vol)[0].centroid_weighted
 
         df.at[n, 'total_brightness'] = total_brightness
         df.at[n, 'neuron_volume'] = neuron_vol
