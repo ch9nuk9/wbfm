@@ -45,4 +45,4 @@ subfolder_configs:
 ###################
 # Other
 ###################
-verbose: 2
+verbose: 0
