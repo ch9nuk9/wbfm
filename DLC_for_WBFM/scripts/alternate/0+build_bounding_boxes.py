@@ -28,6 +28,8 @@ def cfg(project_path, DEBUG):
     cfg = modular_project_config(project_path)
     bounding_box_fname = os.path.join(cfg.project_dir, '1-segmentation', 'bounding_boxes.pickle')
 
+    segment_cfg = cfg.get_segmentation_config()
+
     if not DEBUG:
         using_monkeypatch()
         log_dir = cfg.get_log_dir()
@@ -41,3 +43,7 @@ def main(_config, _run):
     video_fname = _config['cfg'].config['preprocessed_red']
     bbox_fname = _config['bounding_box_fname']
     calculate_bounding_boxes_from_fnames(video_fname, bbox_fname)
+
+    segment_cfg = _config['segment_cfg']
+    segment_cfg.config['bbox_fname'] = bbox_fname
+    segment_cfg.update_on_disk()
