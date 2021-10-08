@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -78,27 +79,37 @@ def calc_covering_from_distances(all_dist, df_tracklet, all_covering_ind, d_max=
     return covering_time_points, covering_ind, these_dist
 
 
-def combine_one_dlc_and_tracklet_covering(these_tracklet_ind, neuron_name, df_tracklet, dlc_tracks):
+def combine_matched_tracklets(these_tracklet_ind: list,
+                              neuron_name: str,
+                              df_tracklet: pd.DataFrame,
+                              dlc_tracks: pd.DataFrame) -> pd.DataFrame:
     """Combines a covering of short tracklets and a gappy DLC track into a final DLC-style track"""
+    coords = ['z', 'x', 'y', 'likelihood']
 
     # Extract the tracklets belonging to this neuron
     tracklet_names = df_tracklet.columns.levels[0]
     these_tracklet_names = [tracklet_names[i] for i in these_tracklet_ind]
+    logging.info(f"Found {len(these_tracklet_names)} tracklets for neuron {neuron_name}")
 
-    # Combine tracklets (one dataframe, multiple names)
-    new_df = df_tracklet[these_tracklet_names]
-    coords = ['z', 'x', 'y', 'likelihood']
-    all_arrs = []
-    for c in coords:
-        this_column = np.nansum([new_df[name][c] for name in these_tracklet_names], axis=0)
-        # My tracker often does not track the very last frames
-        if len(this_column) < len(dlc_tracks):
-            tmp = np.zeros(len(dlc_tracks) - len(this_column))
-            tmp[:] = np.nan
-            this_column = np.hstack([this_column, tmp])
+    if len(these_tracklet_names) == 0:
+        # Then no tracklets were found, so we pass an empty column
+        one_col_shape = dlc_tracks[neuron_name].shape
+        summed_tracklet_array = np.nan(one_col_shape)
 
-        all_arrs.append(this_column)
-    summed_tracklet_array = np.stack(all_arrs, axis=1)
+    else:
+        # Combine tracklets (one dataframe, multiple names)
+        new_df = df_tracklet[these_tracklet_names]
+        all_arrs = []
+        for c in coords:
+            this_column = np.nansum([new_df[name][c] for name in these_tracklet_names], axis=0)
+            # My tracker often does not track the very last frames, so fill with nan
+            if len(this_column) < len(dlc_tracks):
+                tmp = np.zeros(len(dlc_tracks) - len(this_column))
+                tmp[:] = np.nan
+                this_column = np.hstack([this_column, tmp])
+
+            all_arrs.append(this_column)
+        summed_tracklet_array = np.stack(all_arrs, axis=1)
 
     # Morph to DLC format
     cols = [[neuron_name], coords]
@@ -108,22 +119,35 @@ def combine_one_dlc_and_tracklet_covering(these_tracklet_ind, neuron_name, df_tr
     return summed_tracklet_df
 
 
-def combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tracks, rename_neurons=False, verbose=0):
+def combine_all_dlc_and_tracklet_coverings(all_covering_ind: list,
+                                           df_tracklet: pd.DataFrame,
+                                           dlc_tracks: pd.DataFrame,
+                                           rename_neurons: bool = False, verbose=0):
     """Combines coverings of all tracklets and DLC-tracked neurons"""
     all_df = []
-    if verbose >= 1:
-        print(f"Found {len(all_covering_ind)} tracklet-track combinations")
+    logging.log(f"Found {len(all_covering_ind)} tracklet-track combinations")
 
-    # Build new tracklets
+    # Build new tracklets into intermediate column
     all_neuron_names = dlc_tracks.columns.levels[0]
     for these_tracklet_ind, neuron_name in zip(all_covering_ind, all_neuron_names):
-        df = combine_one_dlc_and_tracklet_covering(these_tracklet_ind, neuron_name, df_tracklet, dlc_tracks)
+        df = combine_matched_tracklets(these_tracklet_ind, neuron_name, df_tracklet, dlc_tracks)
         all_df.append(df)
-
     new_tracklet_df = pd.concat(all_df, axis=1)
     if verbose >= 2:
         print(all_df)
 
+    # Produce new dataframe
+    all_neuron_names, final_track_df = combine_dlc_and_tracklets(all_neuron_names, dlc_tracks, new_tracklet_df)
+
+    # To be sequential, and same as segmentation
+    if rename_neurons:
+        new_neuron_names = {name: f'neuron{i + 1}' for i, name in enumerate(all_neuron_names)}
+        final_track_df.rename(columns=new_neuron_names, inplace=True)
+
+    return final_track_df, new_tracklet_df
+
+
+def combine_dlc_and_tracklets(all_neuron_names, dlc_tracks, new_tracklet_df):
     # Combine new and old tracklets (two dataframes, same neuron names)
     # Note: needs a loop because combine_first() doesn't work for multiindexes
     new_tracklet_df.replace(0, np.NaN, inplace=True)
@@ -131,12 +155,7 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklet, dlc_tr
     all_neuron_names = list(new_tracklet_df.columns.levels[0])
     for name in all_neuron_names:
         final_track_df[name] = new_tracklet_df[name].combine_first(dlc_tracks[name])
-    # final_track_df = pd.concat(all_df, axis=1)
-    if rename_neurons:
-        new_neuron_names = {name: f'neuron{i + 1}' for i, name in enumerate(all_neuron_names)}
-        final_track_df.rename(columns=new_neuron_names, inplace=True)
-
-    return final_track_df, new_tracklet_df
+    return all_neuron_names, final_track_df
 
 
 def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file_with_project_context,
@@ -163,6 +182,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
     # all_covering_dist = []
     # all_covering_time_points = []
     all_covering_ind = []
+    logging.info("Calculating distances between tracklets and DLC tracks")
     for i, dlc_name in enumerate(tqdm(all_neuron_names)):
         dist = calc_dlc_to_tracklet_distances(df_dlc_tracks, df_tracklets, dlc_name, all_covering_ind,
                                               min_overlap=min_overlap)
@@ -176,13 +196,18 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
 
         if DEBUG and i > 0:
             # Should do 2, so that the column concatenation is checked too
+            logging.info("DEBUG: checking only 2 neurons")
             break
 
     # Combine and save
-    combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind, df_tracklets, df_dlc_tracks,
-                                                                          rename_neurons=rename_neurons, verbose=0)
-
     # Rename to be sequential, like the reindexed segmentation
+    logging.info("Concatenating tracklets")
+    combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind,
+                                                                          df_tracklets,
+                                                                          df_dlc_tracks,
+                                                                          rename_neurons=rename_neurons,
+                                                                          verbose=0)
+
     with safe_cd(project_dir):
         # Actually save
         combined_df.to_hdf(output_df_fname, key='df_with_missing')
