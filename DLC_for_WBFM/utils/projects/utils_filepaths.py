@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Tuple
 
+import pandas as pd
+
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 
@@ -172,3 +174,12 @@ def update_path_to_segmentation_in_config(cfg: modular_project_config) -> config
     train_cfg.config['tracker_params']['external_detections'] = metadata_path
 
     return train_cfg
+
+
+def read_if_exists(df_fname, reader=pd.read_hdf):
+    if df_fname is None:
+        return None
+    elif os.path.exists(df_fname):
+        return reader(df_fname)
+    else:
+        return None

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import zarr
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, read_if_exists
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
@@ -73,18 +73,9 @@ class finished_project_data:
         green_data = zarr.open(green_dat_fname)
 
         with safe_cd(project_dir):
-            if os.path.exists(red_traces_fname):
-                red_traces = pd.read_hdf(red_traces_fname)
-            else:
-                red_traces = None
-            if os.path.exists(green_traces_fname):
-                green_traces = pd.read_hdf(green_traces_fname)
-            else:
-                green_traces = None
-            if os.path.exists(final_tracks_fname):
-                final_tracks = pd.read_hdf(final_tracks_fname)
-            else:
-                final_tracks = None
+            red_traces = read_if_exists(red_traces_fname)
+            green_traces = read_if_exists(green_traces_fname)
+            final_tracks = read_if_exists(final_tracks_fname)
 
             # Segmentation
             if '.zarr' in seg_fname_raw:
