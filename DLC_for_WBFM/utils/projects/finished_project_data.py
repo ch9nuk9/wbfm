@@ -21,6 +21,7 @@ class finished_project_data:
 
     raw_segmentation: zarr.Array
     segmentation: zarr.Array
+    segmentation_metadata: dict
 
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
@@ -65,6 +66,7 @@ class finished_project_data:
         green_traces_fname = traces_cfg.config['traces']['green']
         final_tracks_fname = tracking_cfg.config['final_3d_tracks_df']
         seg_fname_raw = segment_cfg.config['output_masks']
+        seg_metadata_fname = segment_cfg.config['output_metadata']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 
         fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"  # TODO: do not hardcode
@@ -80,6 +82,8 @@ class finished_project_data:
             # Segmentation
             if '.zarr' in seg_fname_raw:
                 raw_segmentation = zarr.open(seg_fname_raw, mode='r')
+                with open(seg_metadata_fname, 'rb') as f:
+                    seg_metadata: dict = pickle.load(f)
             else:
                 raw_segmentation = None
 
@@ -107,6 +111,7 @@ class finished_project_data:
             green_data,
             raw_segmentation,
             segmentation,
+            seg_metadata,
             red_traces,
             green_traces,
             final_tracks,
