@@ -16,4 +16,4 @@ traces:
     - dummy0
     - dummy1
 
-all_matches: 4-traces\all_matches.pickle
+all_matches: 4-traces/all_matches.pickle
