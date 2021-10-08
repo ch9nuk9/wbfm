@@ -15,6 +15,7 @@ from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_
 @dataclass
 class finished_project_data:
     project_dir: str
+    project_config: modular_project_config
 
     red_data: zarr.Array
     green_data: zarr.Array
@@ -107,6 +108,7 @@ class finished_project_data:
         # Return a full object
         obj = finished_project_data(
             project_dir,
+            cfg,
             red_data,
             green_data,
             raw_segmentation,
