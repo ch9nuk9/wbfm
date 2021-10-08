@@ -129,7 +129,7 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind: list,
                                            rename_neurons: bool = False, verbose=0):
     """Combines coverings of all tracklets and DLC-tracked neurons"""
     all_df = []
-    logging.log(f"Found {len(all_covering_ind)} tracklet-track combinations")
+    logging.info(f"Found {len(all_covering_ind)} tracklet-track combinations")
 
     # Build new tracklets into intermediate column
     all_neuron_names = dlc_tracks.columns.levels[0]
@@ -238,6 +238,6 @@ def _unpack_tracklets_for_combining(project_dir, track_config):
 
         df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
-        print(f"Combining {df_tracklets.shape[1]} tracklets with {df_dlc_tracks.shape[1]} neurons")
+        print(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {df_dlc_tracks.shape[1]} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
     return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, rename_neurons
