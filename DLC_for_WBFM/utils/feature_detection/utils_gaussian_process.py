@@ -1,7 +1,9 @@
 import numpy as np
 from sklearn import preprocessing
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, DotProduct
+from sklearn.utils._testing import ignore_warnings
 
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
@@ -49,10 +51,16 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     kernel = k0 + k1
 
     options = {'n_restarts_optimizer': 10, 'alpha': noise}
-    gpx = GaussianProcessRegressor(kernel=kernel, **options)
-    gpx.fit(xyz_scaled[:, 1:], dat_scaled[:, 1])
-    gpy = GaussianProcessRegressor(kernel=kernel, **options)
-    gpy.fit(xyz_scaled[:, 1:], dat_scaled[:, 2])
+
+    @ignore_warnings(category=ConvergenceWarning)
+    def f():
+        # See: https://stackoverflow.com/questions/53784971/how-to-disable-convergencewarning-using-sklearn
+        gpx = GaussianProcessRegressor(kernel=kernel, **options)
+        gpx.fit(xyz_scaled[:, 1:], dat_scaled[:, 1])
+        gpy = GaussianProcessRegressor(kernel=kernel, **options)
+        gpy.fit(xyz_scaled[:, 1:], dat_scaled[:, 2])
+        return gpx, gpy
+    gpx, gpy = f()
     # gpz = GaussianProcessRegressor(kernel=kernel, **options)
     # gpz.fit(xyz_scaled[:, 1:], dat_scaled[:, 0])
 
