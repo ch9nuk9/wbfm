@@ -73,9 +73,18 @@ class finished_project_data:
         green_data = zarr.open(green_dat_fname)
 
         with safe_cd(project_dir):
-            red_traces = pd.read_hdf(red_traces_fname)
-            green_traces = pd.read_hdf(green_traces_fname)
-            final_tracks = pd.read_hdf(final_tracks_fname)
+            if os.path.exists(red_traces_fname):
+                red_traces = pd.read_hdf(red_traces_fname)
+            else:
+                red_traces = None
+            if os.path.exists(green_traces_fname):
+                green_traces = pd.read_hdf(green_traces_fname)
+            else:
+                green_traces = None
+            if os.path.exists(final_tracks_fname):
+                final_tracks = pd.read_hdf(final_tracks_fname)
+            else:
+                final_tracks = None
 
             # Segmentation
             if '.zarr' in seg_fname_raw:
@@ -88,7 +97,10 @@ class finished_project_data:
             else:
                 segmentation = None
 
-            behavior_annotations = pd.read_excel(fname, sheet_name='behavior')['Annotation']
+            if os.path.exists(fname):
+                behavior_annotations = pd.read_excel(fname, sheet_name='behavior')['Annotation']
+            else:
+                behavior_annotations = None
 
         # TODO: do not hardcode
         background_per_pixel = 14
