@@ -159,11 +159,11 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
         project_dir, track_config)
 
     # Match tracklets to DLC neurons
-    all_dlc_names = list(df_dlc_tracks.columns.levels[0])
+    all_neuron_names = list(df_dlc_tracks.columns.levels[0])
     # all_covering_dist = []
     # all_covering_time_points = []
     all_covering_ind = []
-    for i, dlc_name in enumerate(tqdm(all_dlc_names)):
+    for i, dlc_name in enumerate(tqdm(all_neuron_names)):
         dist = calc_dlc_to_tracklet_distances(df_dlc_tracks, df_tracklets, dlc_name, all_covering_ind,
                                               min_overlap=min_overlap)
         out = calc_covering_from_distances(dist, df_tracklets, all_covering_ind, d_max=d_max)
@@ -187,8 +187,8 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
         # Actually save
         combined_df.to_hdf(output_df_fname, key='df_with_missing')
 
-        df_fname = Path(output_df_fname).with_suffix('.csv')
-        combined_df.to_csv(df_fname)
+        csv_fname = Path(output_df_fname).with_suffix('.csv')
+        combined_df.to_csv(csv_fname)
 
         # Save only df_fname in yaml; don't overwrite other fields
         updates = {'final_3d_tracks_df': str(output_df_fname)}
@@ -209,5 +209,6 @@ def _unpack_tracklets_for_combining(project_dir, track_config):
 
         df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
+        print(f"Combining {df_tracklets.shape[0]} tracklets with {df_dlc_tracks.shape[1]} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
     return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, rename_neurons

@@ -29,8 +29,8 @@ def cfg(project_path, DEBUG):
     project_dir = cfg.project_dir
 
     seg_cfg = cfg.get_segmentation_config()
-    training_cfg = cfg.get_training_config()
     tracking_cfg = cfg.get_tracking_config()
+    traces_cfg = cfg.get_traces_config()
 
     if not DEBUG:
         using_monkeypatch()
@@ -44,8 +44,8 @@ def make_full_tracks(_config, _run):
 
     DEBUG = _config['DEBUG']
     seg_cfg = _config['seg_cfg']
-    track_cfg = _config['track_cfg']
-    trace_cfg = _config['trace_cfg']
+    track_cfg = _config['tracking_cfg']
+    trace_cfg = _config['traces_cfg']
     project_cfg = _config['project_cfg']
 
     with safe_cd(_config['project_dir']):
