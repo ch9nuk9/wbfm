@@ -98,7 +98,8 @@ def combine_matched_tracklets(these_tracklet_ind: list,
     if len(these_tracklet_names) == 0:
         # Then no tracklets were found, so we pass an empty column
         one_col_shape = dlc_tracks[neuron_name].shape
-        summed_tracklet_array = np.nan(one_col_shape)
+        summed_tracklet_array = np.empty(one_col_shape)
+        summed_tracklet_array[:] = np.nan
 
     else:
         # Combine tracklets (one dataframe, multiple names)
