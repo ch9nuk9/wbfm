@@ -264,7 +264,7 @@ def training_data_from_3dDLC_annotations(video_fname,
 
     # TODO: Get which frames directly from dataframe?
     if len(which_frames) != len(list(dlc3d_df.index)):
-        raise AnalysisOutOfOrderError(f"Dataframe subset in time")
+        raise AnalysisOutOfOrderError(f"DataFrame subset in time")
     which_frames = list(dlc3d_df.index)
     # which_frames = list(subset_df.index)
 

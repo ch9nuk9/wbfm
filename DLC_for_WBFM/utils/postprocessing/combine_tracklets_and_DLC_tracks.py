@@ -10,8 +10,12 @@ from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 
 
-def calc_dlc_to_tracklet_distances(dlc_tracks, df_tracklet, dlc_name, all_covering_ind, min_overlap=5,
-                                   min_dlc_confidence=0.6):
+def calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
+                                   df_tracklet: pd.DataFrame,
+                                   dlc_name: str,
+                                   all_covering_ind: list,
+                                   min_overlap: int = 5,
+                                   min_dlc_confidence: float = 0.6):
     """For one DLC neuron, calculate distances between that track and all tracklets"""
     coords = ['z', 'x', 'y']
 
@@ -234,6 +238,6 @@ def _unpack_tracklets_for_combining(project_dir, track_config):
 
         df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
-        print(f"Combining {df_tracklets.shape[0]} tracklets with {df_dlc_tracks.shape[1]} neurons")
+        print(f"Combining {df_tracklets.shape[1]} tracklets with {df_dlc_tracks.shape[1]} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
     return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, rename_neurons
