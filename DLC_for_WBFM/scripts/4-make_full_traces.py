@@ -46,7 +46,7 @@ def make_full_tracks(_config, _run):
     seg_cfg = _config['seg_cfg']
     track_cfg = _config['tracking_cfg']
     trace_cfg = _config['traces_cfg']
-    project_cfg = _config['project_cfg']
+    project_cfg = _config['cfg']
 
     with safe_cd(_config['project_dir']):
         get_traces_from_3d_tracks_using_config(seg_cfg,
