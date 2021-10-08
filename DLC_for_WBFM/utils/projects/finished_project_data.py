@@ -19,13 +19,13 @@ class finished_project_data:
     red_data: zarr.Array
     green_data: zarr.Array
 
+    raw_segmentation: zarr.Array
+    segmentation: zarr.Array
+
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
 
     final_tracks: pd.DataFrame
-
-    raw_segmentation: zarr.Array
-    segmentation: zarr.Array
 
     behavior_annotations: pd.DataFrame
     background_per_pixel: float
@@ -105,11 +105,11 @@ class finished_project_data:
             project_dir,
             red_data,
             green_data,
+            raw_segmentation,
+            segmentation,
             red_traces,
             green_traces,
             final_tracks,
-            raw_segmentation,
-            segmentation,
             behavior_annotations,
             background_per_pixel
         )
@@ -195,9 +195,9 @@ project_dir: {self.project_dir} \n\
 Found data:\n\
 red_data: {self.red_data is not None}\n\
 green_data: {self.green_data is not None}\n\
+raw_segmentation: {self.raw_segmentation is not None}\n\
+segmentation: {self.segmentation is not None}\n\
 red_traces: {self.red_traces is not None}\n\
 green_traces: {self.green_traces is not None}\n\
 final_tracks: {self.final_tracks is not None}\n\
-raw_segmentation: {self.raw_segmentation is not None}\n\
-segmentation: {self.segmentation is not None}\n\
 behavior_annotations: {self.behavior_annotations is not None}\n"
