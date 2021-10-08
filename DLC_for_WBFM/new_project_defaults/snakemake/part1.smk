@@ -12,6 +12,7 @@ rule segmentation:
         files=expand("{input}", input=config['input_1'])
     output:
         expand("{output}", output=config['output_1'])
+        directory(expand("{output}", output=config['output_1_dir']))
     shell:
         "python {input.code_path}/1-segment_video.py with project_path={input.cfg}"
 
@@ -23,6 +24,7 @@ rule training_data:
         files=expand("{input}", input=config['input_2'])
     output:
         expand("{output}", output=config['output_2'])
+        directory(expand("{output}", output=config['output_2_dir']))
     shell:
         "python {input.code_path}/2-produce_training_data.py with project_path={input.cfg}"
 
