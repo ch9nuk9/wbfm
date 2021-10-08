@@ -239,6 +239,6 @@ def _unpack_tracklets_for_combining(project_dir, track_config):
 
         df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
-        print(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {df_dlc_tracks.shape[1]} neurons")
+        print(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_dlc_tracks.shape[1]/4)} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
     return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, rename_neurons
