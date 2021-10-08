@@ -128,15 +128,15 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.segmentationButton, 1, 3, 1, 1)
         self.trainingButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.trainingButton.setObjectName("pushButton_7")
-        self.segmentationButton.clicked.connect(self.do_tracklet_generation)
+        self.trainingButton.clicked.connect(self.do_tracklet_generation)
         self.gridLayout.addWidget(self.trainingButton, 2, 3, 1, 1)
         self.trackingButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.trackingButton.setObjectName("pushButton_8")
-        self.segmentationButton.clicked.connect(self.do_dlc_training_and_tracking)
+        self.trackingButton.clicked.connect(self.do_dlc_training_and_tracking)
         self.gridLayout.addWidget(self.trackingButton, 3, 3, 1, 1)
         self.tracesButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.tracesButton.setObjectName("pushButton_9")
-        self.segmentationButton.clicked.connect(self.do_final_traces)
+        self.tracesButton.clicked.connect(self.do_final_traces)
         self.gridLayout.addWidget(self.tracesButton, 4, 3, 1, 1)
 
         self.verticalLayout.addLayout(self.gridLayout)
@@ -182,30 +182,36 @@ class Ui_MainWindow(object):
 
     def do_segmentation(self):
         # Runs in a new process
+        print("Running step 1")
         mod = importlib.import_module("DLC_for_WBFM.scripts.1-segment_video", package="DLC_for_WBFM")
         config_updates = {'project_path': self.project_file, 'DEBUG': False}
         mod.ex.run(config_updates=config_updates)
 
     def do_tracklet_generation(self):
         # Runs in a new process
+        print("Running step 2")
         mod = importlib.import_module("DLC_for_WBFM.scripts.2-produce_training_data", package="DLC_for_WBFM")
         config_updates = {'project_path': self.project_file, 'DEBUG': False}
         mod.ex.run(config_updates=config_updates)
 
     def do_dlc_training_and_tracking(self):
         # Runs in a new process
+        print("Running step 3a")
         mod = importlib.import_module("DLC_for_WBFM.scripts.3a-initialize_dlc_stack", package="DLC_for_WBFM")
         config_updates = {'project_path': self.project_file, 'DEBUG': False}
         mod.ex.run(config_updates=config_updates)
 
+        print("Running step 3b")
         mod = importlib.import_module("DLC_for_WBFM.scripts.3b-train_all_dlc_networks", package="DLC_for_WBFM")
         mod.ex.run(config_updates=config_updates)
 
+        print("Running step 3c")
         mod = importlib.import_module("DLC_for_WBFM.scripts.3c-make_full_tracks", package="DLC_for_WBFM")
         mod.ex.run(config_updates=config_updates)
 
     def do_final_traces(self):
         # Runs in a new process
+        print("Running step 4")
         mod = importlib.import_module("DLC_for_WBFM.scripts.4-make_full_traces", package="DLC_for_WBFM")
         config_updates = {'project_path': self.project_file, 'DEBUG': False}
         mod.ex.run(config_updates=config_updates)
