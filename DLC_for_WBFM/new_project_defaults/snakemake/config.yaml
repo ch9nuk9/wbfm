@@ -12,7 +12,7 @@ input_1:
   - ../1-segmentation/bounding_boxes.pickle # Optional
 output_1:
   - ../1-segmentation/masks.zarr
-  - ../1-segmentation/metadata.zarr
+  - ../1-segmentation/metadata.pickle
 
 # Step 2: tracklets
 input_2:
