@@ -147,55 +147,6 @@ def _save_traces_as_hdf_and_update_configs(new_neuron_names: list,
     edit_config(traces_cfg['self_path'], traces_cfg)
 
 
-# def get_traces_from_3d_tracks(DEBUG: bool, dlc_tracks: pd.DataFrame, green_video: zarr.Array, is_mirrored: bool,
-#                               mask_array: zarr.Array, max_dist: float, num_frames: int,
-#                               params_start_volume: int, segmentation_metadata: dict,
-#                               z_to_xy_ratio: float) -> Tuple[defaultdict, list, pd.DataFrame, pd.DataFrame]:
-#     # Convert DLC dataframe to array
-#     all_neuron_names = list(dlc_tracks.columns.levels[0])
-#
-#     def _get_dlc_zxy(t, dlc_tracks=dlc_tracks):
-#         all_dlc_zxy = np.zeros((len(all_neuron_names), 3))
-#         coords = ['z', 'y', 'x']
-#         for i, name in enumerate(all_neuron_names):
-#             all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
-#         return all_dlc_zxy
-#
-#     # Main loop: Match segmentations to tracks
-#     # Also: get connected red brightness and mask
-#     # Initialize multi-index dataframe for data
-#     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
-#     green_dat = _initialize_dataframe(all_neuron_names, frame_list)
-#     red_dat = green_dat.copy()
-#     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
-#     print("Matching segmentation and DLC tracking...")
-#     if DEBUG:
-#         frame_list = frame_list[:2]
-#     calculate_segmentation_and_dlc_matches(_get_dlc_zxy, all_matches, frame_list, max_dist,
-#                                            segmentation_metadata, z_to_xy_ratio, DEBUG=DEBUG)
-#
-#     print("Extracting green traces using matches...")
-#     for i_volume in tqdm(frame_list):
-#         # Prepare matches and locations
-#         matches = all_matches[i_volume]
-#         if len(matches) == 0:
-#             continue
-#         mdat = segmentation_metadata[i_volume]
-#         all_seg_names = list(mdat['centroids'].keys())
-#         all_zxy_dlc = _get_dlc_zxy(i_volume)
-#         # Prepare mask (segmentation)
-#         i_mask = i_volume - params_start_volume
-#         this_mask_volume = mask_array[i_mask, ...]
-#         this_green_volume = green_video[i_volume, ...]
-#         for i_dlc, i_seg, c in matches:
-#             i_dlc, i_seg = i_dlc - 1, i_seg - 1  # Matches start at 1
-#             extract_traces_using_reindexed_masks(all_neuron_names, all_seg_names, all_zxy_dlc, green_dat, i_dlc, i_seg,
-#                                                  i_volume,
-#                                                  is_mirrored, mdat, this_green_volume, this_mask_volume, c)
-#
-#     return all_matches, all_neuron_names, green_dat, red_dat
-
-
 def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
                                            all_matches: defaultdict,
                                            frame_list: list,
@@ -236,32 +187,8 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
         # TODO: the distance function doesn't produce the correct reindexed segmentations
         # out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
-        # if DEBUG:
-        #     visualize_tracks(zxy0, zxy1, matches)
-        # Use metadata to get red traces
-        # OPTIMIZE: minimum confidence?
-        # mdat = segmentation_metadata[i_volume]
-        # all_seg_names = list(mdat['centroids'].keys())
-        # zxy0[:, 0] /= z_to_xy_ratio  # Return to original
-        # for (i_dlc, i_seg), c in zip(matches, conf):
-        #     d_name = all_neuron_names[i_dlc]  # output name
-        #     s_name = int(all_seg_names[i_seg])
-        #     # See saved_names above
-        #     i = i_volume
-        #     if 'all_values' in mdat:
-        #         red_dat[(d_name, 'all_values')].loc[i] = mdat['all_values'][s_name]
-        #     elif 'pixel_counts' in mdat:
-        #         # Temporary workaround when I saved the wrong thing
-        #         red_dat[(d_name, 'all_values')].loc[i] = [rebuild_pixel_values(mdat, s_name)]
-        #     red_dat[(d_name, 'brightness')].loc[i] = mdat['total_brightness'][s_name]
-        #     red_dat[(d_name, 'volume')].loc[i] = mdat['neuron_volume'][s_name]
-        #     red_dat[(d_name, 'centroid_ind')].loc[i] = s_name
-        #     zxy_seg = mdat['centroids'][s_name]
-        #     zxy_dlc = zxy0[i_dlc]
-        #     _save_locations_in_df(d_name, red_dat, i, zxy_dlc, zxy_seg, c)
 
         # Save
-        # all_matches[i_volume] = np.hstack([matches, conf])
         # NOTE: need to offset by 1, because the background is 0
         all_matches[i_volume] = np.array([[m[0] + 1, m[1] + 1, c[0]] for m, c in zip(matches, conf)])
 
@@ -305,13 +232,6 @@ def _get_multiindex(all_neuron_names: List[str]) -> pd.MultiIndex:
                   'i_reindexed_segmentation',
                   'z_dlc', 'x_dlc', 'y_dlc',
                   'match_confidence']
-    # save_names = ['brightness', 'volume',
-    #               'all_values',
-    #               'centroid_ind',
-    #               'i_reindexed_segmentation',
-    #               'z_seg', 'x_seg', 'y_seg',
-    #               'z_dlc', 'x_dlc', 'y_dlc',
-    #               'match_confidence']
     m_index = pd.MultiIndex.from_product([all_neuron_names,
                                           save_names],
                                          names=['neurons', 'data'])
@@ -348,17 +268,6 @@ def extract_traces_using_reindexed_masks(d_name: str, zxy_dlc: np.ndarray,
 
     df = pd.DataFrame(df_as_dict, index=[i])
 
-    # df = _initialize_dataframe([d_name], [i])
-    # df[(d_name, 'brightness')].loc[i] = brightness
-    # df[(d_name, 'volume')].loc[i] = volume
-    # df[(d_name, 'all_values')].loc[i] = all_values
-    # df[(d_name, 'i_reindexed_segmentation')].loc[i] = i_mask
-    # zxy_dlc = all_zxy_dlc[i_mask-1]
-    # df[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
-    # df[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
-    # df[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
-    # df[(d_name, 'match_confidence')].loc[i] = confidence
-
     return df
 
 
@@ -391,9 +300,6 @@ def OLD_extract_traces_using_reindexed_masks(d_name: List[str], all_zxy_dlc: np.
 
 
 def _save_locations_in_df(d_name, df, i, zxy_dlc, conf):
-    # df[(d_name, 'z_seg')].loc[i] = zxy_seg[0]
-    # df[(d_name, 'x_seg')].loc[i] = zxy_seg[1]
-    # df[(d_name, 'y_seg')].loc[i] = zxy_seg[2]
     df[(d_name, 'z_dlc')].loc[i] = zxy_dlc[0]
     df[(d_name, 'x_dlc')].loc[i] = zxy_dlc[1]
     df[(d_name, 'y_dlc')].loc[i] = zxy_dlc[2]
