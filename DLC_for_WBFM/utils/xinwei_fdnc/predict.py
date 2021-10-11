@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -84,3 +85,6 @@ def track_using_fdnc_from_config(project_cfg: modular_project_config,
 
     # Save in main traces folder
     df.to_hdf(output_df_fname, key='df_with_missing')
+
+    output_df_fname = Path(output_df_fname).with_suffix('.csv')
+    df.to_csv(str(output_df_fname))
