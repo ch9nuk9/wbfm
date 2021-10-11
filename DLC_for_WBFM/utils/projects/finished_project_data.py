@@ -51,7 +51,7 @@ class finished_project_data:
 
     @property
     def num_frames(self):
-        return len(self.segmentation_metadata.keys())
+        return self.project_config.config['dataset_params']['num_frames']
 
     @staticmethod
     def unpack_config_file(project_path):

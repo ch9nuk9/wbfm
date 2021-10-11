@@ -60,7 +60,7 @@ def track_using_fdnc(project_dat: finished_project_data,
             neuron_arrays[this_template_idx][i_frame, :3] = this_unscaled_pt
             neuron_arrays[this_template_idx][i_frame, 3] = m[2]  # Match confidence
 
-    # Convert to pandas formatting
+    # Convert to pandas multiindexing formatting
     new_dict = {}
     for i_neuron, data in neuron_arrays.items():
         for i_col, coord_name in enumerate(coords):
