@@ -78,9 +78,9 @@ def track_using_fdnc_from_config(project_cfg: modular_project_config,
     prediction_options = load_template()
     project_dat = finished_project_data.load_final_project_data_from_config(project_cfg)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
+    output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
 
     df = track_using_fdnc(project_dat, prediction_options, match_confidence_threshold)
 
     # Save in main traces folder
-    output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
     df.to_hdf(output_df_fname, key='df_with_missing')

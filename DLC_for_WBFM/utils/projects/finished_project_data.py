@@ -133,10 +133,14 @@ class finished_project_data:
         if isinstance(project_path, (str, os.PathLike)):
             args = finished_project_data.unpack_config_file(project_path)
             return finished_project_data._load_data_from_configs(*args)
+        elif isinstance(project_path, modular_project_config):
+            project_path = project_path.project_path
+            args = finished_project_data.unpack_config_file(project_path)
+            return finished_project_data._load_data_from_configs(*args)
         elif isinstance(project_path, finished_project_data):
             return project_path
         else:
-            raise TypeError("Must path pathlike or already loaded project data")
+            raise TypeError("Must pass pathlike or already loaded project data")
 
     def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str):
         assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
