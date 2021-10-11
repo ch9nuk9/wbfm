@@ -49,6 +49,10 @@ class finished_project_data:
             matches = pickle.load(f)
         return matches
 
+    @property
+    def num_frames(self):
+        return len(self.segmentation_metadata.keys())
+
     @staticmethod
     def unpack_config_file(project_path):
         cfg = modular_project_config(project_path)
