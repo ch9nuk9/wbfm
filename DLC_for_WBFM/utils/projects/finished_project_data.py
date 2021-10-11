@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 from dataclasses import dataclass
@@ -192,7 +193,15 @@ class finished_project_data:
         return calc_y(neuron_name)
 
     def shade_axis_using_behavior(self, ax, behaviors_to_ignore='none'):
-        shade_using_behavior(self.behavior_annotations, ax, behaviors_to_ignore)
+        if self.behavior_annotations is None:
+            logging.warning("No behavior annotations present; skipping")
+        else:
+            shade_using_behavior(self.behavior_annotations, ax, behaviors_to_ignore)
+
+    def get_centroids_as_numpy(self, i_frame):
+        """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
+        vol0_zxy = self.segmentation_metadata[i_frame]['centroids'].to_numpy()
+        return np.array([np.array(m) for m in vol0_zxy])
 
     def __repr__(self):
         return f"=======================================\n\
