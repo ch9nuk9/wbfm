@@ -23,8 +23,6 @@ ex.add_config(project_path=None, channel_mode='green', calculation_mode='integra
 @ex.config
 def cfg(project_path):
     project_dir = str(Path(project_path).parent)
-    proj_dat = finished_project_data.load_final_project_data_from_config(project_path)
-    proj_dat.verbose = 0
 
     log_dir = str(Path(project_dir).joinpath('log'))
     ex.observers.append(TinyDbObserver(log_dir))
@@ -34,7 +32,10 @@ def cfg(project_path):
 def make_dlc_labeled_videos(_config, _run):
     sacred.commands.print_config(_run)
 
+    proj_dat = finished_project_data.load_final_project_data_from_config(_config['project_path'])
+    proj_dat.verbose = 0
+
     with safe_cd(_config['project_dir']):
-        make_grid_plot_from_project(_config['proj_dat'], channel_mode=_config['channel_mode'],
+        make_grid_plot_from_project(proj_dat, channel_mode=_config['channel_mode'],
                                     calculation_mode=_config['calculation_mode'])
         # make_grid_plot_from_project(_config['traces_cfg'], trace_mode=_config['trace_mode'])
