@@ -131,20 +131,23 @@ def calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_v
 
 
 def _save_traces_as_hdf_and_update_configs(new_neuron_names: list,
-                                           df_green: pd.DataFrame, df_red: pd.DataFrame, traces_cfg: dict) -> None:
+                                           df_green: pd.DataFrame,
+                                           df_red: pd.DataFrame,
+                                           traces_cfg: config_file_with_project_context) -> None:
     # Save traces (red and green) and neuron names
     # csv doesn't work well when some entries are lists
     red_fname = Path('4-traces').joinpath('red_traces.h5')
-    df_red.to_hdf(red_fname, "df_with_missing")
+    df_red.to_hdf(str(red_fname), "df_with_missing")
 
     green_fname = Path('4-traces').joinpath('green_traces.h5')
-    df_green.to_hdf(green_fname, "df_with_missing")
+    df_green.to_hdf(str(green_fname), "df_with_missing")
 
     # Save the output filenames
-    traces_cfg['traces']['green'] = str(green_fname)
-    traces_cfg['traces']['red'] = str(red_fname)
-    traces_cfg['traces']['neuron_names'] = new_neuron_names
-    edit_config(traces_cfg['self_path'], traces_cfg)
+    traces_cfg.config['traces']['green'] = str(green_fname)
+    traces_cfg.config['traces']['red'] = str(red_fname)
+    traces_cfg.config['traces']['neuron_names'] = new_neuron_names
+    traces_cfg.update_on_disk()
+    # edit_config(traces_cfg.config['self_path'], traces_cfg)
 
 
 # def get_traces_from_3d_tracks(DEBUG: bool, dlc_tracks: pd.DataFrame, green_video: zarr.Array, is_mirrored: bool,
