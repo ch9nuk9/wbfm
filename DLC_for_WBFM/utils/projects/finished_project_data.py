@@ -200,7 +200,7 @@ class finished_project_data:
 
         return calc_y(neuron_name)
 
-    def shade_axis_using_behavior(self, ax, behaviors_to_ignore='none'):
+    def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:
             logging.warning("No behavior annotations present; skipping")
         else:

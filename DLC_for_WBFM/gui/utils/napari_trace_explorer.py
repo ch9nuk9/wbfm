@@ -151,7 +151,8 @@ class napari_trace_explorer(QtWidgets.QWidget):
         return self.build_tracks_from_name()
 
     def color_using_behavior(self):
-        shade_using_behavior(self.dat.behavior_annotations)
+        self.dat.shade_axis_using_behavior()
+        # shade_using_behavior(self.dat.behavior_annotations)
 
     # def save_annotations(self):
     #     self.update_dataframe_using_points()
