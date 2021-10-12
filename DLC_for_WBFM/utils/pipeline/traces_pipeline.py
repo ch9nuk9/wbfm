@@ -56,10 +56,11 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     project_cfg.save_in_local_project(all_matches, relative_fname)
 
     print("Reindexing masks using matches...")
-    # Saves the masks to disk
+    # Reads matches from disk, and then saves the masks
     reindex_segmentation_using_config(traces_cfg, segment_cfg, project_cfg)
 
-    print("Extracting red and green traces using matches...")
+    print("Extracting red and green traces using reindexed masks...")
+    # Reads masks from disk, and writes traces
     fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
     with safe_cd(project_cfg.project_dir):
         reindexed_masks = zarr.open(fname)

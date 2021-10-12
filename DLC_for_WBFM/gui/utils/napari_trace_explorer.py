@@ -194,14 +194,14 @@ class napari_trace_explorer(QtWidgets.QWidget):
         # Just visualize one neuron for now
         # 5 columns:
         # track_id, t, z, y, x
+        likelihood_thresh = self.dat.likelihood_thresh
         coords = ['z_dlc', 'x_dlc', 'y_dlc']
         zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
 
         all_tracks_list = []
-        likelihood_thresh = 0.4
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
 
-        if 'likelihood' in self.dat.final_tracks[self.current_name]:
+        if likelihood_thresh is not None and 'likelihood' in self.dat.final_tracks[self.current_name]:
             to_remove = self.dat.final_tracks[self.current_name]['likelihood'] < likelihood_thresh
         else:
             to_remove = np.zeros_like(zxy_array[:, 0], dtype=bool)

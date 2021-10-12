@@ -64,6 +64,7 @@ def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     out_fname = project_cfg.resolve_path_relative_to_project(relative_path)
     print(f"Saving masks at {out_fname}")
     new_masks = zarr.open_like(raw_seg_masks, path=out_fname)
+    # new_masks = zarr.open_like(raw_seg_masks, path=out_fname, synchronizer=zarr.ThreadSynchronizer())
 
     # Get tracking (dataframe) with neuron names
     matches_fname = traces_cfg.resolve_relative_path_from_config('all_matches')

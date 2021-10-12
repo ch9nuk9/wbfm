@@ -32,6 +32,7 @@ class finished_project_data:
 
     behavior_annotations: pd.DataFrame
     background_per_pixel: float
+    likelihood_thresh: float
 
     verbose: int = 2
 
@@ -103,8 +104,8 @@ class finished_project_data:
             else:
                 behavior_annotations = None
 
-        # TODO: do not hardcode
-        background_per_pixel = 14
+        background_per_pixel = traces_cfg.config['visualization']['background_per_pixel']
+        likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']
 
         start = cfg.config['dataset_params']['start_volume']
         end = start + cfg.config['dataset_params']['num_frames']
@@ -123,7 +124,8 @@ class finished_project_data:
             green_traces,
             final_tracks,
             behavior_annotations,
-            background_per_pixel
+            background_per_pixel,
+            likelihood_thresh
         )
 
         return obj
