@@ -153,8 +153,13 @@ class finished_project_data:
         # Way to process a single dataframe
         if calculation_mode == 'integration':
             def calc_single_trace(i, df_tmp):
-                y_raw = df_tmp[i]['brightness']
-                return y_raw - self.background_per_pixel * df_tmp[i]['volume']
+                try:
+                    y_raw = df_tmp[i]['brightness']
+                    vol = df_tmp[i]['volume']
+                except KeyError:
+                    y_raw = df_tmp[i]['intensity_image']
+                    vol = df_tmp[i]['area']
+                return y_raw - self.background_per_pixel * vol
         elif calculation_mode == 'max':
             def calc_single_trace(i, df_tmp):
                 y_raw = df_tmp[i]['all_values']
@@ -162,8 +167,13 @@ class finished_project_data:
                 return y_raw.apply(f) - self.background_per_pixel
         elif calculation_mode == 'mean':
             def calc_single_trace(i, df_tmp):
-                y_raw = df_tmp[i]['brightness']
-                return y_raw / df_tmp[i]['volume'] - self.background_per_pixel
+                try:
+                    y_raw = df_tmp[i]['brightness']
+                    vol = df_tmp[i]['volume']
+                except KeyError:
+                    y_raw = df_tmp[i]['intensity_image']
+                    vol = df_tmp[i]['area']
+                return y_raw / vol - self.background_per_pixel
         # elif calculation_mode == 'quantile90':
         #     def calc_single_trace(i, df_tmp):
         #         y_raw = df_tmp[i]['all_values']
