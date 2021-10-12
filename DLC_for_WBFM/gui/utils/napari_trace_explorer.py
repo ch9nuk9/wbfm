@@ -180,13 +180,27 @@ class napari_trace_explorer(QtWidgets.QWidget):
         name = self.current_name
         new_points = self.viewer.layers['final_track'].data
 
-        col = pd.MultiIndex.from_product([[self.current_name], ['z', 'x', 'y', 'likelihood']])
-        df_new = pd.DataFrame(columns=col, index=self.dat.final_tracks.index)
+        # Initialize as dict and immediately create dataframe
+        coords = ['z', 'x', 'y', 'likelihood']
+        coords2ind = {'z': 1, 'x': 2, 'y': 3, 'likelihood': None}
+        tmp_dict = {}
+        for c in coords:
+            key = (name, c)
+            pts_ind = coords2ind[c]
+            if pts_ind is not None:
+                tmp_dict[key] = new_points[:, pts_ind]
+            else:
+                tmp_dict[key] = np.ones(new_points.shape[0])
 
-        df_new[(name, 'z')] = new_points[:, 1]
-        df_new[(name, 'x')] = new_points[:, 2]
-        df_new[(name, 'y')] = new_points[:, 3]
-        df_new[(name, 'likelihood')] = np.ones(new_points.shape[0])
+        df_new = pd.DataFrame(tmp_dict)
+
+        # col = pd.MultiIndex.from_product([[self.current_name], ['z', 'x', 'y', 'likelihood']])
+        # df_new = pd.DataFrame(columns=col, index=self.dat.final_tracks.index)
+        #
+        # df_new[(name, 'z')] = new_points[:, 1]
+        # df_new[(name, 'x')] = new_points[:, 2]
+        # df_new[(name, 'y')] = new_points[:, 3]
+        # df_new[(name, 'likelihood')] = np.ones(new_points.shape[0])
 
         return df_new
 
