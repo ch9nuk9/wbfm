@@ -106,7 +106,13 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
     all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
     properties = {'label': []}
     for n in all_neurons:
-        zxy = df[n][zxy_names].to_numpy(dtype=int)
+        try:
+            coords = ['z_dlc', 'x_dlc', 'y_dlc']
+            zxy = np.array(df[n][coords])
+        except KeyError:
+            coords = ['z', 'x', 'y']
+            zxy = np.array(df[n][coords])
+        # zxy = df[n][zxy_names].to_numpy(dtype=int)
         t_zxy = np.hstack([t_vec, zxy])
         if n in neuron_name_dict:
             # label_vec[:] = this_name

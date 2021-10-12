@@ -209,8 +209,12 @@ class napari_trace_explorer(QtWidgets.QWidget):
         # 5 columns:
         # track_id, t, z, y, x
         likelihood_thresh = self.dat.likelihood_thresh
-        coords = ['z_dlc', 'x_dlc', 'y_dlc']
-        zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
+        try:
+            coords = ['z_dlc', 'x_dlc', 'y_dlc']
+            zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
+        except KeyError:
+            coords = ['z', 'x', 'y']
+            zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
 
         all_tracks_list = []
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
