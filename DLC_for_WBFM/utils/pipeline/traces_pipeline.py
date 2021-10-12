@@ -192,9 +192,19 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
         # out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, _ = out
 
+        def seg_array_to_ind(i):
+            # The seg_zxy array has the 0th row corresponding to segmentation mask label 1
+            return i + 1
+
+        def dlc_array_to_ind(i):
+            # _get_dlc_zxy has the 0th row corresponding to neuron label 1
+            return i + 1
+
         # Save
         # NOTE: need to offset by 1, because the background is 0
-        all_matches[i_volume] = np.array([[m[0] + 1, m[1] + 1, c[0]] for m, c in zip(matches, conf)])
+        all_matches[i_volume] = np.array(
+            [[seg_array_to_ind(m[0]), dlc_array_to_ind(m[1]), c[0]] for m, c in zip(matches, conf)]
+        )
 
 
 def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
