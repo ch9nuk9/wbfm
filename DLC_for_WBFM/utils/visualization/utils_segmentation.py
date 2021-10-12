@@ -54,6 +54,17 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks):
                 _ = future.result()
                 pbar.update(1)
 
+#     with tqdm(total=len(all_lut)) as pbar:
+#
+#         with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
+#             future_results = {executor.submit(_parallel_func, i, new_masks, seg_masks, all_lut): i for i in all_lut_keys}
+#             for future in concurrent.futures.as_completed(future_results):
+#                 _ = future.result()
+#                 pbar.update(1)
+#
+# def _parallel_func(i, new_masks, seg_masks, all_lut):
+#     lut = all_lut[i]
+#     new_masks[i, ...] = lut[seg_masks[i, ...]]
 
 def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     # Get original segmentation

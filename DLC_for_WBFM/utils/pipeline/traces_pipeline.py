@@ -90,6 +90,23 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
                 results.append(future.result())
                 pbar.update(1)
 
+    # options = dict(frame_list=frame_list,
+    #                green_video=green_video,
+    #                red_video=red_video,
+    #                params_start_volume=params_start_volume,
+    #                reindexed_masks=reindexed_masks,
+    #                dlc_name_mapping=dlc_name_mapping,
+    #                dlc_tracks=dlc_tracks)
+    #
+    # print("Starting up parallel pool...")
+    # with tqdm(total=len(new_neuron_names)) as pbar:
+    #     with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+    #         futures = {executor.submit(_pool_parallel_func, i, options): i for i in enumerate(new_neuron_names)}
+    #         results = []
+    #         for future in concurrent.futures.as_completed(futures):
+    #             results.append(future.result())
+    #             pbar.update(1)
+
     all_green_dfs = [r[0] for r in results]
     all_red_dfs = [r[1] for r in results]
 
@@ -100,6 +117,49 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
         print("Single pass-through successful")
 
     _save_traces_as_hdf_and_update_configs(new_neuron_names, df_green, df_red, traces_cfg)
+
+
+def _pool_parallel_func(i_and_name, options):
+    i, new_name = i_and_name
+    return _pool_calc_trace_from_mask_one_neuron(i=i, new_name=new_name, **options)
+
+
+def _pool_get_dlc_zxy_one_neuron(t, new_name, dlc_name_mapping, dlc_tracks):
+    old_name = dlc_name_mapping[new_name]
+    coords = ['z', 'y', 'x']
+    all_dlc_zxy = np.asarray(dlc_tracks[old_name][coords].loc[t])
+    return all_dlc_zxy
+
+
+def _pool_calc_trace_from_mask_one_neuron(frame_list, green_video, red_video,
+                                     i, new_name, params_start_volume,
+                                     reindexed_masks,
+                                     dlc_name_mapping,
+                                     dlc_tracks):
+    all_green_dfs_one_neuron = []
+    all_red_dfs_one_neuron = []
+    i_mask_ind = i + 1
+    for i_volume in tqdm(frame_list, leave=False):
+        this_zxy_dlc = _pool_get_dlc_zxy_one_neuron(i_volume, new_name, dlc_name_mapping, dlc_tracks)
+        # Prepare mask (segmentation)
+        i_mask = i_volume - params_start_volume
+        this_mask_volume = reindexed_masks[i_mask, ...]
+        this_mask_neuron = (this_mask_volume == i_mask_ind)
+
+        # Green then red
+        this_green_volume = green_video[i_volume, ...]
+        df_green_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
+                                                                  i_mask_ind, i_volume,
+                                                                  this_green_volume, this_mask_neuron)
+        this_red_volume = red_video[i_volume, ...]
+        df_red_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
+                                                                i_mask_ind, i_volume,
+                                                                this_red_volume, this_mask_neuron)
+        all_green_dfs_one_neuron.append(df_green_one_frame)
+        all_red_dfs_one_neuron.append(df_red_one_frame)
+    df_green_one_neuron = pd.concat(all_green_dfs_one_neuron, axis=0)
+    df_red_one_neuron = pd.concat(all_red_dfs_one_neuron, axis=0)
+    return df_green_one_neuron, df_red_one_neuron
 
 
 def calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_video, red_video,
