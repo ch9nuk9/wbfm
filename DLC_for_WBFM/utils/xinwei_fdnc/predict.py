@@ -1,5 +1,6 @@
 import concurrent
 import os
+import pickle
 from collections import defaultdict
 from pathlib import Path
 
@@ -70,6 +71,7 @@ def track_using_fdnc(project_dat: finished_project_data,
     #             _ = future.result()
     #             pbar.update(1)
 
+    all_matches = []
     for i_frame in tqdm(range(num_frames), total=num_frames):
 
         pts = project_dat.get_centroids_as_numpy(i_frame)
@@ -85,6 +87,7 @@ def track_using_fdnc(project_dat: finished_project_data,
 
             neuron_arrays[this_template_idx][i_frame, :3] = this_unscaled_pt
             neuron_arrays[this_template_idx][i_frame, 3] = m[2]  # Match confidence
+        all_matches.append(matches)
 
     # Convert to pandas multiindexing formatting
     new_dict = {}
@@ -95,7 +98,7 @@ def track_using_fdnc(project_dat: finished_project_data,
 
     df = pd.DataFrame(new_dict)
 
-    return df
+    return df, all_matches
 
 
 def track_using_fdnc_from_config(project_cfg: modular_project_config,
@@ -110,12 +113,17 @@ def track_using_fdnc_from_config(project_cfg: modular_project_config,
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
 
-    df = track_using_fdnc(project_dat, prediction_options, match_confidence_threshold)
+    df, all_matches = track_using_fdnc(project_dat, prediction_options, match_confidence_threshold)
 
     # Save in main traces folder
     df.to_hdf(output_df_fname, key='df_with_missing')
     tracks_cfg.config['final_3d_tracks_df'] = str(output_df_fname)
     tracks_cfg.update_on_disk()
 
+    # For visualization
     output_df_fname = Path(output_df_fname).with_suffix('.csv')
     df.to_csv(str(output_df_fname))
+
+    output_pickle_fname = Path(output_df_fname).with_name('fdnc_matches.pickle')
+    with open(output_pickle_fname, 'wb') as f:
+        pickle.dump(all_matches, f)
