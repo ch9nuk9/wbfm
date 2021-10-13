@@ -15,20 +15,21 @@ from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
 default_package_path = "/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID"
 
 
-def load_template(path_to_folder=None):
+def load_template(custom_template=None, path_to_folder=None):
     if path_to_folder is None:
         path_to_folder = default_package_path
 
     model_path = os.path.join(path_to_folder, 'model', 'model.bin')
-
-    temp_fname = os.path.join(default_package_path, 'Data', 'Example', 'template.data')
-    temp = pre_matt(temp_fname)  # load python dictinary from a pickle file.
-
     prediction_options = dict(
-        template_pos=temp['pts'],
         cuda=False,
         model_path=model_path
     )
+    if custom_template is None:
+        temp_fname = os.path.join(default_package_path, 'Data', 'Example', 'template.data')
+        temp = pre_matt(temp_fname)
+        prediction_options['template_pos'] = temp['pts']
+    else:
+        prediction_options['template_pos'] = custom_template
 
     return prediction_options
 
@@ -99,9 +100,13 @@ def track_using_fdnc(project_dat: finished_project_data,
 
 def track_using_fdnc_from_config(project_cfg: modular_project_config,
                                  tracks_cfg: config_file_with_project_context):
-
-    prediction_options = load_template()
+    use_zimmer_template = tracks_cfg.config['leifer_params']['use_zimmer_template']
     project_dat = finished_project_data.load_final_project_data_from_config(project_cfg)
+    if use_zimmer_template:
+        # TODO: use a hand-curated segmentation
+        custom_template = project_dat.get_centroids_as_numpy(0)
+        custom_template = zimmer2leifer(custom_template)
+    prediction_options = load_template(custom_template=custom_template)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
 
