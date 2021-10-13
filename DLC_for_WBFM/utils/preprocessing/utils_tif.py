@@ -8,7 +8,7 @@ from typing import List, Tuple
 import numpy as np
 import scipy.ndimage as ndi
 # import tifffile
-import yaml
+from ruamel.yaml import YAML
 import zarr
 from tqdm.auto import tqdm
 
@@ -61,7 +61,7 @@ class PreprocessingSettings:
     @staticmethod
     def load_from_yaml(fname):
         with open(fname, 'r') as f:
-            cfg = yaml.safe_load(f)
+            cfg = YAML().load(f)
         return PreprocessingSettings(**cfg)
 
     def write_to_yaml(self, fname):
