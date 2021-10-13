@@ -108,7 +108,8 @@ def propagate_all_neurons(f0: ReferenceFrame, f1: ReferenceFrame, all_feature_ma
     return all_propagated
 
 
-def calc_matches_using_affine_propagation(f0, f1, all_feature_matches,
+def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame,
+                                          all_feature_matches,
                                           radius=10.0,
                                           min_matches=100,
                                           maximum_distance=15.0,

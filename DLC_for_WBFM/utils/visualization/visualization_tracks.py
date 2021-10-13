@@ -11,7 +11,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tre
 from DLC_for_WBFM.utils.feature_detection.utils_keypoint_matching import get_indices_of_tracklet
 
 
-def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False, to_plot=True):
+def visualize_tracks(neurons0, neurons1, matches=None, trivial_matches=False, to_plot_failed_lines=False, to_plot=True):
     """
 
     Parameters
@@ -33,34 +33,40 @@ def visualize_tracks(neurons0, neurons1, matches, to_plot_failed_lines=False, to
     # Plot lines from initial neuron to target
     points = np.vstack((pc_n0.points, pc_n1.points))
 
-    combined_matches = []
-    for i, match in enumerate(matches):
-        combined_matches.append([match[0], n0 + match[1]])
+    if trivial_matches:
+        matches = [[i, i] for i in range(max(n0, n1))]
 
-    successful_lines = []
-    failed_lines = []
-    for row in combined_matches:
-        if row[1] != n0:
-            successful_lines.append(row)
-        else:
-            failed_lines.append(row)
+    if matches is not None:
+        combined_matches = []
+        for i, match in enumerate(matches):
+            combined_matches.append([match[0], n0 + match[1]])
 
-    successful_colors = [[0, 1, 0] for i in range(len(successful_lines))]
-    successful_line_set = o3d.geometry.LineSet(
-        points=o3d.utility.Vector3dVector(points),
-        lines=o3d.utility.Vector2iVector(successful_lines),
-    )
-    successful_line_set.colors = o3d.utility.Vector3dVector(successful_colors)
-    if to_plot_failed_lines:
-        failed_colors = [[1, 0, 0] for i in range(len(failed_lines))]
-        failed_line_set = o3d.geometry.LineSet(
+        successful_lines = []
+        failed_lines = []
+        for row in combined_matches:
+            if row[1] != n0:
+                successful_lines.append(row)
+            else:
+                failed_lines.append(row)
+
+        successful_colors = [[0, 1, 0] for i in range(len(successful_lines))]
+        successful_line_set = o3d.geometry.LineSet(
             points=o3d.utility.Vector3dVector(points),
-            lines=o3d.utility.Vector2iVector(failed_lines),
+            lines=o3d.utility.Vector2iVector(successful_lines),
         )
-        failed_line_set.colors = o3d.utility.Vector3dVector(failed_colors)
-        to_draw = [failed_line_set, successful_line_set, pc_n0, pc_n1]
+        successful_line_set.colors = o3d.utility.Vector3dVector(successful_colors)
+        if to_plot_failed_lines:
+            failed_colors = [[1, 0, 0] for i in range(len(failed_lines))]
+            failed_line_set = o3d.geometry.LineSet(
+                points=o3d.utility.Vector3dVector(points),
+                lines=o3d.utility.Vector2iVector(failed_lines),
+            )
+            failed_line_set.colors = o3d.utility.Vector3dVector(failed_colors)
+            to_draw = [failed_line_set, successful_line_set, pc_n0, pc_n1]
+        else:
+            to_draw = [successful_line_set, pc_n0, pc_n1]
     else:
-        to_draw = [successful_line_set, pc_n0, pc_n1]
+        to_draw = [pc_n0, pc_n1]
 
     if to_plot:
         o3d.visualization.draw_geometries(to_draw)
@@ -294,25 +300,34 @@ def plot_three_point_clouds(all_frames, neuron_matches, ind=(0, 1, 2)):
 ## 2d visualizations
 ##
 
-def match2quiver(all_frames, all_matches, which_pair, actually_draw=True):
+def match2quiver_from_frames(all_frames, all_matches, which_pair, actually_draw=True):
     """
-    Plots neuron matches as a quiver plot
+    Plots neuron matches as a quiver plot using custom ReferenceFrame objects
     """
 
     n0_unmatched = all_frames[which_pair[0]].neuron_locs
     n1_unmatched = all_frames[which_pair[1]].neuron_locs
     matches = all_matches[which_pair]
 
+    return match2quiver(matches, n0_unmatched, n1_unmatched, actually_draw)
+
+
+def match2quiver(matches, n0_unmatched, n1_unmatched, actually_draw):
+    """
+    Plots neuron matches as a quiver plot
+    """
     # Align the neuron locations via matches
     xyz = np.zeros((len(matches), 3), dtype=np.float32)  # Start point
     diff_vec = np.zeros((len(matches), 3), dtype=np.float32)  # Difference vector
-
     for m, match in enumerate(matches):
-        v0 = n0_unmatched[match[0]]
-        v1 = n1_unmatched[match[1]]
+        try:
+            v0 = n0_unmatched[int(match[0])]
+            v1 = n1_unmatched[int(match[1])]
+        except IndexError:
+            v0 = n0_unmatched[match[0], :]
+            v1 = n1_unmatched[match[1], :]
         xyz[m, :] = v0
         diff_vec[m, :] = v1 - v0
-
     # C = dat[:,2] / np.max(dat[:,1])
     if actually_draw:
         plt.quiver(xyz[:, 1], xyz[:, 2], diff_vec[:, 1], diff_vec[:, 2])
@@ -415,27 +430,34 @@ def plot_full_tracklet_covering(clust_df, window_len=20, num_frames=500):
     return x, y
 
 
-def create_affine_visualizations(which_neuron, f0, f1, neuron0_trans):
+def visualize_point_cloud_and_propagated_locations_from_frames(which_neuron, f0, f1, neuron0_trans):
+    n0 = f0.neuron_locs
+    n1 = f1.neuron_locs
+
+    line, pc0_neuron, pc1_neuron, pc1_trans = visualize_point_cloud_and_propagated_locations(n0, n1, neuron0_trans,
+                                                                                             which_neuron)
+
+    return pc0_neuron, pc1_trans, pc1_neuron, line
+
+
+def visualize_point_cloud_and_propagated_locations(n0, n1, neuron0_trans, which_neuron):
     # Original neurons
     pc0_neuron = o3d.geometry.PointCloud()
-    pc0_neuron.points = o3d.utility.Vector3dVector(f0.neuron_locs)
+    pc0_neuron.points = o3d.utility.Vector3dVector(n0)
     pc0_neuron.paint_uniform_color([0.5, 0.5, 0.5])
     np.asarray(pc0_neuron.colors)[which_neuron, :] = [1, 0, 0]
-
     # Visualize the correspondence
     pc1_trans = o3d.geometry.PointCloud()
     pc1_trans.points = o3d.utility.Vector3dVector(neuron0_trans)
     pc1_trans.paint_uniform_color([0, 1, 0])
-
     corr = [(which_neuron, 0)]
     line = o3d.geometry.LineSet.create_from_point_cloud_correspondences(pc0_neuron, pc1_trans, corr)
-
     # Visualize this neuron with the new neurons as well
     pc1_neuron = o3d.geometry.PointCloud()
-    pc1_neuron.points = o3d.utility.Vector3dVector(f1.neuron_locs)
+    pc1_neuron.points = o3d.utility.Vector3dVector(n1)
     pc1_neuron.paint_uniform_color([0, 0, 1])
 
-    return pc0_neuron, pc1_trans, pc1_neuron, line
+    return line, pc0_neuron, pc1_neuron, pc1_trans
 
 
 def visualize_tracklet_in_body(i_tracklet, i_frame,
