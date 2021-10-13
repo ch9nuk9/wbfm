@@ -3,6 +3,7 @@ from typing import Tuple, Union
 
 import cv2
 import numpy as np
+import zarr
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
@@ -64,10 +65,13 @@ class ReferenceFrame:
         return self.neuron_locs.shape[0]
 
     def get_raw_data(self):
-        return get_single_volume(self.video_fname,
-                                 self.frame_ind,
-                                 num_slices=self.vol_shape[0],
-                                 alpha=self.preprocessing_settings.alpha)
+        return zarr.open(self.video_fname)[self.frame_ind, ...]
+
+    # def get_raw_data(self):
+    #     return get_single_volume(self.video_fname,
+    #                              self.frame_ind,
+    #                              num_slices=self.vol_shape[0],
+    #                              alpha=self.preprocessing_settings.alpha)
 
     def detect_or_import_neurons(self, dat: list, external_detections: str, metadata: dict, num_slices: int,
                                  start_slice: int) -> list:
