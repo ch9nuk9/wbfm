@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 import zarr
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, read_if_exists, pickle_load_binary
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, read_if_exists, pickle_load_binary, \
+    config_file_with_project_context
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
@@ -40,14 +41,18 @@ class finished_project_data:
 
     @property
     def raw_frames(self):
-        fname = Path(self.project_dir).joinpath('2-training_data').joinpath('raw').joinpath('frame_dat.pickle')
+        train_cfg = self.project_config.get_training_config()
+        fname = train_cfg.resolve_relative_path(os.path.join('2-training_data', 'raw', 'frame_dat.pickle'))
+        # fname = Path(self.project_dir).joinpath('2-training_data').joinpath('raw').joinpath('frame_dat.pickle')
         with open(fname, 'rb') as f:
             frames = pickle.load(f)
         return frames
 
     @property
     def raw_matches(self):
-        fname = Path(self.project_dir).joinpath('2-training_data').joinpath('raw').joinpath('match_dat.pickle')
+        train_cfg = self.project_config.get_training_config()
+        fname = train_cfg.resolve_relative_path(os.path.join('2-training_data', 'raw', 'match_dat.pickle'))
+        # fname = Path(self.project_dir).joinpath('2-training_data').joinpath('raw').joinpath('match_dat.pickle')
         with open(fname, 'rb') as f:
             matches = pickle.load(f)
         return matches
@@ -68,22 +73,27 @@ class finished_project_data:
         return cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir
 
     @staticmethod
-    def _load_data_from_configs(cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir):
+    def _load_data_from_configs(cfg: modular_project_config,
+                                segment_cfg: config_file_with_project_context,
+                                tracking_cfg: config_file_with_project_context,
+                                traces_cfg: config_file_with_project_context,
+                                project_dir):
         red_dat_fname = cfg.config['preprocessed_red']
         green_dat_fname = cfg.config['preprocessed_green']
         red_traces_fname = traces_cfg.config['traces']['red']
         green_traces_fname = traces_cfg.config['traces']['green']
-        final_tracks_fname = tracking_cfg.config['final_3d_tracks_df']
-        seg_fname_raw = segment_cfg.config['output_masks']
-        seg_metadata_fname = segment_cfg.config['output_metadata']
-        seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
+
+        final_tracks_fname = tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
+        seg_fname_raw = segment_cfg.resolve_relative_path_from_config('output_masks')
+        seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
+        seg_fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
 
         behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"  # TODO: do not hardcode
 
         red_data = zarr.open(red_dat_fname)
         green_data = zarr.open(green_dat_fname)
 
-        with safe_cd(project_dir):
+        with safe_cd(cfg.project_dir):
             zarr_reader = lambda fname: zarr.open(fname, mode='r')
             excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
@@ -115,7 +125,7 @@ class finished_project_data:
 
         # Return a full object
         obj = finished_project_data(
-            project_dir,
+            cfg.project_dir,
             cfg,
             red_data,
             green_data,
