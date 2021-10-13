@@ -1,3 +1,4 @@
+import concurrent
 import os
 from collections import defaultdict
 from pathlib import Path
@@ -44,11 +45,34 @@ def track_using_fdnc(project_dat: finished_project_data,
     sz = (num_frames, len(coords))
     neuron_arrays = defaultdict(lambda: np.zeros(sz))
 
+    # def _parallel_func(i_frame):
+    #
+    #     pts = project_dat.get_centroids_as_numpy(i_frame)
+    #     pts_scaled = zimmer2leifer(pts)
+    #     # Match
+    #     matches = predict_matches(test_pos=pts_scaled, **prediction_options)
+    #     matches = filter_matches(matches, match_confidence_threshold)
+    #
+    #     # For each match, save location
+    #     for m in matches:
+    #         this_unscaled_pt = pts[m[1]]
+    #         this_template_idx = m[0]
+    #
+    #         neuron_arrays[this_template_idx][i_frame, :3] = this_unscaled_pt
+    #         neuron_arrays[this_template_idx][i_frame, 3] = m[2]  # Match confidence
+
     # Main loop
+    # with tqdm(total=len(num_frames)) as pbar:
+    #     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+    #         futures = {executor.submit(_parallel_func, i): i for i in range(num_frames)}
+    #         for future in concurrent.futures.as_completed(futures):
+    #             _ = future.result()
+    #             pbar.update(1)
+
     for i_frame in tqdm(range(num_frames), total=num_frames):
 
         pts = project_dat.get_centroids_as_numpy(i_frame)
-        pts_scaled, scaler = zimmer2leifer(pts)
+        pts_scaled = zimmer2leifer(pts)
         # Match
         matches = predict_matches(test_pos=pts_scaled, **prediction_options)
         matches = filter_matches(matches, match_confidence_threshold)
