@@ -96,10 +96,11 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
     -------
 
     """
+    df.replace(0, np.NaN, inplace=True)  # DLC uses all zeros as failed tracks
+
     if neuron_name_dict is None:
         neuron_name_dict = {}
     all_neurons = list(df.columns.levels[0])
-    zxy_names = ['z_dlc', 'x_dlc', 'y_dlc']
     t_vec = np.expand_dims(np.array(list(df.index), dtype=int), axis=1)
     # label_vec = np.ones(len(df.index), dtype=int)
     all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
@@ -124,7 +125,7 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
                 label_vec = list(df[n][i_name])
             except KeyError:
                 i_name = 'label'
-                label_vec = list(df[n][i_name])
+                label_vec = [cast_int_or_nan(i) for i in df[n][i_name]]
 
         all_t_zxy = np.vstack([all_t_zxy, t_zxy])
         properties['label'].extend(label_vec)
@@ -139,6 +140,12 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
 
     return options
 
+
+def cast_int_or_nan(i):
+    if np.isnan(i):
+        return i
+    else:
+        return int(i)
 
 def napari_labels_from_frames(all_frames: dict, num_frames=1) -> dict:
 

@@ -1,6 +1,8 @@
+import concurrent
 import logging
 import os
 import pickle
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -8,7 +10,7 @@ import numpy as np
 import pandas as pd
 import zarr
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, read_if_exists
+from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, read_if_exists, pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
@@ -76,33 +78,33 @@ class finished_project_data:
         seg_metadata_fname = segment_cfg.config['output_metadata']
         seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
 
-        fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"  # TODO: do not hardcode
+        behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"  # TODO: do not hardcode
 
         red_data = zarr.open(red_dat_fname)
         green_data = zarr.open(green_dat_fname)
 
         with safe_cd(project_dir):
-            red_traces = read_if_exists(red_traces_fname)
-            green_traces = read_if_exists(green_traces_fname)
-            final_tracks = read_if_exists(final_tracks_fname)
+            zarr_reader = lambda fname: zarr.open(fname, mode='r')
+            excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
-            # Segmentation
-            if '.zarr' in seg_fname_raw:
-                raw_segmentation = zarr.open(seg_fname_raw, mode='r')
-                with open(seg_metadata_fname, 'rb') as f:
-                    seg_metadata: dict = pickle.load(f)
-            else:
-                raw_segmentation = None
+            logging.info("Starting threads to read data...")
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                f = executor.submit(read_if_exists, red_traces_fname)
+                red_traces = f.result()
+                f = executor.submit(read_if_exists, green_traces_fname)
+                green_traces = f.result()
+                f = executor.submit(read_if_exists, final_tracks_fname)
+                final_tracks = f.result()
+                f = executor.submit(read_if_exists, seg_fname_raw, zarr_reader)
+                raw_segmentation = f.result()
+                f = executor.submit(read_if_exists, seg_fname, zarr_reader)
+                segmentation = f.result()
+                f = executor.submit(pickle_load_binary, seg_metadata_fname)
+                seg_metadata: dict = f.result()
+                f = executor.submit(read_if_exists, behavior_fname, excel_reader)
+                behavior_annotations = f.result()
 
-            if os.path.exists(seg_fname):
-                segmentation = zarr.open(seg_fname, mode='r')
-            else:
-                segmentation = None
-
-            if os.path.exists(fname):
-                behavior_annotations = pd.read_excel(fname, sheet_name='behavior')['Annotation']
-            else:
-                behavior_annotations = None
+            logging.info("Read all data")
 
         background_per_pixel = traces_cfg.config['visualization']['background_per_pixel']
         likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']

@@ -183,3 +183,9 @@ def read_if_exists(df_fname, reader=pd.read_hdf):
         return reader(df_fname)
     else:
         return None
+
+
+def pickle_load_binary(fname):
+    with open(fname, 'rb') as f:
+        dat = pickle.load(f)
+    return dat
