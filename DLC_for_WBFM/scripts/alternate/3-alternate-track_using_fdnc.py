@@ -4,6 +4,8 @@ from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
+    combine_all_dlc_and_tracklet_coverings_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
 
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -36,6 +38,10 @@ def main(_config, _run):
 
     tracks_cfg = _config['tracks_cfg']
     project_cfg = _config['cfg']
+    project_dir = _config['project_dir']
 
-    with safe_cd(_config['project_dir']):
+    with safe_cd(project_dir):
         track_using_fdnc_from_config(project_cfg, tracks_cfg)
+
+        # Necessary postprocessing step
+        combine_all_dlc_and_tracklet_coverings_from_config(tracks_cfg, project_dir, DEBUG=_config['DEBUG'])
