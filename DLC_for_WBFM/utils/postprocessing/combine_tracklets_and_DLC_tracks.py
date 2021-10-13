@@ -188,7 +188,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
 
     # Match tracklets to DLC neurons
     all_neuron_names = list(df_dlc_tracks.columns.levels[0])
-    verbose = 1
+    verbose = 0
     all_covering_ind = []
     used_indices = set()
     logging.info("Calculating distances between tracklets and DLC tracks")

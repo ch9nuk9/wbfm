@@ -140,6 +140,8 @@ class finished_project_data:
             likelihood_thresh
         )
 
+        print(obj)
+
         return obj
 
     @staticmethod
