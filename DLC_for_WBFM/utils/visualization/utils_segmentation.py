@@ -1,4 +1,5 @@
 import concurrent.futures
+import logging
 import os
 import pickle
 from collections import defaultdict
@@ -222,6 +223,7 @@ def reindex_segmentation_only_training_data(cfg: modular_project_config,
     """
     Using tracklets and full segmentation, produces a small video (zarr) with neurons colored by track
     """
+    logging.info("Reindexing segmentation (only training volumes)")
 
     num_frames = cfg.config['dataset_params']['num_frames']
 

@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -123,6 +124,7 @@ def save_training_data_as_dlc_format(tracking_config: config_file_with_project_c
     -------
 
     """
+    logging.info("Saving training data as DLC format")
 
     df, min_length_to_save = _unpack_config_training_data_conversion(training_config)
 
@@ -174,6 +176,7 @@ def save_all_tracklets_as_dlc_format(this_config, min_length, DEBUG=False):
     -------
 
     """
+    logging.info("Saving all tracklets as DLC format")
 
     fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
     df = pd.read_pickle(fname)
@@ -183,8 +186,9 @@ def save_all_tracklets_as_dlc_format(this_config, min_length, DEBUG=False):
     out_fname = os.path.join("2-training_data", "all_tracklets.h5")
     training_df.to_hdf(out_fname, 'df_with_missing')
 
-    out_fname = Path(out_fname).with_suffix(".csv")
-    training_df.to_csv(out_fname)
+    # Can easily be an absurd number of columns
+    # out_fname = Path(out_fname).with_suffix(".csv")
+    # training_df.to_csv(out_fname)
 
 
 def build_subset_df_from_tracklets(clust_df,

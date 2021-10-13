@@ -10,6 +10,7 @@ import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format, \
     save_all_tracklets_as_dlc_format
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
@@ -77,4 +78,5 @@ def produce_training_data(_config, _run):
 
     # For later extending
     min_length = train_cfg.config['postprocessing_params']['min_length_to_save']
-    save_all_tracklets_as_dlc_format(None, min_length=min_length)
+    with safe_cd(project_config.project_dir):
+        save_all_tracklets_as_dlc_format(None, min_length=min_length)

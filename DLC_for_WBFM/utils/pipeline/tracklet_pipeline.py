@@ -1,3 +1,4 @@
+import logging
 import os
 import os.path as osp
 import pickle
@@ -26,6 +27,7 @@ def partial_track_video_using_config(project_config: modular_project_config,
     See new_project_defaults/2-training_data/training_data_config.yaml
     See also track_neurons_full_video()
     """
+    logging.info(f"Producing tracklets for video {video_fname}")
 
     video_fname, options = _unpack_config_partial_tracking(DEBUG, project_config, training_config)
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)

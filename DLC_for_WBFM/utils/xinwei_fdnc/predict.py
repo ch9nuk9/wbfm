@@ -109,6 +109,8 @@ def track_using_fdnc_from_config(project_cfg: modular_project_config,
 
     # Save in main traces folder
     df.to_hdf(output_df_fname, key='df_with_missing')
+    tracks_cfg.config['final_3d_tracks_df'] = str(output_df_fname)
+    tracks_cfg.update_on_disk()
 
     output_df_fname = Path(output_df_fname).with_suffix('.csv')
     df.to_csv(str(output_df_fname))
