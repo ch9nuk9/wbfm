@@ -7,7 +7,7 @@ from dataclasses import field
 from typing import List, Tuple
 import numpy as np
 import scipy.ndimage as ndi
-import tifffile
+# import tifffile
 import yaml
 import zarr
 from tqdm.auto import tqdm
@@ -149,6 +149,8 @@ def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, 
 def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p: PreprocessingSettings,
                           start_volume: int, sz: Tuple, video_fname: str, vid_opt: dict,
                           which_frames: list) -> Tuple[zarr.Array, dict]:
+    import tifffile
+
     if DEBUG:
         # Make a much shorter video
         if which_frames is not None:
@@ -193,6 +195,7 @@ def _preprocess_all_frames_unpack_config(config, verbose, video_fname):
 
 
 def _get_video_options(config, video_fname):
+    import tifffile
     if video_fname.endswith('.tif') or video_fname.endswith('.btf'):
         with tifffile.TiffFile(video_fname) as tif:
             sz = tif.pages[0].shape
