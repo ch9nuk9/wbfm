@@ -60,24 +60,29 @@ def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, v
         # Check if this was used before
         if i_tracklet in used_indices:
             continue
-        # Check distance
+        # Check distance; break becuase they are sorted by distance
         if all_medians[i_tracklet] > d_max:
             break
-        # Check time overlap
+        # Check time overlap, except first time
         name = all_tracklet_names[i_tracklet]
         is_nan = df_tracklet[name]['x'].isnull()
         new_t = list(t[~is_nan])
-        if any([t in covering_time_points for t in new_t]):
-            continue
+        if len(covering_time_points) > 0:
+            if any([t in covering_time_points for t in new_t]):
+                continue
 
         # Save
         new_t = np.array(new_t)
         covering_time_points.extend(new_t)
         covering_ind.append(i_tracklet)
         these_dist[new_t] = all_dist[i_tracklet][new_t]
-    #         these_dist.append(all_dist[i])
+
     if verbose >= 1:
         print(f"Covering of length {len(covering_time_points)} made from {len(covering_ind)} tracklets")
+    if len(covering_time_points) == 0:
+        logging.warning("No covering found, here are some diagnostics:")
+        logging.warning(f"Minimum distance to other covering: {np.min(all_medians)}")
+        logging.warning(f"Looped up to tracklet {i_tracklet} with distance {all_medians[i_tracklet]}")
 
     return covering_time_points, covering_ind, these_dist
 
