@@ -45,10 +45,10 @@ def calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
     return all_dist
 
 
-def calc_covering_from_distances(all_dist, df_tracklet, all_covering_ind, d_max=5, verbose=0):
+def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, verbose=0):
     """Given distances between a dlc track and all tracklets, make a time-unique covering from the tracklets"""
-    all_meds = list(map(np.nanmedian, all_dist))
-    ind = np.argsort(all_meds)
+    all_medians = list(map(np.nanmedian, all_dist))
+    i_sorted_by_median_distance = np.argsort(all_medians)
     all_tracklet_names = list(df_tracklet.columns.levels[0])
 
     covering_ind = []
@@ -56,16 +56,15 @@ def calc_covering_from_distances(all_dist, df_tracklet, all_covering_ind, d_max=
     t = df_tracklet.index
     these_dist = np.zeros_like(t, dtype=float)
 
-    for i in ind:
+    for i_tracklet in i_sorted_by_median_distance:
         # Check if this was used before
-        for old_coverings in all_covering_ind:
-            if i in old_coverings:
-                continue
+        if i_tracklet in used_indices:
+            continue
         # Check distance
-        if all_meds[i] > d_max:
+        if all_medians[i_tracklet] > d_max:
             break
         # Check time overlap
-        name = all_tracklet_names[i]
+        name = all_tracklet_names[i_tracklet]
         is_nan = df_tracklet[name]['x'].isnull()
         new_t = list(t[~is_nan])
         if any([t in covering_time_points for t in new_t]):
@@ -74,8 +73,8 @@ def calc_covering_from_distances(all_dist, df_tracklet, all_covering_ind, d_max=
         # Save
         new_t = np.array(new_t)
         covering_time_points.extend(new_t)
-        covering_ind.append(i)
-        these_dist[new_t] = all_dist[i][new_t]
+        covering_ind.append(i_tracklet)
+        these_dist[new_t] = all_dist[i_tracklet][new_t]
     #         these_dist.append(all_dist[i])
     if verbose >= 1:
         print(f"Covering of length {len(covering_time_points)} made from {len(covering_ind)} tracklets")
@@ -184,20 +183,18 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
 
     # Match tracklets to DLC neurons
     all_neuron_names = list(df_dlc_tracks.columns.levels[0])
-    # all_covering_dist = []
-    # all_covering_time_points = []
+    verbose = 1
     all_covering_ind = []
+    used_indices = set()
     logging.info("Calculating distances between tracklets and DLC tracks")
     for i, dlc_name in enumerate(tqdm(all_neuron_names)):
         dist = calc_dlc_to_tracklet_distances(df_dlc_tracks, df_tracklets, dlc_name, all_covering_ind,
                                               min_overlap=min_overlap)
-        out = calc_covering_from_distances(dist, df_tracklets, all_covering_ind, d_max=d_max)
+        out = calc_covering_from_distances(dist, df_tracklets, used_indices, d_max=d_max, verbose=verbose)
         # covering_time_points, covering_ind, these_dist = out
         _, covering_ind, _ = out
-
-        # all_covering_dist.append(these_dist)
-        # all_covering_time_points.append(covering_time_points)
         all_covering_ind.append(covering_ind)
+        used_indices.update(covering_ind)
 
         if DEBUG and i > 0:
             # Should do 2, so that the column concatenation is checked too
@@ -207,6 +204,8 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
     # Combine and save
     # Rename to be sequential, like the reindexed segmentation
     logging.info("Concatenating tracklets")
+    if DEBUG:
+        rename_neurons = False
     combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind,
                                                                           df_tracklets,
                                                                           df_dlc_tracks,
@@ -220,10 +219,11 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
         csv_fname = Path(output_df_fname).with_suffix('.csv')
         combined_df.to_csv(csv_fname)
 
-        # Save only df_fname in yaml; don't overwrite other fields
-        updates = {'final_3d_tracks_df': str(output_df_fname)}
-        track_config.config.update(updates)
-        track_config.update_on_disk()
+        if not DEBUG:
+            # Save only df_fname in yaml; don't overwrite other fields
+            updates = {'final_3d_tracks_df': str(output_df_fname)}
+            track_config.config.update(updates)
+            track_config.update_on_disk()
 
 
 def _unpack_tracklets_for_combining(project_dir, track_config):
@@ -235,7 +235,7 @@ def _unpack_tracklets_for_combining(project_dir, track_config):
     with safe_cd(project_dir):
         # TODO: add the tracklet fname to the config file
         tracklet_fname = os.path.join('2-training_data', 'all_tracklets.h5')
-        dlc_fname = track_config.config['final_3d_tracks_df']
+        dlc_fname = track_config.resolve_relative_path_from_config('final_3d_tracks_df')
 
         df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
