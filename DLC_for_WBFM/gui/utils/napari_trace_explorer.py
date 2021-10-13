@@ -23,7 +23,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
 
         # Load dataframe and path to outputs
         self.viewer = viewer
-        neuron_names = list(self.dat.final_tracks.columns.levels[0])
+        neuron_names = list(self.dat.red_traces.columns.levels[0])
         self.current_name = neuron_names[0]
 
         # Change neurons (dropdown)
