@@ -66,88 +66,92 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     with safe_cd(project_cfg.project_dir):
         reindexed_masks = zarr.open(fname)
 
-    # New: rename neurons to be same as segmentation indices
-    new_neuron_names = [f"neuron{i + 1}" for i in range(len(old_dlc_names))]
-    dlc_name_mapping = dict(zip(old_dlc_names, new_neuron_names))
+    use_region_props = True
+    if not use_region_props:
+        # New: rename neurons to be same as segmentation indices
+        new_neuron_names = [f"neuron{i + 1}" for i in range(len(old_dlc_names))]
+        dlc_name_mapping = dict(zip(old_dlc_names, new_neuron_names))
 
-    # def _get_dlc_zxy_one_neuron(t, new_name):
-    #     old_name = dlc_name_mapping[new_name]
-    #     coords = ['z', 'y', 'x']
-    #     all_dlc_zxy = np.asarray(dlc_tracks[old_name][coords].loc[t])
-    #     return all_dlc_zxy
-    #
-    # def parallel_func(i_and_name):
-    #     i, new_name = i_and_name
-    #     return calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_video, red_video,
-    #                                            i, new_name,
-    #                                            params_start_volume,
-    #                                            reindexed_masks)
-    #
-    # with tqdm(total=len(new_neuron_names)) as pbar:
-    #     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-    #         futures = {executor.submit(parallel_func, i): i for i in enumerate(new_neuron_names)}
-    #         results = []
-    #         for future in concurrent.futures.as_completed(futures):
-    #             results.append(future.result())
-    #             pbar.update(1)
-    # options = dict(frame_list=frame_list,
-    #                green_video=green_video,
-    #                red_video=red_video,
-    #                params_start_volume=params_start_volume,
-    #                reindexed_masks=reindexed_masks,
-    #                dlc_name_mapping=dlc_name_mapping,
-    #                dlc_tracks=dlc_tracks)
-    #
-    # print("Starting up parallel pool...")
-    # with tqdm(total=len(new_neuron_names)) as pbar:
-    #     with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
-    #         futures = {executor.submit(_pool_parallel_func, i, options): i for i in enumerate(new_neuron_names)}
-    #         results = []
-    #         for future in concurrent.futures.as_completed(futures):
-    #             results.append(future.result())
-    #             pbar.update(1)
+        def _get_dlc_zxy_one_neuron(t, new_name):
+            old_name = dlc_name_mapping[new_name]
+            coords = ['z', 'y', 'x']
+            all_dlc_zxy = np.asarray(dlc_tracks[old_name][coords].loc[t])
+            return all_dlc_zxy
 
-    # all_green_dfs = [r[0] for r in results]
-    # all_red_dfs = [r[1] for r in results]
-    #
-    # df_green = pd.concat(all_green_dfs, axis=1)
-    # df_red = pd.concat(all_red_dfs, axis=1)
+        def parallel_func(i_and_name):
+            i, new_name = i_and_name
+            return calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_video, red_video,
+                                                   i, new_name,
+                                                   params_start_volume,
+                                                   reindexed_masks)
 
-    # NEW: get properties much faster (I hope)
+        with tqdm(total=len(new_neuron_names)) as pbar:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+                futures = {executor.submit(parallel_func, i): i for i in enumerate(new_neuron_names)}
+                results = []
+                for future in concurrent.futures.as_completed(futures):
+                    results.append(future.result())
+                    pbar.update(1)
+        # options = dict(frame_list=frame_list,
+        #                green_video=green_video,
+        #                red_video=red_video,
+        #                params_start_volume=params_start_volume,
+        #                reindexed_masks=reindexed_masks,
+        #                dlc_name_mapping=dlc_name_mapping,
+        #                dlc_tracks=dlc_tracks)
+        #
+        # print("Starting up parallel pool...")
+        # with tqdm(total=len(new_neuron_names)) as pbar:
+        #     with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+        #         futures = {executor.submit(_pool_parallel_func, i, options): i for i in enumerate(new_neuron_names)}
+        #         results = []
+        #         for future in concurrent.futures.as_completed(futures):
+        #             results.append(future.result())
+        #             pbar.update(1)
 
-    matches_fname = traces_cfg.resolve_relative_path_from_config('all_matches')
-    all_matches = pd.read_pickle(matches_fname)
-    mask2final_name_per_volume = make_mask2final_mapping(all_matches)
+        all_green_dfs = [r[0] for r in results]
+        all_red_dfs = [r[1] for r in results]
 
-    red_all_neurons, green_all_neurons = region_props_all_volumes(
-        reindexed_masks,
-        red_video,
-        green_video,
-        mask2final_name_per_volume,
-        frame_list,
-        params_start_volume
-    )
+        df_green = pd.concat(all_green_dfs, axis=1)
+        df_red = pd.concat(all_red_dfs, axis=1)
 
-    # Convert nested dict of volumes to final dataframes
-    sz_one_neuron = len(frame_list)
-    tmp_red = defaultdict(lambda: np.zeros(sz_one_neuron))
-    tmp_green = defaultdict(lambda: np.zeros(sz_one_neuron))
-    coords = ['z', 'x', 'y']
-    for i_vol in red_all_neurons.keys():
-        red_props, green_props = red_all_neurons[i_vol], green_all_neurons[i_vol]
-        for key in red_props.keys():
-            if 'weighted_centroid' in key:
-                # Later formatting expects this to be split
-                for i, c in enumerate(coords):
-                    new_key = (key[0], c)
-                    tmp_red[new_key][i_vol] = red_props[key][i]
-                    tmp_green[new_key][i_vol] = green_props[key][i]
-            else:
-                tmp_red[key][i_vol] = red_props[key]
-                tmp_green[key][i_vol] = green_props[key]
+    else:
+        # NEW: get properties much faster (I hope)
+        # matches_fname = traces_cfg.resolve_relative_path_from_config('all_matches')
+        # all_matches = pd.read_pickle(matches_fname)
+        # mask2final_name_per_volume = make_mask2final_mapping(all_matches)
 
-    df_red = pd.DataFrame(tmp_red)
-    df_green = pd.DataFrame(tmp_green)
+        red_all_neurons, green_all_neurons = region_props_all_volumes(
+            reindexed_masks,
+            red_video,
+            green_video,
+            frame_list,
+            params_start_volume
+        )
+
+        # Convert nested dict of volumes to final dataframes
+        sz_one_neuron = len(frame_list)
+        tmp_red = defaultdict(lambda: np.zeros(sz_one_neuron))
+        tmp_green = defaultdict(lambda: np.zeros(sz_one_neuron))
+        coords = ['z', 'x', 'y']
+        for i_vol in red_all_neurons.keys():
+            red_props, green_props = red_all_neurons[i_vol], green_all_neurons[i_vol]
+            for key in red_props.keys():
+                if 'weighted_centroid' in key:
+                    # Later formatting expects this to be split
+                    for i, c in enumerate(coords):
+                        new_key = (key[0], c)
+                        tmp_red[new_key][i_vol] = red_props[key][i]
+                        tmp_green[new_key][i_vol] = green_props[key][i]
+                else:
+                    tmp_red[key][i_vol] = red_props[key]
+                    tmp_green[key][i_vol] = green_props[key]
+
+        df_red = pd.DataFrame(tmp_red)
+        df_green = pd.DataFrame(tmp_green)
+
+        # TODO: make sure these are strings
+        new_neuron_names = list(df_red.columns.levels[0])
 
     if DEBUG:
         print("Single pass-through successful")
@@ -170,7 +174,7 @@ def make_mask2final_mapping(all_matches: dict):
     return mask2final_name_per_volume
 
 
-def region_props_all_volumes(reindexed_masks, red_video, green_video, mask2final_name_per_volume,
+def region_props_all_volumes(reindexed_masks, red_video, green_video,
                              frame_list,
                              params_start_volume):
     """
@@ -180,7 +184,6 @@ def region_props_all_volumes(reindexed_masks, red_video, green_video, mask2final
     reindexed_masks
     red_video
     green_video
-    mask2final_name_per_volume
     frame_list
     params_start_volume
 
@@ -192,19 +195,35 @@ def region_props_all_volumes(reindexed_masks, red_video, green_video, mask2final
     red_all_neurons = {}
     green_all_neurons = {}
 
-    options = dict(
-        green_all_neurons=green_all_neurons,
-        green_video=green_video,
-        mask2final_name_per_volume=mask2final_name_per_volume,
-        params_start_volume=params_start_volume,
-        red_all_neurons=red_all_neurons,
-        red_video=red_video,
-        reindexed_masks=reindexed_masks
-    )
+    # options = dict(
+    #     green_all_neurons=green_all_neurons,
+    #     green_video=green_video,
+    #     mask2final_name_per_volume=mask2final_name_per_volume,
+    #     params_start_volume=params_start_volume,
+    #     red_all_neurons=red_all_neurons,
+    #     red_video=red_video,
+    #     reindexed_masks=reindexed_masks
+    # )
+
+    # def _parallel_func(i_volume, green_all_neurons, green_video, mask2final_name_per_volume, params_start_volume,
+    #                    red_all_neurons, red_video, reindexed_masks):
+    def _parallel_func(i_volume):
+        i_mask = i_volume - params_start_volume
+        this_mask_volume = reindexed_masks[i_mask, ...]
+        this_green_volume = green_video[i_volume, ...]
+        this_red_volume = red_video[i_volume, ...]
+        # mask2final_name = mask2final_name_per_volume[i_volume]
+        red_one_vol, green_one_vol = region_props_one_volume(
+            this_mask_volume,
+            this_red_volume,
+            this_green_volume
+        )
+        red_all_neurons[i_volume] = red_one_vol
+        green_all_neurons[i_volume] = green_one_vol
 
     with tqdm(total=len(frame_list)) as pbar:
         with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-            futures = {executor.submit(_parallel_func, i, **options): i for i in frame_list}
+            futures = {executor.submit(_parallel_func, i): i for i in frame_list}
             for future in concurrent.futures.as_completed(futures):
                 _ = future.result()
                 pbar.update(1)
@@ -212,27 +231,9 @@ def region_props_all_volumes(reindexed_masks, red_video, green_video, mask2final
     return red_all_neurons, green_all_neurons
 
 
-def _parallel_func(green_all_neurons, green_video, i_volume, mask2final_name_per_volume, params_start_volume,
-                   red_all_neurons, red_video, reindexed_masks):
-    i_mask = i_volume - params_start_volume
-    this_mask_volume = reindexed_masks[i_mask, ...]
-    this_green_volume = green_video[i_volume, ...]
-    this_red_volume = red_video[i_volume, ...]
-    mask2final_name = mask2final_name_per_volume[i_volume]
-    red_one_vol, green_one_vol = region_props_one_volume(
-        this_mask_volume,
-        this_red_volume,
-        this_green_volume,
-        mask2final_name
-    )
-    red_all_neurons[i_volume] = red_one_vol
-    green_all_neurons[i_volume] = green_one_vol
-
-
 def region_props_one_volume(this_mask_volume,
                             this_red_volume,
-                            this_green_volume,
-                            mask2final_name):
+                            this_green_volume):
     """
 
     Parameters
@@ -258,8 +259,8 @@ def region_props_one_volume(this_mask_volume,
 
     for this_red, this_green in zip(red_props, green_props):
         seg_index = this_red['label']
-        final_index = mask2final_name[seg_index]
-        key_base = (final_index, )
+        # final_index = mask2final_name[seg_index]
+        key_base = (f"neuron{seg_index}", )
 
         for this_prop in props_to_save:
             key = key_base + (this_prop,)
