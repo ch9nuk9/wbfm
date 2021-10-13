@@ -21,7 +21,10 @@ dependencies:
   - scipy=1.2.1
   - pytorch
   - tifffile
+  - opencv
+  - matplotlib
   - torchvision
+  - scikit-learn
   - pip:
     - sacred
     - tables

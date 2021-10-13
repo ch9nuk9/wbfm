@@ -10,7 +10,8 @@ import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format, \
+    save_all_tracklets_as_dlc_format
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
@@ -52,20 +53,28 @@ def produce_training_data(_config, _run):
     DEBUG = _config['DEBUG']
     project_config = _config['cfg']
 
+    tracking_cfg = _config['tracking_cfg']
+    segment_cfg = _config['segment_cfg']
+    train_cfg = _config['train_cfg']
+
     partial_track_video_using_config(
         project_config,
-        _config['train_cfg'],
+        train_cfg,
         DEBUG=DEBUG
     )
 
     # For manual correction
     reindex_segmentation_only_training_data(
         project_config,
-        _config['segment_cfg'],
-        _config['tracking_cfg'],
-        DEBUG = DEBUG
+        segment_cfg,
+        tracking_cfg,
+        DEBUG=DEBUG
     )
 
     # For later analysis, i.e. don't use the raw dataframes directly
-    save_training_data_as_dlc_format(_config['tracking_cfg'],
-                                     _config['train_cfg'], DEBUG=DEBUG)
+    save_training_data_as_dlc_format(tracking_cfg,
+                                     train_cfg, DEBUG=DEBUG)
+
+    # For later extending
+    min_length = train_cfg.config['postprocessing_params']['min_length_to_save']
+    save_all_tracklets_as_dlc_format(None, min_length=min_length)
