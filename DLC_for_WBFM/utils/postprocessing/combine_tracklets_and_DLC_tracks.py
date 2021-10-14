@@ -146,7 +146,7 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind: list,
         print(all_df)
 
     # Produce new dataframe
-    all_neuron_names, final_track_df = combine_dlc_and_tracklets(all_neuron_names, dlc_tracks, new_tracklet_df)
+    all_neuron_names, final_track_df = combine_dlc_and_tracklets(dlc_tracks, new_tracklet_df)
 
     # To be sequential, and same as segmentation
     if rename_neurons:
@@ -156,7 +156,7 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind: list,
     return final_track_df, new_tracklet_df
 
 
-def combine_dlc_and_tracklets(all_neuron_names, dlc_tracks, new_tracklet_df):
+def combine_dlc_and_tracklets(dlc_tracks, new_tracklet_df):
     # Combine new and old tracklets (two dataframes, same neuron names)
     # Note: needs a loop because combine_first() doesn't work for multiindexes
     new_tracklet_df.replace(0, np.NaN, inplace=True)
@@ -244,6 +244,6 @@ def _unpack_tracklets_for_combining(project_dir, track_config):
 
         df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
-        print(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_dlc_tracks.shape[1]/4)} neurons")
+        logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_dlc_tracks.shape[1]/4)} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
     return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, rename_neurons
