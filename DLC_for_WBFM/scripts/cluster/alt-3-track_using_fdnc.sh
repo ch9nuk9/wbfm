@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-#SBATCH --job-name=fdnc_tracking   # Job name
+#SBATCH --job_name=fdnc_tracking
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
-#SBATCH --output=fdnc_tracking.out    # Standard output and error log
-#SBATCH --time=4:00:00
+#SBATCH --time=6:00:00
 #SBATCH --mem=16G
+#SBATCH --cpus-per-task=8
 
 pwd; hostname; date
 
