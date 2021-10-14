@@ -163,7 +163,7 @@ def combine_dlc_and_tracklets(dlc_tracks, new_tracklet_df):
 
 
 def combine_all_dlc_and_tracklet_coverings_from_config(track_config: ConfigFileWithProjectContext,
-                                                       traces_cfg: ConfigFileWithProjectContext,
+                                                       training_cfg: ConfigFileWithProjectContext,
                                                        project_dir, DEBUG=False):
     """
     Improves tracking by combining DLC neurons with my short tracklets
@@ -171,7 +171,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: ConfigFileW
     Parameters
     ----------
     track_config
-    traces_cfg
+    training_cfg
     project_dir
     DEBUG
 
@@ -181,7 +181,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: ConfigFileW
     """
 
     d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname = _unpack_tracklets_for_combining(
-        project_dir, traces_cfg, track_config)
+        project_dir, training_cfg, track_config)
 
     # Match tracklets to DLC neurons
     all_neuron_names = list(df_dlc_tracks.columns.levels[0])
@@ -226,7 +226,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: ConfigFileW
 
 
 def _unpack_tracklets_for_combining(project_dir,
-                                    traces_cfg: ConfigFileWithProjectContext,
+                                    training_cfg: ConfigFileWithProjectContext,
                                     track_config: ConfigFileWithProjectContext):
     d_max = track_config.config['final_3d_postprocessing']['max_dist']
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
@@ -234,7 +234,7 @@ def _unpack_tracklets_for_combining(project_dir,
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
     with safe_cd(project_dir):
         # TODO: add the tracklet fname to the config file
-        tracklet_fname = traces_cfg.resolve_relative_path('all_tracklets.h5', prepend_subfolder=True)
+        tracklet_fname = training_cfg.resolve_relative_path('all_tracklets.h5', prepend_subfolder=True)
         dlc_fname = track_config.resolve_relative_path_from_config('final_3d_tracks_df')
 
         df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)

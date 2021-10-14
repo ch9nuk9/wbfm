@@ -28,7 +28,7 @@ def cfg(project_path, DEBUG):
     project_dir = cfg.project_dir
 
     tracking_cfg = cfg.get_tracking_config()
-    traces_cfg = cfg.get_traces_config()
+    training_cfg = cfg.get_training_config()
 
     if not DEBUG:
         using_monkeypatch()
@@ -43,6 +43,6 @@ def combine_tracks(_config, _run):
     DEBUG = _config['DEBUG']
     track_cfg = _config['tracking_cfg']
     project_dir = _config['project_dir']
-    traces_cfg = _config['traces_cfg']
+    training_cfg = _config['training_cfg']
 
-    combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, traces_cfg, project_dir, DEBUG=DEBUG)
+    combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, training_cfg, project_dir, DEBUG=DEBUG)
