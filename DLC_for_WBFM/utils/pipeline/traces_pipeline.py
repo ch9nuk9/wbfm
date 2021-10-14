@@ -12,6 +12,7 @@ from skimage import measure
 from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
+from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
 from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
@@ -30,8 +31,9 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio = _unpack_configs_for_traces(
         project_cfg, segment_cfg, track_cfg)
 
-    green_video = zarr.open(green_fname)
-    red_video = zarr.open(red_fname)
+    # green_video = zarr.open(green_fname)
+    # red_video = zarr.open(red_fname)
+    project_data = finished_project_data.load_final_project_data_from_config(project_cfg)
 
     # Match -> Reindex -> Get traces
     old_dlc_names = list(dlc_tracks.columns.levels[0])
@@ -52,7 +54,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     if DEBUG:
         frame_list = frame_list[:2]  # Shorten (to avoid break)
     calculate_segmentation_and_dlc_matches(_get_dlc_zxy, all_matches, frame_list, max_dist,
-                                           segmentation_metadata, z_to_xy_ratio, DEBUG=DEBUG)
+                                           segmentation_metadata, project_data, z_to_xy_ratio, DEBUG=DEBUG)
 
     relative_fname = traces_cfg.config['all_matches']
     project_cfg.save_in_local_project(all_matches, relative_fname)
@@ -81,7 +83,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
 
         def parallel_func(i_and_name):
             i, new_name = i_and_name
-            return calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_video, red_video,
+            return calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list,
+                                                   project_data.green_data, project_data.red_data,
                                                    i, new_name,
                                                    params_start_volume,
                                                    reindexed_masks)
@@ -124,8 +127,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
 
         red_all_neurons, green_all_neurons = region_props_all_volumes(
             reindexed_masks,
-            red_video,
-            green_video,
+            project_data.red_data,
+            project_data.green_data,
             frame_list,
             params_start_volume
         )
@@ -373,6 +376,7 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
                                            frame_list: list,
                                            max_dist: float,
                                            segmentation_metadata: Dict[int, pd.DataFrame],
+                                           project_data: finished_project_data,
                                            z_to_xy_ratio: float, DEBUG: bool = False) -> None:
     """
 
@@ -396,12 +400,9 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
         # NOTE: This dataframe starts at 0, not start_volume
         zxy0 = _get_dlc_zxy(i_volume)
         zxy0[:, 0] *= z_to_xy_ratio
-        # REVIEW: Get segmentation point cloud
-        seg_zxy = segmentation_metadata[i_volume]['centroids']
-        seg_zxy = [np.asarray(row) for row in seg_zxy]
-        if len(seg_zxy) == 0:
+        zxy1 = project_data.get_centroids_as_numpy(i_volume)
+        if len(zxy1) == 0:
             continue
-        zxy1 = np.array(seg_zxy)
         zxy1[:, 0] *= z_to_xy_ratio
         # Get matches
         out = calc_icp_matches(zxy0, zxy1, max_dist=max_dist)
