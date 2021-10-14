@@ -3,11 +3,11 @@ import os
 import napari
 import numpy as np
 import zarr
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 
-def napari_of_training_data(cfg: modular_project_config):
+def napari_of_training_data(cfg: ModularProjectConfig):
     # TODO: read from config file, not project directory
     training_dat_fname = cfg.config['preprocessed_red']
     training_seg_fname = os.path.join(cfg.project_dir, '2-training_data', 'reindexed_masks.zarr')

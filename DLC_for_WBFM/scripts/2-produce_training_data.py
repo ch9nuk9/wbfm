@@ -15,7 +15,7 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_
     save_all_tracklets_as_dlc_format
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, update_path_to_segmentation_in_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, update_path_to_segmentation_in_config
 
 from sacred import SETTINGS
 SETTINGS.CAPTURE_MODE = 'sys' # Capture stdout
@@ -29,7 +29,7 @@ ex.add_config(project_path=None, DEBUG=False)
 @ex.config
 def cfg(project_path, DEBUG):
     # Manually load yaml files
-    cfg = modular_project_config(project_path)
+    cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
     train_cfg = update_path_to_segmentation_in_config(cfg)

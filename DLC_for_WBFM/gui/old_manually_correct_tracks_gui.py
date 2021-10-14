@@ -1,7 +1,7 @@
 import argparse
 
 from DLC_for_WBFM.gui.utils.manual_annotation import create_manual_correction_gui
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 if __name__ == "__main__":
@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     print("Starting manual annotation GUI, may take a while to load...")
 
-    cfg = modular_project_config(project_path)
+    cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()

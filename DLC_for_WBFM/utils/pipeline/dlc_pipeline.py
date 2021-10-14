@@ -16,7 +16,7 @@ from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_
     training_data_from_3dDLC_annotations
 from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _get_video_options
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import calculate_best_covering_from_tracklets
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
@@ -52,9 +52,9 @@ def create_only_videos(video_fname, config, verbose=1, DEBUG=False):
     return all_avi_fnames
 
 
-def create_dlc_training_from_tracklets(project_config: modular_project_config,
-                                       training_config: config_file_with_project_context,
-                                       tracking_config: config_file_with_project_context,
+def create_dlc_training_from_tracklets(project_config: ModularProjectConfig,
+                                       training_config: ConfigFileWithProjectContext,
+                                       tracking_config: ConfigFileWithProjectContext,
                                        scorer: str = None,
                                        task_name: str = None,
                                        DEBUG: bool = False) -> None:
@@ -229,7 +229,7 @@ def _get_or_make_avi(all_avi_fnames, center, i, preprocessed_dat, vid_opt, video
 
 
 def _get_frames_for_dlc_training(DEBUG: bool, df: pd.DataFrame,
-                                 tracking_config: config_file_with_project_context):
+                                 tracking_config: ConfigFileWithProjectContext):
     # Choose a subset of frames with enough tracklets
     which_frames = tracking_config.config['training_data_3d'].get('which_frames', None)
     if which_frames is None:
@@ -271,7 +271,7 @@ def _make_avi_name(center):
     return fname
 
 
-def train_all_dlc_from_config(tracking_cfg: config_file_with_project_context) -> None:
+def train_all_dlc_from_config(tracking_cfg: ConfigFileWithProjectContext) -> None:
     """
     Simple multi-network wrapper around:
     deeplabcut.train_network()
@@ -300,7 +300,7 @@ def train_single_dlc_network(dlc_config):
             pass
 
 
-def make_3d_tracks_from_stack(track_cfg: config_file_with_project_context,
+def make_3d_tracks_from_stack(track_cfg: ConfigFileWithProjectContext,
                               use_dlc_project_videos: bool = True,
                               DEBUG: bool = False) -> pd.DataFrame:
     """

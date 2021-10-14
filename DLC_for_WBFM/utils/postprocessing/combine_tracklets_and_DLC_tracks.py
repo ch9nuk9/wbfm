@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_filepaths import ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 
 
@@ -162,7 +162,7 @@ def combine_dlc_and_tracklets(dlc_tracks, new_tracklet_df):
     return all_neuron_names, final_track_df
 
 
-def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file_with_project_context,
+def combine_all_dlc_and_tracklet_coverings_from_config(track_config: ConfigFileWithProjectContext,
                                                        project_dir, DEBUG=False):
     """
     Improves tracking by combining DLC neurons with my short tracklets

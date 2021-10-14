@@ -14,7 +14,7 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from segmentation.util.utils_pipeline import segment_video_using_config_2d, segment_video_using_config_3d
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, synchronize_segment_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, synchronize_segment_config
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
@@ -25,7 +25,7 @@ ex.add_config(project_path=None, continue_from_frame=None, DEBUG=False)
 @ex.config
 def cfg(project_path, DEBUG):
     # Manually load yaml files
-    cfg = modular_project_config(project_path)
+    cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()

@@ -12,22 +12,29 @@ from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 
 
 @dataclass
-class config_file_with_project_context:
+class ConfigFileWithProjectContext:
     """
     Configuration file (loaded from .yaml) that knows the project it should be executed in
+
+    In principle this config file is associated with a subfolder (and single step) of a project
     """
 
     config: dict
     project_dir: str
+    subfolder: str
 
     def resolve_relative_path_from_config(self, key):
         val = self.config.get(key, None)
         return self.resolve_relative_path(val)
 
-    def resolve_relative_path(self, val: str):
+    def resolve_relative_path(self, val: str, prepend_subfolder=False):
         if val is None:
             return None
-        return os.path.join(self.project_dir, val)
+
+        if prepend_subfolder:
+            return os.path.join(self.project_dir, self.subfolder, val)
+        else:
+            return os.path.join(self.project_dir, val)
 
     def update_on_disk(self):
         with safe_cd(self.project_dir):
@@ -38,7 +45,7 @@ class config_file_with_project_context:
 
 
 @dataclass
-class modular_project_config:
+class ModularProjectConfig:
     """
     Add functionality to get individual config files using the main project config filepath
 
@@ -55,15 +62,15 @@ class modular_project_config:
 
     def get_segmentation_config(self):
         fname = Path(self.config['subfolder_configs']['segmentation'])
-        return config_file_with_project_context(*self._check_abs_and_load_config(fname))
+        return ConfigFileWithProjectContext(*self._check_abs_and_load_config(fname))
 
     def get_training_config(self):
         fname = Path(self.config['subfolder_configs']['training_data'])
-        return config_file_with_project_context(*self._check_abs_and_load_config(fname))
+        return ConfigFileWithProjectContext(*self._check_abs_and_load_config(fname))
 
     def get_tracking_config(self):
         fname = Path(self.config['subfolder_configs']['tracking'])
-        return config_file_with_project_context(*self._check_abs_and_load_config(fname))
+        return ConfigFileWithProjectContext(*self._check_abs_and_load_config(fname))
 
     def get_preprocessing_config(self):
         """Different: plain dict, which is only used at the very beginning"""
@@ -72,16 +79,17 @@ class modular_project_config:
 
     def get_traces_config(self):
         fname = Path(self.config['subfolder_configs']['traces'])
-        return config_file_with_project_context(*self._check_abs_and_load_config(fname))
+        return ConfigFileWithProjectContext(*self._check_abs_and_load_config(fname))
 
-    def _check_abs_and_load_config(self, fname: Path) -> Tuple[dict, str]:
+    def _check_abs_and_load_config(self, fname: Path) -> Tuple[dict, str, str]:
         if fname.is_absolute():
             project_dir = fname.parent.parent
         else:
             project_dir = Path(self.project_path).parent
         with safe_cd(project_dir):
             cfg = load_config(fname)
-        return cfg, str(project_dir)
+        subfolder = fname.parent
+        return cfg, str(project_dir), str(subfolder)
 
     def to_json(self):
         return json.dumps(vars(self))
@@ -156,14 +164,10 @@ def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
     updates = {'video_path': project_cfg['preprocessed_red']}
     segment_cfg.update(updates)
 
-    # segment_folder = get_absname(project_path, 'segmentation')
-    # updates = {'output_folder': segment_folder}
-    # segment_cfg['output_params'].update(updates)
-
     return segment_cfg
 
 
-def update_path_to_segmentation_in_config(cfg: modular_project_config) -> config_file_with_project_context:
+def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> ConfigFileWithProjectContext:
     # For now, does NOT overwrite anything on disk
 
     segment_cfg = cfg.get_segmentation_config()

@@ -10,7 +10,7 @@ from sacred.observers import TinyDbObserver
 
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_dlc_training_from_tracklets
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
@@ -22,7 +22,7 @@ ex.add_config(project_path=None, DEBUG=False)
 
 @ex.config
 def cfg(project_path, DEBUG):
-    cfg = modular_project_config(project_path)
+    cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
     training_cfg = cfg.get_training_config()

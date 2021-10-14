@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 import zarr
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, read_if_exists, pickle_load_binary, \
-    config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
+    ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
@@ -19,7 +19,7 @@ from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_
 @dataclass
 class finished_project_data:
     project_dir: str
-    project_config: modular_project_config
+    project_config: ModularProjectConfig
 
     red_data: zarr.Array
     green_data: zarr.Array
@@ -42,7 +42,7 @@ class finished_project_data:
     @property
     def raw_frames(self):
         train_cfg = self.project_config.get_training_config()
-        fname = train_cfg.resolve_relative_path(os.path.join('2-training_data', 'raw', 'frame_dat.pickle'))
+        fname = train_cfg.resolve_relative_path(os.path.join('raw', 'frame_dat.pickle'), prepend_subfolder=True)
         # fname = Path(self.project_dir).joinpath('2-training_data').joinpath('raw').joinpath('frame_dat.pickle')
         with open(fname, 'rb') as f:
             frames = pickle.load(f)
@@ -51,7 +51,7 @@ class finished_project_data:
     @property
     def raw_matches(self):
         train_cfg = self.project_config.get_training_config()
-        fname = train_cfg.resolve_relative_path(os.path.join('2-training_data', 'raw', 'match_dat.pickle'))
+        fname = train_cfg.resolve_relative_path(os.path.join('raw', 'match_dat.pickle'), prepend_subfolder=True)
         # fname = Path(self.project_dir).joinpath('2-training_data').joinpath('raw').joinpath('match_dat.pickle')
         with open(fname, 'rb') as f:
             matches = pickle.load(f)
@@ -63,7 +63,7 @@ class finished_project_data:
 
     @staticmethod
     def unpack_config_file(project_path):
-        cfg = modular_project_config(project_path)
+        cfg = ModularProjectConfig(project_path)
         project_dir = cfg.project_dir
 
         segment_cfg = cfg.get_segmentation_config()
@@ -73,10 +73,10 @@ class finished_project_data:
         return cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir
 
     @staticmethod
-    def _load_data_from_configs(cfg: modular_project_config,
-                                segment_cfg: config_file_with_project_context,
-                                tracking_cfg: config_file_with_project_context,
-                                traces_cfg: config_file_with_project_context,
+    def _load_data_from_configs(cfg: ModularProjectConfig,
+                                segment_cfg: ConfigFileWithProjectContext,
+                                tracking_cfg: ConfigFileWithProjectContext,
+                                traces_cfg: ConfigFileWithProjectContext,
                                 project_dir):
         red_dat_fname = cfg.config['preprocessed_red']
         green_dat_fname = cfg.config['preprocessed_green']
@@ -153,7 +153,7 @@ class finished_project_data:
         if isinstance(project_path, (str, os.PathLike)):
             args = finished_project_data.unpack_config_file(project_path)
             return finished_project_data._load_data_from_configs(*args)
-        elif isinstance(project_path, modular_project_config):
+        elif isinstance(project_path, ModularProjectConfig):
             project_path = project_path.project_path
             args = finished_project_data.unpack_config_file(project_path)
             return finished_project_data._load_data_from_configs(*args)

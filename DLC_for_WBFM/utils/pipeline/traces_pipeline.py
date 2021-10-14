@@ -13,16 +13,16 @@ from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
 
 
-def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project_context,
-                                           track_cfg: config_file_with_project_context,
-                                           traces_cfg: config_file_with_project_context,
-                                           project_cfg: modular_project_config,
+def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectContext,
+                                           track_cfg: ConfigFileWithProjectContext,
+                                           traces_cfg: ConfigFileWithProjectContext,
+                                           project_cfg: ModularProjectConfig,
                                            DEBUG: bool = False) -> None:
     """
     Connect the 3d traces to previously segmented masks
@@ -351,7 +351,7 @@ def calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_v
 def _save_traces_as_hdf_and_update_configs(final_neuron_names: list,
                                            df_green: pd.DataFrame,
                                            df_red: pd.DataFrame,
-                                           traces_cfg: config_file_with_project_context) -> None:
+                                           traces_cfg: ConfigFileWithProjectContext) -> None:
     # Save traces (red and green) and neuron names
     # csv doesn't work well when some entries are lists
     red_fname = Path('4-traces').joinpath('red_traces.h5')

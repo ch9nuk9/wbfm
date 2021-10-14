@@ -10,15 +10,15 @@ import pandas as pd
 import zarr
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import config_file_with_project_context, modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ConfigFileWithProjectContext, ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames
 
 
-def reindex_segmentation_using_config(traces_cfg: config_file_with_project_context,
-                                      segment_cfg: config_file_with_project_context,
-                                      project_cfg: modular_project_config,
+def reindex_segmentation_using_config(traces_cfg: ConfigFileWithProjectContext,
+                                      segment_cfg: ConfigFileWithProjectContext,
+                                      project_cfg: ModularProjectConfig,
                                       DEBUG=False):
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
@@ -217,9 +217,9 @@ def all_matches_to_lookup_tables(all_matches: dict) -> dict:
     return all_lut
 
 
-def reindex_segmentation_only_training_data(cfg: modular_project_config,
-                                            segment_cfg: config_file_with_project_context,
-                                            tracking_cfg: config_file_with_project_context,
+def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
+                                            segment_cfg: ConfigFileWithProjectContext,
+                                            tracking_cfg: ConfigFileWithProjectContext,
                                             DEBUG=False):
     """
     Using tracklets and full segmentation, produces a small video (zarr) with neurons colored by track

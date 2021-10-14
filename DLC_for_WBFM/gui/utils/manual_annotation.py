@@ -8,7 +8,7 @@ import zarr
 from PyQt5 import QtWidgets
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_which_frames
 
@@ -191,10 +191,10 @@ class manual_annotation_widget(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def create_manual_correction_gui(cfg: modular_project_config,
-                                 segment_cfg: config_file_with_project_context,
-                                 training_cfg: config_file_with_project_context,
-                                 tracking_cfg: config_file_with_project_context,
+def create_manual_correction_gui(cfg: ModularProjectConfig,
+                                 segment_cfg: ConfigFileWithProjectContext,
+                                 training_cfg: ConfigFileWithProjectContext,
+                                 tracking_cfg: ConfigFileWithProjectContext,
                                  corrector_name='Charlie', initial_annotation_name=None, DEBUG=False):
     """
     Creates a napari-based gui for correcting tracks

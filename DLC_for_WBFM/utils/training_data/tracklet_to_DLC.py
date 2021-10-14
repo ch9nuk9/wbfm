@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
 
 
 def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
@@ -110,8 +110,8 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
     return new_df
 
 
-def save_training_data_as_dlc_format(tracking_config: config_file_with_project_context,
-                                     training_config: config_file_with_project_context, DEBUG=False):
+def save_training_data_as_dlc_format(tracking_config: ConfigFileWithProjectContext,
+                                     training_config: ConfigFileWithProjectContext, DEBUG=False):
     """
     Takes my training data from my tracklet format and saves as a DLC dataframe
 
@@ -141,8 +141,7 @@ def save_training_data_as_dlc_format(tracking_config: config_file_with_project_c
     training_df = convert_training_dataframe_to_dlc_format(subset_df,
                                                            min_length=min_length_to_save, scorer=None)
 
-    out_fname = os.path.join("2-training_data", "training_data_tracks.h5")
-    out_fname= training_config.resolve_relative_path(out_fname)
+    out_fname = training_config.resolve_relative_path("training_data_tracks.h5", prepend_subfolder=True)
     training_df.to_hdf(out_fname, 'df_with_missing')
 
     training_config.config['df_raw_3d_tracks'] = out_fname
@@ -155,8 +154,8 @@ def save_training_data_as_dlc_format(tracking_config: config_file_with_project_c
 
 def _unpack_config_training_data_conversion(training_config):
     min_length_to_save = training_config.config['postprocessing_params']['min_length_to_save']
-    fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
-    fname = training_config.resolve_relative_path(fname)
+    fname = os.path.join('raw', 'clust_df_dat.pickle')
+    fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
     df = pd.read_pickle(fname)
     return df, min_length_to_save
 
@@ -348,7 +347,7 @@ def build_subset_df_from_3dDLC(dlc3d_dlc: pd.DataFrame,
 
 
 def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
-                                    tracking_config: config_file_with_project_context):
+                                    tracking_config: ConfigFileWithProjectContext):
     """
 
     Parameters

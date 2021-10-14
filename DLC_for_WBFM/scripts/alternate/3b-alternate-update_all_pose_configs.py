@@ -12,7 +12,7 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 # main function
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import update_all_pose_configs
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
@@ -25,7 +25,7 @@ ex.add_config(project_path=None, update_key=None, update_val=None, DEBUG=False)
 
 @ex.config
 def cfg(project_path, update_key, update_val, DEBUG):
-    cfg = modular_project_config(project_path)
+    cfg = ModularProjectConfig(project_path)
 
     tracking_cfg = cfg.get_tracking_config()
     updates = {update_key: update_val}

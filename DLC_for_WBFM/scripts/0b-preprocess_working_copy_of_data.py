@@ -12,7 +12,7 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
@@ -27,7 +27,7 @@ ex.add_config(project_path=None,
 @ex.config
 def cfg(project_path, DEBUG):
     # Manually load yaml files
-    cfg = modular_project_config(project_path)
+    cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
     fname = cfg.resolve_mounted_path_in_current_os('red_bigtiff_fname')

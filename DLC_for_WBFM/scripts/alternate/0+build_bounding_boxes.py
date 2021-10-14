@@ -11,7 +11,7 @@ from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
@@ -25,7 +25,7 @@ ex.add_config(project_path=None,
 @ex.config
 def cfg(project_path, DEBUG):
     # Manually load yaml files
-    cfg = modular_project_config(project_path)
+    cfg = ModularProjectConfig(project_path)
     bounding_box_fname = os.path.join(cfg.project_dir, '1-segmentation', 'bounding_boxes.pickle')
 
     segment_cfg = cfg.get_segmentation_config()

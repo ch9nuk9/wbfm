@@ -14,7 +14,7 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
     combine_all_dlc_and_tracklet_coverings_from_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 # Initialize sacred experiment
 ex = Experiment()
@@ -24,7 +24,7 @@ ex.add_config(project_path=None, DEBUG=False)
 @ex.config
 def cfg(project_path, DEBUG):
     # Manually load yaml files
-    cfg = modular_project_config(project_path)
+    cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
     tracking_cfg = cfg.get_tracking_config()

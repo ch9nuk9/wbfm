@@ -15,7 +15,7 @@ from pathlib import Path
 import napari
 import zarr
 from PyQt5 import QtCore, QtWidgets
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, load_config, get_project_of_substep
@@ -279,7 +279,7 @@ class Ui_MainWindow(object):
             self.tracesProgress.setValue(0)
 
     def _load_config_files(self, project_path):
-        cfg = modular_project_config(project_path)
+        cfg = ModularProjectConfig(project_path)
         self.cfg = cfg
         self.segment_cfg = cfg.get_segmentation_config()
         # TODO: The segmentation path may be different from the overall folder

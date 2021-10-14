@@ -8,7 +8,7 @@ from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from segmentation.util.utils_pipeline import recalculate_metadata_from_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
@@ -22,7 +22,7 @@ ex.add_config(project_path=None, out_fname=None, DEBUG=False)
 @ex.config
 def cfg(project_path, DEBUG):
     # Manually load yaml files
-    cfg = modular_project_config(project_path)
+    cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()

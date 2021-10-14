@@ -2,7 +2,7 @@ import argparse
 
 from DLC_for_WBFM.gui.utils.manual_annotation import create_manual_correction_gui
 from DLC_for_WBFM.gui.utils.napari_match_correction import build_napari_match_corrector
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 if __name__ == "__main__":
