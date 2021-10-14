@@ -116,6 +116,8 @@ class finished_project_data:
                 f = executor.submit(read_if_exists, behavior_fname, excel_reader)
                 behavior_annotations = f.result()
 
+            red_traces.replace(0, np.nan, inplace=True)
+            green_traces.replace(0, np.nan, inplace=True)
             logging.info("Read all data")
 
         background_per_pixel = traces_cfg.config['visualization']['background_per_pixel']

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -50,7 +51,8 @@ def make_grid_plot_from_project(project_data: finished_project_data,
                         hspace=0.0)
 
     fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
-    out_fname = Path(project_data.project_dir).joinpath('4-traces').joinpath(fname)
+    traces_cfg = project_data.project_config.get_traces_config()
+    out_fname = traces_cfg.resolve_relative_path(os.path.join('4-traces', fname))
     plt.savefig(out_fname, bbox_inches='tight', pad_inches=0)
 
 
