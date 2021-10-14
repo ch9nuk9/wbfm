@@ -165,7 +165,6 @@ def detect_neurons_from_file(detection_fname: str, which_volume: int, verbose: i
     """
     Designed to be used with centroids detected using a different pipeline
     """
-    # dat = pd.read_pickle(detection_fname)
     with open(detection_fname, 'rb') as f:
         # Note: dict of dataframes
         neuron_locs = pickle.load(f)[which_volume]['centroids']

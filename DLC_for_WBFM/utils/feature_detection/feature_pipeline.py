@@ -540,7 +540,7 @@ def track_neurons_full_video(video_fname: str,
                                            external_detections=external_detections)
         return f
 
-    # Build all frames initially
+    # Build all frames initially, then match
     end_volume = start_volume + num_frames
     frame_range = range(start_volume, end_volume)
     all_frame_dict = dict()
@@ -554,30 +554,23 @@ def track_neurons_full_video(video_fname: str,
                 i_frame = futures[future]
                 all_frame_dict[i_frame] = future.result()
                 pbar.update(1)
+
     # Match
     if verbose >= 1:
         print("Building initial frame...")
-    # frame0 = _build_frame(start_volume)
 
     all_frame_pairs = {}
-    # all_frame_dict = {start_volume: frame0}
-    # end_frame = start_volume + num_frames
     frame_range = range(start_volume + 1, end_volume)
     match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
                  'add_gp_to_candidates': add_gp_to_candidates,
                  'min_confidence': min_confidence}
     logging.info(f"Calculating Frame pairs for frames:  {start_volume+1}, {end_volume}")
     for i_frame in tqdm(frame_range):
-        # frame1 = _build_frame(i_frame)
         key = (i_frame - 1, i_frame)
         frame0, frame1 = all_frame_dict[key[0]], all_frame_dict[key[1]]
         this_pair = calc_FramePair_from_Frames(frame0, frame1, **match_opt)
 
-        # key = (i_frame - 1, i_frame)
         all_frame_pairs[key] = this_pair
-        # all_frame_dict[i_frame] = frame1
-
-        # frame0 = frame1
 
     return all_frame_pairs, all_frame_dict
 

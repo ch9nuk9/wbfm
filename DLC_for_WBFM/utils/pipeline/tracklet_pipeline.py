@@ -44,8 +44,8 @@ def partial_track_video_using_config(project_config: modular_project_config,
 def _postprocess_frame_matches(all_frame_dict, all_frame_pairs, verbose=0):
     # Also updates the matches of the object
     all_matches = {k: pair.calc_final_matches_using_bipartite_matching() for k, pair in all_frame_pairs.items()}
-    all_xyz = {k: f.neuron_locs for k, f in all_frame_dict.items()}
-    df = build_tracklets_dfs(all_matches, all_xyz, verbose=verbose)
+    all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
+    df = build_tracklets_dfs(all_matches, all_zxy, verbose=verbose)
     return df
 
 

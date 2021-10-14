@@ -400,9 +400,9 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
 ##
 
 def build_tracklets_dfs(pairwise_matches_dict: dict,
-                        xyz_per_neuron_per_frame: list = None,
+                        zxy_per_neuron_per_frame: list = None,
                         slice_offset: int = 0,
-                        verbose = 0) -> pd.DataFrame:
+                        verbose=0) -> pd.DataFrame:
     """
     Instead of looping through pairs, does a depth-first-search to fully complete a tracklet, then moves to the next
 
@@ -416,7 +416,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
     # Make everything a dictionary
     dict_of_match_dicts = {k: dict([m0[:2] for m0 in m]) for k, m in pairwise_matches_dict.items()}
     try:
-        dict_of_prob_dicts = {k: {m0[0]:m0[2] for m0 in m} for k, m in pairwise_matches_dict.items()}
+        dict_of_prob_dicts = {k: {m0[0]: m0[2] for m0 in m} for k, m in pairwise_matches_dict.items()}
         has_probability = True
     except IndexError:
         has_probability = False
@@ -457,10 +457,10 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
         i_frame0, i_frame1 = match_key
 
         all_ind_local = [i0, i1]
-        if xyz_per_neuron_per_frame is not None:
-            all_xyz = [xyz_per_neuron_per_frame[i_frame0][i0], xyz_per_neuron_per_frame[i_frame1][i1]]
+        if zxy_per_neuron_per_frame is not None:
+            all_zxy = [zxy_per_neuron_per_frame[i_frame0][i0], zxy_per_neuron_per_frame[i_frame1][i1]]
         else:
-            all_xyz = [[], []]
+            all_zxy = [[], []]
         slice_ind = [i_frame0, i_frame1]
         if has_probability:
             all_prob = [dict_of_prob_dicts[match_key][i0]]
@@ -484,10 +484,10 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
                 i_frame = next_match_key[1]
 
                 all_ind_local.append(i1)
-                if xyz_per_neuron_per_frame is not None:
-                    all_xyz.append(xyz_per_neuron_per_frame[i_frame][i1])
+                if zxy_per_neuron_per_frame is not None:
+                    all_zxy.append(zxy_per_neuron_per_frame[i_frame][i1])
                 else:
-                    all_xyz.append([])
+                    all_zxy.append([])
                 slice_ind.append(i_frame)
                 if has_probability:
                     all_prob.append(dict_of_prob_dicts[next_match_key][i0])
@@ -512,7 +512,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
             all_prob = np.expand_dims(np.array(all_prob), axis=-1)
         if verbose >= 2:
             print(f"Ended tracklet with length {len(slice_ind)}")
-        df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_xyz],
+        df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_zxy],
                                all_prob=[all_prob], slice_ind=[slice_ind]))
 
         clust_df = clust_df.append(df, ignore_index=True)
