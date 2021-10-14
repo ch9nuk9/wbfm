@@ -25,6 +25,7 @@ def cfg(project_path, DEBUG):
     project_dir = cfg.project_dir
 
     tracks_cfg = cfg.get_tracking_config()
+    traces_cfg = cfg.get_traces_config()
 
     if not DEBUG:
         using_monkeypatch()
@@ -37,6 +38,7 @@ def main(_config, _run):
     sacred.commands.print_config(_run)
 
     tracks_cfg = _config['tracks_cfg']
+    traces_cfg = _config['traces_cfg']
     project_cfg = _config['cfg']
     project_dir = _config['project_dir']
 
@@ -44,4 +46,4 @@ def main(_config, _run):
         track_using_fdnc_from_config(project_cfg, tracks_cfg)
 
         # Necessary postprocessing step
-        combine_all_dlc_and_tracklet_coverings_from_config(tracks_cfg, project_dir, DEBUG=_config['DEBUG'])
+        combine_all_dlc_and_tracklet_coverings_from_config(tracks_cfg, traces_cfg, project_dir, DEBUG=_config['DEBUG'])

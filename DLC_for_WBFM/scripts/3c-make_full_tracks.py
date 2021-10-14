@@ -31,6 +31,7 @@ def cfg(project_path, DEBUG):
     project_dir = cfg.project_dir
 
     tracking_cfg = cfg.get_tracking_config()
+    traces_cfg = cfg.get_traces_config()
 
     if not DEBUG:
         using_monkeypatch()
@@ -43,6 +44,7 @@ def make_full_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
     track_cfg = _config['tracking_cfg']
+    traces_cfg = _config['traces_cfg']
     project_dir = _config['project_dir']
     DEBUG = _config['DEBUG']
 
@@ -50,5 +52,5 @@ def make_full_tracks(_config, _run):
         make_3d_tracks_from_stack(track_cfg, DEBUG=DEBUG)
 
         # Necessary postprocessing step
-        combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, project_dir, DEBUG=DEBUG)
+        combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, traces_cfg, project_dir, DEBUG=DEBUG)
 
