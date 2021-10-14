@@ -64,7 +64,8 @@ class FramePair:
         self.frame0.rebuild_keypoints()
         self.frame1.rebuild_keypoints()
 
-    def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None) -> list:
+    def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None,
+                                                    z_threshold=None) -> list:
         assert len(self.all_candidate_matches) > 0, "No candidate matches!"
         if min_confidence is None:
             min_confidence = self.min_confidence
@@ -72,8 +73,10 @@ class FramePair:
             self.min_confidence = min_confidence
 
         matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches, min_conf=min_confidence)
-        self.final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
-        return self.final_matches
+        final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
+        final_matches = self.filter_matches_using_z_threshold(final_matches, z_threshold)
+        self.final_matches = final_matches
+        return final_matches
 
     def get_f0_to_f1_dict(self):
         return {n0: n1 for n0, n1, _ in self.final_matches}
@@ -98,6 +101,17 @@ class FramePair:
         fname = f'matches_f{f0_ind}_f{f1_ind}.xlsx'
         fname = os.path.join(target_dir, fname)
         df.to_excel(fname, index=False)
+
+    def filter_matches_using_z_threshold(self, matches, z_threshold):
+        if z_threshold is None:
+            return matches
+        n0 = self.frame0.neuron_locs.copy()
+        n1 = self.frame1.neuron_locs.copy()
+
+        def _delta_z(m):
+            return np.abs(n0[m[0]] - n1[m[1]])
+
+        return [m for m in matches if _delta_z(m) < z_threshold]
 
     def __repr__(self):
         return f"FramePair with {len(self.final_matches)}/{self.num_possible_matches} matches \n"
@@ -155,8 +169,8 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
         n1 = frame1.neuron_locs.copy()
 
         # TODO: Increase z distances correctly
-        n0[:, 0] *= 5
-        n1[:, 0] *= 5
+        n0[:, 0] *= 3
+        n1[:, 0] *= 3
         # Actually match
         options = {'matches_with_conf': matches_with_conf}
         matches_with_conf, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)

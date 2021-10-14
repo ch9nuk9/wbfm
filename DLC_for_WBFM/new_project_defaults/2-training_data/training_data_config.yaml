@@ -18,5 +18,6 @@ tracker_params: # OPTIMIZE
 
 postprocessing_params:
     min_length_to_save: 3
+    z_threshold: 3
 
 df_raw_3d_tracks: 2-training_data/all_tracklets.h5

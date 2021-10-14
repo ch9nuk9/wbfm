@@ -29,7 +29,7 @@ def partial_track_video_using_config(project_config: modular_project_config,
     """
     logging.info(f"Producing tracklets")
 
-    video_fname, options = _unpack_config_partial_tracking(DEBUG, project_config, training_config)
+    video_fname, z_threshold, options = _unpack_config_partial_tracking(DEBUG, project_config, training_config)
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)
 
     val = len(all_frame_pairs)
@@ -37,13 +37,14 @@ def partial_track_video_using_config(project_config: modular_project_config,
     msg = f"Incorrect number of frame pairs ({val} != {expected})"
     assert val == expected, msg
 
-    df = _postprocess_frame_matches(all_frame_dict, all_frame_pairs)
+    df = _postprocess_frame_matches(all_frame_dict, all_frame_pairs, z_threshold)
     save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, training_config)
 
 
-def _postprocess_frame_matches(all_frame_dict, all_frame_pairs, verbose=0):
+def _postprocess_frame_matches(all_frame_dict, all_frame_pairs, z_threshold=None, verbose=0):
     # Also updates the matches of the object
-    all_matches = {k: pair.calc_final_matches_using_bipartite_matching() for k, pair in all_frame_pairs.items()}
+    all_matches = {k: pair.calc_final_matches_using_bipartite_matching(z_threshold=z_threshold)
+                   for k, pair in all_frame_pairs.items()}
     all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
     df = build_tracklets_dfs(all_matches, all_zxy, verbose=verbose)
     return df
@@ -88,8 +89,9 @@ def _unpack_config_partial_tracking(DEBUG, project_config, training_config):
     options['preprocessing_settings'] = None
 
     video_fname = project_config.config['preprocessed_red']
+    z_threshold = training_config.config['postprocessing_params']['z_threshold']
 
-    return video_fname, options
+    return video_fname, z_threshold, options
 
 
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict, df: pd.DataFrame) -> None:

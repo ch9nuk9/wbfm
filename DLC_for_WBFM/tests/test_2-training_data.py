@@ -12,7 +12,7 @@ def _load_training_data() -> pd.DataFrame:
 
     fname = training_cfg.resolve_relative_path_from_config('df_raw_3d_tracks')
     df_tracks = pd.read_hdf(fname)
-    return df_tracks
+    return df_tracks, cfg
 
 
 def test_pipeline_step():
@@ -25,7 +25,7 @@ def test_pipeline_step():
 
 
 def test_saved_properly():
-    df = _load_training_data()
+    df, _ = _load_training_data()
     assert type(df) == pd.DataFrame
 
 
@@ -40,12 +40,13 @@ def test_finds_matches():
     assert df.shape[1] > minimum_expected_matches
 
 
-@pytest.mark.xfail(reason="Known incorrect segmentation leads to unreasonable z changes")
+# @pytest.mark.xfail(reason="Known incorrect segmentation leads to unreasonable z changes")
 def test_reasonable_z():
-    df = _load_training_data()
+    df, cfg = _load_training_data()
+
+    max_z_delta = cfg.get_training_config().config['postprocessing_params']['z_threshold']
 
     df_delta = df.diff()[1:]
-    max_z_delta = 3
     all_neurons = list(df.columns.levels[0])
 
     for n in all_neurons:
