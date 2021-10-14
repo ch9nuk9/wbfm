@@ -14,6 +14,7 @@ from tqdm import tqdm
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
 
@@ -31,17 +32,17 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio = _unpack_configs_for_traces(
         project_cfg, segment_cfg, track_cfg)
 
-    # green_video = zarr.open(green_fname)
-    # red_video = zarr.open(red_fname)
     project_data = finished_project_data.load_final_project_data_from_config(project_cfg)
 
-    # Match -> Reindex -> Get traces
-    old_dlc_names = list(dlc_tracks.columns.levels[0])
+    # Match -> Reindex raw segmentation -> Get traces
+    final_neuron_names = list(dlc_tracks.columns.levels[0])
+    assert 'neuron0' not in final_neuron_names, "Neuron0 found; 0 is reserved for background... check original " \
+                                                "dataframe generation and indexing"
 
-    def _get_dlc_zxy(t, dlc_tracks=dlc_tracks):
-        all_dlc_zxy = np.zeros((len(old_dlc_names), 3))
+    def _get_dlc_zxy(t):
+        all_dlc_zxy = np.zeros((len(final_neuron_names), 3))
         coords = ['z', 'y', 'x']
-        for i, name in enumerate(old_dlc_names):
+        for i, name in enumerate(final_neuron_names):
             all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
         return all_dlc_zxy
 
@@ -57,7 +58,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
                                            segmentation_metadata, project_data, z_to_xy_ratio, DEBUG=DEBUG)
 
     relative_fname = traces_cfg.config['all_matches']
-    project_cfg.save_in_local_project(all_matches, relative_fname)
+    project_cfg.pickle_in_local_project(all_matches, relative_fname)
 
     logging.info("Reindexing masks using matches...")
     # Reads matches from disk, and then saves the masks
@@ -72,13 +73,13 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     use_region_props = True
     if not use_region_props:
         # New: rename neurons to be same as segmentation indices
-        new_neuron_names = [f"neuron{i + 1}" for i in range(len(old_dlc_names))]
-        dlc_name_mapping = dict(zip(old_dlc_names, new_neuron_names))
+        # new_neuron_names = [f"neuron{i + 1}" for i in range(len(final_neuron_names))]
+        # dlc_name_mapping = dict(zip(final_neuron_names, new_neuron_names))
 
         def _get_dlc_zxy_one_neuron(t, new_name):
-            old_name = dlc_name_mapping[new_name]
+            # old_name = dlc_name_mapping[new_name]
             coords = ['z', 'y', 'x']
-            all_dlc_zxy = np.asarray(dlc_tracks[old_name][coords].loc[t])
+            all_dlc_zxy = np.asarray(dlc_tracks[new_name][coords].loc[t])
             return all_dlc_zxy
 
         def parallel_func(i_and_name):
@@ -89,9 +90,9 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
                                                    params_start_volume,
                                                    reindexed_masks)
 
-        with tqdm(total=len(new_neuron_names)) as pbar:
+        with tqdm(total=len(final_neuron_names)) as pbar:
             with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-                futures = {executor.submit(parallel_func, i): i for i in enumerate(new_neuron_names)}
+                futures = {executor.submit(parallel_func, i): i for i in enumerate(final_neuron_names)}
                 results = []
                 for future in concurrent.futures.as_completed(futures):
                     results.append(future.result())
@@ -120,11 +121,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
         df_red = pd.concat(all_red_dfs, axis=1)
 
     else:
-        # NEW: get properties much faster (I hope)
-        # matches_fname = traces_cfg.resolve_relative_path_from_config('all_matches')
-        # all_matches = pd.read_pickle(matches_fname)
-        # mask2final_name_per_volume = make_mask2final_mapping(all_matches)
-
+        # NEW: get properties much faster (10x)
         red_all_neurons, green_all_neurons = region_props_all_volumes(
             reindexed_masks,
             project_data.red_data,
@@ -160,7 +157,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     if DEBUG:
         print("Single pass-through successful")
 
-    _save_traces_as_hdf_and_update_configs(new_neuron_names, df_green, df_red, traces_cfg)
+    _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
 
 
 def make_mask2final_mapping(all_matches: dict):
@@ -264,7 +261,7 @@ def region_props_one_volume(this_mask_volume,
     for this_red, this_green in zip(red_props, green_props):
         seg_index = this_red['label']
         # final_index = mask2final_name[seg_index]
-        key_base = (f"neuron{seg_index}", )
+        key_base = (int2name(seg_index), )
 
         for this_prop in props_to_save:
             key = key_base + (this_prop,)
@@ -351,7 +348,7 @@ def calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_v
     return df_green_one_neuron, df_red_one_neuron
 
 
-def _save_traces_as_hdf_and_update_configs(new_neuron_names: list,
+def _save_traces_as_hdf_and_update_configs(final_neuron_names: list,
                                            df_green: pd.DataFrame,
                                            df_red: pd.DataFrame,
                                            traces_cfg: config_file_with_project_context) -> None:
@@ -366,7 +363,7 @@ def _save_traces_as_hdf_and_update_configs(new_neuron_names: list,
     # Save the output filenames
     traces_cfg.config['traces']['green'] = str(green_fname)
     traces_cfg.config['traces']['red'] = str(red_fname)
-    traces_cfg.config['traces']['neuron_names'] = new_neuron_names
+    traces_cfg.config['traces']['neuron_names'] = final_neuron_names
     traces_cfg.update_on_disk()
     # edit_config(traces_cfg.config['self_path'], traces_cfg)
 
@@ -417,7 +414,7 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
 
         def dlc_array_to_ind(i):
             # _get_dlc_zxy has the 0th row corresponding to neuron label 1
-            return i + 1
+            return i
 
         # Save
         all_matches[i_volume] = np.array(

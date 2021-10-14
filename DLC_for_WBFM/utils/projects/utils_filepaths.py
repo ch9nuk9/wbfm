@@ -87,7 +87,7 @@ class modular_project_config:
     def get_log_dir(self):
         return str(Path(self.project_dir).joinpath('log'))
 
-    def save_in_local_project(self, data, relative_path):
+    def pickle_in_local_project(self, data, relative_path):
         abs_path = self.resolve_path_relative_to_project(relative_path)
         with open(abs_path, 'wb') as f:
             pickle.dump(data, f)

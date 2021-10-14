@@ -11,6 +11,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
 from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
 
 default_package_path = "/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID"
@@ -92,9 +93,10 @@ def track_using_fdnc(project_dat: finished_project_data,
 
     # Convert to pandas multiindexing formatting
     new_dict = {}
-    for i_neuron, data in neuron_arrays.items():
+    for i_template, data in neuron_arrays.items():
         for i_col, coord_name in enumerate(coords):
-            k = (f'neuron{i_neuron + 1}', coord_name)
+            # Note: these neuron names are final for all subsequent steps
+            k = (int2name(i_template + 1), coord_name)
             new_dict[k] = data[:, i_col]
 
     df = pd.DataFrame(new_dict)
