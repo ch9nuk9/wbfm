@@ -172,7 +172,8 @@ def detect_neurons_from_file(detection_fname: str, which_volume: int, verbose: i
     # In current format: flipped x and y
     neuron_locs = np.array([n for n in neuron_locs])
     if len(neuron_locs) > 0:
-        neuron_locs = neuron_locs[:, [0, 2, 1]]
+        pass
+        # neuron_locs = neuron_locs[:, [0, 2, 1]]
     else:
         neuron_locs = []
     return neuron_locs
