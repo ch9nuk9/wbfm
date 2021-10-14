@@ -1,4 +1,5 @@
 import concurrent
+import logging
 import pickle
 from collections import defaultdict
 from pathlib import Path
@@ -47,7 +48,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     # Initialize multi-index dataframe for data
     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
-    print("Matching segmentation and DLC tracking...")
+    logging.info("Matching segmentation and tracked positions...")
     if DEBUG:
         frame_list = frame_list[:2]  # Shorten (to avoid break)
     calculate_segmentation_and_dlc_matches(_get_dlc_zxy, all_matches, frame_list, max_dist,
@@ -56,11 +57,11 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     relative_fname = traces_cfg.config['all_matches']
     project_cfg.save_in_local_project(all_matches, relative_fname)
 
-    print("Reindexing masks using matches...")
+    logging.info("Reindexing masks using matches...")
     # Reads matches from disk, and then saves the masks
     reindex_segmentation_using_config(traces_cfg, segment_cfg, project_cfg)
 
-    print("Extracting red and green traces using reindexed masks...")
+    logging.info("Extracting red and green traces using reindexed masks...")
     # Reads masks from disk, and writes traces
     fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
     with safe_cd(project_cfg.project_dir):
