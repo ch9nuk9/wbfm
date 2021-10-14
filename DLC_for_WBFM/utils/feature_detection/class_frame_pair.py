@@ -109,7 +109,7 @@ class FramePair:
         n1 = self.frame1.neuron_locs.copy()
 
         def _delta_z(m):
-            return np.abs(n0[m[0]] - n1[m[1]])
+            return np.abs(n0[m[0]][0] - n1[m[1]][0])
 
         return [m for m in matches if _delta_z(m) < z_threshold]
 
