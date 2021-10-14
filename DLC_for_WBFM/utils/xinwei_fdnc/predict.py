@@ -16,7 +16,7 @@ from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
 default_package_path = "/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID"
 
 
-def load_template(custom_template=None, path_to_folder=None):
+def load_prediction_options(custom_template=None, path_to_folder=None):
     if path_to_folder is None:
         path_to_folder = default_package_path
 
@@ -25,6 +25,7 @@ def load_template(custom_template=None, path_to_folder=None):
         cuda=False,
         model_path=model_path
     )
+
     if custom_template is None:
         temp_fname = os.path.join(default_package_path, 'Data', 'Example', 'template.data')
         temp = pre_matt(temp_fname)
@@ -109,7 +110,7 @@ def track_using_fdnc_from_config(project_cfg: modular_project_config,
         # TODO: use a hand-curated segmentation
         custom_template = project_dat.get_centroids_as_numpy(0)
         custom_template = zimmer2leifer(custom_template)
-    prediction_options = load_template(custom_template=custom_template)
+    prediction_options = load_prediction_options(custom_template=custom_template)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
 
