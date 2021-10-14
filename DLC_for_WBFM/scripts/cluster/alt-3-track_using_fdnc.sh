@@ -3,9 +3,9 @@
 #SBATCH --job-name=fdnc_tracking   # Job name
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Run a single task
-#SBATCH --qos=short             # Time limit hrs:min:sec
+#SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=fdnc_tracking.out    # Standard output and error log
-#SBATCH --time=2:00:00
+#SBATCH --time=4:00:00
 #SBATCH --mem=16G
 
 pwd; hostname; date
