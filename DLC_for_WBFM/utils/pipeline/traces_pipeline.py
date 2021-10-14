@@ -39,9 +39,10 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
     assert 'neuron0' not in final_neuron_names, "Neuron0 found; 0 is reserved for background... check original " \
                                                 "dataframe generation and indexing"
 
+    coords = ['z', 'x', 'y']
+
     def _get_dlc_zxy(t):
         all_dlc_zxy = np.zeros((len(final_neuron_names), 3))
-        coords = ['z', 'x', 'y']
         for i, name in enumerate(final_neuron_names):
             all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
         return all_dlc_zxy
@@ -78,7 +79,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
 
         def _get_dlc_zxy_one_neuron(t, new_name):
             # old_name = dlc_name_mapping[new_name]
-            coords = ['z', 'y', 'x']
+            # coords = ['z', 'x', 'y']
             all_dlc_zxy = np.asarray(dlc_tracks[new_name][coords].loc[t])
             return all_dlc_zxy
 
@@ -134,7 +135,6 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
         sz_one_neuron = len(frame_list)
         tmp_red = defaultdict(lambda: np.zeros(sz_one_neuron))
         tmp_green = defaultdict(lambda: np.zeros(sz_one_neuron))
-        coords = ['z', 'x', 'y']
         for i_vol in red_all_neurons.keys():
             red_props, green_props = red_all_neurons[i_vol], green_all_neurons[i_vol]
             for key in red_props.keys():
@@ -283,7 +283,7 @@ def _pool_parallel_func(i_and_name, options):
 
 def _pool_get_dlc_zxy_one_neuron(t, new_name, dlc_name_mapping, dlc_tracks):
     old_name = dlc_name_mapping[new_name]
-    coords = ['z', 'y', 'x']
+    coords = ['z', 'x', 'y']
     all_dlc_zxy = np.asarray(dlc_tracks[old_name][coords].loc[t])
     return all_dlc_zxy
 
