@@ -9,7 +9,7 @@ import pandas as pd
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
@@ -37,7 +37,7 @@ def load_prediction_options(custom_template=None, path_to_folder=None):
     return prediction_options
 
 
-def track_using_fdnc(project_dat: finished_project_data,
+def track_using_fdnc(project_dat: ProjectData,
                      prediction_options,
                      match_confidence_threshold):
     # Loop through detections and match all to template
@@ -107,7 +107,7 @@ def track_using_fdnc(project_dat: finished_project_data,
 def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
                                  tracks_cfg: ConfigFileWithProjectContext):
     use_zimmer_template = tracks_cfg.config['leifer_params']['use_zimmer_template']
-    project_dat = finished_project_data.load_final_project_data_from_config(project_cfg)
+    project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
     if use_zimmer_template:
         # TODO: use a hand-curated segmentation
         custom_template = project_dat.get_centroids_as_numpy(0)

@@ -12,7 +12,7 @@ from skimage import measure
 from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
-from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
@@ -32,7 +32,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectCon
     dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio = _unpack_configs_for_traces(
         project_cfg, segment_cfg, track_cfg)
 
-    project_data = finished_project_data.load_final_project_data_from_config(project_cfg)
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
     # Match -> Reindex raw segmentation -> Get traces
     final_neuron_names = list(dlc_tracks.columns.levels[0])
@@ -373,7 +373,7 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
                                            frame_list: list,
                                            max_dist: float,
                                            segmentation_metadata: Dict[int, pd.DataFrame],
-                                           project_data: finished_project_data,
+                                           project_data: ProjectData,
                                            z_to_xy_ratio: float, DEBUG: bool = False) -> None:
     """
 

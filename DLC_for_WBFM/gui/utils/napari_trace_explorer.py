@@ -6,7 +6,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
-from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
@@ -17,7 +17,7 @@ class napari_trace_explorer(QtWidgets.QWidget):
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.dat = finished_project_data.load_final_project_data_from_config(project_path)
+        self.dat = ProjectData.load_final_project_data_from_config(project_path)
 
     def setupUi(self, viewer: napari.Viewer):
 

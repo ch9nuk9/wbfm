@@ -7,7 +7,7 @@ from matplotlib import transforms
 from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.visualization.utils_plot_traces import build_trace_factory, check_default_names, set_big_font
 
 
@@ -15,7 +15,7 @@ from DLC_for_WBFM.utils.visualization.utils_plot_traces import build_trace_facto
 ## New functions for use with project_config files
 ##
 
-def make_grid_plot_from_project(project_data: finished_project_data,
+def make_grid_plot_from_project(project_data: ProjectData,
                                 channel_mode: str,
                                 calculation_mode: str,
                                 color_using_behavior=True):

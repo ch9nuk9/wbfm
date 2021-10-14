@@ -3,7 +3,7 @@ from PyQt5 import QtWidgets
 import win32com.client
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
-from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_traces_dataframe, \
     napari_labels_from_frames
 
@@ -15,7 +15,7 @@ class napari_track_correction(QtWidgets.QWidget):
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.dat = finished_project_data.load_final_project_data_from_config(project_path)
+        self.dat = ProjectData.load_final_project_data_from_config(project_path)
         self.frames = self.dat.raw_frames
         self.excel_path = excel_path
 

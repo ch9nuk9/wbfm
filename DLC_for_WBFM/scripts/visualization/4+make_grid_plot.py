@@ -10,7 +10,7 @@ from sacred import Experiment
 from sacred.observers import TinyDbObserver
 
 # main function
-from DLC_for_WBFM.utils.projects.finished_project_data import finished_project_data
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_project
 
@@ -32,7 +32,7 @@ def cfg(project_path):
 def make_dlc_labeled_videos(_config, _run):
     sacred.commands.print_config(_run)
 
-    proj_dat = finished_project_data.load_final_project_data_from_config(_config['project_path'])
+    proj_dat = ProjectData.load_final_project_data_from_config(_config['project_path'])
     proj_dat.verbose = 0
 
     with safe_cd(_config['project_dir']):
