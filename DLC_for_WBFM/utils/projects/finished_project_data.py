@@ -90,12 +90,14 @@ class finished_project_data:
 
         behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"  # TODO: do not hardcode
 
-        red_data = zarr.open(red_dat_fname)
-        green_data = zarr.open(green_dat_fname)
+        zarr_reader = lambda fname: zarr.open(fname, mode='r')
+        excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
+
+        # Note: when running on the cluster the raw data isn't (for now) accessible
+        red_data = read_if_exists(red_dat_fname, reader=zarr_reader)
+        green_data = read_if_exists(green_dat_fname, reader=zarr_reader)
 
         with safe_cd(cfg.project_dir):
-            zarr_reader = lambda fname: zarr.open(fname, mode='r')
-            excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
             logging.info("Starting threads to read data...")
             with concurrent.futures.ThreadPoolExecutor() as executor:
