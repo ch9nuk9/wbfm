@@ -112,6 +112,8 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
         # TODO: use a hand-curated segmentation
         custom_template = project_dat.get_centroids_as_numpy(0)
         custom_template = zimmer2leifer(custom_template)
+    else:
+        custom_template = None
     prediction_options = load_prediction_options(custom_template=custom_template)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
