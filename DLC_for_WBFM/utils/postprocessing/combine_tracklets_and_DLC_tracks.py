@@ -13,7 +13,7 @@ from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit
 def calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
                                    df_tracklet: pd.DataFrame,
                                    dlc_name: str,
-                                   all_covering_ind: list,
+                                   used_indices: set,
                                    min_overlap: int = 5,
                                    min_dlc_confidence: float = 0.6):
     """For one DLC neuron, calculate distances between that track and all tracklets"""
@@ -28,7 +28,7 @@ def calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
     all_dist = []
     for i, name in enumerate(tqdm(all_tracklet_names, leave=False)):
         # Check for already belonging to another track
-        if i not in all_covering_ind:
+        if i not in used_indices:
             this_diff = df_tracklet[name][coords] - this_dlc
 
             # Check for enough common data points
@@ -193,7 +193,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
     used_indices = set()
     logging.info("Calculating distances between tracklets and DLC tracks")
     for i, dlc_name in enumerate(tqdm(all_neuron_names)):
-        dist = calc_dlc_to_tracklet_distances(df_dlc_tracks, df_tracklets, dlc_name, all_covering_ind,
+        dist = calc_dlc_to_tracklet_distances(df_dlc_tracks, df_tracklets, dlc_name, used_indices,
                                               min_overlap=min_overlap)
         out = calc_covering_from_distances(dist, df_tracklets, used_indices, d_max=d_max, verbose=verbose)
         # covering_time_points, covering_ind, these_dist = out
