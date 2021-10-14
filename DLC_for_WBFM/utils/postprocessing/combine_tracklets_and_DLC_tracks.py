@@ -131,7 +131,7 @@ def combine_matched_tracklets(these_tracklet_ind: list,
 def combine_all_dlc_and_tracklet_coverings(all_covering_ind: list,
                                            df_tracklet: pd.DataFrame,
                                            dlc_tracks: pd.DataFrame,
-                                           rename_neurons: bool = False, verbose=0):
+                                           verbose=0):
     """Combines coverings of all tracklets and DLC-tracked neurons"""
     all_df = []
     logging.info(f"Found {len(all_covering_ind)} tracklet-track combinations")
@@ -147,11 +147,6 @@ def combine_all_dlc_and_tracklet_coverings(all_covering_ind: list,
 
     # Produce new dataframe
     all_neuron_names, final_track_df = combine_dlc_and_tracklets(dlc_tracks, new_tracklet_df)
-
-    # To be sequential, and same as segmentation
-    if rename_neurons:
-        new_neuron_names = {name: f'neuron{i + 1}' for i, name in enumerate(all_neuron_names)}
-        final_track_df.rename(columns=new_neuron_names, inplace=True)
 
     return final_track_df, new_tracklet_df
 
@@ -183,7 +178,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
 
     """
 
-    d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, rename_neurons = _unpack_tracklets_for_combining(
+    d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname = _unpack_tracklets_for_combining(
         project_dir, track_config)
 
     # Match tracklets to DLC neurons
@@ -209,12 +204,9 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: config_file
     # Combine and save
     # Rename to be sequential, like the reindexed segmentation
     logging.info("Concatenating tracklets")
-    if DEBUG:
-        rename_neurons = False
     combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind,
                                                                           df_tracklets,
                                                                           df_dlc_tracks,
-                                                                          rename_neurons=rename_neurons,
                                                                           verbose=0)
 
     with safe_cd(project_dir):
@@ -235,7 +227,6 @@ def _unpack_tracklets_for_combining(project_dir, track_config):
     d_max = track_config.config['final_3d_postprocessing']['max_dist']
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
     min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
-    rename_neurons = track_config.config['final_3d_postprocessing']['rename_neurons']
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
     with safe_cd(project_dir):
         # TODO: add the tracklet fname to the config file
@@ -246,4 +237,4 @@ def _unpack_tracklets_for_combining(project_dir, track_config):
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
         logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_dlc_tracks.shape[1]/4)} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
-    return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, rename_neurons
+    return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname
