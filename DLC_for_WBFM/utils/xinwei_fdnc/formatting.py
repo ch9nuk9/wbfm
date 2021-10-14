@@ -23,7 +23,7 @@ def zimmer2leifer(vol0_zxy):
     xy_in_um = vol0_zxy[:, [1, 2]] * zimmer_um_per_pixel
     xy_in_leifer = xy_in_um / leifer_um_per_unit
 
-    z_in_um = vol0_zxy[:, [0]] * zimmer_um_per_pixel
+    z_in_um = vol0_zxy[:, [0]] * zimmer_um_per_pixel_z
     z_in_leifer = z_in_um / leifer_um_per_unit
 
     zxy_in_leifer = np.hstack([z_in_leifer, xy_in_leifer])
