@@ -6,4 +6,4 @@ def int2name(i_neuron: int):
 
 
 def name2int(name_neuron):
-    return name_neuron.split('_')[1]
+    return int(name_neuron.split('_')[1])

@@ -67,6 +67,7 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks):
 #     lut = all_lut[i]
 #     new_masks[i, ...] = lut[seg_masks[i, ...]]
 
+
 def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     # Get original segmentation
     seg_fname = segment_cfg.resolve_relative_path_from_config('output_masks')
@@ -75,7 +76,7 @@ def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     relative_path = traces_cfg.config['reindexed_masks']
     out_fname = project_cfg.resolve_path_relative_to_project(relative_path)
     print(f"Saving masks at {out_fname}")
-    new_masks = zarr.open_like(raw_seg_masks, path=out_fname)
+    new_masks = zarr.open_like(raw_seg_masks, path=str(out_fname))
     # new_masks = zarr.open_like(raw_seg_masks, path=out_fname, synchronizer=zarr.ThreadSynchronizer())
 
     # Get tracking (dataframe) with neuron names

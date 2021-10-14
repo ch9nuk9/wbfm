@@ -41,7 +41,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: config_file_with_project
 
     def _get_dlc_zxy(t):
         all_dlc_zxy = np.zeros((len(final_neuron_names), 3))
-        coords = ['z', 'y', 'x']
+        coords = ['z', 'x', 'y']
         for i, name in enumerate(final_neuron_names):
             all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
         return all_dlc_zxy
@@ -396,11 +396,12 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
         # Get DLC point cloud
         # NOTE: This dataframe starts at 0, not start_volume
         zxy0 = _get_dlc_zxy(i_volume)
-        zxy0[:, 0] *= z_to_xy_ratio
+        # TODO: use physical units and align between z and xy
+        # zxy0[:, 0] *= z_to_xy_ratio
         zxy1 = project_data.get_centroids_as_numpy(i_volume)
         if len(zxy1) == 0:
             continue
-        zxy1[:, 0] *= z_to_xy_ratio
+        # zxy1[:, 0] *= z_to_xy_ratio
         # Get matches
         out = calc_icp_matches(zxy0, zxy1, max_dist=max_dist)
         # TODO: the distance function doesn't produce the correct reindexed segmentations
@@ -413,8 +414,8 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
             return segmentation_metadata[i_volume].iloc[i].name
 
         def dlc_array_to_ind(i):
-            # _get_dlc_zxy has the 0th row corresponding to neuron label 1
-            return i
+            # the 0th index corresponds to neuron_001, and should finally be label 1
+            return i + 1
 
         # Save
         all_matches[i_volume] = np.array(

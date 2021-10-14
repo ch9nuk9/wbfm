@@ -25,6 +25,8 @@ class config_file_with_project_context:
         return self.resolve_relative_path(val)
 
     def resolve_relative_path(self, val: str):
+        if val is None:
+            return None
         return os.path.join(self.project_dir, val)
 
     def update_on_disk(self):
