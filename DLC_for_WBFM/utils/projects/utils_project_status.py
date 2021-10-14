@@ -79,7 +79,7 @@ def check_traces(project_path):
         return False
 
 
-def print_sacred_log(project_path):
+def print_sacred_log(project_path: str) -> None:
     cfg = ModularProjectConfig(project_path)
 
     reader = TinyDbReader(cfg.get_log_dir())
