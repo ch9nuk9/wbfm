@@ -9,6 +9,7 @@ import sacred
 from sacred import Experiment
 
 # main function
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 # Initialize sacred experiment
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_all_tracklets_as_dlc_format
@@ -21,14 +22,16 @@ ex.add_config(project_path=None, min_length=10)
 @ex.config
 def cfg(project_path):
     # Manually load yaml files
-    project_dir = Path(project_path).parent
+    cfg = ModularProjectConfig(project_path)
+    project_dir = cfg.project_dir
+    train_cfg = cfg.get_training_config()
 
 
 @ex.automain
 def save_training_data(_config, _run):
     sacred.commands.print_config(_run)
 
-    this_config = _config.copy()
+    train_cfg = _config['train_cfg']
 
     with safe_cd(_config['project_dir']):
-        save_all_tracklets_as_dlc_format(this_config, min_length=_config['min_length'])
+        save_all_tracklets_as_dlc_format(train_cfg)

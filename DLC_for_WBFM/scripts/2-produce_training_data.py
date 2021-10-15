@@ -85,6 +85,5 @@ def produce_training_data(_config, _run):
                                      train_cfg, DEBUG=DEBUG)
 
     # For later extending
-    min_length = train_cfg.config['postprocessing_params']['min_length_to_save']
     with safe_cd(project_config.project_dir):
-        save_all_tracklets_as_dlc_format(None, min_length=min_length)
+        save_all_tracklets_as_dlc_format(train_cfg)

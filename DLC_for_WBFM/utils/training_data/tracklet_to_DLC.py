@@ -160,7 +160,8 @@ def _unpack_config_training_data_conversion(training_config):
     return df, min_length_to_save
 
 
-def save_all_tracklets_as_dlc_format(this_config, min_length, DEBUG=False):
+def save_all_tracklets_as_dlc_format(train_cfg: ConfigFileWithProjectContext,
+                                     DEBUG=False):
     """
     Takes my tracklet format and saves ALL as DLC format (i.e. many short tracklets)
 
@@ -177,12 +178,16 @@ def save_all_tracklets_as_dlc_format(this_config, min_length, DEBUG=False):
     """
     logging.info("Saving all tracklets as DLC format")
 
-    fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
-    df = pd.read_pickle(fname)
+    min_length = train_cfg.config['postprocessing_params']['min_length_to_save']
+
+    # fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
+    raw_fname = train_cfg.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'), prepend_subfolder=True)
+    df = pd.read_pickle(raw_fname)
 
     training_df = convert_training_dataframe_to_dlc_format(df, min_length=min_length, scorer=None)
 
-    out_fname = os.path.join("2-training_data", "all_tracklets.h5")
+    # TODO: read from config
+    out_fname = train_cfg.resolve_relative_path("all_tracklets.h5", prepend_subfolder=True)
     training_df.to_hdf(out_fname, 'df_with_missing')
 
     # Can easily be an absurd number of columns

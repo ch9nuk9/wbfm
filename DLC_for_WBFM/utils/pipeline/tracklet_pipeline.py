@@ -18,7 +18,8 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_da
 
 
 def partial_track_video_using_config(project_config: ModularProjectConfig,
-                                     training_config: ConfigFileWithProjectContext, DEBUG: bool = False) -> None:
+                                     training_config: ConfigFileWithProjectContext,
+                                     DEBUG: bool = False) -> None:
     """
     Produce training data via partial tracking using 3d feature-based method
 
