@@ -160,9 +160,12 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     """
     # ENHANCE: use sparse distance matrix: https://stackoverflow.com/questions/52366421/how-to-do-n-d-distance-and-nearest-neighbor-calculations-on-numpy-arrays
     cost_matrix = cdist(np.array(xyz0), np.array(xyz1), 'euclidean')
-    np.where(cost_matrix > max_dist, np.inf, cost_matrix)
+    # Scipy can't deal with np.inf, so we want to maximize, not minimize
+    # (And set impossible values to 0.0)
+    inv_cost_matrix = 1.0 / cost_matrix
+    np.where(inv_cost_matrix < 1.0/max_dist, 0.0, inv_cost_matrix)
 
-    matches = linear_sum_assignment(cost_matrix)
+    matches = linear_sum_assignment(inv_cost_matrix, maximize=True)
     raw_matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     matches = raw_matches.copy()
 
