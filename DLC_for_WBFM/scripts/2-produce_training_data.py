@@ -10,6 +10,7 @@ import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format, \
     save_all_tracklets_as_dlc_format
@@ -23,7 +24,7 @@ SETTINGS.CAPTURE_MODE = 'sys' # Capture stdout
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None, DEBUG=False)
+ex.add_config(project_path=None, allow_raw_artifact_reuse=False, DEBUG=False)
 
 
 @ex.config
@@ -58,11 +59,18 @@ def produce_training_data(_config, _run):
     segment_cfg = _config['segment_cfg']
     train_cfg = _config['train_cfg']
 
-    partial_track_video_using_config(
-        project_config,
-        train_cfg,
-        DEBUG=DEBUG
-    )
+    raw_foldername = train_cfg.resolve_relative_path('raw', prepend_subfolder=True)
+    if os.path.exists(raw_foldername):
+        if _config['allow_raw_artifact_reuse']:
+            logging.info("Found raw data folder; reusing")
+        else:
+            raise AnalysisOutOfOrderError("Found raw data folder, but flag does not allow reuse")
+    else:
+        partial_track_video_using_config(
+            project_config,
+            train_cfg,
+            DEBUG=DEBUG
+        )
 
     # For manual correction
     reindex_segmentation_only_training_data(
