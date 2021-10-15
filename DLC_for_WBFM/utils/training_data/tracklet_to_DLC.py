@@ -200,7 +200,7 @@ def save_all_tracklets_as_dlc_format(train_cfg: ConfigFileWithProjectContext,
 def fill_missing_indices_with_nan(df):
     t = df.index
     if len(t) != int(t[-1]) + 1:
-        add_indices = pd.Index(int(t[-1])).difference(t)
+        add_indices = pd.Index(range(int(t[-1]))).difference(t)
         add_df = pd.DataFrame(index=add_indices, columns=df.columns)
         df = pd.concat([df, add_df]).sort_index()
     return df
