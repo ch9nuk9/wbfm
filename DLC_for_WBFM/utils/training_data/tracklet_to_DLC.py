@@ -182,17 +182,28 @@ def save_all_tracklets_as_dlc_format(train_cfg: ConfigFileWithProjectContext,
 
     # fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
     raw_fname = train_cfg.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'), prepend_subfolder=True)
-    df = pd.read_pickle(raw_fname)
+    df_raw = pd.read_pickle(raw_fname)
 
-    training_df = convert_training_dataframe_to_dlc_format(df, min_length=min_length, scorer=None)
+    df = convert_training_dataframe_to_dlc_format(df_raw, min_length=min_length, scorer=None)
+    # If there are no tracklets on some frames, then there will be gaps in the indices and it will cause errors
+    df = fill_missing_indices_with_nan(df)
 
     # TODO: read from config
     out_fname = train_cfg.resolve_relative_path("all_tracklets.h5", prepend_subfolder=True)
-    training_df.to_hdf(out_fname, 'df_with_missing')
+    df.to_hdf(out_fname, 'df_with_missing')
 
     # Can easily be an absurd number of columns
     # out_fname = Path(out_fname).with_suffix(".csv")
     # training_df.to_csv(out_fname)
+
+
+def fill_missing_indices_with_nan(df):
+    t = df.index
+    if len(t) != int(t[-1]) + 1:
+        add_indices = pd.Index(int(t[-1])).difference(t)
+        add_df = pd.DataFrame(index=add_indices, columns=df.columns)
+        df = pd.concat([df, add_df]).sort_index()
+    return df
 
 
 def build_subset_df_from_tracklets(clust_df,

@@ -54,6 +54,7 @@ def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, v
     covering_ind = []
     covering_time_points = []
     t = df_tracklet.index
+    assert len(t) == int(t[-1])+1, "Tracklet dataframe has missing indices, and will cause errors"
     these_dist = np.zeros_like(t, dtype=float)
 
     for i_tracklet in i_sorted_by_median_distance:
@@ -66,16 +67,16 @@ def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, v
         # Check time overlap, except first time
         name = all_tracklet_names[i_tracklet]
         is_nan = df_tracklet[name]['x'].isnull()
-        new_t = list(t[~is_nan])
+        newly_covered_times = list(t[~is_nan])
         if len(covering_time_points) > 0:
-            if any([t in covering_time_points for t in new_t]):
+            if any([t in covering_time_points for t in newly_covered_times]):
                 continue
 
         # Save
-        new_t = np.array(new_t)
-        covering_time_points.extend(new_t)
+        newly_covered_times = np.array(newly_covered_times)
+        covering_time_points.extend(newly_covered_times)
         covering_ind.append(i_tracklet)
-        these_dist[new_t] = all_dist[i_tracklet][new_t]
+        these_dist[newly_covered_times] = all_dist[i_tracklet][newly_covered_times]
 
     if verbose >= 1:
         print(f"Covering of length {len(covering_time_points)} made from {len(covering_ind)} tracklets")
