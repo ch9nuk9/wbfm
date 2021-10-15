@@ -1,4 +1,6 @@
 import importlib
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
@@ -6,7 +8,7 @@ from .global_vars_for_tests import project_path
 import pytest
 
 
-def _load_training_data() -> pd.DataFrame:
+def _load_training_data() -> Tuple[object, ModularProjectConfig]:
     cfg = ModularProjectConfig(project_path)
     training_cfg = cfg.get_training_config()
 
@@ -52,3 +54,7 @@ def test_reasonable_z():
     for n in all_neurons:
         z_delta_series = df_delta[n]['z']
         assert all(np.abs(z_delta_series < max_z_delta))
+
+
+if __name__ == "__main__":
+    test_pipeline_step()
