@@ -64,7 +64,7 @@ def produce_training_data(_config, _run):
         if _config['allow_raw_artifact_reuse']:
             logging.info("Found raw data folder; reusing")
         else:
-            raise AnalysisOutOfOrderError("Found raw data folder, but flag does not allow reuse")
+            raise FileExistsError("Found raw data folder, but flag does not allow reuse")
     else:
         partial_track_video_using_config(
             project_config,
