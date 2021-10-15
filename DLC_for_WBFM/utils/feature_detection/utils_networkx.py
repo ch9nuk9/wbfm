@@ -164,7 +164,7 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     # (And set impossible values to 0.0)
     inv_cost_matrix = 1.0 / (cost_matrix + 1e-6)
     np.where(inv_cost_matrix < (1.0/max_dist), 0.0, inv_cost_matrix)
-    inv_cost_matrix[inv_cost_matrix == np.inf] = 1e6
+    inv_cost_matrix = np.nan_to_num(inv_cost_matrix, nan=1e6)
 
     try:
         matches = linear_sum_assignment(inv_cost_matrix, maximize=True)
