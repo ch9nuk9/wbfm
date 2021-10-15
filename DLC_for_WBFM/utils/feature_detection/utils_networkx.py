@@ -160,16 +160,18 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     """
     # ENHANCE: use sparse distance matrix: https://stackoverflow.com/questions/52366421/how-to-do-n-d-distance-and-nearest-neighbor-calculations-on-numpy-arrays
     cost_matrix = cdist(np.array(xyz0), np.array(xyz1), 'euclidean')
+    np.where(cost_matrix > max_dist, np.inf, cost_matrix)
+
     matches = linear_sum_assignment(cost_matrix)
     raw_matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     matches = raw_matches.copy()
 
     # Postprocess to remove distance matches
-    if max_dist is not None:
-        match_dist = [cost_matrix[i, j] for (i, j) in matches]
-        to_remove = [i for i, d in enumerate(match_dist) if d > max_dist]
-        to_remove.reverse()
-        [matches.pop(i) for i in to_remove]
+    # if max_dist is not None:
+    #     match_dist = [cost_matrix[i, j] for (i, j) in matches]
+    #     to_remove = [i for i, d in enumerate(match_dist) if d > max_dist]
+    #     to_remove.reverse()
+    #     [matches.pop(i) for i in to_remove]
 
     matches = np.array(matches)
     conf = calc_confidence_from_distance_array_and_matches(cost_matrix, matches)
