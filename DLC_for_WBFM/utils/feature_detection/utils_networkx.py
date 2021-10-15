@@ -3,7 +3,6 @@ from typing import Tuple, List
 
 import networkx as nx
 import numpy as np
-import open3d as o3d
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 
@@ -211,6 +210,7 @@ def calc_icp_matches(xyz0: np.ndarray, xyz1: np.ndarray,
         (uses same API)
 
     """
+    import open3d as o3d
     zxy0, zxy1 = np.array(xyz0), np.array(xyz1)
 
     pc0 = o3d.geometry.PointCloud()

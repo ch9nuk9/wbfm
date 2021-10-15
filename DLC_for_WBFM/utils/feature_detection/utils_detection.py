@@ -1,7 +1,6 @@
 import pickle
 import cv2
 import numpy as np
-import open3d as o3d
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
 
 
@@ -59,7 +58,7 @@ def build_point_clouds_for_volume(dat,
     """
     Build point clouds for each plane, with points = neurons
     """
-
+    import open3d as o3d
     all_keypoints_pcs = []
 
     f = lambda dat, which_slice: (alpha * dat[which_slice]).astype('uint8')
@@ -85,7 +84,7 @@ def build_correspondence_icp(all_keypoints_pcs,
                              options=None,
                              verbose=0):
     # Build correspondence between each pair of planes
-
+    import open3d as o3d
     if options is None:
         options = {'max_correspondence_distance': 4.0}
     all_icp = []

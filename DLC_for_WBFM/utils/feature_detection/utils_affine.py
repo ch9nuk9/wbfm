@@ -1,8 +1,6 @@
 from typing import Dict
 import cv2
 import numpy as np
-import open3d as o3d
-
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
@@ -88,6 +86,7 @@ def propagate_all_neurons(f0: ReferenceFrame, f1: ReferenceFrame, all_feature_ma
     Loops over neurons in f0 (frame 0), and applies:
         propagate_via_affine_model(which_neuron, f0, f1, all_feature_matches)
     """
+    import open3d as o3d
     all_propagated = None
 
     options = {'f0': f0, 'f1': f1, 'all_feature_matches': all_feature_matches,

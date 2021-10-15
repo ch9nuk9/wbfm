@@ -4,9 +4,7 @@ from collections import defaultdict
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import open3d as o3d
 import pandas as pd
-
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_neuron_tree
 from DLC_for_WBFM.utils.feature_detection.utils_keypoint_matching import get_indices_of_tracklet
 
@@ -25,6 +23,7 @@ def visualize_tracks(neurons0, neurons1, matches=None, trivial_matches=False, to
     -------
 
     """
+    import open3d as o3d
     n0, pc_n0, tree_neurons0 = build_neuron_tree(neurons0, to_mirror=False)
     n1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror=False)
     pc_n0.paint_uniform_color([0.5, 0.5, 0.5])
@@ -75,6 +74,7 @@ def visualize_tracks(neurons0, neurons1, matches=None, trivial_matches=False, to
 
 
 def visualize_tracks_simple(pc0, pc1, matches):
+    import open3d as o3d
     pc0.paint_uniform_color([1, 0, 0])
     pc1.paint_uniform_color([0, 1, 0])
 
@@ -92,6 +92,7 @@ def visualize_tracks_multiple_matches(all_pc, all_matches):
 
     See also visualize_tracks_simple
     """
+    import open3d as o3d
 
     all_lines = []
     for i, match in enumerate(all_matches):
@@ -112,6 +113,7 @@ def visualize_tracks_multiple_matches(all_pc, all_matches):
 
 
 def build_line_set_from_matches(pc0, pc1, matches=None, color=None):
+    import open3d as o3d
     if color is None:
         color = [0, 0, 1]
     try:
@@ -145,6 +147,7 @@ def build_line_set_from_matches(pc0, pc1, matches=None, color=None):
 
 
 def visualize_cluster_labels(labels, pc):
+    import open3d as o3d
     max_label = labels.max()
     print(f"point cloud has {max_label + 1} clusters")
     colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
@@ -154,6 +157,7 @@ def visualize_cluster_labels(labels, pc):
 
 
 def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0, smallest_cluster=3, default_color=None):
+    import open3d as o3d
     # Assign colors to the data frame based on cluster id
     if default_color is None:
         default_color = [0, 0, 0]
@@ -183,6 +187,7 @@ def visualize_clusters_from_dataframe(full_pc, clust_df, verbose=0, smallest_clu
 
 
 def build_full_pc_from_list(all_keypoints_pcs):
+    import open3d as o3d
     full_pc = o3d.geometry.PointCloud()
     for pc in all_keypoints_pcs:
         full_pc = full_pc + pc
@@ -192,6 +197,7 @@ def build_full_pc_from_list(all_keypoints_pcs):
 
 
 def draw_registration_result(source, target, transformation, base=None):
+    import open3d as o3d
     source_temp = copy.deepcopy(source)
     target_temp = copy.deepcopy(target)
     source_temp.paint_uniform_color([0, 1, 0])
@@ -253,6 +259,7 @@ def plot_matched_point_clouds(all_frames,
     """
     Plots the matched neurons between two frames
     """
+    import open3d as o3d
     if color is None:
         color = [0, 0, 1]
     frame0 = all_frames[which_pair[0]]
@@ -275,6 +282,7 @@ def plot_matched_point_clouds(all_frames,
 
 def plot_three_point_clouds(all_frames, neuron_matches, ind=(0, 1, 2)):
     """See also plot_matched_point_clouds"""
+    import open3d as o3d
     options = {'all_frames': all_frames,
                'neuron_matches': neuron_matches,
                'actually_draw': False}
@@ -441,6 +449,7 @@ def visualize_point_cloud_and_propagated_locations_from_frames(which_neuron, f0,
 
 
 def visualize_point_cloud_and_propagated_locations(n0, n1, neuron0_trans, which_neuron):
+    import open3d as o3d
     # Original neurons
     pc0_neuron = o3d.geometry.PointCloud()
     pc0_neuron.points = o3d.utility.Vector3dVector(n0)
@@ -503,6 +512,7 @@ def visualize_tracklet_in_body(i_tracklet, i_frame,
         np.asarray(pc_neurons.colors)[idx[:], :] = [0, 0, 1]
 
     if to_plot:
+        import open3d as o3d
         o3d.visualization.draw_geometries([pc_neurons])
 
     return pc_neurons

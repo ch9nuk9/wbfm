@@ -2,7 +2,6 @@
 
 import cv2
 import numpy as np
-import open3d as o3d
 from matplotlib import pyplot as plt
 from scipy import stats
 from tqdm.auto import tqdm
@@ -256,6 +255,7 @@ def build_neuron_tree(neurons, to_mirror=True):
     Build neuron point cloud from a list of 3d neuron positions
         Expected input syntax: ZXY
     """
+    import open3d as o3d
     pc = o3d.geometry.PointCloud()
 
     num_neurons = neurons.shape[0]
@@ -279,6 +279,7 @@ def build_feature_tree(features, which_slice=None):
         If the input is 2d, then a 3rd dimension is added to form:
         ZXY
     """
+    import open3d as o3d
     pc = o3d.geometry.PointCloud()
 
     num_features = features.shape[0]
@@ -333,6 +334,7 @@ def build_f2n_map(features1,
                   radius,
                   tree_n1,
                   verbose=0):
+    import open3d as o3d
     features_to_neurons1 = dict()
     nn_opt = {'radius': 5 * radius, 'max_nn': 1}
     for i in range(num_features1):
