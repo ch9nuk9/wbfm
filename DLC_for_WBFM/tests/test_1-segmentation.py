@@ -1,5 +1,6 @@
 import importlib
-from .global_vars_for_tests import project_path
+from DLC_for_WBFM.tests.global_vars_for_tests import project_path
+
 
 def test_segmentation():
     # Run the sacred experiment from the actual script
