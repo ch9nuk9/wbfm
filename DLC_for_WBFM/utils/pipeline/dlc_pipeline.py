@@ -114,7 +114,7 @@ def _make_all_projects(all_avi_fnames, all_center_slices, dlc_opt, net_opt, png_
 
 
 def unpack_configs_dlc_projects(DEBUG, project_config, scorer, task_name, tracking_config, training_config):
-    df_fname = training_config.resolve_relative_path_from_config('df_raw_3d_tracks')
+    df_fname = training_config.resolve_relative_path_from_config('df_training_3d_tracks')
     if df_fname.endswith(".pickle"):
         raise DeprecationWarning("Creating training data from raw pickle not supported; convert to 3d DLC dataframe")
     else:

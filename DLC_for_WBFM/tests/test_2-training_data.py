@@ -12,7 +12,7 @@ def _load_training_data() -> Tuple[object, ModularProjectConfig]:
     cfg = ModularProjectConfig(project_path)
     training_cfg = cfg.get_training_config()
 
-    fname = training_cfg.resolve_relative_path_from_config('df_raw_3d_tracks')
+    fname = training_cfg.resolve_relative_path_from_config('df_3d_tracklets')
     df_tracks = pd.read_hdf(fname)
     return df_tracks, cfg
 

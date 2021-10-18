@@ -180,7 +180,6 @@ def save_all_tracklets_as_dlc_format(train_cfg: ConfigFileWithProjectContext,
 
     min_length = train_cfg.config['postprocessing_params']['min_length_to_save']
 
-    # fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
     raw_fname = train_cfg.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'), prepend_subfolder=True)
     df_raw = pd.read_pickle(raw_fname)
 
@@ -188,8 +187,8 @@ def save_all_tracklets_as_dlc_format(train_cfg: ConfigFileWithProjectContext,
     # If there are no tracklets on some frames, then there will be gaps in the indices and it will cause errors
     df = fill_missing_indices_with_nan(df)
 
-    # TODO: read from config
-    out_fname = train_cfg.resolve_relative_path("all_tracklets.h5", prepend_subfolder=True)
+    out_fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
+    # out_fname = train_cfg.resolve_relative_path("all_tracklets.h5", prepend_subfolder=True)
     df.to_hdf(out_fname, 'df_with_missing')
 
     # Can easily be an absurd number of columns

@@ -230,7 +230,7 @@ def create_manual_correction_gui(cfg: ModularProjectConfig,
 
         if initial_annotation_name is None:
             # Use the output of my tracker
-            fname = training_cfg.resolve_relative_path_from_config('df_raw_3d_tracks')
+            fname = training_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
             df_initial_annotations = pd.read_hdf(fname)
             # fname = os.path.join('2-training_data', 'training_data_tracks.h5')
             # TODO: not hardcoded experimenter
