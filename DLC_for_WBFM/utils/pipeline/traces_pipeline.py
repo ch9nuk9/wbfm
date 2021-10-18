@@ -69,18 +69,14 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectCon
 
 
 def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
-                                traces_cfg: ConfigFileWithProjectContext,
-                                track_cfg: ConfigFileWithProjectContext, DEBUG):
+                                traces_cfg: ConfigFileWithProjectContext):
     """
     Final step that loops through original data and extracts traces using labeled masks
     """
-    final_neuron_names, frame_list, params_start_volume = \
-        _unpack_configs_for_extraction(project_cfg, track_cfg)
+    coords, reindexed_masks, frame_list, params_start_volume = \
+        _unpack_configs_for_extraction(project_cfg, traces_cfg)
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
-    coords = ['z', 'x', 'y']
-    fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
-    reindexed_masks = zarr.open(fname)
     red_all_neurons, green_all_neurons = region_props_all_volumes(
         reindexed_masks,
         project_data.red_data,
@@ -94,8 +90,6 @@ def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
     # TODO: make sure these are strings
     final_neuron_names = list(df_red.columns.levels[0])
 
-    if DEBUG:
-        print("Single pass-through successful")
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
 
 
@@ -404,13 +398,18 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     return dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio
 
 
-def _unpack_configs_for_extraction(project_cfg, track_cfg):
+def _unpack_configs_for_extraction(project_cfg, traces_cfg):
     # Settings
-    max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
     params_start_volume = project_cfg.config['dataset_params']['start_volume']
     num_frames = project_cfg.config['dataset_params']['num_frames']
 
-    return max_dist, num_frames, params_start_volume
+    frame_list = list(range(params_start_volume, num_frames + params_start_volume))
+
+    coords = ['z', 'x', 'y']
+    fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
+    reindexed_masks = zarr.open(fname)
+
+    return coords, reindexed_masks, frame_list, params_start_volume
 
 
 def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) -> pd.DataFrame:
