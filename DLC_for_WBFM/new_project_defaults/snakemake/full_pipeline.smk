@@ -15,7 +15,7 @@ rule preprocessing:
     output:
         expand("{dir}/{output}", output=config['output_0'], dir=config['project_dir']),
     shell:
-        "python {input.code_path}/alternate/0+build_bounding_boxes with project_path={input.cfg}"
+        "python {input.code_path}/alternate/0+build_bounding_boxes.py with project_path={input.cfg}"
 
 #
 # Segmentation

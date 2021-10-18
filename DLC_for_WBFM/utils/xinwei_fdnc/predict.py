@@ -106,6 +106,26 @@ def track_using_fdnc(project_dat: ProjectData,
 
 def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
                                  tracks_cfg: ConfigFileWithProjectContext):
+    match_confidence_threshold, output_df_fname, prediction_options, project_dat = _unpack_for_fdnc(project_cfg,
+                                                                                                    tracks_cfg)
+
+    df, all_matches = track_using_fdnc(project_dat, prediction_options, match_confidence_threshold)
+
+    # Save in main traces folder
+    df.to_hdf(output_df_fname, key='df_with_missing')
+    tracks_cfg.config['final_3d_tracks_df'] = str(output_df_fname)
+    tracks_cfg.update_on_disk()
+
+    # For later visualization
+    output_df_fname = Path(output_df_fname).with_suffix('.csv')
+    df.to_csv(str(output_df_fname))
+
+    output_pickle_fname = Path(output_df_fname).with_name('fdnc_matches.pickle')
+    with open(output_pickle_fname, 'wb') as f:
+        pickle.dump(all_matches, f)
+
+
+def _unpack_for_fdnc(project_cfg, tracks_cfg):
     use_zimmer_template = tracks_cfg.config['leifer_params']['use_zimmer_template']
     project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
     if use_zimmer_template:
@@ -117,18 +137,4 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
     prediction_options = load_prediction_options(custom_template=custom_template)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
-
-    df, all_matches = track_using_fdnc(project_dat, prediction_options, match_confidence_threshold)
-
-    # Save in main traces folder
-    df.to_hdf(output_df_fname, key='df_with_missing')
-    tracks_cfg.config['final_3d_tracks_df'] = str(output_df_fname)
-    tracks_cfg.update_on_disk()
-
-    # For visualization
-    output_df_fname = Path(output_df_fname).with_suffix('.csv')
-    df.to_csv(str(output_df_fname))
-
-    output_pickle_fname = Path(output_df_fname).with_name('fdnc_matches.pickle')
-    with open(output_pickle_fname, 'wb') as f:
-        pickle.dump(all_matches, f)
+    return match_confidence_threshold, output_df_fname, prediction_options, project_dat

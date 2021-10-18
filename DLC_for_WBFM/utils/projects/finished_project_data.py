@@ -25,6 +25,9 @@ class ProjectData:
     segmentation: zarr.Array
     segmentation_metadata: dict
 
+    df_training_tracklets: pd.DataFrame
+    reindexed_masks_training: zarr.Array
+
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
 
@@ -36,6 +39,7 @@ class ProjectData:
 
     verbose: int = 2
 
+    # Can be quite large, so don't read by default
     @property
     def raw_frames(self):
         train_cfg = self.project_config.get_training_config()
@@ -53,6 +57,12 @@ class ProjectData:
         return matches
 
     @property
+    def df_all_tracklets(self):
+        train_cfg = self.project_config.get_training_config()
+        fname = train_cfg.resolve_relative_path_from_config('reindexed_masks')
+        return read_if_exists(fname)
+
+    @property
     def num_frames(self):
         return self.project_config.config['dataset_params']['num_frames']
 
@@ -62,14 +72,16 @@ class ProjectData:
         project_dir = cfg.project_dir
 
         segment_cfg = cfg.get_segmentation_config()
+        train_cfg = cfg.get_training_config()
         tracking_cfg = cfg.get_tracking_config()
         traces_cfg = cfg.get_traces_config()
 
-        return cfg, segment_cfg, tracking_cfg, traces_cfg, project_dir
+        return cfg, segment_cfg, train_cfg, tracking_cfg, traces_cfg, project_dir
 
     @staticmethod
     def _load_data_from_configs(cfg: ModularProjectConfig,
                                 segment_cfg: ConfigFileWithProjectContext,
+                                train_cfg: ConfigFileWithProjectContext,
                                 tracking_cfg: ConfigFileWithProjectContext,
                                 traces_cfg: ConfigFileWithProjectContext,
                                 project_dir):
@@ -77,6 +89,9 @@ class ProjectData:
         green_dat_fname = cfg.config['preprocessed_green']
         red_traces_fname = traces_cfg.config['traces']['red']
         green_traces_fname = traces_cfg.config['traces']['green']
+
+        df_training_tracklets_fname = train_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
+        reindexed_masks_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_masks')
 
         final_tracks_fname = tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
         seg_fname_raw = segment_cfg.resolve_relative_path_from_config('output_masks')
@@ -89,30 +104,27 @@ class ProjectData:
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
         # Note: when running on the cluster the raw data isn't (for now) accessible
-        red_data = read_if_exists(red_dat_fname, reader=zarr_reader)
-        green_data = read_if_exists(green_dat_fname, reader=zarr_reader)
+        # , reader=zarr_reader)
 
         with safe_cd(cfg.project_dir):
 
             logging.info("Starting threads to read data...")
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                f = executor.submit(read_if_exists, red_traces_fname)
-                red_traces = f.result()
-                f = executor.submit(read_if_exists, green_traces_fname)
-                green_traces = f.result()
-                f = executor.submit(read_if_exists, final_tracks_fname)
-                final_tracks = f.result()
-                f = executor.submit(read_if_exists, seg_fname_raw, zarr_reader)
-                raw_segmentation = f.result()
-                f = executor.submit(read_if_exists, seg_fname, zarr_reader)
-                segmentation = f.result()
-                f = executor.submit(pickle_load_binary, seg_metadata_fname)
-                seg_metadata: dict = f.result()
-                f = executor.submit(read_if_exists, behavior_fname, excel_reader)
-                behavior_annotations = f.result()
+            with concurrent.futures.ThreadPoolExecutor() as ex:
+                red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader).result()
+                green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader).result()
+                red_traces = ex.submit(read_if_exists, red_traces_fname).result()
+                green_traces = ex.submit(read_if_exists, green_traces_fname).result()
+                df_training_tracklets = ex.submit(read_if_exists, df_training_tracklets_fname).result()
+                reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader).result()
+                final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
+                raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader).result()
+                segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader).result()
+                seg_metadata: dict = ex.submit(pickle_load_binary, seg_metadata_fname).result()
+                behavior_annotations = ex.submit(read_if_exists, behavior_fname, excel_reader).result()
 
-            red_traces.replace(0, np.nan, inplace=True)
-            green_traces.replace(0, np.nan, inplace=True)
+            if red_traces is not None:
+                red_traces.replace(0, np.nan, inplace=True)
+                green_traces.replace(0, np.nan, inplace=True)
             logging.info("Read all data")
 
         background_per_pixel = traces_cfg.config['visualization']['background_per_pixel']
@@ -131,6 +143,8 @@ class ProjectData:
             raw_segmentation,
             segmentation,
             seg_metadata,
+            df_training_tracklets,
+            reindexed_masks_training,
             red_traces,
             green_traces,
             final_tracks,
@@ -245,6 +259,8 @@ red_data: {self.red_data is not None}\n\
 green_data: {self.green_data is not None}\n\
 raw_segmentation: {self.raw_segmentation is not None}\n\
 segmentation: {self.segmentation is not None}\n\
+df_training_tracklets: {self.df_training_tracklets is not None}\n\
+reindexed_masks_training: {self.reindexed_masks_training is not None}\n\
 red_traces: {self.red_traces is not None}\n\
 green_traces: {self.green_traces is not None}\n\
 final_tracks: {self.final_tracks is not None}\n\

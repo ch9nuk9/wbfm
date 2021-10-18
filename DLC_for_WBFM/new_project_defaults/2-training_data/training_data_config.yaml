@@ -22,6 +22,7 @@ postprocessing_params:
 
 df_training_3d_tracks: 2-training_data/training_tracklets.h5
 df_3d_tracklets: 2-training_data/all_tracklets.h5
+reindexed_masks: 2-training_data/reindexed_masks.zarr
 
 # Which frames have enough tracklets to be used for DLC later
 training_data_3d:
