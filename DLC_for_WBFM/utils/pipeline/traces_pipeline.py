@@ -74,12 +74,13 @@ def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
     """
     Final step that loops through original data and extracts traces using labeled masks
     """
-    final_neuron_names, frame_list, params_start_volume, project_data = \
+    final_neuron_names, frame_list, params_start_volume = \
         _unpack_configs_for_extraction(project_cfg, track_cfg)
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+
     coords = ['z', 'x', 'y']
     fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
     reindexed_masks = zarr.open(fname)
-    # NEW: get properties much faster (10x)
     red_all_neurons, green_all_neurons = region_props_all_volumes(
         reindexed_masks,
         project_data.red_data,
@@ -88,6 +89,17 @@ def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
         params_start_volume
     )
 
+    df_green, df_red = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons, red_all_neurons)
+
+    # TODO: make sure these are strings
+    final_neuron_names = list(df_red.columns.levels[0])
+
+    if DEBUG:
+        print("Single pass-through successful")
+    _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
+
+
+def _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons, red_all_neurons):
     # Convert nested dict of volumes to final dataframes
     sz_one_neuron = len(frame_list)
     tmp_red = defaultdict(lambda: np.zeros(sz_one_neuron))
@@ -104,16 +116,9 @@ def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
             else:
                 tmp_red[key][i_vol] = red_props[key]
                 tmp_green[key][i_vol] = green_props[key]
-
     df_red = pd.DataFrame(tmp_red)
     df_green = pd.DataFrame(tmp_green)
-
-    # TODO: make sure these are strings
-    final_neuron_names = list(df_red.columns.levels[0])
-
-    if DEBUG:
-        print("Single pass-through successful")
-    _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
+    return df_green, df_red
 
 
 def make_mask2final_mapping(all_matches: dict):
@@ -404,9 +409,8 @@ def _unpack_configs_for_extraction(project_cfg, track_cfg):
     max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
     params_start_volume = project_cfg.config['dataset_params']['start_volume']
     num_frames = project_cfg.config['dataset_params']['num_frames']
-    z_to_xy_ratio = project_cfg.config['dataset_params']['z_to_xy_ratio']
 
-    return max_dist, num_frames, params_start_volume, z_to_xy_ratio
+    return max_dist, num_frames, params_start_volume
 
 
 def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) -> pd.DataFrame:
