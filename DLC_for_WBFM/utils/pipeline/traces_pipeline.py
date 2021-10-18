@@ -15,8 +15,6 @@ from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
-from DLC_for_WBFM.utils.projects.utils_project import edit_config, safe_cd
-from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
 
 
 def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectContext,
@@ -112,7 +110,7 @@ def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
 
     # TODO: make sure these are strings
     final_neuron_names = list(df_red.columns.levels[0])
-    
+
     if DEBUG:
         print("Single pass-through successful")
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
@@ -197,7 +195,6 @@ def region_props_one_volume(this_mask_volume,
 
     Parameters
     ----------
-    mask2final_name
     this_green_volume
     this_mask_volume
     this_red_volume
@@ -339,11 +336,10 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
     ----------
     _get_dlc_zxy
     all_matches
-    all_neuron_names
     frame_list
     max_dist
-    red_dat
     segmentation_metadata
+    project_data
     z_to_xy_ratio
 
     Returns
@@ -470,34 +466,6 @@ def extract_traces_using_reindexed_masks(d_name: str, zxy_dlc: np.ndarray,
     df = pd.DataFrame(df_as_dict, index=[i])
 
     return df
-
-
-def OLD_extract_traces_using_reindexed_masks(d_name: List[str], all_zxy_dlc: np.ndarray,
-                                             df: pd.DataFrame, i_mask: int, i_volume: int,
-                                             is_mirrored: bool, video_volume: np.ndarray,
-                                             this_mask_volume: np.ndarray, confidence: float = 0.0):
-    # For conversion between lists
-    # i_dlc, i_seg = int(i_dlc), int(i_seg)
-    # s_name = int(all_seg_names[i_seg])
-    i = i_volume
-    # Get brightness from green volume and mask
-    # this_mask_neuron = (this_mask_volume == s_name)
-    # Use reindexed mask instead of original index mask
-    this_mask_neuron = (this_mask_volume == i_mask)
-    if is_mirrored:
-        this_mask_neuron = np.flip(this_mask_neuron, axis=2)
-    volume = np.count_nonzero(this_mask_neuron)
-    all_values = video_volume[this_mask_neuron]
-    brightness = np.sum(all_values)
-    # Save in dataframe
-    df[(d_name, 'brightness')].loc[i] = brightness
-    df[(d_name, 'volume')].loc[i] = volume
-    # df[(d_name, 'centroid_ind')].loc[i] = s_name
-    df[(d_name, 'all_values')].loc[i] = all_values
-    df[(d_name, 'i_reindexed_segmentation')].loc[i] = i_mask
-    # zxy_seg = mdat['centroids'][s_name]
-    zxy_dlc = all_zxy_dlc[i_mask - 1]
-    _save_locations_in_df(d_name, df, i, zxy_dlc, confidence)
 
 
 def _save_locations_in_df(d_name, df, i, zxy_dlc, conf):
