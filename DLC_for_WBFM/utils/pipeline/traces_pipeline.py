@@ -67,10 +67,20 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectCon
 
     logging.info("Extracting red and green traces using reindexed masks...")
     # Reads masks from disk, and writes traces
-    fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
-    with safe_cd(project_cfg.project_dir):
-        reindexed_masks = zarr.open(fname)
+    extract_traces_using_config(project_cfg, traces_cfg, track_cfg, DEBUG)
 
+
+def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
+                                traces_cfg: ConfigFileWithProjectContext,
+                                track_cfg: ConfigFileWithProjectContext, DEBUG):
+    """
+    Final step that loops through original data and extracts traces using labeled masks
+    """
+    final_neuron_names, frame_list, params_start_volume, project_data = \
+        _unpack_configs_for_extraction(project_cfg, track_cfg)
+    coords = ['z', 'x', 'y']
+    fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
+    reindexed_masks = zarr.open(fname)
     use_region_props = True
     if not use_region_props:
         # New: rename neurons to be same as segmentation indices
@@ -152,11 +162,9 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectCon
         df_green = pd.DataFrame(tmp_green)
 
         # TODO: make sure these are strings
-        new_neuron_names = list(df_red.columns.levels[0])
-
+        final_neuron_names = list(df_red.columns.levels[0])
     if DEBUG:
         print("Single pass-through successful")
-
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
 
 
@@ -443,6 +451,16 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
 
     return dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio
+
+
+def _unpack_configs_for_extraction(project_cfg, track_cfg):
+    # Settings
+    max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
+    params_start_volume = project_cfg.config['dataset_params']['start_volume']
+    num_frames = project_cfg.config['dataset_params']['num_frames']
+    z_to_xy_ratio = project_cfg.config['dataset_params']['z_to_xy_ratio']
+
+    return max_dist, num_frames, params_start_volume, z_to_xy_ratio
 
 
 def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) -> pd.DataFrame:

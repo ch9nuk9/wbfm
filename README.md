@@ -173,7 +173,7 @@ Preparation: None, for now
 
 Command:
 ```bash
-python scripts/4-make_full_traces.py with project_path=PATH-TO-YOUR-PROJECT
+python scripts/4a-match_tracks_and_segmentation.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
 Speed: Medium; 1-3 hours
