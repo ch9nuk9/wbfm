@@ -46,4 +46,4 @@ def main(_config, _run):
         track_using_fdnc_from_config(project_cfg, tracks_cfg)
 
         # Necessary postprocessing step
-        combine_all_dlc_and_tracklet_coverings_from_config(tracks_cfg, training_cfg, project_dir, DEBUG=_config['DEBUG'])
+        # combine_all_dlc_and_tracklet_coverings_from_config(tracks_cfg, training_cfg, project_dir, DEBUG=_config['DEBUG'])

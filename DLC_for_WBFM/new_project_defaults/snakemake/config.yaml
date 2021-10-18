@@ -7,7 +7,8 @@ code_path: "/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scrip
 #... for now, do manually
 
 # Step 1: segmentation
-# This is the beginning, with no required input
+# This is the beginning, with no required input except raw data
+# NOTE: raw data is outside the project, and thus is not in this format
 input_1:
   - ../1-segmentation/bounding_boxes.pickle # Optional
 output_1_dir:
@@ -16,29 +17,62 @@ output_1:
   - ../1-segmentation/metadata.pickle
 
 # Step 2: tracklets
-input_2:
+input_2a:
   - ../1-segmentation/masks.zarr
-  - ../1-segmentation/metadata.zarr
-output_2_dir:
-  - ../2-training_data/reindexed_masks.zarr
-output_2:
-  - ../2-training_data/training_data_tracks.h5
+  - ../1-segmentation/metadata.pickle
+output_2a:
   - ../2-training_data/all_tracklets.h5
+  - ../2-training_data/raw/clust_df_dat.pickle
+
+input_2b:
+  - ../2-training_data/all_tracklets.h5
+output_2b_dir:
+  - ../2-training_data/reindexed_masks.zarr
+
+input_2c:
+  - ../2-training_data/raw/clust_df_dat.pickle
+output_2c:
+  - ../2-training_data/training_data_tracks.h5
+  -
 
 # Step 3: dlc... for now, just combine all steps
 # NOTE: should be done on cluster
 # However, the .avi videos should be created off the cluster...
-input_3:
+input_3_dlc:
   - ../3-tracking/ONCLUSTER.FAKE
   - ../2-training_data/training_data_tracks.h5
   - ../2-training_data/reindexed_masks.zarr
-output_3:
+output_3_dlc:
   - ../3-tracking/full_3d_tracks.h5
 
+
+# Step 3: Alternate: leifer style
+input_3a:
+  - ../1-segmentation/metadata.pickle
+output_3a:
+  - ../3-tracking/postprocessing/leifer_tracks.h5
+
+input_3b:
+  - ../3-tracking/postprocessing/leifer_tracks.h5
+output_3b:
+  - ../3-tracking/postprocessing/combined_3d_tracks.h5
+
 # Step 4: final traces
-input_4:
-  - ../3-tracking/full_3d_tracks.h5
-  - ../2-training_data/all_tracklets.h5
-output_4:
+input_4a:
+  - ../3-tracking/postprocessing/combined_3d_tracks.h5
+  - ../1-segmentation/metadata.pickle
+output_4a:
+  - ../4-traces/all_matches.pickle
+
+input_4b:
+  - ../4-traces/all_matches.pickle
+  - ../1-segmentation/masks.zarr
+output_4b_dir:
+  - ../4-traces/reindexed_masks.zarr
+
+# Note: also needs raw data
+input_4c:
+  - ../4-traces/reindexed_masks.zarr
+output_4c:
   - ../4-traces/red_traces.h5
   - ../4-traces/green_traces.h5
