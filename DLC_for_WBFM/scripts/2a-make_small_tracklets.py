@@ -10,16 +10,11 @@ import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrderError
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format, \
-    save_all_tracklets_as_dlc_format
-from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, update_path_to_segmentation_in_config
 
 from sacred import SETTINGS
-SETTINGS.CAPTURE_MODE = 'sys' # Capture stdout
+SETTINGS.CAPTURE_MODE = 'sys'  # Capture stdout
 
 # Initialize sacred experiment
 ex = Experiment()

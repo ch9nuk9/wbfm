@@ -12,7 +12,7 @@ from sacred import Experiment
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 # Initialize sacred experiment
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_all_tracklets_as_dlc_format
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import alt_save_all_tracklets_as_dlc_format
 
 ex = Experiment()
 # Add single variable so that the cfg() function works
@@ -34,4 +34,4 @@ def save_training_data(_config, _run):
     train_cfg = _config['train_cfg']
 
     with safe_cd(_config['project_dir']):
-        save_all_tracklets_as_dlc_format(train_cfg)
+        alt_save_all_tracklets_as_dlc_format(train_cfg)

@@ -160,8 +160,8 @@ def _unpack_config_training_data_conversion(training_config):
     return df, min_length_to_save
 
 
-def save_all_tracklets_as_dlc_format(train_cfg: ConfigFileWithProjectContext,
-                                     DEBUG=False):
+def alt_save_all_tracklets_as_dlc_format(train_cfg: ConfigFileWithProjectContext,
+                                         DEBUG=False):
     """
     Takes my tracklet format and saves ALL as DLC format (i.e. many short tracklets)
 
