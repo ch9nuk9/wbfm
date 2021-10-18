@@ -1,10 +1,12 @@
 
 # Global requirement
-project_path: null
+project_path: "/scratch/zimmer/Charles/dlc_stacks/project-pytest/project_config.yaml"
 code_path: "/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
 
 # Step 0: preprocessing
 #... for now, do manually
+output_0:
+  - ../1-segmentation/bounding_boxes.pickle # Optional
 
 # Step 1: segmentation
 # This is the beginning, with no required input except raw data
@@ -53,6 +55,7 @@ output_3a:
 
 input_3b:
   - ../3-tracking/postprocessing/leifer_tracks.h5
+  - ../2-training_data/all_tracklets.h5
 output_3b:
   - ../3-tracking/postprocessing/combined_3d_tracks.h5
 
