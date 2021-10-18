@@ -24,7 +24,7 @@ SETTINGS.CAPTURE_MODE = 'sys' # Capture stdout
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None, allow_raw_artifact_reuse=False, DEBUG=False)
+ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
@@ -54,15 +54,8 @@ def produce_training_data(_config, _run):
 
     train_cfg = _config['train_cfg']
 
-    raw_foldername = train_cfg.resolve_relative_path('raw', prepend_subfolder=True)
-    if os.path.exists(raw_foldername):
-        if _config['allow_raw_artifact_reuse']:
-            logging.info("Found raw data folder; reusing")
-        else:
-            raise FileExistsError("Found raw data folder, but flag does not allow reuse")
-    else:
-        partial_track_video_using_config(
-            project_config,
-            train_cfg,
-            DEBUG=DEBUG
-        )
+    partial_track_video_using_config(
+        project_config,
+        train_cfg,
+        DEBUG=DEBUG
+    )

@@ -30,6 +30,10 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     """
     logging.info(f"Producing tracklets")
 
+    raw_foldername = training_config.resolve_relative_path('raw', prepend_subfolder=True)
+    if os.path.exists(raw_foldername):
+        raise FileExistsError("Found old raw data folder; either rename or skip this step to reuse")
+
     video_fname, z_threshold, options = _unpack_config_partial_tracking(DEBUG, project_config, training_config)
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)
 
