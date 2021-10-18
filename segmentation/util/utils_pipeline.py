@@ -140,6 +140,7 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
+
 def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     # Initializing variables
     start_volume = project_cfg.config['dataset_params']['start_volume']
@@ -148,7 +149,11 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
         num_frames = 1
     frame_list = list(range(start_volume, start_volume + num_frames))
     video_path = segment_cfg.config['video_path']
-    mask_fname, metadata_fname = get_output_fnames(video_path, segment_cfg.config['output_folder'], num_frames)
+    # Generate new filenames if they are not set
+    mask_fname = segment_cfg.config['output_masks']
+    metadata_fname = segment_cfg.config['output_metadata']
+    output_dir = segment_cfg.config['output_folder']
+    mask_fname, metadata_fname = get_output_fnames(video_path, output_dir, mask_fname, metadata_fname)
     # Save settings
     segment_cfg.config['output_masks'] = mask_fname
     segment_cfg.config['output_metadata'] = metadata_fname
@@ -564,7 +569,7 @@ def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
 
     masks_zarr = zarr.open(mask_fname)
     video_dat = zarr.open(video_path)
-    logging.info(f"Read zarr from: {masks_zarr}")
+    logging.info(f"Read zarr from: {mask_fname}")
     logging.info(f"Read video from: {video_path}")
 
     if DEBUG:
