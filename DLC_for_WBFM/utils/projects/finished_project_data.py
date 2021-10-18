@@ -237,10 +237,10 @@ class ProjectData:
 
     def __repr__(self):
         return f"=======================================\n\
-Project data:\n\
-project_dir: {self.project_dir} \n\
+Project data for directory:\n\
+{self.project_dir} \n\
 =======================================\n\
-Found data:\n\
+Found the following data files:\n\
 red_data: {self.red_data is not None}\n\
 green_data: {self.green_data is not None}\n\
 raw_segmentation: {self.raw_segmentation is not None}\n\
