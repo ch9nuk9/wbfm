@@ -36,9 +36,6 @@ def cfg(project_path, DEBUG):
     train_cfg = update_path_to_segmentation_in_config(cfg)
     train_cfg.update_on_disk()
 
-    tracking_cfg = cfg.get_tracking_config()
-    segment_cfg = cfg.get_segmentation_config()
-
     log_dir = cfg.get_log_dir()
     log_fname = os.path.join(log_dir, '2-training_data_warnings.log')
     logging.basicConfig(filename=log_fname, level=logging.DEBUG)
@@ -55,8 +52,6 @@ def produce_training_data(_config, _run):
     DEBUG = _config['DEBUG']
     project_config = _config['cfg']
 
-    tracking_cfg = _config['tracking_cfg']
-    segment_cfg = _config['segment_cfg']
     train_cfg = _config['train_cfg']
 
     raw_foldername = train_cfg.resolve_relative_path('raw', prepend_subfolder=True)
@@ -71,19 +66,3 @@ def produce_training_data(_config, _run):
             train_cfg,
             DEBUG=DEBUG
         )
-
-    # For manual correction
-    reindex_segmentation_only_training_data(
-        project_config,
-        segment_cfg,
-        tracking_cfg,
-        DEBUG=DEBUG
-    )
-
-    # For later analysis, i.e. don't use the raw dataframes directly
-    save_training_data_as_dlc_format(tracking_cfg,
-                                     train_cfg, DEBUG=DEBUG)
-
-    # For later extending
-    with safe_cd(project_config.project_dir):
-        save_all_tracklets_as_dlc_format(train_cfg)
