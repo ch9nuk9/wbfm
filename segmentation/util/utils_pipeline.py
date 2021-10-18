@@ -10,7 +10,7 @@ from tqdm import tqdm
 import pickle
 # preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, synchronize_segment_config, config_file_with_project_context
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 # metadata
@@ -22,8 +22,8 @@ from segmentation.util.utils_model import get_stardist_model
 import concurrent.futures
 
 
-def segment_video_using_config_3d(segment_cfg: config_file_with_project_context,
-                                  project_cfg: modular_project_config,
+def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
+                                  project_cfg: ModularProjectConfig,
                                   continue_from_frame: int =None,
                                   DEBUG: bool = False) -> None:
     """
@@ -168,8 +168,8 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
 ## 2d pipeline (stitch to get 3d)
 ##
 
-def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
-                                  project_cfg: modular_project_config,
+def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
+                                  project_cfg: ModularProjectConfig,
                                   continue_from_frame: int =None,
                                   DEBUG: bool = False) -> None:
     """
@@ -225,7 +225,7 @@ def initialize_stardist_model(stardist_model_name, verbose):
     return sd_model
 
 
-def _segment_full_video_2d(segment_cfg: config_file_with_project_context,
+def _segment_full_video_2d(segment_cfg: ConfigFileWithProjectContext,
                            frame_list: list, mask_fname: str, num_frames: int, verbose: int,
                            video_dat: zarr.Array,
                            opt: dict, continue_from_frame: int) -> None:
