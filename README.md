@@ -104,7 +104,7 @@ Preparation:
 
 Command:
 ```bash
-python scripts/2a-make_small_tracklets.py with project_path=PATH-TO-YOUR-PROJECT
+python scripts/2a-make_short_tracklets.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
 Speed: Fast, but depends on number of frames; 1-2 hours

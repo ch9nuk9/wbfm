@@ -33,7 +33,6 @@ input_2c:
   - ../2-training_data/raw/clust_df_dat.pickle
 output_2c:
   - ../2-training_data/training_data_tracks.h5
-  -
 
 # Step 3: dlc... for now, just combine all steps
 # NOTE: should be done on cluster
