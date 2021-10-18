@@ -1,3 +1,4 @@
+import logging
 import threading
 from multiprocessing import Manager
 
@@ -563,6 +564,8 @@ def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
 
     masks_zarr = zarr.open(mask_fname)
     video_dat = zarr.open(video_path)
+    logging.info(f"Read zarr from: {masks_zarr}")
+    logging.info(f"Read video from: {video_path}")
 
     if DEBUG:
         frame_list = frame_list[:2]
