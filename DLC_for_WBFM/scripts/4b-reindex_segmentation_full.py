@@ -46,4 +46,5 @@ def make_full_tracks(_config, _run):
     project_cfg = _config['cfg']
 
     with safe_cd(_config['project_dir']):
+        # Reads matches from disk, and then saves the masks
         reindex_segmentation_using_config(traces_cfg, seg_cfg, project_cfg)

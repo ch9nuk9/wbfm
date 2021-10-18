@@ -10,7 +10,8 @@ from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
-from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks_using_config
+from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks_using_config, \
+    extract_traces_using_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
@@ -28,7 +29,6 @@ def cfg(project_path, DEBUG):
     cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
-    seg_cfg = cfg.get_segmentation_config()
     tracking_cfg = cfg.get_tracking_config()
     traces_cfg = cfg.get_traces_config()
 
@@ -43,14 +43,10 @@ def make_full_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    seg_cfg = _config['seg_cfg']
     track_cfg = _config['tracking_cfg']
     trace_cfg = _config['traces_cfg']
     project_cfg = _config['cfg']
 
     with safe_cd(_config['project_dir']):
-        get_traces_from_3d_tracks_using_config(seg_cfg,
-                                               track_cfg,
-                                               trace_cfg,
-                                               project_cfg,
-                                               DEBUG=DEBUG)
+        # Reads masks from disk, and writes traces
+        extract_traces_using_config(project_cfg, trace_cfg, track_cfg, DEBUG)
