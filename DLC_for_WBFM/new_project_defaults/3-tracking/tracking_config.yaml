@@ -6,10 +6,6 @@ self_path: 3-tracking/tracking_config.yaml # For programmatic updates
 #########################
 # Producing training data
 #########################
-# Which frames have enough tracklets to be used for DLC later
-training_data_3d:
-  num_training_frames: 30 # CHANGE ME; trade-off between number of neurons and number of frames
-  which_frames: null # To be calculated
 
 # Translating between 3d annotations and stack of 2d
 training_data_2d:

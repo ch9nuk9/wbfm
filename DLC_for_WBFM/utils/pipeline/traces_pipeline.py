@@ -69,7 +69,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectCon
 
 
 def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
-                                traces_cfg: ConfigFileWithProjectContext):
+                                traces_cfg: ConfigFileWithProjectContext,
+                                DEBUG):
     """
     Final step that loops through original data and extracts traces using labeled masks
     """

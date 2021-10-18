@@ -26,8 +26,6 @@ def cfg(project_path):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
-
-    tracking_cfg = cfg.get_tracking_config()
     training_cfg = cfg.get_training_config()
 
 
@@ -36,9 +34,6 @@ def save_training_data(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    # this_config = _config.copy()
-    # this_config['dataset_params'] = _config['project_cfg'].config['dataset_params'].copy()
 
     with safe_cd(_config['project_dir']):
-        save_training_data_as_dlc_format(_config['tracking_cfg'],
-                                         _config['training_cfg'], DEBUG=DEBUG)
+        save_training_data_as_dlc_format(_config['training_cfg'], DEBUG=DEBUG)

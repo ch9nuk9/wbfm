@@ -28,7 +28,7 @@ def cfg(project_path, DEBUG):
     cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
-    tracking_cfg = cfg.get_tracking_config()
+    training_cfg = cfg.get_training_config()
     segment_cfg = cfg.get_segmentation_config()
 
     log_dir = cfg.get_log_dir()
@@ -47,13 +47,13 @@ def produce_training_data(_config, _run):
     DEBUG = _config['DEBUG']
     project_config = _config['cfg']
 
-    tracking_cfg = _config['tracking_cfg']
+    training_cfg = _config['training_cfg']
     segment_cfg = _config['segment_cfg']
 
     # For manual correction
     reindex_segmentation_only_training_data(
         project_config,
         segment_cfg,
-        tracking_cfg,
+        training_cfg,
         DEBUG=DEBUG
     )

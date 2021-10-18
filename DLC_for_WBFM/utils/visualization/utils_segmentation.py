@@ -219,7 +219,7 @@ def all_matches_to_lookup_tables(all_matches: dict) -> dict:
 
 def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
                                             segment_cfg: ConfigFileWithProjectContext,
-                                            tracking_cfg: ConfigFileWithProjectContext,
+                                            training_cfg: ConfigFileWithProjectContext,
                                             DEBUG=False):
     """
     Using tracklets and full segmentation, produces a small video (zarr) with neurons colored by track
@@ -235,7 +235,7 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
         df = pd.read_pickle(fname)
 
         # Get the frames chosen as training data, or recalculate
-        which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_cfg)
+        which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, training_cfg)
         # logging.log(f"Which frames to use for training data: {which_frames}")
 
         # Build a sub-df with only the relevant neurons; all slices

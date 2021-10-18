@@ -216,7 +216,7 @@ def create_manual_correction_gui(cfg: ModularProjectConfig,
         # Get the frames chosen as training data, or recalculate
         which_frames = list(
             get_or_recalculate_which_frames(DEBUG, df_raw_matches, cfg.config['dataset_params']['num_frames'],
-                                            tracking_cfg))
+                                            training_cfg))
 
         # Import segmentation
         fname = segment_cfg.config['output_masks']

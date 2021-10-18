@@ -110,14 +110,13 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
     return new_df
 
 
-def save_training_data_as_dlc_format(tracking_config: ConfigFileWithProjectContext,
-                                     training_config: ConfigFileWithProjectContext, DEBUG=False):
+def save_training_data_as_dlc_format(training_config: ConfigFileWithProjectContext, DEBUG=False):
     """
     Takes my training data from my tracklet format and saves as a DLC dataframe
 
     Parameters
     ----------
-    this_config
+    training_config
     DEBUG
 
     Returns
@@ -130,7 +129,7 @@ def save_training_data_as_dlc_format(tracking_config: ConfigFileWithProjectConte
 
     # Get the frames chosen as training data, or recalculate
     num_frames = len(df)
-    which_frames = list(get_or_recalculate_which_frames(DEBUG, df, num_frames, tracking_config))
+    which_frames = list(get_or_recalculate_which_frames(DEBUG, df, num_frames, training_config))
 
     # Build a sub-df with only the relevant neurons; all slices
     # Todo: connect up to actually tracked z slices?
@@ -362,7 +361,7 @@ def build_subset_df_from_3dDLC(dlc3d_dlc: pd.DataFrame,
 
 
 def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
-                                    tracking_config: ConfigFileWithProjectContext):
+                                    training_cfg: ConfigFileWithProjectContext):
     """
 
     Parameters
@@ -377,11 +376,11 @@ def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
 
     """
     # which_frames = this_config['track_cfg']['training_data_3d']['which_frames']
-    which_frames = tracking_config.config['training_data_3d'].get('which_frames', None)
+    which_frames = training_cfg.config['training_data_3d'].get('which_frames', None)
 
     if which_frames is None:
         # Choose a subset of frames with enough tracklets
-        num_frames_needed = tracking_config.config['training_data_3d']['num_training_frames']
+        num_frames_needed = training_cfg.config['training_data_3d']['num_training_frames']
         tracklet_opt = {'num_frames_needed': num_frames_needed,
                         'num_frames': num_frames,
                         'verbose': 1}
@@ -389,8 +388,8 @@ def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
             tracklet_opt['num_frames_needed'] = 2
         which_frames, _ = best_tracklet_covering_from_my_matches(df, **tracklet_opt)
 
-        tracking_config.config['training_data_3d']['which_frames'] = which_frames
-        tracking_config.update_on_disk()
+        training_cfg.config['training_data_3d']['which_frames'] = which_frames
+        training_cfg.update_on_disk()
 
     return which_frames
 

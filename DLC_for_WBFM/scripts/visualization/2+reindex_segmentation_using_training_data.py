@@ -26,7 +26,7 @@ def cfg(project_path):
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()
-    tracking_cfg = cfg.get_tracking_config()
+    training_cfg = cfg.get_training_config()
 
 
 @ex.automain
@@ -39,6 +39,6 @@ def make_dlc_labeled_videos(_config, _run):
     reindex_segmentation_only_training_data(
         _config['cfg'],
         _config['segment_cfg'],
-        _config['tracking_cfg'],
+        _config['training_cfg'],
         DEBUG = DEBUG
     )

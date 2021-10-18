@@ -15,9 +15,9 @@ def napari_of_training_data(cfg: ModularProjectConfig):
     z_seg = zarr.open_array(training_seg_fname)
 
     # Training data doesn't usually start at i=0, so align
-    track_cfg = cfg.get_tracking_config()
-    num_frames = track_cfg.config['training_data_3d']['num_training_frames']
-    i_seg_start = track_cfg.config['training_data_3d']['which_frames'][0]
+    training_cfg = cfg.get_training_config()
+    num_frames = training_cfg.config['training_data_3d']['num_training_frames']
+    i_seg_start = training_cfg.config['training_data_3d']['which_frames'][0]
     i_seg_end = i_seg_start + num_frames
     z_dat = z_dat[i_seg_start:i_seg_end, ...]
 

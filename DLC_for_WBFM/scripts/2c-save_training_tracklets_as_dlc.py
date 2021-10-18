@@ -27,8 +27,6 @@ def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
-
-    tracking_cfg = cfg.get_tracking_config()
     train_cfg = cfg.get_training_config()
 
     log_dir = cfg.get_log_dir()
@@ -46,9 +44,7 @@ def produce_training_data(_config, _run):
 
     DEBUG = _config['DEBUG']
 
-    tracking_cfg = _config['tracking_cfg']
     train_cfg = _config['train_cfg']
 
     # For later analysis, i.e. don't use the raw dataframes directly
-    save_training_data_as_dlc_format(tracking_cfg,
-                                     train_cfg, DEBUG=DEBUG)
+    save_training_data_as_dlc_format(train_cfg, DEBUG=DEBUG)
