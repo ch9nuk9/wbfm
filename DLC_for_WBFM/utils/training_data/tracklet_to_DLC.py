@@ -144,7 +144,7 @@ def save_training_data_as_dlc_format(tracking_config: ConfigFileWithProjectConte
     out_fname = training_config.resolve_relative_path("training_data_tracks.h5", prepend_subfolder=True)
     training_df.to_hdf(out_fname, 'df_with_missing')
 
-    training_config.config['df_raw_3d_tracks'] = out_fname
+    training_config.config['df_training_3d_tracks'] = out_fname
     training_config.update_on_disk()
 
     # Usually too large for .csv

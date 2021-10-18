@@ -20,4 +20,5 @@ postprocessing_params:
     min_length_to_save: 3
     z_threshold: 3
 
-df_raw_3d_tracks: 2-training_data/all_tracklets.h5
+df_training_3d_tracks: 2-training_data/training_tracklets.h5
+df_3d_tracklets: 2-training_data/all_tracklets.h5

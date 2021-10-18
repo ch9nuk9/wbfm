@@ -64,7 +64,7 @@ def save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, trai
         min_length = training_config.config['postprocessing_params']['min_length_to_save']
         training_df = convert_training_dataframe_to_dlc_format(df, min_length=min_length, scorer=None)
 
-        out_fname = training_config.config['df_raw_3d_tracks']
+        out_fname = training_config.config['df_3d_tracklets']
         training_df.to_hdf(out_fname, 'df_with_missing')
 
         out_fname = Path(out_fname).with_suffix(".csv")
