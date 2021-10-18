@@ -81,88 +81,38 @@ def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
     coords = ['z', 'x', 'y']
     fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
     reindexed_masks = zarr.open(fname)
-    use_region_props = True
-    if not use_region_props:
-        # New: rename neurons to be same as segmentation indices
-        # new_neuron_names = [f"neuron{i + 1}" for i in range(len(final_neuron_names))]
-        # dlc_name_mapping = dict(zip(final_neuron_names, new_neuron_names))
+    # NEW: get properties much faster (10x)
+    red_all_neurons, green_all_neurons = region_props_all_volumes(
+        reindexed_masks,
+        project_data.red_data,
+        project_data.green_data,
+        frame_list,
+        params_start_volume
+    )
 
-        def _get_dlc_zxy_one_neuron(t, new_name):
-            # old_name = dlc_name_mapping[new_name]
-            # coords = ['z', 'x', 'y']
-            all_dlc_zxy = np.asarray(dlc_tracks[new_name][coords].loc[t])
-            return all_dlc_zxy
+    # Convert nested dict of volumes to final dataframes
+    sz_one_neuron = len(frame_list)
+    tmp_red = defaultdict(lambda: np.zeros(sz_one_neuron))
+    tmp_green = defaultdict(lambda: np.zeros(sz_one_neuron))
+    for i_vol in red_all_neurons.keys():
+        red_props, green_props = red_all_neurons[i_vol], green_all_neurons[i_vol]
+        for key in red_props.keys():
+            if 'weighted_centroid' in key:
+                # Later formatting expects this to be split
+                for i, c in enumerate(coords):
+                    new_key = (key[0], c)
+                    tmp_red[new_key][i_vol] = red_props[key][i]
+                    tmp_green[new_key][i_vol] = green_props[key][i]
+            else:
+                tmp_red[key][i_vol] = red_props[key]
+                tmp_green[key][i_vol] = green_props[key]
 
-        def parallel_func(i_and_name):
-            i, new_name = i_and_name
-            return calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list,
-                                                   project_data.green_data, project_data.red_data,
-                                                   i, new_name,
-                                                   params_start_volume,
-                                                   reindexed_masks)
+    df_red = pd.DataFrame(tmp_red)
+    df_green = pd.DataFrame(tmp_green)
 
-        with tqdm(total=len(final_neuron_names)) as pbar:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-                futures = {executor.submit(parallel_func, i): i for i in enumerate(final_neuron_names)}
-                results = []
-                for future in concurrent.futures.as_completed(futures):
-                    results.append(future.result())
-                    pbar.update(1)
-        # options = dict(frame_list=frame_list,
-        #                green_video=green_video,
-        #                red_video=red_video,
-        #                params_start_volume=params_start_volume,
-        #                reindexed_masks=reindexed_masks,
-        #                dlc_name_mapping=dlc_name_mapping,
-        #                dlc_tracks=dlc_tracks)
-        #
-        # print("Starting up parallel pool...")
-        # with tqdm(total=len(new_neuron_names)) as pbar:
-        #     with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
-        #         futures = {executor.submit(_pool_parallel_func, i, options): i for i in enumerate(new_neuron_names)}
-        #         results = []
-        #         for future in concurrent.futures.as_completed(futures):
-        #             results.append(future.result())
-        #             pbar.update(1)
-
-        all_green_dfs = [r[0] for r in results]
-        all_red_dfs = [r[1] for r in results]
-
-        df_green = pd.concat(all_green_dfs, axis=1)
-        df_red = pd.concat(all_red_dfs, axis=1)
-
-    else:
-        # NEW: get properties much faster (10x)
-        red_all_neurons, green_all_neurons = region_props_all_volumes(
-            reindexed_masks,
-            project_data.red_data,
-            project_data.green_data,
-            frame_list,
-            params_start_volume
-        )
-
-        # Convert nested dict of volumes to final dataframes
-        sz_one_neuron = len(frame_list)
-        tmp_red = defaultdict(lambda: np.zeros(sz_one_neuron))
-        tmp_green = defaultdict(lambda: np.zeros(sz_one_neuron))
-        for i_vol in red_all_neurons.keys():
-            red_props, green_props = red_all_neurons[i_vol], green_all_neurons[i_vol]
-            for key in red_props.keys():
-                if 'weighted_centroid' in key:
-                    # Later formatting expects this to be split
-                    for i, c in enumerate(coords):
-                        new_key = (key[0], c)
-                        tmp_red[new_key][i_vol] = red_props[key][i]
-                        tmp_green[new_key][i_vol] = green_props[key][i]
-                else:
-                    tmp_red[key][i_vol] = red_props[key]
-                    tmp_green[key][i_vol] = green_props[key]
-
-        df_red = pd.DataFrame(tmp_red)
-        df_green = pd.DataFrame(tmp_green)
-
-        # TODO: make sure these are strings
-        final_neuron_names = list(df_red.columns.levels[0])
+    # TODO: make sure these are strings
+    final_neuron_names = list(df_red.columns.levels[0])
+    
     if DEBUG:
         print("Single pass-through successful")
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
