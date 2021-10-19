@@ -423,7 +423,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
     except IndexError:
         has_probability = False
     f = lambda m: len(m.final_matches)
-    list_of_all_possible_matches = list(map(f, dict_of_match_dicts.values()))
+    list_of_all_possible_matches = list(map(f, pairwise_matches_dict.values()))
     total_possible_matches = sum(list_of_all_possible_matches)
     # mean_progress_per_match = int(np.mean(np.array(list_of_all_possible_matches)))
 
