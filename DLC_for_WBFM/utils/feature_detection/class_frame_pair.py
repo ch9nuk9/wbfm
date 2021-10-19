@@ -44,9 +44,9 @@ class FramePair:
     @property
     def all_candidate_matches(self):
         all_matches = self.feature_matches.copy()
-        if self.affine_matches is not None:
+        if self.add_affine_to_candidates:
             all_matches.extend(self.affine_matches)
-        if self.gp_matches is not None:
+        if self.add_gp_to_candidates:
             all_matches.extend(self.gp_matches)
         return all_matches
 

@@ -40,28 +40,38 @@ class ProjectData:
 
     verbose: int = 2
 
+    _raw_frames: dict = None
+    _raw_matches: dict = None
+    _df_all_tracklets: pd.DataFrame = None
+
     # Can be quite large, so don't read by default
     @property
     def raw_frames(self):
-        train_cfg = self.project_config.get_training_config()
-        fname = os.path.join('raw', 'frame_dat.pickle')
-        fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        frames = pickle_load_binary(fname)
-        return frames
+        if self._raw_frames is None:
+            train_cfg = self.project_config.get_training_config()
+            fname = os.path.join('raw', 'frame_dat.pickle')
+            fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+            frames = pickle_load_binary(fname)
+            self._raw_frames = frames
+        return self._raw_frames
 
     @property
     def raw_matches(self):
-        train_cfg = self.project_config.get_training_config()
-        fname = os.path.join('raw', 'match_dat.pickle')
-        fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        matches = pickle_load_binary(fname)
-        return matches
+        if self._raw_matches is None:
+            train_cfg = self.project_config.get_training_config()
+            fname = os.path.join('raw', 'match_dat.pickle')
+            fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+            matches = pickle_load_binary(fname)
+            self._raw_matches = matches
+        return self._raw_matches
 
     @property
     def df_all_tracklets(self):
-        train_cfg = self.project_config.get_training_config()
-        fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
-        return read_if_exists(fname)
+        if self._df_all_tracklets is None:
+            train_cfg = self.project_config.get_training_config()
+            fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
+            self._df_all_tracklets = read_if_exists(fname)
+        return self._df_all_tracklets
 
     @property
     def num_frames(self):
