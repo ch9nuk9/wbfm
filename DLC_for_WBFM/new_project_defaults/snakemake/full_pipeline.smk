@@ -2,7 +2,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("{test}", test=config['output_4c'])
+        expand("{dir}/{test}", test=config['output_4c'], dir=config['project_dir'])
 
 #
 # Preprocessing
@@ -79,11 +79,9 @@ rule save_training_tracklets:
     shell:
         "python {input.code_path}/2d-save_training_tracklets_as_dlc.py with project_path={input.cfg}"
 
-
 #
 # Tracking
 #
-
 rule fndc_tracking:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
@@ -107,7 +105,6 @@ rule combine_tracking_and_tracklets:
 #
 # Traces
 #
-
 rule match_tracks_and_segmentation:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
@@ -133,8 +130,8 @@ rule extract_full_traces:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
         code_path=expand("{code}", code=config['code_path']),
-        files=expand("{dir}/{input}", input=config['input_4c_dir'], dir=config['project_dir'])
+        masks=rules.reindex_segmentation.output
     output:
-        rules.reindex_segmentation.output
+        expand("{dir}/{output}", output=config['output_4c'], dir=config['project_dir'])
     shell:
         "python {input.code_path}/4c-extract_full_traces.py with project_path={input.cfg}"
