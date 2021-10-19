@@ -60,7 +60,7 @@ class ProjectData:
     @property
     def df_all_tracklets(self):
         train_cfg = self.project_config.get_training_config()
-        fname = train_cfg.resolve_relative_path_from_config('reindexed_masks')
+        fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
         return read_if_exists(fname)
 
     @property
@@ -256,7 +256,6 @@ class ProjectData:
     def get_centroids_as_numpy_training(self, i_frame):
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
         return centroids_from_dict_of_dataframes(self.reindexed_metadata_training, i_frame)
-
 
     def __repr__(self):
         return f"=======================================\n\

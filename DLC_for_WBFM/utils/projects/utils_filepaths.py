@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import pickle
 from dataclasses import dataclass
@@ -182,12 +183,13 @@ def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> ConfigFi
     return train_cfg
 
 
-def read_if_exists(df_fname, reader=pd.read_hdf):
-    if df_fname is None:
+def read_if_exists(filename, reader=pd.read_hdf):
+    if filename is None:
         return None
-    elif os.path.exists(df_fname):
-        return reader(df_fname)
+    elif os.path.exists(filename):
+        return reader(filename)
     else:
+        logging.warning(f"Did not find file {filename}")
         return None
 
 
