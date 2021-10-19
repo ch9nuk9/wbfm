@@ -65,3 +65,8 @@ def get_metadata_dictionary(masks, original_vol):
         # df.at[n, 'pixel_counts'] = counts
 
     return df
+
+
+def centroids_from_dict_of_dataframes(dict_of_dataframes, i_frame):
+    vol0_zxy = dict_of_dataframes[i_frame]['centroids'].to_numpy()
+    return np.array([np.array(m) for m in vol0_zxy])
