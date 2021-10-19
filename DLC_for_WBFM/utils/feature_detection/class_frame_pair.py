@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
+from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array, recursive_cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
@@ -181,11 +181,14 @@ class FramePair:
                    num_features_per_plane=10000,
                    matches_to_keep=0.8,
                    use_GMS=True)
-        kp0_locs, kp1_locs, all_kp0, all_kp1, kp_matches = build_features_and_match_2volumes(dat0, dat1, **opt)
+        kp0_locs, kp1_locs, all_kp0, all_kp1, kp_matches, all_match_offsets = \
+            build_features_and_match_2volumes(dat0, dat1, **opt)
+        # Save intermediate data in objects
         frame0.keypoint_locs = kp0_locs
         frame0.keypoints = all_kp0
         frame1.keypoint_locs = kp1_locs
         frame1.keypoints = all_kp1
+        kp_matches = recursive_cast_matches_as_array(kp_matches, all_match_offsets, gamma=1.0)
         self.keypoint_matches = kp_matches
         # Then match using distance from neuron position to keypoint cloud
         options = {'all_feature_matches': kp_matches}
@@ -204,6 +207,7 @@ class FramePair:
         # Actually match
         options = {'matches_with_conf': getattr(self, starting_matches)}
         gp_matches, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)
+        # gp_matches = recursive_cast_matches_as_array(gp_matches, gamma=1.0)
         self.gp_matches = gp_matches
         self.all_gps = all_gps
         self.gp_pushed_locations = gp_pushed

@@ -9,7 +9,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
 def propagate_via_affine_model(which_neuron: int,
                                f0: ReferenceFrame,
                                f1: ReferenceFrame,
-                               all_feature_matches: Dict,
+                               all_feature_matches: dict,
                                radius=10.0,
                                min_matches=100,
                                no_match_mode='negative_position',
@@ -41,18 +41,25 @@ def propagate_via_affine_model(which_neuron: int,
         # Get just these points, and align two lists
         pts0, pts1 = [], []
         for match in all_feature_matches:
-            v0_ind = match.queryIdx
+            try:
+                v0_ind = match.queryIdx
+            except AttributeError:
+                # Already converted to list
+                v0_ind = int(match[0])
             if v0_ind in close_features:
                 pts0.append(f0.keypoint_locs[v0_ind])
-                pts1.append(f1.keypoint_locs[match.trainIdx])
+                try:
+                    pts1.append(f1.keypoint_locs[match.trainIdx])
+                except AttributeError:
+                    pts1.append(f1.keypoint_locs[int(match[1])])
         pts0, pts1 = np.array(pts0), np.array(pts1)
 
-        if len(pts0) < min_matches:
+        if pts0.shape[0] < min_matches:
             radius = radius * 1.5
         else:
             break
 
-    np.asarray(pc0.colors)[close_features[1:], :] = [0, 1, 0]
+    # np.asarray(pc0.colors)[close_features[1:], :] = [0, 1, 0]
 
     # Now calculate and apply the affine transformation
     if no_match_mode is 'negative_position':

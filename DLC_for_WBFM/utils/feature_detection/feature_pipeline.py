@@ -56,7 +56,7 @@ def track_neurons_two_volumes(dat0,
                'detect_keypoints': True,
                'kp0': neurons0,
                'kp1': neurons1}
-    all_f0, all_f1, _, _, _ = build_features_and_match_2volumes(dat0, dat1, **options)
+    all_f0, all_f1, _, _, _, _ = build_features_and_match_2volumes(dat0, dat1, **options)
 
     # Now, match the neurons using feature space
     options = {'radius': 8,

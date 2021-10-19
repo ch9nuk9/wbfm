@@ -536,6 +536,8 @@ def build_features_and_match_2volumes(dat0, dat1,
                                       dat_foldername=r'..\point_cloud_alignment'):
     """
     Multi-plane wrapper around: detect_features_and_match
+
+    Returns a list of lists, with the outer list referring to the plane
     """
 
     all_locs0 = []
@@ -543,6 +545,7 @@ def build_features_and_match_2volumes(dat0, dat1,
     all_matches = []
     all_kp0 = []
     all_kp1 = []
+    all_match_offsets = [[0, 0]]
     if start_plane > dat0.shape[0]:
         print("Warning: Start plane is greater than the shape of the image... no matches possible")
     for i in tqdm(range(dat0.shape[0]), leave=False):
@@ -569,12 +572,14 @@ def build_features_and_match_2volumes(dat0, dat1,
 
         if verbose >= 2:
             print(f"Adding {len(locs0)} locations from plane {i}")
-        locs_3d = np.array([np.hstack((i, row)) for row in locs0])
-        all_locs0.extend(locs_3d)
-        locs_3d = np.array([np.hstack((i, row)) for row in locs1])
-        all_locs1.extend(locs_3d)
+        locs_3d_0 = np.array([np.hstack((i, row)) for row in locs0])
+        all_locs0.extend(locs_3d_0)
+        locs_3d_1 = np.array([np.hstack((i, row)) for row in locs1])
+        all_locs1.extend(locs_3d_1)
         all_matches.append(matches)
         all_kp0.extend(keypoints0)
         all_kp1.extend(keypoints1)
+        # TODO
+        all_match_offsets.append([len(locs_3d_0), len(all_locs1)])
 
-    return np.array(all_locs0), np.array(all_locs1), all_kp0, all_kp1, all_matches
+    return np.array(all_locs0), np.array(all_locs1), all_kp0, all_kp1, all_matches, all_match_offsets
