@@ -85,7 +85,7 @@ def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs
     all_matches = {k: pair.calc_final_matches_using_bipartite_matching(**opt)
                    for k, pair in tqdm(all_frame_pairs.items())}
     logging.info("Extracting locations of neurons")
-    all_zxy = {k: f.neuron_locs for k, f in tqdm(all_frame_dict.items())}
+    all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
     logging.info("Building tracklets")
     df = build_tracklets_dfs(all_matches, all_zxy, verbose=verbose)
     return df

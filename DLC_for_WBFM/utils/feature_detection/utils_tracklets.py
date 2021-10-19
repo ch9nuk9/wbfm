@@ -447,7 +447,8 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
     # Main storage, with fewer columns
     columns = ['clust_ind', 'all_ind_local', 'all_xyz',
                'all_prob', 'slice_ind']
-    clust_df = pd.DataFrame(columns=columns)
+    # clust_df = pd.DataFrame(columns=columns)
+    all_dfs = []
 
     # Individual tracks
     clust_ind = 0
@@ -527,8 +528,9 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
                 print(f"Ended tracklet with length {len(slice_ind)}")
             df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_zxy],
                                    all_prob=[all_prob], slice_ind=[slice_ind]))
-
-            clust_df = clust_df.append(df, ignore_index=True)
+            all_dfs.append(df)
+            # clust_df = clust_df.append(df, ignore_index=True)
             clust_ind += 1
 
-    return clust_df
+    final_df = pd.concat(all_dfs, ignore_index=True, axis=0)
+    return final_df

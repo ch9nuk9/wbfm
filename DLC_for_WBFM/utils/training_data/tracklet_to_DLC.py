@@ -81,7 +81,8 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
 
     all_dfs = []
 
-    for ind, row in tqdm(df.iterrows()):
+    logging.info("Converting to pandas multi-index format")
+    for ind, row in tqdm(df.iterrows(), total=df.shape[0]):
         which_frames = df.at[ind, 'slice_ind']
         if len(which_frames) < min_length:
             continue
