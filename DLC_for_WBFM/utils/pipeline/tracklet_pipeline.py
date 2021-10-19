@@ -16,6 +16,7 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_da
 ###
 ### For use with produces tracklets (step 2 of pipeline)
 ###
+from tqdm.auto import tqdm
 
 
 def partial_track_video_using_config(project_config: ModularProjectConfig,
@@ -76,9 +77,12 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence, verbose=0):
     # Also updates the matches of the object
     opt = dict(z_threshold=z_threshold, min_confidence=min_confidence)
+    logging.info("Postprocessing pairwise matches")
     all_matches = {k: pair.calc_final_matches_using_bipartite_matching(**opt)
-                   for k, pair in all_frame_pairs.items()}
-    all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
+                   for k, pair in tqdm(all_frame_pairs.items())}
+    logging.info("Extracting locations of neurons")
+    all_zxy = {k: f.neuron_locs for k, f in tqdm(all_frame_dict.items())}
+    logging.info("Building tracklets")
     df = build_tracklets_dfs(all_matches, all_zxy, verbose=verbose)
     return df
 
