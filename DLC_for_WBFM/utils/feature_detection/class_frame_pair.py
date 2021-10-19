@@ -171,8 +171,9 @@ class FramePair:
             else:
                 print(f"Neuron not matched using {method_name} method")
 
-    def match_using_local_affine(self, frame0, frame1):
+    def match_using_local_affine(self):
         # Generate keypoints and match per slice
+        frame0, frame1 = self.frame0, self.frame1
         # TODO: should I reread the data here?
         dat0, dat1 = frame0.get_raw_data(), frame1.get_raw_data()
         # TODO: read from config
@@ -192,8 +193,9 @@ class FramePair:
         self.affine_matches = affine_matches
         self.affine_pushed_locations = affine_pushed
 
-    def match_using_gp(self, frame0, frame1, starting_matches='affine_matches'):
+    def match_using_gp(self, starting_matches='affine_matches'):
         # Can start with any matched point clouds, but not more than ~100 matches
+        frame0, frame1 = self.frame0, self.frame1
         n0 = frame0.neuron_locs.copy()
         n1 = frame1.neuron_locs.copy()
         # TODO: Increase z distances correctly
@@ -258,10 +260,10 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
 
     # Add additional candidates, if used
     if add_affine_to_candidates:
-        frame_pair.match_using_local_affine(frame0, frame1)
+        frame_pair.match_using_local_affine()
 
     if add_gp_to_candidates:
-        frame_pair.match_using_gp(frame0, frame1, starting_matches='affine_matches')
+        frame_pair.match_using_gp(starting_matches='affine_matches')
 
     return frame_pair
 
