@@ -86,6 +86,20 @@ def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
     return np.vstack(all_tracks_list)
 
 
+def napari_tracks_from_match_list(list_of_matches, n0_zxy_raw, n1_zxy_raw):
+    all_tracks_list = []
+    for i_track, m in enumerate(list_of_matches):
+        track_m0 = [i_track, 0]
+        track_m0.extend(n0_zxy_raw[m[0]])
+
+        track_m1 = [i_track, 1]
+        track_m1.extend(n1_zxy_raw[m[1]])
+
+        all_tracks_list.append(track_m0)
+        all_tracks_list.append(track_m1)
+    return all_tracks_list
+
+
 def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
     """
     Expected napari-ready format:

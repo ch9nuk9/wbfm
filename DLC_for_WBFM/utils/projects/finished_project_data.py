@@ -3,9 +3,12 @@ import logging
 import os
 import pickle
 from dataclasses import dataclass
+
+import napari
 import numpy as np
 import pandas as pd
 import zarr
+from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
 from segmentation.util.utils_metadata import centroids_from_dict_of_dataframes
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
     ConfigFileWithProjectContext
@@ -48,6 +51,7 @@ class ProjectData:
     @property
     def raw_frames(self):
         if self._raw_frames is None:
+            logging.info("First time loading the raw frames, may take a while...")
             train_cfg = self.project_config.get_training_config()
             fname = os.path.join('raw', 'frame_dat.pickle')
             fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -58,6 +62,7 @@ class ProjectData:
     @property
     def raw_matches(self):
         if self._raw_matches is None:
+            logging.info("First time loading the raw matches, may take a while...")
             train_cfg = self.project_config.get_training_config()
             fname = os.path.join('raw', 'match_dat.pickle')
             fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -266,6 +271,21 @@ class ProjectData:
     def get_centroids_as_numpy_training(self, i_frame):
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
         return centroids_from_dict_of_dataframes(self.reindexed_metadata_training, i_frame)
+
+    def napari_of_single_match(self, pair, which_matches='final_matches'):
+
+        raw_red_data = self.red_data[pair[0]:pair[1] + 1, ...]
+        this_match = self.raw_matches[pair]
+        n0_zxy_raw = this_match.frame0.neuron_locs
+        n1_zxy_raw = this_match.frame1.neuron_locs
+
+        list_of_matches = getattr(this_match, which_matches)
+        all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy_raw, n1_zxy_raw)
+
+        v = napari.view_image(raw_red_data, ndisplay=3)
+        v.add_points(n0_zxy_raw, size=3, face_color='green', symbol='x', n_dimensional=True)
+        v.add_points(n1_zxy_raw, size=3, face_color='blue', symbol='x', n_dimensional=True)
+        v.add_tracks(all_tracks_list, head_length=2, name=which_matches)
 
     def __repr__(self):
         return f"=======================================\n\
