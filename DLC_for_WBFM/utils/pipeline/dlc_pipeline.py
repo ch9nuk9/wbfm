@@ -172,6 +172,7 @@ def _define_project_options(config: dict, df: pd.DataFrame, scorer: str, task_na
                'working_directory': '3-tracking',
                'copy_videos': copy_videos}
     # Get a few frames as training data
+    # TODO: change training data to training cfg
     png_opt = {'df_fname': df, 'total_num_frames': config['dataset_params']['num_frames'], 'coord_names': ['x', 'y'],
                'which_frames': config['training_data_3d']['which_frames'],
                'max_z_dist_for_traces': config['training_data_2d']['max_z_dist_for_traces']}

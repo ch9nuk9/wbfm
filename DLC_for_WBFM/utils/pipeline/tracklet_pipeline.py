@@ -30,9 +30,9 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     """
     logging.info(f"Producing tracklets")
 
-    raw_foldername = training_config.resolve_relative_path('raw', prepend_subfolder=True)
-    if os.path.exists(raw_foldername):
-        raise FileExistsError("Found old raw data folder; either rename or skip this step to reuse")
+    raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'), prepend_subfolder=True)
+    if os.path.exists(raw_fname):
+        raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
     video_fname, z_threshold, options = _unpack_config_partial_tracking(DEBUG, project_config, training_config)
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)
@@ -101,7 +101,7 @@ def _unpack_config_partial_tracking(DEBUG, project_config, training_config):
 
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict, df: pd.DataFrame) -> None:
     subfolder = osp.join('2-training_data', 'raw')
-    subfolder = get_sequential_filename(subfolder)
+    # subfolder = get_sequential_filename(subfolder)
     os.mkdir(subfolder)
     fname = osp.join(subfolder, 'clust_df_dat.pickle')
     with open(fname, 'wb') as f:
