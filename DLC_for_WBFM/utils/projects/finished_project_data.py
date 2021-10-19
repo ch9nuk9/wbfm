@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import zarr
-
+from segmentation.util.utils_metadata import centroids_from_dict_of_dataframes
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
     ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -27,6 +27,7 @@ class ProjectData:
 
     df_training_tracklets: pd.DataFrame
     reindexed_masks_training: zarr.Array
+    reindexed_metadata_training: dict
 
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
@@ -92,6 +93,7 @@ class ProjectData:
 
         df_training_tracklets_fname = train_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
         reindexed_masks_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_masks')
+        reindexed_metadata_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_metadata')
 
         final_tracks_fname = tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
         seg_fname_raw = segment_cfg.resolve_relative_path_from_config('output_masks')
@@ -116,6 +118,8 @@ class ProjectData:
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
                 df_training_tracklets = ex.submit(read_if_exists, df_training_tracklets_fname).result()
                 reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader).result()
+                reindexed_metadata_training = ex.submit(read_if_exists,
+                                                        reindexed_metadata_training_fname, pickle_load_binary).result()
                 final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader).result()
@@ -145,6 +149,7 @@ class ProjectData:
             seg_metadata,
             df_training_tracklets,
             reindexed_masks_training,
+            reindexed_metadata_training,
             red_traces,
             green_traces,
             final_tracks,
@@ -246,8 +251,12 @@ class ProjectData:
 
     def get_centroids_as_numpy(self, i_frame):
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
-        vol0_zxy = self.segmentation_metadata[i_frame]['centroids'].to_numpy()
-        return np.array([np.array(m) for m in vol0_zxy])
+        return centroids_from_dict_of_dataframes(self.segmentation_metadata, i_frame)
+
+    def get_centroids_as_numpy_training(self, i_frame):
+        """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
+        return centroids_from_dict_of_dataframes(self.reindexed_metadata_training, i_frame)
+
 
     def __repr__(self):
         return f"=======================================\n\
@@ -257,10 +266,13 @@ Project data for directory:\n\
 Found the following data files:\n\
 red_data: {self.red_data is not None}\n\
 green_data: {self.green_data is not None}\n\
+============Segmentation===============\n\
 raw_segmentation: {self.raw_segmentation is not None}\n\
 segmentation: {self.segmentation is not None}\n\
+============Tracklets==================\n\
 df_training_tracklets: {self.df_training_tracklets is not None}\n\
 reindexed_masks_training: {self.reindexed_masks_training is not None}\n\
+============Traces=====================\n\
 red_traces: {self.red_traces is not None}\n\
 green_traces: {self.green_traces is not None}\n\
 final_tracks: {self.final_tracks is not None}\n\
