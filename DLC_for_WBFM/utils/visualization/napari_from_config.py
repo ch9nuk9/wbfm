@@ -10,18 +10,25 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 def napari_of_training_data(cfg: ModularProjectConfig):
     # TODO: read from config file, not project directory
     training_dat_fname = cfg.config['preprocessed_red']
-    training_seg_fname = os.path.join(cfg.project_dir, '2-training_data', 'reindexed_masks.zarr')
+    training_cfg = cfg.get_training_config()
+    training_seg_fname = training_cfg.resolve_relative_path_from_config('reindexed_masks')
+
+    segmentation_cfg = cfg.get_segmentation_config()
+    raw_seg_fname = segmentation_cfg.resolve_relative_path_from_config('output_masks')
+
     z_dat = zarr.open_array(training_dat_fname)
     z_seg = zarr.open_array(training_seg_fname)
+    raw_seg = zarr.open(raw_seg_fname)
 
     # Training data doesn't usually start at i=0, so align
-    training_cfg = cfg.get_training_config()
     num_frames = training_cfg.config['training_data_3d']['num_training_frames']
     i_seg_start = training_cfg.config['training_data_3d']['which_frames'][0]
     i_seg_end = i_seg_start + num_frames
     z_dat = z_dat[i_seg_start:i_seg_end, ...]
+    raw_seg = raw_seg[i_seg_start:i_seg_end, ...]
 
     viewer = napari.view_labels(z_seg, ndisplay=3)
+    viewer.add_labels(raw_seg, visible=False)
     viewer.add_image(z_dat)
     viewer.show()
 
@@ -146,6 +153,7 @@ def cast_int_or_nan(i):
         return i
     else:
         return int(i)
+
 
 def napari_labels_from_frames(all_frames: dict, num_frames=1) -> dict:
 
