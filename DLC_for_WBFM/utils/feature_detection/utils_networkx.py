@@ -103,7 +103,6 @@ def build_digraph_from_matches(pairwise_matches,
 ## Alternate, non-networkx way to get bipartite matches
 ##
 
-
 def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e-3, verbose=0):
     """
     Sparse version of calc_bipartite_from_distance

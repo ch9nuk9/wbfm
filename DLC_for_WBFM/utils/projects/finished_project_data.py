@@ -44,17 +44,17 @@ class ProjectData:
     @property
     def raw_frames(self):
         train_cfg = self.project_config.get_training_config()
-        fname = train_cfg.resolve_relative_path(os.path.join('raw', 'frame_dat.pickle'), prepend_subfolder=True)
-        with open(fname, 'rb') as f:
-            frames = pickle.load(f)
+        fname = os.path.join('raw', 'frame_dat.pickle')
+        fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        frames = pickle_load_binary(fname)
         return frames
 
     @property
     def raw_matches(self):
         train_cfg = self.project_config.get_training_config()
-        fname = train_cfg.resolve_relative_path(os.path.join('raw', 'match_dat.pickle'), prepend_subfolder=True)
-        with open(fname, 'rb') as f:
-            matches = pickle.load(f)
+        fname = os.path.join('raw', 'match_dat.pickle')
+        fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        matches = pickle_load_binary(fname)
         return matches
 
     @property

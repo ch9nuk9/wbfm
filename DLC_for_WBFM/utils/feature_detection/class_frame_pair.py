@@ -113,6 +113,17 @@ class FramePair:
 
         return [m for m in matches if _delta_z(m) < z_threshold]
 
+    def print_candidates_by_method(self):
+        num_matches = len(self.feature_matches)
+        print(f"Found {num_matches} candidates via feature matching")
+        num_matches = len(self.affine_matches)
+        print(f"Found {num_matches} candidates via affine matching")
+        num_matches = len(self.gp_matches)
+        print(f"Found {num_matches} candidates via gaussian process matching")
+
+        num_matches = len(self.final_matches)
+        print(f"Processed these into {num_matches} final matches candidates")
+
     def __repr__(self):
         return f"FramePair with {len(self.final_matches)}/{self.num_possible_matches} matches \n"
 
