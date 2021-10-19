@@ -70,8 +70,12 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
     assert val == expected, msg
 
     # Calculate and save in both raw and dataframe format
-    df = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence)
-    save_all_tracklets(df, training_config)
+    df_custom_format = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence)
+
+    # Convert to easier format
+    min_length = training_config.config['postprocessing_params']['min_length_to_save']
+    df_dlc_format = convert_training_dataframe_to_dlc_format(df_custom_format, min_length=min_length, scorer=None)
+    save_all_tracklets(df_custom_format, df_dlc_format, training_config)
 
 
 def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence, verbose=0):
@@ -87,7 +91,7 @@ def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs
     return df
 
 
-def save_all_tracklets(df, training_config):
+def save_all_tracklets(df, df_dlc_format, training_config):
     with safe_cd(training_config.project_dir):
         # Custom format for pairs
         subfolder = osp.join('2-training_data', 'raw')
@@ -95,15 +99,11 @@ def save_all_tracklets(df, training_config):
         with open(fname, 'wb') as f:
             pickle.dump(df, f)
 
-        # Convert to easier format
-        min_length = training_config.config['postprocessing_params']['min_length_to_save']
-        training_df = convert_training_dataframe_to_dlc_format(df, min_length=min_length, scorer=None)
-
         out_fname = training_config.config['df_3d_tracklets']
-        training_df.to_hdf(out_fname, 'df_with_missing')
+        df_dlc_format.to_hdf(out_fname, 'df_with_missing')
 
         out_fname = Path(out_fname).with_suffix(".csv")
-        training_df.to_csv(out_fname)
+        df_dlc_format.to_csv(out_fname)
 
         # Tracklets are generally too large to save in excel...
         # out_fname = Path(out_fname).with_suffix(".xlxs")

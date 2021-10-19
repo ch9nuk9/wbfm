@@ -422,9 +422,10 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
         has_probability = True
     except IndexError:
         has_probability = False
-    list_of_all_possible_matches = list(map(len, dict_of_match_dicts.keys()))
+    f = lambda m: len(m.final_matches)
+    list_of_all_possible_matches = list(map(f, dict_of_match_dicts.values()))
     total_possible_matches = sum(list_of_all_possible_matches)
-    mean_progress_per_match = np.mean(np.array(list_of_all_possible_matches))
+    # mean_progress_per_match = int(np.mean(np.array(list_of_all_possible_matches)))
 
     min_pair = min([k[0] for k in pairwise_matches_dict.keys()])
     max_pair = max([k[0] for k in pairwise_matches_dict.keys()])
@@ -450,6 +451,8 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
     # Individual tracks
     clust_ind = 0
+    if verbose >= 1:
+        print(f"Searching through total possible matches: {total_possible_matches}")
     with tqdm(total=total_possible_matches) as pbar:
         while True:
             # Choose a starting point, and initialize lists
@@ -478,10 +481,10 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
             # DFS for this starting point
             remaining_frame_pair_indices = list(range(match_key[1], tracklet_starting_indices[-1]+1))
-            if verbose >= 2:
+            if verbose >= 3:
                 # Note: even
                 print(f"Searching through {len(remaining_frame_pair_indices)} remaining pairs")
-            for i_pair in tqdm(remaining_frame_pair_indices, leave=False):
+            for i_pair in remaining_frame_pair_indices:
                 next_match_key = (i_pair, i_pair + 1)
                 next_match_dict = dict_of_match_dicts.get(next_match_key, {})
                 # next_match_dict = dict_of_match_dicts[next_match_key]
@@ -503,27 +506,29 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
                         print(f"Continued tracklet: {next_match_key}, {i0}")
 
                 else:
-                    pbar.update(mean_progress_per_match)
+                    pbar.update(len(slice_ind) - 1)
                     if verbose >= 2:
+                        print(f"Tracklet length: {len(slice_ind)}")
+                    if verbose >= 3:
                         print(f"Tracklet ended on frame pair: {next_match_key}")
                     break
             else:
-                pbar.update(mean_progress_per_match)
+                pbar.update(len(slice_ind) - 1)
                 if verbose >= 2:
                     print(f"Tracklet reached the end of the recording")
 
-        # Save these lists in the dataframe
-        slice_ind = [s + slice_offset for s in slice_ind]
-        # TODO: probability here means matches, not neuron detection... change?
-        if has_probability:
-            all_prob.append(0)  # Make the probability match the zxy
-            all_prob = np.expand_dims(np.array(all_prob), axis=-1)
-        if verbose >= 2:
-            print(f"Ended tracklet with length {len(slice_ind)}")
-        df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_zxy],
-                               all_prob=[all_prob], slice_ind=[slice_ind]))
+            # Save these lists in the dataframe
+            slice_ind = [s + slice_offset for s in slice_ind]
+            # TODO: probability here means matches, not neuron detection... change?
+            if has_probability:
+                all_prob.append(0)  # Make the probability match the zxy
+                all_prob = np.expand_dims(np.array(all_prob), axis=-1)
+            if verbose >= 2:
+                print(f"Ended tracklet with length {len(slice_ind)}")
+            df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_zxy],
+                                   all_prob=[all_prob], slice_ind=[slice_ind]))
 
-        clust_df = clust_df.append(df, ignore_index=True)
-        clust_ind += 1
+            clust_df = clust_df.append(df, ignore_index=True)
+            clust_ind += 1
 
     return clust_df
