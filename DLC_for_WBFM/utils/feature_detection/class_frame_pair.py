@@ -78,14 +78,20 @@ class FramePair:
         self.final_matches = final_matches
         return final_matches
 
-    def get_f0_to_f1_dict(self):
-        return {n0: n1 for n0, n1, _ in self.final_matches}
+    def get_f0_to_f1_dict(self, matches=None):
+        if matches is None:
+            matches = self.final_matches
+        return {n0: n1 for n0, n1, _ in matches}
 
-    def get_f1_to_f0_dict(self):
-        return {n1: n0 for n0, n1, _ in self.final_matches}
+    def get_f1_to_f0_dict(self, matches=None):
+        if matches is None:
+            matches = self.final_matches
+        return {n1: n0 for n0, n1, _ in matches}
 
-    def get_pair_to_conf_dict(self):
-        return {(n0, n1): c for n0, n1, c in self.final_matches}
+    def get_pair_to_conf_dict(self, matches=None):
+        if matches is None:
+            matches = self.final_matches
+        return {(n0, n1): c for n0, n1, c in matches}
 
     # def calculate_additional_orb_keypoints_and_matches(self):
     #     return False
@@ -123,6 +129,53 @@ class FramePair:
 
         num_matches = len(self.final_matches)
         print(f"Processed these into {num_matches} final matches candidates")
+
+    def print_reason_for_match(self, test_match):
+        m0, m1 = test_match
+
+        f0_to_1 = self.get_f0_to_f1_dict()
+        if f0_to_1[m0] == m1:
+            f_to_conf = self.get_pair_to_conf_dict()
+            print(f"Found match {test_match} with confidence {f_to_conf[test_match]}")
+
+            feature_dict = self.get_f0_to_f1_dict(self.feature_matches)
+            method_name = "feature"
+            if m0 in feature_dict:
+                if feature_dict[m0] == m1:
+                    conf = self.get_pair_to_conf_dict(self.feature_matches)[test_match]
+                    print(f"Same match from {method_name} method with confidence: {conf}")
+                else:
+                    print(f"Different match from {method_name} method: {feature_dict[m0]}")
+            else:
+                print(f"Neuron not matched using {method_name} method")
+
+            aff_dict = self.get_f0_to_f1_dict(self.affine_matches)
+            method_name = "affine"
+            if m0 in aff_dict:
+                if aff_dict[m0] == m1:
+                    conf = self.get_pair_to_conf_dict(self.affine_matches)[test_match]
+                    print(f"Same match from {method_name} method with confidence: {conf}")
+                else:
+                    print(f"Different match from {method_name} method: {aff_dict[m0]}")
+            else:
+                print(f"Neuron not matched using {method_name} method")
+
+            gp_dict = self.get_f0_to_f1_dict(self.gp_matches)
+            method_name = "gaussian process"
+            if m0 in gp_dict:
+                if gp_dict[m0] == m1:
+                    conf = self.get_pair_to_conf_dict(self.gp_matches)[test_match]
+                    print(f"Same match from {method_name} method with confidence: {conf}")
+                else:
+                    print(f"Different match from {method_name} method: {gp_dict[m0]}")
+            else:
+                print(f"Neuron not matched using {method_name} method")
+
+    def print_reason_for_all_final_matches(self):
+        dict_of_matches = self.get_pair_to_conf_dict()
+        for k in dict_of_matches.keys():
+            print("==================================")
+            self.print_reason_for_match(k)
 
     def __repr__(self):
         return f"FramePair with {len(self.final_matches)}/{self.num_possible_matches} matches \n"
