@@ -7,7 +7,7 @@ import pandas as pd
 from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
-from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features
+from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
 
@@ -64,7 +64,7 @@ class FramePair:
         self.frame0.rebuild_keypoints()
         self.frame1.rebuild_keypoints()
 
-    def calc_final_matches_using_bipartite_matching(self, min_confidence: float=None,
+    def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None,
                                                     z_threshold=None) -> list:
         assert len(self.all_candidate_matches) > 0, "No candidate matches!"
         if min_confidence is None:
@@ -171,6 +171,41 @@ class FramePair:
             else:
                 print(f"Neuron not matched using {method_name} method")
 
+    def match_using_local_affine(self, frame0, frame1):
+        # Generate keypoints and match per slice
+        # TODO: should I reread the data here?
+        dat0, dat1 = frame0.get_raw_data(), frame1.get_raw_data()
+        # TODO: read from config
+        opt = dict(start_plane=4,
+                   num_features_per_plane=10000,
+                   matches_to_keep=0.8,
+                   use_GMS=True)
+        kp0_locs, kp1_locs, all_kp0, all_kp1, kp_matches = build_features_and_match_2volumes(dat0, dat1, **opt)
+        frame0.keypoint_locs = kp0_locs
+        frame0.keypoints = all_kp0
+        frame1.keypoint_locs = kp1_locs
+        frame1.keypoints = all_kp1
+        self.keypoint_matches = kp_matches
+        # Then match using distance from neuron position to keypoint cloud
+        options = {'all_feature_matches': kp_matches}
+        affine_matches, _, affine_pushed = calc_matches_using_affine_propagation(frame0, frame1, **options)
+        self.affine_matches = affine_matches
+        self.affine_pushed_locations = affine_pushed
+
+    def match_using_gp(self, frame0, frame1, starting_matches='affine_matches'):
+        # Can start with any matched point clouds, but not more than ~100 matches
+        n0 = frame0.neuron_locs.copy()
+        n1 = frame1.neuron_locs.copy()
+        # TODO: Increase z distances correctly
+        n0[:, 0] *= 3
+        n1[:, 0] *= 3
+        # Actually match
+        options = {'matches_with_conf': getattr(self, starting_matches)}
+        gp_matches, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)
+        self.gp_matches = gp_matches
+        self.all_gps = all_gps
+        self.gp_pushed_locations = gp_pushed
+
     def print_reason_for_all_final_matches(self):
         dict_of_matches = self.get_pair_to_conf_dict()
         for k in dict_of_matches.keys():
@@ -201,7 +236,7 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
     frame1.check_data_desyncing()
 
     # First, get feature matches
-    keypoint_matches = match_known_features(frame0.all_features,
+    neuron_embedding_matches = match_known_features(frame0.all_features,
                                             frame1.all_features,
                                             frame0.keypoints,
                                             frame1.keypoints,
@@ -211,36 +246,22 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
                                             use_GMS=False)
 
     # With neuron embeddings, the keypoints are the neurons
-    matches_with_conf = cast_matches_as_array(keypoint_matches, gamma=1.0)
+    neuron_embedding_matches_with_conf = cast_matches_as_array(neuron_embedding_matches, gamma=1.0)
 
     # Create convenience object to store matches
-    frame_pair = FramePair(matches_with_conf, matches_with_conf,
+    frame_pair = FramePair(neuron_embedding_matches_with_conf, neuron_embedding_matches_with_conf,
                            frame0=frame0, frame1=frame1,
                            add_affine_to_candidates=add_affine_to_candidates,
                            add_gp_to_candidates=add_gp_to_candidates,
                            min_confidence=min_confidence)
-    frame_pair.keypoint_matches = matches_with_conf
+    frame_pair.keypoint_matches = neuron_embedding_matches_with_conf
 
     # Add additional candidates, if used
     if add_affine_to_candidates:
-        options = {'all_feature_matches': keypoint_matches}
-        matches_with_conf, _, affine_pushed = calc_matches_using_affine_propagation(frame0, frame1, **options)
-        frame_pair.affine_matches = matches_with_conf
-        frame_pair.affine_pushed_locations = affine_pushed
+        frame_pair.match_using_local_affine(frame0, frame1)
 
     if add_gp_to_candidates:
-        n0 = frame0.neuron_locs.copy()
-        n1 = frame1.neuron_locs.copy()
-
-        # TODO: Increase z distances correctly
-        n0[:, 0] *= 3
-        n1[:, 0] *= 3
-        # Actually match
-        options = {'matches_with_conf': matches_with_conf}
-        matches_with_conf, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)
-        frame_pair.gp_matches = matches_with_conf
-        frame_pair.all_gps = all_gps
-        frame_pair.gp_pushed_locations = gp_pushed
+        frame_pair.match_using_gp(frame0, frame1, starting_matches='affine_matches')
 
     return frame_pair
 

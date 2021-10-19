@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Tuple, Union
 
@@ -13,7 +14,6 @@ from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_
 from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 ##
 ## Basic class definition
@@ -43,6 +43,8 @@ class ReferenceFrame:
     # For adding new keypoints
     alternate_2d_encoder: callable = lambda x: None
 
+    _all_features_non_neurons: np.ndarray = None
+
     def get_default_base_2d_encoder(self):
         self.alternate_2d_encoder = self.get_default_base_2d_encoder
         return cv2.xfeatures2d.VGG_create()
@@ -65,6 +67,7 @@ class ReferenceFrame:
         return self.neuron_locs.shape[0]
 
     def get_raw_data(self):
+        # TODO: should I cache this?
         return zarr.open(self.video_fname)[self.frame_ind, ...]
 
     # def get_raw_data(self):
@@ -321,7 +324,7 @@ class ReferenceFrame:
         see also self.prep_for_pickle()
         """
         if len(self.keypoints) > 0:
-            print("Overwriting existing keypoints...")
+            logging.warning("Overwriting existing keypoints...")
         k = get_keypoints_from_3dseg(self.keypoint_locs)
         self.keypoints = k
 
