@@ -12,7 +12,6 @@ from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, Co
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename, safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_dlc_format
 
-
 ###
 ### For use with produces tracklets (step 2 of pipeline)
 ###
@@ -32,7 +31,8 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     """
     logging.info(f"Producing tracklets")
 
-    raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'), prepend_subfolder=True)
+    raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
+                                                      prepend_subfolder=True)
     if os.path.exists(raw_fname):
         raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
@@ -70,24 +70,28 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
     assert val == expected, msg
 
     # Calculate and save in both raw and dataframe format
-    df_custom_format = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence)
+    df_custom_format = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold,
+                                                                    min_confidence)
+    # Overwrite intermediate products, because the pair objects save the postprocessing options
+    _save_matches_and_frames(all_frame_dict, all_frame_pairs)
 
-    # Convert to easier format
+    # Convert to easier format and save
     min_length = training_config.config['postprocessing_params']['min_length_to_save']
     df_dlc_format = convert_training_dataframe_to_dlc_format(df_custom_format, min_length=min_length, scorer=None)
     save_all_tracklets(df_custom_format, df_dlc_format, training_config)
 
 
-def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence, verbose=0):
+def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence,
+                                                 verbose=0):
     # Also updates the matches of the object
     opt = dict(z_threshold=z_threshold, min_confidence=min_confidence)
     logging.info(f"Postprocessing pairwise matches using confidence threshold: {min_confidence}")
-    all_matches = {k: pair.calc_final_matches_using_bipartite_matching(**opt)
-                   for k, pair in tqdm(all_frame_pairs.items())}
+    all_matches_list = {k: pair.calc_final_matches_using_bipartite_matching(**opt)
+                        for k, pair in tqdm(all_frame_pairs.items())}
     logging.info("Extracting locations of neurons")
     all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
     logging.info("Building tracklets")
-    df = build_tracklets_dfs(all_matches, all_zxy, verbose=verbose)
+    df = build_tracklets_dfs(all_matches_list, all_zxy, verbose=verbose)
     return df
 
 

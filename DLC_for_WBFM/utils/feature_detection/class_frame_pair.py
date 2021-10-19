@@ -64,7 +64,7 @@ class FramePair:
         self.frame0.rebuild_keypoints()
         self.frame1.rebuild_keypoints()
 
-    def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None,
+    def calc_final_matches_using_bipartite_matching(self, min_confidence: float=None,
                                                     z_threshold=None) -> list:
         assert len(self.all_candidate_matches) > 0, "No candidate matches!"
         if min_confidence is None:
