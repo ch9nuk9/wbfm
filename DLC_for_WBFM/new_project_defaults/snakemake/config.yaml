@@ -25,17 +25,24 @@ input_2a_dir:
 input_2a:
   - 1-segmentation/metadata.pickle
 output_2a:
-  - 2-training_data/all_tracklets.h5
-  - 2-training_data/raw/clust_df_dat.pickle
+  - 2-training_data/raw/frame_dat.pickle
+  - 2-training_data/raw/match_dat.pickle
 
 input_2b:
+  - 2-training_data/raw/frame_dat.pickle
+  - 2-training_data/raw/match_dat.pickle
+output_2b:
   - 2-training_data/all_tracklets.h5
-output_2b_dir:
-  - 2-training_data/reindexed_masks.zarr
+  - 2-training_data/raw/clust_df_dat.pickle
 
 input_2c:
+  - 2-training_data/all_tracklets.h5
+output_2c_dir:
+  - 2-training_data/reindexed_masks.zarr
+
+input_2d:
   - 2-training_data/raw/clust_df_dat.pickle
-output_2c:
+output_2d:
   - 2-training_data/training_data_tracks.h5
 
 # Step 3: dlc... for now, just combine all steps
