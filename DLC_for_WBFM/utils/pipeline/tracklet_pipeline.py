@@ -92,6 +92,7 @@ def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs
 
 
 def save_all_tracklets(df, df_dlc_format, training_config):
+    logging.info("Saving dataframes; could take a while")
     with safe_cd(training_config.project_dir):
         # Custom format for pairs
         subfolder = osp.join('2-training_data', 'raw')
@@ -102,8 +103,8 @@ def save_all_tracklets(df, df_dlc_format, training_config):
         out_fname = training_config.config['df_3d_tracklets']
         df_dlc_format.to_hdf(out_fname, 'df_with_missing')
 
-        out_fname = Path(out_fname).with_suffix(".csv")
-        df_dlc_format.to_csv(out_fname)
+        # out_fname = Path(out_fname).with_suffix(".csv")
+        # df_dlc_format.to_csv(out_fname)
 
         # Tracklets are generally too large to save in excel...
         # out_fname = Path(out_fname).with_suffix(".xlxs")
