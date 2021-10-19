@@ -422,6 +422,9 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
         has_probability = True
     except IndexError:
         has_probability = False
+    list_of_all_possible_matches = list(map(len, dict_of_match_dicts.keys()))
+    total_possible_matches = sum(list_of_all_possible_matches)
+    mean_progress_per_match = np.mean(np.array(list_of_all_possible_matches))
 
     min_pair = min([k[0] for k in pairwise_matches_dict.keys()])
     max_pair = max([k[0] for k in pairwise_matches_dict.keys()])
@@ -447,7 +450,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
     # Individual tracks
     clust_ind = 0
-    with tqdm(total=len(tracklet_starting_indices)) as pbar:
+    with tqdm(total=total_possible_matches) as pbar:
         while True:
             # Choose a starting point, and initialize lists
             match_key, i0, i1 = get_start_match(dict_of_match_dicts)
@@ -500,12 +503,12 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
                         print(f"Continued tracklet: {next_match_key}, {i0}")
 
                 else:
-                    pbar.update(1)
+                    pbar.update(mean_progress_per_match)
                     if verbose >= 2:
                         print(f"Tracklet ended on frame pair: {next_match_key}")
                     break
             else:
-                pbar.update(1)
+                pbar.update(mean_progress_per_match)
                 if verbose >= 2:
                     print(f"Tracklet reached the end of the recording")
 
