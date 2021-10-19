@@ -70,10 +70,11 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
     assert val == expected, msg
 
     # Calculate and save in both raw and dataframe format
-    df_custom_format = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold,
-                                                                    min_confidence)
+    df_custom_format = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs,
+                                                                    z_threshold, min_confidence)
     # Overwrite intermediate products, because the pair objects save the postprocessing options
-    _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+    with safe_cd(training_config.project_dir):
+        _save_matches_and_frames(all_frame_dict, all_frame_pairs)
 
     # Convert to easier format and save
     min_length = training_config.config['postprocessing_params']['min_length_to_save']
