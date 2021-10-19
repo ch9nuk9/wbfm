@@ -36,7 +36,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
         raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
     # Intermediate products: pairwise matches between frames
-    video_fname, z_threshold, options = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
+    video_fname, options = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)
 
     _save_matches_and_frames(all_frame_dict, all_frame_pairs)
@@ -59,7 +59,8 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
     """
     # Load data
-    all_frame_dict, all_frame_pairs, z_threshold = _unpack_config_for_tracklets(training_config)
+    all_frame_dict, all_frame_pairs, z_threshold, min_confidence = \
+        _unpack_config_for_tracklets(training_config)
 
     # Sanity check
     val = len(all_frame_pairs)
@@ -68,13 +69,14 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
     assert val == expected, msg
 
     # Calculate and save in both raw and dataframe format
-    df = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold)
+    df = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence)
     save_all_tracklets(df, training_config)
 
 
-def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold=None, verbose=0):
+def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence, verbose=0):
     # Also updates the matches of the object
-    all_matches = {k: pair.calc_final_matches_using_bipartite_matching(z_threshold=z_threshold)
+    opt = dict(z_threshold=z_threshold, min_confidence=min_confidence)
+    all_matches = {k: pair.calc_final_matches_using_bipartite_matching(**opt)
                    for k, pair in all_frame_pairs.items()}
     all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
     df = build_tracklets_dfs(all_matches, all_zxy, verbose=verbose)
@@ -105,7 +107,9 @@ def save_all_tracklets(df, training_config):
 
 
 def _unpack_config_for_tracklets(training_config):
-    z_threshold = training_config.config['postprocessing_params']['z_threshold']
+    params = training_config.config['postprocessing_params']
+    z_threshold = params['z_threshold']
+    min_confidence = params['min_confidence']
 
     fname = os.path.join('raw', 'match_dat.pickle')
     fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
@@ -115,7 +119,8 @@ def _unpack_config_for_tracklets(training_config):
     fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
     all_frame_dict = pickle_load_binary(fname)
 
-    return all_frame_dict, all_frame_pairs, z_threshold
+    return all_frame_dict, all_frame_pairs, z_threshold, min_confidence
+
 
 def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     # Make tracklets
@@ -137,7 +142,7 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
 
     video_fname = project_config.config['preprocessed_red']
 
-    return video_fname, z_threshold, options
+    return video_fname, options
 
 
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> None:

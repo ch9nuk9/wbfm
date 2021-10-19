@@ -13,12 +13,12 @@ tracker_params: # OPTIMIZE
   use_affine_matching: false
   add_affine_to_candidates: true
   add_gp_to_candidates: true
-  min_confidence: 0.4
   external_detections: null # Will be synchronized with segmentation
 
 postprocessing_params:
-    min_length_to_save: 3
-    z_threshold: 3
+  min_confidence: 0.4
+  min_length_to_save: 3
+  z_threshold: 3
 
 df_training_3d_tracks: 2-training_data/training_tracklets.h5
 df_3d_tracklets: 2-training_data/all_tracklets.h5
