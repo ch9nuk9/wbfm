@@ -102,7 +102,7 @@ def _unpack_config_partial_tracking(DEBUG, project_config, training_config):
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict, df: pd.DataFrame) -> None:
     subfolder = osp.join('2-training_data', 'raw')
     # subfolder = get_sequential_filename(subfolder)
-    os.mkdir(subfolder)
+    Path(subfolder).mkdir(exist_ok=True)
     fname = osp.join(subfolder, 'clust_df_dat.pickle')
     with open(fname, 'wb') as f:
         pickle.dump(df, f)
