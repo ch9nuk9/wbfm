@@ -43,7 +43,7 @@ rule make_tracklets:
     output:
         expand("{dir}/{output}", output=config['output_2a'], dir=config['project_dir'])
     shell:
-        "python {input.code_path}/2a-make_short_tracklets.py with project_path={input.cfg}"
+        "python {input.code_path}/2a-pairwise_match_sequential_frames.py with project_path={input.cfg}"
 
 
 rule reindex_tracklets:
@@ -55,7 +55,7 @@ rule reindex_tracklets:
     output:
         directory(expand("{dir}/{output}", output=config['output_2b_dir'], dir=config['project_dir']))
     shell:
-        "python {input.code_path}/2b-reindex_segmentation_training.py with project_path={input.cfg}"
+        "python {input.code_path}/2c-reindex_segmentation_training_masks.py with project_path={input.cfg}"
 
 
 rule save_training_data:
@@ -66,7 +66,7 @@ rule save_training_data:
     output:
         expand("{dir}/{output}", output=config['output_2c'], dir=config['project_dir'])
     shell:
-        "python {input.code_path}/2c-save_training_tracklets_as_dlc.py with project_path={input.cfg}"
+        "python {input.code_path}/2d-save_training_tracklets_as_dlc.py with project_path={input.cfg}"
 
 
 #

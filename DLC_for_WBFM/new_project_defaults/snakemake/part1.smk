@@ -26,7 +26,7 @@ rule training_data_a:
         expand("{output}", output=config['output_2a'])
         directory(expand("{output}", output=config['output_2_dir']))
     shell:
-        "python {input.code_path}/2a-make_short_tracklets.py with project_path={input.cfg}"
+        "python {input.code_path}/2a-pairwise_match_sequential_frames.py with project_path={input.cfg}"
 
 
 rule training_data_b:
@@ -37,7 +37,7 @@ rule training_data_b:
     output:
         directory(expand("{output}", output=config['output_2b_dir']))
     shell:
-        "python {input.code_path}/2b-reindex_segmentation_training.py with project_path={input.cfg}"
+        "python {input.code_path}/2c-reindex_segmentation_training_masks.py with project_path={input.cfg}"
 
 
 rule training_data_c:
@@ -48,4 +48,4 @@ rule training_data_c:
     output:
         directory(expand("{output}", output=config['output_2c']))
     shell:
-        "python {input.code_path}/2c-save_training_tracklets_as_dlc.py with project_path={input.cfg}"
+        "python {input.code_path}/2d-save_training_tracklets_as_dlc.py with project_path={input.cfg}"

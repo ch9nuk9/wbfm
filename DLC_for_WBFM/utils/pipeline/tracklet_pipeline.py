@@ -7,7 +7,8 @@ import pandas as pd
 
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext, \
+    pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename, safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_dlc_format
 
@@ -34,19 +35,44 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     if os.path.exists(raw_fname):
         raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
-    video_fname, z_threshold, options = _unpack_config_partial_tracking(DEBUG, project_config, training_config)
+    # Intermediate products: pairwise matches between frames
+    video_fname, z_threshold, options = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)
 
+    _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+
+
+def postprocess_and_build_matches_from_config(project_config: ModularProjectConfig,
+                                              training_config: ConfigFileWithProjectContext, DEBUG):
+    """
+    Starting with pairwise matches of neurons between sequential Frame objects, postprocess the matches and generate
+    longer tracklets
+
+    Parameters
+    ----------
+    project_config
+    training_config
+    DEBUG
+
+    Returns
+    -------
+
+    """
+    # Load data
+    all_frame_dict, all_frame_pairs, z_threshold = _unpack_config_for_tracklets(training_config)
+
+    # Sanity check
     val = len(all_frame_pairs)
     expected = project_config.config['dataset_params']['num_frames'] - 1
     msg = f"Incorrect number of frame pairs ({val} != {expected})"
     assert val == expected, msg
 
-    df = _postprocess_frame_matches(all_frame_dict, all_frame_pairs, z_threshold)
-    save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, training_config)
+    # Calculate and save in both raw and dataframe format
+    df = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold)
+    save_all_tracklets(df, training_config)
 
 
-def _postprocess_frame_matches(all_frame_dict, all_frame_pairs, z_threshold=None, verbose=0):
+def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold=None, verbose=0):
     # Also updates the matches of the object
     all_matches = {k: pair.calc_final_matches_using_bipartite_matching(z_threshold=z_threshold)
                    for k, pair in all_frame_pairs.items()}
@@ -55,12 +81,15 @@ def _postprocess_frame_matches(all_frame_dict, all_frame_pairs, z_threshold=None
     return df
 
 
-def save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, training_config):
-    with safe_cd(project_config.project_dir):
-        # Intermediate products
-        _save_matches_and_frames(all_frame_dict, all_frame_pairs, df)
+def save_all_tracklets(df, training_config):
+    with safe_cd(training_config.project_dir):
+        # Custom format for pairs
+        subfolder = osp.join('2-training_data', 'raw')
+        fname = osp.join(subfolder, 'clust_df_dat.pickle')
+        with open(fname, 'wb') as f:
+            pickle.dump(df, f)
 
-        # Postprocess and save final output
+        # Convert to easier format
         min_length = training_config.config['postprocessing_params']['min_length_to_save']
         training_df = convert_training_dataframe_to_dlc_format(df, min_length=min_length, scorer=None)
 
@@ -75,7 +104,20 @@ def save_all_tracklets(all_frame_dict, all_frame_pairs, df, project_config, trai
         # training_df.to_excel(out_fname)
 
 
-def _unpack_config_partial_tracking(DEBUG, project_config, training_config):
+def _unpack_config_for_tracklets(training_config):
+    z_threshold = training_config.config['postprocessing_params']['z_threshold']
+
+    fname = os.path.join('raw', 'match_dat.pickle')
+    fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
+    all_frame_pairs = pickle_load_binary(fname)
+
+    fname = os.path.join('raw', 'frame_dat.pickle')
+    fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
+    all_frame_dict = pickle_load_binary(fname)
+
+    return all_frame_dict, all_frame_pairs, z_threshold
+
+def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     # Make tracklets
     # Get options
     options = training_config.config['tracker_params'].copy()
@@ -94,18 +136,13 @@ def _unpack_config_partial_tracking(DEBUG, project_config, training_config):
     options['preprocessing_settings'] = None
 
     video_fname = project_config.config['preprocessed_red']
-    z_threshold = training_config.config['postprocessing_params']['z_threshold']
 
     return video_fname, z_threshold, options
 
 
-def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict, df: pd.DataFrame) -> None:
+def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> None:
     subfolder = osp.join('2-training_data', 'raw')
-    # subfolder = get_sequential_filename(subfolder)
     Path(subfolder).mkdir(exist_ok=True)
-    fname = osp.join(subfolder, 'clust_df_dat.pickle')
-    with open(fname, 'wb') as f:
-        pickle.dump(df, f)
     fname = osp.join(subfolder, 'match_dat.pickle')
     [p.prep_for_pickle() for p in all_frame_pairs.values()]
     with open(fname, 'wb') as f:
