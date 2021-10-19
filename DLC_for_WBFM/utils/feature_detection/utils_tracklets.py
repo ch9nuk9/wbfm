@@ -8,6 +8,8 @@ import pandas as pd
 ##
 ## Helper functions for tracks
 ##
+from tqdm.auto import tqdm
+
 
 def create_new_track(i0, i1,
                      i0_xyz,
@@ -445,64 +447,67 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
     # Individual tracks
     clust_ind = 0
-    while True:
-        # Choose a starting point, and initialize lists
-        match_key, i0, i1 = get_start_match(dict_of_match_dicts)
-        if match_key is None:
-            if verbose >= 1:
-                print(f"No matches left")
-            break
-        if verbose >= 2:
-            print(f"Starting match: {match_key}, {i0}, {i1}")
-        i_frame0, i_frame1 = match_key
-
-        all_ind_local = [i0, i1]
-        if zxy_per_neuron_per_frame is not None:
-            all_zxy = [zxy_per_neuron_per_frame[i_frame0][i0], zxy_per_neuron_per_frame[i_frame1][i1]]
-        else:
-            all_zxy = [[], []]
-        slice_ind = [i_frame0, i_frame1]
-        if has_probability:
-            all_prob = [dict_of_prob_dicts[match_key][i0]]
-        else:
-            all_prob = []
-
-        # Remove match
-        del dict_of_match_dicts[match_key][i0]
-
-        # DFS for this starting point
-        remaining_frame_pair_indices = list(range(match_key[1], tracklet_starting_indices[-1]+1))
-        if verbose >= 2:
-            # Note: even
-            print(f"Searching through {len(remaining_frame_pair_indices)} remaining pairs")
-        for i_pair in remaining_frame_pair_indices:
-            next_match_key = (i_pair, i_pair + 1)
-            next_match_dict = dict_of_match_dicts.get(next_match_key, {})
-            # next_match_dict = dict_of_match_dicts[next_match_key]
-            if i1 in next_match_dict:
-                i0, i1 = i1, next_match_dict[i1]
-                i_frame = next_match_key[1]
-
-                all_ind_local.append(i1)
-                if zxy_per_neuron_per_frame is not None:
-                    all_zxy.append(zxy_per_neuron_per_frame[i_frame][i1])
-                else:
-                    all_zxy.append([])
-                slice_ind.append(i_frame)
-                if has_probability:
-                    all_prob.append(dict_of_prob_dicts[next_match_key][i0])
-
-                del dict_of_match_dicts[next_match_key][i0]
-                if verbose >= 3:
-                    print(f"Continued tracklet: {next_match_key}, {i0}")
-
-            else:
-                if verbose >= 2:
-                    print(f"Tracklet ended on frame pair: {next_match_key}")
+    with tqdm(total=len(tracklet_starting_indices)) as pbar:
+        while True:
+            # Choose a starting point, and initialize lists
+            match_key, i0, i1 = get_start_match(dict_of_match_dicts)
+            if match_key is None:
+                if verbose >= 1:
+                    print(f"No matches left")
                 break
-        else:
             if verbose >= 2:
-                print(f"Tracklet reached the end of the recording")
+                print(f"Starting match: {match_key}, {i0}, {i1}")
+            i_frame0, i_frame1 = match_key
+
+            all_ind_local = [i0, i1]
+            if zxy_per_neuron_per_frame is not None:
+                all_zxy = [zxy_per_neuron_per_frame[i_frame0][i0], zxy_per_neuron_per_frame[i_frame1][i1]]
+            else:
+                all_zxy = [[], []]
+            slice_ind = [i_frame0, i_frame1]
+            if has_probability:
+                all_prob = [dict_of_prob_dicts[match_key][i0]]
+            else:
+                all_prob = []
+
+            # Remove match
+            del dict_of_match_dicts[match_key][i0]
+
+            # DFS for this starting point
+            remaining_frame_pair_indices = list(range(match_key[1], tracklet_starting_indices[-1]+1))
+            if verbose >= 2:
+                # Note: even
+                print(f"Searching through {len(remaining_frame_pair_indices)} remaining pairs")
+            for i_pair in tqdm(remaining_frame_pair_indices, leave=False):
+                next_match_key = (i_pair, i_pair + 1)
+                next_match_dict = dict_of_match_dicts.get(next_match_key, {})
+                # next_match_dict = dict_of_match_dicts[next_match_key]
+                if i1 in next_match_dict:
+                    i0, i1 = i1, next_match_dict[i1]
+                    i_frame = next_match_key[1]
+
+                    all_ind_local.append(i1)
+                    if zxy_per_neuron_per_frame is not None:
+                        all_zxy.append(zxy_per_neuron_per_frame[i_frame][i1])
+                    else:
+                        all_zxy.append([])
+                    slice_ind.append(i_frame)
+                    if has_probability:
+                        all_prob.append(dict_of_prob_dicts[next_match_key][i0])
+
+                    del dict_of_match_dicts[next_match_key][i0]
+                    if verbose >= 3:
+                        print(f"Continued tracklet: {next_match_key}, {i0}")
+
+                else:
+                    pbar.update(1)
+                    if verbose >= 2:
+                        print(f"Tracklet ended on frame pair: {next_match_key}")
+                    break
+            else:
+                pbar.update(1)
+                if verbose >= 2:
+                    print(f"Tracklet reached the end of the recording")
 
         # Save these lists in the dataframe
         slice_ind = [s + slice_offset for s in slice_ind]
