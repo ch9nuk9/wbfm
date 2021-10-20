@@ -243,7 +243,7 @@ class ReferenceFrame:
 
         return kp2n_map
 
-    def encode_all_keypoints(self, base_2d_encoder=None) -> Tuple[np.ndarray, list]:
+    def encode_all_keypoints(self, base_2d_encoder=None) -> None:
         """
         Builds a feature vector for each neuron (zxy location) in a 3d volume
         Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
@@ -259,6 +259,7 @@ class ReferenceFrame:
         z_depth = self.z_depth
         im_3d = self.get_raw_data()
         locs_zxy = self.keypoint_locs
+        num_kps = locs_zxy.shape[0]
 
         im_3d_gray = [convert_to_grayscale(xy).astype('uint8') for xy in im_3d]
         all_embeddings = []
@@ -281,8 +282,8 @@ class ReferenceFrame:
         #
         #     # Save
 
-        for loc in tqdm(locs_zxy, leave=False):
-            z, x, y = loc
+        for i_loc in tqdm(range(num_kps), total=num_kps, leave=False):
+            z, x, y = locs_zxy[i_loc, :]
             kp_2d = cv2.KeyPoint(x, y, 31.0)
 
             z = int(z)
@@ -301,18 +302,15 @@ class ReferenceFrame:
             all_keypoints.append(kp_2d)
 
         all_embeddings = np.array(all_embeddings)
-
         self.all_features = all_embeddings
         self.keypoints = all_keypoints
-
-        return all_embeddings, all_keypoints
+        self.check_data_desyncing()
 
     def build_trivial_keypoint_to_neuron_mapping(self):
         # This is now just a trivial mapping
         self.check_data_desyncing()
         kp2n_map = {i: i for i in range(len(self.neuron_locs))}
         self.features_to_neurons = kp2n_map
-        return kp2n_map
 
     def prep_for_pickle(self):
         """Deletes the cv2.Keypoints (the locations are stored though)"""
@@ -409,49 +407,49 @@ def build_reference_frame_encoding(metadata=None, all_detected_neurons: Detected
     return frame
 
 
-def build_reference_frame(dat: np.ndarray,
-                          num_slices: int,
-                          neuron_feature_radius: float,
-                          preprocessing_settings: PreprocessingSettings = None,
-                          start_slice: int = 2,
-                          metadata: dict = None,
-                          detected_neurons: DetectedNeurons = None,
-                          verbose: int = 0) -> ReferenceFrame:
-    """Main convenience constructor for ReferenceFrame class"""
-    if metadata is None:
-        metadata = {}
-
-    # Initialize class
-    frame = ReferenceFrame(**metadata, preprocessing_settings=None)
-
-    # Build neurons and keypoints
-    frame.detect_or_import_neurons(detected_neurons)
-
-    feature_opt = {'num_features_per_plane': 1000, 'start_plane': 5}
-    frame.detect_keypoints_and_build_features(dat, **feature_opt)
-
-    # Set up mapping between neurons and keypoints
-    frame.build_trivial_keypoint_to_neuron_mapping(neuron_feature_radius)
-
-    # Get neurons and features, and a map between them
-    # neuron_locs = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
-    # if len(neuron_locs) == 0:
-    #     print("No neurons detected... check data settings")
-    #     raise ValueError
-    # kps, kp_3d_locs, features = build_features_1volume(dat, **feature_opt)
-    #
-    # # The map requires some open3d subfunctions; may not work on a cluster
-    # num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
-    # _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
-    # f2n_map = build_f2n_map(kp_3d_locs,
-    #                         num_f,
-    #                         pc_f,
-    #                         neuron_feature_radius,
-    #                         tree_neurons,
-    #                         verbose=verbose - 1)
-    #
-    # # Finally, my summary class
-    # f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map,
-    #                    **metadata,
-    #                    preprocessing_settings=preprocessing_settings)
-    return frame
+# def OLD_build_reference_frame(dat: np.ndarray,
+#                           num_slices: int,
+#                           neuron_feature_radius: float,
+#                           preprocessing_settings: PreprocessingSettings = None,
+#                           start_slice: int = 2,
+#                           metadata: dict = None,
+#                           detected_neurons: DetectedNeurons = None,
+#                           verbose: int = 0) -> ReferenceFrame:
+#     """Main convenience constructor for ReferenceFrame class"""
+#     if metadata is None:
+#         metadata = {}
+#
+#     # Initialize class
+#     frame = ReferenceFrame(**metadata, preprocessing_settings=None)
+#
+#     # Build neurons and keypoints
+#     frame.detect_or_import_neurons(detected_neurons)
+#
+#     feature_opt = {'num_features_per_plane': 1000, 'start_plane': 5}
+#     frame.detect_keypoints_and_build_features(dat, **feature_opt)
+#
+#     # Set up mapping between neurons and keypoints
+#     frame.build_trivial_keypoint_to_neuron_mapping(neuron_feature_radius)
+#
+#     # Get neurons and features, and a map between them
+#     # neuron_locs = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
+#     # if len(neuron_locs) == 0:
+#     #     print("No neurons detected... check data settings")
+#     #     raise ValueError
+#     # kps, kp_3d_locs, features = build_features_1volume(dat, **feature_opt)
+#     #
+#     # # The map requires some open3d subfunctions; may not work on a cluster
+#     # num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
+#     # _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
+#     # f2n_map = build_f2n_map(kp_3d_locs,
+#     #                         num_f,
+#     #                         pc_f,
+#     #                         neuron_feature_radius,
+#     #                         tree_neurons,
+#     #                         verbose=verbose - 1)
+#     #
+#     # # Finally, my summary class
+#     # f = ReferenceFrame(neuron_locs, kps, kp_3d_locs, features, f2n_map,
+#     #                    **metadata,
+#     #                    preprocessing_settings=preprocessing_settings)
+#     return frame
