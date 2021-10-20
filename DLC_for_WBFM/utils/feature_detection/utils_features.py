@@ -538,6 +538,8 @@ def build_features_and_match_2volumes(dat0, dat1,
     Multi-plane wrapper around: detect_features_and_match
 
     Returns a list of lists, with the outer list referring to the plane
+
+    Note: the matches refer to the keypoint list, not the locations (which are already matched)
     """
 
     all_locs0 = []
@@ -580,6 +582,6 @@ def build_features_and_match_2volumes(dat0, dat1,
         all_kp0.extend(keypoints0)
         all_kp1.extend(keypoints1)
         # TODO
-        all_match_offsets.append([len(locs_3d_0), len(all_locs1)])
+        all_match_offsets.append([len(all_locs0), len(all_locs1)])
 
     return np.array(all_locs0), np.array(all_locs1), all_kp0, all_kp1, all_matches, all_match_offsets

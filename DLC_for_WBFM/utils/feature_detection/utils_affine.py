@@ -13,6 +13,7 @@ def propagate_via_affine_model(which_neuron: int,
                                radius=10.0,
                                min_matches=100,
                                no_match_mode='negative_position',
+                               allow_z_change=False,
                                verbose=0):
     """
     1. Gets a cloud of features around a neuron (first frame)
@@ -29,7 +30,7 @@ def propagate_via_affine_model(which_neuron: int,
     this_neuron = f0.neuron_locs[which_neuron]
 
     num_features, pc0, tree_features0 = build_feature_tree(f0.keypoint_locs)
-    pc0.paint_uniform_color([0.9, 0.9, 0.9])
+    # pc0.paint_uniform_color([0.9, 0.9, 0.9])
 
     # See also calc_2frame_matches
     # Iteratively increases the radius if not enough matches are found
@@ -78,6 +79,9 @@ def propagate_via_affine_model(which_neuron: int,
             neuron0_trans = cv2.transform(np.array([neuron_matrix]), h)[0]
 
             success = True
+
+            if success and not allow_z_change:
+                neuron0_trans[:, 0] = neuron_matrix[:, 0]
     else:
         if verbose >= 2:
             print("Failed to find a match")
@@ -88,6 +92,7 @@ def propagate_via_affine_model(which_neuron: int,
 def propagate_all_neurons(f0: ReferenceFrame, f1: ReferenceFrame, all_feature_matches,
                           radius=10.0,
                           min_matches=100,
+                          allow_z_change=False,
                           verbose=0):
     """
     Loops over neurons in f0 (frame 0), and applies:
@@ -97,7 +102,7 @@ def propagate_all_neurons(f0: ReferenceFrame, f1: ReferenceFrame, all_feature_ma
     all_propagated = None
 
     options = {'f0': f0, 'f1': f1, 'all_feature_matches': all_feature_matches,
-               'radius': radius, 'min_matches': min_matches}
+               'radius': radius, 'min_matches': min_matches, 'allow_z_change': allow_z_change}
     for which_neuron in range(len(f0.neuron_locs)):
         success, n0_propagated = propagate_via_affine_model(which_neuron, **options)
         # Note: needs the failed neurons to keep the indices aligned
@@ -119,6 +124,7 @@ def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame
                                           radius=10.0,
                                           min_matches=100,
                                           maximum_distance=15.0,
+                                          allow_z_change=False,
                                           verbose=0,
                                           DEBUG=False):
     """
@@ -132,7 +138,8 @@ def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame
 
     all_propagated = propagate_all_neurons(f0, f1, all_feature_matches,
                                            radius=radius,
-                                           min_matches=min_matches)
+                                           min_matches=min_matches,
+                                           allow_z_change=allow_z_change)
 
     # Loop over locations of pushed v0 neurons
     # out = calc_matches_using_2nn(all_propagated, f1.neuron_locs, distance_ratio=distance_ratio)

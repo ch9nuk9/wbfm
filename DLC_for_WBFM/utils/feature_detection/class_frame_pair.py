@@ -185,14 +185,21 @@ class FramePair:
             build_features_and_match_2volumes(dat0, dat1, **opt)
         # Save intermediate data in objects
         frame0.keypoint_locs = kp0_locs
-        frame0.keypoints = all_kp0
         frame1.keypoint_locs = kp1_locs
+        frame0.keypoints = all_kp0
         frame1.keypoints = all_kp1
-        kp_matches = recursive_cast_matches_as_array(kp_matches, all_match_offsets, gamma=1.0)
+        # kp_matches = recursive_cast_matches_as_array(kp_matches, all_match_offsets, gamma=1.0)
+        # TODO: are these really just trivial matches?
+        kp_matches = [(i, i, 1.0) for i in range(len(kp0_locs))]
         self.keypoint_matches = kp_matches
         # Then match using distance from neuron position to keypoint cloud
-        options = {'all_feature_matches': kp_matches}
+        options = {'all_feature_matches': kp_matches,
+                   'min_matches': 20,
+                   'allow_z_change': False}
         affine_matches, _, affine_pushed = calc_matches_using_affine_propagation(frame0, frame1, **options)
+        # TODO: above code requires that the keypoint_locs are actually the full keypoints...
+        # frame0.keypoint_locs = kp0_locs
+        # frame1.keypoint_locs = kp1_locs
         self.affine_matches = affine_matches
         self.affine_pushed_locations = affine_pushed
 
