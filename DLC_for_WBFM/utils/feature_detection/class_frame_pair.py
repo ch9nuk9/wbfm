@@ -224,8 +224,8 @@ class FramePair:
         # First, get feature matches
         neuron_embedding_matches = match_known_features(frame0.all_features,
                                                         frame1.all_features,
-                                                        frame0.keypoints,
-                                                        frame1.keypoints,
+                                                        frame0.neuron_locs,
+                                                        frame1.neuron_locs,
                                                         frame0.vol_shape[1:],
                                                         frame1.vol_shape[1:],
                                                         matches_to_keep=matches_to_keep,
@@ -261,9 +261,9 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
 
     See also: calc_2frame_matches
     """
-
-    frame0.check_data_desyncing()
-    frame1.check_data_desyncing()
+    # Frames are 'desynced' because affine matching overwrites the keypoints
+    # frame0.check_data_desyncing()
+    # frame1.check_data_desyncing()
 
     # Create class, then call member functions
     frame_pair = FramePair(frame0=frame0, frame1=frame1,

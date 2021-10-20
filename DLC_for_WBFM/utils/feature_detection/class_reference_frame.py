@@ -43,13 +43,18 @@ class ReferenceFrame:
 
     # For adding new keypoints
     alternate_2d_encoder: callable = lambda x: None
+    options_2d_encoder: dict = None
 
     _all_features_non_neurons: np.ndarray = None
     _raw_data: np.ndarray = None
 
     def get_default_base_2d_encoder(self):
         self.alternate_2d_encoder = self.get_default_base_2d_encoder
-        return cv2.xfeatures2d.VGG_create()
+        if self.options_2d_encoder is not None:
+            opt = self.options_2d_encoder
+        else:
+            opt = {}
+        return cv2.xfeatures2d.VGG_create(**opt)
 
     def get_metadata(self):
         return {'frame_ind': self.frame_ind,
@@ -111,10 +116,7 @@ class ReferenceFrame:
             logging.warning("No neurons detected... check data settings")
             # TODO: do not just raise an error, but instead skip rest of analysis
             raise ValueError
-
         self.neuron_locs = neuron_locs
-
-        return neuron_locs
 
     def copy_neurons_to_keypoints(self):
         """ Explicitly a different method for backwards compatibility"""
@@ -315,7 +317,7 @@ class ReferenceFrame:
     def prep_for_pickle(self):
         """Deletes the cv2.Keypoints (the locations are stored though)"""
         if len(self.keypoints) > 0:
-            self.check_data_desyncing()
+            # self.check_data_desyncing()
             self.keypoints = []
         self._raw_data = None
 

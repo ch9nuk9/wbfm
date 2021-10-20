@@ -30,7 +30,7 @@ def test_pipeline_step_b():
 
 
 def test_pipeline_step_c():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.2c-reindex_segmentation_training", package="DLC_for_WBFM")
+    mod = importlib.import_module("DLC_for_WBFM.scripts.2c-reindex_segmentation_training_masks", package="DLC_for_WBFM")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 

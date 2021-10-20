@@ -40,7 +40,8 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     video_fname, options = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)
 
-    _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+    with safe_cd(project_config.project_dir):
+        _save_matches_and_frames(all_frame_dict, all_frame_pairs)
 
 
 def postprocess_and_build_matches_from_config(project_config: ModularProjectConfig,
