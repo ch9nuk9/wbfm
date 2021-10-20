@@ -10,7 +10,6 @@ self_path: 2-training_data/training_data_config.yaml # for programmatic updating
 tracker_params: # OPTIMIZE
 #  num_frames: 100  # Uncomment this if you want a different number from the main project!
   z_depth_neuron_encoding: 5.0
-  use_affine_matching: false
   add_affine_to_candidates: true
   add_gp_to_candidates: true
   external_detections: null # Will be synchronized with segmentation

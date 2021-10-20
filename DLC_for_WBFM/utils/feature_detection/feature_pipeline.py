@@ -77,59 +77,59 @@ def track_neurons_two_volumes(dat0,
 ## Different strategy: reference frames
 ##
 
-def build_all_reference_frames(num_reference_frames,
-                               video_fname,
-                               start_frame,
-                               num_frames,
-                               num_slices,
-                               neuron_feature_radius,
-                               start_slice=2,
-                               is_sequential=True,
-                               preprocessing_settings=PreprocessingSettings(),
-                               verbose=1,
-                               recalculate_reference_frames=True,
-                               external_detections=None):
-    """
-    Selects a sample of reference frames, then builds features for them
-
-    FOR NOW:
-    By default, these frames are sequential
-
-    The ref_frames argument allows previously calculated frames to be reused
-    """
-
-    other_ind = list(range(start_frame, start_frame + num_frames))
-    if is_sequential:
-        ref_ind = list(range(start_frame, start_frame + num_reference_frames))
-    else:
-        ref_ind = random.sample(other_ind, num_reference_frames)
-    for ind in ref_ind:
-        other_ind.remove(ind)
-
-    ref_dat = []
-    ref_frames = {}
-    video_opt = {'num_slices': num_slices,
-                 'alpha': 1.0,
-                 'dtype': preprocessing_settings.initial_dtype}
-    if verbose >= 1:
-        print("Building reference frames...")
-    for ind in tqdm(ref_ind, total=len(ref_ind)):
-        dat = get_single_volume(video_fname, ind, **video_opt)
-        ref_dat.append(dat)
-
-        metadata = {'frame_ind': ind,
-                    'vol_shape': dat.shape,
-                    'video_fname': video_fname}
-        if recalculate_reference_frames:
-            f = build_reference_frame(dat, num_slices, neuron_feature_radius,
-                                      start_slice=start_slice,
-                                      metadata=metadata,
-                                      preprocessing_settings=preprocessing_settings,
-                                      external_detections=external_detections)
-            ref_frames[f.frame_ind] = f
-            # ref_frames.append(f)
-
-    return ref_dat, ref_frames, other_ind
+# def OLD_build_all_reference_frames(num_reference_frames,
+#                                video_fname,
+#                                start_frame,
+#                                num_frames,
+#                                num_slices,
+#                                neuron_feature_radius,
+#                                start_slice=2,
+#                                is_sequential=True,
+#                                preprocessing_settings=PreprocessingSettings(),
+#                                verbose=1,
+#                                recalculate_reference_frames=True,
+#                                detected_neurons: DetectedNeurons = None):
+#     """
+#     Selects a sample of reference frames, then builds features for them
+# 
+#     FOR NOW:
+#     By default, these frames are sequential
+# 
+#     The ref_frames argument allows previously calculated frames to be reused
+#     """
+# 
+#     other_ind = list(range(start_frame, start_frame + num_frames))
+#     if is_sequential:
+#         ref_ind = list(range(start_frame, start_frame + num_reference_frames))
+#     else:
+#         ref_ind = random.sample(other_ind, num_reference_frames)
+#     for ind in ref_ind:
+#         other_ind.remove(ind)
+# 
+#     ref_dat = []
+#     ref_frames = {}
+#     video_opt = {'num_slices': num_slices,
+#                  'alpha': 1.0,
+#                  'dtype': preprocessing_settings.initial_dtype}
+#     if verbose >= 1:
+#         print("Building reference frames...")
+#     for ind in tqdm(ref_ind, total=len(ref_ind)):
+#         dat = get_single_volume(video_fname, ind, **video_opt)
+#         ref_dat.append(dat)
+# 
+#         metadata = {'frame_ind': ind,
+#                     'vol_shape': dat.shape,
+#                     'video_fname': video_fname}
+#         if recalculate_reference_frames:
+#             f = build_reference_frame(dat, num_slices, neuron_feature_radius,
+#                                       start_slice=start_slice,
+#                                       metadata=metadata,
+#                                       preprocessing_settings=preprocessing_settings,
+#                                       detected_neurons=detected_neurons)
+#             ref_frames[f.frame_ind] = f
+#             # ref_frames.append(f)
+# 
+#     return ref_dat, ref_frames, other_ind
 
 
 ##
@@ -495,17 +495,11 @@ def match_all_to_reference_frames(reference_set,
 ##
 
 
-def track_neurons_full_video(video_fname: str,
-                             start_volume: int = 0,
-                             num_frames: int = 10,
-                             num_slices: int = 33,
+def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames: int = 10,
                              z_depth_neuron_encoding: float = 5.0,
                              preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
-                             use_affine_matching: bool = False,
-                             add_affine_to_candidates: bool = False,
-                             add_gp_to_candidates: bool = False,
-                             external_detections: str = None,
-                             verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
+                             add_affine_to_candidates: bool = False, add_gp_to_candidates: bool = False,
+                             external_detections: str = None, verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
     """
     Detects and tracks neurons using opencv-based feature matching
     Note: only compares adjacent frames
@@ -520,25 +514,17 @@ def track_neurons_full_video(video_fname: str,
         # TODO: better way to get datatype
         dtype = 'uint8'
     # Get initial volume; settings are same for all
-    import_opt = {'num_slices': num_slices,
-                  'alpha': 1.0,
-                  'dtype': dtype}
-    ref_opt = {'z_depth': z_depth_neuron_encoding}
     vid_dat = zarr.open(video_fname)
     vol_shape = vid_dat[0, ...].shape
 
-    detected_neurons = DetectedNeurons(external_detections)
+    all_detected_neurons = DetectedNeurons(external_detections)
 
     def _build_frame(frame_ind: int) -> ReferenceFrame:
-        # dat = vid_dat[frame_ind, ...]
         metadata = {'frame_ind': frame_ind,
                     'vol_shape': vol_shape,
-                    'video_fname': video_fname}
-
-        f = build_reference_frame_encoding(num_slices=import_opt['num_slices'],
-                                           **ref_opt,
-                                           metadata=metadata,
-                                           detected_neurons=detected_neurons)
+                    'video_fname': video_fname,
+                    'z_depth': z_depth_neuron_encoding}
+        f = build_reference_frame_encoding(metadata=metadata, all_detected_neurons=all_detected_neurons)
         return f
 
     # Build all frames initially, then match
@@ -575,81 +561,81 @@ def track_neurons_full_video(video_fname: str,
     return all_frame_pairs, all_frame_dict
 
 
-def track_via_reference_frames(video_fname,
-                               start_frame=0,
-                               num_frames=10,
-                               num_slices=33,
-                               neuron_feature_radius=5.0,
-                               verbose=0,
-                               num_reference_frames=5,
-                               add_gp_to_candidates=False,
-                               add_affine_to_candidates=False,
-                               use_affine_matching=False,
-                               neuron_cluster_mode='threshold',
-                               preprocessing_settings=PreprocessingSettings(),
-                               reference_set=None,
-                               external_detections=None):
-    """
-    Tracks neurons by registering them to a set of reference frames
-    """
-
-    # First, analyze the reference frames
-    if verbose >= 1:
-        print("Loading reference frames...")
-    video_opt = {'video_fname': video_fname,
-                 'start_frame': start_frame,
-                 'num_frames': num_frames,
-                 'num_slices': num_slices,
-                 'neuron_feature_radius': neuron_feature_radius,
-                 'verbose': verbose - 1}
-    if reference_set is None:
-        ref_dat, ref_frames, other_ind = build_all_reference_frames(
-            num_reference_frames,
-            **video_opt,
-            preprocessing_settings=preprocessing_settings,
-            recalculate_reference_frames=True,
-            external_detections=external_detections
-        )
-    else:
-        # Reuse previous reference frames, but still build the metadata
-        ref_dat, _, other_ind = build_all_reference_frames(
-            num_reference_frames,
-            **video_opt,
-            preprocessing_settings=preprocessing_settings,
-            recalculate_reference_frames=False
-        )
-        ref_frames = reference_set.reference_frames
-
-    if verbose >= 1:
-        print("Analyzing reference frames...")
-    match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
-                 'add_gp_to_candidates': add_gp_to_candidates,
-                 'neuron_cluster_mode': neuron_cluster_mode,
-                 'verbose': verbose - 1}
-    if reference_set is None:
-        reference_set = register_all_reference_frames(ref_frames, **match_opt)
-
-    if verbose >= 1:
-        print("Matching other frames to reference...")
-    video_opt = {'num_slices': num_slices,
-                 'alpha': 1.0,
-                 'dtype': preprocessing_settings.initial_dtype}
-    i_tmp = list(ref_frames.keys())[0]
-    metadata = ref_frames[i_tmp].get_metadata()
-    all_matches, all_other_frames = match_all_to_reference_frames(
-        reference_set,
-        video_fname,
-        other_ind,
-        video_opt,
-        metadata,
-        num_slices,
-        neuron_feature_radius,
-        preprocessing_settings=preprocessing_settings,
-        external_detections=external_detections,
-        min_conf=num_reference_frames / 3.0
-    )
-
-    return all_matches, all_other_frames, reference_set
+# def OLD_track_via_reference_frames(video_fname,
+#                                start_frame=0,
+#                                num_frames=10,
+#                                num_slices=33,
+#                                neuron_feature_radius=5.0,
+#                                verbose=0,
+#                                num_reference_frames=5,
+#                                add_gp_to_candidates=False,
+#                                add_affine_to_candidates=False,
+#                                use_affine_matching=False,
+#                                neuron_cluster_mode='threshold',
+#                                preprocessing_settings=PreprocessingSettings(),
+#                                reference_set=None,
+#                                external_detections=None):
+#     """
+#     Tracks neurons by registering them to a set of reference frames
+#     """
+# 
+#     # First, analyze the reference frames
+#     if verbose >= 1:
+#         print("Loading reference frames...")
+#     video_opt = {'video_fname': video_fname,
+#                  'start_frame': start_frame,
+#                  'num_frames': num_frames,
+#                  'num_slices': num_slices,
+#                  'neuron_feature_radius': neuron_feature_radius,
+#                  'verbose': verbose - 1}
+#     if reference_set is None:
+#         ref_dat, ref_frames, other_ind = build_all_reference_frames(
+#             num_reference_frames,
+#             **video_opt,
+#             preprocessing_settings=preprocessing_settings,
+#             recalculate_reference_frames=True,
+#             external_detections=external_detections
+#         )
+#     else:
+#         # Reuse previous reference frames, but still build the metadata
+#         ref_dat, _, other_ind = build_all_reference_frames(
+#             num_reference_frames,
+#             **video_opt,
+#             preprocessing_settings=preprocessing_settings,
+#             recalculate_reference_frames=False
+#         )
+#         ref_frames = reference_set.reference_frames
+# 
+#     if verbose >= 1:
+#         print("Analyzing reference frames...")
+#     match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
+#                  'add_gp_to_candidates': add_gp_to_candidates,
+#                  'neuron_cluster_mode': neuron_cluster_mode,
+#                  'verbose': verbose - 1}
+#     if reference_set is None:
+#         reference_set = register_all_reference_frames(ref_frames, **match_opt)
+# 
+#     if verbose >= 1:
+#         print("Matching other frames to reference...")
+#     video_opt = {'num_slices': num_slices,
+#                  'alpha': 1.0,
+#                  'dtype': preprocessing_settings.initial_dtype}
+#     i_tmp = list(ref_frames.keys())[0]
+#     metadata = ref_frames[i_tmp].get_metadata()
+#     all_matches, all_other_frames = match_all_to_reference_frames(
+#         reference_set,
+#         video_fname,
+#         other_ind,
+#         video_opt,
+#         metadata,
+#         num_slices,
+#         neuron_feature_radius,
+#         preprocessing_settings=preprocessing_settings,
+#         external_detections=external_detections,
+#         min_conf=num_reference_frames / 3.0
+#     )
+# 
+#     return all_matches, all_other_frames, reference_set
 
 
 def track_neurons_full_video_window(video_fname,
@@ -734,63 +720,63 @@ def track_neurons_full_video_window(video_fname,
     return pairwise_matches_dict, pairwise_conf_dict, all_frame_dict, pairwise_candidates_dict
 
 
-def track_via_sequence_consensus(video_fname,
-                                 start_frame=0,
-                                 num_frames=10,
-                                 num_slices=33,
-                                 neuron_feature_radius=5.0,
-                                 verbose=0,
-                                 num_consensus_frames=3,
-                                 preprocessing_settings=PreprocessingSettings()):
-    """
-    OLD
-
-    Tracks neurons by finding consensus between a sliding window of frames
-
-    Note: if num_consensus_frames=2, this is tracking via adjacent frames
-    """
-
-    # Initial frame calculations
-
-    # Build a reference set of the first n-1 frames
-    video_opt = {'video_fname': video_fname,
-                 'start_frame': start_frame,
-                 'num_frames': num_frames,
-                 'num_slices': num_slices,
-                 'neuron_feature_radius': neuron_feature_radius,
-                 'verbose': verbose - 1}
-    _, ref_frames, _ = build_all_reference_frames(
-        num_consensus_frames - 1,
-        **video_opt,
-        preprocessing_settings=preprocessing_settings
-    )
-    reference_set_minus1 = register_all_reference_frames(ref_frames)
-
-    all_frames = reference_set_minus1.reference_frames.copy()
-    ind = range(start_frame + num_consensus_frames, start_frame + num_frames)
-    frame_video_opt = {'num_slices': num_slices,
-                       'alpha': 1.0,
-                       'dtype': preprocessing_settings.initial_dtype}
-    metadata = ref_frames[0].get_metadata()
-    for i_frame in tqdm(ind, total=len(ind)):
-        # Build the next frame
-        metadata['frame_ind'] = i_frame
-        dat = get_single_volume(video_fname, i_frame, **frame_video_opt)
-        next_frame = build_reference_frame(dat, num_slices, neuron_feature_radius,
-                                           metadata=metadata,
-                                           preprocessing_settings=preprocessing_settings)
-        # Match this frame
-        reference_set = register_all_reference_frames(
-            [next_frame],
-            previous_ref_set=reference_set_minus1
-        )
-
-        # Adjust by 1: the new reference set partially overlaps with the previous
-        reference_set_minus1 = remove_first_frame(reference_set)
-
-        all_frames.append(reference_set.reference_frames[-1])
-
-    return all_frames
+# def OLD_track_via_sequence_consensus(video_fname,
+#                                  start_frame=0,
+#                                  num_frames=10,
+#                                  num_slices=33,
+#                                  neuron_feature_radius=5.0,
+#                                  verbose=0,
+#                                  num_consensus_frames=3,
+#                                  preprocessing_settings=PreprocessingSettings()):
+#     """
+#     OLD
+#
+#     Tracks neurons by finding consensus between a sliding window of frames
+#
+#     Note: if num_consensus_frames=2, this is tracking via adjacent frames
+#     """
+#
+#     # Initial frame calculations
+#
+#     # Build a reference set of the first n-1 frames
+#     video_opt = {'video_fname': video_fname,
+#                  'start_frame': start_frame,
+#                  'num_frames': num_frames,
+#                  'num_slices': num_slices,
+#                  'neuron_feature_radius': neuron_feature_radius,
+#                  'verbose': verbose - 1}
+#     _, ref_frames, _ = build_all_reference_frames(
+#         num_consensus_frames - 1,
+#         **video_opt,
+#         preprocessing_settings=preprocessing_settings
+#     )
+#     reference_set_minus1 = register_all_reference_frames(ref_frames)
+#
+#     all_frames = reference_set_minus1.reference_frames.copy()
+#     ind = range(start_frame + num_consensus_frames, start_frame + num_frames)
+#     frame_video_opt = {'num_slices': num_slices,
+#                        'alpha': 1.0,
+#                        'dtype': preprocessing_settings.initial_dtype}
+#     metadata = ref_frames[0].get_metadata()
+#     for i_frame in tqdm(ind, total=len(ind)):
+#         # Build the next frame
+#         metadata['frame_ind'] = i_frame
+#         dat = get_single_volume(video_fname, i_frame, **frame_video_opt)
+#         next_frame = build_reference_frame(dat, num_slices, neuron_feature_radius,
+#                                            metadata=metadata,
+#                                            preprocessing_settings=preprocessing_settings)
+#         # Match this frame
+#         reference_set = register_all_reference_frames(
+#             [next_frame],
+#             previous_ref_set=reference_set_minus1
+#         )
+#
+#         # Adjust by 1: the new reference set partially overlaps with the previous
+#         reference_set_minus1 = remove_first_frame(reference_set)
+#
+#         all_frames.append(reference_set.reference_frames[-1])
+#
+#     return all_frames
 
 
 ##

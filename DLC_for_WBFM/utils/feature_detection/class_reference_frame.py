@@ -35,6 +35,7 @@ class ReferenceFrame:
     frame_ind: int = None
     video_fname: str = None
     vol_shape: tuple = None
+    z_depth: int = None
 
     preprocessing_settings: Union[PreprocessingSettings, None] = None
 
@@ -244,8 +245,7 @@ class ReferenceFrame:
 
         return kp2n_map
 
-    def encode_all_keypoints(self, z_depth: int,
-                             base_2d_encoder=None) -> Tuple[np.ndarray, list]:
+    def encode_all_neurons(self, base_2d_encoder=None) -> Tuple[np.ndarray, list]:
         """
         Builds a feature vector for each neuron (zxy location) in a 3d volume
         Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
@@ -258,9 +258,9 @@ class ReferenceFrame:
         Creates feature vectors of length z_depth *
         """
 
+        z_depth = self.z_depth
         im_3d = self.get_raw_data()
-
-        locs_zxy = self.keypoint_locs
+        locs_zxy = self.neuron_locs
 
         im_3d_gray = [convert_to_grayscale(xy).astype('uint8') for xy in im_3d]
         all_embeddings = []
@@ -388,13 +388,7 @@ class RegisteredReferenceFrames():
                 Number of frames: {len(self.reference_frames)} \n"
 
 
-def build_reference_frame_encoding(num_slices,
-                                   z_depth,
-                                   start_slice=None,
-                                   metadata=None,
-                                   detected_neurons: DetectedNeurons=None,
-                                   to_add_orb_keypoints=False,
-                                   verbose=0):
+def build_reference_frame_encoding(metadata=None, all_detected_neurons: DetectedNeurons = None, verbose=0):
     """
     New pipeline that directly builds an embedding for each neuron, instead of detecting keypoints
 
@@ -407,11 +401,11 @@ def build_reference_frame_encoding(num_slices,
     frame = ReferenceFrame(**metadata, preprocessing_settings=None)
 
     # Build keypoints (in this case, neurons directly)
-    frame.detect_or_import_neurons(detected_neurons)
+    frame.detect_or_import_neurons(all_detected_neurons)
     frame.copy_neurons_to_keypoints()
 
     # Calculate encodings
-    frame.encode_all_keypoints(z_depth)
+    frame.encode_all_neurons()
 
     # Set up mapping between neurons and keypoints
     frame.build_trivial_keypoint_to_neuron_mapping()
@@ -437,7 +431,7 @@ def build_reference_frame(dat: np.ndarray,
                           preprocessing_settings: PreprocessingSettings = None,
                           start_slice: int = 2,
                           metadata: dict = None,
-                          external_detections: str = None,
+                          detected_neurons: DetectedNeurons = None,
                           verbose: int = 0) -> ReferenceFrame:
     """Main convenience constructor for ReferenceFrame class"""
     if metadata is None:
@@ -447,7 +441,7 @@ def build_reference_frame(dat: np.ndarray,
     frame = ReferenceFrame(**metadata, preprocessing_settings=None)
 
     # Build neurons and keypoints
-    frame.detect_or_import_neurons(external_detections)
+    frame.detect_or_import_neurons(detected_neurons)
 
     feature_opt = {'num_features_per_plane': 1000, 'start_plane': 5}
     frame.detect_keypoints_and_build_features(dat, **feature_opt)
