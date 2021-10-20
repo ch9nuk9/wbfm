@@ -23,6 +23,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tra
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
+from segmentation.util.utils_metadata import DetectedNeurons
 
 ##
 ## Full pipeline
@@ -524,18 +525,20 @@ def track_neurons_full_video(video_fname: str,
                   'dtype': dtype}
     ref_opt = {'z_depth': z_depth_neuron_encoding}
     vid_dat = zarr.open(video_fname)
+    vol_shape = vid_dat[0, ...].shape
+
+    detected_neurons = DetectedNeurons(external_detections)
 
     def _build_frame(frame_ind: int) -> ReferenceFrame:
-        dat = vid_dat[frame_ind, ...]
+        # dat = vid_dat[frame_ind, ...]
         metadata = {'frame_ind': frame_ind,
-                    'vol_shape': dat.shape,
+                    'vol_shape': vol_shape,
                     'video_fname': video_fname}
 
-        f = build_reference_frame_encoding(dat,
-                                           num_slices=import_opt['num_slices'],
+        f = build_reference_frame_encoding(num_slices=import_opt['num_slices'],
                                            **ref_opt,
                                            metadata=metadata,
-                                           external_detections=external_detections)
+                                           detected_neurons=detected_neurons)
         return f
 
     # Build all frames initially, then match

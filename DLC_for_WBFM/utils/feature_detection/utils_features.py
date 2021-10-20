@@ -63,15 +63,16 @@ def match_known_features(descriptors1, descriptors2,
                          im2_shape=None,
                          matches_to_keep=1.0,
                          use_GMS=True,
-                         use_orb=False):
+                         use_orb=False,
+                         crossCheck=True):
     # MAIN USE FUNCTION
 
     # Match features.
     if use_orb:
-        matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=crossCheck)
         matches = matcher.match(descriptors1, descriptors2)
     else:
-        matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
+        matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck=crossCheck)
         matches = matcher.match(descriptors1, descriptors2)
 
     if use_GMS:

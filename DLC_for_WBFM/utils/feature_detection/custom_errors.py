@@ -38,3 +38,10 @@ class DataSynchronizationError(Exception):
             self.message += f"; try {suggested_method}"
 
         super().__init__(self.message)
+
+
+class DeprecationError(Exception):
+
+    def __init__(self, message=""):
+        self.message = message
+        super().__init__(self.message)

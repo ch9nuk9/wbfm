@@ -219,7 +219,7 @@ class FramePair:
         self.all_gps = all_gps
         self.gp_pushed_locations = gp_pushed
 
-    def match_using_feature_embedding(self, matches_to_keep=1.0, use_GMS=False):
+    def match_using_feature_embedding(self, matches_to_keep=1.0, use_GMS=False, crossCheck=True):
         frame0, frame1 = self.frame0, self.frame1
         # First, get feature matches
         neuron_embedding_matches = match_known_features(frame0.all_features,
@@ -229,7 +229,8 @@ class FramePair:
                                                         frame0.vol_shape[1:],
                                                         frame1.vol_shape[1:],
                                                         matches_to_keep=matches_to_keep,
-                                                        use_GMS=use_GMS)
+                                                        use_GMS=use_GMS,
+                                                        crossCheck=crossCheck)
         # With neuron embeddings, the keypoints are the neurons
         neuron_embedding_matches_with_conf = cast_matches_as_array(neuron_embedding_matches, gamma=1.0)
         self.feature_matches = neuron_embedding_matches_with_conf

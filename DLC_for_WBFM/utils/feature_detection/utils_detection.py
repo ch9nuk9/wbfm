@@ -1,4 +1,3 @@
-import pickle
 import cv2
 import numpy as np
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
@@ -154,24 +153,3 @@ def detect_neurons_using_ICP(dat,
         print("Finished ID'ing neurons")
 
     return centroids, clust_df, all_icp, all_keypoints_pcs
-
-
-##
-## Alternative: read from pipeline
-##
-
-def detect_neurons_from_file(detection_fname: str, which_volume: int, verbose: int = 0) -> list:
-    """
-    Designed to be used with centroids detected using a different pipeline
-    """
-    with open(detection_fname, 'rb') as f:
-        # Note: dict of dataframes
-        neuron_locs = pickle.load(f)[which_volume]['centroids']
-    # In current format: flipped x and y
-    neuron_locs = np.array([n for n in neuron_locs])
-    if len(neuron_locs) > 0:
-        pass
-        # neuron_locs = neuron_locs[:, [0, 2, 1]]
-    else:
-        neuron_locs = []
-    return neuron_locs

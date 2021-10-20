@@ -9,11 +9,12 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from DLC_for_WBFM.utils.feature_detection.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
-    AnalysisOutOfOrderError
-from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_from_file
+    AnalysisOutOfOrderError, DeprecationError
+from DLC_for_WBFM.utils.feature_detection.class_detected_neurons import detect_neurons_from_file
 from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
+from segmentation.util.utils_metadata import DetectedNeurons
 
 ##
 ## Basic class definition
@@ -44,6 +45,7 @@ class ReferenceFrame:
     alternate_2d_encoder: callable = lambda x: None
 
     _all_features_non_neurons: np.ndarray = None
+    _raw_data: np.ndarray = None
 
     def get_default_base_2d_encoder(self):
         self.alternate_2d_encoder = self.get_default_base_2d_encoder
@@ -68,7 +70,9 @@ class ReferenceFrame:
 
     def get_raw_data(self):
         # TODO: should I cache this?
-        return zarr.open(self.video_fname)[self.frame_ind, ...]
+        if self._raw_data is None:
+            self._raw_data = zarr.open(self.video_fname)[self.frame_ind, ...]
+        return self._raw_data
 
     # def get_raw_data(self):
     #     return get_single_volume(self.video_fname,
@@ -76,38 +80,36 @@ class ReferenceFrame:
     #                              num_slices=self.vol_shape[0],
     #                              alpha=self.preprocessing_settings.alpha)
 
-    def detect_or_import_neurons(self, dat: list, external_detections: str, metadata: dict, num_slices: int,
-                                 start_slice: int) -> list:
+    def detect_or_import_neurons(self, detected_neurons: DetectedNeurons) -> list:
         """
 
         Parameters
         ----------
-        dat
         external_detections
         metadata
-        num_slices
-        start_slice
 
         Returns
         -------
         neuron_locs - also saved as self.neuron_locs and self.keypoint_locs
 
         """
-        if external_detections is None:
-            from DLC_for_WBFM.utils.feature_detection.legacy_neuron_detection import detect_neurons_using_ICP
-            neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
-                                                            num_slices=num_slices,
-                                                            alpha=1.0,
-                                                            min_detections=3,
-                                                            start_slice=start_slice,
-                                                            verbose=0)
-            neuron_locs = np.array([n for n in neuron_locs])
+
+        if detected_neurons is None:
+            raise DeprecationError("Detection of neurons within this class is deprecated")
+            # from DLC_for_WBFM.utils.feature_detection.legacy_neuron_detection import detect_neurons_using_ICP
+            # neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
+            #                                                 num_slices=num_slices,
+            #                                                 alpha=1.0,
+            #                                                 min_detections=3,
+            #                                                 start_slice=start_slice,
+            #                                                 verbose=0)
+            # neuron_locs = np.array([n for n in neuron_locs])
         else:
-            i = metadata['frame_ind']
-            neuron_locs = detect_neurons_from_file(external_detections, i)
+            i = self.frame_ind
+            neuron_locs = detected_neurons.detect_neurons_from_file(i)
 
         if len(neuron_locs) == 0:
-            print("No neurons detected... check data settings")
+            logging.warning("No neurons detected... check data settings")
             # TODO: do not just raise an error, but instead skip rest of analysis
             raise ValueError
 
@@ -242,7 +244,7 @@ class ReferenceFrame:
 
         return kp2n_map
 
-    def encode_all_keypoints(self, im_3d: np.ndarray, z_depth: int,
+    def encode_all_keypoints(self, z_depth: int,
                              base_2d_encoder=None) -> Tuple[np.ndarray, list]:
         """
         Builds a feature vector for each neuron (zxy location) in a 3d volume
@@ -256,6 +258,8 @@ class ReferenceFrame:
         Creates feature vectors of length z_depth *
         """
 
+        im_3d = self.get_raw_data()
+
         locs_zxy = self.keypoint_locs
 
         im_3d_gray = [convert_to_grayscale(xy).astype('uint8') for xy in im_3d]
@@ -265,6 +269,7 @@ class ReferenceFrame:
         if base_2d_encoder is None:
             base_2d_encoder = self.get_default_base_2d_encoder()
 
+        # TODO: should be much faster to loop per plane instead of per neuron
         # Loop per plane, getting all keypoints for this plane
         # for z in range(im_3d.shape[0]):
         #     # Slice band
@@ -317,6 +322,7 @@ class ReferenceFrame:
         if len(self.keypoints) > 0:
             self.check_data_desyncing()
             self.keypoints = []
+        self._raw_data = None
 
     def rebuild_keypoints(self):
         """
@@ -382,14 +388,11 @@ class RegisteredReferenceFrames():
                 Number of frames: {len(self.reference_frames)} \n"
 
 
-
-
-def build_reference_frame_encoding(dat_raw,
-                                   num_slices,
+def build_reference_frame_encoding(num_slices,
                                    z_depth,
                                    start_slice=None,
                                    metadata=None,
-                                   external_detections=None,
+                                   detected_neurons: DetectedNeurons=None,
                                    to_add_orb_keypoints=False,
                                    verbose=0):
     """
@@ -404,11 +407,11 @@ def build_reference_frame_encoding(dat_raw,
     frame = ReferenceFrame(**metadata, preprocessing_settings=None)
 
     # Build keypoints (in this case, neurons directly)
-    frame.detect_or_import_neurons(dat_raw, external_detections, metadata, num_slices, start_slice)
+    frame.detect_or_import_neurons(detected_neurons)
     frame.copy_neurons_to_keypoints()
 
     # Calculate encodings
-    frame.encode_all_keypoints(dat_raw, z_depth)
+    frame.encode_all_keypoints(z_depth)
 
     # Set up mapping between neurons and keypoints
     frame.build_trivial_keypoint_to_neuron_mapping()
@@ -444,7 +447,7 @@ def build_reference_frame(dat: np.ndarray,
     frame = ReferenceFrame(**metadata, preprocessing_settings=None)
 
     # Build neurons and keypoints
-    frame.detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
+    frame.detect_or_import_neurons(external_detections)
 
     feature_opt = {'num_features_per_plane': 1000, 'start_plane': 5}
     frame.detect_keypoints_and_build_features(dat, **feature_opt)
