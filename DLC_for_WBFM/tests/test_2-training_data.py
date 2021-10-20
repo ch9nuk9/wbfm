@@ -18,19 +18,25 @@ def _load_training_data() -> Tuple[object, ModularProjectConfig]:
 
 
 def test_pipeline_step_a():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.2a-make_short_tracklets", package="DLC_for_WBFM")
+    mod = importlib.import_module("DLC_for_WBFM.scripts.2a-pairwise_match_sequential_frames", package="DLC_for_WBFM")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 
 
 def test_pipeline_step_b():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.2b-reindex_segmentation_training", package="DLC_for_WBFM")
+    mod = importlib.import_module("DLC_for_WBFM.scripts.2b-postprocess_matches_to_tracklets", package="DLC_for_WBFM")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 
 
 def test_pipeline_step_c():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.2c-save_training_tracklets_as_dlc", package="DLC_for_WBFM")
+    mod = importlib.import_module("DLC_for_WBFM.scripts.2c-reindex_segmentation_training", package="DLC_for_WBFM")
+    config_updates = {'project_path': project_path, 'DEBUG': False}
+    mod.ex.run(config_updates=config_updates)
+
+
+def test_pipeline_step_d():
+    mod = importlib.import_module("DLC_for_WBFM.scripts.2d-save_training_tracklets_as_dlc", package="DLC_for_WBFM")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 

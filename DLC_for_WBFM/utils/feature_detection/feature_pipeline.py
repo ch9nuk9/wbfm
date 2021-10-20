@@ -278,108 +278,108 @@ def align_dictionaries(ref_set, global2local, local2global):
 ##
 
 
-def register_all_reference_frames(ref_frames,
-                                  previous_ref_set=None,
-                                  add_gp_to_candidates=False,
-                                  add_affine_to_candidates=False,
-                                  use_affine_matching=False,
-                                  neuron_cluster_mode='threshold',
-                                  verbose=0):
-    """
-    Registers a set of reference frames, aligning their neuron indices
-
-    Builds all pairwise matches
-        Alternate option: extend a previously built reference_set
-    """
-
-    ref_neuron_ind = []
-    if previous_ref_set is None:
-        pairwise_matches_dict = {}
-        feature_matches_dict = {}
-        pairwise_conf_dict = {}
-        bp_matches_dict = {}
-    else:
-        previous_ref_set.reference_frames.extend(ref_frames)
-        ref_frames = previous_ref_set.reference_frames
-        pairwise_matches_dict = previous_ref_set.pairwise_matches
-        feature_matches_dict = previous_ref_set.feature_matches
-        pairwise_conf_dict = previous_ref_set.pairwise_conf
-        bp_matches_dict = previous_ref_set.bipartite_matches
-
-    match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
-                 'add_gp_to_candidates': add_gp_to_candidates}
-    if verbose >= 1:
-        print("Pairwise matching all reference frames...")
-    for i0, frame0 in tqdm(ref_frames.items(), total=len(ref_frames)):
-        for i1, frame1 in ref_frames.items():
-            # Note: frame_ind does not necessarily start at 0
-            # key = (frame0.frame_ind, frame1.frame_ind)
-            key = (i0, i1)
-            if key[1] == key[0] and key not in pairwise_matches_dict:
-                continue
-            out = calc_FramePair_from_Frames(frame0, frame1, **match_opt)
-            raise ValueError("Needs refactor with FramePair")
-            match, conf, feature_matches, candidate_matches = out
-            pairwise_matches_dict[key] = match
-            pairwise_conf_dict[key] = conf
-            feature_matches_dict[key] = feature_matches
-            if candidate_matches is not None:
-                bp_matches_dict[key] = list(candidate_matches)
-    # Use the matches to build a global index
-    all_cluster_modes = ['k_clique', 'threshold', 'voronoi']
-    if neuron_cluster_mode == 'k_clique':
-        global2local, local2global = neuron_global_id_from_multiple_matches(
-            bp_matches_dict,
-            total_size=len(ref_frames),
-            verbose=verbose
-        )
-    elif neuron_cluster_mode == 'threshold':
-        global2local, local2global = neuron_global_id_from_multiple_matches_thresholds(
-            pairwise_matches_dict,
-            pairwise_conf_dict,
-            len(ref_frames)
-        )
-    elif neuron_cluster_mode == 'voronoi':
-        global2local, local2global = neuron_global_id_from_multiple_matches_voronoi(
-            pairwise_matches_dict,
-            pairwise_conf_dict,
-            len(ref_frames),
-            verbose=verbose
-        )
-    else:
-        print("Unrecognized cluster mode; finishing without global neuron labels")
-        print(f"Allowed cluster modes are: {all_cluster_modes}")
-
-    # ENHANCE: align to previous global match, if it exists
-    if previous_ref_set is not None:
-        global2local, local2global = align_dictionaries(
-            previous_ref_set,
-            global2local,
-            local2global
-        )
-
-    # Update the global indices of the individual reference frames
-    for f in ref_frames.values():
-        f.neuron_ids = []
-    for local_ind, global_ind in local2global.items():
-        frame_ind, local_neuron = local_ind
-        ref_frames[frame_ind].neuron_ids.append([local_neuron, global_ind])
-
-    # Build a class to store all the information
-    reference_set = RegisteredReferenceFrames(
-        ref_frames,
-        pairwise_matches_dict,
-        pairwise_conf_dict,
-        feature_matches_dict,
-        bp_matches_dict,
-        neuron_cluster_mode,
-        global2local,
-        local2global
-    )
-
-    return reference_set
-    # return global2local, local2global, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
-
+# def register_all_reference_frames(ref_frames,
+#                                   previous_ref_set=None,
+#                                   add_gp_to_candidates=False,
+#                                   add_affine_to_candidates=False,
+#                                   use_affine_matching=False,
+#                                   neuron_cluster_mode='threshold',
+#                                   verbose=0):
+#     """
+#     Registers a set of reference frames, aligning their neuron indices
+#
+#     Builds all pairwise matches
+#         Alternate option: extend a previously built reference_set
+#     """
+#
+#     ref_neuron_ind = []
+#     if previous_ref_set is None:
+#         pairwise_matches_dict = {}
+#         feature_matches_dict = {}
+#         pairwise_conf_dict = {}
+#         bp_matches_dict = {}
+#     else:
+#         previous_ref_set.reference_frames.extend(ref_frames)
+#         ref_frames = previous_ref_set.reference_frames
+#         pairwise_matches_dict = previous_ref_set.pairwise_matches
+#         feature_matches_dict = previous_ref_set.feature_matches
+#         pairwise_conf_dict = previous_ref_set.pairwise_conf
+#         bp_matches_dict = previous_ref_set.bipartite_matches
+#
+#     match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
+#                  'add_gp_to_candidates': add_gp_to_candidates}
+#     if verbose >= 1:
+#         print("Pairwise matching all reference frames...")
+#     for i0, frame0 in tqdm(ref_frames.items(), total=len(ref_frames)):
+#         for i1, frame1 in ref_frames.items():
+#             # Note: frame_ind does not necessarily start at 0
+#             # key = (frame0.frame_ind, frame1.frame_ind)
+#             key = (i0, i1)
+#             if key[1] == key[0] and key not in pairwise_matches_dict:
+#                 continue
+#             out = calc_FramePair_from_Frames(frame0, frame1, **match_opt)
+#             raise ValueError("Needs refactor with FramePair")
+#             match, conf, feature_matches, candidate_matches = out
+#             pairwise_matches_dict[key] = match
+#             pairwise_conf_dict[key] = conf
+#             feature_matches_dict[key] = feature_matches
+#             if candidate_matches is not None:
+#                 bp_matches_dict[key] = list(candidate_matches)
+#     # Use the matches to build a global index
+#     all_cluster_modes = ['k_clique', 'threshold', 'voronoi']
+#     if neuron_cluster_mode == 'k_clique':
+#         global2local, local2global = neuron_global_id_from_multiple_matches(
+#             bp_matches_dict,
+#             total_size=len(ref_frames),
+#             verbose=verbose
+#         )
+#     elif neuron_cluster_mode == 'threshold':
+#         global2local, local2global = neuron_global_id_from_multiple_matches_thresholds(
+#             pairwise_matches_dict,
+#             pairwise_conf_dict,
+#             len(ref_frames)
+#         )
+#     elif neuron_cluster_mode == 'voronoi':
+#         global2local, local2global = neuron_global_id_from_multiple_matches_voronoi(
+#             pairwise_matches_dict,
+#             pairwise_conf_dict,
+#             len(ref_frames),
+#             verbose=verbose
+#         )
+#     else:
+#         print("Unrecognized cluster mode; finishing without global neuron labels")
+#         print(f"Allowed cluster modes are: {all_cluster_modes}")
+#
+#     # ENHANCE: align to previous global match, if it exists
+#     if previous_ref_set is not None:
+#         global2local, local2global = align_dictionaries(
+#             previous_ref_set,
+#             global2local,
+#             local2global
+#         )
+#
+#     # Update the global indices of the individual reference frames
+#     for f in ref_frames.values():
+#         f.neuron_ids = []
+#     for local_ind, global_ind in local2global.items():
+#         frame_ind, local_neuron = local_ind
+#         ref_frames[frame_ind].neuron_ids.append([local_neuron, global_ind])
+#
+#     # Build a class to store all the information
+#     reference_set = RegisteredReferenceFrames(
+#         ref_frames,
+#         pairwise_matches_dict,
+#         pairwise_conf_dict,
+#         feature_matches_dict,
+#         bp_matches_dict,
+#         neuron_cluster_mode,
+#         global2local,
+#         local2global
+#     )
+#
+#     return reference_set
+#     # return global2local, local2global, pairwise_matches_dict, pairwise_conf_dict, feature_matches_dict, bp_matches_dict
+#
 
 def create_dict_from_matches(self):
     assert type(self) == RegisteredReferenceFrames

@@ -10,7 +10,6 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from DLC_for_WBFM.utils.feature_detection.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
     AnalysisOutOfOrderError, DeprecationError
-from DLC_for_WBFM.utils.feature_detection.class_detected_neurons import detect_neurons_from_file
 from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
@@ -86,8 +85,7 @@ class ReferenceFrame:
 
         Parameters
         ----------
-        external_detections
-        metadata
+        detected_neurons
 
         Returns
         -------
@@ -245,7 +243,7 @@ class ReferenceFrame:
 
         return kp2n_map
 
-    def encode_all_neurons(self, base_2d_encoder=None) -> Tuple[np.ndarray, list]:
+    def encode_all_keypoints(self, base_2d_encoder=None) -> Tuple[np.ndarray, list]:
         """
         Builds a feature vector for each neuron (zxy location) in a 3d volume
         Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
@@ -260,12 +258,11 @@ class ReferenceFrame:
 
         z_depth = self.z_depth
         im_3d = self.get_raw_data()
-        locs_zxy = self.neuron_locs
+        locs_zxy = self.keypoint_locs
 
         im_3d_gray = [convert_to_grayscale(xy).astype('uint8') for xy in im_3d]
         all_embeddings = []
         all_keypoints = []
-        # all_keypoints = [None] * len(locs_zxy)
         if base_2d_encoder is None:
             base_2d_encoder = self.get_default_base_2d_encoder()
 
@@ -335,12 +332,12 @@ class ReferenceFrame:
         self.keypoints = k
 
     def check_data_desyncing(self):
-        # Keypoints and locations
         if len(self.keypoint_locs) != len(self.keypoints):
+            logging.warning(f"{len(self.keypoint_locs)} != {len(self.keypoints)}")
             raise DataSynchronizationError('keypoint_locs', 'keypoints', 'rebuild_keypoints')
 
-        # Keypoints and features
         if len(self.keypoints) != len(self.all_features):
+            logging.warning(f"{len(self.keypoints)} != {len(self.all_features)}")
             raise DataSynchronizationError('all_features', 'keypoints')
 
     def __str__(self):
@@ -359,7 +356,7 @@ Number of keypoints: {len(self.keypoint_locs)} \n"
 ##
 
 @dataclass
-class RegisteredReferenceFrames():
+class RegisteredReferenceFrames:
     """Data for matched reference frames"""
 
     # Intermediate products
@@ -397,7 +394,6 @@ def build_reference_frame_encoding(metadata=None, all_detected_neurons: Detected
     if metadata is None:
         metadata = {}
 
-    # Initialize class
     frame = ReferenceFrame(**metadata, preprocessing_settings=None)
 
     # Build keypoints (in this case, neurons directly)
@@ -405,22 +401,10 @@ def build_reference_frame_encoding(metadata=None, all_detected_neurons: Detected
     frame.copy_neurons_to_keypoints()
 
     # Calculate encodings
-    frame.encode_all_neurons()
+    frame.encode_all_keypoints()
 
     # Set up mapping between neurons and keypoints
     frame.build_trivial_keypoint_to_neuron_mapping()
-    #
-    #
-    # dat = dat_raw
-    # neuron_zxy = _detect_or_import_neurons(dat, external_detections, metadata, num_slices, start_slice)
-    #
-    # embeddings, keypoints = encode_all_neurons(neuron_zxy, dat, z_depth)
-    #
-    # # This is now just a trivial mapping
-    # f2n_map = {i: i for i in range(len(neuron_zxy))}
-    # f = ReferenceFrame(neuron_zxy, keypoints, neuron_zxy, embeddings, f2n_map,
-    #                    **metadata,
-    #                    preprocessing_settings=None)
 
     return frame
 

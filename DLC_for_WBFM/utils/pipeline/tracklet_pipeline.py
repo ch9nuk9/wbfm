@@ -146,7 +146,7 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
         options['start_volume'] = training_config.config['tracker_params']['start_volume']
     else:
         options['start_volume'] = project_config.config['dataset_params']['start_volume']
-    options['num_slices'] = project_config.config['dataset_params']['num_slices']
+    # options['num_slices'] = project_config.config['dataset_params']['num_slices']
 
     options['preprocessing_settings'] = None
 
