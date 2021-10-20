@@ -33,4 +33,5 @@ old/example-feature-workflow/feature_alignment/Extract_traces.ipynb
 *.eps
 /DLC_for_WBFM/experiments/
 DLC_for_WBFM/new_project_defaults/snakemake/.snakemake/
+*.out.*
 *.out
