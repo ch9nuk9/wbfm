@@ -1,6 +1,9 @@
 """
 The metadata generator for the segmentation pipeline
 """
+import pickle
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 from skimage.measure import label, regionprops
@@ -70,3 +73,29 @@ def get_metadata_dictionary(masks, original_vol):
 def centroids_from_dict_of_dataframes(dict_of_dataframes, i_frame):
     vol0_zxy = dict_of_dataframes[i_frame]['centroids'].to_numpy()
     return np.array([np.array(m) for m in vol0_zxy])
+
+
+@dataclass
+class DetectedNeurons:
+
+    detection_fname: str
+    _segmentation_metadata: dict = None
+
+    def detect_neurons_from_file(self, which_volume: int, verbose: int = 0) -> list:
+        """
+        Designed to be used with centroids detected using a different pipeline
+        """
+        if self._segmentation_metadata is None:
+
+            with open(self.detection_fname, 'rb') as f:
+                # Note: dict of dataframes
+                self._segmentation_metadata = pickle.load(f)
+        neuron_locs = centroids_from_dict_of_dataframes(self._segmentation_metadata, which_volume)
+        # neuron_locs = np.array([n for n in neuron_locs])
+        if len(neuron_locs) > 0:
+            pass
+            # neuron_locs = neuron_locs[:, [0, 2, 1]]
+        else:
+            neuron_locs = []
+
+        return neuron_locs
