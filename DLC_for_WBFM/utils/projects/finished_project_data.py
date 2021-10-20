@@ -1,14 +1,10 @@
 import concurrent
 import logging
 import os
-import pickle
 from dataclasses import dataclass
-
-import napari
 import numpy as np
 import pandas as pd
 import zarr
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
     ConfigFileWithProjectContext
@@ -277,6 +273,8 @@ class ProjectData:
         return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
 
     def napari_of_single_match(self, pair, which_matches='final_matches'):
+        import napari
+        from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
 
         raw_red_data = self.red_data[pair[0]:pair[1] + 1, ...]
         this_match = self.raw_matches[pair]
