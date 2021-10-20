@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair, calc_FramePair_from_Frames
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame, \
-    build_reference_frame_encoding, build_reference_frame
+    build_reference_frame_encoding
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, \
     calc_all_bipartite_matches, calc_neuron_using_voronoi
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP

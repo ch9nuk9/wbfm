@@ -105,7 +105,7 @@ class ReferenceFrame:
             # neuron_locs = np.array([n for n in neuron_locs])
         else:
             i = self.frame_ind
-            neuron_locs = detected_neurons.detect_neurons_from_file(i)
+            neuron_locs = detected_neurons.detect_neurons_from_file(i, numpy_not_list=False)
 
         if len(neuron_locs) == 0:
             logging.warning("No neurons detected... check data settings")
