@@ -17,7 +17,7 @@ class FramePair:
     """Information connecting neurons in two ReferenceFrame objects"""
 
     # Final output, with confidences
-    final_matches: list
+    final_matches: list = None
 
     # Intermediate products, with confidences
     feature_matches: list = None
@@ -219,6 +219,22 @@ class FramePair:
         self.all_gps = all_gps
         self.gp_pushed_locations = gp_pushed
 
+    def match_using_feature_embedding(self, matches_to_keep=1.0, use_GMS=False):
+        frame0, frame1 = self.frame0, self.frame1
+        # First, get feature matches
+        neuron_embedding_matches = match_known_features(frame0.all_features,
+                                                        frame1.all_features,
+                                                        frame0.keypoints,
+                                                        frame1.keypoints,
+                                                        frame0.vol_shape[1:],
+                                                        frame1.vol_shape[1:],
+                                                        matches_to_keep=matches_to_keep,
+                                                        use_GMS=use_GMS)
+        # With neuron embeddings, the keypoints are the neurons
+        neuron_embedding_matches_with_conf = cast_matches_as_array(neuron_embedding_matches, gamma=1.0)
+        self.feature_matches = neuron_embedding_matches_with_conf
+        self.keypoint_matches = neuron_embedding_matches_with_conf  # Overwritten by affine match, if used
+
     def print_reason_for_all_final_matches(self):
         dict_of_matches = self.get_pair_to_conf_dict()
         for k in dict_of_matches.keys():
@@ -248,26 +264,14 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
     frame0.check_data_desyncing()
     frame1.check_data_desyncing()
 
-    # First, get feature matches
-    neuron_embedding_matches = match_known_features(frame0.all_features,
-                                            frame1.all_features,
-                                            frame0.keypoints,
-                                            frame1.keypoints,
-                                            frame0.vol_shape[1:],
-                                            frame1.vol_shape[1:],
-                                            matches_to_keep=1.0,
-                                            use_GMS=False)
-
-    # With neuron embeddings, the keypoints are the neurons
-    neuron_embedding_matches_with_conf = cast_matches_as_array(neuron_embedding_matches, gamma=1.0)
-
-    # Create convenience object to store matches
-    frame_pair = FramePair(neuron_embedding_matches_with_conf, neuron_embedding_matches_with_conf,
-                           frame0=frame0, frame1=frame1,
+    # Create class, then call member functions
+    frame_pair = FramePair(frame0=frame0, frame1=frame1,
                            add_affine_to_candidates=add_affine_to_candidates,
                            add_gp_to_candidates=add_gp_to_candidates,
                            min_confidence=min_confidence)
-    frame_pair.keypoint_matches = neuron_embedding_matches_with_conf
+
+    # Core matching algorithm
+    frame_pair.match_using_feature_embedding()
 
     # Add additional candidates, if used
     if add_affine_to_candidates:
