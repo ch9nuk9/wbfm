@@ -245,7 +245,9 @@ class ReferenceFrame:
 
         return kp2n_map
 
-    def encode_all_keypoints(self, base_2d_encoder=None) -> None:
+    def encode_all_keypoints_or_neurons(self, base_2d_encoder=None,
+                                        use_keypoint_locs=True,
+                                        transpose_images=True) -> None:
         """
         Builds a feature vector for each neuron (zxy location) in a 3d volume
         Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
@@ -260,10 +262,16 @@ class ReferenceFrame:
 
         z_depth = self.z_depth
         im_3d = self.get_raw_data()
-        locs_zxy = self.keypoint_locs
+        if use_keypoint_locs:
+            locs_zxy = self.keypoint_locs
+        else:
+            locs_zxy = self.neuron_locs
         num_kps = locs_zxy.shape[0]
 
-        im_3d_gray = [convert_to_grayscale(xy).astype('uint8') for xy in im_3d]
+        if transpose_images:
+            im_3d_gray = [convert_to_grayscale(xy).astype('uint8').transpose() for xy in im_3d]
+        else:
+            im_3d_gray = [convert_to_grayscale(xy).astype('uint8') for xy in im_3d]
         all_embeddings = []
         all_keypoints = []
         if base_2d_encoder is None:
@@ -306,7 +314,7 @@ class ReferenceFrame:
         all_embeddings = np.array(all_embeddings)
         self.all_features = all_embeddings
         self.keypoints = all_keypoints
-        self.check_data_desyncing()
+        # self.check_data_desyncing()
 
     def build_trivial_keypoint_to_neuron_mapping(self):
         # This is now just a trivial mapping
@@ -401,7 +409,7 @@ def build_reference_frame_encoding(metadata=None, all_detected_neurons: Detected
     frame.copy_neurons_to_keypoints()
 
     # Calculate encodings
-    frame.encode_all_keypoints()
+    frame.encode_all_keypoints_or_neurons()
 
     # Set up mapping between neurons and keypoints
     frame.build_trivial_keypoint_to_neuron_mapping()
