@@ -291,6 +291,8 @@ class ProjectData:
         v.add_points(n1_zxy_raw, size=3, face_color='blue', symbol='x', n_dimensional=True)
         v.add_tracks(all_tracks_list, head_length=2, name=which_matches)
 
+        return v
+
     def __repr__(self):
         return f"=======================================\n\
 Project data for directory:\n\

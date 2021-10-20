@@ -1,10 +1,9 @@
 import os
 from dataclasses import dataclass
-
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array, recursive_cast_matches_as_array
+from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
@@ -176,6 +175,9 @@ class FramePair:
         frame0, frame1 = self.frame0, self.frame1
         # TODO: should I reread the data here?
         dat0, dat1 = frame0.get_raw_data(), frame1.get_raw_data()
+        # Transpose because opencv needs it
+        dat0 = np.transpose(dat0, axes=(0, 2, 1))
+        dat1 = np.transpose(dat1, axes=(0, 2, 1))
         # TODO: read from config
         opt = dict(start_plane=4,
                    num_features_per_plane=10000,

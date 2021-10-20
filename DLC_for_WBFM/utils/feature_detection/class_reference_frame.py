@@ -73,7 +73,7 @@ class ReferenceFrame:
     def num_neurons(self):
         return self.neuron_locs.shape[0]
 
-    def get_raw_data(self):
+    def get_raw_data(self) -> np.ndarray:
         # TODO: should I cache this?
         if self._raw_data is None:
             self._raw_data = zarr.open(self.video_fname)[self.frame_ind, ...]
