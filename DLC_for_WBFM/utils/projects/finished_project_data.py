@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import zarr
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
-from segmentation.util.utils_metadata import centroids_from_dict_of_dataframes
+from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
     ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -26,11 +26,11 @@ class ProjectData:
 
     raw_segmentation: zarr.Array
     segmentation: zarr.Array
-    segmentation_metadata: dict
+    segmentation_metadata: DetectedNeurons
 
     df_training_tracklets: pd.DataFrame
     reindexed_masks_training: zarr.Array
-    reindexed_metadata_training: dict
+    reindexed_metadata_training: DetectedNeurons
 
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
@@ -108,12 +108,16 @@ class ProjectData:
 
         df_training_tracklets_fname = train_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
         reindexed_masks_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_masks')
-        reindexed_metadata_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_metadata')
 
         final_tracks_fname = tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
         seg_fname_raw = segment_cfg.resolve_relative_path_from_config('output_masks')
-        seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         seg_fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
+
+        # Metadata uses class from segmentation package
+        seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
+        seg_metadata = DetectedNeurons(seg_metadata_fname)
+        reindexed_metadata_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_metadata')
+        reindexed_metadata_training = DetectedNeurons(reindexed_metadata_training_fname)
 
         behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"  # TODO: do not hardcode
 
@@ -133,12 +137,12 @@ class ProjectData:
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
                 df_training_tracklets = ex.submit(read_if_exists, df_training_tracklets_fname).result()
                 reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader).result()
-                reindexed_metadata_training = ex.submit(read_if_exists,
-                                                        reindexed_metadata_training_fname, pickle_load_binary).result()
+                # reindexed_metadata_training = ex.submit(read_if_exists,
+                #                                         reindexed_metadata_training_fname, pickle_load_binary).result()
                 final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader).result()
-                seg_metadata: dict = ex.submit(pickle_load_binary, seg_metadata_fname).result()
+                # seg_metadata: dict = ex.submit(pickle_load_binary, seg_metadata_fname).result()
                 behavior_annotations = ex.submit(read_if_exists, behavior_fname, excel_reader).result()
 
             if red_traces is not None:
@@ -266,11 +270,11 @@ class ProjectData:
 
     def get_centroids_as_numpy(self, i_frame):
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
-        return centroids_from_dict_of_dataframes(self.segmentation_metadata, i_frame)
+        return self.segmentation_metadata.detect_neurons_from_file(i_frame)
 
     def get_centroids_as_numpy_training(self, i_frame):
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
-        return centroids_from_dict_of_dataframes(self.reindexed_metadata_training, i_frame)
+        return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
 
     def napari_of_single_match(self, pair, which_matches='final_matches'):
 
