@@ -37,6 +37,7 @@ leifer_params:
   match_confidence_threshold: 0.2
   output_df_fname: 3-tracking/postprocessing/leifer_tracks.h5
   use_zimmer_template: true
+  use_multiple_templates: false
 
 use_pretrained_dlc: true
 
