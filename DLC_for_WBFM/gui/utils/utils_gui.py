@@ -104,8 +104,14 @@ def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer):
     return layer.data[ind, :][ind_within_layer, :]
 
 
-def change_viewer_time_point(viewer: napari.Viewer, dt: int, a_max: int = None) -> None:
+def change_viewer_time_point(viewer: napari.Viewer,
+                             dt: int = None, t_target: int=None, a_max: int = None) -> None:
     # Increment time
-    t = np.clip(viewer.dims.current_step[0] + dt, a_min=0, a_max=a_max)
+    if dt is not None:
+        t = np.clip(viewer.dims.current_step[0] + dt, a_min=0, a_max=a_max)
+    elif t_target is not None:
+        t = np.clip(t_target, a_min=0, a_max=a_max)
+    else:
+        raise ValueError("Must pass either target time or dt")
     tzxy = (t,) + viewer.dims.current_step[1:]
     viewer.dims.current_step = tzxy

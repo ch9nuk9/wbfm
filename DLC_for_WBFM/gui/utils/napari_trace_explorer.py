@@ -114,7 +114,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.color_using_behavior()
         self.connect_time_line_callback()
 
+        # Connect clicking to a time change
+        # https://matplotlib.org/stable/users/event_handling.html
+        on_click = lambda event: self.on_trace_plot_click(event)
+        cid = self.mpl_widget.mpl_connect('button_press_event', on_click)
+
+        # Finally, add the traces to napari
         self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
+
+    def on_trace_plot_click(self, event):
+        t = event.xdata
+        change_viewer_time_point(self.viewer, t_target=t)
 
     def update_trace_subplot(self):
         self.update_stored_time_series()
