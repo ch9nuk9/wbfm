@@ -11,7 +11,7 @@ from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_fr
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
 
-class napari_trace_explorer(QtWidgets.QWidget):
+class NapariTraceExplorer(QtWidgets.QWidget):
 
     def __init__(self, project_path):
         super(QtWidgets.QWidget, self).__init__()
@@ -238,7 +238,7 @@ def build_napari_trace_explorer(project_config):
     viewer = napari.Viewer(ndisplay=2)
 
     # Build object that has all the data
-    ui = napari_trace_explorer(project_config)
+    ui = NapariTraceExplorer(project_config)
 
     # Build Napari and add widgets
     print("Finished loading data, starting napari...")
