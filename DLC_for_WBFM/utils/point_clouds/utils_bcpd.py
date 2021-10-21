@@ -85,6 +85,7 @@ def match_2vol_BCPD(neurons0, neurons1,
                     w=0.0,
                     bcpd_kwargs={},
                     do_zscore=False,
+                    do_any_preprocessing=True,
                     voxel_size=None,
                     DEBUG=False):
     """
@@ -102,10 +103,13 @@ def match_2vol_BCPD(neurons0, neurons1,
 
     # Build pointclouds with normalized coordinates
     options = {'to_mirror': False}
-    if not do_zscore:
-        f = lambda this_n: pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
+    if do_any_preprocessing:
+        if not do_zscore:
+            f = lambda this_n: pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
+        else:
+            f = lambda this_n: scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
     else:
-        f = lambda this_n: scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
+        f = lambda x: x
     _, pc0, _ = build_neuron_tree(f(neurons0), **options)
     _, pc1, _ = build_neuron_tree(f(neurons1), **options)
     if DEBUG:
@@ -133,6 +137,7 @@ def match_2vol_rigid(neurons0, neurons1,
                      do_zscore=False,
                      voxel_size=None,
                      tf_type_name='rigid',
+                     do_any_preprocessing=True,
                      DEBUG=False):
     """
     Matches using RIGID Coherent Point drift
@@ -142,10 +147,13 @@ def match_2vol_rigid(neurons0, neurons1,
 
     # Build pointclouds with normalized coordinates
     options = {'to_mirror': False}
-    if not do_zscore:
-        f = lambda this_n: pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
+    if do_any_preprocessing:
+        if not do_zscore:
+            f = lambda this_n: pixels_to_bcpd(np.array([np.array(n) for n in this_n]))
+        else:
+            f = lambda this_n: scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
     else:
-        f = lambda this_n: scipy.stats.zscore(np.array([np.array(n) for n in this_n]))
+        f = lambda x: x
     _, pc0, _ = build_neuron_tree(f(neurons0), **options)
     _, pc1, _ = build_neuron_tree(f(neurons1), **options)
 

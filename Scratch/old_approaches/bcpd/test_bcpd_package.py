@@ -44,6 +44,7 @@ def prepare_source_and_target_nonrigid_3d(source_filename,
     print(target)
     return source, target
 
+
 def correspondence_from_transform(tf_param, source, target):
     """
     From the learned registration and the source and target distributions,
@@ -64,6 +65,7 @@ def correspondence_from_transform(tf_param, source, target):
 
     return indices
 
+
 def save_indices(indices, fname=None):
     """ Saves indices (csv) using a standard format """
 
@@ -74,6 +76,7 @@ def save_indices(indices, fname=None):
     df.to_csv(fname, header=False)
 
     return fname
+
 
 def save_indices_DLC(indices, centroid_fnames,
                      fname=None,
@@ -147,6 +150,7 @@ def save_indices_DLC(indices, centroid_fnames,
 
     dataFrame.to_csv(os.path.join(output_path,"CollectedData_" + scorer + ".csv"))
     dataFrame.to_hdf(os.path.join(output_path,"CollectedData_" + scorer + '.h5'),'df_with_missing',format='table', mode='w')
+
 
 ##
 ## Initialize and align
