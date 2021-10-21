@@ -11,6 +11,7 @@ from sacred import Experiment
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
+from segmentation.util.utils_pipeline import recalculate_metadata_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 from sacred import SETTINGS
@@ -50,10 +51,12 @@ def produce_training_data(_config, _run):
     training_cfg = _config['training_cfg']
     segment_cfg = _config['segment_cfg']
 
-    # For manual correction
+    # For manual correction or improvement of later algorithms
     reindex_segmentation_only_training_data(
         project_config,
         segment_cfg,
         training_cfg,
         DEBUG=DEBUG
     )
+
+    recalculate_metadata_from_config(segment_cfg, project_config, DEBUG)
