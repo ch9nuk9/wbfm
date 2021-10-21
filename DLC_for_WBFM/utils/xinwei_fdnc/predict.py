@@ -125,14 +125,13 @@ def generate_templates_from_training_data(project_data: ProjectData):
 def track_using_fdnc_multiple_templates(project_data: ProjectData,
                                         base_prediction_options,
                                         match_confidence_threshold):
-    # df_per_template = []
-    # matches_per_template = []
     all_templates = generate_templates_from_training_data(project_data)
 
     def _parallel_func(template):
         return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+    max_workers = round(project_data.reindexed_metadata_training.num_frames / 2)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         submitted_jobs = [executor.submit(_parallel_func, template) for template in all_templates]
         matches_per_template = [job.result() for job in submitted_jobs]
 
