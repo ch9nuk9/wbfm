@@ -5,6 +5,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import zarr
+from DLC_for_WBFM.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, filter_rolling_mean, \
+    filter_linear_interpolation
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
     ConfigFileWithProjectContext
@@ -190,10 +192,11 @@ class ProjectData:
         else:
             raise TypeError("Must pass pathlike or already loaded project data")
 
-    def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str):
+    def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str,
+                         remove_outliers: bool = False, filter_mode: str = 'no_filtering'):
         assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
 
-        if self.verbose >= 1:
+        if self.verbose >= 2:
             print(f"Calculating {channel_mode} trace for {neuron_name} for {calculation_mode} mode")
 
         # Way to process a single dataframe
@@ -256,7 +259,24 @@ class ProjectData:
             def calc_y(i):
                 return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
 
-        return calc_y(neuron_name)
+        y = calc_y(neuron_name)
+
+        # Then remove outliers and / or filter
+        # TODO: allow parameter selection
+        if remove_outliers:
+            y = remove_outliers_via_rolling_mean(y, window=21)
+
+        # TODO: set up enum
+        if filter_mode == "rolling_mean":
+            y = filter_rolling_mean(y, window=5)
+        elif filter_mode == "linear_interpolation":
+            y = filter_linear_interpolation(y, window=15)
+        elif filter_mode == "no_filtering":
+            pass
+        else:
+            logging.warning(f"Unrecognized filter mode: {filter_mode}")
+
+        return y
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:

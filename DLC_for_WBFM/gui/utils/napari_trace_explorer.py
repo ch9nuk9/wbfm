@@ -1,6 +1,8 @@
 import napari
 import numpy as np
 import pandas as pd
+from DLC_for_WBFM.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, filter_rolling_mean, \
+    filter_linear_interpolation
 from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
@@ -44,6 +46,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceCalculationDropdown.addItems(['integration', 'max', 'mean', 'z', 'volume'])
         self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.verticalLayout.addWidget(self.changeTraceCalculationDropdown)
+
+        # Change trace filtering (dropdown)
+        self.changeTraceFilteringDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
+        self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
+        self.verticalLayout.addWidget(self.changeTraceFilteringDropdown)
+
+        # Change trace outlier removal (dropdown)
+        self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox("Remove outliers?", self.verticalLayoutWidget)
+        # self.changeTraceOutlierDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
+        self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
+        self.verticalLayout.addWidget(self.changeTraceOutlierCheckBox)
 
         # Save annotations (button)
         # self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
@@ -142,7 +156,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         name = self.current_name
         channel = self.changeChannelDropdown.currentText()
         calc_mode = self.changeTraceCalculationDropdown.currentText()
-        y = self.dat.calculate_traces(channel, calc_mode, name)
+        remove_outliers = self.changeTraceOutlierCheckBox.checkState()
+        filter_mode = self.changeTraceFilteringDropdown.currentText()
+
+        y = self.dat.calculate_traces(channel, calc_mode, name, remove_outliers, filter_mode)
 
         self.y = y
 
