@@ -26,28 +26,21 @@ def load_prediction_options(custom_template=None, path_to_folder=None):
         cuda=False,
         model_path=model_path
     )
-
     if custom_template is None:
         temp_fname = os.path.join(default_package_path, 'Data', 'Example', 'template.data')
         temp = pre_matt(temp_fname)
-        prediction_options['template_pos'] = temp['pts']
+        template = temp['pts']
     else:
-        prediction_options['template_pos'] = custom_template
+        template = custom_template
 
-    return prediction_options
+    return prediction_options, template
 
 
-def track_using_fdnc(project_dat: ProjectData,
+def track_using_fdnc(project_data: ProjectData,
                      prediction_options,
+                     template,
                      match_confidence_threshold):
-    # Loop through detections and match all to template
-
-    # Initialize
-    num_frames = project_dat.num_frames
-    coords = ['z', 'x', 'y', 'likelihood']
-
-    sz = (num_frames, len(coords))
-    neuron_arrays = defaultdict(lambda: np.zeros(sz))
+    num_frames = project_data.num_frames
 
     # def _parallel_func(i_frame):
     #
@@ -74,22 +67,35 @@ def track_using_fdnc(project_dat: ProjectData,
     #             pbar.update(1)
 
     all_matches = []
-    for i_frame in tqdm(range(num_frames), total=num_frames):
+    for i_frame in tqdm(range(num_frames), total=num_frames, leave=False):
 
-        pts = project_dat.get_centroids_as_numpy(i_frame)
+        pts = project_data.get_centroids_as_numpy(i_frame)
         pts_scaled = zimmer2leifer(pts)
         # Match
-        matches = predict_matches(test_pos=pts_scaled, **prediction_options)
+        matches = predict_matches(test_pos=pts_scaled, template_pos=template, **prediction_options)
         matches = filter_matches(matches, match_confidence_threshold)
 
+        all_matches.append(matches)
+
+    return all_matches
+
+
+def template_matches_to_dataframe(project_data: ProjectData,
+                                  all_matches):
+    num_frames = project_data.num_frames
+    coords = ['z', 'x', 'y', 'likelihood']
+    sz = (num_frames, len(coords))
+    neuron_arrays = defaultdict(lambda: np.zeros(sz))
+
+    for i_frame, these_matches in enumerate(tqdm(all_matches, leave=False)):
+        pts = project_data.get_centroids_as_numpy(i_frame)
         # For each match, save location
-        for m in matches:
+        for m in these_matches:
             this_unscaled_pt = pts[m[1]]
             this_template_idx = m[0]
 
             neuron_arrays[this_template_idx][i_frame, :3] = this_unscaled_pt
             neuron_arrays[this_template_idx][i_frame, 3] = m[2]  # Match confidence
-        all_matches.append(matches)
 
     # Convert to pandas multiindexing formatting
     new_dict = {}
@@ -101,15 +107,47 @@ def track_using_fdnc(project_dat: ProjectData,
 
     df = pd.DataFrame(new_dict)
 
-    return df, all_matches
+    return df
+
+
+def generate_templates_from_training_data(project_data: ProjectData):
+    all_templates = []
+    num_templates = project_data.reindexed_metadata_training.num_frames
+
+    for i in range(num_templates):
+        custom_template = project_data.get_centroids_as_numpy_training(i)
+        all_templates.append(zimmer2leifer(custom_template))
+    return all_templates
+
+
+def track_using_fdnc_multiple_templates(project_data: ProjectData,
+                                        base_prediction_options,
+                                        match_confidence_threshold):
+    df_per_template = []
+    matches_per_template = []
+    all_templates = generate_templates_from_training_data(project_data)
+
+    def _parallel_func(template):
+        return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        submitted_jobs = [executor.submit(_parallel_func, template) for template in all_templates]
+        results = [job.result() for job in submitted_jobs]
+
+        for r in results:
+            df_per_template.append(r[0])
+            matches_per_template.append(r[1])
+
+    # Process into overall matches with confidence
 
 
 def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
                                  tracks_cfg: ConfigFileWithProjectContext):
-    match_confidence_threshold, output_df_fname, prediction_options, project_dat = _unpack_for_fdnc(project_cfg,
-                                                                                                    tracks_cfg)
+    match_confidence_threshold, output_df_fname, prediction_options, template, project_data = \
+        _unpack_for_fdnc(project_cfg, tracks_cfg)
 
-    df, all_matches = track_using_fdnc(project_dat, prediction_options, match_confidence_threshold)
+    all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold)
+    df = template_matches_to_dataframe(project_data, all_matches)
 
     # Save in main traces folder
     df.to_hdf(output_df_fname, key='df_with_missing')
@@ -134,7 +172,7 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg):
         custom_template = zimmer2leifer(custom_template)
     else:
         custom_template = None
-    prediction_options = load_prediction_options(custom_template=custom_template)
+    prediction_options, template = load_prediction_options(custom_template=custom_template)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
-    return match_confidence_threshold, output_df_fname, prediction_options, project_dat
+    return match_confidence_threshold, output_df_fname, prediction_options, template, project_dat
