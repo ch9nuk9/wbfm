@@ -78,21 +78,33 @@ def centroids_from_dict_of_dataframes(dict_of_dataframes, i_volume):
 class DetectedNeurons:
 
     detection_fname: str
-    _segmentation_metadata: dict = None
 
-    def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> list:
-        """
-        Designed to be used with centroids detected using a different pipeline
-        """
+    _segmentation_metadata: dict = None
+    _num_frames: int = None
+
+    @property
+    def segmentation_metadata(self):
         if self._segmentation_metadata is None:
 
             with open(self.detection_fname, 'rb') as f:
                 # Note: dict of dataframes
                 self._segmentation_metadata = pickle.load(f)
+        return self._segmentation_metadata
+
+    @property
+    def num_frames(self):
+        if self._num_frames is None:
+            self._num_frames = len(self.segmentation_metadata)
+        return self._num_frames
+
+    def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> list:
+        """
+        Designed to be used with centroids detected using a different pipeline
+        """
         if numpy_not_list:
-            neuron_locs = centroids_from_dict_of_dataframes(self._segmentation_metadata, i_volume)
+            neuron_locs = centroids_from_dict_of_dataframes(self.segmentation_metadata, i_volume)
         else:
-            neuron_locs = self._segmentation_metadata[i_volume]['centroids']
+            neuron_locs = self.segmentation_metadata[i_volume]['centroids']
             neuron_locs = np.array([n for n in neuron_locs])
 
         if len(neuron_locs) > 0:
