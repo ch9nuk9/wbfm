@@ -29,35 +29,46 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.current_name = neuron_names[0]
 
         # Change neurons (dropdown)
-        self.changeNeuronsDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.groupBox1 = QtWidgets.QGroupBox("Neuron selection", self.verticalLayoutWidget)
+        self.vbox1 = QtWidgets.QVBoxLayout(self.groupBox1)
+        self.changeNeuronsDropdown = QtWidgets.QComboBox()
         self.changeNeuronsDropdown.addItems(neuron_names)
         self.changeNeuronsDropdown.setItemText(0, self.current_name)
         self.changeNeuronsDropdown.currentIndexChanged.connect(self.change_neurons)
-        self.verticalLayout.addWidget(self.changeNeuronsDropdown)
+        # self.verticalLayout.addWidget(self.changeNeuronsDropdown)
+        self.vbox1.addWidget(self.changeNeuronsDropdown)
 
         # Change traces (dropdown)
-        self.changeChannelDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.groupBox2 = QtWidgets.QGroupBox("Channel selection", self.verticalLayoutWidget)
+        self.vbox2 = QtWidgets.QVBoxLayout(self.groupBox2)
+        self.changeChannelDropdown = QtWidgets.QComboBox()
         self.changeChannelDropdown.addItems(['green', 'red', 'ratio'])
         self.changeChannelDropdown.currentIndexChanged.connect(self.update_trace_subplot)
-        self.verticalLayout.addWidget(self.changeChannelDropdown)
+        self.vbox2.addWidget(self.changeChannelDropdown)
 
         # Change traces (dropdown)
-        self.changeTraceCalculationDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
+        self.vbox3 = QtWidgets.QVBoxLayout(self.groupBox3)
+        self.changeTraceCalculationDropdown = QtWidgets.QComboBox()
         self.changeTraceCalculationDropdown.addItems(['integration', 'max', 'mean', 'z', 'volume'])
         self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
-        self.verticalLayout.addWidget(self.changeTraceCalculationDropdown)
+        self.vbox3.addWidget(self.changeTraceCalculationDropdown)
 
         # Change trace filtering (dropdown)
-        self.changeTraceFilteringDropdown = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
         self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
-        self.verticalLayout.addWidget(self.changeTraceFilteringDropdown)
+        self.vbox3.addWidget(self.changeTraceFilteringDropdown)
 
         # Change trace outlier removal (dropdown)
-        self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox("Remove outliers?", self.verticalLayoutWidget)
+        self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox("Remove outliers?")
         # self.changeTraceOutlierDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
         self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
-        self.verticalLayout.addWidget(self.changeTraceOutlierCheckBox)
+        self.vbox3.addWidget(self.changeTraceOutlierCheckBox)
+
+        self.verticalLayout.addWidget(self.groupBox1)
+        self.verticalLayout.addWidget(self.groupBox2)
+        self.verticalLayout.addWidget(self.groupBox3)
 
         # Save annotations (button)
         # self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
@@ -109,7 +120,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.static_ax = self.mpl_widget.figure.subplots()
         self.update_stored_time_series()
         self.trace_line = self.static_ax.plot(self.y)[0]
-        self.dat.shade_axis_using_behavior(self.static_ax)
+        # self.dat.shade_axis_using_behavior(self.static_ax)
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.color_using_behavior()
         self.connect_time_line_callback()
@@ -129,7 +140,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_trace_subplot(self):
         self.update_stored_time_series()
         self.trace_line.set_ydata(self.y)
-        self.dat.shade_axis_using_behavior(self.static_ax)
+        # self.dat.shade_axis_using_behavior(self.static_ax)
         self.time_line.set_data(self.calculate_time_line()[:2])
         self.color_using_behavior()
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
@@ -178,7 +189,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return self.build_tracks_from_name()
 
     def color_using_behavior(self):
-        self.dat.shade_axis_using_behavior()
+        self.dat.shade_axis_using_behavior(self.static_ax)
         # shade_using_behavior(self.dat.behavior_annotations)
 
     # def save_annotations(self):
