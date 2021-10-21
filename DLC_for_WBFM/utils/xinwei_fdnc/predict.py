@@ -1,4 +1,5 @@
 import concurrent
+import logging
 import os
 import pickle
 from collections import defaultdict
@@ -131,7 +132,7 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
     def _parallel_func(template):
         return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         submitted_jobs = [executor.submit(_parallel_func, template) for template in all_templates]
         matches_per_template = [job.result() for job in submitted_jobs]
 
@@ -154,12 +155,16 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
         _unpack_for_fdnc(project_cfg, tracks_cfg)
 
     if use_multiple_templates:
-        all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold)
-    else:
+        logging.info("Tracking using multiple templates")
         all_matches = track_using_fdnc_multiple_templates(project_data, prediction_options, match_confidence_threshold)
+    else:
+        logging.info("Tracking using single template")
+        all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold)
+
+    logging.info("Converting matches to dataframe format")
     df = template_matches_to_dataframe(project_data, all_matches)
 
-    # Save in main traces folder
+    logging.info("Saving tracks and matches")
     _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg)
 
 
