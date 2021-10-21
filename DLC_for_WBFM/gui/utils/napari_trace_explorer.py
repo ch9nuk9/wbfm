@@ -120,7 +120,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.static_ax = self.mpl_widget.figure.subplots()
         self.update_stored_time_series()
         self.trace_line = self.static_ax.plot(self.y)[0]
-        # self.dat.shade_axis_using_behavior(self.static_ax)
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.color_using_behavior()
         self.connect_time_line_callback()
@@ -140,7 +139,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_trace_subplot(self):
         self.update_stored_time_series()
         self.trace_line.set_ydata(self.y)
-        # self.dat.shade_axis_using_behavior(self.static_ax)
         self.time_line.set_data(self.calculate_time_line()[:2])
         self.color_using_behavior()
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
@@ -190,7 +188,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def color_using_behavior(self):
         self.dat.shade_axis_using_behavior(self.static_ax)
-        # shade_using_behavior(self.dat.behavior_annotations)
 
     # def save_annotations(self):
     #     self.update_dataframe_using_points()
