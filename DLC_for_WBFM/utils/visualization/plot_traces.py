@@ -24,19 +24,24 @@ def make_grid_plot_from_project(project_data: ProjectData,
     neuron_names.sort()
 
     num_neurons = len(neuron_names)
-    num_columns = 4
-    num_rows = num_neurons // num_columns + 1
+    num_columns = 5
+    num_rows = int(np.ceil(num_neurons / float(num_columns)))
     print(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
 
     # Loop through neurons and plot
-    fig, axes = plt.subplots(num_rows, num_columns, figsize=(45, 15), sharex=True, sharey=False)
+    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 15), sharex=True, sharey=False)
 
     options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
-    for ax, neuron_name in tqdm(zip(fig.axes, neuron_names)):
+    for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
         options['neuron_name'] = neuron_name
         y = project_data.calculate_traces(**options)
         ax.plot(y, label=neuron_name)
-        ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
+        # For removing the lines from the legends:
+        # https://stackoverflow.com/questions/25123127/how-do-you-just-show-the-text-label-in-plot-legend-e-g-remove-a-labels-line
+        leg = ax.legend(loc='upper left', handlelength=0, handletextpad=0, fancybox=True)
+        for item in leg.legendHandles:
+            item.set_visible(False)
+        # ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
         ax.set_frame_on(False)
         ax.set_axis_off()
         if color_using_behavior:
