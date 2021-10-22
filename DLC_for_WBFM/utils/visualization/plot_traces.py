@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -58,6 +59,7 @@ def make_grid_plot_from_project(project_data: ProjectData,
     fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
     traces_cfg = project_data.project_config.get_traces_config()
     out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+    logging.info(f"Saving figure at: {out_fname}")
     plt.savefig(out_fname, bbox_inches='tight', pad_inches=0)
 
 
