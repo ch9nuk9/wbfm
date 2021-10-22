@@ -44,8 +44,20 @@ def load_prediction_options(custom_template=None, path_to_folder=None):
 def track_using_fdnc(project_data: ProjectData,
                      prediction_options,
                      template,
-                     match_confidence_threshold):
-    num_frames = project_data.num_frames
+                     match_confidence_threshold,
+                     full_video_not_training=True):
+    if full_video_not_training:
+        num_frames = project_data.num_frames
+
+        def get_pts(i):
+            these_pts = project_data.get_centroids_as_numpy(i)
+            return zimmer2leifer(these_pts)
+    else:
+        num_frames = project_data.reindexed_metadata_training.num_frames
+
+        def get_pts(i):
+            these_pts = project_data.get_centroids_as_numpy_training(i)
+            return zimmer2leifer(these_pts)
 
     # def _parallel_func(i_frame):
     #
@@ -73,8 +85,7 @@ def track_using_fdnc(project_data: ProjectData,
 
     all_matches = []
     for i_frame in tqdm(range(num_frames), total=num_frames, leave=False):
-        pts = project_data.get_centroids_as_numpy(i_frame)
-        pts_scaled = zimmer2leifer(pts)
+        pts_scaled = get_pts(i_frame)
         matches = predict_matches(test_pos=pts_scaled, template_pos=template, **prediction_options)
         matches = filter_matches(matches, match_confidence_threshold)
 
@@ -127,7 +138,6 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
                                         base_prediction_options,
                                         match_confidence_threshold):
     all_templates = generate_templates_from_training_data(project_data)
-    num_templates = len(all_templates)
 
     def _parallel_func(template):
         return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold)
@@ -138,18 +148,25 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
         matches_per_template = [job.result() for job in submitted_jobs]
 
     # Combine the matches between each frame and template
+    final_matches = combine_multiple_template_matches(matches_per_template)
+
+    return final_matches
+
+
+def combine_multiple_template_matches(matches_per_template):
     final_matches = []
-    for i_frame in range(project_data.num_frames):
+    num_frames = len(matches_per_template[0])
+    num_templates = len(matches_per_template)
+    for i_frame in range(num_frames):
         candidate_matches = []
         for i_template in range(num_templates):
             candidate_matches.extend(matches_per_template[i_template][i_frame])
         # Reduce individual confidences so they are an average, not a sum
-        candidate_matches = [(m[0], m[1], m[2]/num_templates) for m in candidate_matches]
+        candidate_matches = [(m[0], m[1], m[2] / num_templates) for m in candidate_matches]
 
         matches, conf, _ = calc_bipartite_from_candidates(candidate_matches, min_conf=0.1)
         match_and_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
         final_matches.append(match_and_conf)
-
     return final_matches
 
 
