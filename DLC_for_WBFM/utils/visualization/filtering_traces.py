@@ -17,6 +17,20 @@ def remove_outliers_via_rolling_mean(y: pd.DataFrame, window: int, outlier_thres
     return y
 
 
+def remove_outliers_large_diff(y: pd.DataFrame, outlier_threshold=None):
+    raise NotImplementedError
+    diff = y.diff()
+    if outlier_threshold is None:
+        # TODO: not working very well
+        outlier_threshold = 10*diff.var() + np.abs(diff.mean())
+        print(f"Calculated error threshold at {outlier_threshold}")
+    # Only remove the first jump frame, because often the outliers are only one frame
+    is_outlier = diff > outlier_threshold
+    y[is_outlier] = np.nan
+
+    return y
+
+
 def filter_rolling_mean(y: pd.DataFrame, window: int = 7):
     return y.rolling(window, min_periods=3).mean()
 

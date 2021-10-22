@@ -54,17 +54,26 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.vbox3.addWidget(self.changeTraceCalculationDropdown)
 
-        # Change trace filtering (dropdown)
+        # Change trace filtering (checkbox)
         self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
         self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.vbox3.addWidget(self.changeTraceFilteringDropdown)
 
         # Change trace outlier removal (dropdown)
-        self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox("Remove outliers?")
-        # self.changeTraceOutlierDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
+        self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox("Remove outliers (activity)?")
         self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         self.vbox3.addWidget(self.changeTraceOutlierCheckBox)
+
+        self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox("Remove outliers (tracking confidence)?")
+        self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
+        self.vbox3.addWidget(self.changeTrackingOutlierCheckBox)
+
+        self.changeTrackingOutlierSpinBox = QtWidgets.QSpinBox()
+        self.changeTrackingOutlierSpinBox.setRange(0, 1)
+        self.changeTrackingOutlierSpinBox.setSingleStep(0.1)
+        self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
+        self.vbox3.addWidget(self.changeTrackingOutlierSpinBox)
 
         self.verticalLayout.addWidget(self.groupBox1)
         self.verticalLayout.addWidget(self.groupBox2)
@@ -175,10 +184,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         name = self.current_name
         channel = self.changeChannelDropdown.currentText()
         calc_mode = self.changeTraceCalculationDropdown.currentText()
-        remove_outliers = self.changeTraceOutlierCheckBox.checkState()
+        remove_outliers_activity = self.changeTraceOutlierCheckBox.checkState()
+        remove_outliers_tracking = self.changeTrackingOutlierCheckBox.checkState()
+        if remove_outliers_tracking:
+            min_confidence = self.changeTrackingOutlierSpinBox.value()
+        else:
+            min_confidence = None
         filter_mode = self.changeTraceFilteringDropdown.currentText()
 
-        y = self.dat.calculate_traces(channel, calc_mode, name, remove_outliers, filter_mode)
+        y = self.dat.calculate_traces(channel, calc_mode, name,
+                                      remove_outliers_activity,
+                                      filter_mode,
+                                      min_confidence=min_confidence)
 
         self.y = y
 

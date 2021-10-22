@@ -198,7 +198,7 @@ class ProjectData:
                          min_confidence: float = None):
         assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
 
-        if self.verbose >= 2:
+        if self.verbose >= 3:
             print(f"Calculating {channel_mode} trace for {neuron_name} for {calculation_mode} mode")
 
         # Way to process a single dataframe
@@ -324,7 +324,7 @@ class ProjectData:
 Project data for directory:\n\
 {self.project_dir} \n\
 =======================================\n\
-Found the following data files:\n\
+Found the following raw data files:\n\
 red_data: {self.red_data is not None}\n\
 green_data: {self.green_data is not None}\n\
 ============Segmentation===============\n\
