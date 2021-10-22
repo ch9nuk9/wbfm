@@ -193,7 +193,9 @@ class ProjectData:
             raise TypeError("Must pass pathlike or already loaded project data")
 
     def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str,
-                         remove_outliers: bool = False, filter_mode: str = 'no_filtering'):
+                         remove_outliers: bool = False,
+                         filter_mode: str = 'no_filtering',
+                         min_confidence: float = None):
         assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
 
         if self.verbose >= 2:
@@ -262,9 +264,15 @@ class ProjectData:
         y = calc_y(neuron_name)
 
         # Then remove outliers and / or filter
+        if min_confidence is not None:
+            low_confidence = self.final_tracks[neuron_name]['likelihood'] < min_confidence
+            nan_confidence = np.isnan(self.final_tracks[neuron_name]['likelihood'])
+            outliers_from_tracking = np.logical_or(low_confidence, nan_confidence)
+            y[outliers_from_tracking] = np.nan
+
         # TODO: allow parameter selection
         if remove_outliers:
-            y = remove_outliers_via_rolling_mean(y, window=21)
+            y = remove_outliers_via_rolling_mean(y, window=9)
 
         # TODO: set up enum
         if filter_mode == "rolling_mean":
