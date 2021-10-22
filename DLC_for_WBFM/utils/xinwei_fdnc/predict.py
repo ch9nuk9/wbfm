@@ -125,6 +125,7 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
                                         base_prediction_options,
                                         match_confidence_threshold):
     all_templates = generate_templates_from_training_data(project_data)
+    num_templates = len(all_templates)
 
     def _parallel_func(template):
         return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold)
@@ -138,8 +139,11 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
     final_matches = []
     for i_frame in range(project_data.num_frames):
         candidate_matches = []
-        for i_template in range(len(all_templates)):
+        for i_template in range(num_templates):
             candidate_matches.extend(matches_per_template[i_template][i_frame])
+        # Reduce individual confidences so they are an average, not a sum
+        candidate_matches = [(m[0], m[1], m[2]/num_templates) for m in candidate_matches]
+
         matches, conf, _ = calc_bipartite_from_candidates(candidate_matches, min_conf=0.1)
         match_and_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
         final_matches.append(match_and_conf)
