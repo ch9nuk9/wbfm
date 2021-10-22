@@ -33,10 +33,12 @@ def load_prediction_options(custom_template=None, path_to_folder=None):
         temp_fname = os.path.join(default_package_path, 'Data', 'Example', 'template.data')
         temp = pre_matt(temp_fname)
         template = temp['pts']
+        template_label = temp['name']
     else:
         template = custom_template
+        template_label = None
 
-    return prediction_options, template
+    return prediction_options, template, template_label
 
 
 def track_using_fdnc(project_data: ProjectData,
@@ -197,6 +199,6 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
         custom_template = zimmer2leifer(custom_template)
     else:
         custom_template = None
-    prediction_options, template = load_prediction_options(custom_template=custom_template)
+    prediction_options, template, _ = load_prediction_options(custom_template=custom_template)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     return match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates
