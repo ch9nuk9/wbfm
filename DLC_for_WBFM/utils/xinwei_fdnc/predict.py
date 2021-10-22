@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches
 from tqdm.auto import tqdm
 
@@ -163,7 +164,8 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
     df = template_matches_to_dataframe(project_data, all_matches)
 
     logging.info("Saving tracks and matches")
-    _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg)
+    with safe_cd(project_cfg.project_dir):
+        _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg)
 
 
 def _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg):
