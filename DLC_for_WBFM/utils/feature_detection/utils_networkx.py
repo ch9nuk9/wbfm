@@ -113,6 +113,9 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e
     Note: does not use scipy.sparse.csgraph.min_weight_full_bipartite_matching for version compatibility
     """
     # OPTIMIZE: this produces a larger matrix than necessary
+    if len(all_candidate_matches) == 0:
+        logging.warning("No candidate matches; aborting")
+        return [[]], [[]], [[]]
 
     m0 = np.max([m[0] for m in all_candidate_matches]) + 1
     m1 = np.max([m[1] for m in all_candidate_matches]) + 1
@@ -125,7 +128,7 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e
     # Note: bipartite matching is very sensitive to outliers
     conf_matrix = np.where(conf_matrix < min_conf, 0.0, conf_matrix)
 
-    matches = linear_sum_assignment(conf_matrix, maximize=True)
+    matches = linear_sum_assignment(-conf_matrix)
     matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     # Apply sigmoid to summed confidence
     matches = np.array(matches)

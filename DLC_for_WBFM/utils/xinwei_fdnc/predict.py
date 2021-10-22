@@ -70,10 +70,8 @@ def track_using_fdnc(project_data: ProjectData,
 
     all_matches = []
     for i_frame in tqdm(range(num_frames), total=num_frames, leave=False):
-
         pts = project_data.get_centroids_as_numpy(i_frame)
         pts_scaled = zimmer2leifer(pts)
-        # Match
         matches = predict_matches(test_pos=pts_scaled, template_pos=template, **prediction_options)
         matches = filter_matches(matches, match_confidence_threshold)
 
@@ -135,11 +133,11 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
         submitted_jobs = [executor.submit(_parallel_func, template) for template in all_templates]
         matches_per_template = [job.result() for job in submitted_jobs]
 
-    # Combine the match from each template
+    # Combine the matches between each frame and template
     final_matches = []
     for i_frame in range(project_data.num_frames):
         candidate_matches = []
-        for i_template in range(len(final_matches)):
+        for i_template in range(len(all_templates)):
             candidate_matches.extend(matches_per_template[i_template][i_frame])
         matches, conf, _ = calc_bipartite_from_candidates(candidate_matches, min_conf=0.1)
         match_and_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
@@ -149,9 +147,10 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
 
 
 def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
-                                 tracks_cfg: ConfigFileWithProjectContext):
+                                 tracks_cfg: ConfigFileWithProjectContext,
+                                 DEBUG=False):
     match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates = \
-        _unpack_for_fdnc(project_cfg, tracks_cfg)
+        _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG)
 
     if use_multiple_templates:
         logging.info("Tracking using multiple templates")
@@ -180,16 +179,18 @@ def _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg):
     project_cfg.pickle_in_local_project(all_matches, output_pickle_fname)
 
 
-def _unpack_for_fdnc(project_cfg, tracks_cfg):
+def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     use_zimmer_template = tracks_cfg.config['leifer_params']['use_zimmer_template']
     use_multiple_templates = tracks_cfg.config['leifer_params']['use_multiple_templates']
-    project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    if DEBUG:
+        project_data.project_config.config['dataset_params']['num_frames'] = 2
     if use_zimmer_template:
         # TODO: use a hand-curated segmentation
-        custom_template = project_dat.get_centroids_as_numpy(0)
+        custom_template = project_data.get_centroids_as_numpy(0)
         custom_template = zimmer2leifer(custom_template)
     else:
         custom_template = None
     prediction_options, template = load_prediction_options(custom_template=custom_template)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
-    return match_confidence_threshold, prediction_options, template, project_dat, use_multiple_templates
+    return match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates
