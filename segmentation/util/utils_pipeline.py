@@ -567,10 +567,10 @@ def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
     frame_list, mask_fname, metadata_fname, _, _, _, video_path, _, _ = _unpack_config_file(
         segment_cfg, project_cfg, DEBUG)
 
-    masks_zarr = zarr.open(mask_fname)
-    video_dat = zarr.open(video_path)
-    logging.info(f"Read zarr from: {mask_fname}")
-    logging.info(f"Read video from: {video_path}")
+    masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
+    video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
+    logging.info(f"Read zarr from: {mask_fname} with size {masks_zarr.shape}")
+    logging.info(f"Read video from: {video_path} with size {video_dat.shape}")
 
     if DEBUG:
         frame_list = frame_list[:2]
