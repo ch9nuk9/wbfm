@@ -7,6 +7,7 @@ from datetime import date
 
 # Experiment tracking
 import sacred
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
@@ -59,4 +60,5 @@ def produce_training_data(_config, _run):
         DEBUG=DEBUG
     )
 
-    recalculate_metadata_from_config(segment_cfg, project_config, DEBUG)
+    with safe_cd(project_config.project_dir):
+        recalculate_metadata_from_config(segment_cfg, project_config, DEBUG)
