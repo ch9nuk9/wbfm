@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-snakemake -s part1.snakemake --cores
+snakemake -s full_pipeline.smk --cores

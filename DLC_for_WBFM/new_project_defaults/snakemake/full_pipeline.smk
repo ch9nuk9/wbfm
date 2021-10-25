@@ -130,7 +130,7 @@ rule extract_full_traces:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
         code_path=expand("{code}", code=config['code_path']),
-        masks=rules.reindex_segmentation.output
+        masks=ancient(rules.reindex_segmentation.output)
     output:
         expand("{dir}/{output}", output=config['output_4c'], dir=config['project_dir'])
     shell:
