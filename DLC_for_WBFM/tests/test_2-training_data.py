@@ -68,7 +68,9 @@ def test_reasonable_z():
 
     for n in all_neurons:
         z_delta_series = df_delta[n]['z']
-        assert all(np.abs(z_delta_series <= max_z_delta))
+        is_small = np.abs(z_delta_series <= max_z_delta)
+        is_nan = np.isnan(z_delta_series)
+        assert all(np.logical_or(is_small, is_nan))
 
 
 # if __name__ == "__main__":
