@@ -87,7 +87,7 @@ def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs
                                                  verbose=0):
     # Also updates the matches of the object
     opt = dict(z_threshold=z_threshold, min_confidence=min_confidence)
-    logging.info(f"Postprocessing pairwise matches using confidence threshold: {min_confidence}")
+    logging.info(f"Postprocessing pairwise matches using confidence threshold {min_confidence} and z threshold: {z_threshold}")
     all_matches_list = {k: pair.calc_final_matches_using_bipartite_matching(**opt)
                         for k, pair in tqdm(all_frame_pairs.items())}
     logging.info("Extracting locations of neurons")
