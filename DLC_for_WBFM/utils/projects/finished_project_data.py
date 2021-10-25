@@ -246,11 +246,17 @@ class ProjectData:
         #         return np.quantile(y_raw, 0.5) - self.background_per_pixel
         elif calculation_mode == 'volume':
             def calc_single_trace(i, df_tmp):
-                y_raw = df_tmp[i]['volume']
+                try:
+                    y_raw = df_tmp[i]['volume']
+                except KeyError:
+                    y_raw = df_tmp[i]['area']
                 return y_raw
         elif calculation_mode == 'z':
             def calc_single_trace(i, df_tmp):
-                y_raw = df_tmp[i]['z_dlc']
+                try:
+                    y_raw = df_tmp[i]['z_dlc']
+                except KeyError:
+                    y_raw = df_tmp[i]['z']
                 return y_raw
         else:
             raise ValueError(f"Unknown calculation mode {calculation_mode}")
