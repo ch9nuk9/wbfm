@@ -1,4 +1,5 @@
 # Use classical methods for building and matching features
+import logging
 
 import cv2
 import numpy as np
@@ -584,5 +585,10 @@ def build_features_and_match_2volumes(dat0, dat1,
         all_kp1.extend(keypoints1)
         # TODO
         all_match_offsets.append([len(all_locs0), len(all_locs1)])
+
+    if len(all_matches) == 0:
+        logging.warning("No matches found on any planes; this probably means the z depth was set incorrectly or that "
+                        "this images are empty")
+        raise ValueError
 
     return np.array(all_locs0), np.array(all_locs1), all_kp0, all_kp1, all_matches, all_match_offsets

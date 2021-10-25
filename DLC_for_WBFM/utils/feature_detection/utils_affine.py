@@ -29,6 +29,7 @@ def propagate_via_affine_model(which_neuron: int,
     global close_features, pts0, pts1
     this_neuron = f0.neuron_locs[which_neuron]
 
+    # if f0.keypoint_locs
     num_features, pc0, tree_features0 = build_feature_tree(f0.keypoint_locs)
     # pc0.paint_uniform_color([0.9, 0.9, 0.9])
 
