@@ -23,13 +23,13 @@ def reindex_segmentation_using_config(traces_cfg: ConfigFileWithProjectContext,
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
     """
-    all_matches, raw_seg_masks, new_masks = _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg)
+    all_matches, raw_seg_masks, new_masks, min_confidence = _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg)
 
-    reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks)
+    reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks, min_confidence)
 
 
-def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks):
-    all_lut = all_matches_to_lookup_tables(all_matches)
+def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidence):
+    all_lut = all_matches_to_lookup_tables(all_matches, min_confidence=min_confidence)
     all_lut_keys = all_lut.keys()
     if DEBUG:
         all_lut_keys = [0, 1]
@@ -84,7 +84,9 @@ def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     all_matches = pd.read_pickle(matches_fname)
     # Format: dict with i_volume -> Nx3 array of [dlc_ind, segmentation_ind, confidence] triplets
 
-    return all_matches, raw_seg_masks, new_masks
+    min_confidence = traces_cfg.config['traces']['min_confidence']
+
+    return all_matches, raw_seg_masks, new_masks, min_confidence
 
 
 def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
@@ -185,7 +187,7 @@ def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
     # blosc.use_threads = None
 
 
-def all_matches_to_lookup_tables(all_matches: dict) -> dict:
+def all_matches_to_lookup_tables(all_matches: dict, min_confidence=None) -> dict:
     """
     Convert a dictionary of match arrays into a lookup table
 
@@ -207,7 +209,13 @@ def all_matches_to_lookup_tables(all_matches: dict) -> dict:
             # TODO: are the matches always the same length?
             dlc_ind = np.array(match)[:, 0].astype(int)
             seg_ind = np.array(match)[:, 1].astype(int)
-            lut[seg_ind] = dlc_ind  # Raw indices of the lut should match the local index
+            conf = np.array(match)[:, 2]
+            for dlc, seg, c in zip(dlc_ind, seg_ind, conf):
+                # Raw indices of the lut should match the local index
+                if c > min_confidence:
+                    lut[seg] = dlc
+                    # Otherwise keep as 0
+            # lut[seg_ind] = dlc_ind
             if np.max(seg_ind) > lut_size:
                 raise ValueError("Lookup-table size is too small; increase this (in code) or fix it!")
         except IndexError:

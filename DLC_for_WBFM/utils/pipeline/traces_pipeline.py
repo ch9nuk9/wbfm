@@ -59,14 +59,6 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectCon
     relative_fname = traces_cfg.config['all_matches']
     project_cfg.pickle_in_local_project(all_matches, relative_fname)
 
-    # logging.info("Reindexing masks using matches...")
-    # Reads matches from disk, and then saves the masks
-    # reindex_segmentation_using_config(traces_cfg, segment_cfg, project_cfg)
-
-    # logging.info("Extracting red and green traces using reindexed masks...")
-    # Reads masks from disk, and writes traces
-    # extract_traces_using_config(project_cfg, traces_cfg, track_cfg, DEBUG)
-
 
 def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
                                 traces_cfg: ConfigFileWithProjectContext,

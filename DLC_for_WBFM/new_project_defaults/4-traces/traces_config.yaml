@@ -10,6 +10,7 @@ self_path: 4-traces/traces_config.yaml
 reindexed_masks: 4-traces/reindexed_masks.zarr
 
 traces:
+  min_confidence: 0.8  # Matching the segmentation and the tracks; should have very high confidence
   red: null
   green: null
   neuron_names:
