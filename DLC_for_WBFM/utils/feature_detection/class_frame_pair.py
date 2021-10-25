@@ -40,6 +40,8 @@ class FramePair:
     add_affine_to_candidates: bool = False
     add_gp_to_candidates: bool = False
 
+    z_threshold: float = None
+
     @property
     def all_candidate_matches(self):
         all_matches = self.feature_matches.copy()
@@ -70,6 +72,10 @@ class FramePair:
             min_confidence = self.min_confidence
         else:
             self.min_confidence = min_confidence
+        if z_threshold is None:
+            z_threshold = self.z_threshold
+        else:
+            self.z_threshold = z_threshold
 
         matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches, min_conf=min_confidence)
         final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
