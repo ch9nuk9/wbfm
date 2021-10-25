@@ -11,6 +11,12 @@ do
     esac
 done
 
+# Make conda functions available
+# https://github.com/conda/conda/issues/7980
+source /home/charles/anaconda3/etc/profile.d/conda.sh
+#conda activate my_env
+
+
 CODE_PATH="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
 SUFFIX="with project_path=$project_path"
 
