@@ -20,6 +20,14 @@ def make_grid_plot_from_project(project_data: ProjectData,
                                 channel_mode: str,
                                 calculation_mode: str,
                                 color_using_behavior=True):
+    if channel_mode == 'all':
+        all_modes = ['red', 'green', 'ratio']
+        opt = dict(project_data=project_data,
+                   calculation_mode=calculation_mode,
+                   color_using_behavior=color_using_behavior)
+        for mode in all_modes:
+            make_grid_plot_from_project(channel_mode=mode, **opt)
+        return
     neuron_names = list(set(project_data.green_traces.columns.get_level_values(0)))
     # Guess a good shape for subplots
     neuron_names.sort()

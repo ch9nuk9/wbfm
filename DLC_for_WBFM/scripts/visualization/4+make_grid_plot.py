@@ -17,7 +17,7 @@ from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_pro
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None, channel_mode='green', calculation_mode='integration')
+ex.add_config(project_path=None, channel_mode='all', calculation_mode='integration')
 
 
 @ex.config

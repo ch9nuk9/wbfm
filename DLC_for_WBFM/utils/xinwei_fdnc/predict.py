@@ -245,12 +245,9 @@ def get_putative_names_from_config(cfg: ModularProjectConfig):
                 all_only_top_dict[key].append(val)
 
     df_candidate_names = pd.DataFrame(all_only_top_dict)
-
     raw_names = list(df_candidate_names.columns.levels[0])
-
     all_match_dict = {}
     all_conf_dict = {}
-
     for n in raw_names:
 
         this_df = df_candidate_names[n]
