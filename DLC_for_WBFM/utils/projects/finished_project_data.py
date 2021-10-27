@@ -9,7 +9,7 @@ from DLC_for_WBFM.utils.visualization.filtering_traces import remove_outliers_vi
     filter_linear_interpolation
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
-    ConfigFileWithProjectContext
+    SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
@@ -104,10 +104,10 @@ class ProjectData:
 
     @staticmethod
     def _load_data_from_configs(cfg: ModularProjectConfig,
-                                segment_cfg: ConfigFileWithProjectContext,
-                                train_cfg: ConfigFileWithProjectContext,
-                                tracking_cfg: ConfigFileWithProjectContext,
-                                traces_cfg: ConfigFileWithProjectContext,
+                                segment_cfg: SubfolderConfigFile,
+                                train_cfg: SubfolderConfigFile,
+                                tracking_cfg: SubfolderConfigFile,
+                                traces_cfg: SubfolderConfigFile,
                                 project_dir):
         red_dat_fname = cfg.config['preprocessed_red']
         green_dat_fname = cfg.config['preprocessed_green']
@@ -194,7 +194,7 @@ class ProjectData:
             args = ProjectData.unpack_config_file(project_path)
             return ProjectData._load_data_from_configs(*args)
         elif isinstance(project_path, ModularProjectConfig):
-            project_path = project_path.project_path
+            project_path = project_path.self_path
             args = ProjectData.unpack_config_file(project_path)
             return ProjectData._load_data_from_configs(*args)
         elif isinstance(project_path, ProjectData):

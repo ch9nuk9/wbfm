@@ -7,7 +7,7 @@ import pandas as pd
 
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext, \
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile, \
     pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename, safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_dlc_format
@@ -19,7 +19,7 @@ from tqdm.auto import tqdm
 
 
 def partial_track_video_using_config(project_config: ModularProjectConfig,
-                                     training_config: ConfigFileWithProjectContext,
+                                     training_config: SubfolderConfigFile,
                                      DEBUG: bool = False) -> None:
     """
     Produce training data via partial tracking using 3d feature-based method
@@ -45,7 +45,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
 
 
 def postprocess_and_build_matches_from_config(project_config: ModularProjectConfig,
-                                              training_config: ConfigFileWithProjectContext, DEBUG):
+                                              training_config: SubfolderConfigFile, DEBUG):
     """
     Starting with pairwise matches of neurons between sequential Frame objects, postprocess the matches and generate
     longer tracklets

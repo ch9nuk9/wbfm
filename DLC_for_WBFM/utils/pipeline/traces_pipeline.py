@@ -13,13 +13,13 @@ from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches, calc_bipartite_from_distance
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 
 
-def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectContext,
-                                           track_cfg: ConfigFileWithProjectContext,
-                                           traces_cfg: ConfigFileWithProjectContext,
+def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
+                                           track_cfg: SubfolderConfigFile,
+                                           traces_cfg: SubfolderConfigFile,
                                            project_cfg: ModularProjectConfig,
                                            DEBUG: bool = False) -> None:
     """
@@ -60,8 +60,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: ConfigFileWithProjectCon
     project_cfg.pickle_in_local_project(all_matches, relative_fname)
 
 
-def extract_traces_using_config(project_cfg: ConfigFileWithProjectContext,
-                                traces_cfg: ConfigFileWithProjectContext,
+def extract_traces_using_config(project_cfg: SubfolderConfigFile,
+                                traces_cfg: SubfolderConfigFile,
                                 DEBUG):
     """
     Final step that loops through original data and extracts traces using labeled masks
@@ -298,7 +298,7 @@ def calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_v
 def _save_traces_as_hdf_and_update_configs(final_neuron_names: list,
                                            df_green: pd.DataFrame,
                                            df_red: pd.DataFrame,
-                                           traces_cfg: ConfigFileWithProjectContext) -> None:
+                                           traces_cfg: SubfolderConfigFile) -> None:
     # Save traces (red and green) and neuron names
     # csv doesn't work well when some entries are lists
     red_fname = Path('4-traces').joinpath('red_traces.h5')

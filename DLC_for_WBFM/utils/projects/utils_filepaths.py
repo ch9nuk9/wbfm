@@ -14,19 +14,36 @@ from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 
 @dataclass
 class ConfigFileWithProjectContext:
+    self_path: str
+    config: dict
+    project_dir: str
+
+    def resolve_relative_path_from_config(self, key):
+        val = self.config.get(key, None)
+        return self.resolve_relative_path(val)
+
+    def resolve_relative_path(self, val: str):
+        if val is None:
+            return None
+        return os.path.join(self.project_dir, val)
+
+    def update_on_disk(self):
+        with safe_cd(self.project_dir):
+            edit_config(self.self_path, self.config)
+
+    def to_json(self):
+        return json.dumps(vars(self))
+
+
+@dataclass
+class SubfolderConfigFile(ConfigFileWithProjectContext):
     """
     Configuration file (loaded from .yaml) that knows the project it should be executed in
 
     In principle this config file is associated with a subfolder (and single step) of a project
     """
 
-    config: dict
-    project_dir: str
     subfolder: str
-
-    def resolve_relative_path_from_config(self, key):
-        val = self.config.get(key, None)
-        return self.resolve_relative_path(val)
 
     def resolve_relative_path(self, val: str, prepend_subfolder=False):
         if val is None:
@@ -37,41 +54,30 @@ class ConfigFileWithProjectContext:
         else:
             return os.path.join(self.project_dir, val)
 
-    def update_on_disk(self):
-        with safe_cd(self.project_dir):
-            edit_config(self.config['self_path'], self.config)
-
-    def to_json(self):
-        return json.dumps(vars(self))
-
 
 @dataclass
-class ModularProjectConfig:
+class ModularProjectConfig(ConfigFileWithProjectContext):
     """
     Add functionality to get individual config files using the main project config filepath
 
     Returns config_file_with_project_context objects, instead of raw dictionaries for the subconfig files
     """
 
-    project_path: str
-    config: dict = None
-    project_dir: str = None
-
     def __post_init__(self):
-        self.config = load_config(self.project_path)
-        self.project_dir = str(Path(self.project_path).parent)
+        self.config = load_config(self.self_path)
+        self.project_dir = str(Path(self.self_path).parent)
 
     def get_segmentation_config(self):
         fname = Path(self.config['subfolder_configs']['segmentation'])
-        return ConfigFileWithProjectContext(*self._check_abs_and_load_config(fname))
+        return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
     def get_training_config(self):
         fname = Path(self.config['subfolder_configs']['training_data'])
-        return ConfigFileWithProjectContext(*self._check_abs_and_load_config(fname))
+        return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
     def get_tracking_config(self):
         fname = Path(self.config['subfolder_configs']['tracking'])
-        return ConfigFileWithProjectContext(*self._check_abs_and_load_config(fname))
+        return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
     def get_preprocessing_config(self):
         """Different: plain dict, which is only used at the very beginning"""
@@ -80,31 +86,25 @@ class ModularProjectConfig:
 
     def get_traces_config(self):
         fname = Path(self.config['subfolder_configs']['traces'])
-        return ConfigFileWithProjectContext(*self._check_abs_and_load_config(fname))
+        return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
-    def _check_abs_and_load_config(self, fname: Path) -> Tuple[dict, str, str]:
-        if fname.is_absolute():
-            project_dir = fname.parent.parent
+    def _check_path_and_load_config(self, subconfig_path: Path) -> Tuple[str, dict, str, str]:
+        if subconfig_path.is_absolute():
+            project_dir = subconfig_path.parent.parent
         else:
-            project_dir = Path(self.project_path).parent
+            project_dir = Path(self.self_path).parent
         with safe_cd(project_dir):
-            cfg = load_config(fname)
-        subfolder = fname.parent
-        return cfg, str(project_dir), str(subfolder)
-
-    def to_json(self):
-        return json.dumps(vars(self))
+            cfg = load_config(subconfig_path)
+        subfolder = subconfig_path.parent
+        return str(subconfig_path), cfg, str(project_dir), str(subfolder)
 
     def get_log_dir(self):
         return str(Path(self.project_dir).joinpath('log'))
 
     def pickle_in_local_project(self, data, relative_path):
-        abs_path = self.resolve_path_relative_to_project(relative_path)
+        abs_path = self.resolve_relative_path(relative_path)
         with open(abs_path, 'wb') as f:
             pickle.dump(data, f)
-
-    def resolve_path_relative_to_project(self, relative_path):
-        return Path(self.project_dir).joinpath(relative_path)
 
     def resolve_mounted_path_in_current_os(self, key):
         return Path(resolve_mounted_path_in_current_os(self.config[key]))
@@ -168,7 +168,7 @@ def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
     return segment_cfg
 
 
-def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> ConfigFileWithProjectContext:
+def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:
     # For now, does NOT overwrite anything on disk
 
     segment_cfg = cfg.get_segmentation_config()

@@ -13,7 +13,7 @@ from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
 
@@ -171,7 +171,7 @@ def combine_multiple_template_matches(matches_per_template):
 
 
 def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
-                                 tracks_cfg: ConfigFileWithProjectContext,
+                                 tracks_cfg: SubfolderConfigFile,
                                  DEBUG=False):
     match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates = \
         _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG)

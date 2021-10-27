@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
 
 
 def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
@@ -111,7 +111,7 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
     return new_df
 
 
-def save_training_data_as_dlc_format(training_config: ConfigFileWithProjectContext, DEBUG=False):
+def save_training_data_as_dlc_format(training_config: SubfolderConfigFile, DEBUG=False):
     """
     Takes my training data from my tracklet format and saves as a DLC dataframe
 
@@ -160,7 +160,7 @@ def _unpack_config_training_data_conversion(training_config):
     return df, min_length_to_save
 
 
-def alt_save_all_tracklets_as_dlc_format(train_cfg: ConfigFileWithProjectContext,
+def alt_save_all_tracklets_as_dlc_format(train_cfg: SubfolderConfigFile,
                                          DEBUG=False):
     """
     Takes my tracklet format and saves ALL as DLC format (i.e. many short tracklets)
@@ -362,7 +362,7 @@ def build_subset_df_from_3dDLC(dlc3d_dlc: pd.DataFrame,
 
 
 def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
-                                    training_cfg: ConfigFileWithProjectContext):
+                                    training_cfg: SubfolderConfigFile):
     """
 
     Parameters

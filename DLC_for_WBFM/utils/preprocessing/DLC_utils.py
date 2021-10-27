@@ -12,7 +12,7 @@ from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrde
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
     build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC
 from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
-from DLC_for_WBFM.utils.projects.utils_filepaths import ConfigFileWithProjectContext
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile
 from DLC_for_WBFM.utils.pipeline.paths_to_external_resources import get_pretrained_network_path
 
 ##
@@ -303,7 +303,7 @@ def training_data_from_3dDLC_annotations(video_fname,
 
 #
 def update_pose_config(dlc_config_fname,
-                       tracking_config: ConfigFileWithProjectContext,
+                       tracking_config: SubfolderConfigFile,
                        DEBUG=False):
     # Copied from: https://github.com/DeepLabCut/DeepLabCut/blob/master/examples/testscript.py
     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
@@ -366,7 +366,7 @@ def update_pose_config(dlc_config_fname,
     auxiliaryfunctions.write_plainconfig(posefile, pose_config)
 
 
-def update_all_pose_configs(tracking_config: ConfigFileWithProjectContext,
+def update_all_pose_configs(tracking_config: SubfolderConfigFile,
                             updates: dict =None):
     """
 

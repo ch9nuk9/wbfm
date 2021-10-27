@@ -10,14 +10,14 @@ import pandas as pd
 import zarr
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import ConfigFileWithProjectContext, ModularProjectConfig
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames
 
 
-def reindex_segmentation_using_config(traces_cfg: ConfigFileWithProjectContext,
-                                      segment_cfg: ConfigFileWithProjectContext,
+def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
+                                      segment_cfg: SubfolderConfigFile,
                                       project_cfg: ModularProjectConfig,
                                       DEBUG=False):
     """
@@ -74,7 +74,7 @@ def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     raw_seg_masks = zarr.open(seg_fname)
 
     relative_path = traces_cfg.config['reindexed_masks']
-    out_fname = project_cfg.resolve_path_relative_to_project(relative_path)
+    out_fname = project_cfg.resolve_relative_path(relative_path)
     print(f"Saving masks at {out_fname}")
     new_masks = zarr.open_like(raw_seg_masks, path=str(out_fname))
     # new_masks = zarr.open_like(raw_seg_masks, path=out_fname, synchronizer=zarr.ThreadSynchronizer())
@@ -226,8 +226,8 @@ def all_matches_to_lookup_tables(all_matches: dict, min_confidence=None) -> dict
 
 
 def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
-                                            segment_cfg: ConfigFileWithProjectContext,
-                                            training_cfg: ConfigFileWithProjectContext,
+                                            segment_cfg: SubfolderConfigFile,
+                                            training_cfg: SubfolderConfigFile,
                                             DEBUG=False):
     """
     Using tracklets and full segmentation, produces a small video (zarr) with neurons colored by track
