@@ -1,24 +1,33 @@
+import logging
 import os
+from typing import Tuple
 
 import napari
 import numpy as np
 import zarr
+
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 
-def napari_of_training_data(cfg: ModularProjectConfig):
-    # TODO: read from config file, not project directory
-    training_dat_fname = cfg.config['preprocessed_red']
+def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
+
+    project_data = ProjectData.load_final_project_data_from_config(cfg)
+    # training_dat_fname = cfg.config['preprocessed_red']
     training_cfg = cfg.get_training_config()
-    training_seg_fname = training_cfg.resolve_relative_path_from_config('reindexed_masks')
+    # training_seg_fname = training_cfg.resolve_relative_path_from_config('reindexed_masks')
+    #
+    # segmentation_cfg = cfg.get_segmentation_config()
+    # raw_seg_fname = segmentation_cfg.resolve_relative_path_from_config('output_masks')
+    #
+    # z_dat = zarr.open_array(training_dat_fname)
+    # z_seg = zarr.open_array(training_seg_fname)
+    # raw_seg = zarr.open(raw_seg_fname)
 
-    segmentation_cfg = cfg.get_segmentation_config()
-    raw_seg_fname = segmentation_cfg.resolve_relative_path_from_config('output_masks')
-
-    z_dat = zarr.open_array(training_dat_fname)
-    z_seg = zarr.open_array(training_seg_fname)
-    raw_seg = zarr.open(raw_seg_fname)
+    z_dat = project_data.red_data
+    raw_seg = project_data.segmentation
+    z_seg = project_data.reindexed_masks_training
 
     # Training data doesn't usually start at i=0, so align
     num_frames = training_cfg.config['training_data_3d']['num_training_frames']
@@ -26,6 +35,8 @@ def napari_of_training_data(cfg: ModularProjectConfig):
     i_seg_end = i_seg_start + num_frames
     z_dat = z_dat[i_seg_start:i_seg_end, ...]
     raw_seg = raw_seg[i_seg_start:i_seg_end, ...]
+
+    logging.info(f"Size of reindexed_masks: {z_dat.shape}")
 
     viewer = napari.view_labels(z_seg, ndisplay=3)
     viewer.add_labels(raw_seg, visible=False)

@@ -317,7 +317,7 @@ class Ui_MainWindow(object):
 
     def napari_for_masks_training(self):
         """Open napari window for segmentation for just the training data"""
-        self.viewer = napari_of_training_data(self.cfg)[0]
+        self.viewer, _, _ = napari_of_training_data(self.cfg)
 
     def open_traces_gui(self):
 
