@@ -30,9 +30,9 @@ def cfg(project_path, DEBUG):
     train_cfg = cfg.get_training_config()
 
     log_dir = cfg.get_log_dir()
-    log_fname = os.path.join(log_dir, '2-training_data_warnings.log')
-    logging.basicConfig(filename=log_fname, level=logging.DEBUG)
-    logging.warning(f'Starting run at: {date.today().strftime("%Y/%m/%d %H:%M:%S")}')
+    # log_fname = os.path.join(log_dir, '2-training_data_warnings.log')
+    # logging.basicConfig(filename=log_fname, level=logging.DEBUG)
+    # logging.warning(f'Starting run at: {date.today().strftime("%Y/%m/%d %H:%M:%S")}')
     if not DEBUG:
         using_monkeypatch()
         ex.observers.append(TinyDbObserver(log_dir))
