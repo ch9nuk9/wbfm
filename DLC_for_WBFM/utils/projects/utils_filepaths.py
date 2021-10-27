@@ -15,8 +15,8 @@ from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 @dataclass
 class ConfigFileWithProjectContext:
     self_path: str
-    config: dict
-    project_dir: str
+    config: dict = None
+    project_dir: str = None
 
     def resolve_relative_path_from_config(self, key):
         val = self.config.get(key, None)
@@ -28,8 +28,8 @@ class ConfigFileWithProjectContext:
         return os.path.join(self.project_dir, val)
 
     def update_on_disk(self):
-        with safe_cd(self.project_dir):
-            edit_config(self.self_path, self.config)
+        fname = self.resolve_relative_path(self.self_path)
+        edit_config(fname, self.config)
 
     def to_json(self):
         return json.dumps(vars(self))
@@ -43,7 +43,7 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     In principle this config file is associated with a subfolder (and single step) of a project
     """
 
-    subfolder: str
+    subfolder: str = None
 
     def resolve_relative_path(self, val: str, prepend_subfolder=False):
         if val is None:

@@ -111,8 +111,8 @@ class ProjectData:
                                 project_dir):
         red_dat_fname = cfg.config['preprocessed_red']
         green_dat_fname = cfg.config['preprocessed_green']
-        red_traces_fname = traces_cfg.config['traces']['red']
-        green_traces_fname = traces_cfg.config['traces']['green']
+        red_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['red'])
+        green_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['green'])
 
         df_training_tracklets_fname = train_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
         reindexed_masks_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_masks')
