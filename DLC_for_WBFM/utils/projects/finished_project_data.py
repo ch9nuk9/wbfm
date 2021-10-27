@@ -312,7 +312,7 @@ class ProjectData:
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
         return self.segmentation_metadata.detect_neurons_from_file(i_frame)
 
-    def get_centroids_as_numpy_training(self, i_frame):
+    def get_centroids_as_numpy_training(self, i_frame: int) -> np.ndarray:
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
         return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
 

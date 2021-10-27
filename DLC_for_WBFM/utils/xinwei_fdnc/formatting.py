@@ -1,13 +1,13 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
-zimmer_um_per_pixel = 0.325
+zimmer_um_per_pixel_xy = 0.325
 zimmer_um_per_pixel_z = 1
 
 leifer_um_per_unit = 84
 
 
-def zimmer2leifer(vol0_zxy):
+def zimmer2leifer(vol0_zxy: np.ndarray) -> np.ndarray:
     """ Target: 1 unit = 84 um"""
     #
     # scaler = StandardScaler()
@@ -20,7 +20,7 @@ def zimmer2leifer(vol0_zxy):
     # vol0_scaled /= 5.0
 
     # xy, then z
-    xy_in_um = vol0_zxy[:, [1, 2]] * zimmer_um_per_pixel
+    xy_in_um = vol0_zxy[:, [1, 2]] * zimmer_um_per_pixel_xy
     xy_in_leifer = xy_in_um / leifer_um_per_unit
 
     z_in_um = vol0_zxy[:, [0]] * zimmer_um_per_pixel_z
