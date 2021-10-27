@@ -276,7 +276,7 @@ def get_putative_names_from_config(cfg: ModularProjectConfig):
     # Save
     out_fname = os.path.join('4-traces', 'names_from_leifer_template.h5')
     out_fname = cfg.resolve_relative_path(out_fname)
-    df_out.to_hdf(out_fname)
+    df_out.to_hdf(out_fname, key='df_with_missing')
 
     out_fname = Path(out_fname).with_suffix('.csv')
     df_out.to_csv(str(out_fname))

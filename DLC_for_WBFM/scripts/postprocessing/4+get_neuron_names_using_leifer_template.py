@@ -35,6 +35,5 @@ def cfg(project_path, DEBUG):
 def combine_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
-    cfg = _config['cfg']
-
-    get_putative_names_from_config(cfg)
+    project_config = _config['cfg']
+    get_putative_names_from_config(project_config)

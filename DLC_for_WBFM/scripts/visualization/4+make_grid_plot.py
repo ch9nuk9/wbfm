@@ -38,4 +38,3 @@ def make_dlc_labeled_videos(_config, _run):
     with safe_cd(_config['project_dir']):
         make_grid_plot_from_project(proj_dat, channel_mode=_config['channel_mode'],
                                     calculation_mode=_config['calculation_mode'])
-        # make_grid_plot_from_project(_config['traces_cfg'], trace_mode=_config['trace_mode'])
