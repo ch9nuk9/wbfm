@@ -18,14 +18,20 @@ class ConfigFileWithProjectContext:
     config: dict = None
     project_dir: str = None
 
-    def resolve_relative_path_from_config(self, key):
+    def resolve_relative_path_from_config(self, key) -> str:
         val = self.config.get(key, None)
         return self.resolve_relative_path(val)
 
-    def resolve_relative_path(self, val: str):
+    def resolve_relative_path(self, val: str) -> str:
         if val is None:
             return None
-        return os.path.join(self.project_dir, val)
+        relative_path = Path(self.project_dir).joinpath(val)
+        return str(relative_path.resolve())
+
+    def unresolve_relative_path(self, val: str) -> str:
+        if val is None:
+            return None
+        return str(Path(val).relative_to(self.project_dir))
 
     def update_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)
@@ -45,14 +51,15 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
 
     subfolder: str = None
 
-    def resolve_relative_path(self, val: str, prepend_subfolder=False):
+    def resolve_relative_path(self, val: str, prepend_subfolder=False) -> str:
         if val is None:
             return None
 
         if prepend_subfolder:
-            return os.path.join(self.project_dir, self.subfolder, val)
+            final_path = os.path.join(self.project_dir, self.subfolder, val)
         else:
-            return os.path.join(self.project_dir, val)
+            final_path = os.path.join(self.project_dir, val)
+        return str(Path(final_path).resolve())
 
 
 @dataclass

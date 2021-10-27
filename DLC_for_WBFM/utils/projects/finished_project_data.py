@@ -127,7 +127,9 @@ class ProjectData:
         reindexed_metadata_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_metadata')
         reindexed_metadata_training = DetectedNeurons(reindexed_metadata_training_fname)
 
-        behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"  # TODO: do not hardcode
+        # TODO: do not hardcode
+        behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
+        behavior_fname = cfg.resolve_relative_path(behavior_fname)
 
         zarr_reader = lambda fname: zarr.open(fname, mode='r')
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
