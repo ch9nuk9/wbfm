@@ -18,7 +18,6 @@ from DLC_for_WBFM.utils.pipeline.paths_to_external_resources import get_pretrain
 ##
 ## Functions for building DLC projects using config class
 ##
-
 def create_dlc_project(task_name,
                        experimenter,
                        video_path,

@@ -41,7 +41,18 @@ class DataSynchronizationError(Exception):
 
 
 class DeprecationError(Exception):
-
     def __init__(self, message=""):
         self.message = message
+        super().__init__(self.message)
+
+
+class NoMatchesError(Exception):
+    def __init__(self, message=""):
+        self.message = "No matches found; " + message
+        super().__init__(self.message)
+
+
+class NoNeuronsError(Exception):
+    def __init__(self, message=""):
+        self.message = "No neurons found; " + message
         super().__init__(self.message)

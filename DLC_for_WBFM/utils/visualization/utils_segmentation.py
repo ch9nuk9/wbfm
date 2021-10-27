@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import zarr
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, ModularProjectConfig, pickle_load_binary
@@ -203,22 +204,31 @@ def all_matches_to_lookup_tables(all_matches: dict, min_confidence=None) -> dict
     # Note: if not all neurons are in the dataframe, then they are set to 0
     all_lut = defaultdict(np.array)
     lut_size = 1000
+    # lut_size = max([max(np.array(m)[:, 1]) for m in all_matches.values()]) + 1
     for i_volume, match in all_matches.items():
         lut = np.zeros(lut_size, dtype=int)  # TODO: Should be more than the maximum local index
         try:
+            if len(match) == 0:
+                raise NoMatchesError
             # TODO: are the matches always the same length?
-            dlc_ind = np.array(match)[:, 0].astype(int)
-            seg_ind = np.array(match)[:, 1].astype(int)
-            conf = np.array(match)[:, 2]
+            match = np.array(match)
+            dlc_ind = match[:, 0].astype(int)
+            seg_ind = match[:, 1].astype(int)
+            if match.shape[1] > 2:
+                conf = match[:, 2]
+            else:
+                conf = np.ones_like(dlc_ind)
+                if min_confidence is not None:
+                    logging.warning("Confidence threshold passed, but confidence isn't saved; skipping")
             for dlc, seg, c in zip(dlc_ind, seg_ind, conf):
                 # Raw indices of the lut should match the local index
-                if c > min_confidence:
+                if min_confidence is None or c > min_confidence:
                     lut[seg] = dlc
                     # Otherwise keep as 0
             # lut[seg_ind] = dlc_ind
             if np.max(seg_ind) > lut_size:
                 raise ValueError("Lookup-table size is too small; increase this (in code) or fix it!")
-        except IndexError:
+        except NoMatchesError:
             # Some volumes may be empty
             pass
         all_lut[i_volume] = lut

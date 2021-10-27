@@ -60,6 +60,7 @@ def produce_training_data(_config, _run):
         DEBUG=DEBUG
     )
 
+    # TODO
     # Modify the config files so that we process the training data instead of the main masks
     segment_cfg.config['output_masks'] = training_cfg.config['reindexed_masks']
     segment_cfg.config['output_metadata'] = training_cfg.config['reindexed_metadata']
