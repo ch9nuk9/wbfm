@@ -69,7 +69,7 @@ def get_metadata_dictionary(masks, original_vol):
     return df
 
 
-def centroids_from_dict_of_dataframes(dict_of_dataframes, i_volume):
+def centroids_from_dict_of_dataframes(dict_of_dataframes, i_volume) -> np.ndarray:
     vol0_zxy = dict_of_dataframes[i_volume]['centroids'].to_numpy()
     return np.array([np.array(m) for m in vol0_zxy])
 
@@ -97,7 +97,7 @@ class DetectedNeurons:
             self._num_frames = len(self.segmentation_metadata)
         return self._num_frames
 
-    def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> list:
+    def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> np.ndarray:
         """
         Designed to be used with centroids detected using a different pipeline
         """
