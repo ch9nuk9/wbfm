@@ -240,7 +240,7 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
     with safe_cd(cfg.project_dir):
         # TODO: not hardcoded
         fname = os.path.join('raw', 'clust_df_dat.pickle')
-        training_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        fname = training_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         df = pd.read_pickle(fname)
 
         # Get the frames chosen as training data, or recalculate
