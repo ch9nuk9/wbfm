@@ -10,7 +10,7 @@ import pandas as pd
 import zarr
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, ModularProjectConfig
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, ModularProjectConfig, pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames
@@ -239,7 +239,8 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
     # Get ALL matches to the segmentation, then subset
     with safe_cd(cfg.project_dir):
         # TODO: not hardcoded
-        fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
+        fname = os.path.join('raw', 'clust_df_dat.pickle')
+        training_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         df = pd.read_pickle(fname)
 
         # Get the frames chosen as training data, or recalculate
@@ -253,14 +254,13 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
                       'verbose': 1}
         subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
 
-        fname = segment_cfg.config['output_metadata']
-        with open(fname, 'rb') as f:
-            segmentation_metadata = pickle.load(f)
+        fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
+        segmentation_metadata = pickle_load_binary(fname)
 
-        fname = segment_cfg.config['output_masks']
+        fname = segment_cfg.resolve_relative_path_from_config('output_masks')
         masks = zarr.open(fname)
 
-    # Convert dataframe to matches per frame
+    logging.info("Convert dataframe to matches per frame")
     all_matches = {}
     for i, i_frame in tqdm(enumerate(which_frames)):
         matches = []
@@ -277,10 +277,11 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
     # Initialize new array
     new_sz = list(masks.shape)
     new_sz[0] = len(which_frames)
-    out_fname = os.path.join(cfg.project_dir, '2-training_data', 'reindexed_masks.zarr')
+    out_fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
+    out_fname = cfg.resolve_relative_path(out_fname)
     new_masks = zarr.open_like(masks, path=out_fname, shape=new_sz)
 
-    # Reindex; this automatically writes to disk
+    logging.info("Reindexing segmentation and writing to disk")
     for i, (i_volume, lut) in tqdm(enumerate(all_lut.items())):
         new_masks[i, ...] = lut[masks[i_volume, ...]]
 
