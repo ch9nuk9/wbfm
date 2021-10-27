@@ -1,15 +1,13 @@
 import concurrent
 import logging
 import os
-import pickle
 from collections import defaultdict
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches
+from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, predict_label
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -219,3 +217,69 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     prediction_options, template, _ = load_prediction_options(custom_template=custom_template)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     return match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates
+
+
+def get_putative_names_from_config(cfg: ModularProjectConfig):
+
+    project_data = ProjectData.load_final_project_data_from_config(cfg)
+    prediction_options, template, template_label = load_prediction_options()
+
+    all_only_top_dict = defaultdict(list)
+    num_templates = project_data.reindexed_metadata_training.num_frames
+
+    for i_template in tqdm(range(num_templates)):
+        pts = project_data.get_centroids_as_numpy_training(i_template)
+        pts = zimmer2leifer(pts)
+        labels = predict_label(test_pos=pts, template_pos=template, template_label=template_label, **prediction_options)
+        template_top1 = labels[0]
+
+        for i_neuron, neuron_top_candidate in enumerate(template_top1):
+            name = int2name(i_neuron + 1)
+            neuron_key = (name,)
+            for i_name_or_conf in range(2):
+                if i_name_or_conf == 0:
+                    key = neuron_key + ('name',)
+                else:
+                    key = neuron_key + ('likelihood',)
+                val = neuron_top_candidate[i_name_or_conf]
+                all_only_top_dict[key].append(val)
+
+    df_candidate_names = pd.DataFrame(all_only_top_dict)
+
+    raw_names = list(df_candidate_names.columns.levels[0])
+
+    all_match_dict = {}
+    all_conf_dict = {}
+
+    for n in raw_names:
+
+        this_df = df_candidate_names[n]
+        candidate_names = this_df['name'].unique()
+        candidate_conf = np.zeros_like(candidate_names)
+
+        conf_func = lambda x: sum(x) / df_candidate_names.shape[0]
+
+        for i, c in enumerate(candidate_names):
+            ind = this_df['name'] == c
+            candidate_conf[i] = conf_func(this_df['likelihood'].loc[ind])
+
+        # Just take the max value
+        i_max = np.argmax(candidate_conf)
+        this_name = candidate_names[i_max]
+        if this_name != '':
+            all_match_dict[n] = this_name
+        else:
+            all_match_dict[n] = n
+        all_conf_dict[n] = candidate_conf[i_max]
+
+    df_out1 = pd.DataFrame.from_dict(all_match_dict, orient='index', columns=['name'])
+    df_out2 = pd.DataFrame.from_dict(all_conf_dict, orient='index', columns=['likelihood'])
+    df_out = pd.concat([df_out1, df_out2], axis=1)
+
+    # Save
+    out_fname = os.path.join('4-traces', 'names_from_leifer_template.h5')
+    out_fname = cfg.resolve_relative_path(out_fname)
+    df_out.to_hdf(out_fname)
+
+    out_fname = Path(out_fname).with_suffix('.csv')
+    df_out.to_csv(str(out_fname))
