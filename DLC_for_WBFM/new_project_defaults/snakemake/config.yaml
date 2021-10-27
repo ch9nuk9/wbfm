@@ -44,6 +44,7 @@ input_2d:
   - 2-training_data/raw/clust_df_dat.pickle
 output_2d:
   - 2-training_data/training_data_tracks.h5
+  - 2-training_data/reindexed_metadata.pickle
 
 # Step 3: dlc... for now, just combine all steps
 # NOTE: should be done on cluster
@@ -59,6 +60,7 @@ output_3_dlc:
 # Step 3: Alternate: leifer style
 input_3a:
   - 1-segmentation/metadata.pickle
+  - 2-training_data/reindexed_metadata.pickle
 output_3a:
   - 3-tracking/postprocessing/leifer_tracks.h5
 
