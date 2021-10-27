@@ -6,11 +6,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from shutil import copytree
-
 from ruamel.yaml import YAML
-
-
-# import concurrent.futures
 
 
 def build_project_structure(_config: dict) -> None:
