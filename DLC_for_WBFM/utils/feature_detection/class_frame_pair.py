@@ -181,7 +181,12 @@ class FramePair:
             else:
                 print(f"Neuron not matched using {method_name} method")
 
-    def match_using_local_affine(self):
+    def match_using_local_affine(self, start_plane,
+                                 num_features_per_plane,
+                                 matches_to_keep,
+                                 use_GMS,
+                                 min_matches,
+                                 allow_z_change):
         # Generate keypoints and match per slice
         frame0, frame1 = self.frame0, self.frame1
         # TODO: should I reread the data here?
@@ -189,11 +194,10 @@ class FramePair:
         # Transpose because opencv needs it
         dat0 = np.transpose(dat0, axes=(0, 2, 1))
         dat1 = np.transpose(dat1, axes=(0, 2, 1))
-        # TODO: read from config
-        opt = dict(start_plane=4,
-                   num_features_per_plane=10000,
-                   matches_to_keep=0.8,
-                   use_GMS=True)
+        opt = dict(start_plane=start_plane,
+                   num_features_per_plane=num_features_per_plane,
+                   matches_to_keep=matches_to_keep,
+                   use_GMS=use_GMS)
         kp0_locs, kp1_locs, all_kp0, all_kp1, kp_matches, all_match_offsets = \
             build_features_and_match_2volumes(dat0, dat1, **opt)
         # Save intermediate data in objects
@@ -206,8 +210,8 @@ class FramePair:
         self.keypoint_matches = kp_matches
         # Then match using distance from neuron position to keypoint cloud
         options = {'all_feature_matches': kp_matches,
-                   'min_matches': 20,
-                   'allow_z_change': False}
+                   'min_matches': min_matches,
+                   'allow_z_change': allow_z_change}
         affine_matches, _, affine_pushed = calc_matches_using_affine_propagation(frame0, frame1, **options)
         # TODO: above code requires that the keypoint_locs are actually the full keypoints...
         # frame0.keypoint_locs = kp0_locs
@@ -220,7 +224,6 @@ class FramePair:
         frame0, frame1 = self.frame0, self.frame1
         n0 = frame0.neuron_locs.copy()
         n1 = frame1.neuron_locs.copy()
-        # TODO: Increase z distances correctly
         n0[:, 0] *= self.z_to_xy_ratio
         n1[:, 0] *= self.z_to_xy_ratio
         # Actually match
@@ -270,6 +273,34 @@ class FramePair:
         return f"FramePair with {len(self.final_matches)}/{self.num_possible_matches} matches \n"
 
 
+@dataclass
+class FramePairOptions:
+    # Flag and options for each method
+    # First: default feature-embedding method
+    embedding_matches_to_keep: float = 1.0
+    embedding_use_GMS: bool = False
+    crossCheck: bool = True
+
+    add_affine_to_candidates: bool = False
+    start_plane: int = 4
+    num_features_per_plane: int = 10000
+    affine_matches_to_keep: float = 0.8
+    affine_use_GMS: bool = True
+    min_matches: int = 20
+    allow_z_change: bool = False
+
+    add_gp_to_candidates: bool = False
+    starting_matches: str = 'affine_matches'
+
+    add_fdnc_to_candidates: bool = False
+    fdnc_options: dict = None
+
+    # For filtering / postprocessing the matches
+    z_threshold: float = None
+    min_confidence: float = 0.001
+    z_to_xy_ratio: float = 3.0
+
+
 def calc_FramePair_from_Frames(frame0: ReferenceFrame,
                                frame1: ReferenceFrame,
                                verbose: int = 1,
@@ -303,7 +334,8 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
         frame_pair.match_using_local_affine()
     if add_gp_to_candidates:
         frame_pair.match_using_gp(starting_matches='affine_matches')
-    if False:
+    add_fdnc_to_candidates = False
+    if add_fdnc_to_candidates:
         # TODO: should load prediction options one step above this
         frame_pair.match_using_fdnc(prediction_options=None)
 
