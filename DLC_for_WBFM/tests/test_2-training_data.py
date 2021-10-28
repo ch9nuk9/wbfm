@@ -61,7 +61,7 @@ def test_finds_matches():
 def test_reasonable_z():
     df, cfg = _load_training_data()
 
-    max_z_delta = cfg.get_training_config().config['postprocessing_params']['z_threshold']
+    max_z_delta = cfg.get_training_config().config['pairwise_matching_params']['z_threshold']
 
     df_delta = df.diff()[1:]
     all_neurons = list(df.columns.levels[0])

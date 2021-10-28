@@ -119,7 +119,7 @@ def save_all_tracklets(df, df_dlc_format, training_config):
 
 
 def _unpack_config_for_tracklets(training_config):
-    params = training_config.config['postprocessing_params']
+    params = training_config.config['pairwise_matching_params']
     z_threshold = params['z_threshold']
     min_confidence = params['min_confidence']
 
@@ -150,7 +150,6 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
         tracker_params['start_volume'] = project_config.config['dataset_params']['start_volume']
 
     pairwise_matches_params = training_config.config['pairwise_matching_params'].copy()
-    pairwise_matches_params.update(training_config.config['postprocessing_params'])
     tracker_params['preprocessing_settings'] = None
 
     video_fname = project_config.config['preprocessed_red']

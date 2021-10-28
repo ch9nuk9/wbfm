@@ -7,7 +7,7 @@ from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from segmentation.util.utils_pipeline import recalculate_metadata_from_config
+from segmentation.util.utils_metadata import recalculate_metadata_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
