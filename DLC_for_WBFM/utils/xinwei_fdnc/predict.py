@@ -18,15 +18,14 @@ from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
 default_package_path = "/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID"
 
 
-def load_prediction_options(custom_template=None, path_to_folder=None):
-    if path_to_folder is None:
-        path_to_folder = default_package_path
+def load_fdnc_options_and_template(custom_template=None, path_to_folder=None):
+    prediction_options = load_fdnc_options(path_to_folder)
+    template, template_label = load_fdnc_template(custom_template)
 
-    model_path = os.path.join(path_to_folder, 'model', 'model.bin')
-    prediction_options = dict(
-        cuda=False,
-        model_path=model_path
-    )
+    return prediction_options, template, template_label
+
+
+def load_fdnc_template(custom_template):
     if custom_template is None:
         temp_fname = os.path.join(default_package_path, 'Data', 'Example', 'template.data')
         temp = pre_matt(temp_fname)
@@ -35,8 +34,18 @@ def load_prediction_options(custom_template=None, path_to_folder=None):
     else:
         template = custom_template
         template_label = None
+    return template, template_label
 
-    return prediction_options, template, template_label
+
+def load_fdnc_options(path_to_folder):
+    if path_to_folder is None:
+        path_to_folder = default_package_path
+    model_path = os.path.join(path_to_folder, 'model', 'model.bin')
+    prediction_options = dict(
+        cuda=False,
+        model_path=model_path
+    )
+    return prediction_options
 
 
 def track_using_fdnc(project_data: ProjectData,
@@ -86,7 +95,6 @@ def track_using_fdnc(project_data: ProjectData,
         pts_scaled = get_pts(i_frame)
         matches = predict_matches(test_pos=pts_scaled, template_pos=template, **prediction_options)
         matches = filter_matches(matches, match_confidence_threshold)
-
         all_matches.append(matches)
 
     return all_matches
@@ -214,7 +222,7 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
         custom_template = zimmer2leifer(custom_template)
     else:
         custom_template = None
-    prediction_options, template, _ = load_prediction_options(custom_template=custom_template)
+    prediction_options, template, _ = load_fdnc_options_and_template(custom_template=custom_template)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     return match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates
 
@@ -222,7 +230,7 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
 def get_putative_names_from_config(cfg: ModularProjectConfig):
 
     project_data = ProjectData.load_final_project_data_from_config(cfg)
-    prediction_options, template, template_label = load_prediction_options()
+    prediction_options, template, template_label = load_fdnc_options_and_template()
 
     all_only_top_dict = defaultdict(list)
     num_templates = project_data.reindexed_metadata_training.num_frames

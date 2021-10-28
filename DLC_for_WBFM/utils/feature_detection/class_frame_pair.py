@@ -9,6 +9,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
+from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
 
 
 @dataclass
@@ -36,11 +37,15 @@ class FramePair:
     frame0: ReferenceFrame = None
     frame1: ReferenceFrame = None
 
+    # New method:
+    fdnc_matches: list = None
+
     # Metadata
     add_affine_to_candidates: bool = False
     add_gp_to_candidates: bool = False
 
     z_threshold: float = None
+    z_to_xy_ratio: float = 3.0
 
     @property
     def all_candidate_matches(self):
@@ -197,7 +202,6 @@ class FramePair:
         frame0.keypoints = all_kp0
         frame1.keypoints = all_kp1
         # kp_matches = recursive_cast_matches_as_array(kp_matches, all_match_offsets, gamma=1.0)
-        # TODO: are these really just trivial matches?
         kp_matches = [(i, i, 1.0) for i in range(len(kp0_locs))]
         self.keypoint_matches = kp_matches
         # Then match using distance from neuron position to keypoint cloud
@@ -212,13 +216,13 @@ class FramePair:
         self.affine_pushed_locations = affine_pushed
 
     def match_using_gp(self, starting_matches='affine_matches'):
-        # Can start with any matched point clouds, but not more than ~100 matches
+        # Can start with any matched point clouds, but not more than ~100 matches otherwise it's way too slow
         frame0, frame1 = self.frame0, self.frame1
         n0 = frame0.neuron_locs.copy()
         n1 = frame1.neuron_locs.copy()
         # TODO: Increase z distances correctly
-        n0[:, 0] *= 3
-        n1[:, 0] *= 3
+        n0[:, 0] *= self.z_to_xy_ratio
+        n1[:, 0] *= self.z_to_xy_ratio
         # Actually match
         options = {'matches_with_conf': getattr(self, starting_matches)}
         gp_matches, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)
@@ -228,6 +232,9 @@ class FramePair:
         self.gp_pushed_locations = gp_pushed
 
     def match_using_feature_embedding(self, matches_to_keep=1.0, use_GMS=False, crossCheck=True):
+        """
+        Requires the frame objects to have been correctly initialized, i.e. their neurons need a feature embedding
+        """
         frame0, frame1 = self.frame0, self.frame1
         # First, get feature matches
         neuron_embedding_matches = match_known_features(frame0.all_features,
@@ -243,6 +250,15 @@ class FramePair:
         neuron_embedding_matches_with_conf = cast_matches_as_array(neuron_embedding_matches, gamma=1.0)
         self.feature_matches = neuron_embedding_matches_with_conf
         self.keypoint_matches = neuron_embedding_matches_with_conf  # Overwritten by affine match, if used
+
+    def match_using_fdnc(self, prediction_options):
+        from fDNC.src.DNC_predict import predict_matches
+        frame0, frame1 = self.frame0, self.frame1
+        template_pos = zimmer2leifer(np.array(frame0.neuron_locs))
+        test_pos = zimmer2leifer(np.array(frame1.neuron_locs))
+
+        matches_with_conf = predict_matches(test_pos=test_pos, template_pos=template_pos, **prediction_options)
+        self.fdnc_matches = matches_with_conf
 
     def print_reason_for_all_final_matches(self):
         dict_of_matches = self.get_pair_to_conf_dict()
@@ -285,9 +301,11 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
     # Add additional candidates, if used
     if add_affine_to_candidates:
         frame_pair.match_using_local_affine()
-
     if add_gp_to_candidates:
         frame_pair.match_using_gp(starting_matches='affine_matches')
+    if False:
+        # TODO: should load prediction options one step above this
+        frame_pair.match_using_fdnc(prediction_options=None)
 
     return frame_pair
 

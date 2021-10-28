@@ -74,16 +74,9 @@ class ReferenceFrame:
         return self.neuron_locs.shape[0]
 
     def get_raw_data(self) -> np.ndarray:
-        # TODO: should I cache this?
         if self._raw_data is None:
             self._raw_data = zarr.open(self.video_fname)[self.frame_ind, ...]
         return self._raw_data
-
-    # def get_raw_data(self):
-    #     return get_single_volume(self.video_fname,
-    #                              self.frame_ind,
-    #                              num_slices=self.vol_shape[0],
-    #                              alpha=self.preprocessing_settings.alpha)
 
     def detect_or_import_neurons(self, detected_neurons: DetectedNeurons) -> list:
         """
