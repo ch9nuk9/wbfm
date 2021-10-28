@@ -147,9 +147,8 @@ def save_training_data_as_dlc_format(training_config: SubfolderConfigFile, DEBUG
     training_config.config['df_training_3d_tracks'] = out_fname
     training_config.update_on_disk()
 
-    # Usually too large for .csv
-    # out_fname = Path(out_fname).with_suffix(".csv")
-    # training_df.to_csv(out_fname)
+    out_fname = Path(out_fname).with_suffix(".csv")
+    training_df.to_csv(str(out_fname))
 
 
 def _unpack_config_training_data_conversion(training_config):
