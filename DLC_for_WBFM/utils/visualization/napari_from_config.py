@@ -14,19 +14,10 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
 
     project_data = ProjectData.load_final_project_data_from_config(cfg)
-    # training_dat_fname = cfg.config['preprocessed_red']
     training_cfg = cfg.get_training_config()
-    # training_seg_fname = training_cfg.resolve_relative_path_from_config('reindexed_masks')
-    #
-    # segmentation_cfg = cfg.get_segmentation_config()
-    # raw_seg_fname = segmentation_cfg.resolve_relative_path_from_config('output_masks')
-    #
-    # z_dat = zarr.open_array(training_dat_fname)
-    # z_seg = zarr.open_array(training_seg_fname)
-    # raw_seg = zarr.open(raw_seg_fname)
 
     z_dat = project_data.red_data
-    raw_seg = project_data.segmentation
+    raw_seg = project_data.raw_segmentation
     z_seg = project_data.reindexed_masks_training
 
     # Training data doesn't usually start at i=0, so align
