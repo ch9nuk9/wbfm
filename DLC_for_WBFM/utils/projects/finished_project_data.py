@@ -306,7 +306,8 @@ class ProjectData:
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:
-            logging.warning("No behavior annotations present; skipping")
+            pass
+            # logging.warning("No behavior annotations present; skipping")
         else:
             shade_using_behavior(self.behavior_annotations, ax, behaviors_to_ignore)
 

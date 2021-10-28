@@ -15,7 +15,7 @@ from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_
 
 class NapariTraceExplorer(QtWidgets.QWidget):
 
-    def __init__(self, project_path):
+    def __init__(self, project_path: str):
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
@@ -286,7 +286,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def build_napari_trace_explorer(project_config):
+def build_napari_trace_explorer(project_config: str, to_print_fps=True):
     viewer = napari.Viewer(ndisplay=2)
 
     # Build object that has all the data
@@ -311,5 +311,12 @@ def build_napari_trace_explorer(project_config):
     ui.show()
 
     print("Finished GUI setup")
+
+    if to_print_fps:
+        # From: https://github.com/napari/napari/issues/836
+        def fps_status(viewer, x):
+            # viewer.help = f'{x:.1f} frames per second'
+            print(f'{x:.1f} frames per second')
+        viewer.window.qt_viewer.canvas.measure_fps(callback=lambda x: fps_status(viewer, x))
 
     napari.run()
