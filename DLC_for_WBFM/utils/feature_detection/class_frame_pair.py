@@ -171,43 +171,32 @@ class FramePair:
     def print_reason_for_match(self, test_match):
         m0, m1 = test_match
 
+        all_match_types = [
+            (self.feature_matches, "feature"),
+            (self.affine_matches, "affine"),
+            (self.gp_matches, "gaussian process"),
+            (self.fdnc_matches, "fdnc (neural network)"),
+        ]
+
         f0_to_1 = self.get_f0_to_f1_dict()
         if f0_to_1[m0] == m1:
             f_to_conf = self.get_pair_to_conf_dict()
             print(f"Found match {test_match} with confidence {f_to_conf[test_match]}")
 
-            feature_dict = self.get_f0_to_f1_dict(self.feature_matches)
-            method_name = "feature"
-            if m0 in feature_dict:
-                if feature_dict[m0] == m1:
-                    conf = self.get_pair_to_conf_dict(self.feature_matches)[test_match]
-                    print(f"Same match from {method_name} method with confidence: {conf}")
-                else:
-                    print(f"Different match from {method_name} method: {feature_dict[m0]}")
-            else:
-                print(f"Neuron not matched using {method_name} method")
+            for match_type in all_match_types:
+                self.print_match_by_method(match_type[0], m0, m1, match_type[1])
 
-            aff_dict = self.get_f0_to_f1_dict(self.affine_matches)
-            method_name = "affine"
-            if m0 in aff_dict:
-                if aff_dict[m0] == m1:
-                    conf = self.get_pair_to_conf_dict(self.affine_matches)[test_match]
-                    print(f"Same match from {method_name} method with confidence: {conf}")
-                else:
-                    print(f"Different match from {method_name} method: {aff_dict[m0]}")
+    def print_match_by_method(self, this_method_matches, m0, m1, method_name):
+        aff_dict = self.get_f0_to_f1_dict(this_method_matches)
+        if m0 in aff_dict:
+            if aff_dict[m0] == m1:
+                conf = self.get_pair_to_conf_dict(this_method_matches)[(m0, m1)]
+                print(f"Same match from {method_name} method with confidence: {conf}")
             else:
-                print(f"Neuron not matched using {method_name} method")
-
-            gp_dict = self.get_f0_to_f1_dict(self.gp_matches)
-            method_name = "gaussian process"
-            if m0 in gp_dict:
-                if gp_dict[m0] == m1:
-                    conf = self.get_pair_to_conf_dict(self.gp_matches)[test_match]
-                    print(f"Same match from {method_name} method with confidence: {conf}")
-                else:
-                    print(f"Different match from {method_name} method: {gp_dict[m0]}")
-            else:
-                print(f"Neuron not matched using {method_name} method")
+                conf = self.get_pair_to_conf_dict(this_method_matches)[(m0, aff_dict[m0])]
+                print(f"Different match from {method_name} method: {aff_dict[m0]} with confidence: {conf}")
+        else:
+            print(f"Neuron not matched using {method_name} method")
 
     def match_using_local_affine(self):
         if not self.options.add_affine_to_candidates:
