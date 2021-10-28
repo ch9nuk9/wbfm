@@ -4,9 +4,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 
 
@@ -245,3 +246,57 @@ def _unpack_tracklets_for_combining(project_dir,
         logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_dlc_tracks.shape[1]/4)} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
     return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname
+
+
+def remove_overmatching(df, tol=1e-3):
+    """
+    Checks the tracklet + tracks combined dataframe for multiple neuron names being assigned to the same location, and
+    removes the one with lower confidence
+
+    Returns
+    -------
+
+    """
+    all_neurons = list(df.columns.levels[0])
+    coords = ['z', 'x', 'y']
+    tspan = list(df.index)
+
+    for i_time in tspan:
+        all_zxy = np.array([df[n][coords].iloc[i_time].to_numpy() for n in all_neurons])
+        dist_mat = squareform(pdist(all_zxy))
+        dist_mat[np.diag_indices_from(dist_mat)] = np.nan
+
+        min_dist = np.nanmin(dist_mat, axis=1)
+        all_overmatched = []
+        # Get neurons that are extremely close
+        for i0, d in enumerate(min_dist):
+            if np.abs(d) < tol:
+                i1 = np.nanargmin(dist_mat[i0, :])
+                all_overmatched.append([all_neurons[i0], all_neurons[i1]])
+
+        # Remove the neuron with lower confidence
+        for n0, n1 in all_overmatched:
+            conf0, conf1 = df[n0]['likelihood'].iloc[i_time], df[n1]['likelihood'].iloc[i_time]
+            d_conf = conf0 - conf1
+            if np.isnan(d_conf):
+                continue
+            if d_conf == 0:
+                raise ValueError
+            if d_conf > 0:
+                df[n1].iloc[i_time] = np.nan
+            else:
+                df[n0].iloc[i_time] = np.nan
+
+    return df
+
+
+def remove_overmatched_tracks_using_config(track_cfg: SubfolderConfigFile):
+
+    df_fname = track_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
+    df = read_if_exists(df_fname)
+
+    df = remove_overmatching(df)
+
+    # Overwrite
+    df.to_hdf(df_fname, key='df_with_missing')
+    df.to_csv(Path(df_fname).with_suffix('.csv.'))
