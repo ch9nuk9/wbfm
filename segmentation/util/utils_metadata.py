@@ -1,11 +1,15 @@
 """
 The metadata generator for the segmentation pipeline
 """
+import logging
 import pickle
 from dataclasses import dataclass
 import numpy as np
 import pandas as pd
+import zarr
 from skimage.measure import label, regionprops
+
+from segmentation.util.utils_pipeline import _unpack_config_file, calc_metadata_full_video
 
 
 def get_metadata_dictionary(masks, original_vol):
@@ -114,3 +118,35 @@ class DetectedNeurons:
             neuron_locs = []
 
         return neuron_locs
+
+
+def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
+    """
+
+    Given a project that contains a segmentation, recalculate the metadata
+
+    Parameters
+    ----------
+    _config : dict, loaded from project yaml file
+
+    Returns
+    -------
+    Saves metadata.pickle to disk (within folder 1-segmentation)
+
+    See also:
+        segment_video_using_config_3d
+
+    """
+
+    frame_list, mask_fname, metadata_fname, _, _, _, video_path, _, _ = _unpack_config_file(
+        segment_cfg, project_cfg, DEBUG)
+
+    masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
+    video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
+    logging.info(f"Read zarr from: {mask_fname} with size {masks_zarr.shape}")
+    logging.info(f"Read video from: {video_path} with size {video_dat.shape}")
+
+    if DEBUG:
+        frame_list = frame_list[:2]
+
+    calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
