@@ -261,7 +261,7 @@ def remove_overmatching(df, tol=1e-3):
     coords = ['z', 'x', 'y']
     tspan = list(df.index)
 
-    for i_time in tspan:
+    for i_time in tqdm(tspan):
         all_zxy = np.array([df[n][coords].iloc[i_time].to_numpy() for n in all_neurons])
         dist_mat = squareform(pdist(all_zxy))
         dist_mat[np.diag_indices_from(dist_mat)] = np.nan
