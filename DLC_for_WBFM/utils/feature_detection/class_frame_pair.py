@@ -389,7 +389,7 @@ def calc_FramePair_like(pair: FramePair, frame0: ReferenceFrame = None, frame1: 
     if frame1 is None:
         frame1 = pair.frame1
 
-    new_pair = calc_FramePair_from_Frames(frame0, frame1, None, metadata)
+    new_pair = calc_FramePair_from_Frames(frame0, frame1, metadata)
     new_pair.calc_final_matches_using_bipartite_matching(pair.options.min_confidence)
 
     return new_pair

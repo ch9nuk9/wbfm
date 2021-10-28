@@ -37,9 +37,10 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
         raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
     # Intermediate products: pairwise matches between frames
-    video_fname, options = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
-    all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **options)
-
+    video_fname, tracker_params, pairwise_matches_params = _unpack_config_frame2frame_matches(
+        DEBUG, project_config, training_config)
+    all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **tracker_params,
+                                                               pairwise_matches_params=pairwise_matches_params)
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs)
 
@@ -136,24 +137,25 @@ def _unpack_config_for_tracklets(training_config):
 def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     # Make tracklets
     # Get options
-    options = training_config.config['tracker_params'].copy()
+    tracker_params = training_config.config['tracker_params'].copy()
     if 'num_frames' in training_config.config['tracker_params']:
-        options['num_frames'] = training_config.config['tracker_params']['num_frames']
+        tracker_params['num_frames'] = training_config.config['tracker_params']['num_frames']
     else:
-        options['num_frames'] = project_config.config['dataset_params']['num_frames']
+        tracker_params['num_frames'] = project_config.config['dataset_params']['num_frames']
     if DEBUG:
-        options['num_frames'] = 5
+        tracker_params['num_frames'] = 5
     if 'start_volume' in training_config.config['tracker_params']:
-        options['start_volume'] = training_config.config['tracker_params']['start_volume']
+        tracker_params['start_volume'] = training_config.config['tracker_params']['start_volume']
     else:
-        options['start_volume'] = project_config.config['dataset_params']['start_volume']
-    # options['num_slices'] = project_config.config['dataset_params']['num_slices']
+        tracker_params['start_volume'] = project_config.config['dataset_params']['start_volume']
 
-    options['preprocessing_settings'] = None
+    pairwise_matches_params = training_config.config['pairwise_matching_params'].copy()
+    pairwise_matches_params.update(training_config.config['postprocessing_params'])
+    tracker_params['preprocessing_settings'] = None
 
     video_fname = project_config.config['preprocessed_red']
 
-    return video_fname, options
+    return video_fname, tracker_params, pairwise_matches_params
 
 
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> None:
