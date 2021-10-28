@@ -234,6 +234,8 @@ def _unpack_tracklets_for_combining(project_dir,
     min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
     with safe_cd(project_dir):
+        subfolder = os.path.join('3-tracking', 'postprocessing')
+        Path(subfolder).mkdir(exist_ok=True)
         # TODO: add the tracklet fname to the config file
         tracklet_fname = training_cfg.resolve_relative_path('all_tracklets.h5', prepend_subfolder=True)
         dlc_fname = track_config.resolve_relative_path_from_config('final_3d_tracks_df')
