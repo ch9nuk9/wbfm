@@ -10,6 +10,8 @@ from scipy.spatial.distance import cdist
 ##
 ## Use networkx to do bipartite matching
 ##
+from sklearn.neighbors import NearestNeighbors
+
 
 def calc_bipartite_matches(all_candidate_matches, verbose=0):
     """
@@ -199,6 +201,36 @@ def calc_confidence_from_distance_array_and_matches(distance_matrix, matches):
         dist = distance_matrix[m0, m1]
         conf[i] = conf_func(dist)
     return conf
+
+
+def calc_nearest_neighbor_matches(zxy0: np.ndarray,
+                                  zxy1: np.ndarray,
+                                  max_dist: float = None):
+    """
+    Fast sklearn version of calc_icp_matches, based on raw neighbors, not a rigid transformation
+
+    Parameters
+    ----------
+    zxy0
+    zxy1
+    max_dist
+
+    Returns
+    -------
+    matches_with_confidence
+
+    """
+
+    algorithm = 'brute'
+    neighbors_of_1 = NearestNeighbors(n_neighbors=1, radius=max_dist, algorithm=algorithm).fit(zxy1)
+
+    all_dist, all_ind_1 = neighbors_of_1.kneighbors(zxy0)
+
+    all_matches = np.array([[i0, i1] for i0, i1 in enumerate(all_ind_1)])
+    dist_matrix = cdist(zxy0, zxy1, 'euclidean')
+    conf = calc_confidence_from_distance_array_and_matches(dist_matrix, matches)
+
+    return all_matches, conf
 
 
 def calc_icp_matches(xyz0: np.ndarray, xyz1: np.ndarray,

@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches, calc_nearest_neighbor_matches
 
 
 def propagate_via_affine_model(which_neuron: int,
@@ -151,8 +151,9 @@ def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame
 
     # out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=10*distance_ratio)
     # TODO: Better max distance
-    out = calc_icp_matches(xyz0, xyz1, max_dist=maximum_distance)
-    all_matches, all_conf, all_candidate_matches = out
+    out = calc_nearest_neighbor_matches(xyz0, xyz1, max_dist=maximum_distance)
+    all_matches, all_conf = out
+    all_candidate_matches = all_matches
     matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(all_matches, all_conf)]
 
     return matches_with_conf, all_candidate_matches, xyz0

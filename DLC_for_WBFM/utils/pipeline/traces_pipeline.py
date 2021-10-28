@@ -11,7 +11,8 @@ import zarr
 from skimage import measure
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches, calc_bipartite_from_distance
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches, calc_bipartite_from_distance, \
+    calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
@@ -349,13 +350,14 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
             continue
         # zxy1[:, 0] *= z_to_xy_ratio
         # Get matches
-        try:
-            out = calc_icp_matches(zxy0, zxy1, max_dist=max_dist)
-        except ModuleNotFoundError:
-            logging.warning("Using bipartite matching because open3d can't be used on the cluster")
-            # TODO: the distance function doesn't produce the correct reindexed segmentations
-            out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
-        matches, conf, _ = out
+
+        # try:
+        #     out = calc_icp_matches(zxy0, zxy1, max_dist=max_dist)
+        # except ModuleNotFoundError:
+        #     logging.warning("Using bipartite matching because open3d can't be used on the cluster")
+        #     # TODO: the distance function doesn't produce the correct reindexed segmentations
+        #     out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
+        matches, conf, = calc_nearest_neighbor_matches(zxy0, zxy1, max_dist=max_dist)
 
         def seg_array_to_mask_ind(i):
             # The seg_zxy array has the 0th row corresponding to segmentation mask label 1

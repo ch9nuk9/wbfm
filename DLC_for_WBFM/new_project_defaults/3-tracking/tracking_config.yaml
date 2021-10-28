@@ -24,7 +24,7 @@ final_3d_tracks_df: null # See 3c-make_full_tracks.py
 
 final_3d_tracks:
   max_dist: 5.0 # CHANGE ME
-  max_dist_to_segmentation: 20.0 # CHANGE ME
+  max_dist_to_segmentation: 1.0 # CHANGE ME
   use_filtered: False # See postprocessing/3b+filter_dlc_predictions
 
 final_3d_postprocessing:
