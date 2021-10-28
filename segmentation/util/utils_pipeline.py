@@ -10,7 +10,7 @@ from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, Co
 from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 # metadata
-from segmentation.util.utils_metadata import get_metadata_dictionary
+from segmentation.util.utils_metadata import get_metadata_dictionary, calc_metadata_full_video
 from segmentation.util.utils_paths import get_output_fnames
 import zarr
 from segmentation.util.utils_model import segment_with_stardist_2d, segment_with_stardist_3d
@@ -64,47 +64,6 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
                            segmentation_options, continue_from_frame)
 
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
-
-
-def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat: zarr.Array,
-                             metadata_fname: str) -> None:
-    """
-    Calculates metadata once segmentation is finished
-
-    Parameters
-    ----------
-    frame_list
-    masks_zarr
-    video_dat
-    metadata_fname
-    """
-    metadata = dict()
-
-    # Loop again in order to calculate metadata and possibly postprocess
-    # with tifffile.TiffFile(video_path) as video_stream:
-    #     for i_rel, i_abs in tqdm(enumerate(frame_list), total=len(frame_list)):
-    #         masks = masks_zarr[i_rel, :, :, :]
-    #         # TODO: Use a disk-saved preprocessing artifact instead of recalculating
-    #         volume = _get_and_prepare_volume(i_abs, num_slices, preprocessing_settings, video_path=video_stream)
-    #
-    #         metadata[i_abs] = get_metadata_dictionary(masks, volume)
-
-    with tqdm(total=len(frame_list)) as pbar:
-        def parallel_func(i_both):
-            i_out, i_vol = i_both
-            masks = masks_zarr[i_out, :, :, :]
-            volume = video_dat[i_vol, ...]
-            metadata[i_vol] = get_metadata_dictionary(masks, volume)
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
-            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
-                pbar.update(1)
-
-    # saving metadata and settings
-    with open(metadata_fname, 'wb') as meta_save:
-        pickle.dump(metadata, meta_save)
 
 
 def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num_frames: int, verbose: int,
