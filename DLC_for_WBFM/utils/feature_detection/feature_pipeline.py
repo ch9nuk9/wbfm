@@ -7,7 +7,8 @@ import numpy as np
 import zarr as zarr
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair, calc_FramePair_from_Frames
+from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair, calc_FramePair_from_Frames, \
+    FramePairOptions
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame, \
     build_reference_frame_encoding
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, \
@@ -423,7 +424,7 @@ def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
     for ref_frame_ind, ref in reference_set.reference_frames.items():
         # Get matches (coordinates are local to this reference frame)
         # OPTMIZE: only attempt to check the subset of reference neurons
-        local_matches, conf, _, _ = calc_FramePair_from_Frames(this_frame, ref)
+        local_matches, conf, _, _ = calc_FramePair_from_Frames(this_frame, ref, None)
         # Convert to global coordinates
         global_matches = []
         global_conf = []
@@ -547,13 +548,18 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
 
     all_frame_pairs = {}
     frame_range = range(start_volume + 1, end_volume)
-    match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
-                 'add_gp_to_candidates': add_gp_to_candidates}
+    # match_opt = {'add_affine_to_candidates': add_affine_to_candidates,
+    #              'add_gp_to_candidates': add_gp_to_candidates}
+    match_opt = FramePairOptions(
+        add_affine_to_candidates=add_affine_to_candidates,
+        add_gp_to_candidates=add_gp_to_candidates,
+        add_fdnc_to_candidates=add_fdnc_to_candidates
+    )
     logging.info(f"Calculating Frame pairs for frames:  {start_volume+1}, {end_volume}")
     for i_frame in tqdm(frame_range):
         key = (i_frame - 1, i_frame)
         frame0, frame1 = all_frame_dict[key[0]], all_frame_dict[key[1]]
-        this_pair = calc_FramePair_from_Frames(frame0, frame1, **match_opt)
+        this_pair = calc_FramePair_from_Frames(frame0, frame1, match_opt)
 
         all_frame_pairs[key] = this_pair
 
@@ -841,7 +847,7 @@ def stitch_tracklets(clust_df,
                 # Otherwise, calculate from scratch
                 if verbose >= 3:
                     print(f"Calculating new matches between frames {key}")
-                out = calc_FramePair_from_Frames(frame0, frame1)
+                out = calc_FramePair_from_Frames(frame0, frame1, None)
                 raise ValueError("Needs refactor with FramePair")
                 matches, conf = out[0], out[1]
                 # Save for future

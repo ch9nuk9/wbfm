@@ -13,8 +13,42 @@ from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
 
 
 @dataclass
+class FramePairOptions:
+    # Flag and options for each method
+    # First: default feature-embedding method
+    embedding_matches_to_keep: float = 1.0
+    embedding_use_GMS: bool = False
+    crossCheck: bool = True
+
+    add_affine_to_candidates: bool = False
+    start_plane: int = 4
+    num_features_per_plane: int = 10000
+    affine_matches_to_keep: float = 0.8
+    affine_use_GMS: bool = True
+    min_matches: int = 20
+    allow_z_change: bool = False
+
+    add_gp_to_candidates: bool = False
+    starting_matches: str = 'affine_matches'
+
+    add_fdnc_to_candidates: bool = False
+    fdnc_options: dict = None
+
+    # For filtering / postprocessing the matches
+    z_threshold: float = None
+    min_confidence: float = 0.001
+    z_to_xy_ratio: float = 3.0
+
+    def __post_init__(self):
+        if self.fdnc_options is None:
+            from DLC_for_WBFM.utils.xinwei_fdnc.predict import load_fdnc_options
+            self.fdnc_options = load_fdnc_options()
+
+
+@dataclass
 class FramePair:
     """Information connecting neurons in two ReferenceFrame objects"""
+    options: FramePairOptions = None
 
     # Final output, with confidences
     final_matches: list = None
@@ -28,32 +62,25 @@ class FramePair:
 
     all_gps: list = None  # The actual gaussian processes; may get warning from scipy versioning
 
+    # New method:
+    fdnc_matches: list = None
+
     # Original keypoints
     keypoint_matches: list = None
-
-    min_confidence: float = 0.001
 
     # Frame classes
     frame0: ReferenceFrame = None
     frame1: ReferenceFrame = None
 
-    # New method:
-    fdnc_matches: list = None
-
-    # Metadata
-    add_affine_to_candidates: bool = False
-    add_gp_to_candidates: bool = False
-
-    z_threshold: float = None
-    z_to_xy_ratio: float = 3.0
-
     @property
     def all_candidate_matches(self):
         all_matches = self.feature_matches.copy()
-        if self.add_affine_to_candidates:
+        if self.options.add_affine_to_candidates:
             all_matches.extend(self.affine_matches)
-        if self.add_gp_to_candidates:
+        if self.options.add_gp_to_candidates:
             all_matches.extend(self.gp_matches)
+        if self.options.add_fdnc_to_candidates:
+            all_matches.extend(self.fdnc_matches)
         return all_matches
 
     @property
@@ -74,13 +101,13 @@ class FramePair:
                                                     z_threshold=None) -> list:
         assert len(self.all_candidate_matches) > 0, "No candidate matches!"
         if min_confidence is None:
-            min_confidence = self.min_confidence
+            min_confidence = self.options.min_confidence
         else:
-            self.min_confidence = min_confidence
+            self.options.min_confidence = min_confidence
         if z_threshold is None:
-            z_threshold = self.z_threshold
+            z_threshold = self.options.z_threshold
         else:
-            self.z_threshold = z_threshold
+            self.options.z_threshold = z_threshold
 
         matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches, min_conf=min_confidence)
         final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
@@ -106,9 +133,10 @@ class FramePair:
     # def calculate_additional_orb_keypoints_and_matches(self):
     #     return False
 
-    def get_metadata_dict(self):
-        return {'add_affine_to_candidates': self.add_affine_to_candidates,
-                'add_gp_to_candidates': self.add_gp_to_candidates}
+    def get_metadata_dict(self) -> FramePairOptions:
+        return self.options
+        # return {'add_affine_to_candidates': self.add_affine_to_candidates,
+        #         'add_gp_to_candidates': self.add_gp_to_candidates}
 
     def save_matches_as_excel(self, target_dir='.'):
         f0_ind = self.frame0.frame_ind
@@ -181,12 +209,25 @@ class FramePair:
             else:
                 print(f"Neuron not matched using {method_name} method")
 
-    def match_using_local_affine(self, start_plane,
-                                 num_features_per_plane,
-                                 matches_to_keep,
-                                 use_GMS,
-                                 min_matches,
-                                 allow_z_change):
+    def match_using_local_affine(self):
+        if not self.options.add_affine_to_candidates:
+            return
+        else:
+            obj = self.options
+            opt = dict(start_plane=obj.start_plane,
+                       num_features_per_plane=obj.num_features_per_plane,
+                       matches_to_keep=obj.affine_matches_to_keep,
+                       use_GMS=obj.affine_matches_to_keep,
+                       min_matches=obj.min_matches,
+                       allow_z_change=obj.allow_z_change)
+            self._match_using_local_affine(**opt)
+
+    def _match_using_local_affine(self, start_plane,
+                                  num_features_per_plane,
+                                  matches_to_keep,
+                                  use_GMS,
+                                  min_matches,
+                                  allow_z_change):
         # Generate keypoints and match per slice
         frame0, frame1 = self.frame0, self.frame1
         # TODO: should I reread the data here?
@@ -219,13 +260,19 @@ class FramePair:
         self.affine_matches = affine_matches
         self.affine_pushed_locations = affine_pushed
 
-    def match_using_gp(self, starting_matches='affine_matches'):
+    def match_using_gp(self):
+        if not self.options.add_gp_to_candidates:
+            return
+        else:
+            self._match_using_gp(self.options.starting_matches)
+
+    def _match_using_gp(self, starting_matches='affine_matches'):
         # Can start with any matched point clouds, but not more than ~100 matches otherwise it's way too slow
         frame0, frame1 = self.frame0, self.frame1
         n0 = frame0.neuron_locs.copy()
         n1 = frame1.neuron_locs.copy()
-        n0[:, 0] *= self.z_to_xy_ratio
-        n1[:, 0] *= self.z_to_xy_ratio
+        n0[:, 0] *= self.options.z_to_xy_ratio
+        n1[:, 0] *= self.options.z_to_xy_ratio
         # Actually match
         options = {'matches_with_conf': getattr(self, starting_matches)}
         gp_matches, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)
@@ -234,7 +281,15 @@ class FramePair:
         self.all_gps = all_gps
         self.gp_pushed_locations = gp_pushed
 
-    def match_using_feature_embedding(self, matches_to_keep=1.0, use_GMS=False, crossCheck=True):
+    def match_using_feature_embedding(self):
+        # Default method; always call this
+        obj = self.options
+        opt = dict(matches_to_keep=obj.embedding_matches_to_keep,
+                   use_GMS=obj.embedding_use_GMS,
+                   crossCheck=obj.crossCheck)
+        self._match_using_feature_embedding(**opt)
+
+    def _match_using_feature_embedding(self, matches_to_keep=1.0, use_GMS=False, crossCheck=True):
         """
         Requires the frame objects to have been correctly initialized, i.e. their neurons need a feature embedding
         """
@@ -254,7 +309,13 @@ class FramePair:
         self.feature_matches = neuron_embedding_matches_with_conf
         self.keypoint_matches = neuron_embedding_matches_with_conf  # Overwritten by affine match, if used
 
-    def match_using_fdnc(self, prediction_options):
+    def match_using_fdnc(self):
+        if not self.options.add_fdnc_to_candidates:
+            return
+        else:
+            self._match_using_fdnc(self.options.fdnc_options)
+
+    def _match_using_fdnc(self, prediction_options):
         from fDNC.src.DNC_predict import predict_matches
         frame0, frame1 = self.frame0, self.frame1
         template_pos = zimmer2leifer(np.array(frame0.neuron_locs))
@@ -273,40 +334,8 @@ class FramePair:
         return f"FramePair with {len(self.final_matches)}/{self.num_possible_matches} matches \n"
 
 
-@dataclass
-class FramePairOptions:
-    # Flag and options for each method
-    # First: default feature-embedding method
-    embedding_matches_to_keep: float = 1.0
-    embedding_use_GMS: bool = False
-    crossCheck: bool = True
-
-    add_affine_to_candidates: bool = False
-    start_plane: int = 4
-    num_features_per_plane: int = 10000
-    affine_matches_to_keep: float = 0.8
-    affine_use_GMS: bool = True
-    min_matches: int = 20
-    allow_z_change: bool = False
-
-    add_gp_to_candidates: bool = False
-    starting_matches: str = 'affine_matches'
-
-    add_fdnc_to_candidates: bool = False
-    fdnc_options: dict = None
-
-    # For filtering / postprocessing the matches
-    z_threshold: float = None
-    min_confidence: float = 0.001
-    z_to_xy_ratio: float = 3.0
-
-
-def calc_FramePair_from_Frames(frame0: ReferenceFrame,
-                               frame1: ReferenceFrame,
+def calc_FramePair_from_Frames(frame0: ReferenceFrame, frame1: ReferenceFrame, frame_pair_options: FramePairOptions,
                                verbose: int = 1,
-                               add_affine_to_candidates: bool = False,
-                               add_gp_to_candidates: bool = False,
-                               min_confidence: float = 0.001,
                                DEBUG: bool = False) -> FramePair:
     """
     Similar to older function, but this doesn't assume the features are
@@ -321,23 +350,19 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame,
     # frame1.check_data_desyncing()
 
     # Create class, then call member functions
-    frame_pair = FramePair(frame0=frame0, frame1=frame1,
-                           add_affine_to_candidates=add_affine_to_candidates,
-                           add_gp_to_candidates=add_gp_to_candidates,
-                           min_confidence=min_confidence)
+    frame_pair = FramePair(options=frame_pair_options, frame0=frame0, frame1=frame1)
+    # frame_pair = FramePair(frame0=frame0, frame1=frame1,
+    #                        add_affine_to_candidates=add_affine_to_candidates,
+    #                        add_gp_to_candidates=add_gp_to_candidates,
+    #                        min_confidence=min_confidence)
 
     # Core matching algorithm
     frame_pair.match_using_feature_embedding()
 
-    # Add additional candidates, if used
-    if add_affine_to_candidates:
-        frame_pair.match_using_local_affine()
-    if add_gp_to_candidates:
-        frame_pair.match_using_gp(starting_matches='affine_matches')
-    add_fdnc_to_candidates = False
-    if add_fdnc_to_candidates:
-        # TODO: should load prediction options one step above this
-        frame_pair.match_using_fdnc(prediction_options=None)
+    # Add additional candidates; the class checks if they are used
+    frame_pair.match_using_local_affine()
+    frame_pair.match_using_gp()
+    frame_pair.match_using_fdnc()
 
     return frame_pair
 
@@ -364,7 +389,7 @@ def calc_FramePair_like(pair: FramePair, frame0: ReferenceFrame = None, frame1: 
     if frame1 is None:
         frame1 = pair.frame1
 
-    new_pair = calc_FramePair_from_Frames(frame0, frame1, **metadata)
-    new_pair.calc_final_matches_using_bipartite_matching(pair.min_confidence)
+    new_pair = calc_FramePair_from_Frames(frame0, frame1, None, metadata)
+    new_pair.calc_final_matches_using_bipartite_matching(pair.options.min_confidence)
 
     return new_pair

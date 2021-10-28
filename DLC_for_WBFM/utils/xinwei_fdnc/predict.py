@@ -25,7 +25,7 @@ def load_fdnc_options_and_template(custom_template=None, path_to_folder=None):
     return prediction_options, template, template_label
 
 
-def load_fdnc_template(custom_template):
+def load_fdnc_template(custom_template=None):
     if custom_template is None:
         temp_fname = os.path.join(default_package_path, 'Data', 'Example', 'template.data')
         temp = pre_matt(temp_fname)
@@ -37,7 +37,7 @@ def load_fdnc_template(custom_template):
     return template, template_label
 
 
-def load_fdnc_options(path_to_folder):
+def load_fdnc_options(path_to_folder=None):
     if path_to_folder is None:
         path_to_folder = default_package_path
     model_path = os.path.join(path_to_folder, 'model', 'model.bin')
