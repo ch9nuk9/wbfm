@@ -11,7 +11,7 @@ import zarr
 from skimage.measure import label, regionprops
 from tqdm import tqdm
 
-from segmentation.util.utils_pipeline import _unpack_config_file
+from segmentation.util.utils_config_files import _unpack_config_file
 
 
 def get_metadata_dictionary(masks, original_vol):

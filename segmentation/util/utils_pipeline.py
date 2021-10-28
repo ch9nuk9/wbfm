@@ -3,15 +3,14 @@ import stardist.models
 import segmentation.util.utils_postprocessing as post
 import numpy as np
 from tqdm import tqdm
-import pickle
 # preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 # metadata
+from segmentation.util.utils_config_files import _unpack_config_file
 from segmentation.util.utils_metadata import get_metadata_dictionary, calc_metadata_full_video
-from segmentation.util.utils_paths import get_output_fnames
 import zarr
 from segmentation.util.utils_model import segment_with_stardist_2d, segment_with_stardist_3d
 from segmentation.util.utils_model import get_stardist_model
@@ -93,36 +92,6 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
         edit_config(_config.config['self_path'], _config.config)
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
-
-
-def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
-    # Initializing variables
-    start_volume = project_cfg.config['dataset_params']['start_volume']
-    num_frames = project_cfg.config['dataset_params']['num_frames']
-    if DEBUG:
-        num_frames = 1
-    frame_list = list(range(start_volume, start_volume + num_frames))
-    video_path = segment_cfg.config['video_path']
-    # Generate new filenames if they are not set
-    mask_fname = segment_cfg.config['output_masks']
-    metadata_fname = segment_cfg.config['output_metadata']
-    output_dir = segment_cfg.config['output_folder']
-    mask_fname, metadata_fname = get_output_fnames(video_path, output_dir, mask_fname, metadata_fname)
-    # Save settings
-    segment_cfg.config['output_masks'] = mask_fname
-    segment_cfg.config['output_metadata'] = metadata_fname
-    verbose = project_cfg.config['verbose']
-    stardist_model_name = segment_cfg.config['segmentation_params']['stardist_model_name']
-    zero_out_borders = segment_cfg.config['segmentation_params']['zero_out_borders']
-    # Preprocessing information
-    bbox_fname = segment_cfg.config.get('bbox_fname', None)
-    if bbox_fname is not None:
-        with open(bbox_fname, 'rb') as f:
-            all_bounding_boxes = pickle.load(f)
-    else:
-        all_bounding_boxes = None
-    return frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes
-
 
 ##
 ## 2d pipeline (stitch to get 3d)
