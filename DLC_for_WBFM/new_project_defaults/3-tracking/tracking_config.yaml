@@ -33,6 +33,10 @@ final_3d_postprocessing:
   min_dlc_confidence: null
   output_df_fname: 3-tracking/postprocessing/combined_3d_tracks.h5
 
+missing_data_postprocessing:
+  likelihood_threshold: 0.5
+  n_nearest_features: 50
+
 leifer_params:
   match_confidence_threshold: 0.2
   output_df_fname: 3-tracking/postprocessing/leifer_tracks.h5
