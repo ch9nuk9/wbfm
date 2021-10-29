@@ -234,7 +234,7 @@ def calc_nearest_neighbor_matches(zxy0: np.ndarray,
     all_ind_1, all_dist = all_ind_1[to_keep], all_dist[to_keep]
     # all_dist, all_ind_1 = neighbors_of_1.radius_neighbors(zxy0, radius=max_dist)
 
-    matches = np.array([[i0, i1[0]] for i0, i1 in enumerate(all_ind_1)])
+    matches = np.array([[i0, i1] for i0, i1 in enumerate(all_ind_1)])
     dist_matrix = cdist(zxy0, zxy1, 'euclidean')
     conf = calc_confidence_from_distance_array_and_matches(dist_matrix, matches)
 
