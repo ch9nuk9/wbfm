@@ -1,25 +1,21 @@
 import napari
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, filter_rolling_mean, \
-    filter_linear_interpolation
 from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
-from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
 
 class NapariTraceExplorer(QtWidgets.QWidget):
 
-    def __init__(self, project_path: str):
+    def __init__(self, project_data: ProjectData):
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.dat = ProjectData.load_final_project_data_from_config(project_path)
+        self.dat = project_data
 
     def setupUi(self, viewer: napari.Viewer):
 
@@ -260,17 +256,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Just visualize one neuron for now
         # 5 columns:
         # track_id, t, z, y, x
-        likelihood_thresh = self.dat.likelihood_thresh
         try:
             coords = ['z_dlc', 'x_dlc', 'y_dlc']
-            zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
+            zxy_array = np.array(self.dat.final_tracks[self.current_name][coords])
+            # zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
         except KeyError:
             coords = ['z', 'x', 'y']
-            zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
+            zxy_array = np.array(self.dat.final_tracks[self.current_name][coords])
+            # zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
 
         all_tracks_list = []
         t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
 
+        likelihood_thresh = self.dat.likelihood_thresh
         if likelihood_thresh is not None and 'likelihood' in self.dat.final_tracks[self.current_name]:
             to_remove = self.dat.final_tracks[self.current_name]['likelihood'] < likelihood_thresh
         else:
@@ -286,27 +284,32 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def build_napari_trace_explorer(project_config: str, to_print_fps=True):
-    viewer = napari.Viewer(ndisplay=2)
+def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
 
     # Build object that has all the data
-    ui = NapariTraceExplorer(project_config)
+    project_data = ProjectData.load_final_project_data_from_config(project_path)
+    napari_trace_explorer(project_data, to_print_fps)
 
+    # Note: don't use this in jupyter
+    napari.run()
+
+
+def napari_trace_explorer(project_data: ProjectData, to_print_fps: bool):
+    print("Starting GUI setup")
+    ui = NapariTraceExplorer(project_data)
     # Build Napari and add widgets
+    viewer = napari.Viewer(ndisplay=2)
     ui.dat.add_layers_to_viewer(viewer)
-
     # Actually dock my additional gui elements
     ui.setupUi(viewer)
     viewer.window.add_dock_widget(ui)
     ui.show()
-
     print("Finished GUI setup")
-
     if to_print_fps:
         # From: https://github.com/napari/napari/issues/836
         def fps_status(viewer, x):
             # viewer.help = f'{x:.1f} frames per second'
             print(f'{x:.1f} frames per second')
+
         viewer.window.qt_viewer.canvas.measure_fps(callback=lambda x: fps_status(viewer, x))
 
-    napari.run()

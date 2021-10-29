@@ -10,10 +10,11 @@ from scipy import ndimage as ndi
 
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d, get_crop_coords
 
-
 ##
 ## Background subtraction
 ##
+from tqdm.auto import tqdm
+
 
 def subtract_background_4d(video, sz=None):
     if sz is None:
@@ -352,3 +353,19 @@ def save_video4d(file, video4d, fontsize=20):
     plt.close('all')
 
     return anim
+
+
+##
+## Dataframes
+##
+
+def filter_dataframe_using_likelihood(df, threshold, coords=None):
+    if coords is None:
+        coords = ['z', 'x', 'y']
+
+    neuron_names = list(df.columns.levels[0])
+    for n in tqdm(neuron_names):
+        bad_points = df[n]['likelihood'] < threshold
+        for x in coords:
+            df.loc[bad_points, (n, x)] = np.nan
+    return df

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import napari
 import zarr
-from DLC_for_WBFM.gui.utils.napari_trace_explorer import build_napari_trace_explorer
+from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer_from_config
 from PyQt5 import QtCore, QtWidgets
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
@@ -322,7 +322,7 @@ class Ui_MainWindow(object):
     def open_traces_gui(self):
 
         self.traces_gui = QtWidgets.QMainWindow()
-        build_napari_trace_explorer(self.project_file)
+        napari_trace_explorer_from_config(self.project_file)
 
 
 if __name__ == "__main__":

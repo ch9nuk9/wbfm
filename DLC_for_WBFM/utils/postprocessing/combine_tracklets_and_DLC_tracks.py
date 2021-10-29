@@ -20,6 +20,7 @@ def calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
     """For one DLC neuron, calculate distances between that track and all tracklets"""
     coords = ['z', 'x', 'y']
 
+    # TODO: use confidence of dlc tracks
     this_dlc = dlc_tracks[dlc_name][coords]
     # Remove low confidence points
     #     low_conf = this_dlc['likelihood'] < min_dlc_confidence

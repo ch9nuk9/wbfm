@@ -1,6 +1,6 @@
 import argparse
 
-from DLC_for_WBFM.gui.utils.napari_trace_explorer import build_napari_trace_explorer
+from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer_from_config
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')
@@ -14,4 +14,4 @@ if __name__ == "__main__":
 
     print("Starting trace explorer GUI, may take a while to load...")
 
-    build_napari_trace_explorer(project_path)
+    napari_trace_explorer_from_config(project_path)
