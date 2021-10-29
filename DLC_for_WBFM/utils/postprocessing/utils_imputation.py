@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
 from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
+# Note: following must be present, even if pycharm cleans it
+# from sklearn.experimental import enable_iterative_imputer
+from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn.preprocessing import StandardScaler
 
@@ -25,14 +28,15 @@ def df_of_only_locations(df_raw):
     new_names = [old2new_names[n] for n in old_names]
     df_raw.columns = new_names
 
-    def name_to_keep(c):
-        return ('likelihood' not in c.lower()) and ('intensity' not in c.lower()) and ('label' not in c.lower()) and \
-                    ('area' not in c.lower())
-
-    to_keep = [c for c in df_raw.columns if name_to_keep(c)]
+    to_keep = [c for c in df_raw.columns if is_spatial_column_name(c)]
     df_only_locations = df_raw[to_keep].copy()
 
     return df_only_locations, old2new_names
+
+
+def is_spatial_column_name(c):
+    return ('likelihood' not in c.lower()) and ('intensity' not in c.lower()) and ('label' not in c.lower()) and \
+                ('area' not in c.lower())
 
 
 def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20, random_state=0):
@@ -54,11 +58,18 @@ def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20,
 
 
 def update_dataframe_using_flat_names(df_old, df_new, old2new_names):
-    """Note: can also be used when only updating part of the column (e.g. with takens embedding)"""
+    """
+    Note: can also be used when only updating part of the column (e.g. with takens embedding)
+
+    Also leaves non-spatial columns as they are
+    """
 
     df_interp = df_old.copy()
+    old_names = list(df_old.columns)
 
-    for n in old2new_names.values():
+    for n in old_names:
+        if not is_spatial_column_name(n[1]):
+            continue
         df_interp[n] = df_new[old2new_names[n]]
 
     return df_interp
@@ -79,7 +90,8 @@ def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
     # Save
     fname = Path(fname)
     base_fname = fname.stem
-    out_fname = fname.with_stem(f"{base_fname}_imputed")
+    out_fname = fname.with_name(f"{base_fname}_imputed.h5")
+    # out_fname = fname.with_stem(f"{base_fname}_imputed")
     df_final.to_hdf(out_fname, key='df_with_missing')
 
 
