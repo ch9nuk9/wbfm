@@ -28,7 +28,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
 
     Get both red and green traces for each neuron
     """
-    dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio = _unpack_configs_for_traces(
+    dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, z_to_xy_ratio = _unpack_configs_for_traces(
         project_cfg, segment_cfg, track_cfg)
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
@@ -55,7 +55,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     if DEBUG:
         frame_list = frame_list[:2]  # Shorten (to avoid break)
     calculate_segmentation_and_dlc_matches(_get_dlc_zxy, all_matches, frame_list, max_dist,
-                                           segmentation_metadata, project_data, z_to_xy_ratio, DEBUG=DEBUG)
+                                           project_data, z_to_xy_ratio, DEBUG=DEBUG)
 
     relative_fname = traces_cfg.config['all_matches']
     project_cfg.pickle_in_local_project(all_matches, relative_fname)
@@ -320,7 +320,6 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
                                            all_matches: defaultdict,
                                            frame_list: list,
                                            max_dist: float,
-                                           segmentation_metadata: Dict[int, pd.DataFrame],
                                            project_data: ProjectData,
                                            z_to_xy_ratio: float, DEBUG: bool = False) -> None:
     """
@@ -331,7 +330,6 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
     all_matches
     frame_list
     max_dist
-    segmentation_metadata
     project_data
     z_to_xy_ratio
 
@@ -350,19 +348,12 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
             continue
         # zxy1[:, 0] *= z_to_xy_ratio
         # Get matches
-
-        # try:
-        #     out = calc_icp_matches(zxy0, zxy1, max_dist=max_dist)
-        # except ModuleNotFoundError:
-        #     logging.warning("Using bipartite matching because open3d can't be used on the cluster")
-        #     # TODO: the distance function doesn't produce the correct reindexed segmentations
-        #     out = calc_bipartite_from_distance(zxy0, zxy1, max_dist=max_dist)
         matches, conf, = calc_nearest_neighbor_matches(zxy0, zxy1, max_dist=max_dist)
 
         def seg_array_to_mask_ind(i):
             # The seg_zxy array has the 0th row corresponding to segmentation mask label 1
             # BUT can also skip rows and might generally be non-monotonic
-            return segmentation_metadata[i_volume].iloc[i].name
+            return project_data.segmentation_metadata.seg_array_to_mask_index(i_volume, i)
 
         def dlc_array_to_ind(i):
             # the 0th index corresponds to neuron_001, and should finally be label 1
@@ -379,9 +370,6 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
     params_start_volume = project_cfg.config['dataset_params']['start_volume']
     num_frames = project_cfg.config['dataset_params']['num_frames']
-    # Get previous annotations
-    segmentation_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
-    segmentation_metadata = pickle_load_binary(segmentation_fname)
     dlc_fname = track_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
     z_to_xy_ratio = project_cfg.config['dataset_params']['z_to_xy_ratio']
     green_fname = project_cfg.config['preprocessed_green']
@@ -389,7 +377,7 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
 
     dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
 
-    return dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, segmentation_metadata, z_to_xy_ratio
+    return dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, z_to_xy_ratio
 
 
 def _unpack_configs_for_extraction(project_cfg, traces_cfg):
