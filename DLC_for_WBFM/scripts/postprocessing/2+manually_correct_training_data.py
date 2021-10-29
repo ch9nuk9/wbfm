@@ -11,7 +11,6 @@ from sacred import SETTINGS
 
 # main function
 from DLC_for_WBFM.gui.utils.manual_annotation import create_manual_correction_gui
-from DLC_for_WBFM.utils.pipeline.traces_pipeline import get_traces_from_3d_tracks_using_config
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False

@@ -221,16 +221,20 @@ def calc_nearest_neighbor_matches(zxy0: np.ndarray,
 
     """
 
+    nan_val = 1e6
+    zxy0 = np.nan_to_num(zxy0, nan=nan_val)
+    zxy1 = np.nan_to_num(zxy1, nan=nan_val)
+
     algorithm = 'brute'
     neighbors_of_1 = NearestNeighbors(n_neighbors=1, radius=max_dist, algorithm=algorithm).fit(zxy1)
 
-    all_dist, all_ind_1 = neighbors_of_1.kneighbors(zxy0)
+    all_dist, all_ind_1 = neighbors_of_1.radius_neighbors(zxy0, radius=max_dist)
 
-    all_matches = np.array([[i0, i1] for i0, i1 in enumerate(all_ind_1)])
+    matches = np.array([[i0, i1[0]] for i0, i1 in enumerate(all_ind_1)])
     dist_matrix = cdist(zxy0, zxy1, 'euclidean')
     conf = calc_confidence_from_distance_array_and_matches(dist_matrix, matches)
 
-    return all_matches, conf
+    return matches, conf
 
 
 def calc_icp_matches(xyz0: np.ndarray, xyz1: np.ndarray,

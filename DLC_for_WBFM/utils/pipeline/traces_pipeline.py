@@ -14,7 +14,7 @@ from tqdm import tqdm
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches, calc_bipartite_from_distance, \
     calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile, pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 
 
@@ -381,8 +381,7 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     num_frames = project_cfg.config['dataset_params']['num_frames']
     # Get previous annotations
     segmentation_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
-    with open(segmentation_fname, 'rb') as f:
-        segmentation_metadata = pickle.load(f)
+    segmentation_metadata = pickle_load_binary(segmentation_fname)
     dlc_fname = track_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
     z_to_xy_ratio = project_cfg.config['dataset_params']['z_to_xy_ratio']
     green_fname = project_cfg.config['preprocessed_green']
