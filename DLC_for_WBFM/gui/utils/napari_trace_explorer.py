@@ -9,7 +9,7 @@ from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_traces_dataframe
+from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 
 
@@ -293,17 +293,7 @@ def build_napari_trace_explorer(project_config: str, to_print_fps=True):
     ui = NapariTraceExplorer(project_config)
 
     # Build Napari and add widgets
-    print("Finished loading data, starting napari...")
-    viewer.add_image(ui.dat.red_data, name="Red data", opacity=0.5, colormap='red', visible=False)
-    viewer.add_image(ui.dat.green_data, name="Green data", opacity=0.5, colormap='green')
-    viewer.add_labels(ui.dat.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
-    if ui.dat.segmentation is not None:
-        viewer.add_labels(ui.dat.segmentation, name="Colored segmentation", opacity=0.4)
-
-    # Add a text overlay
-    df = ui.dat.red_traces
-    options = napari_labels_from_traces_dataframe(df)
-    viewer.add_points(**options)
+    ui.dat.add_layers_to_viewer(viewer)
 
     # Actually dock my additional gui elements
     ui.setupUi(viewer)

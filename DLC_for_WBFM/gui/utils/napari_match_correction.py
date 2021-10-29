@@ -4,8 +4,8 @@ import win32com.client
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_traces_dataframe, \
-    napari_labels_from_frames
+from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
+from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 
 
 class napari_track_correction(QtWidgets.QWidget):

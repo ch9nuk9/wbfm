@@ -7,6 +7,7 @@ import pandas as pd
 import zarr
 from DLC_for_WBFM.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, filter_rolling_mean, \
     filter_linear_interpolation
+from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
     SubfolderConfigFile
@@ -337,6 +338,20 @@ class ProjectData:
         v.add_tracks(all_tracks_list, head_length=2, name=which_matches)
 
         return v
+
+    def add_layers_to_viewer(self, viewer, which_layers='all'):
+
+        print("Finished loading data, starting napari...")
+        viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red', visible=False)
+        viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green')
+        viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
+        if self.segmentation is not None:
+            viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4)
+
+        # Add a text overlay
+        df = self.red_traces
+        options = napari_labels_from_traces_dataframe(df)
+        viewer.add_points(**options)
 
     def __repr__(self):
         return f"=======================================\n\
