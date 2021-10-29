@@ -194,7 +194,7 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
 
 
 def calc_confidence_from_distance_array_and_matches(distance_matrix, matches):
-    conf_func = lambda dist: np.tanh(1.0 / dist)
+    conf_func = lambda dist: np.tanh(1.0 / dist + 1e-6)
     # Calculate confidences from distance
     conf = np.zeros((matches.shape[0], 1))
     for i, (m0, m1) in enumerate(matches):

@@ -264,6 +264,7 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
                       'verbose': 1}
         subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
 
+        # TODO: refactor using DetectedNeurons class
         fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         segmentation_metadata = pickle_load_binary(fname)
 
