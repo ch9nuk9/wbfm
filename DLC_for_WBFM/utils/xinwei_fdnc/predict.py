@@ -223,6 +223,8 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     else:
         custom_template = None
     prediction_options, template, _ = load_fdnc_options_and_template(custom_template=custom_template)
+    fdnc_updates = tracks_cfg.config['leifer_params']['core_options']
+    prediction_options.update(fdnc_updates)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
     return match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates
 
