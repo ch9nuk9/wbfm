@@ -91,6 +91,12 @@ class ProjectData:
     def num_frames(self):
         return self.project_config.config['dataset_params']['num_frames']
 
+    @property
+    def which_training_frames(self):
+        # TODO: change this to just load on init?
+        train_cfg = self.project_config.get_training_config()
+        return train_cfg.config['training_data_3d']['which_frames']
+
     @staticmethod
     def unpack_config_file(project_path):
         cfg = ModularProjectConfig(project_path)
