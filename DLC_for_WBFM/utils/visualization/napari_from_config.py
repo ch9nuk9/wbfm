@@ -1,39 +1,9 @@
-import logging
 import os
-from typing import Tuple
 import napari
 import numpy as np
 import zarr
 
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-
-
-def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
-
-    project_data = ProjectData.load_final_project_data_from_config(cfg)
-    training_cfg = cfg.get_training_config()
-
-    z_dat = project_data.red_data
-    raw_seg = project_data.raw_segmentation
-    z_seg = project_data.reindexed_masks_training
-
-    # Training data doesn't usually start at i=0, so align
-    num_frames = training_cfg.config['training_data_3d']['num_training_frames']
-    i_seg_start = training_cfg.config['training_data_3d']['which_frames'][0]
-    i_seg_end = i_seg_start + num_frames
-    z_dat = z_dat[i_seg_start:i_seg_end, ...]
-    raw_seg = raw_seg[i_seg_start:i_seg_end, ...]
-
-    logging.info(f"Size of reindexed_masks: {z_dat.shape}")
-
-    viewer = napari.view_labels(z_seg, ndisplay=3)
-    viewer.add_labels(raw_seg, visible=False)
-    viewer.add_image(z_dat)
-    viewer.show()
-
-    return viewer, z_dat, z_seg
 
 
 def napari_of_full_data(project_dir):
@@ -101,7 +71,7 @@ def napari_tracks_from_match_list(list_of_matches, n0_zxy_raw, n1_zxy_raw):
     return all_tracks_list
 
 
-def napari_labels_from_frames(all_frames: dict, num_frames=1) -> dict:
+def napari_labels_from_frames(all_frames: dict, num_frames=1, to_flip_zxy=True) -> dict:
 
     all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
     properties = {'label': []}
@@ -109,7 +79,8 @@ def napari_labels_from_frames(all_frames: dict, num_frames=1) -> dict:
         if i_frame >= num_frames:
             break
         zxy = frame.neuron_locs
-        zxy = zxy[:, [0, 2, 1]]
+        if to_flip_zxy:
+            zxy = zxy[:, [0, 2, 1]]
         num_neurons = zxy.shape[0]
         t_vec = np.ones((num_neurons, 1)) * i_frame
         t_zxy = np.hstack([t_vec, zxy])

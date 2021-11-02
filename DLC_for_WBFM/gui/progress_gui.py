@@ -22,7 +22,8 @@ from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_training_data, napari_of_full_data
+from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_full_data
+from DLC_for_WBFM.utils.projects.finished_project_data import napari_of_training_data
 
 
 class Ui_MainWindow(object):

@@ -2,11 +2,15 @@ import concurrent
 import logging
 import os
 from dataclasses import dataclass
+from typing import Tuple
+
+import napari
 import numpy as np
 import pandas as pd
 import zarr
 from DLC_for_WBFM.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, filter_rolling_mean, \
     filter_linear_interpolation
+from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
@@ -322,9 +326,14 @@ class ProjectData:
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
         return self.segmentation_metadata.detect_neurons_from_file(i_frame)
 
-    def get_centroids_as_numpy_training(self, i_frame: int) -> np.ndarray:
+    def get_centroids_as_numpy_training(self, i_frame: int, is_relative_index=True) -> np.ndarray:
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
+        if is_relative_index:
+            i_frame = self.correct_relative_index(i_frame)
         return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
+
+    def correct_relative_index(self, i):
+        return self.which_training_frames[i]
 
     def napari_of_single_match(self, pair, which_matches='final_matches'):
         import napari
@@ -340,13 +349,17 @@ class ProjectData:
 
         v = napari.view_image(raw_red_data, ndisplay=3)
         v.add_points(n0_zxy_raw, size=3, face_color='green', symbol='x', n_dimensional=True)
-        v.add_points(n1_zxy_raw, size=3, face_color='blue', symbol='x', n_dimensional=True)
+        v.add_points(n1_zxy_raw, size=3, face_color='blue', symbol='o', n_dimensional=True)
         v.add_tracks(all_tracks_list, head_length=2, name=which_matches)
+
+        # Add text overlay
+        frames = {0: this_match.frame0, 1: this_match.frame1}
+        options = napari_labels_from_frames(frames, num_frames=2, to_flip_zxy=False)
+        v.add_points(**options)
 
         return v
 
     def add_layers_to_viewer(self, viewer, which_layers='all'):
-
         print("Finished loading data, starting napari...")
         viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red', visible=False)
         viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green')
@@ -378,3 +391,29 @@ red_traces: {self.red_traces is not None}\n\
 green_traces: {self.green_traces is not None}\n\
 final_tracks: {self.final_tracks is not None}\n\
 behavior_annotations: {self.behavior_annotations is not None}\n"
+
+
+def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
+
+    project_data = ProjectData.load_final_project_data_from_config(cfg)
+    training_cfg = cfg.get_training_config()
+
+    z_dat = project_data.red_data
+    raw_seg = project_data.raw_segmentation
+    z_seg = project_data.reindexed_masks_training
+
+    # Training data doesn't usually start at i=0, so align
+    num_frames = training_cfg.config['training_data_3d']['num_training_frames']
+    i_seg_start = training_cfg.config['training_data_3d']['which_frames'][0]
+    i_seg_end = i_seg_start + num_frames
+    z_dat = z_dat[i_seg_start:i_seg_end, ...]
+    raw_seg = raw_seg[i_seg_start:i_seg_end, ...]
+
+    logging.info(f"Size of reindexed_masks: {z_dat.shape}")
+
+    viewer = napari.view_labels(z_seg, ndisplay=3)
+    viewer.add_labels(raw_seg, visible=False)
+    viewer.add_image(z_dat)
+    viewer.show()
+
+    return viewer, z_dat, z_seg

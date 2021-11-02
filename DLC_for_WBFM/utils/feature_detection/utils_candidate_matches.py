@@ -11,6 +11,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_m
 ##
 ## Convinience function
 ##
+from scipy.sparse import coo_matrix
 
 
 def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):
@@ -189,3 +190,12 @@ def fix_candidates_without_confidences(candidates):
             new_matches.append(m)
         new_candidates[k] = new_matches
     return new_candidates
+
+
+def matches_to_sparse_matrix(matches_with_conf, shape=None):
+    matches_with_conf = np.array([np.array(m) for m in matches_with_conf])
+    row, col, data = \
+        matches_with_conf[:, 0].astype(int), matches_with_conf[:, 1].astype(int), matches_with_conf[:, 2].astype(float)
+    if shape is None:
+        shape = (max(row)+1, max(col)+1)
+    return coo_matrix((data, (row, col)), shape=shape, dtype=float)
