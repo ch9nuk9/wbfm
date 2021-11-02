@@ -93,7 +93,7 @@ def track_using_fdnc(project_data: ProjectData,
     all_matches = []
     for i_frame in tqdm(range(num_frames), total=num_frames, leave=False):
         pts_scaled = get_pts(i_frame)
-        matches = predict_matches(test_pos=pts_scaled, template_pos=template, **prediction_options)
+        matches, _ = predict_matches(test_pos=pts_scaled, template_pos=template, **prediction_options)
         matches = filter_matches(matches, match_confidence_threshold)
         all_matches.append(matches)
 

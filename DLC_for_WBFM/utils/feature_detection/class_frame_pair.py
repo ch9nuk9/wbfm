@@ -40,10 +40,14 @@ class FramePairOptions:
     z_to_xy_ratio: float = 3.0
 
     def __post_init__(self):
-        if self.fdnc_options is None:
-            from DLC_for_WBFM.utils.xinwei_fdnc.predict import load_fdnc_options
-            self.fdnc_options = load_fdnc_options()
+        from DLC_for_WBFM.utils.xinwei_fdnc.predict import load_fdnc_options
+        default_options = load_fdnc_options()
 
+        if self.fdnc_options is None:
+            self.fdnc_options = {}
+        else:
+            default_options.update(self.fdnc_options)
+        self.fdnc_options = default_options
 
 @dataclass
 class FramePair:
@@ -310,7 +314,7 @@ class FramePair:
         template_pos = zimmer2leifer(np.array(frame0.neuron_locs))
         test_pos = zimmer2leifer(np.array(frame1.neuron_locs))
 
-        matches_with_conf = predict_matches(test_pos=test_pos, template_pos=template_pos, **prediction_options)
+        _, matches_with_conf = predict_matches(test_pos=test_pos, template_pos=template_pos, **prediction_options)
         self.fdnc_matches = matches_with_conf
 
     def print_reason_for_all_final_matches(self):

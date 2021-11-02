@@ -16,6 +16,8 @@ pairwise_matching_params:
   add_affine_to_candidates: true
   add_gp_to_candidates: true
   add_fdnc_to_candidates: true
+  fdnc_options:
+    topn: 5
   min_confidence: 0.4
   z_threshold: 3
 
