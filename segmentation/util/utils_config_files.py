@@ -10,6 +10,7 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     if DEBUG:
         num_frames = 1
     frame_list = list(range(start_volume, start_volume + num_frames))
+    # print(project_cfg.config)
     video_path = segment_cfg.config['video_path']
     # Generate new filenames if they are not set
     mask_fname = segment_cfg.config['output_masks']

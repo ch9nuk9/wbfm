@@ -163,6 +163,7 @@ def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
     video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
     logging.info(f"Read zarr from: {mask_fname} with size {masks_zarr.shape}")
     logging.info(f"Read video from: {video_path} with size {video_dat.shape}")
+    logging.info(f"Using frame mapping from masks to video: {frame_list[:5]}...")
 
     if DEBUG:
         frame_list = frame_list[:2]
