@@ -6,7 +6,6 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 
-
 ##
 ## Use networkx to do bipartite matching
 ##
@@ -167,7 +166,7 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     # Scipy can't deal with np.inf, so we want to maximize, not minimize
     # (And set impossible values to 0.0)
     inv_cost_matrix = 1.0 / (cost_matrix + 1e-6)
-    np.where(inv_cost_matrix < (1.0/max_dist), 0.0, inv_cost_matrix)
+    np.where(inv_cost_matrix < (1.0 / max_dist), 0.0, inv_cost_matrix)
     inv_cost_matrix = np.nan_to_num(inv_cost_matrix)
 
     try:
@@ -193,13 +192,20 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     return matches, conf, np.array(raw_matches)
 
 
+def dist2conf(dist):
+    return np.tanh(1.0 / dist + 1e-6)
+
+
+# def dist2conf_vector(dist):
+#     return np.array([dist2conf_scalar(d) for d in dist])
+
+
 def calc_confidence_from_distance_array_and_matches(distance_matrix, matches):
-    conf_func = lambda dist: np.tanh(1.0 / dist + 1e-6)
     # Calculate confidences from distance
     conf = np.zeros((matches.shape[0], 1))
     for i, (m0, m1) in enumerate(matches):
         dist = distance_matrix[m0, m1]
-        conf[i] = conf_func(dist)
+        conf[i] = dist2conf(dist)
     return conf
 
 
@@ -233,18 +239,20 @@ def calc_nearest_neighbor_matches(zxy0: np.ndarray,
     all_dist, all_ind_1 = neighbors_of_1.kneighbors(zxy0, n_neighbors=n_neighbors)
     # all_dist, all_ind_1 = neighbors_of_1.radius_neighbors(zxy0, radius=max_dist)
 
+    to_keep = all_dist < max_dist
     if n_neighbors == 1:
-        to_keep = all_dist < max_dist
         all_ind_0 = np.array(range(len(all_ind_1)), dtype=int)
         all_ind_0 = all_ind_0[:, np.newaxis]
-        all_ind_0, all_ind_1, all_dist = all_ind_0[to_keep], all_ind_1[to_keep], all_dist[to_keep]
-        matches = np.array([[i0, i1] for i0, i1 in zip(all_ind_0, all_ind_1)])
     else:
         # Then all_ind_1 is nested
-        pass
-    dist_matrix = cdist(zxy0, zxy1, 'euclidean')
-    conf = calc_confidence_from_distance_array_and_matches(dist_matrix, matches)
+        base_ind = np.array([1] * n_neighbors)
+        all_ind_0 = np.array([base_ind * i for i in range(len(all_ind_1))])
 
+    all_ind_0, all_ind_1, all_dist = all_ind_0[to_keep], all_ind_1[to_keep], all_dist[to_keep]
+    # Doing the subset here automatically flattens the arrays
+    matches = np.array([[i0, i1] for i0, i1 in zip(all_ind_0, all_ind_1)])
+    conf = dist2conf(all_dist)
+    # err
     return matches, conf
 
 

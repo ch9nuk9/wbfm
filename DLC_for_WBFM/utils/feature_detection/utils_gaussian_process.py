@@ -82,6 +82,7 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     xyz0, xyz1 = pc_pushed.points, pc_target.points
     matches, conf = calc_nearest_neighbor_matches(xyz0, xyz1, max_dist=max_dist, n_neighbors=n_neighbors)
 
-    matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(matches, conf)]
+    assert np.isscalar(conf[0]), "Check formatting (nested lists)"
+    matches_with_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
 
     return matches_with_conf, (gpx, gpy), np.array(xyz0)

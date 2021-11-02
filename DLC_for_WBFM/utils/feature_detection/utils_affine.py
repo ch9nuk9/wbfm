@@ -155,6 +155,7 @@ def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame
     out = calc_nearest_neighbor_matches(xyz0, xyz1, max_dist=maximum_distance, n_neighbors=num_candidates)
     all_matches, all_conf = out
     all_candidate_matches = all_matches
-    matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(all_matches, all_conf)]
+    assert np.isscalar(all_conf[0]), "Check formatting (nested lists)"
+    matches_with_conf = [(m[0], m[1], c) for m, c in zip(all_matches, all_conf)]
 
     return matches_with_conf, all_candidate_matches, xyz0
