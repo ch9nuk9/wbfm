@@ -65,7 +65,8 @@ def produce_training_data(_config, _run):
     segment_cfg.config['output_masks'] = training_cfg.config['reindexed_masks']
     segment_cfg.config['output_metadata'] = training_cfg.config['reindexed_metadata']
     project_config.config['dataset_params']['num_frames'] = training_cfg.config['training_data_3d']['num_training_frames']
-    project_config.config['dataset_params']['start_volume'] = training_cfg.config['training_data_3d']['which_frames'][0]
+    start_volume = training_cfg.config['training_data_3d']['which_frames'][0]
+    project_config.config['dataset_params']['start_volume'] = start_volume
 
     with safe_cd(project_config.project_dir):
         recalculate_metadata_from_config(segment_cfg, project_config, DEBUG)

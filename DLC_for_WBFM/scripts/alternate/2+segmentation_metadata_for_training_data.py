@@ -33,6 +33,9 @@ def cfg(project_path, DEBUG):
     segment_cfg.config['output_metadata'] = train_cfg.config['reindexed_metadata']
     # TODO: check that start frame indexes properly
     cfg.config['dataset_params']['num_frames'] = train_cfg.config['training_data_3d']['num_training_frames']
+    start_volume = train_cfg.config['training_data_3d']['which_frames'][0]
+    print(f"Using start volume: {start_volume}")
+    cfg.config['dataset_params']['start_volume'] = start_volume
 
     if not DEBUG:
         using_monkeypatch()
