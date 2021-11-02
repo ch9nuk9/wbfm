@@ -8,6 +8,8 @@ import napari
 import numpy as np
 import pandas as pd
 import zarr
+from scipy.spatial.distance import cdist
+
 from DLC_for_WBFM.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, filter_rolling_mean, \
     filter_linear_interpolation
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
@@ -331,6 +333,20 @@ class ProjectData:
         if is_relative_index:
             i_frame = self.correct_relative_index(i_frame)
         return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
+
+    def get_centroids_as_numpy_training_with_unmatched(self, i_rel: int):
+        i_abs = self.correct_relative_index(i_rel)
+        matched_pts = self.reindexed_metadata_training.detect_neurons_from_file(i_rel)
+        all_pts = self.segmentation_metadata.detect_neurons_from_file(i_abs)
+
+        # Any points that do not have a near-identical match in matched_pts are unmatched
+        # These will be appended
+        tol = 1e-3
+        ind_unmatched = np.any(cdist(all_pts, matched_pts) < tol, axis=1)
+
+        pts_to_add = all_pts[ind_unmatched, :]
+        final_pts = np.vstack([matched_pts, pts_to_add])
+        return final_pts
 
     def correct_relative_index(self, i):
         return self.which_training_frames[i]
