@@ -143,7 +143,9 @@ def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
 
     Parameters
     ----------
-    _config : dict, loaded from project yaml file
+    DEBUG
+    project_cfg
+    segment_cfg
 
     Returns
     -------
@@ -173,6 +175,8 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
     """
     Calculates metadata once segmentation is finished
 
+    Assume the masks are indexed from 0 and the video is indexed using frame_list
+
     Parameters
     ----------
     frame_list
@@ -193,8 +197,8 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
 
     with tqdm(total=len(frame_list)) as pbar:
         def parallel_func(i_both):
-            i_out, i_vol = i_both
-            masks = masks_zarr[i_out, :, :, :]
+            i_mask, i_vol = i_both
+            masks = masks_zarr[i_mask, :, :, :]
             volume = video_dat[i_vol, ...]
             metadata[i_vol] = get_metadata_dictionary(masks, volume)
 
