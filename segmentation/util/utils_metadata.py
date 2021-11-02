@@ -121,6 +121,9 @@ class DetectedNeurons:
 
         return neuron_locs
 
+    def seg_array_to_mask_index(self, i_time, i_index):
+        return self.segmentation_metadata[i_time].iloc[i_index].name
+
 
 def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
     """
