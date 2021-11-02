@@ -205,7 +205,8 @@ def calc_confidence_from_distance_array_and_matches(distance_matrix, matches):
 
 def calc_nearest_neighbor_matches(zxy0: np.ndarray,
                                   zxy1: np.ndarray,
-                                  max_dist: float = None):
+                                  max_dist: float = None,
+                                  n_neighbors: int = 1):
     """
     Fast sklearn version of calc_icp_matches, based on raw neighbors, not a rigid transformation
 
@@ -226,15 +227,21 @@ def calc_nearest_neighbor_matches(zxy0: np.ndarray,
     zxy1 = np.nan_to_num(zxy1, nan=nan_val)
 
     algorithm = 'brute'
-    neighbors_of_1 = NearestNeighbors(n_neighbors=1, radius=max_dist, algorithm=algorithm).fit(zxy1)
+    neighbors_of_1 = NearestNeighbors(n_neighbors=n_neighbors, radius=max_dist, algorithm=algorithm).fit(zxy1)
 
     # Easier to just get the closest and postprocess the distance, vs. returning all neighbors in a ball and sorting
-    all_dist, all_ind_1 = neighbors_of_1.kneighbors(zxy0, n_neighbors=1)
-    to_keep = all_dist < max_dist
-    all_ind_1, all_dist = all_ind_1[to_keep], all_dist[to_keep]
+    all_dist, all_ind_1 = neighbors_of_1.kneighbors(zxy0, n_neighbors=n_neighbors)
     # all_dist, all_ind_1 = neighbors_of_1.radius_neighbors(zxy0, radius=max_dist)
 
-    matches = np.array([[i0, i1] for i0, i1 in enumerate(all_ind_1)])
+    if n_neighbors == 1:
+        to_keep = all_dist < max_dist
+        all_ind_0 = np.array(range(len(all_ind_1)), dtype=int)
+        all_ind_0 = all_ind_0[:, np.newaxis]
+        all_ind_0, all_ind_1, all_dist = all_ind_0[to_keep], all_ind_1[to_keep], all_dist[to_keep]
+        matches = np.array([[i0, i1] for i0, i1 in zip(all_ind_0, all_ind_1)])
+    else:
+        # Then all_ind_1 is nested
+        pass
     dist_matrix = cdist(zxy0, zxy1, 'euclidean')
     conf = calc_confidence_from_distance_array_and_matches(dist_matrix, matches)
 

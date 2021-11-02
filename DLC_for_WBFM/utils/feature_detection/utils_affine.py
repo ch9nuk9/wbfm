@@ -126,6 +126,7 @@ def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame
                                           min_matches=100,
                                           maximum_distance=15.0,
                                           allow_z_change=False,
+                                          num_candidates=1,
                                           verbose=0,
                                           DEBUG=False):
     """
@@ -151,7 +152,7 @@ def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame
 
     # out = calc_bipartite_from_distance(xyz0, xyz1, max_dist=10*distance_ratio)
     # TODO: Better max distance
-    out = calc_nearest_neighbor_matches(xyz0, xyz1, max_dist=maximum_distance)
+    out = calc_nearest_neighbor_matches(xyz0, xyz1, max_dist=maximum_distance, n_neighbors=num_candidates)
     all_matches, all_conf = out
     all_candidate_matches = all_matches
     matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(all_matches, all_conf)]

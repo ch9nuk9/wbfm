@@ -27,9 +27,11 @@ class FramePairOptions:
     affine_use_GMS: bool = True
     min_matches: int = 20
     allow_z_change: bool = False
+    affine_num_candidates: int = 1
 
     add_gp_to_candidates: bool = False
     starting_matches: str = 'affine_matches'
+    gp_num_candidates: int = 1
 
     add_fdnc_to_candidates: bool = False
     fdnc_options: dict = None
@@ -172,6 +174,11 @@ class FramePair:
         num_matches = len(self.final_matches)
         print(f"Processed these into {num_matches} final matches candidates")
 
+    def print_candidates_for_neuron(self, i_neuron, i_frame=0):
+        for m in self.all_candidate_matches:
+            if m[i_frame] == i_neuron:
+                print(f"Candidate: {m}")
+
     def print_reason_for_match(self, test_match):
         m0, m1 = test_match
 
@@ -212,7 +219,8 @@ class FramePair:
                        matches_to_keep=obj.affine_matches_to_keep,
                        use_GMS=obj.affine_matches_to_keep,
                        min_matches=obj.min_matches,
-                       allow_z_change=obj.allow_z_change)
+                       allow_z_change=obj.allow_z_change,
+                       num_candidates=obj.affine_num_candidates)
             self._match_using_local_affine(**opt)
 
     def _match_using_local_affine(self, start_plane,
@@ -220,7 +228,8 @@ class FramePair:
                                   matches_to_keep,
                                   use_GMS,
                                   min_matches,
-                                  allow_z_change):
+                                  allow_z_change,
+                                  num_candidates):
         # Generate keypoints and match per slice
         frame0, frame1 = self.frame0, self.frame1
         # TODO: should I reread the data here?
@@ -245,7 +254,8 @@ class FramePair:
         # Then match using distance from neuron position to keypoint cloud
         options = {'all_feature_matches': kp_matches,
                    'min_matches': min_matches,
-                   'allow_z_change': allow_z_change}
+                   'allow_z_change': allow_z_change,
+                   'num_candidates': num_candidates}
         affine_matches, _, affine_pushed = calc_matches_using_affine_propagation(frame0, frame1, **options)
         # TODO: above code requires that the keypoint_locs are actually the full keypoints...
         # frame0.keypoint_locs = kp0_locs
@@ -257,9 +267,9 @@ class FramePair:
         if not self.options.add_gp_to_candidates:
             return
         else:
-            self._match_using_gp(self.options.starting_matches)
+            self._match_using_gp(self.options.gp_num_candidates, self.options.starting_matches)
 
-    def _match_using_gp(self, starting_matches='affine_matches'):
+    def _match_using_gp(self, n_neighbors, starting_matches='affine_matches'):
         # Can start with any matched point clouds, but not more than ~100 matches otherwise it's way too slow
         frame0, frame1 = self.frame0, self.frame1
         n0 = frame0.neuron_locs.copy()
@@ -267,7 +277,7 @@ class FramePair:
         n0[:, 0] *= self.options.z_to_xy_ratio
         n1[:, 0] *= self.options.z_to_xy_ratio
         # Actually match
-        options = {'matches_with_conf': getattr(self, starting_matches)}
+        options = {'matches_with_conf': getattr(self, starting_matches), 'n_neighbors': n_neighbors}
         gp_matches, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)
         # gp_matches = recursive_cast_matches_as_array(gp_matches, gamma=1.0)
         self.gp_matches = gp_matches
@@ -315,6 +325,8 @@ class FramePair:
         test_pos = zimmer2leifer(np.array(frame1.neuron_locs))
 
         _, matches_with_conf = predict_matches(test_pos=test_pos, template_pos=template_pos, **prediction_options)
+        if prediction_options['topn'] is not None:
+            matches_with_conf = [item for sublist in matches_with_conf for item in sublist]
         self.fdnc_matches = matches_with_conf
 
     def print_reason_for_all_final_matches(self):

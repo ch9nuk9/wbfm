@@ -11,7 +11,8 @@ from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
 
 def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
                                         matches_with_conf,
-                                        max_dist=30.0):
+                                        max_dist=30.0,
+                                        n_neighbors=1):
     """
     Using noisy matches between 3d point clouds (format: zxy) does the following:
         1. Interpolate the vector field using Gaussian Processes
@@ -79,7 +80,7 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
 
     # New: get matches using bipartite matching on distances
     xyz0, xyz1 = pc_pushed.points, pc_target.points
-    matches, conf = calc_nearest_neighbor_matches(xyz0, xyz1, max_dist=max_dist)
+    matches, conf = calc_nearest_neighbor_matches(xyz0, xyz1, max_dist=max_dist, n_neighbors=n_neighbors)
 
     matches_with_conf = [(m[0], m[1], c[0]) for m, c in zip(matches, conf)]
 
