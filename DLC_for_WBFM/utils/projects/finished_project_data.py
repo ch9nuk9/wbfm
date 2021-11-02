@@ -336,7 +336,7 @@ class ProjectData:
 
     def get_centroids_as_numpy_training_with_unmatched(self, i_rel: int):
         i_abs = self.correct_relative_index(i_rel)
-        matched_pts = self.reindexed_metadata_training.detect_neurons_from_file(i_rel)
+        matched_pts = self.reindexed_metadata_training.detect_neurons_from_file(i_abs)
         all_pts = self.segmentation_metadata.detect_neurons_from_file(i_abs)
 
         # Any points that do not have a near-identical match in matched_pts are unmatched
