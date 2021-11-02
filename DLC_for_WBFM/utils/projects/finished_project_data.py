@@ -45,7 +45,7 @@ class ProjectData:
     _raw_frames: dict = None
     _raw_matches: dict = None
     _df_all_tracklets: pd.DataFrame = None
-    _df_fdnc_tracklets: pd.DataFrame = None
+    _df_fdnc_tracks: pd.DataFrame = None
 
     # Can be quite large, so don't read by default
     @property
@@ -79,13 +79,13 @@ class ProjectData:
         return self._df_all_tracklets
 
     @property
-    def df_fdnc_tracklets(self):
-        if self._df_fdnc_tracklets is None:
+    def df_fdnc_tracks(self):
+        if self._df_fdnc_tracks is None:
             train_cfg = self.project_config.get_tracking_config()
             fname = os.path.join('postprocessing', 'leifer_tracks.h5')
             fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            self._df_fdnc_tracklets = read_if_exists(fname)
-        return self._df_fdnc_tracklets
+            self._df_fdnc_tracks = read_if_exists(fname)
+        return self._df_fdnc_tracks
 
     @property
     def num_frames(self):
