@@ -103,6 +103,17 @@ class DetectedNeurons:
             self._num_frames = len(self.segmentation_metadata)
         return self._num_frames
 
+    def get_all_brightnesses(self, i_volume: int):
+        return self.segmentation_metadata[i_volume]['total_brightness']
+
+    def get_all_volumes(self, i_volume: int):
+        return self.segmentation_metadata[i_volume]['neuron_volume']
+
+    def get_normalized_intensity(self, i_volume: int, background_per_pixel=14):
+        y = self.get_all_brightnesses(i_volume)
+        vol = self.get_all_volumes(i_volume)
+        return y - background_per_pixel*vol
+
     def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> np.ndarray:
         """
         Designed to be used with centroids detected using a different pipeline
