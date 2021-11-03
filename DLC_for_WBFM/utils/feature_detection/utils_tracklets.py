@@ -445,8 +445,8 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
         return None, None, None
 
     # Main storage, with fewer columns
-    columns = ['clust_ind', 'all_ind_local', 'all_xyz',
-               'all_prob', 'slice_ind']
+    # columns = ['clust_ind', 'all_ind_local', 'all_xyz',
+    #            'all_prob', 'slice_ind']
     # clust_df = pd.DataFrame(columns=columns)
     all_dfs = []
 

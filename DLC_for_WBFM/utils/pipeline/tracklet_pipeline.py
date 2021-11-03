@@ -9,7 +9,7 @@ from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile, \
     pickle_load_binary
-from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename, safe_cd
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_dlc_format
 
 ###
