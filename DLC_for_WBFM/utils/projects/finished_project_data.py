@@ -342,7 +342,7 @@ class ProjectData:
         # Any points that do not have a near-identical match in matched_pts are unmatched
         # These will be appended
         tol = 2.0
-        ind_unmatched = np.any(cdist(all_pts, matched_pts) < tol, axis=1)
+        ind_unmatched = ~np.any(cdist(all_pts, matched_pts) < tol, axis=1)
 
         pts_to_add = all_pts[ind_unmatched, :]
         final_pts = np.vstack([matched_pts, pts_to_add])
