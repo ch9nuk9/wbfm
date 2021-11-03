@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Tuple
 import pandas as pd
+import pprint
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
@@ -38,6 +39,10 @@ class ConfigFileWithProjectContext:
 
     def to_json(self):
         return json.dumps(vars(self))
+
+    def __repr__(self):
+        pp = pprint.PrettyPrinter(indent=2)
+        return pp.pformat(self.config)
 
 
 @dataclass
