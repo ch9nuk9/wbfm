@@ -50,6 +50,7 @@ class ProjectData:
 
     _raw_frames: dict = None
     _raw_matches: dict = None
+    _raw_clust: pd.DataFrame = None
     _df_all_tracklets: pd.DataFrame = None
     _df_fdnc_tracks: pd.DataFrame = None
 
@@ -75,6 +76,17 @@ class ProjectData:
             matches = pickle_load_binary(fname)
             self._raw_matches = matches
         return self._raw_matches
+
+    @property
+    def raw_clust(self):
+        if self._raw_clust is None:
+            logging.info("First time loading the raw cluster dataframe, may take a while...")
+            train_cfg = self.project_config.get_training_config()
+            fname = os.path.join('raw', 'clust_df_dat.pickle')
+            fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+            clust = pickle_load_binary(fname)
+            self._raw_clust = clust
+        return self._raw_clust
 
     @property
     def df_all_tracklets(self):
