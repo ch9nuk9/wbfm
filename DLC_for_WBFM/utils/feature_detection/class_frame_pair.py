@@ -3,12 +3,13 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates, dist2conf
 from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer, flatten_nested_list
 
 
@@ -136,13 +137,8 @@ class FramePair:
             matches = self.final_matches
         return {(n0, n1): c for n0, n1, c in matches}
 
-    # def calculate_additional_orb_keypoints_and_matches(self):
-    #     return False
-
     def get_metadata_dict(self) -> FramePairOptions:
         return self.options
-        # return {'add_affine_to_candidates': self.add_affine_to_candidates,
-        #         'add_gp_to_candidates': self.add_gp_to_candidates}
 
     def save_matches_as_excel(self, target_dir='.'):
         f0_ind = self.frame0.frame_ind
@@ -162,6 +158,26 @@ class FramePair:
             return np.abs(n0[m[0]][0] - n1[m[1]][0])
 
         return [m for m in matches if _delta_z(m) < z_threshold]
+
+    def modify_confidences_using_image_features(self, metadata: DetectedNeurons, gamma=1.0, mode='brightness'):
+        # Get brightness... this object doesn't know the object, because it is full-video information
+        i0, i1 = self.frame0.frame_ind, self.frame1.frame_ind
+        if mode == 'brightness':
+            x0, x1 = metadata.get_normalized_intensity(i0), metadata.get_normalized_intensity(i1)
+        elif mode == 'volume':
+            x0, x1 = metadata.get_all_volumes(i0), metadata.get_all_volumes(i1)
+        else:
+            raise ValueError
+
+        # Per match, calculate similarity score based on delta
+        matches = self.final_matches
+        distances = [x0[m[0]] - x1[m[1]] for m in matches]
+        multipliers = dist2conf(distances, gamma)
+
+        # Multiply the original confidence
+        matches[:, 2] *= multipliers
+
+        return matches
 
     def print_candidates_by_method(self):
         num_matches = len(self.feature_matches)

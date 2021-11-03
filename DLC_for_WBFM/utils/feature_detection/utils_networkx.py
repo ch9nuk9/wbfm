@@ -192,8 +192,8 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     return matches, conf, np.array(raw_matches)
 
 
-def dist2conf(dist):
-    return np.tanh(1.0 / dist + 1e-6)
+def dist2conf(dist, gamma=1.0):
+    return np.tanh(gamma / dist + 1e-6)
 
 
 # def dist2conf_vector(dist):
