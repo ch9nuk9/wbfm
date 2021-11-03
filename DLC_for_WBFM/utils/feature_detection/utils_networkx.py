@@ -118,13 +118,13 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e
         logging.warning("No candidate matches; aborting")
         return [[]], [[]], [[]]
 
-    m0 = np.max([m[0] for m in all_candidate_matches]) + 1
-    m1 = np.max([m[1] for m in all_candidate_matches]) + 1
+    m0 = (np.max([m[0] for m in all_candidate_matches]) + 1).astype(int)
+    m1 = (np.max([m[1] for m in all_candidate_matches]) + 1).astype(int)
     # largest_neuron_ind = np.max([max([m[0], m[1]]) for m in all_candidate_matches]) + 1
     # sz = (m0, largest_neuron_ind)
     conf_matrix = np.zeros((m0, m1))
     for i0, i1, conf in all_candidate_matches:
-        conf_matrix[i0, i1] += conf
+        conf_matrix[int(i0), int(i1)] += conf
 
     # Note: bipartite matching is very sensitive to outliers
     conf_matrix = np.where(conf_matrix < min_conf, 0.0, conf_matrix)
