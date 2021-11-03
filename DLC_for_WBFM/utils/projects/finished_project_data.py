@@ -329,6 +329,22 @@ class ProjectData:
 
         return y
 
+    def modify_confidences_of_frame_pair(self, pair, gamma, mode):
+        frame_match = self.raw_matches[pair]
+
+        matches = frame_match.modify_confidences_using_image_features(self.segmentation_metadata,
+                                                                      gamma=gamma,
+                                                                      mode=mode)
+        frame_match.final_matches = matches
+        return matches
+
+    def modify_confidences_of_all_frame_pairs(self, gamma, mode):
+        frame_matches = self.raw_matches
+        opt = dict(metadata=self.segmentation_metadata, gamma=gamma, mode=mode)
+        for pair, obj in frame_matches.items():
+            matches = obj.modify_confidences_using_image_features(**opt)
+            obj.final_matches = matches
+
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:
             pass
