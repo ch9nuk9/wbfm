@@ -9,7 +9,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
-from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
+from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer, flatten_nested_list
 
 
 @dataclass
@@ -326,7 +326,7 @@ class FramePair:
 
         _, matches_with_conf = predict_matches(test_pos=test_pos, template_pos=template_pos, **prediction_options)
         if prediction_options['topn'] is not None:
-            matches_with_conf = [item for sublist in matches_with_conf for item in sublist]
+            matches_with_conf = flatten_nested_list(matches_with_conf)
         self.fdnc_matches = matches_with_conf
 
     def print_reason_for_all_final_matches(self):

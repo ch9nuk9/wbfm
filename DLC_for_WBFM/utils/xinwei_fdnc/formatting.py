@@ -46,3 +46,8 @@ def leifer2zimmer(vol0_scaled, scaler):
     vol0_zxy = scaler.inverse_transform(vol0_scaled)
 
     return vol0_zxy
+
+
+def flatten_nested_list(nested_list):
+    nested_list = [item for sublist in nested_list for item in sublist]
+    return nested_list
