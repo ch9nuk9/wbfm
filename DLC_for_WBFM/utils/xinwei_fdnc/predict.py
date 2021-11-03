@@ -46,6 +46,10 @@ def load_fdnc_options(path_to_folder=None):
         cuda=torch.cuda.is_available(),
         model_path=model_path
     )
+    if prediction_options['cuda']:
+        logging.info("Found cuda!")
+    else:
+        logging.info("Did not find cuda, using cpu")
     return prediction_options
 
 
