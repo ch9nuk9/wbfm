@@ -43,7 +43,7 @@ leifer_params:
   use_zimmer_template: true
   use_multiple_templates: true
   core_options:
-    top_n: 3
+    topn: 3
 
 use_pretrained_dlc: true
 
