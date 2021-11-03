@@ -9,6 +9,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_f
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, predict_label
 from tqdm.auto import tqdm
+import torch
 
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
@@ -42,7 +43,7 @@ def load_fdnc_options(path_to_folder=None):
         path_to_folder = default_package_path
     model_path = os.path.join(path_to_folder, 'model', 'model.bin')
     prediction_options = dict(
-        cuda=False,
+        cuda=torch.cuda.is_available(),
         model_path=model_path
     )
     return prediction_options
@@ -146,6 +147,7 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
     all_templates = generate_templates_from_training_data(project_data)
 
     def _parallel_func(template):
+        # TODO: is pytorch thread safe?
         return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold)
 
     max_workers = round(project_data.reindexed_metadata_training.num_frames / 2)
