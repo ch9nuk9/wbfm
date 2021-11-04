@@ -96,7 +96,7 @@ rule fndc_tracking:
         expand("{dir}/{output}", output=config['output_3a'], dir=config['project_dir'])
     threads: 56
     shell:
-        "python {input.code_path}/alternate/3-track_using_fdnc.py with project_path={input.cfg}"
+        "python {input.code_path}/alternate/3a-track_using_fdnc.py with project_path={input.cfg}"
 
 rule combine_tracking_and_tracklets:
     input:
@@ -107,7 +107,7 @@ rule combine_tracking_and_tracklets:
         expand("{dir}/{output}", output=config['output_3b'], dir=config['project_dir'])
     threads: 56
     shell:
-        "python {input.code_path}/postprocessing/3c+combine_tracklets_and_dlc_tracks.py with project_path={input.cfg}"
+        "python {input.code_path}/postprocessing/3b-combine_tracklets_and_dlc_tracks.py with project_path={input.cfg}"
 
 #
 # Traces
