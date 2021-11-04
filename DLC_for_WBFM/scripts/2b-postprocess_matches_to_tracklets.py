@@ -37,7 +37,7 @@ def cfg(project_path, DEBUG):
     logging.warning(f'Starting run at: {date.today().strftime("%Y/%m/%d %H:%M:%S")}')
     if not DEBUG:
         using_monkeypatch()
-        ex.observers.append(TinyDbObserver(log_dir))
+        # ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain

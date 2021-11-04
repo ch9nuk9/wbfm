@@ -24,8 +24,8 @@ ex.add_config(project_path=None, channel_mode='all', calculation_mode='integrati
 def cfg(project_path):
     project_dir = str(Path(project_path).parent)
 
-    log_dir = str(Path(project_dir).joinpath('log'))
-    ex.observers.append(TinyDbObserver(log_dir))
+    # log_dir = str(Path(project_dir).joinpath('log'))
+    # ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain

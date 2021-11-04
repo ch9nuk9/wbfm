@@ -35,8 +35,8 @@ def cfg(project_path, DEBUG):
 
     if not DEBUG:
         using_monkeypatch()
-        log_dir = cfg.get_log_dir()
-        ex.observers.append(TinyDbObserver(log_dir))
+        # log_dir = cfg.get_log_dir()
+        # ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain
