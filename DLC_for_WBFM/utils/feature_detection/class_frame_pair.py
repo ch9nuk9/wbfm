@@ -6,6 +6,7 @@ import pandas as pd
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
@@ -116,9 +117,13 @@ class FramePair:
         else:
             self.options.z_threshold = z_threshold
 
-        matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches, min_conf=min_confidence)
-        final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
-        final_matches = self.filter_matches_using_z_threshold(final_matches, z_threshold)
+        try:
+            matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches,
+                                                              min_confidence_after_sum=min_confidence)
+            final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
+            final_matches = self.filter_matches_using_z_threshold(final_matches, z_threshold)
+        except NoMatchesError:
+            final_matches = []
         self.final_matches = final_matches
         return final_matches
 

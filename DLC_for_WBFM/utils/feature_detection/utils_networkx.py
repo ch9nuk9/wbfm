@@ -11,6 +11,8 @@ from scipy.spatial.distance import cdist
 ##
 from sklearn.neighbors import NearestNeighbors
 
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
+
 
 def calc_bipartite_matches(all_candidate_matches, verbose=0):
     """
@@ -104,7 +106,8 @@ def build_digraph_from_matches(pairwise_matches,
 ## Alternate, non-networkx way to get bipartite matches
 ##
 
-def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e-3, verbose=0):
+def calc_bipartite_from_candidates(all_candidate_matches, min_confidence_after_sum=1e-3, verbose=0,
+                                   min_confidence_before_sum=1e-3):
     """
     Sparse version of calc_bipartite_from_distance
 
@@ -112,11 +115,19 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e
 
     Uses scipy linear_sum_assignment
     Note: does not use scipy.sparse.csgraph.min_weight_full_bipartite_matching for version compatibility
+
+    Parameters
+    ----------
+    verbose
+    all_candidate_matches
+    min_confidence_after_sum
+    min_confidence_before_sum
     """
     # OPTIMIZE: this produces a larger matrix than necessary
     if len(all_candidate_matches) == 0:
-        logging.warning("No candidate matches; aborting")
-        return [[]], [[]], [[]]
+        raise NoMatchesError("length of candidates is 0")
+        # logging.warning("No candidate matches; aborting and subsequent steps may fail")
+        # return [[]], [[]], [[]]
 
     m0 = (np.max([m[0] for m in all_candidate_matches]) + 1).astype(int)
     m1 = (np.max([m[1] for m in all_candidate_matches]) + 1).astype(int)
@@ -124,18 +135,21 @@ def calc_bipartite_from_candidates(all_candidate_matches, gamma=1.0, min_conf=1e
     # sz = (m0, largest_neuron_ind)
     conf_matrix = np.zeros((m0, m1))
     for i0, i1, conf in all_candidate_matches:
-        conf_matrix[int(i0), int(i1)] += conf
+        if conf > min_confidence_before_sum:
+            conf_matrix[int(i0), int(i1)] += conf
 
     # Note: bipartite matching is very sensitive to outliers
-    conf_matrix = np.where(conf_matrix < min_conf, 0.0, conf_matrix)
+    conf_matrix = np.where(conf_matrix < min_confidence_after_sum, 0.0, conf_matrix)
 
+    # TODO: newer versions of scipy can directly maximize this
+    # The current form has lots of spurious 0-weight matches that need to be explicitly removed
     matches = linear_sum_assignment(-conf_matrix)
     matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     # Apply sigmoid to summed confidence
     matches = np.array(matches)
     conf = np.array([np.tanh(conf_matrix[i0, i1]) for i0, i1 in matches])
 
-    to_keep = conf > min_conf
+    to_keep = conf > min_confidence_after_sum
     matches = matches[to_keep]
     conf = conf[to_keep]
 

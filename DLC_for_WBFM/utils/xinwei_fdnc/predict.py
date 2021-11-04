@@ -5,6 +5,8 @@ from collections import defaultdict
 from pathlib import Path
 import numpy as np
 import pandas as pd
+
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, predict_label
@@ -57,7 +59,7 @@ def track_using_fdnc(project_data: ProjectData,
                      prediction_options,
                      template,
                      match_confidence_threshold,
-                     full_video_not_training=True):
+                     full_video_not_training=True) -> list:
     if full_video_not_training:
         num_frames = project_data.num_frames
 
@@ -106,7 +108,7 @@ def track_using_fdnc(project_data: ProjectData,
 
 
 def template_matches_to_dataframe(project_data: ProjectData,
-                                  all_matches):
+                                  all_matches: list):
     num_frames = project_data.num_frames
     coords = ['z', 'x', 'y', 'likelihood']
     sz = (num_frames, len(coords))
@@ -165,7 +167,7 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
     return final_matches
 
 
-def combine_multiple_template_matches(matches_per_template):
+def combine_multiple_template_matches(matches_per_template, min_conf=0.1):
     final_matches = []
     num_frames = len(matches_per_template[0])
     num_templates = len(matches_per_template)
@@ -176,9 +178,14 @@ def combine_multiple_template_matches(matches_per_template):
         # Reduce individual confidences so they are an average, not a sum
         candidate_matches = [(m[0], m[1], m[2] / num_templates) for m in candidate_matches]
 
-        matches, conf, _ = calc_bipartite_from_candidates(candidate_matches, min_conf=0.1)
-        match_and_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
+        try:
+            matches, conf, _ = calc_bipartite_from_candidates(candidate_matches, min_confidence_after_sum=min_conf)
+            match_and_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
+        except NoMatchesError:
+            # TODO: does this cause future errors?
+            match_and_conf = []
         final_matches.append(match_and_conf)
+
     return final_matches
 
 

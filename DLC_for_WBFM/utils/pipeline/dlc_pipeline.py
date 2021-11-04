@@ -18,7 +18,6 @@ from DLC_for_WBFM.utils.preprocessing.convert_matlab_annotations_to_DLC import c
 from DLC_for_WBFM.utils.preprocessing.utils_tif import _get_video_options
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import calculate_best_covering_from_tracklets
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 
 
