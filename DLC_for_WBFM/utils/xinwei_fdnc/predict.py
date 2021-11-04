@@ -205,6 +205,7 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
 
 def _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg):
     output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
+    Path(output_df_fname).parent.mkdir(exist_ok=True)
     df.to_hdf(output_df_fname, key='df_with_missing')
 
     tracks_cfg.config['final_3d_tracks_df'] = str(output_df_fname)
