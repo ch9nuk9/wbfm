@@ -34,6 +34,8 @@ final_3d_postprocessing:
   keep_only_tracklets_in_final_tracks: true
   output_df_fname: 3-tracking/postprocessing/combined_3d_tracks.h5
 
+global2tracklet_matches_fname: 3-tracking/global2tracklet.pickle
+
 missing_data_postprocessing:
   likelihood_threshold: 0.5
   n_nearest_features: 50

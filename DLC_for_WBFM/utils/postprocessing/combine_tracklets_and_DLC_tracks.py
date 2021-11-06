@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -7,7 +8,7 @@ import pandas as pd
 from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists, pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 
 
@@ -192,15 +193,14 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     """
 
-    d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, keep_only_tracklets_in_final_tracks = _unpack_tracklets_for_combining(
-        project_dir, training_cfg, track_config)
+    d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
+        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices = _unpack_tracklets_for_combining(
+            project_dir, training_cfg, track_config)
 
     # Match tracklets to DLC neurons
     global_neuron_names = list(df_global_tracks.columns.levels[0])
     verbose = 0
     # all_covering_ind = []
-    global2tracklet = {}
-    used_indices = set()
     logging.info("Calculating distances between tracklets and DLC tracks")
     for i, global_name in enumerate(tqdm(global_neuron_names)):
         dist = calc_dlc_to_tracklet_distances(df_global_tracks, df_tracklets, global_name, used_indices,
@@ -209,7 +209,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
         # covering_time_points, covering_ind, these_dist = out
         _, covering_ind, _ = out
         # all_covering_ind.append(covering_ind)
-        global2tracklet[global_name] = covering_ind
+        global2tracklet[global_name].append(covering_ind)
         used_indices.update(covering_ind)
 
         if DEBUG and i > 0:
@@ -234,7 +234,8 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
         combined_df.to_csv(csv_fname)
 
         # TODO: filename
-        fname = os.path.join("3-tracking", "global2tracklet")
+        # fname = os.path.join("3-tracking", "global2tracklet")
+        fname = track_config.config['global2tracklet_matches_fname']
         track_config.pickle_in_local_project(global2tracklet, fname)
 
         if not DEBUG:
@@ -264,7 +265,19 @@ def _unpack_tracklets_for_combining(project_dir,
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
         logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_dlc_tracks.shape[1]/4)} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
-    return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, keep_only_tracklets_in_final_tracks
+
+    # Check for previous matches, and start from them
+    fname = track_config.config['global2tracklet_matches_fname']
+    if Path(fname).exists():
+        logging.info(f"Found previous tracklet matches at {fname}")
+        global2tracklet = pickle_load_binary(fname)
+        used_indices = set()
+        [used_indices.update(ind) for ind in global2tracklet.values()]
+    else:
+        global2tracklet = defaultdict(list)
+        used_indices = set()
+    return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, \
+        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices
 
 
 def remove_overmatching(df, tol=1e-3):
