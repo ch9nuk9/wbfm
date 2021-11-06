@@ -3,9 +3,8 @@
 #SBATCH --job-name=combine_tracks
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Run a single task
-#SBATCH --qos=medium             # Time limit hrs:min:sec
-#SBATCH --time=8:00:00
-#SBATCH --mem=16G
+#SBATCH --time=2:00:00
+#SBATCH --mem=8G
 #SBATCH --cpus-per-task=4
 
 pwd; hostname; date
