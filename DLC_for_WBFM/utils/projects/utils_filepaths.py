@@ -43,7 +43,7 @@ class ConfigFileWithProjectContext:
     def pickle_in_local_project(self, data, relative_path: str):
         abs_path = self.resolve_relative_path(relative_path)
         if not abs_path.endswith('.pickle'):
-            abs_path = abs_path.join(".pickle")
+            abs_path += ".pickle"
         with open(abs_path, 'wb') as f:
             pickle.dump(data, f)
 
