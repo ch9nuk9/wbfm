@@ -134,8 +134,15 @@ def combine_matched_tracklets(these_tracklet_ind: list,
 def combine_global_and_tracklet_coverings(global2tracklet: dict,
                                           df_tracklet: pd.DataFrame,
                                           df_global_tracks: pd.DataFrame,
+                                          keep_only_tracklets_in_final_tracks: bool,
                                           verbose=0):
-    """Combines coverings of all tracklets and DLC-tracked neurons"""
+    """
+    Combines coverings of all tracklets and DLC-tracked neurons
+
+    If there is a tracklet covering for a time point, then it overwrites the global track.
+    If keep_only_tracklets_in_final_tracks is false, then points without a tracklet are filled by the global
+        track position, if any. Otherwise, only tracklets survive to the final dataframe
+    """
     all_df = []
     logging.info(f"Found {len(global2tracklet)} tracklet-track combinations")
 
@@ -148,12 +155,15 @@ def combine_global_and_tracklet_coverings(global2tracklet: dict,
         print(all_df)
 
     # Produce new dataframe
-    all_neuron_names, final_track_df = combine_dlc_and_tracklets(df_global_tracks, new_tracklet_df)
+    if not keep_only_tracklets_in_final_tracks:
+        final_track_df = combine_dlc_and_tracklets(new_tracklet_df, df_global_tracks)
+    else:
+        final_track_df = new_tracklet_df
 
     return final_track_df, new_tracklet_df
 
 
-def combine_dlc_and_tracklets(dlc_tracks, new_tracklet_df):
+def combine_dlc_and_tracklets(new_tracklet_df, dlc_tracks):
     # Combine new and old tracklets (two dataframes, same neuron names)
     # Note: needs a loop because combine_first() doesn't work for multiindexes
     new_tracklet_df.replace(0, np.NaN, inplace=True)
@@ -161,7 +171,7 @@ def combine_dlc_and_tracklets(dlc_tracks, new_tracklet_df):
     all_neuron_names = list(new_tracklet_df.columns.levels[0])
     for name in all_neuron_names:
         final_track_df[name] = new_tracklet_df[name].combine_first(dlc_tracks[name])
-    return all_neuron_names, final_track_df
+    return final_track_df
 
 
 def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFile,
@@ -182,7 +192,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     """
 
-    d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname = _unpack_tracklets_for_combining(
+    d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, keep_only_tracklets_in_final_tracks = _unpack_tracklets_for_combining(
         project_dir, training_cfg, track_config)
 
     # Match tracklets to DLC neurons
@@ -213,6 +223,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
     combined_df, new_tracklet_df = combine_global_and_tracklet_coverings(global2tracklet,
                                                                          df_tracklets,
                                                                          df_global_tracks,
+                                                                         keep_only_tracklets_in_final_tracks,
                                                                          verbose=0)
 
     with safe_cd(project_dir):
@@ -235,6 +246,8 @@ def _unpack_tracklets_for_combining(project_dir,
     d_max = track_config.config['final_3d_postprocessing']['max_dist']
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
     min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
+    keep_only_tracklets_in_final_tracks = track_config.config['final_3d_postprocessing'][
+        'keep_only_tracklets_in_final_tracks']
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
     with safe_cd(project_dir):
         subfolder = os.path.join('3-tracking', 'postprocessing')
@@ -247,7 +260,7 @@ def _unpack_tracklets_for_combining(project_dir,
         df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
         logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_dlc_tracks.shape[1]/4)} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
-    return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname
+    return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, keep_only_tracklets_in_final_tracks
 
 
 def remove_overmatching(df, tol=1e-3):
