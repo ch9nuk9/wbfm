@@ -100,7 +100,7 @@ def combine_matched_tracklets(these_tracklet_ind: list,
     # Extract the tracklets belonging to this neuron
     tracklet_names = df_tracklet.columns.levels[0]
     these_tracklet_names = [tracklet_names[i] for i in these_tracklet_ind]
-    logging.info(f"Found {len(these_tracklet_names)} tracklets for neuron {neuron_name}")
+    logging.info(f"Found {len(these_tracklet_names)} tracklets for {neuron_name}")
 
     if len(these_tracklet_names) == 0:
         # Then no tracklets were found, so we pass an empty column

@@ -2,6 +2,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sklearn.neighbors import NearestNeighbors
+
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
 from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
 # Note: following must be present, even if pycharm cleans it
@@ -124,3 +126,23 @@ def takens_embedding(data, dimension, delay=1, append_dim=0):
     for i in range(1, dimension):
         embedded_data = np.append(embedded_data, [data[i * delay:get_final_index(i)]], axis=append_dim)
     return embedded_data
+
+
+def get_closest_tracklet_to_point(i_time,
+                                  target_pt,
+                                  df_tracklets,
+                                  nbr_obj: NearestNeighbors):
+    # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
+    all_tracklet_names = list(df_tracklets.columns.levels[0])
+
+    if any(np.isnan(target_pt)):
+        dist, ind, tracklet_name = np.inf, None, None
+    else:
+        if nbr_obj is None:
+            all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, 4))
+            all_zxy = all_zxy[~np.isnan(all_zxy).any(axis=1)][:, :3]
+            nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(all_zxy)
+        dist, ind = nbr_obj.kneighbors([target_pt], n_neighbors=1)
+        tracklet_name = all_tracklet_names[ind[0][0]]
+
+    return dist, ind, tracklet_name
