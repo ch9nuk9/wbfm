@@ -63,7 +63,7 @@ def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, v
         # Check if this was used before
         if i_tracklet in used_indices:
             continue
-        # Check distance; break becuase they are sorted by distance
+        # Check distance; break because they are sorted by distance
         if all_medians[i_tracklet] > d_max:
             break
         # Check time overlap, except first time
@@ -74,7 +74,7 @@ def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, v
             if any([t in covering_time_points for t in newly_covered_times]):
                 continue
 
-        # Save
+        # Save if the tracklet passes all conditions above
         newly_covered_times = np.array(newly_covered_times)
         covering_time_points.extend(newly_covered_times)
         covering_ind.append(i_tracklet)
@@ -131,25 +131,24 @@ def combine_matched_tracklets(these_tracklet_ind: list,
     return summed_tracklet_df
 
 
-def combine_all_dlc_and_tracklet_coverings(all_covering_ind: list,
-                                           df_tracklet: pd.DataFrame,
-                                           dlc_tracks: pd.DataFrame,
-                                           verbose=0):
+def combine_global_and_tracklet_coverings(global2tracklet: dict,
+                                          df_tracklet: pd.DataFrame,
+                                          df_global_tracks: pd.DataFrame,
+                                          verbose=0):
     """Combines coverings of all tracklets and DLC-tracked neurons"""
     all_df = []
-    logging.info(f"Found {len(all_covering_ind)} tracklet-track combinations")
+    logging.info(f"Found {len(global2tracklet)} tracklet-track combinations")
 
     # Build new tracklets into intermediate column
-    all_neuron_names = dlc_tracks.columns.levels[0]
-    for these_tracklet_ind, neuron_name in zip(all_covering_ind, all_neuron_names):
-        df = combine_matched_tracklets(these_tracklet_ind, neuron_name, df_tracklet, dlc_tracks)
+    for neuron_name, these_tracklet_ind in global2tracklet.items():
+        df = combine_matched_tracklets(these_tracklet_ind, neuron_name, df_tracklet, df_global_tracks)
         all_df.append(df)
     new_tracklet_df = pd.concat(all_df, axis=1)
     if verbose >= 2:
         print(all_df)
 
     # Produce new dataframe
-    all_neuron_names, final_track_df = combine_dlc_and_tracklets(dlc_tracks, new_tracklet_df)
+    all_neuron_names, final_track_df = combine_dlc_and_tracklets(df_global_tracks, new_tracklet_df)
 
     return final_track_df, new_tracklet_df
 
@@ -183,22 +182,24 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     """
 
-    d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname = _unpack_tracklets_for_combining(
+    d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname = _unpack_tracklets_for_combining(
         project_dir, training_cfg, track_config)
 
     # Match tracklets to DLC neurons
-    all_neuron_names = list(df_dlc_tracks.columns.levels[0])
+    global_neuron_names = list(df_global_tracks.columns.levels[0])
     verbose = 0
-    all_covering_ind = []
+    # all_covering_ind = []
+    global2tracklet = {}
     used_indices = set()
     logging.info("Calculating distances between tracklets and DLC tracks")
-    for i, dlc_name in enumerate(tqdm(all_neuron_names)):
-        dist = calc_dlc_to_tracklet_distances(df_dlc_tracks, df_tracklets, dlc_name, used_indices,
+    for i, global_name in enumerate(tqdm(global_neuron_names)):
+        dist = calc_dlc_to_tracklet_distances(df_global_tracks, df_tracklets, global_name, used_indices,
                                               min_overlap=min_overlap)
         out = calc_covering_from_distances(dist, df_tracklets, used_indices, d_max=d_max, verbose=verbose)
         # covering_time_points, covering_ind, these_dist = out
         _, covering_ind, _ = out
-        all_covering_ind.append(covering_ind)
+        # all_covering_ind.append(covering_ind)
+        global2tracklet[global_name] = covering_ind
         used_indices.update(covering_ind)
 
         if DEBUG and i > 0:
@@ -209,10 +210,10 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
     # Combine and save
     # Rename to be sequential, like the reindexed segmentation
     logging.info("Concatenating tracklets")
-    combined_df, new_tracklet_df = combine_all_dlc_and_tracklet_coverings(all_covering_ind,
-                                                                          df_tracklets,
-                                                                          df_dlc_tracks,
-                                                                          verbose=0)
+    combined_df, new_tracklet_df = combine_global_and_tracklet_coverings(global2tracklet,
+                                                                         df_tracklets,
+                                                                         df_global_tracks,
+                                                                         verbose=0)
 
     with safe_cd(project_dir):
         # Actually save
