@@ -3,8 +3,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
+from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
 # Note: following must be present, even if pycharm cleans it
 # from sklearn.experimental import enable_iterative_imputer
@@ -146,3 +148,13 @@ def get_closest_tracklet_to_point(i_time,
         tracklet_name = all_tracklet_names[ind[0][0]]
 
     return dist, ind, tracklet_name
+
+
+def get_distance_to_closest_neurons_over_time(project_data: ProjectData, which_neuron, df_track):
+    all_dist = []
+
+    for i_frame in tqdm(range(project_data.num_frames)):
+        target_pt = df_track[which_neuron].iloc[i_frame][:3]
+        all_dist.append(project_data.get_distance_to_closest_neuron(i_frame, target_pt))
+
+    return np.array(all_dist)

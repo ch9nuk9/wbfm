@@ -8,6 +8,7 @@ import napari
 import numpy as np
 import pandas as pd
 import zarr
+from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, filter_rolling_mean, \
     filter_linear_interpolation, trace_from_dataframe_factory
@@ -327,6 +328,25 @@ class ProjectData:
         pts_to_add = all_pts[ind_unmatched, :]
         final_pts = np.vstack([matched_pts, pts_to_add])
         return final_pts
+
+    def get_distance_to_closest_neuron(self, i_frame, target_pt, nbr_obj=None):
+        # TODO: refactor to segmentation class?
+        if nbr_obj is None:
+            # TODO: cache these neighbor objects?
+            segmented_pts = self.get_centroids_as_numpy(i_frame)
+            nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(segmented_pts)
+
+        # Get point
+        # target_pt = df_interp2[which_neuron].iloc[i_frame].to_numpy()[:3]
+
+        # Get closest neighbor
+        if not any(np.isnan(target_pt)):
+            imputed_dist, _ = nbr_obj.kneighbors([target_pt], n_neighbors=1)
+            dist = imputed_dist[0][0]
+        else:
+            dist = np.nan
+
+        return dist
 
     def correct_relative_index(self, i):
         return self.which_training_frames[i]
