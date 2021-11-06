@@ -233,6 +233,10 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
         csv_fname = Path(output_df_fname).with_suffix('.csv')
         combined_df.to_csv(csv_fname)
 
+        # TODO: filename
+        fname = os.path.join("3-tracking", "global2tracklet")
+        track_config.pickle_in_local_project(global2tracklet, fname)
+
         if not DEBUG:
             # Save only df_fname in yaml; don't overwrite other fields
             updates = {'final_3d_tracks_df': str(output_df_fname)}

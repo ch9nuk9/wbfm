@@ -40,6 +40,13 @@ class ConfigFileWithProjectContext:
     def to_json(self):
         return json.dumps(vars(self))
 
+    def pickle_in_local_project(self, data, relative_path: str):
+        abs_path = self.resolve_relative_path(relative_path)
+        if not abs_path.endswith('.pickle'):
+            abs_path = abs_path.join(".pickle")
+        with open(abs_path, 'wb') as f:
+            pickle.dump(data, f)
+
     def __repr__(self):
         pp = pprint.PrettyPrinter(indent=2)
         return pp.pformat(self.config)
@@ -111,11 +118,6 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_log_dir(self):
         return str(Path(self.project_dir).joinpath('log'))
-
-    def pickle_in_local_project(self, data, relative_path):
-        abs_path = self.resolve_relative_path(relative_path)
-        with open(abs_path, 'wb') as f:
-            pickle.dump(data, f)
 
     def resolve_mounted_path_in_current_os(self, key):
         return Path(resolve_mounted_path_in_current_os(self.config[key]))
