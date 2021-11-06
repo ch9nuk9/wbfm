@@ -261,8 +261,8 @@ def _unpack_tracklets_for_combining(project_dir,
         tracklet_fname = training_cfg.resolve_relative_path('all_tracklets.h5', prepend_subfolder=True)
         dlc_fname = track_config.resolve_relative_path_from_config('final_3d_tracks_df')
 
-        df_tracklets: pd.DataFrame = pd.read_hdf(tracklet_fname)
-        df_dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
+        df_tracklets: pd.DataFrame = read_if_exists(tracklet_fname)
+        df_dlc_tracks: pd.DataFrame = read_if_exists(dlc_fname)
         logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_dlc_tracks.shape[1]/4)} neurons")
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
 
