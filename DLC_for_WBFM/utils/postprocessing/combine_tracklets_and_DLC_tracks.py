@@ -149,7 +149,7 @@ def combine_global_and_tracklet_coverings(global2tracklet: dict,
 
     # Build new tracklets into intermediate column
     for neuron_name, these_tracklet_ind in global2tracklet.items():
-        df = combine_matched_tracklets(these_tracklet_ind, neuron_name, df_tracklet, df_global_tracks)
+        df = combine_matched_tracklets(list(these_tracklet_ind), neuron_name, df_tracklet, df_global_tracks)
         all_df.append(df)
     new_tracklet_df = pd.concat(all_df, axis=1)
     if verbose >= 2:
