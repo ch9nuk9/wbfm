@@ -209,7 +209,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
         # covering_time_points, covering_ind, these_dist = out
         _, covering_ind, _ = out
         # all_covering_ind.append(covering_ind)
-        global2tracklet[global_name].append(covering_ind)
+        global2tracklet[global_name].extend(covering_ind)
         used_indices.update(covering_ind)
 
         if DEBUG and i > 0:
@@ -274,6 +274,7 @@ def _unpack_tracklets_for_combining(project_dir,
         used_indices = set()
         [used_indices.update(ind) for ind in global2tracklet.values()]
     else:
+        logging.info(f"Did not find previous tracklet matches")
         global2tracklet = defaultdict(list)
         used_indices = set()
     return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, \
