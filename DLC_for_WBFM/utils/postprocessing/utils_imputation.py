@@ -46,16 +46,15 @@ def is_spatial_column_name(c):
 def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20, random_state=0):
     df_dat = df_only_locations.to_numpy()
 
-    imputer = IterativeImputer(random_state=random_state, missing_values=np.nan, verbose=1,
+    imputer = IterativeImputer(random_state=random_state,
+                               missing_values=np.nan,
+                               verbose=1,
                                n_nearest_features=n_nearest_features,
-                               max_iter=20)
+                               max_iter=10)
     scaler = StandardScaler()
-    scaler.fit(df_dat)
-    dat_normalized = scaler.transform(df_dat)
-
-    imputer.fit(dat_normalized)
-
-    dat_sklearn = scaler.inverse_transform(imputer.transform(dat_normalized))
+    dat_normalized = scaler.fit_transform(df_dat)
+    dat_sklearn = imputer.fit_transform(dat_normalized)
+    dat_sklearn = scaler.inverse_transform(dat_sklearn)
     df_sklearn = pd.DataFrame(data=dat_sklearn, columns=df_only_locations.columns)
 
     return df_sklearn
