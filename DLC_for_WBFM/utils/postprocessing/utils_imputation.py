@@ -142,7 +142,9 @@ def takens_embedding(data, dimension, delay=1, append_dim=0):
 def get_closest_tracklet_to_point(i_time,
                                   target_pt,
                                   df_tracklets,
-                                  nbr_obj: NearestNeighbors = None):
+                                  nbr_obj: NearestNeighbors = None,
+                                  nonnan_ind = None,
+                                  verbose=0):
     # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
     all_tracklet_names = list(df_tracklets.columns.levels[0])
 
@@ -151,10 +153,20 @@ def get_closest_tracklet_to_point(i_time,
     else:
         if nbr_obj is None:
             all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, 4))
-            all_zxy = all_zxy[~np.isnan(all_zxy).any(axis=1)][:, :3]
+            nonnan_ind = ~np.isnan(all_zxy).any(axis=1)
+            all_zxy = all_zxy[nonnan_ind][:, :3]
+            if verbose >= 1:
+                print(f"Creating nearest neighbor object with {all_zxy.shape[0]} neurons")
+                print(f"And test point: {target_pt}")
+                if verbose >= 2:
+                    candidate_names = [n for i, n in enumerate(all_tracklet_names) if nonnan_ind[i]]
+                    print(f"These tracklets were possible: {candidate_names}")
             nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(all_zxy)
         dist, ind = nbr_obj.kneighbors([target_pt], n_neighbors=1)
-        tracklet_name = all_tracklet_names[ind[0][0]]
+        ind = nonnan_ind[ind[0][0]]
+        tracklet_name = all_tracklet_names[ind]
+        if verbose >= 1:
+            print(f"Closest point is: {all_zxy[:, ind]}")
 
     return dist, ind, tracklet_name
 
