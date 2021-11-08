@@ -363,7 +363,7 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
 
         # Save
         all_matches[i_volume] = np.array(
-            [[dlc_array_to_ind(m[0]), seg_array_to_mask_ind(m[1]), c[0]] for m, c in zip(matches, conf)]
+            [[dlc_array_to_ind(m[0]), seg_array_to_mask_ind(m[1]), c] for m, c in zip(matches, conf)]
         )
 
 
