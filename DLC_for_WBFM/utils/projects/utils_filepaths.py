@@ -213,5 +213,6 @@ def pickle_load_binary(fname):
 
 
 def lexigraphically_sort(strs_with_numbers):
+    # From: https://stackoverflow.com/questions/35728760/python-sorting-string-numbers-not-lexicographically
     # Note: works with strings like 'neuron0' 'neuron10' etc.
     return sorted(sorted(strs_with_numbers), key=len)

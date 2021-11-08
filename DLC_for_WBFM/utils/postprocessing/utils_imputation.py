@@ -163,11 +163,11 @@ def get_closest_tracklet_to_point(i_time,
                     print(f"These tracklets were possible: {candidate_names}")
             nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(all_zxy)
         dist, ind = nbr_obj.kneighbors([target_pt], n_neighbors=1)
-        ind = nonnan_ind[ind[0][0]]
+        ind = np.where(nonnan_ind)[0][ind[0][0]]
         tracklet_name = all_tracklet_names[ind]
         if verbose >= 1:
             print(ind)
-            print(f"Closest point is: {all_zxy[:, ind]}")
+            print(f"Closest point is: {all_zxy[ind, :]}")
 
     return dist, ind, tracklet_name
 
