@@ -85,7 +85,7 @@ def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, v
         print(f"Covering of length {len(covering_time_points)} made from {len(covering_ind)} tracklets")
     if len(covering_time_points) == 0:
         logging.warning("No covering found, here are some diagnostics:")
-        logging.warning(f"Minimum distance to other covering: {np.min(all_medians)}")
+        # logging.warning(f"Minimum distance to other covering: {np.min(all_medians)}")
         logging.warning(f"Looped up to tracklet {i_tracklet} with distance {all_medians[i_tracklet]}")
 
     return covering_time_points, covering_ind, these_dist
@@ -208,8 +208,9 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     # Match tracklets to DLC neurons
     global_neuron_names = list(df_global_tracks.columns.levels[0])
+    logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets matched from previous analysis")
     verbose = 0
-    # all_covering_ind = []
+
     logging.info("Calculating distances between tracklets and DLC tracks")
     for i, global_name in enumerate(tqdm(global_neuron_names)):
         dist = calc_dlc_to_tracklet_distances(df_global_tracks, df_tracklets, global_name, used_indices,
@@ -226,6 +227,10 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
             logging.info("DEBUG: checking only 2 neurons")
             break
 
+    logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets used in total")
+
+    _save_tracklet_matches(global2tracklet, project_dir, track_config)
+
     # Combine and save
     # Rename to be sequential, like the reindexed segmentation
     logging.info("Concatenating tracklets")
@@ -235,6 +240,10 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
                                                                          keep_only_tracklets_in_final_tracks,
                                                                          verbose=0)
 
+    _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config)
+
+
+def _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config):
     with safe_cd(project_dir):
         # Actually save
         combined_df.to_hdf(output_df_fname, key='df_with_missing')
@@ -242,16 +251,17 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
         csv_fname = Path(output_df_fname).with_suffix('.csv')
         combined_df.to_csv(csv_fname)
 
-        # TODO: filename
-        # fname = os.path.join("3-tracking", "global2tracklet")
-        fname = track_config.config['global2tracklet_matches_fname']
-        track_config.pickle_in_local_project(global2tracklet, fname)
-
         if not DEBUG:
             # Save only df_fname in yaml; don't overwrite other fields
             updates = {'final_3d_tracks_df': str(output_df_fname)}
             track_config.config.update(updates)
             track_config.update_on_disk()
+
+
+def _save_tracklet_matches(global2tracklet, project_dir, track_config):
+    with safe_cd(project_dir):
+        fname = track_config.config['global2tracklet_matches_fname']
+        track_config.pickle_in_local_project(global2tracklet, fname)
 
 
 def _unpack_tracklets_for_combining(project_dir,
@@ -276,7 +286,7 @@ def _unpack_tracklets_for_combining(project_dir,
         df_dlc_tracks.replace(0, np.NaN, inplace=True)
 
     # Check for previous matches, and start from them
-    fname = track_config.config['global2tracklet_matches_fname']
+    fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')
     if Path(fname).exists():
         logging.info(f"Found previous tracklet matches at {fname}")
         global2tracklet = pickle_load_binary(fname)
@@ -286,6 +296,7 @@ def _unpack_tracklets_for_combining(project_dir,
         logging.info(f"Did not find previous tracklet matches")
         global2tracklet = defaultdict(list)
         used_indices = set()
+
     return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, \
         keep_only_tracklets_in_final_tracks, global2tracklet, used_indices
 
