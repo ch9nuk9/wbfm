@@ -94,7 +94,8 @@ def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, v
 def combine_matched_tracklets(these_tracklet_ind: list,
                               neuron_name: str,
                               df_tracklet: pd.DataFrame,
-                              dlc_tracks: pd.DataFrame) -> pd.DataFrame:
+                              dlc_tracks: pd.DataFrame,
+                              verbose=1) -> pd.DataFrame:
     """Combines a covering of short tracklets and a gappy DLC track into a final DLC-style track"""
     coords = ['z', 'x', 'y', 'likelihood']
 
@@ -108,11 +109,13 @@ def combine_matched_tracklets(these_tracklet_ind: list,
         one_col_shape = dlc_tracks[neuron_name].shape
         summed_tracklet_array = np.empty(one_col_shape)
         summed_tracklet_array[:] = np.nan
+        if verbose >= 1:
+            logging.warning(f"No tracklets found for {neuron_name}")
 
     else:
         # Combine tracklets (one dataframe, multiple names)
-        new_df = df_tracklet[these_tracklet_names]
-        all_arrs = []
+        new_df = df_tracklet[these_tracklet_names].copy()
+        numpy_columns = []
         for c in coords:
             this_column = np.nansum([new_df[name][c] for name in these_tracklet_names], axis=0)
             # My tracker often does not track the very last frames, so fill with nan
@@ -121,8 +124,13 @@ def combine_matched_tracklets(these_tracklet_ind: list,
                 tmp[:] = np.nan
                 this_column = np.hstack([this_column, tmp])
 
-            all_arrs.append(this_column)
-        summed_tracklet_array = np.stack(all_arrs, axis=1)
+            numpy_columns.append(this_column)
+            if verbose >= 1 and c == 'z':
+                logging.info(f"Matching neuron {neuron_name} with tracklets {these_tracklet_names}")
+                logging.info(f"summed_tracklet_array: {this_column}")
+                logging.info(f"Nonzero entries: {np.where(this_column>0)}")
+        summed_tracklet_array = np.stack(numpy_columns, axis=1)
+
 
     # Morph to DLC format
     cols = [[neuron_name], coords]
@@ -149,10 +157,11 @@ def combine_global_and_tracklet_coverings(global2tracklet: dict,
 
     # Build new tracklets into intermediate column
     for neuron_name, these_tracklet_ind in global2tracklet.items():
-        df = combine_matched_tracklets(list(these_tracklet_ind), neuron_name, df_tracklet, df_global_tracks)
+        df = combine_matched_tracklets(these_tracklet_ind, neuron_name, df_tracklet, df_global_tracks,
+                                       verbose=verbose-1)
         all_df.append(df)
     new_tracklet_df = pd.concat(all_df, axis=1)
-    if verbose >= 2:
+    if verbose >= 3:
         print(all_df)
 
     # Produce new dataframe

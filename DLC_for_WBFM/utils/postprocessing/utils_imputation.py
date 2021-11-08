@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -5,6 +6,7 @@ import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
@@ -54,6 +56,9 @@ def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20,
     scaler = StandardScaler()
     dat_normalized = scaler.fit_transform(df_dat)
     dat_sklearn = imputer.fit_transform(dat_normalized)
+    if dat_sklearn.shape[0] != dat_normalized.shape[0]:
+        logging.warning("Column of all nan; will cause imputation errors")
+        raise ParameterTooStringentError('likelihood_thresh', '')
     dat_sklearn = scaler.inverse_transform(dat_sklearn)
     df_sklearn = pd.DataFrame(data=dat_sklearn, columns=df_only_locations.columns)
 
