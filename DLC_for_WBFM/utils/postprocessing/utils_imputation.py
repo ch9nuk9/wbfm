@@ -102,6 +102,8 @@ def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
     # out_fname = fname.with_stem(f"{base_fname}_imputed")
     df_final.to_hdf(out_fname, key='df_with_missing')
 
+    tracks_config.config.update()
+
 
 def _unpack_for_imputing(tracks_config):
     fname = tracks_config.resolve_relative_path_from_config('final_3d_tracks_df')

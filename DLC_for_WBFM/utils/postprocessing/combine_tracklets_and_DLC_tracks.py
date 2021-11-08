@@ -48,14 +48,17 @@ def calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
     return all_dist
 
 
-def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, verbose=0):
+def calc_covering_from_distances(all_dist, df_tracklet, used_indices,
+                                 covering_time_points=None,
+                                 d_max=5, verbose=0):
     """Given distances between a dlc track and all tracklets, make a time-unique covering from the tracklets"""
+    if covering_time_points is None:
+        covering_time_points = []
     all_medians = list(map(np.nanmedian, all_dist))
     i_sorted_by_median_distance = np.argsort(all_medians)
     all_tracklet_names = list(df_tracklet.columns.levels[0])
 
-    covering_ind = []
-    covering_time_points = []
+    covering_tracklet_ind = []
     t = df_tracklet.index
     assert len(t) == int(t[-1])+1, "Tracklet dataframe has missing indices, and will cause errors"
     these_dist = np.zeros_like(t, dtype=float)
@@ -78,17 +81,17 @@ def calc_covering_from_distances(all_dist, df_tracklet, used_indices, d_max=5, v
         # Save if the tracklet passes all conditions above
         newly_covered_times = np.array(newly_covered_times)
         covering_time_points.extend(newly_covered_times)
-        covering_ind.append(i_tracklet)
+        covering_tracklet_ind.append(i_tracklet)
         these_dist[newly_covered_times] = all_dist[i_tracklet][newly_covered_times]
 
     if verbose >= 1:
-        print(f"Covering of length {len(covering_time_points)} made from {len(covering_ind)} tracklets")
+        print(f"Covering of length {len(covering_time_points)} made from {len(covering_tracklet_ind)} tracklets")
     if len(covering_time_points) == 0:
         logging.warning("No covering found, here are some diagnostics:")
         # logging.warning(f"Minimum distance to other covering: {np.min(all_medians)}")
         logging.warning(f"Looped up to tracklet {i_tracklet} with distance {all_medians[i_tracklet]}")
 
-    return covering_time_points, covering_ind, these_dist
+    return covering_time_points, covering_tracklet_ind, these_dist
 
 
 def combine_matched_tracklets(these_tracklet_ind: list,
@@ -208,6 +211,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     # Match tracklets to DLC neurons
     global_neuron_names = list(df_global_tracks.columns.levels[0])
+
     logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets matched from previous analysis")
     verbose = 0
 
@@ -215,7 +219,11 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
     for i, global_name in enumerate(tqdm(global_neuron_names)):
         dist = calc_dlc_to_tracklet_distances(df_global_tracks, df_tracklets, global_name, used_indices,
                                               min_overlap=min_overlap)
-        out = calc_covering_from_distances(dist, df_tracklets, used_indices, d_max=d_max, verbose=verbose)
+        previous_matches = global2tracklet[global_name]
+        covering_time_points = get_already_covered_indices(df_tracklets, previous_matches)
+        out = calc_covering_from_distances(dist, df_tracklets, used_indices,
+                                           covering_time_points=covering_time_points,
+                                           d_max=d_max, verbose=verbose)
         # covering_time_points, covering_ind, these_dist = out
         _, covering_ind, _ = out
         # all_covering_ind.append(covering_ind)
@@ -241,6 +249,20 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
                                                                          verbose=0)
 
     _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config)
+
+
+def get_already_covered_indices(df_tracklets, previous_matches):
+    if len(previous_matches) > 0:
+        all_tracklet_names = list(df_tracklets.columns.levels[0])
+        all_tracklet_ind = df_tracklets.index
+        covering_time_points = []
+        for i2 in previous_matches:
+            tracklet_name = all_tracklet_names[i2]
+            is_nan = df_tracklets[tracklet_name]['x'].isnull()
+            covering_time_points.extend(list(all_tracklet_ind[~is_nan]))
+    else:
+        covering_time_points = None
+    return covering_time_points
 
 
 def _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config):
