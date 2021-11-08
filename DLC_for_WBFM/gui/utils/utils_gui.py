@@ -115,3 +115,31 @@ def change_viewer_time_point(viewer: napari.Viewer,
         raise ValueError("Must pass either target time or dt")
     tzxy = (t,) + viewer.dims.current_step[1:]
     viewer.dims.current_step = tzxy
+
+
+def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None):
+    # Just visualize one neuron for now
+    # 5 columns:
+    # track_id, t, z, y, x
+    try:
+        coords = ['z_dlc', 'x_dlc', 'y_dlc']
+        zxy_array = np.array(df_single_track[coords])
+    except KeyError:
+        coords = ['z', 'x', 'y']
+        zxy_array = np.array(df_single_track[coords])
+
+    all_tracks_list = []
+    t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
+
+    if likelihood_thresh is not None and 'likelihood' in df_single_track:
+        to_remove = df_single_track['likelihood'] < likelihood_thresh
+    else:
+        to_remove = np.zeros_like(zxy_array[:, 0], dtype=bool)
+    zxy_array[to_remove, :] = 0
+
+    all_tracks_list.append(np.hstack([t_array, zxy_array]))
+    all_tracks_array = np.vstack(all_tracks_list)
+
+    track_of_point = np.hstack([np.ones((all_tracks_array.shape[0], 1)), all_tracks_array])
+
+    return all_tracks_array, track_of_point, to_remove

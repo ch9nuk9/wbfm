@@ -5,7 +5,7 @@ from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 
-from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
+from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point, build_tracks_from_dataframe
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
@@ -253,32 +253,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return df_new
 
     def build_tracks_from_name(self):
-        # Just visualize one neuron for now
-        # 5 columns:
-        # track_id, t, z, y, x
-        try:
-            coords = ['z_dlc', 'x_dlc', 'y_dlc']
-            zxy_array = np.array(self.dat.final_tracks[self.current_name][coords])
-            # zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
-        except KeyError:
-            coords = ['z', 'x', 'y']
-            zxy_array = np.array(self.dat.final_tracks[self.current_name][coords])
-            # zxy_array = np.array(self.dat.red_traces[self.current_name][coords])
-
-        all_tracks_list = []
-        t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
-
-        likelihood_thresh = self.dat.likelihood_thresh
-        if likelihood_thresh is not None and 'likelihood' in self.dat.final_tracks[self.current_name]:
-            to_remove = self.dat.final_tracks[self.current_name]['likelihood'] < likelihood_thresh
-        else:
-            to_remove = np.zeros_like(zxy_array[:, 0], dtype=bool)
-        zxy_array[to_remove, :] = 0
-
-        all_tracks_list.append(np.hstack([t_array, zxy_array]))
-        all_tracks_array = np.vstack(all_tracks_list)
-
-        track_of_point = np.hstack([np.ones((all_tracks_array.shape[0], 1)), all_tracks_array])
+        neuron_name = self.current_name
+        df_single_track = self.dat.final_tracks[neuron_name]
+        likelihood_threshold = self.dat.likelihood_thresh
+        all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track, likelihood_threshold)
 
         self.bad_points = to_remove
         return all_tracks_array, track_of_point

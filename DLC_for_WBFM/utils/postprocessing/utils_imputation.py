@@ -142,7 +142,7 @@ def takens_embedding(data, dimension, delay=1, append_dim=0):
 def get_closest_tracklet_to_point(i_time,
                                   target_pt,
                                   df_tracklets,
-                                  nbr_obj: NearestNeighbors):
+                                  nbr_obj: NearestNeighbors = None):
     # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
     all_tracklet_names = list(df_tracklets.columns.levels[0])
 
