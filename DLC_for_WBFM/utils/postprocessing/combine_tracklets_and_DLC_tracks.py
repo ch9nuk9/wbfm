@@ -189,7 +189,9 @@ def combine_dlc_and_tracklets(new_tracklet_df, dlc_tracks):
 
 def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFile,
                                                        training_cfg: SubfolderConfigFile,
-                                                       project_dir, DEBUG=False):
+                                                       project_dir,
+                                                       use_imputed_df=False,
+                                                       DEBUG=False):
     """
     Improves tracking by combining DLC neurons with my short tracklets
 
@@ -207,7 +209,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
         keep_only_tracklets_in_final_tracks, global2tracklet, used_indices = _unpack_tracklets_for_combining(
-            project_dir, training_cfg, track_config)
+            project_dir, training_cfg, track_config, use_imputed_df)
 
     # Match tracklets to DLC neurons
     global_neuron_names = list(df_global_tracks.columns.levels[0])
@@ -289,7 +291,8 @@ def _save_tracklet_matches(global2tracklet, project_dir, track_config):
 
 def _unpack_tracklets_for_combining(project_dir,
                                     training_cfg: SubfolderConfigFile,
-                                    track_config: SubfolderConfigFile):
+                                    track_config: SubfolderConfigFile,
+                                    use_imputed_df):
     d_max = track_config.config['final_3d_postprocessing']['max_dist']
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
     min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
@@ -303,12 +306,16 @@ def _unpack_tracklets_for_combining(project_dir,
         Path(subfolder).mkdir(exist_ok=True)
         # TODO: add the tracklet fname to the config file
         tracklet_fname = training_cfg.resolve_relative_path('all_tracklets.h5', prepend_subfolder=True)
-        dlc_fname = track_config.resolve_relative_path_from_config('final_3d_tracks_df')
+        if not use_imputed_df:
+            global_tracks_fname = track_config.resolve_relative_path_from_config('final_3d_tracks_df')
+        else:
+            global_tracks_fname = track_config.resolve_relative_path_from_config('missing_data_imputed_df')
+            logging.info(f"Reading from the imputed data, not the original global tracks: {global_tracks_fname}")
 
         df_tracklets: pd.DataFrame = read_if_exists(tracklet_fname)
-        df_dlc_tracks: pd.DataFrame = read_if_exists(dlc_fname)
-        logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_dlc_tracks.shape[1]/4)} neurons")
-        df_dlc_tracks.replace(0, np.NaN, inplace=True)
+        df_global_tracks: pd.DataFrame = read_if_exists(global_tracks_fname)
+        logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_global_tracks.shape[1]/4)} neurons")
+        df_global_tracks.replace(0, np.NaN, inplace=True)
 
     # Check for previous matches, and start from them
     fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')
@@ -322,7 +329,7 @@ def _unpack_tracklets_for_combining(project_dir,
         global2tracklet = defaultdict(list)
         used_indices = set()
 
-    return d_max, df_dlc_tracks, df_tracklets, min_overlap, output_df_fname, \
+    return d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
         keep_only_tracklets_in_final_tracks, global2tracklet, used_indices
 
 
