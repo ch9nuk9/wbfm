@@ -9,7 +9,7 @@ from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists, pickle_load_binary
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config, get_sequential_filename
 
 
 def calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
@@ -283,7 +283,8 @@ def _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, t
 def _save_tracklet_matches(global2tracklet, project_dir, track_config):
     with safe_cd(project_dir):
         fname = track_config.config['global2tracklet_matches_fname']
-        track_config.pickle_in_local_project(global2tracklet, fname)
+        out_fname = get_sequential_filename(fname)
+        track_config.pickle_in_local_project(global2tracklet, out_fname)
 
 
 def _unpack_tracklets_for_combining(project_dir,
@@ -294,8 +295,10 @@ def _unpack_tracklets_for_combining(project_dir,
     min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
     keep_only_tracklets_in_final_tracks = track_config.config['final_3d_postprocessing'][
         'keep_only_tracklets_in_final_tracks']
-    output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
     with safe_cd(project_dir):
+        output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
+        output_df_fname = get_sequential_filename(output_df_fname)
+
         subfolder = os.path.join('3-tracking', 'postprocessing')
         Path(subfolder).mkdir(exist_ok=True)
         # TODO: add the tracklet fname to the config file

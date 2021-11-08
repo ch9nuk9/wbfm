@@ -45,13 +45,17 @@ def get_project_name(_config: dict) -> str:
 def get_sequential_filename(fname: str) -> str:
     """Check if the file or dir exists, and if so, append an integer"""
     i = 1
-    if Path(fname).exists():
-        print(f"Original fname {fname} exists, so will be suffixed")
-        fname = fname + f"-{i}"
-        while Path(fname).exists():
+    fpath = Path(fname)
+    if fpath.exists():
+        print(f"Original fname {fpath} exists, so will be suffixed")
+        base_fname, suffix_fname = fpath.stem, fpath.suffix
+        new_fname = str(base_fname) + f"-{i}" + str(suffix_fname)
+        while Path(new_fname).exists():
             i += 1
-            fname = fname[:-2] + f"-{i}"
-    return fname
+            new_fname = new_fname[:-2] + f"-{i}"
+    else:
+        new_fname = fname
+    return new_fname
 
 
 def get_absname(project_path, fname):

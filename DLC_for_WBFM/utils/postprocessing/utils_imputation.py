@@ -16,6 +16,8 @@ from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn.preprocessing import StandardScaler
 
+from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename, safe_cd
+
 
 def df_of_only_locations(df_raw):
     """
@@ -96,13 +98,14 @@ def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
     df_final = update_dataframe_using_flat_names(df_raw, df_imputed, old2new_names)
 
     # Save
-    fname = Path(fname)
-    base_fname = fname.stem
-    out_fname = fname.with_name(f"{base_fname}_imputed.h5")
-    # out_fname = fname.with_stem(f"{base_fname}_imputed")
-    df_final.to_hdf(out_fname, key='df_with_missing')
+    with safe_cd(tracks_config.project_dir):
+        fname = tracks_config.resolve_relative_path_from_config('missing_data_imputed_df')
 
-    tracks_config.config.update()
+        out_fname = get_sequential_filename(fname)
+        df_final.to_hdf(out_fname, key='df_with_missing')
+
+        tracks_config.config.update({'missing_data_imputed_df': out_fname})
+        tracks_config.update_on_disk()
 
 
 def _unpack_for_imputing(tracks_config):
