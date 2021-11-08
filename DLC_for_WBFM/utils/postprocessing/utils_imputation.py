@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists, lexigraphically_sort
 # Note: following must be present, even if pycharm cleans it
 # from sklearn.experimental import enable_iterative_imputer
 from sklearn.experimental import enable_iterative_imputer
@@ -146,7 +146,7 @@ def get_closest_tracklet_to_point(i_time,
                                   nonnan_ind = None,
                                   verbose=0):
     # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
-    all_tracklet_names = list(df_tracklets.columns.levels[0])
+    all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))
 
     if any(np.isnan(target_pt)):
         dist, ind, tracklet_name = np.inf, None, None
@@ -166,6 +166,7 @@ def get_closest_tracklet_to_point(i_time,
         ind = nonnan_ind[ind[0][0]]
         tracklet_name = all_tracklet_names[ind]
         if verbose >= 1:
+            print(ind)
             print(f"Closest point is: {all_zxy[:, ind]}")
 
     return dist, ind, tracklet_name

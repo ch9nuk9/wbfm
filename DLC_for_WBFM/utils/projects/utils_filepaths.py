@@ -210,3 +210,8 @@ def pickle_load_binary(fname):
     with open(fname, 'rb') as f:
         dat = pickle.load(f)
     return dat
+
+
+def lexigraphically_sort(strs_with_numbers):
+    # Note: works with strings like 'neuron0' 'neuron10' etc.
+    return sorted(sorted(strs_with_numbers), key=len)
