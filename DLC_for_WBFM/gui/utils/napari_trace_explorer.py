@@ -150,6 +150,27 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             change_viewer_time_point(viewer, dt=-1, a_max=len(self.dat.final_tracks) - 1)
             zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
 
+        @viewer.bind_key('s', overwrite=True)
+        def zoom_to_next_nan(viewer):
+            y_on_plot = self.y_on_plot()
+            t = self.t
+            for i in range(t, len(y_on_plot)):
+                if np.isnan(y_on_plot[i]):
+                    t_target = i
+                    change_viewer_time_point(viewer, t_target=t_target)
+                    zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
+                    break
+            else:
+                print("No nan point found; not switching")
+
+    def y_on_plot(self):
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
+            y_list = self.dat.tracklet_annotator.calculate_tracklets_for_neuron()
+            y_on_plot = np.sum(y_list)
+        else:
+            y_on_plot = self.y
+        return y_on_plot
+
     def init_universal_subplot(self):
         self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         self.static_ax = self.mpl_widget.figure.subplots()
@@ -268,19 +289,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.time_line.color = time_options[-1]
             self.mpl_widget.draw()
 
+    @property
+    def t(self):
+        return self.viewer.dims.current_step[0]
+
     def calculate_time_line(self):
-        t = self.viewer.dims.current_step[0]
+        t = self.t
         y = self.y
         print(f"Calculating time line for t={t}")
         ymin, ymax = np.min(y), np.max(y)
-        self.tracking_lost = not np.isnan(y[t])
-        if not self.tracking_lost:
-            # z, x, y = self.current_centroid
-            # title = f"{current_neuron}: {mode} trace at ({z:.1f}, {x:.0f}, {y:.0f})"
-            line_color = 'k'
-        else:
-            # title = "Tracking lost!"
+        self.tracking_is_nan = np.isnan(y[t])
+        print(f"Current point: {y[t]}")
+        if self.tracking_is_nan:
             line_color = 'r'
+        else:
+            line_color = 'k'
         return [t, t], [ymin, ymax], line_color
 
     def update_stored_time_series(self, calc_mode=None):
