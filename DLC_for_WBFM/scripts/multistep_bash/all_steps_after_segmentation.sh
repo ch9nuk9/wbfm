@@ -23,23 +23,21 @@ SUFFIX="with project_path=$project_path"
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $CMD with project_path=$project_path"
 else
-  conda activate segmentation
+#  conda activate segmentation
   CMD="${CODE_PATH}/2a-pairwise_match_sequential_frames.py"
   python $CMD $SUFFIX
   CMD="${CODE_PATH}/2b-postprocess_matches_to_tracklets.py"
   python $CMD $SUFFIX
   CMD="${CODE_PATH}/2c-reindex_segmentation_training_masks.py"
   python $CMD $SUFFIX
-  CMD="${CODE_PATH}/2d-save_training_tracklets_as_dlc.py"
+
+#  conda activate torch
+  CMD="${CODE_PATH}/3a-track_using_fdnc.py"
+  python $CMD $SUFFIX
+  CMD="${CODE_PATH}/3b-combine_tracklets_and_dlc_tracks.py"
   python $CMD $SUFFIX
 
-  conda activate torch
-  CMD="${CODE_PATH}/alternate/3-track_using_fdnc.py"
-  python $CMD $SUFFIX
-  CMD="${CODE_PATH}/postprocessing/3c+combine_tracklets_and_dlc_tracks.py"
-  python $CMD $SUFFIX
-
-  conda activate segmentation
+#  conda activate segmentation
   CMD="${CODE_PATH}/4a-match_tracks_and_segmentation.py"
   python $CMD $SUFFIX
   CMD="${CODE_PATH}/4b-reindex_segmentation_full.py"
