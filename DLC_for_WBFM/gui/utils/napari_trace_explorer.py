@@ -14,6 +14,7 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 class NapariTraceExplorer(QtWidgets.QWidget):
 
     subplot_is_initialized = False
+    tracklet_lines = []
 
     def __init__(self, project_data: ProjectData):
         super(QtWidgets.QWidget, self).__init__()
@@ -59,7 +60,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
         self.vbox3 = QtWidgets.QVBoxLayout(self.groupBox3)
         self.changeTraceCalculationDropdown = QtWidgets.QComboBox()
-        self.changeTraceCalculationDropdown.addItems(['integration', 'max', 'mean', 'z', 'volume'])
+        self.changeTraceCalculationDropdown.addItems(['integration', 'z', 'volume'])
         self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.vbox3.addWidget(self.changeTraceCalculationDropdown)
 
@@ -178,10 +179,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.post_init_universal_subplot()
 
     def update_trace_or_tracklet_subplot(self):
-        if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.update_tracklet_subplot()
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
             self.update_trace_subplot()
+        else:
+            raise ValueError
 
     def update_trace_subplot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
@@ -197,7 +200,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             logging.info("Currently on traces setting, so tracklets are not updated")
 
         # Tracklet unique part
-        [t.remove() for t in self.tracklet_lines]
+        if len(self.tracklet_lines) > 0:
+            [t.remove() for t in self.tracklet_lines]
         self.tracklet_lines = []
         self.update_stored_tracklets()
         for y in self.y_tracklets:
@@ -261,7 +265,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_stored_tracklets(self):
         name = self.current_name
-        tracklets = self.dat.tracklets_plotter.calculate_tracklets_for_neuron(name)
+        tracklets = self.dat.calculate_tracklets(name)
+        logging.info(f"Found {len(tracklets)} for neuron {name}")
         self.y_tracklets = tracklets
 
     def get_track_data(self):
@@ -334,7 +339,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
 
     # Build object that has all the data
-    project_data = ProjectData.load_final_project_data_from_config(project_path)
+    project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True)
     napari_trace_explorer(project_data, to_print_fps=to_print_fps)
 
     # Note: don't use this in jupyter

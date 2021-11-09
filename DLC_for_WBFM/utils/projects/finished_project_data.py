@@ -28,24 +28,24 @@ class ProjectData:
     project_dir: str
     project_config: ModularProjectConfig
 
-    red_data: zarr.Array
-    green_data: zarr.Array
+    red_data: zarr.Array = None
+    green_data: zarr.Array = None
 
-    raw_segmentation: zarr.Array
-    segmentation: zarr.Array
-    segmentation_metadata: DetectedNeurons
+    raw_segmentation: zarr.Array = None
+    segmentation: zarr.Array = None
+    segmentation_metadata: DetectedNeurons = None
 
-    df_training_tracklets: pd.DataFrame
-    reindexed_masks_training: zarr.Array
-    reindexed_metadata_training: DetectedNeurons
+    df_training_tracklets: pd.DataFrame = None
+    reindexed_masks_training: zarr.Array = None
+    reindexed_metadata_training: DetectedNeurons = None
 
-    red_traces: pd.DataFrame
-    green_traces: pd.DataFrame
-    final_tracks: pd.DataFrame
+    red_traces: pd.DataFrame = None
+    green_traces: pd.DataFrame = None
+    final_tracks: pd.DataFrame = None
 
-    behavior_annotations: pd.DataFrame
-    background_per_pixel: float
-    likelihood_thresh: float
+    behavior_annotations: pd.DataFrame = None
+    background_per_pixel: float = None
+    likelihood_thresh: float = None
 
     verbose: int = 2
 
@@ -109,6 +109,9 @@ class ProjectData:
         df_fdnc_tracks = read_if_exists(fname)
         return df_fdnc_tracks
 
+    def _load_cached_properties(self):
+        _ = self.df_all_tracklets
+
     @property
     def num_frames(self):
         return self.project_config.config['dataset_params']['num_frames']
@@ -137,7 +140,8 @@ class ProjectData:
                                 train_cfg: SubfolderConfigFile,
                                 tracking_cfg: SubfolderConfigFile,
                                 traces_cfg: SubfolderConfigFile,
-                                project_dir):
+                                project_dir,
+                                to_load_tracklets):
         red_dat_fname = cfg.config['preprocessed_red']
         green_dat_fname = cfg.config['preprocessed_green']
         red_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['red'])
@@ -163,11 +167,16 @@ class ProjectData:
         zarr_reader = lambda fname: zarr.open(fname, mode='r')
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
+        # Initialize object in order to use cached properties
+        obj = ProjectData(project_dir, cfg)
+
         # Note: when running on the cluster the raw data isn't (for now) accessible
         with safe_cd(cfg.project_dir):
 
             logging.info("Starting threads to read data...")
             with concurrent.futures.ThreadPoolExecutor() as ex:
+                if to_load_tracklets:
+                    ex.submit(obj._load_cached_properties)
                 red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader).result()
                 green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()
@@ -190,42 +199,38 @@ class ProjectData:
         background_per_pixel = traces_cfg.config['visualization']['background_per_pixel']
         likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']
 
-        start = cfg.config['dataset_params']['start_volume']
-        end = start + cfg.config['dataset_params']['num_frames']
-        x = list(range(start, end))
+        # start = cfg.config['dataset_params']['start_volume']
+        # end = start + cfg.config['dataset_params']['num_frames']
+        # x = list(range(start, end))
 
         # Return a full object
-        obj = ProjectData(
-            cfg.project_dir,
-            cfg,
-            red_data,
-            green_data,
-            raw_segmentation,
-            segmentation,
-            seg_metadata,
-            df_training_tracklets,
-            reindexed_masks_training,
-            reindexed_metadata_training,
-            red_traces,
-            green_traces,
-            final_tracks,
-            behavior_annotations,
-            background_per_pixel,
-            likelihood_thresh
-        )
+        obj.red_data = red_data
+        obj.green_data = green_data
+        obj.raw_segmentation = raw_segmentation
+        obj.segmentation = segmentation
+        obj.seg_metadata = seg_metadata
+        obj.df_training_tracklets = df_training_tracklets
+        obj.reindexed_masks_training = reindexed_masks_training
+        obj.reindexed_metadata_training = reindexed_metadata_training
+        obj.red_traces = red_traces
+        obj.green_traces = green_traces
+        obj.final_tracks = final_tracks
+        obj.behavior_annotations = behavior_annotations
+        obj.background_per_pixel = background_per_pixel
+        obj.likelihood_thresh = likelihood_thresh
         print(obj)
 
         return obj
 
     @staticmethod
-    def load_final_project_data_from_config(project_path):
+    def load_final_project_data_from_config(project_path, to_load_tracklets=False):
         if isinstance(project_path, (str, os.PathLike)):
             args = ProjectData.unpack_config_file(project_path)
-            return ProjectData._load_data_from_configs(*args)
+            return ProjectData._load_data_from_configs(*args, to_load_tracklets=to_load_tracklets)
         elif isinstance(project_path, ModularProjectConfig):
             project_path = project_path.self_path
             args = ProjectData.unpack_config_file(project_path)
-            return ProjectData._load_data_from_configs(*args)
+            return ProjectData._load_data_from_configs(*args, to_load_tracklets=to_load_tracklets)
         elif isinstance(project_path, ProjectData):
             return project_path
         else:

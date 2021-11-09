@@ -23,60 +23,64 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     viewer = napari.Viewer(ndisplay=3)
     ui, viewer = napari_trace_explorer(project_data, viewer=viewer)
-    df_tracklets = project_data.df_all_tracklets
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
-    #     ui, viewer = ex.submit(napari_trace_explorer, project_data).result()
-    #     df_tracklets = ex.submit(_init_tracklets, project_data).result()
 
-    print(ui, viewer)
-    # project_data.add_layers_to_viewer(viewer)
-    print(df_tracklets)
-    # print(df_tracklets.iloc[0,:])
-    all_zxy = np.reshape(df_tracklets.iloc[0, :].to_numpy(), (-1, 4))
-    all_zxy = all_zxy[~np.isnan(all_zxy).any(axis=1)][:, :3]
-    print(all_zxy)
+    use_tracklets = False
+    if use_tracklets:
+        df_tracklets = project_data.df_all_tracklets
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+        #     ui, viewer = ex.submit(napari_trace_explorer, project_data).result()
+        #     df_tracklets = ex.submit(_init_tracklets, project_data).result()
 
-    seg_layer = viewer.layers['Raw segmentation']
+        # project_data.add_layers_to_viewer(viewer)
+        print(df_tracklets)
+        # print(df_tracklets.iloc[0,:])
+        all_zxy = np.reshape(df_tracklets.iloc[0, :].to_numpy(), (-1, 4))
+        all_zxy = all_zxy[~np.isnan(all_zxy).any(axis=1)][:, :3]
+        print(all_zxy)
 
-    max_dist = 10.0
+        seg_layer = viewer.layers['Raw segmentation']
 
-    @seg_layer.mouse_drag_callbacks.append
-    def on_click(layer, event):
-        # start_point, _ = layer.get_ray_intersections(
-        #     position=event.position,
-        #     view_direction=event.view_direction,
-        #     dims_displayed=event.dims_displayed,
-        #     world=True
-        # )
-        seg_index = layer.get_value(
-            position=event.position,
-            view_direction=event.view_direction,
-            dims_displayed=event.dims_displayed,
-            world=True
-        )
-        print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
-              f"and position {event.position[1:]}")
+        max_dist = 10.0
 
-        dist, ind, name = get_closest_tracklet_to_point(
-            i_time=int(event.position[0]),
-            target_pt=event.position[1:],
-            df_tracklets=df_tracklets,
-            verbose=2
-        )
-        dist = dist[0][0]
-        print(f"Neuron is part of tracklet {name} with distance {dist}")
+        @seg_layer.mouse_drag_callbacks.append
+        def on_click(layer, event):
+            # start_point, _ = layer.get_ray_intersections(
+            #     position=event.position,
+            #     view_direction=event.view_direction,
+            #     dims_displayed=event.dims_displayed,
+            #     world=True
+            # )
+            seg_index = layer.get_value(
+                position=event.position,
+                view_direction=event.view_direction,
+                dims_displayed=event.dims_displayed,
+                world=True
+            )
+            print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
+                  f"and position {event.position[1:]}")
 
-        if dist < max_dist:
-            df_single_track = df_tracklets[name]
-            print(f"Adding tracklet of length {df_single_track['z'].count()}")
-            all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
-            viewer.add_tracks(track_of_point, name=name)
+            dist, ind, name = get_closest_tracklet_to_point(
+                i_time=int(event.position[0]),
+                target_pt=event.position[1:],
+                df_tracklets=df_tracklets,
+                verbose=2
+            )
+            dist = dist[0][0]
+            print(f"Neuron is part of tracklet {name} with distance {dist}")
 
-            print(df_single_track.dropna(inplace=False))
-        else:
-            print(f"Tracklet too far away; not adding")
+            if dist < max_dist:
+                df_single_track = df_tracklets[name]
+                print(f"Adding tracklet of length {df_single_track['z'].count()}")
+                all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
+                viewer.add_tracks(track_of_point, name=name)
+
+                print(df_single_track.dropna(inplace=False))
+            else:
+                print(f"Tracklet too far away; not adding")
 
     napari.run()
+
+    sys.exit(app.exec_())
 
 
 if __name__ == "__main__":
