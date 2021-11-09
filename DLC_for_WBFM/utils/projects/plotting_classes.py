@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import List
 
@@ -95,29 +96,36 @@ class TrackletAnnotator:
     df_tracklets: pd.DataFrame
     global2tracklet: dict
 
-    manual_global2tracklet: dict = None
+    # Annotation option
+    manual_global2tracklet_names: dict = None
+    current_neuron: str = None
 
     # Visualization options
     to_add_layer_to_viewer: bool = True
     verbose: int = 1
 
+    def __post_init__(self):
+        if self.manual_global2tracklet_names is None:
+            self.manual_global2tracklet_names = defaultdict(list)
+
     def calculate_tracklets_for_neuron(self, neuron_name) -> List[pd.DataFrame]:
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
 
         tracklet_ind = self.global2tracklet[neuron_name]
-        if self.manual_global2tracklet is not None:
-            tracklet_ind.extend(self.manual_global2tracklet[neuron_name])
         # all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
         all_tracklet_names = list(self.df_tracklets.columns.levels[0])
 
         these_names = [all_tracklet_names[i] for i in tracklet_ind]
+        if self.manual_global2tracklet_names is not None:
+            these_names.extend(self.manual_global2tracklet_names[neuron_name])
         print(f"Found tracklets: {these_names}")
         these_tracklets = [self.df_tracklets[name] for name in these_names]
 
         return these_tracklets
 
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer,
-                                           max_dist=10.0):
+                                           max_dist=10.0,
+                                           refresh_callback=None):
 
         df_tracklets = self.df_tracklets
 
@@ -134,23 +142,28 @@ class TrackletAnnotator:
                 print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
                       f"and position {event.position[1:]}")
 
-            dist, ind, name = get_closest_tracklet_to_point(
+            dist, ind, tracklet_name = get_closest_tracklet_to_point(
                 i_time=int(event.position[0]),
                 target_pt=event.position[1:],
                 df_tracklets=df_tracklets,
                 verbose=2
             )
+
+            if self.current_neuron is not None:
+                self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
+                refresh_callback()
+
             dist = dist[0][0]
             if self.verbose >= 1:
-                print(f"Neuron is part of tracklet {name} with distance {dist}")
+                print(f"Neuron is part of tracklet {tracklet_name} with distance {dist}")
 
             if dist < max_dist:
-                df_single_track = df_tracklets[name]
+                df_single_track = df_tracklets[tracklet_name]
                 if self.verbose >= 1:
                     print(f"Adding tracklet of length {df_single_track['z'].count()}")
                 if self.to_add_layer_to_viewer:
                     all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
-                    viewer.add_tracks(track_of_point, name=name)
+                    viewer.add_tracks(track_of_point, name=tracklet_name)
 
                 if self.verbose >= 2:
                     print(df_single_track.dropna(inplace=False))
@@ -163,7 +176,7 @@ def get_closest_tracklet_to_point(i_time,
                                   target_pt,
                                   df_tracklets,
                                   nbr_obj: NearestNeighbors = None,
-                                  nonnan_ind = None,
+                                  nonnan_ind=None,
                                   verbose=0):
     # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
     all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))

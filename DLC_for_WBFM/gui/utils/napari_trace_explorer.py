@@ -109,6 +109,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_dataframe_using_points()
         self.update_track_layers()
         self.update_trace_or_tracklet_subplot()
+        self.update_tracklet_annotator()
 
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -116,6 +117,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.viewer.layers['track_of_point'].data = track_layer_data
 
         zoom_using_viewer(self.viewer, layer_name='final_track')
+
+    def update_tracklet_annotator(self):
+        self.dat.tracklet_annotator.current_neuron = self.changeNeuronsDropdown.currentText()
 
     def initialize_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -126,7 +130,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         zoom_using_viewer(self.viewer, layer_name='final_track', zoom=10)
 
         layer_to_add_callback = self.viewer.layers['Raw segmentation']
-        self.dat.tracklet_annotator.connect_tracklet_clicking_callback(layer_to_add_callback, self.viewer)
+        self.dat.tracklet_annotator.connect_tracklet_clicking_callback(
+            layer_to_add_callback,
+            self.viewer,
+            refresh_callback=self.update_trace_or_tracklet_subplot
+        )
+        self.update_tracklet_annotator()
 
     def initialize_shortcuts(self):
         viewer = self.viewer
