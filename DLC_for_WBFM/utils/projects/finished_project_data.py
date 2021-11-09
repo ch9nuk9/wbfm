@@ -10,8 +10,7 @@ import pandas as pd
 import zarr
 from sklearn.neighbors import NearestNeighbors
 
-from DLC_for_WBFM.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, filter_rolling_mean, \
-    filter_linear_interpolation, trace_from_dataframe_factory
+from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletPlotter
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
@@ -20,6 +19,7 @@ from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
     SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from functools import cached_property
 
 
 @dataclass
@@ -40,7 +40,6 @@ class ProjectData:
 
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
-
     final_tracks: pd.DataFrame
 
     behavior_annotations: pd.DataFrame
@@ -49,6 +48,10 @@ class ProjectData:
 
     verbose: int = 2
 
+    # Classes for more functionality
+    trace_plotter: TracePlotter = None
+    tracklets_plotter: TrackletPlotter = None
+
     _raw_frames: dict = None
     _raw_matches: dict = None
     _raw_clust: pd.DataFrame = None
@@ -56,6 +59,12 @@ class ProjectData:
     _df_fdnc_tracks: pd.DataFrame = None
 
     # Can be quite large, so don't read by default
+    @cached_property
+    def global2tracklet(self) -> dict:
+        tracking_cfg = self.project_config.get_tracking_config()
+        fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
+        return pickle_load_binary(fname)
+
     @property
     def raw_frames(self):
         if self._raw_frames is None:
@@ -161,8 +170,6 @@ class ProjectData:
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
         # Note: when running on the cluster the raw data isn't (for now) accessible
-        # , reader=zarr_reader)
-
         with safe_cd(cfg.project_dir):
 
             logging.info("Starting threads to read data...")
@@ -234,52 +241,26 @@ class ProjectData:
                          remove_outliers: bool = False,
                          filter_mode: str = 'no_filtering',
                          min_confidence: float = None):
-        assert (channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {channel_mode}"
+        # Todo: don't recreate object every time
+        self.trace_plotter = TracePlotter(
+            self.red_traces,
+            self.green_traces,
+            self.final_tracks,
+            channel_mode,
+            calculation_mode,
+            remove_outliers,
+            filter_mode,
+            min_confidence
+        )
+        y = self.trace_plotter.calculate_traces(neuron_name)
+        return y
 
-        if self.verbose >= 3:
-            print(f"Calculating {channel_mode} trace for {neuron_name} for {calculation_mode} mode")
-
-        calc_single_trace = trace_from_dataframe_factory(calculation_mode, self.background_per_pixel)
-
-        # How to combine channels, or which channel to choose
-        if channel_mode in ['red', 'green']:
-            if channel_mode == 'red':
-                df = self.red_traces
-            else:
-                df = self.green_traces
-
-            def calc_y(i):
-                return calc_single_trace(i, df)
-        else:
-            df_red = self.red_traces
-            df_green = self.green_traces
-
-            def calc_y(i):
-                return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
-
-        y = calc_y(neuron_name)
-
-        # Then remove outliers and / or filter
-        if min_confidence is not None:
-            low_confidence = self.final_tracks[neuron_name]['likelihood'] < min_confidence
-            nan_confidence = np.isnan(self.final_tracks[neuron_name]['likelihood'])
-            outliers_from_tracking = np.logical_or(low_confidence, nan_confidence)
-            y[outliers_from_tracking] = np.nan
-
-        # TODO: allow parameter selection
-        if remove_outliers:
-            y = remove_outliers_via_rolling_mean(y, window=9)
-
-        # TODO: set up enum
-        if filter_mode == "rolling_mean":
-            y = filter_rolling_mean(y, window=5)
-        elif filter_mode == "linear_interpolation":
-            y = filter_linear_interpolation(y, window=15)
-        elif filter_mode == "no_filtering":
-            pass
-        else:
-            logging.warning(f"Unrecognized filter mode: {filter_mode}")
-
+    def calculate_tracklets(self, neuron_name):
+        self.tracklets_plotter = TrackletPlotter(
+            self.final_tracks,
+            self.df_all_tracklets,
+        )
+        y = self.tracklets_plotter.calculate_tracklets_for_neuron(neuron_name)
         return y
 
     def modify_confidences_of_frame_pair(self, pair, gamma, mode):
