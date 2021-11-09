@@ -140,12 +140,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def initialize_shortcuts(self):
         viewer = self.viewer
 
-        @viewer.bind_key('a', overwrite=True)
+        @viewer.bind_key('d', overwrite=True)
         def zoom_next(viewer):
             change_viewer_time_point(viewer, dt=1, a_max=len(self.dat.final_tracks) - 1)
             zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
 
-        @viewer.bind_key('d', overwrite=True)
+        @viewer.bind_key('a', overwrite=True)
         def zoom_previous(viewer):
             change_viewer_time_point(viewer, dt=-1, a_max=len(self.dat.final_tracks) - 1)
             zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
