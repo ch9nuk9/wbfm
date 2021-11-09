@@ -1,3 +1,5 @@
+import logging
+
 import napari
 import numpy as np
 import pandas as pd
@@ -10,6 +12,8 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
 class NapariTraceExplorer(QtWidgets.QWidget):
+
+    subplot_is_initialized = False
 
     def __init__(self, project_data: ProjectData):
         super(QtWidgets.QWidget, self).__init__()
@@ -24,6 +28,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         neuron_names = list(self.dat.red_traces.columns.levels[0])
         self.current_name = neuron_names[0]
 
+        # BOX 1
         # Change neurons (dropdown)
         self.groupBox1 = QtWidgets.QGroupBox("Neuron selection", self.verticalLayoutWidget)
         self.vbox1 = QtWidgets.QVBoxLayout(self.groupBox1)
@@ -34,6 +39,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.verticalLayout.addWidget(self.changeNeuronsDropdown)
         self.vbox1.addWidget(self.changeNeuronsDropdown)
 
+        # BOX 2
         # Change traces (dropdown)
         self.groupBox2 = QtWidgets.QGroupBox("Channel selection", self.verticalLayoutWidget)
         self.vbox2 = QtWidgets.QVBoxLayout(self.groupBox2)
@@ -42,6 +48,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeChannelDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.vbox2.addWidget(self.changeChannelDropdown)
 
+        # Change traces vs tracklet mode
+        self.changeTraceTrackletDropdown = QtWidgets.QComboBox()
+        self.changeTraceTrackletDropdown.addItems(['traces', 'tracklets'])
+        self.changeTraceTrackletDropdown.currentIndexChanged.connect(self.update_trace_or_tracklet_subplot)
+        self.vbox2.addWidget(self.changeTraceTrackletDropdown)
+
+        # BOX 3
         # Change traces (dropdown)
         self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
         self.vbox3 = QtWidgets.QVBoxLayout(self.groupBox3)
@@ -88,7 +101,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def change_neurons(self):
         self.update_dataframe_using_points()
         self.update_track_layers()
-        self.update_trace_subplot()
+        self.update_trace_or_tracklet_subplot()
 
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -102,9 +115,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         points_opt = dict(face_color='blue', size=4)
         self.viewer.add_points(point_layer_data, name="final_track", n_dimensional=True, symbol='cross', **points_opt)
-
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
-
         zoom_using_viewer(self.viewer, layer_name='final_track', zoom=10)
 
     def initialize_shortcuts(self):
@@ -120,35 +131,85 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             change_viewer_time_point(viewer, dt=-1, a_max=len(self.dat.final_tracks) - 1)
             zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
 
-    def initialize_trace_subplot(self):
+    def initialize_universal_subplot(self):
         self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         self.static_ax = self.mpl_widget.figure.subplots()
-        self.update_stored_time_series()
-        self.trace_line = self.static_ax.plot(self.y)[0]
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.color_using_behavior()
         self.connect_time_line_callback()
-
         # Connect clicking to a time change
         # https://matplotlib.org/stable/users/event_handling.html
-        on_click = lambda event: self.on_trace_plot_click(event)
+        on_click = lambda event: self.on_subplot_click(event)
         cid = self.mpl_widget.mpl_connect('button_press_event', on_click)
 
-        # Finally, add the traces to napari
-        self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
+    def initialize_trace_subplot(self):
+        self.update_stored_time_series()
+        self.trace_line = self.static_ax.plot(self.y)[0]
 
-    def on_trace_plot_click(self, event):
+    def initialize_tracklet_subplot(self):
+        # Designed for traces, but reuse and force z coordinate
+        self.update_stored_time_series('z')
+        self.tracklet_lines = []
+        self.update_stored_tracklets()
+        for y in self.y_tracklets:
+            self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
+        # self.trace_line = self.static_ax.plot(self.y)[0]
+
+    def on_subplot_click(self, event):
         t = event.xdata
         change_viewer_time_point(self.viewer, t_target=t)
 
+    def initialize_trace_or_tracklet_subplot(self):
+        if not self.subplot_is_initialized:
+            self.initialize_universal_subplot()
+
+        # This middle block will be called when the mode is switched
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
+            self.initialize_tracklet_subplot()
+        elif self.changeTraceTrackletDropdown.currentText() == 'traces':
+            self.initialize_trace_subplot()
+
+        if not self.subplot_is_initialized:
+            # Finally, add the traces to napari
+            self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
+            self.subplot_is_initialized = True
+
+    def update_trace_or_tracklet_subplot(self):
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
+            self.update_tracklet_subplot()
+        elif self.changeTraceTrackletDropdown.currentText() == 'traces':
+            self.update_trace_subplot()
+
     def update_trace_subplot(self):
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
+            logging.info("Currently on tracklet setting, so traces are not updated")
         self.update_stored_time_series()
         self.trace_line.set_ydata(self.y)
+        title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
+
+        self.finish_subplot_update(title)
+
+    def update_tracklet_subplot(self):
+        if self.changeTraceTrackletDropdown.currentText() == 'traces':
+            logging.info("Currently on traces setting, so tracklets are not updated")
+
+        # Tracklet unique part
+        [t.remove() for t in self.tracklet_lines]
+        self.tracklet_lines = []
+        self.update_stored_tracklets()
+        for y in self.y_tracklets:
+            self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
+
+        self.update_stored_time_series()  # Use this for the time line synchronization
+        # self.trace_line.set_ydata(self.y)
+        title = f"Tracklets for neuron {self.changeNeuronsDropdown.currentText()}"
+
+        self.finish_subplot_update(title)
+
+    def finish_subplot_update(self, title):
+        self.static_ax.set_title(title)
         self.time_line.set_data(self.calculate_time_line()[:2])
         self.color_using_behavior()
-        title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
-        self.static_ax.set_title(title)
-
         self.static_ax.relim()
         self.static_ax.autoscale_view()
         self.mpl_widget.draw()
@@ -175,11 +236,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             line_color = 'k'
         return [t, t], [ymin, ymax], line_color
 
-    def update_stored_time_series(self):
+    def update_stored_time_series(self, calc_mode=None):
         # i = self.changeNeuronsDropdown.currentIndex()
         name = self.current_name
         channel = self.changeChannelDropdown.currentText()
-        calc_mode = self.changeTraceCalculationDropdown.currentText()
+        if calc_mode is None:
+            calc_mode = self.changeTraceCalculationDropdown.currentText()
         remove_outliers_activity = self.changeTraceOutlierCheckBox.checkState()
         remove_outliers_tracking = self.changeTrackingOutlierCheckBox.checkState()
         if remove_outliers_tracking:
@@ -192,8 +254,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                                       remove_outliers_activity,
                                       filter_mode,
                                       min_confidence=min_confidence)
-
         self.y = y
+
+    def update_stored_tracklets(self):
+        name = self.current_name
+        tracklets = self.dat.tracklets_plotter.calculate_tracklets_for_neuron(name)
+        self.y_tracklets = tracklets
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsDropdown.currentText()
