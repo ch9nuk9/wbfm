@@ -19,7 +19,8 @@ from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
     SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from functools import cached_property
+# from functools import cached_property # Only from python>=3.8
+from backports.cached_property import cached_property
 
 
 @dataclass
