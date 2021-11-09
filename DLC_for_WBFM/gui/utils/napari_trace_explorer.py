@@ -140,12 +140,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def initialize_shortcuts(self):
         viewer = self.viewer
 
-        @viewer.bind_key('.', overwrite=True)
+        @viewer.bind_key('a', overwrite=True)
         def zoom_next(viewer):
             change_viewer_time_point(viewer, dt=1, a_max=len(self.dat.final_tracks) - 1)
             zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
 
-        @viewer.bind_key(',', overwrite=True)
+        @viewer.bind_key('d', overwrite=True)
         def zoom_previous(viewer):
             change_viewer_time_point(viewer, dt=-1, a_max=len(self.dat.final_tracks) - 1)
             zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
@@ -160,6 +160,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def init_subplot_post_clear(self):
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
+        self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
         self.color_using_behavior()
         self.connect_time_line_callback()
         self.subplot_is_initialized = True
@@ -223,7 +224,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.trace_line.set_ydata(self.y)
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
 
-        self.time_line.set_data(self.calculate_time_line()[:2])
+        time_options = self.calculate_time_line()
+        self.time_line.set_data(time_options[:2])
+        self.time_line.color = time_options[-1]
         self.finish_subplot_update(title)
 
     def update_tracklet_subplot(self):
@@ -260,7 +263,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.dims.events.current_step.connect
         def update_time_line(event):
-            self.time_line.set_data(self.calculate_time_line()[:2])
+            time_options = self.calculate_time_line()
+            self.time_line.set_data(time_options[:2])
+            self.time_line.color = time_options[-1]
             self.mpl_widget.draw()
 
     def calculate_time_line(self):
@@ -275,7 +280,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             line_color = 'k'
         else:
             # title = "Tracking lost!"
-            line_color = 'k'
+            line_color = 'r'
         return [t, t], [ymin, ymax], line_color
 
     def update_stored_time_series(self, calc_mode=None):
