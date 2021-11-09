@@ -37,7 +37,14 @@ class TracePlotter:
         calc_single_trace = trace_from_dataframe_factory(self.calculation_mode, self.background_per_pixel)
 
         # How to combine channels, or which channel to choose
-        if self.channel_mode in ['red', 'green']:
+        if self.calculation_mode == 'likelihood':
+            # Uses a different dataframe
+            df = self.final_tracks
+
+            def calc_y(i):
+                return calc_single_trace(i, df)
+
+        elif self.channel_mode in ['red', 'green']:
             if self.channel_mode == 'red':
                 df = self.red_traces
             else:
@@ -45,12 +52,14 @@ class TracePlotter:
 
             def calc_y(i):
                 return calc_single_trace(i, df)
-        else:
+        elif self.channel_mode == 'ratio':
             df_red = self.red_traces
             df_green = self.green_traces
 
             def calc_y(i):
                 return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
+        else:
+            raise ValueError("Unknown calculation or channel mode")
 
         y = calc_y(neuron_name)
 
@@ -90,6 +99,8 @@ class TrackletAnnotator:
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
 
         tracklet_ind = self.global2tracklet[neuron_name]
+        if self.manual_global2tracklet is not None:
+            tracklet_ind.extend(self.manual_global2tracklet[neuron_name])
         # all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
         all_tracklet_names = list(self.df_tracklets.columns.levels[0])
 

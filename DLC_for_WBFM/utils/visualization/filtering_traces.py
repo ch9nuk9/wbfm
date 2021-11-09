@@ -91,6 +91,10 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel):
             except KeyError:
                 y_raw = df_tmp[i]['z']
             return y_raw
+    elif calculation_mode == 'likelihood':
+        def calc_single_trace(i, df_tmp):
+            y_raw = df_tmp[i]['likelihood']
+            return y_raw
     else:
         raise ValueError(f"Unknown calculation mode {calculation_mode}")
 

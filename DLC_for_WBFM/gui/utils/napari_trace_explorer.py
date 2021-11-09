@@ -61,7 +61,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
         self.vbox3 = QtWidgets.QVBoxLayout(self.groupBox3)
         self.changeTraceCalculationDropdown = QtWidgets.QComboBox()
-        self.changeTraceCalculationDropdown.addItems(['integration', 'z', 'volume'])
+        self.changeTraceCalculationDropdown.addItems(['integration', 'z', 'volume', 'likelihood'])
         self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.vbox3.addWidget(self.changeTraceCalculationDropdown)
 
