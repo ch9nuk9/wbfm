@@ -90,6 +90,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.groupBox2)
         self.verticalLayout.addWidget(self.groupBox3)
 
+        # General
+        self.refreshButton = QtWidgets.QPushButton("Refresh Subplot")
+        self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
+        self.verticalLayout.addWidget(self.refreshButton)
+
         # Save annotations (button)
         # self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         # self.saveButton.clicked.connect(self.save_annotations)
@@ -169,7 +174,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def change_trace_tracklet_mode(self):
         print(f"Changed mode to: {self.changeTraceTrackletDropdown.currentText()}")
         self.static_ax.clear()
-        self.initialize_tracklet_subplot()
+        self.initialize_trace_or_tracklet_subplot()
         # Not just updating the data because we fully cleared the axes
         self.init_subplot_post_clear()
 
@@ -180,7 +185,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.init_universal_subplot()
 
         # This middle block will be called when the mode is switched
-        if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             print("Initializing tracklet mode")
             self.initialize_tracklet_subplot()
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
@@ -202,7 +207,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_trace_subplot(self):
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
-            logging.info("Currently on tracklet setting, so traces are not updated")
+            print("Currently on tracklet setting, so this option didn't do anything")
+            return
         self.update_stored_time_series()
         self.trace_line.set_ydata(self.y)
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
@@ -213,7 +219,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_tracklet_subplot(self):
         # For now, actually reinitializes the axes
         if not self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            logging.info("Currently on traces setting, so tracklets are not updated")
+            print("Currently on traces setting, so this option didn't do anything")
+            return
 
         # Tracklet unique part
         # if len(self.tracklet_lines) > 0:
