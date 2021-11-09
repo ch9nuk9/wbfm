@@ -149,7 +149,7 @@ def get_closest_tracklet_to_point(i_time,
     all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))
 
     if any(np.isnan(target_pt)):
-        dist, ind, tracklet_name = np.inf, None, None
+        dist, ind_global_coords, tracklet_name = np.inf, None, None
     else:
         if nbr_obj is None:
             all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, 4))
@@ -162,14 +162,15 @@ def get_closest_tracklet_to_point(i_time,
                     candidate_names = [n for i, n in enumerate(all_tracklet_names) if nonnan_ind[i]]
                     print(f"These tracklets were possible: {candidate_names}")
             nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(all_zxy)
-        dist, ind = nbr_obj.kneighbors([target_pt], n_neighbors=1)
-        ind = np.where(nonnan_ind)[0][ind[0][0]]
-        tracklet_name = all_tracklet_names[ind]
+        dist, ind_local_coords = nbr_obj.kneighbors([target_pt], n_neighbors=1)
+        ind_local_coords = ind_local_coords[0][0]
         if verbose >= 1:
-            print(ind)
-            print(f"Closest point is: {all_zxy[ind, :]}")
+            print(ind_local_coords)
+            print(f"Closest point is: {all_zxy[ind_local_coords, :]}")
+        ind_global_coords = np.where(nonnan_ind)[0][ind_local_coords]
+        tracklet_name = all_tracklet_names[ind_global_coords]
 
-    return dist, ind, tracklet_name
+    return dist, ind_global_coords, tracklet_name
 
 
 def get_distance_to_closest_neurons_over_time(project_data: ProjectData, which_neuron, df_track):
