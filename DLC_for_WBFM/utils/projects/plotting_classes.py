@@ -24,6 +24,7 @@ class TracePlotter:
     remove_outliers: bool = False
     filter_mode: str = 'no_filtering'
     min_confidence: float = None
+    background_per_pixel: float = None
 
     verbose: int = 1
 

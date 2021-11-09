@@ -244,7 +244,8 @@ class ProjectData:
             calculation_mode,
             remove_outliers,
             filter_mode,
-            min_confidence
+            min_confidence,
+            self.background_per_pixel
         )
         y = self.trace_plotter.calculate_traces(neuron_name)
         return y
