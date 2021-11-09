@@ -111,6 +111,7 @@ class ProjectData:
 
     def _load_cached_properties(self):
         _ = self.df_all_tracklets
+        _ = self.global2tracklet
 
     @property
     def num_frames(self):
@@ -257,7 +258,6 @@ class ProjectData:
 
     def calculate_tracklets(self, neuron_name):
         self.tracklets_plotter = TrackletPlotter(
-            self.final_tracks,
             self.df_all_tracklets,
             self.global2tracklet
         )

@@ -81,7 +81,6 @@ class TracePlotter:
 @dataclass
 class TrackletPlotter:
 
-    final_tracks: pd.DataFrame
     df_tracklets: pd.DataFrame
     global2tracklet: dict
 
@@ -92,6 +91,7 @@ class TrackletPlotter:
         all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
 
         these_names = [all_tracklet_names[i] for i in tracklet_ind]
+        print(f"Found tracklets: {these_names}")
         these_tracklets = [self.df_tracklets[name] for name in these_names]
 
         return these_tracklets

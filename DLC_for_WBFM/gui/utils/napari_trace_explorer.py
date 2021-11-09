@@ -187,7 +187,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             raise ValueError
 
     def update_trace_subplot(self):
-        if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
+        if not self.changeTraceTrackletDropdown.currentText() == 'traces':
             logging.info("Currently on tracklet setting, so traces are not updated")
         self.update_stored_time_series()
         self.trace_line.set_ydata(self.y)
@@ -196,19 +196,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.finish_subplot_update(title)
 
     def update_tracklet_subplot(self):
-        if self.changeTraceTrackletDropdown.currentText() == 'traces':
+        # For now, actually reinitializes the axes
+        if not self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             logging.info("Currently on traces setting, so tracklets are not updated")
 
         # Tracklet unique part
-        if len(self.tracklet_lines) > 0:
-            [t.remove() for t in self.tracklet_lines]
-        self.tracklet_lines = []
+        # if len(self.tracklet_lines) > 0:
+        #     [t.remove() for t in self.tracklet_lines]
+        # self.tracklet_lines = []
         self.update_stored_tracklets()
+        self.static_ax.clear()
         for y in self.y_tracklets:
             self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
 
-        self.update_stored_time_series()  # Use this for the time line synchronization
-        # self.trace_line.set_ydata(self.y)
+        self.update_stored_time_series('z')  # Use this for the time line synchronization
+        # We are displaying z here
+        # self.y *= 30.0 / np.max(self.y)
         title = f"Tracklets for neuron {self.changeNeuronsDropdown.currentText()}"
 
         self.finish_subplot_update(title)
@@ -266,7 +269,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_stored_tracklets(self):
         name = self.current_name
         tracklets = self.dat.calculate_tracklets(name)
-        logging.info(f"Found {len(tracklets)} for neuron {name}")
+        print(f"Found {len(tracklets)} for neuron {name}")
         self.y_tracklets = tracklets
 
     def get_track_data(self):
