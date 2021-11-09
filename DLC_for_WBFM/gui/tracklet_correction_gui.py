@@ -16,10 +16,9 @@ def _init_tracklets(project_data):
 
 
 def main():
-    fname = "/scratch/zimmer/Charles/dlc_stacks/worm3-multiple_templates/project_config.yaml"
-    project_data = ProjectData.load_final_project_data_from_config(fname)
+    fname = "/scratch/zimmer/Charles/dlc_stacks/worm3-imputation/project_config.yaml"
+    project_data = ProjectData.load_final_project_data_from_config(fname, to_load_tracklets=True)
 
-    # Lots of latency when loading the tracklets
     app = QtWidgets.QApplication(sys.argv)
     viewer = napari.Viewer(ndisplay=3)
     ui, viewer = napari_trace_explorer(project_data, viewer=viewer)
@@ -27,16 +26,13 @@ def main():
     use_tracklets = False
     if use_tracklets:
         df_tracklets = project_data.df_all_tracklets
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
-        #     ui, viewer = ex.submit(napari_trace_explorer, project_data).result()
-        #     df_tracklets = ex.submit(_init_tracklets, project_data).result()
 
         # project_data.add_layers_to_viewer(viewer)
-        print(df_tracklets)
+        # print(df_tracklets)
         # print(df_tracklets.iloc[0,:])
-        all_zxy = np.reshape(df_tracklets.iloc[0, :].to_numpy(), (-1, 4))
-        all_zxy = all_zxy[~np.isnan(all_zxy).any(axis=1)][:, :3]
-        print(all_zxy)
+        # all_zxy = np.reshape(df_tracklets.iloc[0, :].to_numpy(), (-1, 4))
+        # all_zxy = all_zxy[~np.isnan(all_zxy).any(axis=1)][:, :3]
+        # print(all_zxy)
 
         seg_layer = viewer.layers['Raw segmentation']
 

@@ -8,6 +8,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point, build_tracks_from_dataframe
+from DLC_for_WBFM.utils.postprocessing.utils_imputation import get_closest_tracklet_to_point
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
@@ -119,6 +120,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
         zoom_using_viewer(self.viewer, layer_name='final_track', zoom=10)
 
+        self.connect_segmentation_layer_callback()
+
     def initialize_shortcuts(self):
         viewer = self.viewer
 
@@ -140,12 +143,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         on_click = lambda event: self.on_subplot_click(event)
         cid = self.mpl_widget.mpl_connect('button_press_event', on_click)
 
-    def post_init_universal_subplot(self):
+    def init_subplot_post_clear(self):
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.color_using_behavior()
         self.connect_time_line_callback()
-        # Finally, add the traces to napari
-        self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
         self.subplot_is_initialized = True
 
     def initialize_trace_subplot(self):
@@ -166,8 +167,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         change_viewer_time_point(self.viewer, t_target=t)
 
     def change_trace_tracklet_mode(self):
+        print(f"Changed mode to: {self.changeTraceTrackletDropdown.currentText()}")
         self.static_ax.clear()
-        self.initialize_trace_or_tracklet_subplot()
+        self.initialize_tracklet_subplot()
+        # Not just updating the data because we fully cleared the axes
+        self.init_subplot_post_clear()
+
+        self.finish_subplot_update(self.changeTraceTrackletDropdown.currentText())
 
     def initialize_trace_or_tracklet_subplot(self):
         if not self.subplot_is_initialized:
@@ -175,12 +181,16 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # This middle block will be called when the mode is switched
         if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
+            print("Initializing tracklet mode")
             self.initialize_tracklet_subplot()
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
+            print("Initializing trace mode")
             self.initialize_trace_subplot()
 
         if not self.subplot_is_initialized:
-            self.post_init_universal_subplot()
+            self.init_subplot_post_clear()
+            # Finally, add the traces to napari
+            self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
 
     def update_trace_or_tracklet_subplot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
@@ -197,6 +207,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.trace_line.set_ydata(self.y)
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
 
+        self.time_line.set_data(self.calculate_time_line()[:2])
         self.finish_subplot_update(title)
 
     def update_tracklet_subplot(self):
@@ -215,14 +226,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
         # We are displaying z here
-        # self.y *= 30.0 / np.max(self.y)
         title = f"Tracklets for neuron {self.changeNeuronsDropdown.currentText()}"
 
+        self.init_subplot_post_clear()
         self.finish_subplot_update(title)
 
     def finish_subplot_update(self, title):
         self.static_ax.set_title(title)
-        self.time_line.set_data(self.calculate_time_line()[:2])
         self.color_using_behavior()
         self.static_ax.relim()
         self.static_ax.autoscale_view()
@@ -239,6 +249,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def calculate_time_line(self):
         t = self.viewer.dims.current_step[0]
         y = self.y
+        print(f"Calculating time line for t={t}")
         ymin, ymax = np.min(y), np.max(y)
         self.tracking_lost = not np.isnan(y[t])
         if not self.tracking_lost:
@@ -282,6 +293,42 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def color_using_behavior(self):
         self.dat.shade_axis_using_behavior(self.static_ax)
+
+    def connect_segmentation_layer_callback(self):
+        seg_layer = self.viewer.layers['Raw segmentation']
+        df_tracklets = self.dat.df_all_tracklets
+
+        max_dist = 10.0
+
+        @seg_layer.mouse_drag_callbacks.append
+        def on_click(layer, event):
+            seg_index = layer.get_value(
+                position=event.position,
+                view_direction=event.view_direction,
+                dims_displayed=event.dims_displayed,
+                world=True
+            )
+            print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
+                  f"and position {event.position[1:]}")
+
+            dist, ind, name = get_closest_tracklet_to_point(
+                i_time=int(event.position[0]),
+                target_pt=event.position[1:],
+                df_tracklets=df_tracklets,
+                verbose=2
+            )
+            dist = dist[0][0]
+            print(f"Neuron is part of tracklet {name} with distance {dist}")
+
+            if dist < max_dist:
+                df_single_track = df_tracklets[name]
+                print(f"Adding tracklet of length {df_single_track['z'].count()}")
+                all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
+                self.viewer.add_tracks(track_of_point, name=name)
+
+                print(df_single_track.dropna(inplace=False))
+            else:
+                print(f"Tracklet too far away; not adding")
 
     # def save_annotations(self):
     #     self.update_dataframe_using_points()
