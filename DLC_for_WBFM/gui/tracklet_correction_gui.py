@@ -1,3 +1,5 @@
+import concurrent
+
 import numpy as np
 
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
@@ -7,13 +9,20 @@ from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer
 from DLC_for_WBFM.utils.postprocessing.utils_imputation import get_closest_tracklet_to_point
 
 
+async def _init_tracklets(project_data):
+    return project_data.df_all_tracklets
+
+
 def main():
     fname = "/scratch/zimmer/Charles/dlc_stacks/worm3-multiple_templates/project_config.yaml"
     project_data = ProjectData.load_final_project_data_from_config(fname)
 
-    viewer = napari.Viewer(ndisplay=3)
+    # Lots of latency when loading the tracklets
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+        ui, viewer = ex.submit(target=napari_trace_explorer, args=(project_data,))
+        df_tracklets = ex.submit(target=_init_tracklets, args=(project_data,))
+
     project_data.add_layers_to_viewer(viewer)
-    df_tracklets = project_data.df_all_tracklets
     print(df_tracklets)
     # print(df_tracklets.iloc[0,:])
     all_zxy = np.reshape(df_tracklets.iloc[0, :].to_numpy(), (-1, 4))

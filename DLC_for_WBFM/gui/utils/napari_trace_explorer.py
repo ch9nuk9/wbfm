@@ -266,17 +266,19 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
 
     # Build object that has all the data
     project_data = ProjectData.load_final_project_data_from_config(project_path)
-    napari_trace_explorer(project_data, to_print_fps)
+    napari_trace_explorer(project_data, to_print_fps=to_print_fps)
 
     # Note: don't use this in jupyter
     napari.run()
 
 
-def napari_trace_explorer(project_data: ProjectData, to_print_fps: bool):
+def napari_trace_explorer(project_data: ProjectData,
+                          viewer: napari.Viewer = None,
+                          to_print_fps: bool = False):
     print("Starting GUI setup")
     ui = NapariTraceExplorer(project_data)
     # Build Napari and add widgets
-    viewer = napari.Viewer(ndisplay=2)
+    # viewer = napari.Viewer(ndisplay=2)
     ui.dat.add_layers_to_viewer(viewer)
     # Actually dock my additional gui elements
     ui.setupUi(viewer)
@@ -291,3 +293,4 @@ def napari_trace_explorer(project_data: ProjectData, to_print_fps: bool):
 
         viewer.window.qt_viewer.canvas.measure_fps(callback=lambda x: fps_status(viewer, x))
 
+    return ui, viewer
