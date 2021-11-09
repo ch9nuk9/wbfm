@@ -51,7 +51,7 @@ class ProjectData:
 
     # Classes for more functionality
     trace_plotter: TracePlotter = None
-    tracklets_plotter: TrackletAnnotator = None
+    # tracklet_annotator: TrackletAnnotator = None
 
     # _raw_frames: dict = None
     # _raw_matches: dict = None
@@ -102,6 +102,14 @@ class ProjectData:
         return df_all_tracklets
 
     @cached_property
+    def tracklet_annotator(self):
+        tracking_cfg = self.project_config.get_tracking_config()
+        fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
+        global2tracklet = pickle_load_binary(fname)
+
+        return TrackletAnnotator(self.df_all_tracklets, global2tracklet)
+
+    @cached_property
     def df_fdnc_tracks(self):
         train_cfg = self.project_config.get_tracking_config()
         fname = os.path.join('postprocessing', 'leifer_tracks.h5')
@@ -109,9 +117,9 @@ class ProjectData:
         df_fdnc_tracks = read_if_exists(fname)
         return df_fdnc_tracks
 
-    def _load_cached_properties(self):
+    def _load_tracklet_related_properties(self):
         _ = self.df_all_tracklets
-        _ = self.global2tracklet
+        _ = self.tracklet_annotator
 
     @property
     def num_frames(self):
@@ -177,7 +185,7 @@ class ProjectData:
             logging.info("Starting threads to read data...")
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
-                    ex.submit(obj._load_cached_properties)
+                    ex.submit(obj._load_tracklet_related_properties)
                 red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader).result()
                 green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()
@@ -257,11 +265,12 @@ class ProjectData:
         return y
 
     def calculate_tracklets(self, neuron_name):
-        self.tracklets_plotter = TrackletAnnotator(
-            self.df_all_tracklets,
-            self.global2tracklet
-        )
-        y = self.tracklets_plotter.calculate_tracklets_for_neuron(neuron_name)
+        # if self.tracklet_annotator is None:
+        #     self.tracklet_annotator = TrackletAnnotator(
+        #         self.df_all_tracklets,
+        #         self.global2tracklet
+        #     )
+        y = self.tracklet_annotator.calculate_tracklets_for_neuron(neuron_name)
         return y
 
     def modify_confidences_of_frame_pair(self, pair, gamma, mode):

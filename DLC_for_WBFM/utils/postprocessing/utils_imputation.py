@@ -1,18 +1,15 @@
 import logging
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.neighbors import NearestNeighbors
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists, lexigraphically_sort
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
 # Note: following must be present, even if pycharm cleans it
 # from sklearn.experimental import enable_iterative_imputer
-from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn.preprocessing import StandardScaler
 
@@ -137,40 +134,6 @@ def takens_embedding(data, dimension, delay=1, append_dim=0):
     for i in range(1, dimension):
         embedded_data = np.append(embedded_data, [data[i * delay:get_final_index(i)]], axis=append_dim)
     return embedded_data
-
-
-def get_closest_tracklet_to_point(i_time,
-                                  target_pt,
-                                  df_tracklets,
-                                  nbr_obj: NearestNeighbors = None,
-                                  nonnan_ind = None,
-                                  verbose=0):
-    # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
-    all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))
-
-    if any(np.isnan(target_pt)):
-        dist, ind_global_coords, tracklet_name = np.inf, None, None
-    else:
-        if nbr_obj is None:
-            all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, 4))
-            nonnan_ind = ~np.isnan(all_zxy).any(axis=1)
-            all_zxy = all_zxy[nonnan_ind][:, :3]
-            if verbose >= 1:
-                print(f"Creating nearest neighbor object with {all_zxy.shape[0]} neurons")
-                print(f"And test point: {target_pt}")
-                if verbose >= 2:
-                    candidate_names = [n for i, n in enumerate(all_tracklet_names) if nonnan_ind[i]]
-                    print(f"These tracklets were possible: {candidate_names}")
-            nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(all_zxy)
-        dist, ind_local_coords = nbr_obj.kneighbors([target_pt], n_neighbors=1)
-        ind_local_coords = ind_local_coords[0][0]
-        if verbose >= 1:
-            print(ind_local_coords)
-            print(f"Closest point is: {all_zxy[ind_local_coords, :]}")
-        ind_global_coords = np.where(nonnan_ind)[0][ind_local_coords]
-        tracklet_name = all_tracklet_names[ind_global_coords]
-
-    return dist, ind_global_coords, tracklet_name
 
 
 def get_distance_to_closest_neurons_over_time(project_data: ProjectData, which_neuron, df_track):

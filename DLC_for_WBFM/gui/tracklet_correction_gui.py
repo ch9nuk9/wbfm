@@ -8,7 +8,7 @@ from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 import napari
 from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer
-from DLC_for_WBFM.utils.postprocessing.utils_imputation import get_closest_tracklet_to_point
+from DLC_for_WBFM.utils.projects.plotting_classes import get_closest_tracklet_to_point
 
 
 def _init_tracklets(project_data):

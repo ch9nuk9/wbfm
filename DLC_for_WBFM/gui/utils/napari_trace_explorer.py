@@ -8,7 +8,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point, build_tracks_from_dataframe
-from DLC_for_WBFM.utils.postprocessing.utils_imputation import get_closest_tracklet_to_point
+from DLC_for_WBFM.utils.projects.plotting_classes import get_closest_tracklet_to_point
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
@@ -125,7 +125,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
         zoom_using_viewer(self.viewer, layer_name='final_track', zoom=10)
 
-        self.connect_segmentation_layer_callback()
+        layer_to_add_callback = self.viewer.layers['Raw segmentation']
+        self.dat.tracklet_annotator.connect_tracklet_clicking_callback(layer_to_add_callback, self.viewer)
 
     def initialize_shortcuts(self):
         viewer = self.viewer
@@ -301,41 +302,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def color_using_behavior(self):
         self.dat.shade_axis_using_behavior(self.static_ax)
 
-    def connect_segmentation_layer_callback(self):
-        seg_layer = self.viewer.layers['Raw segmentation']
-        df_tracklets = self.dat.df_all_tracklets
 
-        max_dist = 10.0
-
-        @seg_layer.mouse_drag_callbacks.append
-        def on_click(layer, event):
-            seg_index = layer.get_value(
-                position=event.position,
-                view_direction=event.view_direction,
-                dims_displayed=event.dims_displayed,
-                world=True
-            )
-            print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
-                  f"and position {event.position[1:]}")
-
-            dist, ind, name = get_closest_tracklet_to_point(
-                i_time=int(event.position[0]),
-                target_pt=event.position[1:],
-                df_tracklets=df_tracklets,
-                verbose=2
-            )
-            dist = dist[0][0]
-            print(f"Neuron is part of tracklet {name} with distance {dist}")
-
-            if dist < max_dist:
-                df_single_track = df_tracklets[name]
-                print(f"Adding tracklet of length {df_single_track['z'].count()}")
-                all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
-                self.viewer.add_tracks(track_of_point, name=name)
-
-                print(df_single_track.dropna(inplace=False))
-            else:
-                print(f"Tracklet too far away; not adding")
 
     # def save_annotations(self):
     #     self.update_dataframe_using_points()

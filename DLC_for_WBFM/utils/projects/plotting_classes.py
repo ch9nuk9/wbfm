@@ -4,7 +4,9 @@ from typing import List
 
 import numpy as np
 import pandas as pd
+from sklearn.neighbors import NearestNeighbors
 
+from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
 from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort
 from DLC_for_WBFM.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
@@ -95,6 +97,10 @@ class TrackletAnnotator:
 
     manual_global2tracklet: dict = None
 
+    # Visualization options
+    to_add_layer_to_viewer: bool = True
+    verbose: int = 1
+
     def calculate_tracklets_for_neuron(self, neuron_name) -> List[pd.DataFrame]:
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
 
@@ -109,3 +115,79 @@ class TrackletAnnotator:
         these_tracklets = [self.df_tracklets[name] for name in these_names]
 
         return these_tracklets
+
+    def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer,
+                                           max_dist=10.0):
+
+        df_tracklets = self.df_tracklets
+
+        @layer_to_add_callback.mouse_drag_callbacks.append
+        def on_click(layer, event):
+            seg_index = layer.get_value(
+                position=event.position,
+                view_direction=event.view_direction,
+                dims_displayed=event.dims_displayed,
+                world=True
+            )
+
+            if self.verbose >= 1:
+                print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
+                      f"and position {event.position[1:]}")
+
+            dist, ind, name = get_closest_tracklet_to_point(
+                i_time=int(event.position[0]),
+                target_pt=event.position[1:],
+                df_tracklets=df_tracklets,
+                verbose=2
+            )
+            dist = dist[0][0]
+            if self.verbose >= 1:
+                print(f"Neuron is part of tracklet {name} with distance {dist}")
+
+            if dist < max_dist:
+                df_single_track = df_tracklets[name]
+                if self.verbose >= 1:
+                    print(f"Adding tracklet of length {df_single_track['z'].count()}")
+                if self.to_add_layer_to_viewer:
+                    all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
+                    viewer.add_tracks(track_of_point, name=name)
+
+                if self.verbose >= 2:
+                    print(df_single_track.dropna(inplace=False))
+            else:
+                if self.verbose >= 1:
+                    print(f"Tracklet too far away; not adding")
+
+
+def get_closest_tracklet_to_point(i_time,
+                                  target_pt,
+                                  df_tracklets,
+                                  nbr_obj: NearestNeighbors = None,
+                                  nonnan_ind = None,
+                                  verbose=0):
+    # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
+    all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))
+
+    if any(np.isnan(target_pt)):
+        dist, ind_global_coords, tracklet_name = np.inf, None, None
+    else:
+        if nbr_obj is None:
+            all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, 4))
+            nonnan_ind = ~np.isnan(all_zxy).any(axis=1)
+            all_zxy = all_zxy[nonnan_ind][:, :3]
+            if verbose >= 1:
+                print(f"Creating nearest neighbor object with {all_zxy.shape[0]} neurons")
+                print(f"And test point: {target_pt}")
+                if verbose >= 2:
+                    candidate_names = [n for i, n in enumerate(all_tracklet_names) if nonnan_ind[i]]
+                    print(f"These tracklets were possible: {candidate_names}")
+            nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(all_zxy)
+        dist, ind_local_coords = nbr_obj.kneighbors([target_pt], n_neighbors=1)
+        ind_local_coords = ind_local_coords[0][0]
+        if verbose >= 1:
+            print(ind_local_coords)
+            print(f"Closest point is: {all_zxy[ind_local_coords, :]}")
+        ind_global_coords = np.where(nonnan_ind)[0][ind_local_coords]
+        tracklet_name = all_tracklet_names[ind_global_coords]
+
+    return dist, ind_global_coords, tracklet_name
