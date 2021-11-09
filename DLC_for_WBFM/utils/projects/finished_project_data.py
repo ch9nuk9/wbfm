@@ -10,7 +10,7 @@ import pandas as pd
 import zarr
 from sklearn.neighbors import NearestNeighbors
 
-from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletPlotter
+from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAnnotator
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
@@ -51,7 +51,7 @@ class ProjectData:
 
     # Classes for more functionality
     trace_plotter: TracePlotter = None
-    tracklets_plotter: TrackletPlotter = None
+    tracklets_plotter: TrackletAnnotator = None
 
     # _raw_frames: dict = None
     # _raw_matches: dict = None
@@ -257,7 +257,7 @@ class ProjectData:
         return y
 
     def calculate_tracklets(self, neuron_name):
-        self.tracklets_plotter = TrackletPlotter(
+        self.tracklets_plotter = TrackletAnnotator(
             self.df_all_tracklets,
             self.global2tracklet
         )

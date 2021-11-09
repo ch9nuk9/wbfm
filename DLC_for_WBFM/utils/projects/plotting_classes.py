@@ -79,16 +79,19 @@ class TracePlotter:
 
 
 @dataclass
-class TrackletPlotter:
+class TrackletAnnotator:
 
     df_tracklets: pd.DataFrame
     global2tracklet: dict
+
+    manual_global2tracklet: dict = None
 
     def calculate_tracklets_for_neuron(self, neuron_name) -> List[pd.DataFrame]:
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
 
         tracklet_ind = self.global2tracklet[neuron_name]
-        all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
+        # all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
+        all_tracklet_names = list(self.df_tracklets.columns.levels[0])
 
         these_names = [all_tracklet_names[i] for i in tracklet_ind]
         print(f"Found tracklets: {these_names}")

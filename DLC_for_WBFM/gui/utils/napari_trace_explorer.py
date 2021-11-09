@@ -52,7 +52,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Change traces vs tracklet mode
         self.changeTraceTrackletDropdown = QtWidgets.QComboBox()
         self.changeTraceTrackletDropdown.addItems(['traces', 'tracklets'])
-        self.changeTraceTrackletDropdown.currentIndexChanged.connect(self.update_trace_or_tracklet_subplot)
+        self.changeTraceTrackletDropdown.currentIndexChanged.connect(self.change_trace_tracklet_mode)
         self.vbox2.addWidget(self.changeTraceTrackletDropdown)
 
         # BOX 3
@@ -165,6 +165,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         t = event.xdata
         change_viewer_time_point(self.viewer, t_target=t)
 
+    def change_trace_tracklet_mode(self):
+        self.static_ax.clear()
+        self.initialize_trace_or_tracklet_subplot()
+
     def initialize_trace_or_tracklet_subplot(self):
         if not self.subplot_is_initialized:
             self.init_universal_subplot()
@@ -269,7 +273,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_stored_tracklets(self):
         name = self.current_name
         tracklets = self.dat.calculate_tracklets(name)
-        print(f"Found {len(tracklets)} for neuron {name}")
+        print(f"Found {len(tracklets)} tracklets for {name}")
         self.y_tracklets = tracklets
 
     def get_track_data(self):
