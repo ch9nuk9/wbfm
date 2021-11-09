@@ -1,6 +1,8 @@
 import concurrent
+import sys
 
 import numpy as np
+from PyQt5 import QtCore, QtWidgets
 
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -9,7 +11,7 @@ from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer
 from DLC_for_WBFM.utils.postprocessing.utils_imputation import get_closest_tracklet_to_point
 
 
-async def _init_tracklets(project_data):
+def _init_tracklets(project_data):
     return project_data.df_all_tracklets
 
 
@@ -18,11 +20,16 @@ def main():
     project_data = ProjectData.load_final_project_data_from_config(fname)
 
     # Lots of latency when loading the tracklets
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
-        ui, viewer = ex.submit(target=napari_trace_explorer, args=(project_data,))
-        df_tracklets = ex.submit(target=_init_tracklets, args=(project_data,))
+    app = QtWidgets.QApplication(sys.argv)
+    viewer = napari.Viewer(ndisplay=3)
+    ui, viewer = napari_trace_explorer(project_data, viewer=viewer)
+    df_tracklets = project_data.df_all_tracklets
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+    #     ui, viewer = ex.submit(napari_trace_explorer, project_data).result()
+    #     df_tracklets = ex.submit(_init_tracklets, project_data).result()
 
-    project_data.add_layers_to_viewer(viewer)
+    print(ui, viewer)
+    # project_data.add_layers_to_viewer(viewer)
     print(df_tracklets)
     # print(df_tracklets.iloc[0,:])
     all_zxy = np.reshape(df_tracklets.iloc[0, :].to_numpy(), (-1, 4))

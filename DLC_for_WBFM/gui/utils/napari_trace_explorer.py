@@ -96,7 +96,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.initialize_track_layers()
         self.initialize_shortcuts()
-        self.initialize_trace_subplot()
+        self.initialize_trace_or_tracklet_subplot()
 
     def change_neurons(self):
         self.update_dataframe_using_points()
@@ -131,16 +131,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             change_viewer_time_point(viewer, dt=-1, a_max=len(self.dat.final_tracks) - 1)
             zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
 
-    def initialize_universal_subplot(self):
+    def init_universal_subplot(self):
         self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         self.static_ax = self.mpl_widget.figure.subplots()
-        self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
-        self.color_using_behavior()
-        self.connect_time_line_callback()
         # Connect clicking to a time change
         # https://matplotlib.org/stable/users/event_handling.html
         on_click = lambda event: self.on_subplot_click(event)
         cid = self.mpl_widget.mpl_connect('button_press_event', on_click)
+
+    def post_init_universal_subplot(self):
+        self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
+        self.color_using_behavior()
+        self.connect_time_line_callback()
+        # Finally, add the traces to napari
+        self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
+        self.subplot_is_initialized = True
 
     def initialize_trace_subplot(self):
         self.update_stored_time_series()
@@ -161,7 +166,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def initialize_trace_or_tracklet_subplot(self):
         if not self.subplot_is_initialized:
-            self.initialize_universal_subplot()
+            self.init_universal_subplot()
 
         # This middle block will be called when the mode is switched
         if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
@@ -170,9 +175,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.initialize_trace_subplot()
 
         if not self.subplot_is_initialized:
-            # Finally, add the traces to napari
-            self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
-            self.subplot_is_initialized = True
+            self.post_init_universal_subplot()
 
     def update_trace_or_tracklet_subplot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklet':
