@@ -77,11 +77,11 @@ class TracePlotter:
         return y
 
 
+@dataclass
 class TrackletPlotter:
 
     final_tracks: pd.DataFrame
     df_tracklets: pd.DataFrame
-
     global2tracklet: dict
 
     def calculate_tracklets_for_neuron(self, neuron_name) -> List[pd.DataFrame]:

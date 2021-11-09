@@ -52,11 +52,11 @@ class ProjectData:
     trace_plotter: TracePlotter = None
     tracklets_plotter: TrackletPlotter = None
 
-    _raw_frames: dict = None
-    _raw_matches: dict = None
-    _raw_clust: pd.DataFrame = None
-    _df_all_tracklets: pd.DataFrame = None
-    _df_fdnc_tracks: pd.DataFrame = None
+    # _raw_frames: dict = None
+    # _raw_matches: dict = None
+    # _raw_clust: pd.DataFrame = None
+    # _df_all_tracklets: pd.DataFrame = None
+    # _df_fdnc_tracks: pd.DataFrame = None
 
     # Can be quite large, so don't read by default
     @cached_property
@@ -65,55 +65,48 @@ class ProjectData:
         fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
         return pickle_load_binary(fname)
 
-    @property
+    @cached_property
     def raw_frames(self):
-        if self._raw_frames is None:
-            logging.info("First time loading the raw frames, may take a while...")
-            train_cfg = self.project_config.get_training_config()
-            fname = os.path.join('raw', 'frame_dat.pickle')
-            fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            frames = pickle_load_binary(fname)
-            self._raw_frames = frames
-        return self._raw_frames
+        logging.info("First time loading the raw frames, may take a while...")
+        train_cfg = self.project_config.get_training_config()
+        fname = os.path.join('raw', 'frame_dat.pickle')
+        fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        frames = pickle_load_binary(fname)
+        return frames
 
-    @property
+    @cached_property
     def raw_matches(self):
-        if self._raw_matches is None:
-            logging.info("First time loading the raw matches, may take a while...")
-            train_cfg = self.project_config.get_training_config()
-            fname = os.path.join('raw', 'match_dat.pickle')
-            fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            matches = pickle_load_binary(fname)
-            self._raw_matches = matches
-        return self._raw_matches
+        logging.info("First time loading the raw matches, may take a while...")
+        train_cfg = self.project_config.get_training_config()
+        fname = os.path.join('raw', 'match_dat.pickle')
+        fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        matches = pickle_load_binary(fname)
+        return matches
 
-    @property
+    @cached_property
     def raw_clust(self):
-        if self._raw_clust is None:
-            logging.info("First time loading the raw cluster dataframe, may take a while...")
-            train_cfg = self.project_config.get_training_config()
-            fname = os.path.join('raw', 'clust_df_dat.pickle')
-            fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            clust = pickle_load_binary(fname)
-            self._raw_clust = clust
-        return self._raw_clust
+        logging.info("First time loading the raw cluster dataframe, may take a while...")
+        train_cfg = self.project_config.get_training_config()
+        fname = os.path.join('raw', 'clust_df_dat.pickle')
+        fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        clust = pickle_load_binary(fname)
+        return clust
 
-    @property
+    @cached_property
     def df_all_tracklets(self):
-        if self._df_all_tracklets is None:
-            train_cfg = self.project_config.get_training_config()
-            fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
-            self._df_all_tracklets = read_if_exists(fname)
-        return self._df_all_tracklets
+        logging.info("First time loading the all tracklets, may take a while...")
+        train_cfg = self.project_config.get_training_config()
+        fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
+        df_all_tracklets = read_if_exists(fname)
+        return df_all_tracklets
 
-    @property
+    @cached_property
     def df_fdnc_tracks(self):
-        if self._df_fdnc_tracks is None:
-            train_cfg = self.project_config.get_tracking_config()
-            fname = os.path.join('postprocessing', 'leifer_tracks.h5')
-            fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            self._df_fdnc_tracks = read_if_exists(fname)
-        return self._df_fdnc_tracks
+        train_cfg = self.project_config.get_tracking_config()
+        fname = os.path.join('postprocessing', 'leifer_tracks.h5')
+        fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        df_fdnc_tracks = read_if_exists(fname)
+        return df_fdnc_tracks
 
     @property
     def num_frames(self):
@@ -259,6 +252,7 @@ class ProjectData:
         self.tracklets_plotter = TrackletPlotter(
             self.final_tracks,
             self.df_all_tracklets,
+            self.global2tracklet
         )
         y = self.tracklets_plotter.calculate_tracklets_for_neuron(neuron_name)
         return y
