@@ -137,6 +137,7 @@ class TrackletAnnotator:
     def save_manual_additions(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches
         # TODO
+        logging.warning("Saving not implemented")
         pass
 
     def split_current_tracklet(self, i_time):

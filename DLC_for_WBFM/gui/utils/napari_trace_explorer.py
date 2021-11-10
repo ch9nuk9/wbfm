@@ -30,8 +30,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         neuron_names = list(self.dat.red_traces.columns.levels[0])
         self.current_name = neuron_names[0]
 
-        # BOX 1
-        # Change neurons (dropdown)
+        # BOX 1: Change neurons (dropdown)
         self.groupBox1 = QtWidgets.QGroupBox("Neuron selection", self.verticalLayoutWidget)
         self.vbox1 = QtWidgets.QVBoxLayout(self.groupBox1)
         self.changeNeuronsDropdown = QtWidgets.QComboBox()
@@ -41,7 +40,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.verticalLayout.addWidget(self.changeNeuronsDropdown)
         self.vbox1.addWidget(self.changeNeuronsDropdown)
 
-        # BOX 2
+        # BOX 2: overall mode options
         # Change traces (dropdown)
         self.groupBox2 = QtWidgets.QGroupBox("Channel selection", self.verticalLayoutWidget)
         self.vbox2 = QtWidgets.QVBoxLayout(self.groupBox2)
@@ -56,7 +55,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceTrackletDropdown.currentIndexChanged.connect(self.change_trace_tracklet_mode)
         self.vbox2.addWidget(self.changeTraceTrackletDropdown)
 
-        # BOX 3
+        # BOX 3: Trace filtering / display options
         # Change traces (dropdown)
         self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
         self.vbox3 = QtWidgets.QVBoxLayout(self.groupBox3)
@@ -86,14 +85,39 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
         self.vbox3.addWidget(self.changeTrackingOutlierSpinBox)
 
+        # BOX 4: general shortcuts
+        self.groupBox4 = QtWidgets.QGroupBox("Shortcuts", self.verticalLayoutWidget)
+        self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox4)
+
+        self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
+        self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
+        self.vbox4.addWidget(self.refreshButton)
+
+        self.zoom1Button = QtWidgets.QPushButton("Zoom next (D)")
+        self.zoom1Button.pressed.connect(self.zoom_next)
+        self.vbox4.addWidget(self.zoom1Button)
+        self.zoom2Button = QtWidgets.QPushButton("Zoom previous (A)")
+        self.zoom2Button.pressed.connect(self.zoom_previous)
+        self.vbox4.addWidget(self.zoom2Button)
+        self.zoom3Button = QtWidgets.QPushButton("Zoom to next nan (F)")
+        self.zoom3Button.pressed.connect(self.zoom_to_next_nan)
+        self.vbox4.addWidget(self.zoom3Button)
+
+        self.splitTrackletButton = QtWidgets.QPushButton("Split current tracklet (E)")
+        self.splitTrackletButton.pressed.connect(self.split_current_tracklet)
+        self.vbox4.addWidget(self.splitTrackletButton)
+
+        self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations (S)")
+        self.saveTrackletsButton.pressed.connect(self.save_manual_annotations)
+        self.vbox4.addWidget(self.saveTrackletsButton)
+
         self.verticalLayout.addWidget(self.groupBox1)
         self.verticalLayout.addWidget(self.groupBox2)
         self.verticalLayout.addWidget(self.groupBox3)
+        self.verticalLayout.addWidget(self.groupBox4)
 
         # General
-        self.refreshButton = QtWidgets.QPushButton("Refresh Subplot")
-        self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
-        self.verticalLayout.addWidget(self.refreshButton)
+        # self.verticalLayout.addWidget(self.refreshButton)
 
         # Save annotations (button)
         # self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
@@ -140,28 +164,60 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def initialize_shortcuts(self):
         viewer = self.viewer
 
+        @viewer.bind_key('r', overwrite=True)
+        def refresh_subplot(viewer):
+            self.update_trace_or_tracklet_subplot()
+
         @viewer.bind_key('d', overwrite=True)
         def zoom_next(viewer):
-            change_viewer_time_point(viewer, dt=1, a_max=len(self.dat.final_tracks) - 1)
-            zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
+            self.zoom_next(viewer)
 
         @viewer.bind_key('a', overwrite=True)
         def zoom_previous(viewer):
-            change_viewer_time_point(viewer, dt=-1, a_max=len(self.dat.final_tracks) - 1)
-            zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
+            self.zoom_previous(viewer)
+
+        @viewer.bind_key('f', overwrite=True)
+        def zoom_to_next_nan(viewer):
+            self.zoom_to_next_nan(viewer)
+
+        @viewer.bind_key('e', overwrite=True)
+        def split_current_tracklet(viewer):
+            self.split_current_tracklet()
 
         @viewer.bind_key('s', overwrite=True)
-        def zoom_to_next_nan(viewer):
-            y_on_plot = self.y_on_plot()
-            t = self.t
-            for i in range(t, len(y_on_plot)):
-                if np.isnan(y_on_plot[i]):
-                    t_target = i
-                    change_viewer_time_point(viewer, t_target=t_target)
-                    zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
-                    break
-            else:
-                print("No nan point found; not switching")
+        def refresh_subplot(viewer):
+            self.save_manual_annotations()
+
+    @property
+    def max_time(self):
+        return len(self.dat.final_tracks) - 1
+
+    def zoom_next(self, viewer):
+        change_viewer_time_point(viewer, dt=1, a_max=self.max_time)
+        zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
+
+    def zoom_previous(self, viewer):
+        change_viewer_time_point(viewer, dt=-1, a_max=self.max_time)
+        zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
+
+    def zoom_to_next_nan(self, viewer):
+        y_on_plot = self.y_on_plot()
+        t = self.t
+        for i in range(t, len(y_on_plot)):
+            if np.isnan(y_on_plot[i]):
+                t_target = i
+                change_viewer_time_point(viewer, t_target=t_target)
+                zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
+                break
+        else:
+            print("No nan point found; not switching")
+
+    def split_current_tracklet(self):
+        self.dat.tracklet_annotator.split_current_tracklet(self.t)
+        self.update_trace_or_tracklet_subplot()
+
+    def save_manual_annotations(self):
+        self.dat.tracklet_annotator.save_manual_additions()
 
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
