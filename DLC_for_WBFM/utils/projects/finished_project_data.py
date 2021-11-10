@@ -188,6 +188,9 @@ class ProjectData:
         reindexed_metadata_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_metadata')
         obj.reindexed_metadata_training = DetectedNeurons(reindexed_metadata_training_fname)
 
+        # Read ahead of time because they may be needed for classes in the threading environment
+        obj.final_tracks = read_if_exists(final_tracks_fname)
+
         # TODO: do not hardcode
         behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
         behavior_fname = cfg.resolve_relative_path(behavior_fname)
@@ -210,7 +213,7 @@ class ProjectData:
                 reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader).result()
                 # reindexed_metadata_training = ex.submit(read_if_exists,
                 #                                         reindexed_metadata_training_fname, pickle_load_binary).result()
-                final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
+                # final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader).result()
                 # seg_metadata: dict = ex.submit(pickle_load_binary, seg_metadata_fname).result()
@@ -224,10 +227,6 @@ class ProjectData:
         background_per_pixel = traces_cfg.config['visualization']['background_per_pixel']
         likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']
 
-        # start = cfg.config['dataset_params']['start_volume']
-        # end = start + cfg.config['dataset_params']['num_frames']
-        # x = list(range(start, end))
-
         # Return a full object
         obj.red_data = red_data
         obj.green_data = green_data
@@ -237,7 +236,6 @@ class ProjectData:
         obj.reindexed_masks_training = reindexed_masks_training
         obj.red_traces = red_traces
         obj.green_traces = green_traces
-        obj.final_tracks = final_tracks
         obj.behavior_annotations = behavior_annotations
         obj.background_per_pixel = background_per_pixel
         obj.likelihood_thresh = likelihood_thresh

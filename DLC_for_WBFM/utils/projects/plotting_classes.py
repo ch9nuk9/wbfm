@@ -244,13 +244,13 @@ class TrackletAnnotator:
     def save_current_tracklet_to_neuron(self):
         if self.is_current_tracklet_confict_free:
 
-            # TODO: remove tracklets if they conflict with this one
-
             d = self.manual_global2tracklet_names[self.current_neuron]
-            if self.current_tracklet_name not in d:
-                d.append(self.current_tracklet_name)
-            else:
-                print(f"{self.current_neuron} is already matched to tracklet {self.current_tracklet_name}")
+            d.append(self.current_tracklet_name)
+            # if self.current_tracklet_name not in d:
+            #     d.append(self.current_tracklet_name)
+            # else:
+            #     print(f"{self.current_neuron} is already matched to tracklet {self.current_tracklet_name}")
+            print(f"Successfully added tracklet {self.current_tracklet_name} to {self.current_neuron}")
             self.current_tracklet_name = None
         else:
             print("Current tracklet has conflicts, please resolve before saving as a match")
@@ -274,12 +274,20 @@ class TrackletAnnotator:
         match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
         match_fname = get_sequential_filename(match_fname)
         self.tracking_cfg.pickle_in_local_project(self.combined_global2tracklet_dict, match_fname)
+        match_fname = self.tracking_cfg.unresolve_absolute_path(match_fname)
         self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
 
         df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
         df_fname = get_sequential_filename(df_fname)
-        self.tracking_cfg.pickle_in_local_project(self.df_tracklets, df_fname)
+        self.tracking_cfg.h5_in_local_project(self.df_tracklets, df_fname)
+        df_fname = self.tracking_cfg.unresolve_absolute_path(df_fname)
         self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
+
+        df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_3d_tracks_df_fname')
+        df_fname = get_sequential_filename(df_fname)
+        self.tracking_cfg.h5_in_local_project(self.df_final_tracks, df_fname)
+        df_fname = self.tracking_cfg.unresolve_absolute_path(df_fname)
+        self.tracking_cfg.config.update({'manual_correction_3d_tracks_df_fname': df_fname})
 
         logging.info("Saving successful!")
         self.tracking_cfg.update_on_disk()
@@ -332,6 +340,9 @@ class TrackletAnnotator:
                 dims_displayed=event.dims_displayed,
                 world=True
             )
+
+            if seg_index is None:
+                return
 
             if self.verbose >= 1:
                 print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "

@@ -47,6 +47,12 @@ class ConfigFileWithProjectContext:
         with open(abs_path, 'wb') as f:
             pickle.dump(data, f)
 
+    def h5_in_local_project(self, data: pd.DataFrame, relative_path: str):
+        abs_path = self.resolve_relative_path(relative_path)
+        if not abs_path.endswith('.h5'):
+            abs_path += ".h5"
+        data.to_hdf(abs_path, key="df_with_missing")
+
     def __repr__(self):
         pp = pprint.PrettyPrinter(indent=2)
         return pp.pformat(self.config)
