@@ -105,11 +105,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitTrackletButton.pressed.connect(self.split_current_tracklet)
         self.vbox4.addWidget(self.splitTrackletButton)
 
-        self.appendTrackletsButton = QtWidgets.QPushButton("Append current tracklet to dict (Q)")
-        self.appendTrackletsButton.pressed.connect(self.append_current_tracklet_to_dict)
-        self.vbox4.addWidget(self.appendTrackletsButton)
+        self.appendTrackletButton = QtWidgets.QPushButton("Append current tracklet to neuron (Q)")
+        self.appendTrackletButton.pressed.connect(self.append_current_tracklet_to_dict)
+        self.vbox4.addWidget(self.appendTrackletButton)
 
-        self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations (S)")
+        self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk (S)")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
 

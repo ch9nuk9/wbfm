@@ -118,6 +118,7 @@ class ProjectData:
         obj = TrackletAnnotator(
             self.df_all_tracklets,
             global2tracklet_names,
+            segmentation_metadata=self.segmentation_metadata,
             df_final_tracks=self.final_tracks,
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg

@@ -5,6 +5,7 @@ from typing import List, Union, Dict
 
 import numpy as np
 import pandas as pd
+from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
@@ -97,6 +98,7 @@ class TrackletAnnotator:
     df_tracklets: pd.DataFrame
     global2tracklet: Dict[str, List[str]]
     df_final_tracks: pd.DataFrame
+    segmentation_metadata: DetectedNeurons
 
     # Annotation
     manual_global2tracklet_names: Dict[str, List[str]] = None
@@ -190,10 +192,8 @@ class TrackletAnnotator:
         self.tracking_cfg.pickle_in_local_project(self.df_tracklets, df_fname)
         self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
 
+        logging.info("Saving successful!")
         self.tracking_cfg.update_on_disk()
-
-        # logging.warning("Saving not implemented")
-        # pass
 
     def split_current_tracklet(self, i_time):
         # The current time is included in the "new half" of the tracklet
@@ -247,12 +247,15 @@ class TrackletAnnotator:
             if self.verbose >= 1:
                 print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
                       f"and position {event.position[1:]}")
-
-            dist, ind, tracklet_name = self.get_closest_tracklet_to_point(
+            dist, ind, tracklet_name = self.get_tracklet_from_segmentation_index(
                 i_time=int(event.position[0]),
-                target_pt=event.position[1:],
-                verbose=2
+                seg_ind=seg_index
             )
+            # dist, ind, tracklet_name = self.get_closest_tracklet_to_point(
+            #     i_time=int(event.position[0]),
+            #     target_pt=event.position[1:],
+            #     verbose=1
+            # )
 
             dist = dist[0][0]
             if self.verbose >= 1:
@@ -310,3 +313,9 @@ class TrackletAnnotator:
             tracklet_name = all_tracklet_names[ind_global_coords]
 
         return dist, ind_global_coords, tracklet_name
+
+    def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
+
+        # TODO: Directly use the neuron id - tracklet id matching dataframe
+        target_pt = self.segmentation_metadata.mask_index_to_zxy(i_time, seg_ind)
+        return self.get_closest_tracklet_to_point(i_time, target_pt)
