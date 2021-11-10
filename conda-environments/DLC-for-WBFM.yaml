@@ -49,3 +49,4 @@ dependencies:
     - tinydb==3.15.2
     - tinydb-serialization
     - hashfs
+    - backports.cached_property

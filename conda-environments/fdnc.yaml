@@ -36,3 +36,4 @@ dependencies:
     - tinydb==3.15.2
     - tinydb-serialization
     - openpyxl
+    - backports.cached_property
