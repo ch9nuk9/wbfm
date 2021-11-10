@@ -106,6 +106,7 @@ class TrackletAnnotator:
     tracking_cfg: SubfolderConfigFile = None
 
     # Visualization options
+    refresh_callback: callable = None
     to_add_layer_to_viewer: bool = True
     verbose: int = 1
 
@@ -139,16 +140,33 @@ class TrackletAnnotator:
         pass
 
     def split_current_tracklet(self, i_time):
-        # The current time is included in the "old half" of the tracklet
+        # The current time is included in the "new half" of the tracklet
         # The newer half is added as a new index in the df_tracklet dataframe
-        # TODO
-        pass
+        this_tracklet = self.df_tracklets[self.current_tracklet]
+
+        old_half = this_tracklet.iloc[:i_time].copy()
+        old_name = self.current_tracklet
+        new_half = this_tracklet.iloc[i_time:].copy()
+
+        all_names = list(self.df_tracklets.columns.levels[0])
+        i_tracklet = len(all_names) + 1
+        build_tracklet_name = lambda i: f'neuron{i}'
+        new_name = build_tracklet_name(i_tracklet)
+        while new_name in all_names:
+            i_tracklet += 1
+            new_name = build_tracklet_name(i_tracklet)
+
+        logging.info(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_time}")
+
+        self.df_tracklets[new_name] = new_half
+        self.df_tracklets[old_name] = old_half
 
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer,
                                            max_dist=10.0,
                                            refresh_callback=None):
 
         df_tracklets = self.df_tracklets
+        self.refresh_callback = refresh_callback
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
@@ -172,7 +190,7 @@ class TrackletAnnotator:
             self.current_tracklet = tracklet_name
             if self.current_neuron is not None:
                 # self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
-                refresh_callback()
+                self.refresh_callback()
 
             dist = dist[0][0]
             if self.verbose >= 1:
