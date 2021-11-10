@@ -9,6 +9,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
 from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename
 from DLC_for_WBFM.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
 
@@ -95,9 +96,11 @@ class TrackletAnnotator:
 
     df_tracklets: pd.DataFrame
     global2tracklet: Dict[str, List[str]]
+    df_final_tracks: pd.DataFrame
 
     # Annotation
     manual_global2tracklet_names: Dict[str, List[str]] = None
+    manual_global2tracklet_removals: Dict[str, List[str]] = None
     current_neuron: str = None
     current_tracklet_name: Union[str, None] = None
 
@@ -113,6 +116,18 @@ class TrackletAnnotator:
     def __post_init__(self):
         if self.manual_global2tracklet_names is None:
             self.manual_global2tracklet_names = defaultdict(list)
+        if self.manual_global2tracklet_removals is None:
+            self.manual_global2tracklet_removals = defaultdict(list)
+
+    @property
+    def combined_global2tracklet_dict(self):
+        tmp = self.global2tracklet.copy()
+        for k in tmp.keys():
+            tmp[k].extend(self.manual_global2tracklet_names[k].copy())
+            [tmp[k].remove(neuron) for neuron in self.manual_global2tracklet_removals[k]]
+        if self.current_tracklet_name is not None:
+            logging.warning("Currently active tracklet not yet saved")
+        return tmp
 
     def calculate_tracklets_for_neuron(self, neuron_name=None) -> List[pd.DataFrame]:
         # Note: does NOT save this neuron as self.current_neuron
@@ -126,8 +141,7 @@ class TrackletAnnotator:
         # all_tracklet_names = list(self.df_tracklets.columns.levels[0])
 
         # these_names = [all_tracklet_names[i] for i in tracklet_ind]
-        if self.manual_global2tracklet_names is not None:
-            these_names.extend(self.manual_global2tracklet_names[neuron_name])
+        these_names.extend(self.manual_global2tracklet_names[neuron_name])
         if self.current_tracklet_name is not None:
             these_names.append(self.current_tracklet_name)
 
@@ -137,13 +151,18 @@ class TrackletAnnotator:
 
         return these_tracklets
 
-    def append_current_tracklet_to_dict(self):
+    def save_current_tracklet_to_neuron(self):
         d = self.manual_global2tracklet_names[self.current_neuron]
         if self.current_tracklet_name not in d:
             d.append(self.current_tracklet_name)
         else:
-            print(f"Neuron")
+            print(f"{self.current_neuron} is already matched to tracklet {self.current_tracklet_name}")
         self.current_tracklet_name = None
+
+        # TODO: check if this tracklet is matched to another neuron
+
+        # TODO: remove tracklets if they conflict with this one
+        # TODO: OR, do not allow saving if there are conflicts
 
     def print_current_status(self, neuron_name=None):
         if neuron_name is None:
@@ -159,9 +178,22 @@ class TrackletAnnotator:
 
     def save_manual_matches_to_disk(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches
-        # TODO
-        logging.warning("Saving not implemented")
-        pass
+        logging.warning("Saving tracklet dataframe, may take a while")
+
+        match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
+        match_fname = get_sequential_filename(match_fname)
+        self.tracking_cfg.pickle_in_local_project(self.combined_global2tracklet_dict, match_fname)
+        self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
+
+        df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
+        df_fname = get_sequential_filename(df_fname)
+        self.tracking_cfg.pickle_in_local_project(self.df_tracklets, df_fname)
+        self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
+
+        self.tracking_cfg.update_on_disk()
+
+        # logging.warning("Saving not implemented")
+        # pass
 
     def split_current_tracklet(self, i_time):
         # The current time is included in the "new half" of the tracklet
