@@ -105,7 +105,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitTrackletButton.pressed.connect(self.split_current_tracklet)
         self.vbox4.addWidget(self.splitTrackletButton)
 
-        self.appendTrackletButton = QtWidgets.QPushButton("Append current tracklet to neuron (Q)")
+        self.removeTrackletButton1 = QtWidgets.QPushButton("Remove tracklets with time conflicts (Z)")
+        self.removeTrackletButton1.pressed.connect(self.remove_time_conflicts)
+        self.vbox4.addWidget(self.removeTrackletButton1)
+        self.removeTrackletButton2 = QtWidgets.QPushButton("Remove tracklet from other neurons (X)")
+        self.removeTrackletButton2.pressed.connect(self.remove_other_match_conflicts)
+        self.vbox4.addWidget(self.removeTrackletButton2)
+        self.appendTrackletButton = QtWidgets.QPushButton("Save current tracklet to neuron (IF conflict-free) (C)")
         self.appendTrackletButton.pressed.connect(self.append_current_tracklet_to_dict)
         self.vbox4.addWidget(self.appendTrackletButton)
 
@@ -194,13 +200,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def refresh_subplot(viewer):
             self.save_annotations_to_disk()
 
-        @viewer.bind_key('q', overwrite=True)
+        @viewer.bind_key('c', overwrite=True)
         def refresh_subplot(viewer):
             self.append_current_tracklet_to_dict()
 
         @viewer.bind_key('v', overwrite=True)
         def print_tracklet_status(viewer):
             self.print_tracklets()
+
+        @viewer.bind_key('z', overwrite=True)
+        def print_tracklet_status(viewer):
+            self.remove_time_conflicts()
+
+        @viewer.bind_key('x', overwrite=True)
+        def print_tracklet_status(viewer):
+            self.remove_other_match_conflicts()
 
     @property
     def max_time(self):
@@ -247,6 +261,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def print_tracklets(self):
         self.dat.tracklet_annotator.print_current_status()
+
+    def remove_time_conflicts(self):
+        self.dat.tracklet_annotator.remove_tracklets_with_time_conflicts()
+
+    def remove_other_match_conflicts(self):
+        self.dat.tracklet_annotator.remove_tracklet_from_other_match()
 
     @property
     def y_on_plot(self):

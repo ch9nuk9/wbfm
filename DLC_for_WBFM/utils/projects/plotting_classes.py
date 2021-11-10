@@ -241,7 +241,6 @@ class TrackletAnnotator:
         else:
             print("Already not conflicting")
 
-
     def save_current_tracklet_to_neuron(self):
         if self.is_current_tracklet_confict_free:
 
