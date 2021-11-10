@@ -117,8 +117,8 @@ class ProjectData:
     def tracklet_annotator(self):
         tracking_cfg = self.project_config.get_tracking_config()
         training_cfg = self.project_config.get_training_config()
-        fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
-        global2tracklet = pickle_load_binary(fname)
+        # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
+        global2tracklet = self.global2tracklet
 
         # TODO: refactor this dict to be strings from the beginning
         all_tracklet_names = list(self.df_all_tracklets.columns.levels[0])
