@@ -49,13 +49,14 @@ def get_sequential_filename(fname: str) -> str:
     if fpath.exists():
         print(f"Original fname {fpath} exists, so will be suffixed")
         base_fname, suffix_fname = fpath.stem, fpath.suffix
-        new_fname = str(base_fname) + f"-{i}" + str(suffix_fname)
-        while Path(new_fname).exists():
+        new_base_fname = str(base_fname) + f"-{i}"
+        while Path(new_base_fname + str(suffix_fname)).exists():
             i += 1
-            new_fname = new_fname[:-2] + f"-{i}"
+            new_base_fname = new_base_fname[:-2] + f"-{i}"
+        new_fname = fpath.with_name(new_base_fname + str(suffix_fname))
     else:
         new_fname = fname
-    return new_fname
+    return str(new_fname)
 
 
 def get_absname(project_path, fname):
