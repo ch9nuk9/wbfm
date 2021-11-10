@@ -5,10 +5,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists, pickle_load_binary
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists, pickle_load_binary, \
+    ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config, get_sequential_filename
 
 
@@ -189,7 +191,7 @@ def combine_dlc_and_tracklets(new_tracklet_df, dlc_tracks):
 
 def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFile,
                                                        training_cfg: SubfolderConfigFile,
-                                                       project_dir,
+                                                       project_cfg: ModularProjectConfig,
                                                        use_imputed_df=False,
                                                        DEBUG=False):
     """
@@ -209,7 +211,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
         keep_only_tracklets_in_final_tracks, global2tracklet, used_indices = _unpack_tracklets_for_combining(
-            project_dir, training_cfg, track_config, use_imputed_df)
+            project_cfg, training_cfg, track_config, use_imputed_df)
 
     # Match tracklets to DLC neurons
     global_neuron_names = list(df_global_tracks.columns.levels[0])
@@ -242,6 +244,21 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
     _save_tracklet_matches(global2tracklet, project_dir, track_config)
 
     # Combine and save
+    # final_tracks_from_tracklet_matches(DEBUG, df_global_tracks, df_tracklets, global2tracklet,
+    #                                    keep_only_tracklets_in_final_tracks, output_df_fname, project_dir, track_config)
+
+
+
+def final_tracks_from_tracklet_matches_from_config(track_config: SubfolderConfigFile,
+                                                   training_cfg: SubfolderConfigFile,
+                                                   project_cfg: ModularProjectConfig,
+                                                   use_imputed_df=False,
+                                                   DEBUG=False):
+
+    d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
+        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices = _unpack_tracklets_for_combining(
+            project_cfg, training_cfg, track_config, use_imputed_df)
+
     # Rename to be sequential, like the reindexed segmentation
     logging.info("Concatenating tracklets")
     combined_df, new_tracklet_df = combine_global_and_tracklet_coverings(global2tracklet,
@@ -249,7 +266,6 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
                                                                          df_global_tracks,
                                                                          keep_only_tracklets_in_final_tracks,
                                                                          verbose=0)
-
     _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config)
 
 
@@ -293,7 +309,7 @@ def _save_tracklet_matches(global2tracklet, project_dir, track_config):
         track_config.update_on_disk()
 
 
-def _unpack_tracklets_for_combining(project_dir,
+def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
                                     training_cfg: SubfolderConfigFile,
                                     track_config: SubfolderConfigFile,
                                     use_imputed_df):
@@ -305,7 +321,7 @@ def _unpack_tracklets_for_combining(project_dir,
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
     output_df_fname = get_sequential_filename(output_df_fname)
 
-    with safe_cd(project_dir):
+    with safe_cd(project_cfg.project_dir):
 
         subfolder = os.path.join('3-tracking', 'postprocessing')
         Path(subfolder).mkdir(exist_ok=True)
@@ -323,6 +339,7 @@ def _unpack_tracklets_for_combining(project_dir,
         df_global_tracks.replace(0, np.NaN, inplace=True)
 
     # Check for previous matches, and start from them
+    project_data = ProjectData(project_cfg.project_dir, project_cfg)
     fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')
     if Path(fname).exists():
         logging.info(f"Found previous tracklet matches at {fname}")
