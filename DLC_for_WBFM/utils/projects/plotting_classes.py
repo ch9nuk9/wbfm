@@ -99,7 +99,7 @@ class TrackletAnnotator:
     # Annotation
     manual_global2tracklet_names: Dict[str, List[str]] = None
     current_neuron: str = None
-    current_tracklet: Union[str, None] = None
+    current_tracklet_name: Union[str, None] = None
 
     # Saving
     training_cfg: SubfolderConfigFile = None
@@ -121,25 +121,41 @@ class TrackletAnnotator:
         if neuron_name is None:
             raise ValueError("Must pass neuron name explicitly or have one saved in the object")
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
-        these_names = self.global2tracklet[neuron_name]
+        these_names = self.global2tracklet[neuron_name].copy()
         # all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
         # all_tracklet_names = list(self.df_tracklets.columns.levels[0])
 
         # these_names = [all_tracklet_names[i] for i in tracklet_ind]
-        print(f"Initial tracklets: {these_names}")
         if self.manual_global2tracklet_names is not None:
             these_names.extend(self.manual_global2tracklet_names[neuron_name])
-            print(f"Adding previous manually added tracklets: {self.manual_global2tracklet_names[neuron_name]}")
-        if self.current_tracklet is not None:
-            these_names.append(self.current_tracklet)
-            print(f"Adding currently selected tracklet: {self.current_tracklet}")
+        if self.current_tracklet_name is not None:
+            these_names.append(self.current_tracklet_name)
+
+        if self.verbose >= 1:
+            self.print_current_status(neuron_name)
         these_tracklets = [self.df_tracklets[name] for name in these_names]
 
         return these_tracklets
 
     def append_current_tracklet_to_dict(self):
-        self.manual_global2tracklet_names[self.current_neuron].append(self.current_tracklet)
-        self.current_tracklet = None
+        d = self.manual_global2tracklet_names[self.current_neuron]
+        if self.current_tracklet_name not in d:
+            d.append(self.current_tracklet_name)
+        else:
+            print(f"Neuron")
+        self.current_tracklet_name = None
+
+    def print_current_status(self, neuron_name=None):
+        if neuron_name is None:
+            neuron_name = self.current_neuron
+
+        if neuron_name is None:
+            print("No neuron selected")
+        else:
+            these_names = self.global2tracklet[self.current_neuron]
+            print(f"Initial tracklets for this neuron: {these_names}")
+            print(f"Previous manually added tracklets: {self.manual_global2tracklet_names[neuron_name]}")
+            print(f"Currently selected tracklet: {self.current_tracklet_name}")
 
     def save_manual_matches_to_disk(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches
@@ -150,10 +166,12 @@ class TrackletAnnotator:
     def split_current_tracklet(self, i_time):
         # The current time is included in the "new half" of the tracklet
         # The newer half is added as a new index in the df_tracklet dataframe
-        this_tracklet = self.df_tracklets[[self.current_tracklet]]
+        # And finally, the newer half is set as the current tracklet
+        this_tracklet = self.df_tracklets[[self.current_tracklet_name]]
 
+        # Split
         old_half = this_tracklet.copy()
-        old_name = self.current_tracklet
+        old_name = self.current_tracklet_name
         old_half.iloc[i_time:] = np.nan
 
         new_half = this_tracklet.copy()
@@ -163,8 +181,10 @@ class TrackletAnnotator:
 
         logging.info(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_time}")
 
+        # Save
         self.df_tracklets[old_name] = old_half
         self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
+        self.current_tracklet_name = new_name
 
     def get_next_tracklet_name(self):
         all_names = list(self.df_tracklets.columns.levels[0])
@@ -207,7 +227,7 @@ class TrackletAnnotator:
                 print(f"Neuron is part of tracklet {tracklet_name} with distance {dist}")
 
             if dist < max_dist:
-                self.current_tracklet = tracklet_name
+                self.current_tracklet_name = tracklet_name
                 if self.current_neuron is not None:
                     # self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
                     self.refresh_callback()

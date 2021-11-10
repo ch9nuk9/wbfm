@@ -105,13 +105,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitTrackletButton.pressed.connect(self.split_current_tracklet)
         self.vbox4.addWidget(self.splitTrackletButton)
 
-        self.appendTrackletsButton = QtWidgets.QPushButton("Append current tracklet to dict (q)")
+        self.appendTrackletsButton = QtWidgets.QPushButton("Append current tracklet to dict (Q)")
         self.appendTrackletsButton.pressed.connect(self.append_current_tracklet_to_dict)
         self.vbox4.addWidget(self.appendTrackletsButton)
 
         self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations (S)")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
+
+        self.printTrackletsButton = QtWidgets.QPushButton("Print current tracklets (V)")
+        self.printTrackletsButton.pressed.connect(self.print_tracklets)
+        self.vbox4.addWidget(self.printTrackletsButton)
 
         self.verticalLayout.addWidget(self.groupBox1)
         self.verticalLayout.addWidget(self.groupBox2)
@@ -194,6 +198,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def refresh_subplot(viewer):
             self.append_current_tracklet_to_dict()
 
+        @viewer.bind_key('v', overwrite=True)
+        def print_tracklet_status(viewer):
+            self.print_tracklets()
+
     @property
     def max_time(self):
         return len(self.dat.final_tracks) - 1
@@ -237,6 +245,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
+    def print_tracklets(self):
+        self.dat.tracklet_annotator.print_current_status()
 
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
