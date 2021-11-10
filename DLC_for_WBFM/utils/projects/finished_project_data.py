@@ -224,7 +224,7 @@ class ProjectData:
         obj.green_data = green_data
         obj.raw_segmentation = raw_segmentation
         obj.segmentation = segmentation
-        obj.seg_metadata = seg_metadata
+        obj.segmentation_metadata = seg_metadata
         obj.df_training_tracklets = df_training_tracklets
         obj.reindexed_masks_training = reindexed_masks_training
         obj.reindexed_metadata_training = reindexed_metadata_training
@@ -405,6 +405,7 @@ red_traces: {self.red_traces is not None}\n\
 green_traces: {self.green_traces is not None}\n\
 final_tracks: {self.final_tracks is not None}\n\
 behavior_annotations: {self.behavior_annotations is not None}\n"
+
 
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
 

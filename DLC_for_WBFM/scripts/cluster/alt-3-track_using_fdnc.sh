@@ -19,7 +19,7 @@ do
     esac
 done
 
-CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/alternate/3-track_using_fdnc.py"
+CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/3a-track_using_fdnc.py"
 
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $CMD with project_path=$project_path"

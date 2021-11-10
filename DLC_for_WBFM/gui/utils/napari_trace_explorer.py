@@ -1,5 +1,4 @@
 import logging
-
 import napari
 import numpy as np
 import pandas as pd
@@ -8,7 +7,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point, build_tracks_from_dataframe
-from DLC_for_WBFM.utils.projects.plotting_classes import get_closest_tracklet_to_point
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
@@ -170,15 +168,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.bind_key('d', overwrite=True)
         def zoom_next(viewer):
-            self.zoom_next(viewer)
+            self.zoom_next()
 
         @viewer.bind_key('a', overwrite=True)
         def zoom_previous(viewer):
-            self.zoom_previous(viewer)
+            self.zoom_previous()
 
         @viewer.bind_key('f', overwrite=True)
         def zoom_to_next_nan(viewer):
-            self.zoom_to_next_nan(viewer)
+            self.zoom_to_next_nan()
 
         @viewer.bind_key('e', overwrite=True)
         def split_current_tracklet(viewer):
@@ -192,22 +190,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def max_time(self):
         return len(self.dat.final_tracks) - 1
 
-    def zoom_next(self, viewer):
-        change_viewer_time_point(viewer, dt=1, a_max=self.max_time)
-        zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
+    def zoom_next(self, viewer=None):
+        change_viewer_time_point(self.viewer, dt=1, a_max=self.max_time)
+        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
 
-    def zoom_previous(self, viewer):
-        change_viewer_time_point(viewer, dt=-1, a_max=self.max_time)
-        zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
+    def zoom_previous(self, viewer=None):
+        change_viewer_time_point(self.viewer, dt=-1, a_max=self.max_time)
+        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
 
-    def zoom_to_next_nan(self, viewer):
+    def zoom_to_next_nan(self, viewer=None):
         y_on_plot = self.y_on_plot()
         t = self.t
         for i in range(t, len(y_on_plot)):
             if np.isnan(y_on_plot[i]):
                 t_target = i
-                change_viewer_time_point(viewer, t_target=t_target)
-                zoom_using_viewer(viewer, layer_name='final_track', zoom=None)
+                change_viewer_time_point(self.viewer, t_target=t_target)
+                zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
                 break
         else:
             print("No nan point found; not switching")
@@ -253,6 +251,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_stored_tracklets()
         for y in self.y_tracklets:
             self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
+        self.update_tracklet_annotator()
         # self.trace_line = self.static_ax.plot(self.y)[0]
 
     def on_subplot_click(self, event):
