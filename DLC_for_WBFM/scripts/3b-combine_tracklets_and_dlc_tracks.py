@@ -42,7 +42,6 @@ def combine_tracks(_config, _run):
 
     DEBUG = _config['DEBUG']
     track_cfg = _config['tracking_cfg']
-    project_dir = _config['project_dir']
     training_cfg = _config['training_cfg']
 
     combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, training_cfg, _config['cfg'],

@@ -42,9 +42,9 @@ def combine_tracks(_config, _run):
 
     DEBUG = _config['DEBUG']
     track_cfg = _config['tracking_cfg']
-    project_dir = _config['project_dir']
     training_cfg = _config['training_cfg']
 
+    # TODO: do I need the imputed df option here?
     final_tracks_from_tracklet_matches_from_config(track_cfg, training_cfg, _config['cfg'],
-                                                       use_imputed_df=_config['use_imputed_df'],
-                                                       DEBUG=DEBUG)
+                                                   use_imputed_df=_config['use_imputed_df'],
+                                                   DEBUG=DEBUG)

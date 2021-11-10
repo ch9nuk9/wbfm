@@ -106,7 +106,11 @@ def combine_matched_tracklets(these_tracklet_ind: list,
 
     # Extract the tracklets belonging to this neuron
     tracklet_names = df_tracklet.columns.levels[0]
-    these_tracklet_names = [tracklet_names[i] for i in these_tracklet_ind]
+    if type(these_tracklet_ind[0]) == str:
+        logging.info("Assuming that tracklet matches are proper DataFrame keys")
+        these_tracklet_names = these_tracklet_ind
+    else:
+        these_tracklet_names = [tracklet_names[i] for i in these_tracklet_ind]
     logging.info(f"Found {len(these_tracklet_names)} tracklets for {neuron_name}")
 
     if len(these_tracklet_names) == 0:
@@ -248,7 +252,6 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
     #                                    keep_only_tracklets_in_final_tracks, output_df_fname, project_dir, track_config)
 
 
-
 def final_tracks_from_tracklet_matches_from_config(track_config: SubfolderConfigFile,
                                                    training_cfg: SubfolderConfigFile,
                                                    project_cfg: ModularProjectConfig,
@@ -266,7 +269,7 @@ def final_tracks_from_tracklet_matches_from_config(track_config: SubfolderConfig
                                                                          df_global_tracks,
                                                                          keep_only_tracklets_in_final_tracks,
                                                                          verbose=0)
-    _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config)
+    _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_cfg.project_dir, track_config)
 
 
 def get_already_covered_indices(df_tracklets, previous_matches):
