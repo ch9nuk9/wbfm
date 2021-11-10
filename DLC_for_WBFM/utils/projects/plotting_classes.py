@@ -294,23 +294,24 @@ class TrackletAnnotator:
         # The current time is included in the "new half" of the tracklet
         # The newer half is added as a new index in the df_tracklet dataframe
         # And finally, the newer half is set as the current tracklet
-        this_tracklet = self.df_tracklets[[self.current_tracklet_name]]
+        old_name = self.current_tracklet_name
+        this_tracklet = self.df_tracklets[[old_name]]
 
         # Split
         old_half = this_tracklet.copy()
-        old_name = self.current_tracklet_name
-        old_half.iloc[i_time:] = np.nan
-
         new_half = this_tracklet.copy()
+
+        old_half.iloc[i_time:] = np.nan
         new_half.iloc[:i_time] = np.nan
         new_name = self.get_next_tracklet_name()
         new_half.rename(columns={old_name: new_name}, level=0, inplace=True)
 
-        logging.info(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_time}")
+        print(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_time}")
+        print(f"New non-nan lengths: new: {new_half[new_name]['z'].count()}, old:{old_half[old_name]['z'].count()}")
 
         # Save
-        self.df_tracklets[old_name] = old_half
         self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
+        self.df_tracklets[old_name] = old_half[old_name]
         self.current_tracklet_name = new_name
 
     def clear_current_tracklet(self):
@@ -320,7 +321,8 @@ class TrackletAnnotator:
 
     def get_next_tracklet_name(self):
         all_names = list(self.df_tracklets.columns.levels[0])
-        i_tracklet = len(all_names) + 1
+        # Really want to make sure we are after all other names,
+        i_tracklet = 1e7 + len(all_names) + 1
         build_tracklet_name = lambda i: f'neuron{i}'
         new_name = build_tracklet_name(i_tracklet)
         while new_name in all_names:
