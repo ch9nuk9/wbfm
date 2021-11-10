@@ -108,9 +108,16 @@ class ProjectData:
         fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
         global2tracklet = pickle_load_binary(fname)
 
+        # TODO: refactor this dict to be strings from the beginning
+        all_tracklet_names = list(self.df_all_tracklets.columns.levels[0])
+        global2tracklet_names = {}
+        for neuron_name, indices in global2tracklet.items():
+            these_names = [all_tracklet_names[i] for i in indices]
+            global2tracklet_names[neuron_name] = these_names
+
         obj = TrackletAnnotator(
             self.df_all_tracklets,
-            global2tracklet,
+            global2tracklet_names,
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg
         )
