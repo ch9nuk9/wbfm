@@ -128,7 +128,7 @@ class TrackletAnnotator:
             tmp[k].extend(self.manual_global2tracklet_names[k].copy())
             [tmp[k].remove(neuron) for neuron in self.manual_global2tracklet_removals[k]]
         if self.current_tracklet_name is not None:
-            logging.warning("Currently active tracklet not yet saved")
+            logging.warning("Currently active tracklet not included in combined dict")
         return tmp
 
     def calculate_tracklets_for_neuron(self, neuron_name=None) -> List[pd.DataFrame]:
@@ -153,18 +153,83 @@ class TrackletAnnotator:
 
         return these_tracklets
 
-    def save_current_tracklet_to_neuron(self):
-        d = self.manual_global2tracklet_names[self.current_neuron]
-        if self.current_tracklet_name not in d:
-            d.append(self.current_tracklet_name)
+    def get_neuron_name_of_conflicting_match(self, tracklet_name=None):
+        # The tracklet shouldn't be in the manually annotated match, because it can't be added if there are conflicts
+        if tracklet_name is None:
+            tracklet_name = self.current_tracklet_name
+        for k, v in self.combined_global2tracklet_dict.items():
+            if tracklet_name in v:
+                return k
+        return None
+
+    def is_tracklet_already_matched(self, tracklet_name=None):
+        if tracklet_name is None:
+            tracklet_name = self.current_tracklet_name
+        name = self.get_neuron_name_of_conflicting_match(tracklet_name)
+        if name is None:
+            return False
         else:
-            print(f"{self.current_neuron} is already matched to tracklet {self.current_tracklet_name}")
-        self.current_tracklet_name = None
+            return True
 
-        # TODO: check if this tracklet is matched to another neuron
+    def get_tracklet_names_of_time_conflicts(self, tracklet_name=None) -> list:
+        # The tracklet shouldn't be in the manually annotated match, because it can't be added if there are conflicts
+        if tracklet_name is None:
+            tracklet_name = self.current_tracklet_name
+        # for k, v in self.combined_global2tracklet_dict.items():
+        #     if tracklet_name in v:
+        #         return k
+        return None
 
-        # TODO: remove tracklets if they conflict with this one
-        # TODO: OR, do not allow saving if there are conflicts
+    def tracklet_has_time_overlap(self, tracklet_name=None):
+        if tracklet_name is None:
+            tracklet_name = self.current_tracklet_name
+        name_list = self.get_tracklet_names_of_time_conflicts(tracklet_name)
+        if name_list is None:
+            return False
+        else:
+            return True
+
+    @property
+    def is_current_tracklet_confict_free(self):
+        has_match = self.is_tracklet_already_matched()
+        has_time_overlap = self.tracklet_has_time_overlap()
+        if not has_match and not has_time_overlap:
+            return True
+        else:
+            self.print_tracklet_conflicts()
+            return False
+
+    def print_tracklet_conflicts(self):
+        name = self.get_neuron_name_of_conflicting_match()
+        if name is not None:
+            print(f"Tracklet {self.current_tracklet_name} is already matched to other neuron: {name}")
+        name_list = self.get_tracklet_names_of_time_conflicts()
+        if name_list is not None:
+            print(f"Tracklet {self.current_tracklet_name} has time conflict with tracklets: {name_list}")
+
+    def remove_tracklet_from_other_match(self):
+        tracklet_name = self.current_tracklet_name
+        other_match = self.get_neuron_name_of_conflicting_match(tracklet_name)
+        self.manual_global2tracklet_removals[other_match].append(tracklet_name)
+
+        assert not self.is_tracklet_already_matched(tracklet_name), f"Removal of {tracklet_name} from {other_match} failed"
+
+    def remove_tracklets_with_time_conflicts(self):
+        pass
+
+    def save_current_tracklet_to_neuron(self):
+        if self.is_current_tracklet_confict_free:
+
+            # TODO: remove tracklets if they conflict with this one
+
+            d = self.manual_global2tracklet_names[self.current_neuron]
+            if self.current_tracklet_name not in d:
+                d.append(self.current_tracklet_name)
+            else:
+                print(f"{self.current_neuron} is already matched to tracklet {self.current_tracklet_name}")
+            self.current_tracklet_name = None
+        else:
+            print("Current tracklet has conflicts, please resolve before saving as a match")
 
     def print_current_status(self, neuron_name=None):
         if neuron_name is None:
