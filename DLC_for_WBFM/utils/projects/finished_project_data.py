@@ -64,8 +64,10 @@ class ProjectData:
         if Path(manual_fname).exists():
             global2tracklet = pickle_load_binary(manual_fname)
             print(f"Read manually updated matches: {manual_fname}")
-        else:
+        elif Path(fname).exists():
             global2tracklet = pickle_load_binary(fname)
+        else:
+            global2tracklet = None
         return global2tracklet
 
     @cached_property

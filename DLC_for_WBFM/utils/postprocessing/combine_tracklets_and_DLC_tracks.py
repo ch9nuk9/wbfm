@@ -321,35 +321,47 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
     output_df_fname = get_sequential_filename(output_df_fname)
 
+    # Use main object to load
+    project_data = ProjectData(project_cfg.project_dir, project_cfg)
+    df_tracklets = project_data.df_all_tracklets
+
     with safe_cd(project_cfg.project_dir):
 
         subfolder = os.path.join('3-tracking', 'postprocessing')
         Path(subfolder).mkdir(exist_ok=True)
         # TODO: add the tracklet fname to the config file
-        tracklet_fname = training_cfg.resolve_relative_path('all_tracklets.h5', prepend_subfolder=True)
+        # tracklet_fname = training_cfg.resolve_relative_path('all_tracklets.h5', prepend_subfolder=True)
         if not use_imputed_df:
             global_tracks_fname = track_config.resolve_relative_path_from_config('final_3d_tracks_df')
         else:
             global_tracks_fname = track_config.resolve_relative_path_from_config('missing_data_imputed_df')
             logging.info(f"Reading from the imputed data, not the original global tracks: {global_tracks_fname}")
 
-        df_tracklets: pd.DataFrame = read_if_exists(tracklet_fname)
+        # df_tracklets: pd.DataFrame = read_if_exists(tracklet_fname)
         df_global_tracks: pd.DataFrame = read_if_exists(global_tracks_fname)
         logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_global_tracks.shape[1]/4)} neurons")
         df_global_tracks.replace(0, np.NaN, inplace=True)
 
     # Check for previous matches, and start from them
-    project_data = ProjectData(project_cfg.project_dir, project_cfg)
-    fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')
-    if Path(fname).exists():
-        logging.info(f"Found previous tracklet matches at {fname}")
-        global2tracklet = pickle_load_binary(fname)
-        used_indices = set()
-        [used_indices.update(ind) for ind in global2tracklet.values()]
-    else:
+    global2tracklet = project_data.global2tracklet
+    if global2tracklet is None:
         logging.info(f"Did not find previous tracklet matches")
         global2tracklet = defaultdict(list)
         used_indices = set()
+    else:
+        logging.info(f"Found previous tracklet matches")
+        used_indices = set()
+        [used_indices.update(ind) for ind in global2tracklet.values()]
+    # fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')
+    # if Path(fname).exists():
+    #     logging.info(f"Found previous tracklet matches at {fname}")
+    #     global2tracklet = pickle_load_binary(fname)
+    #     used_indices = set()
+    #     [used_indices.update(ind) for ind in global2tracklet.values()]
+    # else:
+    #     logging.info(f"Did not find previous tracklet matches")
+    #     global2tracklet = defaultdict(list)
+    #     used_indices = set()
 
     return d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
         keep_only_tracklets_in_final_tracks, global2tracklet, used_indices
