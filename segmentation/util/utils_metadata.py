@@ -5,6 +5,7 @@ import concurrent.futures
 import logging
 import pickle
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict
 
 import numpy as np
@@ -92,8 +93,8 @@ class DetectedNeurons:
 
     @property
     def segmentation_metadata(self):
+        assert Path(self.detection_fname).exists(), f"{self.detection_fname} doesn't exist!"
         if self._segmentation_metadata is None:
-
             with open(self.detection_fname, 'rb') as f:
                 # Note: dict of dataframes
                 self._segmentation_metadata = pickle.load(f)
