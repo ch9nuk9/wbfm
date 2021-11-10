@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -96,9 +96,10 @@ class TrackletAnnotator:
     df_tracklets: pd.DataFrame
     global2tracklet: dict
 
-    # Annotation option
+    # Annotation
     manual_global2tracklet_names: dict = None
     current_neuron: str = None
+    current_tracklet: Union[str, None] = None
 
     # Visualization options
     to_add_layer_to_viewer: bool = True
@@ -110,7 +111,6 @@ class TrackletAnnotator:
 
     def calculate_tracklets_for_neuron(self, neuron_name) -> List[pd.DataFrame]:
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
-
         tracklet_ind = self.global2tracklet[neuron_name]
         # all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
         all_tracklet_names = list(self.df_tracklets.columns.levels[0])
@@ -118,10 +118,20 @@ class TrackletAnnotator:
         these_names = [all_tracklet_names[i] for i in tracklet_ind]
         if self.manual_global2tracklet_names is not None:
             these_names.extend(self.manual_global2tracklet_names[neuron_name])
+        if self.current_tracklet is not None:
+            these_names.extend(self.current_tracklet)
         print(f"Found tracklets: {these_names}")
         these_tracklets = [self.df_tracklets[name] for name in these_names]
 
         return these_tracklets
+
+    def save_current_tracklet(self):
+        self.manual_global2tracklet_names[self.current_neuron].append(self.current_tracklet)
+        self.current_tracklet = None
+
+    def save_manual_additions(self):
+        # TODO
+        pass
 
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer,
                                            max_dist=10.0,
@@ -149,8 +159,9 @@ class TrackletAnnotator:
                 verbose=2
             )
 
+            self.current_tracklet = tracklet_name
             if self.current_neuron is not None:
-                self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
+                # self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
                 refresh_callback()
 
             dist = dist[0][0]
