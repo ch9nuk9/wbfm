@@ -5,6 +5,8 @@ import concurrent.futures
 import logging
 import pickle
 from dataclasses import dataclass
+from typing import Dict
+
 import numpy as np
 import pandas as pd
 import zarr
@@ -85,7 +87,7 @@ class DetectedNeurons:
 
     detection_fname: str
 
-    _segmentation_metadata: dict = None
+    _segmentation_metadata: Dict[str, pd.DataFrame] = None
     _num_frames: int = None
 
     @property
@@ -148,7 +150,19 @@ class DetectedNeurons:
         return neuron_locs
 
     def seg_array_to_mask_index(self, i_time, i_index):
+        # Given the row index in the position matrix, return the corresponding mask label integer
         return self.segmentation_metadata[i_time].iloc[i_index].name
+
+    def mask_index_to_seg_array(self, i_time, mask_index):
+        # Inverse of seg_array_to_mask_index
+        # Return index of seg array given the mask index
+        return list(self.segmentation_metadata[i_time].index).index(mask_index)
+
+    def mask_index_to_zxy(self, i_time, mask_index):
+        # See mask_index_to_seg_array
+        # Return position given the mask index
+        seg_index = self.mask_index_to_seg_array(i_time, mask_index)
+        return np.array(self.segmentation_metadata[i_time].iloc[seg_index])
 
 
 def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
