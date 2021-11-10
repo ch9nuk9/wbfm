@@ -120,12 +120,7 @@ class ProjectData:
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
         global2tracklet = self.global2tracklet
 
-        # TODO: refactor this dict to be strings from the beginning
-        all_tracklet_names = list(self.df_all_tracklets.columns.levels[0])
-        global2tracklet_names = {}
-        for neuron_name, indices in global2tracklet.items():
-            these_names = [all_tracklet_names[i] for i in indices]
-            global2tracklet_names[neuron_name] = these_names
+        global2tracklet_names = self.fix_global2tracklet_dict(global2tracklet)
 
         obj = TrackletAnnotator(
             self.df_all_tracklets,
@@ -135,6 +130,19 @@ class ProjectData:
             training_cfg=training_cfg
         )
         return obj
+
+    def fix_global2tracklet_dict(self, global2tracklet):
+        # TODO: refactor this dict to be strings from the beginning
+        all_tracklet_names = list(self.df_all_tracklets.columns.levels[0])
+        global2tracklet_names = {}
+        for neuron_name, indices in global2tracklet.items():
+            if type(indices[0]) == str:
+                # Then I already converted it
+                global2tracklet_names = global2tracklet
+                break
+            these_names = [all_tracklet_names[i] for i in indices]
+            global2tracklet_names[neuron_name] = these_names
+        return global2tracklet_names
 
     @cached_property
     def df_fdnc_tracks(self):
