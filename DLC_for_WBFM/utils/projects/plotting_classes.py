@@ -114,7 +114,12 @@ class TrackletAnnotator:
         if self.manual_global2tracklet_names is None:
             self.manual_global2tracklet_names = defaultdict(list)
 
-    def calculate_tracklets_for_neuron(self, neuron_name) -> List[pd.DataFrame]:
+    def calculate_tracklets_for_neuron(self, neuron_name=None) -> List[pd.DataFrame]:
+        # Note: does NOT save this neuron as self.current_neuron
+        if neuron_name is None:
+            neuron_name = self.current_neuron
+        if neuron_name is None:
+            raise ValueError("Must pass neuron name explicitly or have one saved in the object")
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
         tracklet_ind = self.global2tracklet[neuron_name]
         # all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
