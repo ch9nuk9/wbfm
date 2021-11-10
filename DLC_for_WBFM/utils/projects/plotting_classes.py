@@ -126,20 +126,22 @@ class TrackletAnnotator:
         all_tracklet_names = list(self.df_tracklets.columns.levels[0])
 
         these_names = [all_tracklet_names[i] for i in tracklet_ind]
+        print(f"Initial tracklets: {these_names}")
         if self.manual_global2tracklet_names is not None:
             these_names.extend(self.manual_global2tracklet_names[neuron_name])
+            print(f"Adding previous manually added tracklets: {self.manual_global2tracklet_names[neuron_name]}")
         if self.current_tracklet is not None:
-            these_names.extend(self.current_tracklet)
-        print(f"Found tracklets: {these_names}")
+            these_names.append(self.current_tracklet)
+            print(f"Adding currently selected tracklet: {self.current_tracklet}")
         these_tracklets = [self.df_tracklets[name] for name in these_names]
 
         return these_tracklets
 
-    def save_current_tracklet(self):
+    def append_current_tracklet_to_dict(self):
         self.manual_global2tracklet_names[self.current_neuron].append(self.current_tracklet)
         self.current_tracklet = None
 
-    def save_manual_additions(self):
+    def save_manual_matches_to_disk(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches
         # TODO
         logging.warning("Saving not implemented")

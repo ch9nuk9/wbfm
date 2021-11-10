@@ -105,8 +105,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitTrackletButton.pressed.connect(self.split_current_tracklet)
         self.vbox4.addWidget(self.splitTrackletButton)
 
+        self.appendTrackletsButton = QtWidgets.QPushButton("Append current tracklet to dict (q)")
+        self.appendTrackletsButton.pressed.connect(self.append_current_tracklet_to_dict)
+        self.vbox4.addWidget(self.appendTrackletsButton)
+
         self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations (S)")
-        self.saveTrackletsButton.pressed.connect(self.save_manual_annotations)
+        self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
 
         self.verticalLayout.addWidget(self.groupBox1)
@@ -184,7 +188,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.bind_key('s', overwrite=True)
         def refresh_subplot(viewer):
-            self.save_manual_annotations()
+            self.save_annotations_to_disk()
+
+        @viewer.bind_key('q', overwrite=True)
+        def refresh_subplot(viewer):
+            self.append_current_tracklet_to_dict()
 
     @property
     def max_time(self):
@@ -211,16 +219,33 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print("No nan point found; not switching")
 
     def split_current_tracklet(self):
-        self.dat.tracklet_annotator.split_current_tracklet(self.t)
-        self.update_trace_or_tracklet_subplot()
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
+            self.dat.tracklet_annotator.split_current_tracklet(self.t)
+            self.update_trace_or_tracklet_subplot()
+        else:
+            print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
-    def save_manual_annotations(self):
-        self.dat.tracklet_annotator.save_manual_additions()
+    def save_annotations_to_disk(self):
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
+            self.dat.tracklet_annotator.save_manual_matches_to_disk()
+        else:
+            print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
+
+    def append_current_tracklet_to_dict(self):
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
+            self.dat.tracklet_annotator.append_current_tracklet_to_dict()
+        else:
+            print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
+
 
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_list = self.dat.tracklet_annotator.calculate_tracklets_for_neuron()
-            y_on_plot = np.sum(y_list)
+            tmp_df = y_list[0].copy()
+            for df in y_list[1:]:
+                tmp_df = tmp_df.combine_first(df)
+            # y_on_plot = np.sum(y_list, axis=1)
+            y_on_plot = tmp_df['z']
         else:
             y_on_plot = self.y
         return y_on_plot
