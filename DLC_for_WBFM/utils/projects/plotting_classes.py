@@ -171,14 +171,26 @@ class TrackletAnnotator:
         else:
             return True
 
-    def get_tracklet_names_of_time_conflicts(self, tracklet_name=None) -> list:
+    def get_tracklet_names_of_time_conflicts(self, tracklet_name=None) -> Union[dict, None]:
         # The tracklet shouldn't be in the manually annotated match, because it can't be added if there are conflicts
         if tracklet_name is None:
             tracklet_name = self.current_tracklet_name
-        # for k, v in self.combined_global2tracklet_dict.items():
-        #     if tracklet_name in v:
-        #         return k
-        return None
+        current_tracklet_names = self.combined_global2tracklet_dict[self.current_neuron]
+        df_target_tracklet = self.df_tracklets[tracklet_name]
+        times_target_tracklet = df_target_tracklet['z'].dropna().index
+
+        all_overlaps = {}
+        for name in current_tracklet_names:
+            current_tracklet = self.df_tracklets[name]
+            times_current_tracklet = current_tracklet['z'].dropna().index
+            intersection = times_target_tracklet.intersection(times_current_tracklet)
+            if len(intersection) > 0:
+                all_overlaps[name] = intersection
+
+        if len(all_overlaps) == 0:
+            return None
+        else:
+            return all_overlaps
 
     def tracklet_has_time_overlap(self, tracklet_name=None):
         if tracklet_name is None:
@@ -203,19 +215,32 @@ class TrackletAnnotator:
         name = self.get_neuron_name_of_conflicting_match()
         if name is not None:
             print(f"Tracklet {self.current_tracklet_name} is already matched to other neuron: {name}")
-        name_list = self.get_tracklet_names_of_time_conflicts()
-        if name_list is not None:
-            print(f"Tracklet {self.current_tracklet_name} has time conflict with tracklets: {name_list}")
+        name_dict = self.get_tracklet_names_of_time_conflicts()
+        if name_dict is not None:
+            print(f"Current tracklet {self.current_tracklet_name} has time conflict with tracklet(s):")
+            for name, times in name_dict.items():
+                print(f"{name} at times {times}")
 
     def remove_tracklet_from_other_match(self):
         tracklet_name = self.current_tracklet_name
         other_match = self.get_neuron_name_of_conflicting_match(tracklet_name)
-        self.manual_global2tracklet_removals[other_match].append(tracklet_name)
-
-        assert not self.is_tracklet_already_matched(tracklet_name), f"Removal of {tracklet_name} from {other_match} failed"
+        if other_match is not None:
+            self.manual_global2tracklet_removals[other_match].append(tracklet_name)
+            assert not self.is_tracklet_already_matched(tracklet_name), f"Removal of {tracklet_name} from {other_match} failed"
+        else:
+            print("Already unmatched")
 
     def remove_tracklets_with_time_conflicts(self):
-        pass
+        tracklet_name = self.current_tracklet_name
+        all_overlap_dict = self.get_tracklet_names_of_time_conflicts(tracklet_name)
+        if all_overlap_dict is not None:
+            for conflicting_tracklet_name in all_overlap_dict.keys():
+                self.manual_global2tracklet_removals[self.current_neuron].append(conflicting_tracklet_name)
+
+            assert not self.tracklet_has_time_overlap(tracklet_name), f"Clean up of {tracklet_name} failed"
+        else:
+            print("Already not conflicting")
+
 
     def save_current_tracklet_to_neuron(self):
         if self.is_current_tracklet_confict_free:
