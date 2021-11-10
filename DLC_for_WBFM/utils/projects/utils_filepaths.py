@@ -28,7 +28,7 @@ class ConfigFileWithProjectContext:
         relative_path = Path(self.project_dir).joinpath(val)
         return str(relative_path.resolve())
 
-    def unresolve_relative_path(self, val: str) -> str:
+    def unresolve_absolute_path(self, val: str) -> str:
         if val is None:
             return None
         return str(Path(val).relative_to(self.project_dir))

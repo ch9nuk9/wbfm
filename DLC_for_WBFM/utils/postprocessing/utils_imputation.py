@@ -98,14 +98,13 @@ def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
     df_final = update_dataframe_using_flat_names(df_raw, df_imputed, old2new_names)
 
     # Save
-    with safe_cd(tracks_config.project_dir):
-        fname = tracks_config.resolve_relative_path_from_config('missing_data_imputed_df')
+    fname = tracks_config.resolve_relative_path_from_config('missing_data_imputed_df')
+    abs_fname = get_sequential_filename(fname)
+    df_final.to_hdf(abs_fname, key='df_with_missing')
 
-        out_fname = get_sequential_filename(fname)
-        df_final.to_hdf(out_fname, key='df_with_missing')
-
-        tracks_config.config.update({'missing_data_imputed_df': out_fname})
-        tracks_config.update_on_disk()
+    rel_fname = tracks_config.unresolve_absolute_path(abs_fname)
+    tracks_config.config.update({'missing_data_imputed_df': rel_fname})
+    tracks_config.update_on_disk()
 
 
 def _unpack_for_imputing(tracks_config):

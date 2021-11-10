@@ -284,9 +284,13 @@ def _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, t
 
 def _save_tracklet_matches(global2tracklet, project_dir, track_config):
     with safe_cd(project_dir):
-        fname = track_config.config['global2tracklet_matches_fname']
-        out_fname = get_sequential_filename(fname)
-        track_config.pickle_in_local_project(global2tracklet, out_fname)
+        abs_fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')
+        abs_fname = get_sequential_filename(abs_fname)
+        track_config.pickle_in_local_project(global2tracklet, abs_fname)
+
+        rel_fname = track_config.unresolve_absolute_path(abs_fname)
+        track_config.config.update({'global2tracklet_matches_fname': rel_fname})
+        track_config.update_on_disk()
 
 
 def _unpack_tracklets_for_combining(project_dir,
@@ -298,9 +302,10 @@ def _unpack_tracklets_for_combining(project_dir,
     min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
     keep_only_tracklets_in_final_tracks = track_config.config['final_3d_postprocessing'][
         'keep_only_tracklets_in_final_tracks']
+    output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
+    output_df_fname = get_sequential_filename(output_df_fname)
+
     with safe_cd(project_dir):
-        output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
-        output_df_fname = get_sequential_filename(output_df_fname)
 
         subfolder = os.path.join('3-tracking', 'postprocessing')
         Path(subfolder).mkdir(exist_ok=True)
