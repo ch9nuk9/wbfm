@@ -215,7 +215,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
 
     def zoom_to_next_nan(self, viewer=None):
-        y_on_plot = self.y_on_plot()
+        y_on_plot = self.y_on_plot
         t = self.t
         for i in range(t, len(y_on_plot)):
             if np.isnan(y_on_plot[i]):
@@ -248,6 +248,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def print_tracklets(self):
         self.dat.tracklet_annotator.print_current_status()
 
+    @property
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_list = self.dat.tracklet_annotator.calculate_tracklets_for_neuron()
@@ -257,7 +258,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # y_on_plot = np.sum(y_list, axis=1)
             y_on_plot = tmp_df['z']
         else:
-            y_on_plot = self.y
+            y_on_plot = self.y_trace_mode
         return y_on_plot
 
     def init_universal_subplot(self):
@@ -277,7 +278,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def initialize_trace_subplot(self):
         self.update_stored_time_series()
-        self.trace_line = self.static_ax.plot(self.y)[0]
+        self.trace_line = self.static_ax.plot(self.y_trace_mode)[0]
 
     def initialize_tracklet_subplot(self):
         # Designed for traces, but reuse and force z coordinate
@@ -332,7 +333,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print("Currently on tracklet setting, so this option didn't do anything")
             return
         self.update_stored_time_series()
-        self.trace_line.set_ydata(self.y)
+        self.trace_line.set_ydata(self.y_trace_mode)
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
 
         time_options = self.calculate_time_line()
@@ -385,11 +386,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def calculate_time_line(self):
         t = self.t
-        y = self.y
-        print(f"Calculating time line for t={t}")
+        y = self.y_on_plot
+        # print(f"Calculating time line for t={t}")
         ymin, ymax = np.min(y), np.max(y)
         self.tracking_is_nan = np.isnan(y[t])
-        print(f"Current point: {y[t]}")
+        # print(f"Current point: {y[t]}")
         if self.tracking_is_nan:
             line_color = 'r'
         else:
@@ -414,7 +415,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                                       remove_outliers_activity,
                                       filter_mode,
                                       min_confidence=min_confidence)
-        self.y = y
+        self.y_trace_mode = y
 
     def update_stored_tracklets(self):
         name = self.current_name

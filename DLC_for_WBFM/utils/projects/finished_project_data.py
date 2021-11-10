@@ -118,8 +118,8 @@ class ProjectData:
         obj = TrackletAnnotator(
             self.df_all_tracklets,
             global2tracklet_names,
-            segmentation_metadata=self.segmentation_metadata,
             df_final_tracks=self.final_tracks,
+            segmentation_metadata=self.segmentation_metadata,
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg
         )
@@ -167,6 +167,9 @@ class ProjectData:
                                 traces_cfg: SubfolderConfigFile,
                                 project_dir,
                                 to_load_tracklets):
+        # Initialize object in order to use cached properties
+        obj = ProjectData(project_dir, cfg)
+
         red_dat_fname = cfg.config['preprocessed_red']
         green_dat_fname = cfg.config['preprocessed_green']
         red_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['red'])
@@ -179,11 +182,11 @@ class ProjectData:
         seg_fname_raw = segment_cfg.resolve_relative_path_from_config('output_masks')
         seg_fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
 
-        # Metadata uses class from segmentation package
+        # Metadata uses class from segmentation package, which does lazy loading itself
         seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
-        seg_metadata = DetectedNeurons(seg_metadata_fname)
+        obj.segmentation_metadata = DetectedNeurons(seg_metadata_fname)
         reindexed_metadata_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_metadata')
-        reindexed_metadata_training = DetectedNeurons(reindexed_metadata_training_fname)
+        obj.reindexed_metadata_training = DetectedNeurons(reindexed_metadata_training_fname)
 
         # TODO: do not hardcode
         behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
@@ -191,9 +194,6 @@ class ProjectData:
 
         zarr_reader = lambda fname: zarr.open(fname, mode='r')
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
-
-        # Initialize object in order to use cached properties
-        obj = ProjectData(project_dir, cfg)
 
         # Note: when running on the cluster the raw data isn't (for now) accessible
         with safe_cd(cfg.project_dir):
@@ -233,10 +233,8 @@ class ProjectData:
         obj.green_data = green_data
         obj.raw_segmentation = raw_segmentation
         obj.segmentation = segmentation
-        obj.segmentation_metadata = seg_metadata
         obj.df_training_tracklets = df_training_tracklets
         obj.reindexed_masks_training = reindexed_masks_training
-        obj.reindexed_metadata_training = reindexed_metadata_training
         obj.red_traces = red_traces
         obj.green_traces = green_traces
         obj.final_tracks = final_tracks
@@ -383,11 +381,16 @@ class ProjectData:
         return v
 
     def add_layers_to_viewer(self, viewer, which_layers='all'):
+        if which_layers == 'all':
+            which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation']
         print("Finished loading data, starting napari...")
-        viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red', visible=False)
-        viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green')
-        viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
-        if self.segmentation is not None:
+        if 'red' in which_layers:
+            viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red')
+        if 'green' in which_layers:
+            viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False)
+        if 'Raw segmentation' in which_layers:
+            viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
+        if self.segmentation is not None and 'Colored segmentation' in which_layers:
             viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4)
 
         # Add a text overlay
