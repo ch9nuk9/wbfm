@@ -104,6 +104,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitTrackletButton = QtWidgets.QPushButton("Split current tracklet (E)")
         self.splitTrackletButton.pressed.connect(self.split_current_tracklet)
         self.vbox4.addWidget(self.splitTrackletButton)
+        self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (Q)")
+        self.clearTrackletButton.pressed.connect(self.clear_current_tracklet)
+        self.vbox4.addWidget(self.clearTrackletButton)
 
         self.removeTrackletButton1 = QtWidgets.QPushButton("Remove tracklets with time conflicts (Z)")
         self.removeTrackletButton1.pressed.connect(self.remove_time_conflicts)
@@ -196,6 +199,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def split_current_tracklet(viewer):
             self.split_current_tracklet()
 
+        @viewer.bind_key('q', overwrite=True)
+        def clear_current_tracklet(viewer):
+            self.clear_current_tracklet()
+
         @viewer.bind_key('s', overwrite=True)
         def refresh_subplot(viewer):
             self.save_annotations_to_disk()
@@ -246,6 +253,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.update_trace_or_tracklet_subplot()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
+
+    def clear_current_tracklet(self):
+        self.dat.tracklet_annotator.clear_current_tracklet()
+        self.update_trace_or_tracklet_subplot()
 
     def save_annotations_to_disk(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':

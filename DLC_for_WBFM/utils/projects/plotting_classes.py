@@ -248,10 +248,6 @@ class TrackletAnnotator:
 
             d = self.manual_global2tracklet_names[self.current_neuron]
             d.append(self.current_tracklet_name)
-            # if self.current_tracklet_name not in d:
-            #     d.append(self.current_tracklet_name)
-            # else:
-            #     print(f"{self.current_neuron} is already matched to tracklet {self.current_tracklet_name}")
             print(f"Successfully added tracklet {self.current_tracklet_name} to {self.current_neuron}")
             self.current_tracklet_name = None
         else:
@@ -316,6 +312,11 @@ class TrackletAnnotator:
         self.df_tracklets[old_name] = old_half
         self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
         self.current_tracklet_name = new_name
+
+    def clear_current_tracklet(self):
+        if self.current_tracklet_name is not None:
+            print(f"Cleared tracklet {self.current_tracklet_name}")
+            self.current_tracklet_name = None
 
     def get_next_tracklet_name(self):
         all_names = list(self.df_tracklets.columns.levels[0])
