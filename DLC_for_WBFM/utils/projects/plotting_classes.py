@@ -352,7 +352,7 @@ class TrackletAnnotator:
                 world=True
             )
 
-            if seg_index is None:
+            if seg_index is None or seg_index == 0:
                 return
 
             if self.verbose >= 1:
