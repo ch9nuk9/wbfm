@@ -212,7 +212,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         for i in range(t, len(y_on_plot)):
             if np.isnan(y_on_plot[i]):
                 t_target = i
-                change_viewer_time_point(self.viewer, t_target=t_target)
+                change_viewer_time_point(self.viewer, t_target=t_target - 1)
                 zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
                 break
         else:

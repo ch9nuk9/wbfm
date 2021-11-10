@@ -150,12 +150,23 @@ class TrackletAnnotator:
     def split_current_tracklet(self, i_time):
         # The current time is included in the "new half" of the tracklet
         # The newer half is added as a new index in the df_tracklet dataframe
-        this_tracklet = self.df_tracklets[self.current_tracklet]
+        this_tracklet = self.df_tracklets[[self.current_tracklet]]
 
-        old_half = this_tracklet.iloc[:i_time].copy()
+        old_half = this_tracklet.copy()
         old_name = self.current_tracklet
-        new_half = this_tracklet.iloc[i_time:].copy()
+        old_half.iloc[i_time:] = np.nan
 
+        new_half = this_tracklet.copy()
+        new_half.iloc[:i_time] = np.nan
+        new_name = self.get_next_tracklet_name()
+        new_half.rename(columns={old_name: new_name}, level=0, inplace=True)
+
+        logging.info(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_time}")
+
+        self.df_tracklets[old_name] = old_half
+        self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
+
+    def get_next_tracklet_name(self):
         all_names = list(self.df_tracklets.columns.levels[0])
         i_tracklet = len(all_names) + 1
         build_tracklet_name = lambda i: f'neuron{i}'
@@ -163,11 +174,7 @@ class TrackletAnnotator:
         while new_name in all_names:
             i_tracklet += 1
             new_name = build_tracklet_name(i_tracklet)
-
-        logging.info(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_time}")
-
-        self.df_tracklets[new_name] = new_half
-        self.df_tracklets[old_name] = old_half
+        return new_name
 
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer,
                                            max_dist=10.0,
