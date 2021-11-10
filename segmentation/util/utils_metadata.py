@@ -162,7 +162,7 @@ class DetectedNeurons:
         # See mask_index_to_seg_array
         # Return position given the mask index
         seg_index = self.mask_index_to_seg_array(i_time, mask_index)
-        return np.array(self.segmentation_metadata[i_time].iloc[seg_index])
+        return np.array(self.segmentation_metadata[i_time].iloc[seg_index]['centroids'])
 
 
 def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
