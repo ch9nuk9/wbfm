@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Union, Dict
-
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 from segmentation.util.utils_metadata import DetectedNeurons
@@ -123,7 +123,7 @@ class TrackletAnnotator:
 
     @property
     def combined_global2tracklet_dict(self):
-        tmp = self.global2tracklet.copy()
+        tmp = deepcopy(self.global2tracklet)
         for k in tmp.keys():
             tmp[k].extend(self.manual_global2tracklet_names[k].copy())
             [tmp[k].remove(neuron) for neuron in self.manual_global2tracklet_removals[k]]
