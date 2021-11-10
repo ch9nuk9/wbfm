@@ -298,6 +298,10 @@ class TrackletAnnotator:
         # The current time is included in the "new half" of the tracklet
         # The newer half is added as a new index in the df_tracklet dataframe
         # And finally, the newer half is set as the current tracklet
+        if self.current_tracklet_name is None:
+            print("No current tracklet!")
+            return
+
         old_name = self.current_tracklet_name
         this_tracklet = self.df_tracklets[[old_name]]
 
