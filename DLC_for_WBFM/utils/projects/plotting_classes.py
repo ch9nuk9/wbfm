@@ -266,7 +266,8 @@ class TrackletAnnotator:
             these_names = self.global2tracklet[self.current_neuron]
             print(f"Initial tracklets for {self.current_neuron}: {these_names}")
             print(f"Previous manually added tracklets: {self.manual_global2tracklet_names[neuron_name]}")
-            print(f"Currently selected tracklet: {self.current_tracklet_name}")
+            print(f"Previous manually removed tracklets: {self.manual_global2tracklet_removals[neuron_name]}")
+            print(f"Currently selected (not yet added) tracklet: {self.current_tracklet_name}")
 
     def save_manual_matches_to_disk(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches

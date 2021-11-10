@@ -2,6 +2,7 @@ import concurrent
 import logging
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Tuple
 
 import napari
@@ -51,20 +52,21 @@ class ProjectData:
 
     # Classes for more functionality
     trace_plotter: TracePlotter = None
-    # tracklet_annotator: TrackletAnnotator = None
-
-    # _raw_frames: dict = None
-    # _raw_matches: dict = None
-    # _raw_clust: pd.DataFrame = None
-    # _df_all_tracklets: pd.DataFrame = None
-    # _df_fdnc_tracks: pd.DataFrame = None
 
     # Can be quite large, so don't read by default
     @cached_property
     def global2tracklet(self) -> dict:
         tracking_cfg = self.project_config.get_tracking_config()
         fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
-        return pickle_load_binary(fname)
+
+        # Manual annotations take precedence
+        manual_fname = tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
+        if Path(manual_fname).exists():
+            global2tracklet = pickle_load_binary(manual_fname)
+            print(f"Read manually updated matches: {manual_fname}")
+        else:
+            global2tracklet = pickle_load_binary(fname)
+        return global2tracklet
 
     @cached_property
     def raw_frames(self):
@@ -98,7 +100,17 @@ class ProjectData:
         logging.info("First time loading the all tracklets, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
-        df_all_tracklets = read_if_exists(fname)
+
+        # Manual annotations take precedence
+        track_cfg = self.project_config.get_tracking_config()
+        manual_fname = track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
+        df_all_tracklets = read_if_exists(manual_fname)
+
+        if df_all_tracklets is None:
+            df_all_tracklets = read_if_exists(fname)
+        else:
+            print(f"Read manually updated tracklets: {manual_fname}")
+
         return df_all_tracklets
 
     @cached_property
