@@ -273,13 +273,13 @@ class TrackletAnnotator:
         logging.warning("Saving tracklet dataframe, may take a while")
 
         match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
-        match_fname = get_sequential_filename(match_fname)
+        # match_fname = get_sequential_filename(match_fname)
         self.tracking_cfg.pickle_in_local_project(self.combined_global2tracklet_dict, match_fname)
         match_fname = self.tracking_cfg.unresolve_absolute_path(match_fname)
         self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
 
         df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
-        df_fname = get_sequential_filename(df_fname)
+        # df_fname = get_sequential_filename(df_fname)
         self.tracking_cfg.h5_in_local_project(self.df_tracklets, df_fname)
         df_fname = self.tracking_cfg.unresolve_absolute_path(df_fname)
         self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
