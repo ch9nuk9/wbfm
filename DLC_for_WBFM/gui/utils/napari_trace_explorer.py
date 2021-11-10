@@ -541,7 +541,7 @@ def napari_trace_explorer(project_data: ProjectData,
     ui = NapariTraceExplorer(project_data)
     # Build Napari and add widgets
     if viewer is None:
-        viewer = napari.Viewer(ndisplay=2)
+        viewer = napari.Viewer(ndisplay=3)
     ui.dat.add_layers_to_viewer(viewer)
     # Actually dock my additional gui elements
     ui.setupUi(viewer)

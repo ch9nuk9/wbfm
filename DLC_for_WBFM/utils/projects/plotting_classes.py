@@ -247,8 +247,11 @@ class TrackletAnnotator:
         if self.is_current_tracklet_confict_free:
 
             d = self.manual_global2tracklet_names[self.current_neuron]
-            d.append(self.current_tracklet_name)
-            print(f"Successfully added tracklet {self.current_tracklet_name} to {self.current_neuron}")
+            if self.current_tracklet_name in d:
+                print(f"Tracklet {self.current_tracklet_name} already in {self.current_neuron}; nothing added")
+            else:
+                d.append(self.current_tracklet_name)
+                print(f"Successfully added tracklet {self.current_tracklet_name} to {self.current_neuron}")
             self.current_tracklet_name = None
         else:
             print("Current tracklet has conflicts, please resolve before saving as a match")
@@ -261,7 +264,7 @@ class TrackletAnnotator:
             print("No neuron selected")
         else:
             these_names = self.global2tracklet[self.current_neuron]
-            print(f"Initial tracklets for this neuron: {these_names}")
+            print(f"Initial tracklets for {self.current_neuron}: {these_names}")
             print(f"Previous manually added tracklets: {self.manual_global2tracklet_names[neuron_name]}")
             print(f"Currently selected tracklet: {self.current_tracklet_name}")
 
@@ -322,7 +325,7 @@ class TrackletAnnotator:
     def get_next_tracklet_name(self):
         all_names = list(self.df_tracklets.columns.levels[0])
         # Really want to make sure we are after all other names,
-        i_tracklet = 1e7 + len(all_names) + 1
+        i_tracklet = int(1e6 + len(all_names) + 1)
         build_tracklet_name = lambda i: f'neuron{i}'
         new_name = build_tracklet_name(i_tracklet)
         while new_name in all_names:
@@ -333,8 +336,6 @@ class TrackletAnnotator:
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer,
                                            max_dist=10.0,
                                            refresh_callback=None):
-
-        df_tracklets = self.df_tracklets
         self.refresh_callback = refresh_callback
 
         @layer_to_add_callback.mouse_drag_callbacks.append
@@ -372,7 +373,7 @@ class TrackletAnnotator:
                     # self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
                     self.refresh_callback()
 
-                df_single_track = df_tracklets[tracklet_name]
+                df_single_track = self.df_tracklets[tracklet_name]
                 if self.verbose >= 1:
                     print(f"Adding tracklet of length {df_single_track['z'].count()}")
                 if self.to_add_layer_to_viewer:
