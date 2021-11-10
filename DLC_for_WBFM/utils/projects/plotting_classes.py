@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, Union, Dict
 
 import numpy as np
 import pandas as pd
@@ -94,10 +94,10 @@ class TracePlotter:
 class TrackletAnnotator:
 
     df_tracklets: pd.DataFrame
-    global2tracklet: dict
+    global2tracklet: Dict[str, List[str]]
 
     # Annotation
-    manual_global2tracklet_names: dict = None
+    manual_global2tracklet_names: Dict[str, List[str]] = None
     current_neuron: str = None
     current_tracklet: Union[str, None] = None
 
@@ -121,11 +121,11 @@ class TrackletAnnotator:
         if neuron_name is None:
             raise ValueError("Must pass neuron name explicitly or have one saved in the object")
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
-        tracklet_ind = self.global2tracklet[neuron_name]
+        these_names = self.global2tracklet[neuron_name]
         # all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
-        all_tracklet_names = list(self.df_tracklets.columns.levels[0])
+        # all_tracklet_names = list(self.df_tracklets.columns.levels[0])
 
-        these_names = [all_tracklet_names[i] for i in tracklet_ind]
+        # these_names = [all_tracklet_names[i] for i in tracklet_ind]
         print(f"Initial tracklets: {these_names}")
         if self.manual_global2tracklet_names is not None:
             these_names.extend(self.manual_global2tracklet_names[neuron_name])
@@ -202,16 +202,16 @@ class TrackletAnnotator:
                 verbose=2
             )
 
-            self.current_tracklet = tracklet_name
-            if self.current_neuron is not None:
-                # self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
-                self.refresh_callback()
-
             dist = dist[0][0]
             if self.verbose >= 1:
                 print(f"Neuron is part of tracklet {tracklet_name} with distance {dist}")
 
             if dist < max_dist:
+                self.current_tracklet = tracklet_name
+                if self.current_neuron is not None:
+                    # self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
+                    self.refresh_callback()
+
                 df_single_track = df_tracklets[tracklet_name]
                 if self.verbose >= 1:
                     print(f"Adding tracklet of length {df_single_track['z'].count()}")

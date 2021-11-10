@@ -10,7 +10,7 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
 # Note: following must be present, even if pycharm cleans it
 # from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
+# from sklearn.impute import IterativeImputer
 from sklearn.preprocessing import StandardScaler
 
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename, safe_cd
@@ -47,6 +47,9 @@ def is_spatial_column_name(c):
 def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20, random_state=0):
     df_dat = df_only_locations.to_numpy()
 
+    # This gray import must be present
+    from sklearn.experimental import enable_iterative_imputer
+    from sklearn.impute import IterativeImputer
     imputer = IterativeImputer(random_state=random_state,
                                missing_values=np.nan,
                                verbose=1,
