@@ -313,6 +313,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def on_subplot_click(self, event):
         t = event.xdata
         change_viewer_time_point(self.viewer, t_target=t)
+        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
 
     def change_trace_tracklet_mode(self):
         print(f"Changed mode to: {self.changeTraceTrackletDropdown.currentText()}")

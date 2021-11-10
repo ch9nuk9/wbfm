@@ -36,11 +36,15 @@ final_3d_postprocessing:
 
 global2tracklet_matches_fname: 3-tracking/global2tracklet.pickle
 
+manual_correction_global2tracklet_fname: 3-tracking/manual_annotation/global2tracklet_manual.pickle
+manual_correction_tracklets_df_fname: 3-tracking/manual_annotation/manually_split_tracklets.h5
+manual_correction_3d_tracks_df_fname: 3-tracking/manual_annotation/combined_3d_tracks.h5 # Will be updated AFTER manual correction, not during
+
 missing_data_postprocessing:
   likelihood_threshold: 0.5
   n_nearest_features: 50
 
-missing_data_imputed_df: 3-tracking/postprocessing/imputed_3d_tracks-2.h5
+missing_data_imputed_df: 3-tracking/postprocessing/imputed_3d_tracks.h5
 
 leifer_params:
   match_confidence_threshold: 0.2

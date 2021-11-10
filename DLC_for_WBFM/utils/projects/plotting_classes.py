@@ -97,7 +97,7 @@ class TrackletAnnotator:
 
     df_tracklets: pd.DataFrame
     global2tracklet: Dict[str, List[str]]
-    df_final_tracks: pd.DataFrame
+    # df_final_tracks: pd.DataFrame
     segmentation_metadata: DetectedNeurons
 
     # Annotation
@@ -175,6 +175,8 @@ class TrackletAnnotator:
         # The tracklet shouldn't be in the manually annotated match, because it can't be added if there are conflicts
         if tracklet_name is None:
             tracklet_name = self.current_tracklet_name
+        if tracklet_name is None:
+            return None
         current_tracklet_names = self.combined_global2tracklet_dict[self.current_neuron]
         df_target_tracklet = self.df_tracklets[tracklet_name]
         times_target_tracklet = df_target_tracklet['z'].dropna().index
@@ -283,11 +285,11 @@ class TrackletAnnotator:
         df_fname = self.tracking_cfg.unresolve_absolute_path(df_fname)
         self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
 
-        df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_3d_tracks_df_fname')
-        df_fname = get_sequential_filename(df_fname)
-        self.tracking_cfg.h5_in_local_project(self.df_final_tracks, df_fname)
-        df_fname = self.tracking_cfg.unresolve_absolute_path(df_fname)
-        self.tracking_cfg.config.update({'manual_correction_3d_tracks_df_fname': df_fname})
+        # df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_3d_tracks_df_fname')
+        # df_fname = get_sequential_filename(df_fname)
+        # self.tracking_cfg.h5_in_local_project(self.df_final_tracks, df_fname)
+        # df_fname = self.tracking_cfg.unresolve_absolute_path(df_fname)
+        # self.tracking_cfg.config.update({'manual_correction_3d_tracks_df_fname': df_fname})
 
         logging.info("Saving successful!")
         self.tracking_cfg.update_on_disk()
