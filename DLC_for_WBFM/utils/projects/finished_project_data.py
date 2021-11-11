@@ -50,23 +50,35 @@ class ProjectData:
 
     verbose: int = 2
 
+    # Precedence when multiple are available
+    global2tracklet_precedence: list = None
+
     # Classes for more functionality
     trace_plotter: TracePlotter = None
+
+    def __post_init__(self):
+        if self.global2tracklet_precedence is None:
+            self.global2tracklet_precedence = ['manual', 'automatic']
 
     # Can be quite large, so don't read by default
     @cached_property
     def global2tracklet(self) -> dict:
         tracking_cfg = self.project_config.get_tracking_config()
-        fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
 
         # Manual annotations take precedence
-        manual_fname = tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
-        if Path(manual_fname).exists():
-            global2tracklet = pickle_load_binary(manual_fname)
-            print(f"Read manually updated matches: {manual_fname}")
-        elif Path(fname).exists():
-            global2tracklet = pickle_load_binary(fname)
+        possible_fnames = {
+            'manual': tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname'),
+            'automatic': tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')}
+
+        for i, key in enumerate(self.global2tracklet_precedence):
+            fname = possible_fnames[key]
+            if Path(fname).exists():
+                global2tracklet = pickle_load_binary(fname)
+                logging.info(f"File for mode {key} exists at precendence: {i}")
+                logging.info(f"Read global2tracklet matches from: {fname}")
+                break
         else:
+            logging.info(f"No global2tracklet matches found")
             global2tracklet = None
         return global2tracklet
 

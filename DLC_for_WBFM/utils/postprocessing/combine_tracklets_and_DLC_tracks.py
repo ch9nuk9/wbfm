@@ -291,7 +291,8 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 def final_tracks_from_tracklet_matches_from_config(track_config: SubfolderConfigFile,
                                                    training_cfg: SubfolderConfigFile,
                                                    project_cfg: ModularProjectConfig,
-                                                   use_imputed_df=False,
+                                                   use_imputed_df,
+                                                   use_manual_matches,
                                                    DEBUG=False):
 
     d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
@@ -328,6 +329,7 @@ def get_already_covered_indices(df_tracklets, previous_matches):
 def _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config):
     with safe_cd(project_dir):
         # Actually save
+        logging.info(f"Saving to: {output_df_fname}")
         combined_df.to_hdf(output_df_fname, key='df_with_missing')
 
         csv_fname = Path(output_df_fname).with_suffix('.csv')
