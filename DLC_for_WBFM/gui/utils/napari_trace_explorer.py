@@ -101,10 +101,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom3Button.pressed.connect(self.zoom_to_next_nan)
         self.vbox4.addWidget(self.zoom3Button)
 
-        self.splitTrackletButton = QtWidgets.QPushButton("Split current tracklet (E)")
-        self.splitTrackletButton.pressed.connect(self.split_current_tracklet)
-        self.vbox4.addWidget(self.splitTrackletButton)
-        self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (Q)")
+        self.splitTrackletButton1 = QtWidgets.QPushButton("Split tracklet (keep left) (Q)")
+        self.splitTrackletButton1.pressed.connect(self.split_current_tracklet_keep_left)
+        self.vbox4.addWidget(self.splitTrackletButton1)
+        self.splitTrackletButton2 = QtWidgets.QPushButton("Split tracklet (keep right) (E)")
+        self.splitTrackletButton2.pressed.connect(self.split_current_tracklet_keep_right)
+        self.vbox4.addWidget(self.splitTrackletButton2)
+        self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (W)")
         self.clearTrackletButton.pressed.connect(self.clear_current_tracklet)
         self.vbox4.addWidget(self.clearTrackletButton)
 
@@ -188,9 +191,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.bind_key('e', overwrite=True)
         def split_current_tracklet(viewer):
-            self.split_current_tracklet()
+            self.split_current_tracklet_keep_right()
 
         @viewer.bind_key('q', overwrite=True)
+        def split_current_tracklet(viewer):
+            self.split_current_tracklet_keep_left()
+
+        @viewer.bind_key('w', overwrite=True)
         def clear_current_tracklet(viewer):
             self.clear_current_tracklet()
 
@@ -238,9 +245,16 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             print("No nan point found; not switching")
 
-    def split_current_tracklet(self):
+    def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.dat.tracklet_annotator.split_current_tracklet(self.t)
+            self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
+            self.update_trace_or_tracklet_subplot()
+        else:
+            print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
+
+    def split_current_tracklet_keep_left(self):
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
+            self.dat.tracklet_annotator.split_current_tracklet(self.t, False)
             self.update_trace_or_tracklet_subplot()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
@@ -413,7 +427,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def calculate_time_line(self):
         t = self.t
         y = self.y_on_plot
-        # print(f"Calculating time line for t={t}")
+        print(f"Updating time line for t={t}")
         ymin, ymax = np.min(y), np.max(y)
         self.tracking_is_nan = np.isnan(y[t])
         # print(f"Current point: {y[t]}")

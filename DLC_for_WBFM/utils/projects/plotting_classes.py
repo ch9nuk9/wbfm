@@ -294,7 +294,7 @@ class TrackletAnnotator:
         logging.info("Saving successful!")
         self.tracking_cfg.update_on_disk()
 
-    def split_current_tracklet(self, i_time):
+    def split_current_tracklet(self, i_time, set_new_half_to_current=True):
         # The current time is included in the "new half" of the tracklet
         # The newer half is added as a new index in the df_tracklet dataframe
         # And finally, the newer half is set as the current tracklet
@@ -320,7 +320,10 @@ class TrackletAnnotator:
         # Save
         self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
         self.df_tracklets[old_name] = old_half[old_name]
-        self.current_tracklet_name = new_name
+        if set_new_half_to_current:
+            self.current_tracklet_name = new_name
+        else:
+            self.current_tracklet_name = old_name
 
     def clear_current_tracklet(self):
         if self.current_tracklet_name is not None:
