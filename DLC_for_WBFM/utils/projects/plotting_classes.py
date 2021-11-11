@@ -1,4 +1,5 @@
 import logging
+import threading
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Union, Dict
@@ -110,6 +111,11 @@ class TrackletAnnotator:
     training_cfg: SubfolderConfigFile = None
     tracking_cfg: SubfolderConfigFile = None
 
+    output_match_fname: str = None
+    output_df_fname: str = None
+
+    saving_lock: threading.Lock = threading.Lock()
+
     # Visualization options
     refresh_callback: callable = None
     to_add_layer_to_viewer: bool = True
@@ -120,6 +126,13 @@ class TrackletAnnotator:
             self.manual_global2tracklet_names = defaultdict(list)
         if self.manual_global2tracklet_removals is None:
             self.manual_global2tracklet_removals = defaultdict(list)
+
+        match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
+        self.output_match_fname = get_sequential_filename(match_fname)
+        df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
+        self.output_df_fname = get_sequential_filename(df_fname)
+
+        print(f"Output files: {match_fname}, {df_fname}")
 
     @property
     def combined_global2tracklet_dict(self):
@@ -227,7 +240,8 @@ class TrackletAnnotator:
         tracklet_name = self.current_tracklet_name
         other_match = self.get_neuron_name_of_conflicting_match(tracklet_name)
         if other_match is not None:
-            self.manual_global2tracklet_removals[other_match].append(tracklet_name)
+            with self.saving_lock:
+                self.manual_global2tracklet_removals[other_match].append(tracklet_name)
             assert not self.is_tracklet_already_matched(tracklet_name), f"Removal of {tracklet_name} from {other_match} failed"
         else:
             print("Already unmatched")
@@ -236,8 +250,9 @@ class TrackletAnnotator:
         tracklet_name = self.current_tracklet_name
         all_overlap_dict = self.get_tracklet_names_of_time_conflicts(tracklet_name)
         if all_overlap_dict is not None:
-            for conflicting_tracklet_name in all_overlap_dict.keys():
-                self.manual_global2tracklet_removals[self.current_neuron].append(conflicting_tracklet_name)
+            with self.saving_lock:
+                for conflicting_tracklet_name in all_overlap_dict.keys():
+                    self.manual_global2tracklet_removals[self.current_neuron].append(conflicting_tracklet_name)
 
             assert not self.tracklet_has_time_overlap(tracklet_name), f"Clean up of {tracklet_name} failed"
         else:
@@ -246,13 +261,14 @@ class TrackletAnnotator:
     def save_current_tracklet_to_neuron(self):
         if self.is_current_tracklet_confict_free:
 
-            d = self.manual_global2tracklet_names[self.current_neuron]
-            if self.current_tracklet_name in d:
-                print(f"Tracklet {self.current_tracklet_name} already in {self.current_neuron}; nothing added")
-            else:
-                d.append(self.current_tracklet_name)
-                print(f"Successfully added tracklet {self.current_tracklet_name} to {self.current_neuron}")
-            self.current_tracklet_name = None
+            with self.saving_lock:
+                d = self.manual_global2tracklet_names[self.current_neuron]
+                if self.current_tracklet_name in d:
+                    print(f"Tracklet {self.current_tracklet_name} already in {self.current_neuron}; nothing added")
+                else:
+                    d.append(self.current_tracklet_name)
+                    print(f"Successfully added tracklet {self.current_tracklet_name} to {self.current_neuron}")
+                self.current_tracklet_name = None
         else:
             print("Current tracklet has conflicts, please resolve before saving as a match")
 
@@ -269,30 +285,28 @@ class TrackletAnnotator:
             print(f"Previous manually removed tracklets: {self.manual_global2tracklet_removals[neuron_name]}")
             print(f"Currently selected (not yet added) tracklet: {self.current_tracklet_name}")
 
-    def save_manual_matches_to_disk(self):
+    def save_manual_matches_to_disk_dispatch(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches
-        logging.warning("Saving tracklet dataframe, may take a while")
+        logging.warning("Saving tracklet dataframe, DO NOT QUIT")
+        print("Note: the GUI will still respond, but you can't split or save any tracklets")
+        self.saving_lock.acquire(blocking=True)
+        t = threading.Thread(target=self.save_manual_matches_to_disk)
+        t.start()
 
-        match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
-        # match_fname = get_sequential_filename(match_fname)
-        self.tracking_cfg.pickle_in_local_project(self.combined_global2tracklet_dict, match_fname)
-        match_fname = self.tracking_cfg.unresolve_absolute_path(match_fname)
-        self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
+    def save_manual_matches_to_disk(self):
+        try:
+            self.tracking_cfg.pickle_in_local_project(self.combined_global2tracklet_dict, self.output_match_fname)
+            match_fname = self.tracking_cfg.unresolve_absolute_path(self.output_match_fname)
+            self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
 
-        df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
-        # df_fname = get_sequential_filename(df_fname)
-        self.tracking_cfg.h5_in_local_project(self.df_tracklets, df_fname)
-        df_fname = self.tracking_cfg.unresolve_absolute_path(df_fname)
-        self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
+            self.tracking_cfg.h5_in_local_project(self.df_tracklets, self.output_df_fname)
+            df_fname = self.tracking_cfg.unresolve_absolute_path(self.output_df_fname)
+            self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
 
-        # df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_3d_tracks_df_fname')
-        # df_fname = get_sequential_filename(df_fname)
-        # self.tracking_cfg.h5_in_local_project(self.df_final_tracks, df_fname)
-        # df_fname = self.tracking_cfg.unresolve_absolute_path(df_fname)
-        # self.tracking_cfg.config.update({'manual_correction_3d_tracks_df_fname': df_fname})
-
-        logging.info("Saving successful!")
-        self.tracking_cfg.update_on_disk()
+            logging.info("Saving successful! You may now quit")
+            self.tracking_cfg.update_on_disk()
+        finally:
+            self.saving_lock.release()
 
     def split_current_tracklet(self, i_time, set_new_half_to_current=True):
         # The current time is included in the "new half" of the tracklet
@@ -302,28 +316,29 @@ class TrackletAnnotator:
             print("No current tracklet!")
             return
 
-        old_name = self.current_tracklet_name
-        this_tracklet = self.df_tracklets[[old_name]]
+        with self.saving_lock:
+            old_name = self.current_tracklet_name
+            this_tracklet = self.df_tracklets[[old_name]]
 
-        # Split
-        old_half = this_tracklet.copy()
-        new_half = this_tracklet.copy()
+            # Split
+            old_half = this_tracklet.copy()
+            new_half = this_tracklet.copy()
 
-        old_half.iloc[i_time:] = np.nan
-        new_half.iloc[:i_time] = np.nan
-        new_name = self.get_next_tracklet_name()
-        new_half.rename(columns={old_name: new_name}, level=0, inplace=True)
+            old_half.iloc[i_time:] = np.nan
+            new_half.iloc[:i_time] = np.nan
+            new_name = self.get_next_tracklet_name()
+            new_half.rename(columns={old_name: new_name}, level=0, inplace=True)
 
-        print(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_time}")
-        print(f"New non-nan lengths: new: {new_half[new_name]['z'].count()}, old:{old_half[old_name]['z'].count()}")
+            print(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_time}")
+            print(f"New non-nan lengths: new: {new_half[new_name]['z'].count()}, old:{old_half[old_name]['z'].count()}")
 
-        # Save
-        self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
-        self.df_tracklets[old_name] = old_half[old_name]
-        if set_new_half_to_current:
-            self.current_tracklet_name = new_name
-        else:
-            self.current_tracklet_name = old_name
+            # Save
+            self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
+            self.df_tracklets[old_name] = old_half[old_name]
+            if set_new_half_to_current:
+                self.current_tracklet_name = new_name
+            else:
+                self.current_tracklet_name = old_name
 
     def clear_current_tracklet(self):
         if self.current_tracklet_name is not None:

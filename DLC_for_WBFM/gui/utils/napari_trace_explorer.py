@@ -265,7 +265,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def save_annotations_to_disk(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.dat.tracklet_annotator.save_manual_matches_to_disk()
+            self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
