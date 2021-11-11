@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 from pathlib import Path
 
+import numba
 import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import get_tracklet_names_from_ind
@@ -14,7 +15,37 @@ from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, rea
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_sequential_filename
 
 
-def calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
+def calc_dlc_to_tracklet_distances(this_global_track: np.ndarray,
+                                   list_tracklets_zxy: list,
+                                   used_indices: set,
+                                   min_overlap: int = 5):
+    """For one DLC neuron, calculate distances between that track and all tracklets"""
+
+    all_dist = np.zeros(len(list_tracklets_zxy))
+    for i, this_tracklet in enumerate(tqdm(list_tracklets_zxy, leave=False)):
+        # Check for already belonging to another track
+        if i not in used_indices:
+            dist = calc_dist_if_overlap(this_tracklet, min_overlap, this_global_track)
+        else:
+            dist = np.inf
+        all_dist[i] = dist
+    return all_dist
+
+
+def calc_dist_if_overlap(this_tracklet: np.ndarray, min_overlap: int, this_global_track: np.ndarray):
+    this_diff = this_tracklet - this_global_track
+
+    # Check for enough common data points
+    # num_common_pts = this_diff['x'].notnull().sum()
+    num_common_pts = np.count_nonzero(~np.isnan(this_diff[:, 0]))
+    if num_common_pts >= min_overlap:
+        dist = np.linalg.norm(this_diff, axis=1)
+    else:
+        dist = np.inf
+    return dist
+
+
+def OLD_calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
                                    df_tracklet: pd.DataFrame,
                                    dlc_name: str,
                                    used_indices: set,
@@ -217,9 +248,17 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
     logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets matched from previous analysis")
     verbose = 0
 
+    # Pre-make coordinates so that the dataframe is not continuously indexed
+    coords = ['z', 'x', 'y']
+    all_tracklet_names = list(df_tracklets.columns.levels[0])
+    list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in all_tracklet_names]
+
     logging.info("Calculating distances between tracklets and DLC tracks")
     for i, global_name in enumerate(tqdm(global_neuron_names)):
-        dist = calc_dlc_to_tracklet_distances(df_global_tracks, df_tracklets, global_name, used_indices,
+
+        # TODO: use confidence of dlc tracks
+        this_global_track = df_global_tracks[global_name][coords].to_numpy()
+        dist = calc_dlc_to_tracklet_distances(this_global_track, list_tracklets_zxy, used_indices,
                                               min_overlap=min_overlap)
         previous_matches = global2tracklet[global_name]
         covering_time_points = get_already_covered_indices(df_tracklets, previous_matches)
