@@ -21,14 +21,15 @@ def calc_dlc_to_tracklet_distances(this_global_track: np.ndarray,
                                    min_overlap: int = 5):
     """For one DLC neuron, calculate distances between that track and all tracklets"""
 
-    all_dist = np.zeros(len(list_tracklets_zxy))
-    for i, this_tracklet in enumerate(tqdm(list_tracklets_zxy, leave=False)):
+    # all_dist = np.zeros(len(list_tracklets_zxy))
+    all_dist = []
+    for i, this_tracklet in enumerate(list_tracklets_zxy):
         # Check for already belonging to another track
         if i not in used_indices:
             dist = calc_dist_if_overlap(this_tracklet, min_overlap, this_global_track)
         else:
             dist = np.inf
-        all_dist[i] = dist
+        all_dist.append(dist)
     return all_dist
 
 
@@ -258,6 +259,8 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
         # TODO: use confidence of dlc tracks
         this_global_track = df_global_tracks[global_name][coords].to_numpy()
+        # TODO: make the tracklets the proper length before this
+        this_global_track = this_global_track[:-1, :]
         dist = calc_dlc_to_tracklet_distances(this_global_track, list_tracklets_zxy, used_indices,
                                               min_overlap=min_overlap)
         previous_matches = global2tracklet[global_name]
