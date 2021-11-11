@@ -399,9 +399,8 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
         used_indices = set()
         [used_indices.update(ind) for ind in global2tracklet.values()]
         logging.info(f"Found previous tracklet matches with {len(used_indices)}/{len(global2tracklet)} matches")
-
-    # TODO: don't allow these to be integers from the beginning
-    global2tracklet = fix_global2tracklet_full_dict(df_tracklets, global2tracklet)
+        # TODO: don't allow these to be integers from the beginning
+        global2tracklet = fix_global2tracklet_full_dict(df_tracklets, global2tracklet)
 
     # fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')
     # if Path(fname).exists():

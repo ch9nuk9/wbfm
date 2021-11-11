@@ -470,8 +470,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def color_using_behavior(self):
         self.dat.shade_axis_using_behavior(self.static_ax)
 
-
-
     # def save_annotations(self):
     #     self.update_dataframe_using_points()
     #     # self.df[self.current_name] = new_df[self.current_name]

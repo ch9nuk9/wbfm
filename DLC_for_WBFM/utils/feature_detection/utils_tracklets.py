@@ -555,13 +555,15 @@ def fix_matches_to_use_keys_not_int(df_tracklet, these_tracklet_ind):
         for i_or_name in these_tracklet_ind:
             if i_or_name in these_tracklet_names:
                 # TODO: why do I sometimes have problems with non-unique names here?
+                # logging.debug(f"Skipping repeated name: {i_or_name} (current names: {these_tracklet_names})")
                 continue
             if isstr(i_or_name):
                 these_tracklet_names.append(i_or_name)
-            elif isinstance(i_or_name, int):
+            else:
                 these_tracklet_names.append(raw_tracklet_names[i_or_name])
         # these_tracklet_names = list(set(these_tracklet_names))
     if len(these_tracklet_names) < len(these_tracklet_ind):
         logging.debug(f"Removed repeated indices ({len(these_tracklet_ind)} -> {len(these_tracklet_names)})")
+        logging.debug(f"Original list: {these_tracklet_ind}")
     assert all(map(isstr, these_tracklet_names)), f"Not all elements are strings: {these_tracklet_names}"
     return these_tracklet_names
