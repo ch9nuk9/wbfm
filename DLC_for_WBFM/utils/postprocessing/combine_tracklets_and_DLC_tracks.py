@@ -108,7 +108,8 @@ def combine_matched_tracklets(these_tracklet_ind: list,
     tracklet_names = df_tracklet.columns.levels[0]
     if type(these_tracklet_ind[0]) == str:
         logging.info("Assuming that tracklet matches are proper DataFrame keys")
-        these_tracklet_names = these_tracklet_ind
+        # TODO: why do I have problems with non-unique names here?
+        these_tracklet_names = list(set(these_tracklet_ind))
     else:
         these_tracklet_names = [tracklet_names[i] for i in these_tracklet_ind]
     logging.info(f"Found {len(these_tracklet_names)} tracklets for {neuron_name}")

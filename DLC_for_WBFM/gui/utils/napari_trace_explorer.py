@@ -131,15 +131,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.groupBox3)
         self.verticalLayout.addWidget(self.groupBox4)
 
-        # General
-        # self.verticalLayout.addWidget(self.refreshButton)
-
-        # Save annotations (button)
-        # self.saveButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        # self.saveButton.clicked.connect(self.save_annotations)
-        # self.saveButton.setText("Save Annotations")
-        # self.verticalLayout.addWidget(self.saveButton)
-
         self.initialize_track_layers()
         self.initialize_shortcuts()
         self.initialize_trace_or_tracklet_subplot()
@@ -148,7 +139,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_dataframe_using_points()
         self.update_track_layers()
         self.update_trace_or_tracklet_subplot()
-        self.update_tracklet_annotator()
+        self.update_neuron_in_tracklet_annotator()
 
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -157,7 +148,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         zoom_using_viewer(self.viewer, layer_name='final_track')
 
-    def update_tracklet_annotator(self):
+    def update_neuron_in_tracklet_annotator(self):
         self.dat.tracklet_annotator.current_neuron = self.changeNeuronsDropdown.currentText()
 
     def initialize_track_layers(self):
@@ -174,7 +165,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.viewer,
             refresh_callback=self.update_trace_or_tracklet_subplot
         )
-        self.update_tracklet_annotator()
+        self.update_neuron_in_tracklet_annotator()
 
     def initialize_shortcuts(self):
         viewer = self.viewer
@@ -282,7 +273,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     @property
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            y_list = self.dat.tracklet_annotator.calculate_tracklets_for_neuron()
+            # y_list = self.dat.tracklet_annotator.calculate_tracklets_for_neuron()
+            y_list = self.y_tracklets
             tmp_df = y_list[0].copy()
             for df in y_list[1:]:
                 tmp_df = tmp_df.combine_first(df)
@@ -318,7 +310,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_stored_tracklets()
         for y in self.y_tracklets:
             self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
-        self.update_tracklet_annotator()
+        self.update_neuron_in_tracklet_annotator()
         # self.trace_line = self.static_ax.plot(self.y)[0]
 
     def on_subplot_click(self, event):
@@ -329,6 +321,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def change_trace_tracklet_mode(self):
         print(f"Changed mode to: {self.changeTraceTrackletDropdown.currentText()}")
         self.static_ax.clear()
+        # Only show z coordinate for now
+        self.changeChannelDropdown.setCurrentText('z')
         self.initialize_trace_or_tracklet_subplot()
         # Not just updating the data because we fully cleared the axes
         self.init_subplot_post_clear()
