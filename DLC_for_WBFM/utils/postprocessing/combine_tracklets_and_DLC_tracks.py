@@ -373,7 +373,7 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     project_data = ProjectData(project_cfg.project_dir, project_cfg)
     df_tracklets = project_data.df_all_tracklets
     if not use_manual_matches:
-        project_data.global2tracklet_precedence = ['automatic', 'manual']
+        project_data.precedence_global2tracklet = ['automatic', 'manual']
 
     with safe_cd(project_cfg.project_dir):
 

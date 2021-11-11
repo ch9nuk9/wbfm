@@ -52,14 +52,17 @@ class ProjectData:
     verbose: int = 2
 
     # Precedence when multiple are available
-    global2tracklet_precedence: list = None
+    precedence_global2tracklet: list = None
+    precedence_df_tracklets: list = None
 
     # Classes for more functionality
     trace_plotter: TracePlotter = None
 
     def __post_init__(self):
-        if self.global2tracklet_precedence is None:
-            self.global2tracklet_precedence = ['manual', 'automatic']
+        if self.precedence_global2tracklet is None:
+            self.precedence_global2tracklet = ['manual', 'automatic']
+        if self.precedence_df_tracklets is None:
+            self.precedence_df_tracklets = ['manual', 'automatic']
 
     # Can be quite large, so don't read by default
     @cached_property
@@ -71,11 +74,11 @@ class ProjectData:
             'manual': tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname'),
             'automatic': tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')}
 
-        for i, key in enumerate(self.global2tracklet_precedence):
+        for i, key in enumerate(self.precedence_global2tracklet):
             fname = possible_fnames[key]
             if Path(fname).exists():
                 global2tracklet = pickle_load_binary(fname)
-                logging.info(f"File for mode {key} exists at precendence: {i}")
+                logging.info(f"File for mode {key} exists at precendence: {i}/{len(possible_fnames)}")
                 logging.info(f"Read global2tracklet matches from: {fname}")
                 break
         else:
@@ -114,17 +117,29 @@ class ProjectData:
     def df_all_tracklets(self):
         logging.info("First time loading the all tracklets, may take a while...")
         train_cfg = self.project_config.get_training_config()
-        fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
-
-        # Manual annotations take precedence
         track_cfg = self.project_config.get_tracking_config()
-        manual_fname = track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
-        df_all_tracklets = read_if_exists(manual_fname)
 
-        if df_all_tracklets is None:
-            df_all_tracklets = read_if_exists(fname)
+        possible_fnames = {
+            'manual': track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname'),
+            'automatic': train_cfg.resolve_relative_path_from_config('df_3d_tracklets')}
+        # Manual annotations take precedence by default
+        for i, key in enumerate(self.precedence_global2tracklet):
+            fname = possible_fnames[key]
+            if Path(fname).exists():
+                df_all_tracklets = read_if_exists(fname)
+                logging.info(f"File for mode {key} exists at precendence: {i}/{len(possible_fnames)}")
+                logging.info(f"Read df_all_tracklets from: {fname}")
+                break
         else:
-            print(f"Read manually updated tracklets: {manual_fname}")
+            logging.info(f"No df_all_tracklets found")
+            df_all_tracklets = None
+
+        # df_all_tracklets = read_if_exists(manual_fname)
+        #
+        # if df_all_tracklets is None:
+        #     df_all_tracklets = read_if_exists(fname)
+        # else:
+        #     print(f"Read manually updated tracklets: {manual_fname}")
 
         return df_all_tracklets
 
