@@ -19,7 +19,7 @@ from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_
 from scipy.spatial.distance import cdist
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
-    SubfolderConfigFile
+    SubfolderConfigFile, load_file_according_to_precedence
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
 from backports.cached_property import cached_property
@@ -74,16 +74,9 @@ class ProjectData:
             'manual': tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname'),
             'automatic': tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')}
 
-        for i, key in enumerate(self.precedence_global2tracklet):
-            fname = possible_fnames[key]
-            if Path(fname).exists():
-                global2tracklet = pickle_load_binary(fname)
-                logging.info(f"File for mode {key} exists at precendence: {i}/{len(possible_fnames)}")
-                logging.info(f"Read global2tracklet matches from: {fname}")
-                break
-        else:
-            logging.info(f"No global2tracklet matches found")
-            global2tracklet = None
+        fname_precedence = self.precedence_global2tracklet
+        global2tracklet = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                            this_reader=read_if_exists)
         return global2tracklet
 
     @cached_property
@@ -123,16 +116,9 @@ class ProjectData:
             'manual': track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname'),
             'automatic': train_cfg.resolve_relative_path_from_config('df_3d_tracklets')}
         # Manual annotations take precedence by default
-        for i, key in enumerate(self.precedence_global2tracklet):
-            fname = possible_fnames[key]
-            if Path(fname).exists():
-                df_all_tracklets = read_if_exists(fname)
-                logging.info(f"File for mode {key} exists at precendence: {i}/{len(possible_fnames)}")
-                logging.info(f"Read df_all_tracklets from: {fname}")
-                break
-        else:
-            logging.info(f"No df_all_tracklets found")
-            df_all_tracklets = None
+        fname_precedence = self.precedence_global2tracklet
+        df_all_tracklets = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                             this_reader=read_if_exists)
 
         # df_all_tracklets = read_if_exists(manual_fname)
         #

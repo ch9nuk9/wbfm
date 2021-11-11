@@ -222,3 +222,17 @@ def lexigraphically_sort(strs_with_numbers):
     # From: https://stackoverflow.com/questions/35728760/python-sorting-string-numbers-not-lexicographically
     # Note: works with strings like 'neuron0' 'neuron10' etc.
     return sorted(sorted(strs_with_numbers), key=len)
+
+
+def load_file_according_to_precedence(fname_precedence, possible_fnames, this_reader=read_if_exists):
+    for i, key in enumerate(fname_precedence):
+        fname = possible_fnames[key]
+        if Path(fname).exists():
+            data = this_reader(fname)
+            logging.info(f"File for mode {key} exists at precendence: {i}/{len(possible_fnames)}")
+            logging.info(f"Read data from: {fname}")
+            break
+    else:
+        logging.info(f"No data found")
+        data = None
+    return data
