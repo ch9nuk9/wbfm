@@ -1,6 +1,7 @@
 import copy
 import logging
 from collections import defaultdict
+from typing import List, Dict
 
 import numpy as np
 import pandas as pd
@@ -537,13 +538,21 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
     return final_df
 
 
+def fix_global2tracklet_full_dict(df_tracklets, global2tracklet) -> Dict[str, List[str]]:
+    return {key: fix_matches_to_use_keys_not_int(df_tracklets, val) for key, val in global2tracklet.items()}
+
+
 def fix_matches_to_use_keys_not_int(df_tracklet, these_tracklet_ind):
     # Extract the tracklets belonging to this neuron
-    tracklet_names = df_tracklet.columns.levels[0]
+    tracklet_names = list(df_tracklet.columns.levels[0])
     if type(these_tracklet_ind[0]) == str:
         logging.info("Assuming that tracklet matches are proper DataFrame keys")
-        # TODO: why do I sometimes have problems with non-unique names here?
+        logging.debug(f"First key: {these_tracklet_ind[0]}")
         these_tracklet_names = list(set(these_tracklet_ind))
     else:
         these_tracklet_names = [tracklet_names[i] for i in these_tracklet_ind]
+        these_tracklet_names = list(set(these_tracklet_names))
+    # TODO: why do I sometimes have problems with non-unique names here?
+    if len(these_tracklet_names) < len(tracklet_names):
+        logging.debug(f"Removed repeated indices ({len(tracklet_names)} -> {len(these_tracklet_names)})")
     return these_tracklet_names

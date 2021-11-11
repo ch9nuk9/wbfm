@@ -2,12 +2,13 @@ import logging
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 import numba
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_matches_to_use_keys_not_int
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_matches_to_use_keys_not_int, \
+    fix_global2tracklet_full_dict
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
@@ -176,7 +177,7 @@ def combine_matched_tracklets(these_tracklet_names: List[str],
     return summed_tracklet_df
 
 
-def combine_global_and_tracklet_coverings(global2tracklet: dict,
+def combine_global_and_tracklet_coverings(global2tracklet: Dict[str, List[str]],
                                           df_tracklet: pd.DataFrame,
                                           df_global_tracks: pd.DataFrame,
                                           keep_only_tracklets_in_final_tracks: bool,
@@ -403,7 +404,7 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
         [used_indices.update(ind) for ind in global2tracklet.values()]
 
     # TODO: don't allow these to be integers from the beginning
-    global2tracklet = {key: fix_matches_to_use_keys_not_int(df_tracklets, val) for key, val in global2tracklet.items()}
+    global2tracklet = fix_global2tracklet_full_dict(df_tracklets, global2tracklet)
 
     # fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')
     # if Path(fname).exists():
