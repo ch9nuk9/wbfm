@@ -18,7 +18,7 @@ from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 # Initialize sacred experiment
 ex = Experiment()
-ex.add_config(project_path=None, use_imputed_df=False, DEBUG=False)
+ex.add_config(project_path=None, use_imputed_df=False, start_from_manual_matches=False, DEBUG=False)
 
 
 @ex.config
@@ -46,4 +46,5 @@ def combine_tracks(_config, _run):
 
     combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, training_cfg, _config['cfg'],
                                                        use_imputed_df=_config['use_imputed_df'],
+                                                       start_from_manual_matches=_config['start_from_manual_matches'],
                                                        DEBUG=DEBUG)

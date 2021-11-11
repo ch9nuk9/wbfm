@@ -222,10 +222,8 @@ def combine_dlc_and_tracklets(new_tracklet_df, dlc_tracks):
 
 def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFile,
                                                        training_cfg: SubfolderConfigFile,
-                                                       project_cfg: ModularProjectConfig,
-                                                       use_imputed_df=False,
-                                                       use_manual_matches=True,
-                                                       DEBUG=False):
+                                                       project_cfg: ModularProjectConfig, use_imputed_df=False,
+                                                       start_from_manual_matches=True, DEBUG=False):
     """
     Improves tracking by combining DLC neurons with my short tracklets
 
@@ -243,12 +241,12 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
         keep_only_tracklets_in_final_tracks, global2tracklet, used_indices = _unpack_tracklets_for_combining(
-            project_cfg, training_cfg, track_config, use_imputed_df, use_manual_matches)
+            project_cfg, training_cfg, track_config, use_imputed_df, start_from_manual_matches)
 
     # Match tracklets to DLC neurons
     global_neuron_names = list(df_global_tracks.columns.levels[0])
 
-    logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets matched from previous analysis")
+    # logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets matched from previous analysis")
     verbose = 0
 
     # Pre-make coordinates so that the dataframe is not continuously indexed
@@ -282,7 +280,6 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
             break
 
     logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets used in total")
-
     _save_tracklet_matches(global2tracklet, project_cfg.project_dir, track_config)
 
     # Combine and save
@@ -294,12 +291,12 @@ def final_tracks_from_tracklet_matches_from_config(track_config: SubfolderConfig
                                                    training_cfg: SubfolderConfigFile,
                                                    project_cfg: ModularProjectConfig,
                                                    use_imputed_df,
-                                                   use_manual_matches,
+                                                   start_from_manual_matches,
                                                    DEBUG=False):
 
     d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
         keep_only_tracklets_in_final_tracks, global2tracklet, used_indices = _unpack_tracklets_for_combining(
-            project_cfg, training_cfg, track_config, use_imputed_df, use_manual_matches)
+            project_cfg, training_cfg, track_config, use_imputed_df, start_from_manual_matches)
 
     # Rename to be sequential, like the reindexed segmentation
     logging.info("Concatenating tracklets")
@@ -399,9 +396,9 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
         global2tracklet = defaultdict(list)
         used_indices = set()
     else:
-        logging.info(f"Found previous tracklet matches")
         used_indices = set()
         [used_indices.update(ind) for ind in global2tracklet.values()]
+        logging.info(f"Found previous tracklet matches with {len(used_indices)}/{len(global2tracklet)} matches")
 
     # TODO: don't allow these to be integers from the beginning
     global2tracklet = fix_global2tracklet_full_dict(df_tracklets, global2tracklet)

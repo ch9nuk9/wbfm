@@ -229,7 +229,7 @@ def load_file_according_to_precedence(fname_precedence, possible_fnames, this_re
         fname = possible_fnames[key]
         if Path(fname).exists():
             data = this_reader(fname)
-            logging.info(f"File for mode {key} exists at precendence: {i}/{len(possible_fnames)}")
+            logging.info(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
             logging.info(f"Read data from: {fname}")
             break
     else:

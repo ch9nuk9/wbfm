@@ -546,8 +546,8 @@ def fix_matches_to_use_keys_not_int(df_tracklet, these_tracklet_ind):
     # Extract the tracklets belonging to this neuron
     isstr = lambda s: isinstance(s, str)
     if all(map(isstr, these_tracklet_ind)):
-        logging.info("Assuming that tracklet matches are proper DataFrame keys")
-        logging.debug(f"First key: {these_tracklet_ind[0]}")
+        # logging.info("Assuming that tracklet matches are proper DataFrame keys")
+        # logging.debug(f"First key: {these_tracklet_ind[0]}")
         these_tracklet_names = list(set(these_tracklet_ind))
     else:
         raw_tracklet_names = list(df_tracklet.columns.levels[0])

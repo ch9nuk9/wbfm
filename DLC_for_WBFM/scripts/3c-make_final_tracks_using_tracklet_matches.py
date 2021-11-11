@@ -18,7 +18,7 @@ from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 # Initialize sacred experiment
 ex = Experiment()
-ex.add_config(project_path=None, use_imputed_df=False, use_manual_matches=True, DEBUG=False)
+ex.add_config(project_path=None, use_imputed_df=False, start_from_manual_matches=True, DEBUG=False)
 
 
 @ex.config
@@ -47,5 +47,5 @@ def combine_tracks(_config, _run):
     # TODO: do I need the imputed df option here?
     final_tracks_from_tracklet_matches_from_config(track_cfg, training_cfg, _config['cfg'],
                                                    use_imputed_df=_config['use_imputed_df'],
-                                                   use_manual_matches=_config['use_manual_matches'],
+                                                   start_from_manual_matches=_config['start_from_manual_matches'],
                                                    DEBUG=DEBUG)
