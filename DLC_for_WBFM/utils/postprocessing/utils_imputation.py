@@ -2,6 +2,8 @@ import logging
 
 import numpy as np
 import pandas as pd
+from sklearn.linear_model import BayesianRidge
+from sklearn.pipeline import Pipeline
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
@@ -155,3 +157,31 @@ def get_distance_to_closest_neurons_over_time(project_data: ProjectData, which_n
         all_dist.append(project_data.get_distance_to_closest_neuron(i_frame, target_pt))
 
     return np.array(all_dist)
+
+## Getting variance
+# From: https://github.com/scikit-learn/scikit-learn/blob/e10edc3ddd94f49a48be02c73e68e359b3dad925/examples/impute/plot_multiple_imputation.py
+
+
+def get_results_chained_imputation(X_ampute, random_state=0, max_iter=10):
+    # Impute incomplete data with IterativeImputer using single imputation
+    # We perform MAX_ITER imputations and only use the last imputation.
+
+    from sklearn.experimental import enable_iterative_imputer
+    from sklearn.impute import IterativeImputer
+    imputer = IterativeImputer(max_iter=max_iter,
+                               sample_posterior=True,
+                               random_state=random_state)
+    X_imputed = imputer.fit_transform(X_ampute)
+    # For me, just return the data without fitting a predictive model
+    return X_imputed
+
+
+def coef_var_mice_imputation(X_ampute, n_imputations=5, max_iter=10):
+    # Fill the data multiple times (different random seeds)
+    f = lambda i: get_results_chained_imputation(X_ampute, random_state=i, max_iter=max_iter)
+    multiple_datasets = [f(i) for i in range(n_imputations)]
+
+    point_estimates = np.mean(multiple_datasets, axis=0)
+    var_estimates = np.var(multiple_datasets, axis=0)
+
+    return point_estimates, var_estimates
