@@ -76,7 +76,7 @@ class ProjectData:
 
         fname_precedence = self.precedence_global2tracklet
         global2tracklet = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                            this_reader=read_if_exists)
+                                                            this_reader=pickle_load_binary)
         return global2tracklet
 
     @cached_property

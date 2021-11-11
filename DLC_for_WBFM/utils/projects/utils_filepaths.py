@@ -233,6 +233,6 @@ def load_file_according_to_precedence(fname_precedence, possible_fnames, this_re
             logging.info(f"Read data from: {fname}")
             break
     else:
-        logging.info(f"No data found")
+        logging.info(f"Found no files of possibilities: {possible_fnames}")
         data = None
     return data
