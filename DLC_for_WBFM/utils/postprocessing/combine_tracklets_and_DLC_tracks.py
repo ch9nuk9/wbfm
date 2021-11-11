@@ -239,7 +239,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets used in total")
 
-    _save_tracklet_matches(global2tracklet, project_dir, track_config)
+    _save_tracklet_matches(global2tracklet, project_cfg.project_dir, track_config)
 
     # Combine and save
     # final_tracks_from_tracklet_matches(DEBUG, df_global_tracks, df_tracklets, global2tracklet,
