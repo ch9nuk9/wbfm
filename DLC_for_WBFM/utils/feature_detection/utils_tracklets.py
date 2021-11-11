@@ -544,15 +544,24 @@ def fix_global2tracklet_full_dict(df_tracklets, global2tracklet) -> Dict[str, Li
 
 def fix_matches_to_use_keys_not_int(df_tracklet, these_tracklet_ind):
     # Extract the tracklets belonging to this neuron
-    tracklet_names = list(df_tracklet.columns.levels[0])
-    if type(these_tracklet_ind[0]) == str:
+    isstr = lambda s: isinstance(s, str)
+    if all(map(isstr, these_tracklet_ind)):
         logging.info("Assuming that tracklet matches are proper DataFrame keys")
         logging.debug(f"First key: {these_tracklet_ind[0]}")
         these_tracklet_names = list(set(these_tracklet_ind))
     else:
-        these_tracklet_names = [tracklet_names[i] for i in these_tracklet_ind]
-        these_tracklet_names = list(set(these_tracklet_names))
-    # TODO: why do I sometimes have problems with non-unique names here?
-    if len(these_tracklet_names) < len(tracklet_names):
-        logging.debug(f"Removed repeated indices ({len(tracklet_names)} -> {len(these_tracklet_names)})")
+        raw_tracklet_names = list(df_tracklet.columns.levels[0])
+        these_tracklet_names = []
+        for i_or_name in these_tracklet_ind:
+            if i_or_name in these_tracklet_names:
+                # TODO: why do I sometimes have problems with non-unique names here?
+                continue
+            if isstr(i_or_name):
+                these_tracklet_names.append(i_or_name)
+            elif isinstance(i_or_name, int):
+                these_tracklet_names.append(raw_tracklet_names[i_or_name])
+        # these_tracklet_names = list(set(these_tracklet_names))
+    if len(these_tracklet_names) < len(these_tracklet_ind):
+        logging.debug(f"Removed repeated indices ({len(these_tracklet_ind)} -> {len(these_tracklet_names)})")
+    assert all(map(isstr, these_tracklet_names)), f"Not all elements are strings: {these_tracklet_names}"
     return these_tracklet_names
