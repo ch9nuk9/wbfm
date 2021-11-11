@@ -1,4 +1,5 @@
 import copy
+import logging
 from collections import defaultdict
 
 import numpy as np
@@ -534,3 +535,15 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
     final_df = pd.concat(all_dfs, ignore_index=True, axis=0)
     return final_df
+
+
+def get_tracklet_names_from_ind(df_tracklet, these_tracklet_ind):
+    # Extract the tracklets belonging to this neuron
+    tracklet_names = df_tracklet.columns.levels[0]
+    if type(these_tracklet_ind[0]) == str:
+        logging.info("Assuming that tracklet matches are proper DataFrame keys")
+        # TODO: why do I have problems with non-unique names here?
+        these_tracklet_names = list(set(these_tracklet_ind))
+    else:
+        these_tracklet_names = [tracklet_names[i] for i in these_tracklet_ind]
+    return these_tracklet_names

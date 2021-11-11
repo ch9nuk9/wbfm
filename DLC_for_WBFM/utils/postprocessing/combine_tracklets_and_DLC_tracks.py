@@ -5,13 +5,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import get_tracklet_names_from_ind
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists, pickle_load_binary, \
-    ModularProjectConfig
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config, get_sequential_filename
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists, ModularProjectConfig
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_sequential_filename
 
 
 def calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
@@ -104,14 +104,7 @@ def combine_matched_tracklets(these_tracklet_ind: list,
     """Combines a covering of short tracklets and a gappy DLC track into a final DLC-style track"""
     coords = ['z', 'x', 'y', 'likelihood']
 
-    # Extract the tracklets belonging to this neuron
-    tracklet_names = df_tracklet.columns.levels[0]
-    if type(these_tracklet_ind[0]) == str:
-        logging.info("Assuming that tracklet matches are proper DataFrame keys")
-        # TODO: why do I have problems with non-unique names here?
-        these_tracklet_names = list(set(these_tracklet_ind))
-    else:
-        these_tracklet_names = [tracklet_names[i] for i in these_tracklet_ind]
+    these_tracklet_names = get_tracklet_names_from_ind(df_tracklet, these_tracklet_ind)
     logging.info(f"Found {len(these_tracklet_names)} tracklets for {neuron_name}")
 
     if len(these_tracklet_names) == 0:
@@ -279,7 +272,10 @@ def get_already_covered_indices(df_tracklets, previous_matches):
         all_tracklet_ind = df_tracklets.index
         covering_time_points = []
         for i2 in previous_matches:
-            tracklet_name = all_tracklet_names[i2]
+            if type(i2) == str:
+                tracklet_name = i2
+            else:
+                tracklet_name = all_tracklet_names[i2]
             is_nan = df_tracklets[tracklet_name]['x'].isnull()
             covering_time_points.extend(list(all_tracklet_ind[~is_nan]))
     else:
