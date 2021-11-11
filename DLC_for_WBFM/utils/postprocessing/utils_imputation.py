@@ -45,7 +45,13 @@ def is_spatial_column_name(c):
 
 
 def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20, random_state=0):
-    df_dat = df_only_locations.to_numpy()
+    all_zero_columns = df_only_locations.columns[df_only_locations.count() == 0]
+    if len(all_zero_columns) > 0:
+        logging.info(f'Some columns are all nan, and are dropped: {all_zero_columns}')
+        df_no_all_nan = df_only_locations.dropna(axis=1, how='all')
+    else:
+        df_no_all_nan = df_only_locations
+    df_dat = df_no_all_nan.to_numpy()
 
     # This gray import must be present
     from sklearn.experimental import enable_iterative_imputer
@@ -58,11 +64,14 @@ def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20,
     scaler = StandardScaler()
     dat_normalized = scaler.fit_transform(df_dat)
     dat_sklearn = imputer.fit_transform(dat_normalized)
-    if dat_sklearn.shape[0] != dat_normalized.shape[0]:
-        logging.warning("Column of all nan; will cause imputation errors")
-        raise ParameterTooStringentError('likelihood_thresh', '')
+    # if dat_sklearn.shape[0] != dat_normalized.shape[0]:
+    #     logging.warning("Column of all nan; will cause imputation errors")
+    #     raise ParameterTooStringentError('likelihood_thresh', '')
     dat_sklearn = scaler.inverse_transform(dat_sklearn)
-    df_sklearn = pd.DataFrame(data=dat_sklearn, columns=df_only_locations.columns)
+    df_sklearn = pd.DataFrame(data=dat_sklearn, columns=df_no_all_nan.columns)
+
+    for col in all_zero_columns:
+        df_sklearn[col] = np.nan
 
     return df_sklearn
 
