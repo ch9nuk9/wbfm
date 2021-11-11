@@ -168,7 +168,6 @@ def combine_matched_tracklets(these_tracklet_names: List[str],
                 logging.info(f"Nonzero entries: {np.where(this_column>0)}")
         summed_tracklet_array = np.stack(numpy_columns, axis=1)
 
-
     # Morph to DLC format
     cols = [[neuron_name], coords]
     cols = pd.MultiIndex.from_product(cols)
@@ -367,7 +366,8 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     keep_only_tracklets_in_final_tracks = track_config.config['final_3d_postprocessing'][
         'keep_only_tracklets_in_final_tracks']
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
-    output_df_fname = get_sequential_filename(output_df_fname)
+    with safe_cd(project_cfg.project_dir):
+        output_df_fname = get_sequential_filename(output_df_fname)
 
     # Use main object to load
     project_data = ProjectData(project_cfg.project_dir, project_cfg)
