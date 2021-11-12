@@ -37,7 +37,7 @@ final_3d_postprocessing:
 
 global2tracklet_matches_fname: 3-tracking/global2tracklet.pickle
 
-wiggle_split_tracklets_df_fname: 3-trackling/postprocessing/wiggle_split_tracklets.h5
+wiggle_split_tracklets_df_fname: 3-tracking/postprocessing/wiggle_split_tracklets.h5
 
 manual_correction_global2tracklet_fname: 3-tracking/manual_annotation/global2tracklet_manual.pickle
 manual_correction_tracklets_df_fname: 3-tracking/manual_annotation/manually_split_tracklets.h5

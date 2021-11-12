@@ -103,7 +103,7 @@ def calc_covering_from_distances(all_dist: list,
             else:
                 needs_split = len(time_conflicts) > 0
 
-            if needs_split:
+            if needs_split and allowed_tracklet_endpoint_wiggle > 0:
 
                 logging.info("Attempting tracklet wiggling...")
                 candidate_name, df_tracklets, i_tracklet, successfully_split = wiggle_tracklet_endpoint_to_remove_conflict(
