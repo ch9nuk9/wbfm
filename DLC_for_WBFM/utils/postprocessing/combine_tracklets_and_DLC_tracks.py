@@ -19,14 +19,15 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_sequential_fi
 
 def calc_dlc_to_tracklet_distances(this_global_track: np.ndarray,
                                    list_tracklets_zxy: list,
-                                   used_indices: set,
+                                   used_names: set,
+                                   all_tracklet_names: list,
                                    min_overlap: int = 5):
     """For one DLC neuron, calculate distances between that track and all tracklets"""
 
     all_dist = []
-    for i, this_tracklet in enumerate(list_tracklets_zxy):
+    for name, this_tracklet in zip(all_tracklet_names, list_tracklets_zxy):
         # Check for already belonging to another track
-        if i not in used_indices:
+        if name not in used_names:
             dist = calc_dist_if_overlap(this_tracklet, min_overlap, this_global_track)
         else:
             dist = np.inf
@@ -49,8 +50,9 @@ def calc_dist_if_overlap(this_tracklet: np.ndarray, min_overlap: int, this_globa
 
 def calc_covering_from_distances(all_dist: list,
                                  df_tracklets: pd.DataFrame,
-                                 used_indices: set,
+                                 used_names: set,
                                  covering_time_points=None,
+                                 covering_tracklet_names=None,
                                  allowed_tracklet_endpoint_wiggle=0,
                                  d_max=5,
                                  verbose=0):
@@ -63,26 +65,28 @@ def calc_covering_from_distances(all_dist: list,
     """
     if covering_time_points is None:
         covering_time_points = []
+    if covering_tracklet_names is None:
+        covering_tracklet_names = []
     all_medians = list(map(np.nanmedian, all_dist))
     i_sorted_by_median_distance = np.argsort(all_medians)
     all_tracklet_names = list(df_tracklets.columns.levels[0])
 
     # TODO: refactor to remove indices, and only return names
     covering_tracklet_ind = []
-    covering_tracklet_names = []
     t = df_tracklets.index
     assert len(t) == int(t[-1])+1, "Tracklet dataframe has missing indices, and will cause errors"
     these_dist = np.zeros_like(t, dtype=float)
 
     for i_tracklet in i_sorted_by_median_distance:
         # Check if this was used before
-        if i_tracklet in used_indices:
+        candidate_name = all_tracklet_names[i_tracklet]
+        if candidate_name in used_names:
             continue
         # Check distance; break because they are sorted by distance
-        if all_medians[i_tracklet] > d_max:
+        this_distance = all_medians[i_tracklet]
+        if this_distance > d_max:
             break
         # Check time overlap, except first time
-        candidate_name = all_tracklet_names[i_tracklet]
         is_nan = df_tracklets[candidate_name]['x'].isnull()
         newly_covered_times = list(t[~is_nan])
         if len(covering_time_points) > 0:
@@ -118,7 +122,10 @@ def calc_covering_from_distances(all_dist: list,
         print(f"Covering of length {len(covering_time_points)} made from {len(covering_tracklet_names)} tracklets")
     if len(covering_time_points) == 0:
         logging.warning("No covering found, here are some diagnostics:")
-        logging.warning(f"Looped up to tracklet {candidate_name} with distance {all_medians[i_tracklet]}")
+        try:
+            logging.warning(f"Looped up to tracklet {candidate_name} with distance {this_distance}")
+        except UnboundLocalError:
+            logging.warning(f"No tracklets were candidates")
 
     return covering_time_points, covering_tracklet_ind, these_dist, covering_tracklet_names
 
@@ -283,7 +290,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
     """
 
     d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
-        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices,\
+        keep_only_tracklets_in_final_tracks, global2tracklet, used_names,\
         allowed_tracklet_endpoint_wiggle = _unpack_tracklets_for_combining(
             project_cfg, training_cfg, track_config, use_imputed_df, start_from_manual_matches)
 
@@ -305,26 +312,29 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
         this_global_track = df_global_tracks[global_name][coords].to_numpy()
         # TODO: make the tracklets the proper length before this
         this_global_track = this_global_track[:-1, :]
-        dist = calc_dlc_to_tracklet_distances(this_global_track, list_tracklets_zxy, used_indices,
+        dist = calc_dlc_to_tracklet_distances(this_global_track, list_tracklets_zxy, used_names,
+                                              all_tracklet_names,
                                               min_overlap=min_overlap)
         previous_matches = global2tracklet[global_name]
         covering_time_points = get_already_covered_indices(df_tracklets, previous_matches)
-        out = calc_covering_from_distances(dist, df_tracklets, used_indices,
+        out = calc_covering_from_distances(dist, df_tracklets, used_names,
                                            covering_time_points=covering_time_points,
+                                           covering_tracklet_names=previous_matches,
                                            allowed_tracklet_endpoint_wiggle=allowed_tracklet_endpoint_wiggle,
                                            d_max=d_max, verbose=verbose)
         # covering_time_points, covering_ind, these_dist = out
         _, covering_ind, _, covering_names = out
         # all_covering_ind.append(covering_ind)
         global2tracklet[global_name].extend(covering_names)
-        used_indices.update(covering_ind)
+        used_names.update(covering_names)
+        # used_indices.update(covering_ind)
 
         if DEBUG and i > 0:
             # Should do 2, so that the column concatenation is checked too
             logging.info("DEBUG: checking only 2 neurons")
             break
 
-    logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets used in total")
+    logging.info(f"{len(used_names)} / {df_tracklets.shape[1]} tracklets used in total")
     _save_tracklet_matches(global2tracklet, project_cfg.project_dir, track_config)
 
     # Combine and save
@@ -440,12 +450,12 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     if global2tracklet is None:
         logging.info(f"Did not find previous tracklet matches")
         global2tracklet = defaultdict(list)
-        used_indices = set()
+        used_names = set()
     else:
-        used_indices = set()
-        [used_indices.update(ind) for ind in global2tracklet.values()]
+        used_names = set()
+        [used_names.update(names) for names in global2tracklet.values()]
         num_tracklets = len(list(df_tracklets.columns.levels[0]))
-        logging.info(f"Found previous tracklet matches with {len(used_indices)}/{num_tracklets} matches")
+        logging.info(f"Found previous tracklet matches with {len(used_names)}/{num_tracklets} matches")
         # TODO: don't allow these to be integers from the beginning
         global2tracklet = fix_global2tracklet_full_dict(df_tracklets, global2tracklet)
 
@@ -461,7 +471,7 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     #     used_indices = set()
 
     return d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
-        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices, allowed_tracklet_endpoint_wiggle
+        keep_only_tracklets_in_final_tracks, global2tracklet, used_names, allowed_tracklet_endpoint_wiggle
 
 
 def remove_overmatching(df, tol=1e-3):
