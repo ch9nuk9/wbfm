@@ -320,13 +320,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # https://matplotlib.org/stable/users/event_handling.html
         on_click = lambda event: self.on_subplot_click(event)
         cid = self.mpl_widget.mpl_connect('button_press_event', on_click)
+        self.connect_time_line_callback()
 
     def init_subplot_post_clear(self):
         self.time_line = None
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
         self.color_using_behavior()
-        self.connect_time_line_callback()
         self.subplot_is_initialized = True
 
     def initialize_trace_subplot(self):
