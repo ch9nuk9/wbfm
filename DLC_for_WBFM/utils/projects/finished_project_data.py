@@ -9,7 +9,8 @@ import napari
 import numpy as np
 import pandas as pd
 import zarr
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_matches_to_use_keys_not_int
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_matches_to_use_keys_not_int, \
+    fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAnnotator
@@ -77,6 +78,8 @@ class ProjectData:
         fname_precedence = self.precedence_global2tracklet
         global2tracklet = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                             this_reader=pickle_load_binary)
+
+        global2tracklet = fix_global2tracklet_full_dict(self.df_all_tracklets, global2tracklet)
         return global2tracklet
 
     @cached_property
@@ -134,31 +137,15 @@ class ProjectData:
         tracking_cfg = self.project_config.get_tracking_config()
         training_cfg = self.project_config.get_training_config()
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
-        global2tracklet = self.global2tracklet
-
-        global2tracklet_names = self.fix_global2tracklet_dict(global2tracklet)
 
         obj = TrackletAnnotator(
             self.df_all_tracklets,
-            global2tracklet_names,
+            self.global2tracklet,
             segmentation_metadata=self.segmentation_metadata,
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg
         )
         return obj
-
-    def fix_global2tracklet_dict(self, global2tracklet):
-        # TODO: refactor this dict to be strings from the beginning
-        all_tracklet_names = list(self.df_all_tracklets.columns.levels[0])
-        global2tracklet_names = {}
-        for neuron_name, indices in global2tracklet.items():
-            if type(indices[0]) == str:
-                # Then I already converted it
-                global2tracklet_names = global2tracklet
-                break
-            these_names = [all_tracklet_names[i] for i in indices]
-            global2tracklet_names[neuron_name] = these_names
-        return global2tracklet_names
 
     @cached_property
     def df_fdnc_tracks(self):
