@@ -4,11 +4,9 @@ from collections import defaultdict
 from pathlib import Path
 from typing import List, Dict
 
-import numba
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_matches_to_use_keys_not_int, \
-    fix_global2tracklet_full_dict
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
@@ -23,7 +21,6 @@ def calc_dlc_to_tracklet_distances(this_global_track: np.ndarray,
                                    min_overlap: int = 5):
     """For one DLC neuron, calculate distances between that track and all tracklets"""
 
-    # all_dist = np.zeros(len(list_tracklets_zxy))
     all_dist = []
     for i, this_tracklet in enumerate(list_tracklets_zxy):
         # Check for already belonging to another track
@@ -46,42 +43,6 @@ def calc_dist_if_overlap(this_tracklet: np.ndarray, min_overlap: int, this_globa
     else:
         dist = np.inf
     return dist
-
-
-def OLD_calc_dlc_to_tracklet_distances(dlc_tracks: pd.DataFrame,
-                                   df_tracklet: pd.DataFrame,
-                                   dlc_name: str,
-                                   used_indices: set,
-                                   min_overlap: int = 5,
-                                   min_dlc_confidence: float = 0.6):
-    """For one DLC neuron, calculate distances between that track and all tracklets"""
-    coords = ['z', 'x', 'y']
-
-    # TODO: use confidence of dlc tracks
-    this_dlc = dlc_tracks[dlc_name][coords]
-    # Remove low confidence points
-    #     low_conf = this_dlc['likelihood'] < min_dlc_confidence
-    #     this_dlc.loc['x', low_conf].replace()
-
-    all_tracklet_names = list(df_tracklet.columns.levels[0])
-    all_dist = []
-    for i, name in enumerate(tqdm(all_tracklet_names, leave=False)):
-        # Check for already belonging to another track
-        if i not in used_indices:
-            this_diff = df_tracklet[name][coords] - this_dlc
-
-            # Check for enough common data points
-            num_common_pts = this_diff['x'].notnull().sum()
-            if num_common_pts >= min_overlap:
-                dist = np.linalg.norm(this_diff, axis=1)
-            else:
-                dist = np.inf
-        else:
-            dist = np.inf
-
-        all_dist.append(dist)
-
-    return all_dist
 
 
 def calc_covering_from_distances(all_dist, df_tracklet, used_indices,
