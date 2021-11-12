@@ -67,7 +67,7 @@ def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20,
     dat_sklearn = scaler.inverse_transform(dat_sklearn)
     df_sklearn = pd.DataFrame(data=dat_sklearn, columns=df_no_all_nan.columns)
 
-    replace_all_nan_columns(all_nan_columns, df_sklearn)
+    df_sklearn = replace_all_nan_columns(all_nan_columns, df_sklearn)
 
     return df_sklearn
 
@@ -75,6 +75,7 @@ def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20,
 def replace_all_nan_columns(all_nan_columns, df_sklearn):
     for col in all_nan_columns:
         df_sklearn[col] = np.nan
+    return df_sklearn
 
 
 def remove_all_nan_columns(df_only_locations):

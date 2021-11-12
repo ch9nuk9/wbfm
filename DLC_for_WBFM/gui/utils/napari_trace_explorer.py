@@ -90,6 +90,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
         self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
         self.vbox4.addWidget(self.refreshButton)
+        self.printTrackletsButton = QtWidgets.QPushButton("Print current tracklets (V)")
+        self.printTrackletsButton.pressed.connect(self.print_tracklets)
+        self.vbox4.addWidget(self.printTrackletsButton)
 
         self.zoom1Button = QtWidgets.QPushButton("Zoom next (D)")
         self.zoom1Button.pressed.connect(self.zoom_next)
@@ -100,6 +103,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom3Button = QtWidgets.QPushButton("Zoom to next nan (F)")
         self.zoom3Button.pressed.connect(self.zoom_to_next_nan)
         self.vbox4.addWidget(self.zoom3Button)
+        self.zoom4Button = QtWidgets.QPushButton("Zoom to next nan (G)")
+        self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
+        self.vbox4.addWidget(self.zoom4Button)
 
         self.splitTrackletButton1 = QtWidgets.QPushButton("Split tracklet (keep left) (Q)")
         self.splitTrackletButton1.pressed.connect(self.split_current_tracklet_keep_left)
@@ -114,8 +120,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.removeTrackletButton1 = QtWidgets.QPushButton("Remove tracklets with time conflicts (Z)")
         self.removeTrackletButton1.pressed.connect(self.remove_time_conflicts)
         self.vbox4.addWidget(self.removeTrackletButton1)
-        self.removeTrackletButton2 = QtWidgets.QPushButton("Remove tracklet from other neurons (X)")
-        self.removeTrackletButton2.pressed.connect(self.remove_other_match_conflicts)
+        self.removeTrackletButton2 = QtWidgets.QPushButton("Remove tracklet from all neurons (X)")
+        self.removeTrackletButton2.pressed.connect(self.remove_tracklet_from_all_matches)
         self.vbox4.addWidget(self.removeTrackletButton2)
         self.appendTrackletButton = QtWidgets.QPushButton("Save current tracklet to neuron (IF conflict-free) (C)")
         self.appendTrackletButton.pressed.connect(self.append_current_tracklet_to_dict)
@@ -124,10 +130,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk (S)")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
-
-        self.printTrackletsButton = QtWidgets.QPushButton("Print current tracklets (V)")
-        self.printTrackletsButton.pressed.connect(self.print_tracklets)
-        self.vbox4.addWidget(self.printTrackletsButton)
 
         self.verticalLayout.addWidget(self.groupBox1)
         self.verticalLayout.addWidget(self.groupBox2)
@@ -189,6 +191,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def zoom_to_next_nan(viewer):
             self.zoom_to_next_nan()
 
+        @viewer.bind_key('g', overwrite=True)
+        def zoom_to_next_nan(viewer):
+            self.zoom_to_next_conflict()
+
         @viewer.bind_key('e', overwrite=True)
         def split_current_tracklet(viewer):
             self.split_current_tracklet_keep_right()
@@ -219,7 +225,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.bind_key('x', overwrite=True)
         def print_tracklet_status(viewer):
-            self.remove_other_match_conflicts()
+            self.remove_tracklet_from_all_matches()
 
     @property
     def max_time(self):
@@ -243,7 +249,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
                 break
         else:
-            print("No nan point found; not switching")
+            print("No nan point found; not moving")
+
+    def zoom_to_next_conflict(self, viewer=None):
+
+        t, conflict_neuron = self.dat.tracklet_annotator.time_of_next_conflict(i_start=self.t)
+
+        if conflict_neuron is not None:
+            change_viewer_time_point(self.viewer, t_target=t)
+            zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+        else:
+            print("No conflict point found; not moving")
+
 
     def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
@@ -281,8 +298,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def remove_time_conflicts(self):
         self.dat.tracklet_annotator.remove_tracklets_with_time_conflicts()
 
-    def remove_other_match_conflicts(self):
-        self.dat.tracklet_annotator.remove_tracklet_from_other_match()
+    def remove_tracklet_from_all_matches(self):
+        self.dat.tracklet_annotator.remove_tracklet_from_all_matches()
 
     @property
     def y_on_plot(self):
