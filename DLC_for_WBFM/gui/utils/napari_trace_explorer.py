@@ -322,6 +322,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         cid = self.mpl_widget.mpl_connect('button_press_event', on_click)
 
     def init_subplot_post_clear(self):
+        self.time_line = None
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
         self.color_using_behavior()

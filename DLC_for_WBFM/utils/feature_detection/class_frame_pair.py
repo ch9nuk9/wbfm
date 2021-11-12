@@ -290,7 +290,17 @@ class FramePair:
         else:
             self._match_using_gp(self.options.gp_num_candidates, self.options.starting_matches)
 
-    def _match_using_gp(self, n_neighbors, starting_matches='affine_matches'):
+    def _match_using_gp(self, n_neighbors, starting_matches_name='best'):
+        if starting_matches_name == 'best':
+            if len(self.affine_matches) > len(self.feature_matches):
+                starting_matches_name = 'affine_matches'
+            else:
+                starting_matches_name = 'feature_matches'
+        if starting_matches_name in ['affine_matches', 'feature_matches']:
+            starting_matches = getattr(self, starting_matches_name)
+        else:
+            raise ValueError(f"Unknown starting matches: {starting_matches_name}")
+
         # Can start with any matched point clouds, but not more than ~100 matches otherwise it's way too slow
         frame0, frame1 = self.frame0, self.frame1
         n0 = frame0.neuron_locs.copy()
@@ -298,7 +308,7 @@ class FramePair:
         n0[:, 0] *= self.options.z_to_xy_ratio
         n1[:, 0] *= self.options.z_to_xy_ratio
         # Actually match
-        options = {'matches_with_conf': getattr(self, starting_matches), 'n_neighbors': n_neighbors}
+        options = {'matches_with_conf': starting_matches, 'n_neighbors': n_neighbors}
         gp_matches, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)
         # gp_matches = recursive_cast_matches_as_array(gp_matches, gamma=1.0)
         self.gp_matches = gp_matches
