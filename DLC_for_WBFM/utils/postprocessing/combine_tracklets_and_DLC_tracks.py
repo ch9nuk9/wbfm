@@ -6,6 +6,7 @@ from typing import List, Dict
 
 import numpy as np
 import pandas as pd
+from DLC_for_WBFM.utils.feature_detection.custom_errors import ShouldBeUnreachable
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict, \
     get_time_overlap_of_candidate_tracklet, split_tracklet
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -85,48 +86,12 @@ def calc_covering_from_distances(all_dist: list,
         is_nan = df_tracklets[candidate_name]['x'].isnull()
         newly_covered_times = list(t[~is_nan])
         if len(covering_time_points) > 0:
-            time_conflicts = get_time_overlap_of_candidate_tracklet(
-                candidate_name, covering_tracklet_names, df_tracklets
-            )
-            if len(time_conflicts) > 0:
-                split_points = []
-                split_modes = []  # Options: left or right
-                logging.debug(f"Found conflicting time points for a promising tracklet, attempting wiggle: {time_conflicts}")
-                for conflict_name, conflict_ind in time_conflicts.items():
-                    assert np.all(np.diff(conflict_ind) >= 0), "Indices must be sorted or will cause incorrect results"
-                    if len(conflict_ind) > allowed_tracklet_endpoint_wiggle:
-                        # Then there is too much conflict
-                        break
-                    elif conflict_ind[0] == newly_covered_times[0]:
-                        # Then the conflict is at the beginning, and short enough
-                        # Note: splitting keeps that time point on the latter (right) half of the two results
-                        split_points.append(conflict_ind[-1]+1)
-                        split_modes.append("keep_right")
-                    elif conflict_ind[-1] == newly_covered_times[-1]:
-                        # Then the conflict is at the end, and short enough
-                        split_points.append(conflict_ind[-1])
-                        split_modes.append("keep_left")
-                    else:
-                        # TODO: what if the conflict is in the middle of the tracklet?
-                        # TODO: what if the conflict is near the edge, but doesn't touch the exact edge frame?
-                        break
-                if len(split_points) < len(time_conflicts):
-                    continue
-                else:
-                    # Then we split the tracklet, and follow which name we keep
-                    for i_split, mode in zip(split_points, split_modes):
-                        df_tracklets, left_name, right_name = split_tracklet(df_tracklets, i_split, candidate_name)
-                        if mode == "keep_left":
-                            # This is the same as the old name for now
-                            candidate_name = left_name
-                        elif mode == "keep_right":
-                            # Change the name AND the index
-                            candidate_name = right_name
-                            new_tracklet_names = list(df_tracklets.columns.levels[0])
-                            i_tracklet = new_tracklet_names.index(candidate_name)
-                        else:
-                            raise ValueError
-                        pass
+            candidate_name, df_tracklets, i_tracklet, needs_split, successfully_split = wiggle_tracklet_endpoint_to_remove_conflict(
+                allowed_tracklet_endpoint_wiggle, candidate_name, covering_tracklet_names, df_tracklets, i_tracklet,
+                newly_covered_times)
+
+            if needs_split and not successfully_split:
+                continue
 
             # if any([t in covering_time_points for t in newly_covered_times]):
             #     continue
@@ -145,6 +110,57 @@ def calc_covering_from_distances(all_dist: list,
         logging.warning(f"Looped up to tracklet {candidate_name} with distance {all_medians[i_tracklet]}")
 
     return covering_time_points, covering_tracklet_ind, these_dist, covering_tracklet_names
+
+
+def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle, candidate_name,
+                                                covering_tracklet_names, df_tracklets, i_tracklet, newly_covered_times):
+    time_conflicts = get_time_overlap_of_candidate_tracklet(
+        candidate_name, covering_tracklet_names, df_tracklets
+    )
+    if len(time_conflicts) > 0:
+        needs_split = True
+        split_points = []
+        split_modes = []  # Options: left or right
+        logging.debug(f"Found conflicting time points for a promising tracklet, attempting wiggle: {time_conflicts}")
+        for conflict_name, conflict_ind in time_conflicts.items():
+            assert np.all(np.diff(conflict_ind) >= 0), "Indices must be sorted or will cause incorrect results"
+            if len(conflict_ind) > allowed_tracklet_endpoint_wiggle:
+                # Then there is too much conflict
+                break
+            elif conflict_ind[0] == newly_covered_times[0]:
+                # Then the conflict is at the beginning, and short enough
+                # Note: splitting keeps that time point on the latter (right) half of the two results
+                split_points.append(conflict_ind[-1] + 1)
+                split_modes.append("keep_right")
+            elif conflict_ind[-1] == newly_covered_times[-1]:
+                # Then the conflict is at the end, and short enough
+                split_points.append(conflict_ind[-1])
+                split_modes.append("keep_left")
+            else:
+                # TODO: what if the conflict is in the middle of the tracklet?
+                # TODO: what if the conflict is near the edge, but doesn't touch the exact edge frame?
+                break
+        if len(split_points) < len(time_conflicts):
+            successfully_split = False
+        else:
+            # Then we split the tracklet, and follow which name we keep
+            for i_split, mode in zip(split_points, split_modes):
+                df_tracklets, left_name, right_name = split_tracklet(df_tracklets, i_split, candidate_name)
+                if mode == "keep_left":
+                    # This is the same as the old name for now
+                    candidate_name = left_name
+                elif mode == "keep_right":
+                    # Change the name AND the index
+                    candidate_name = right_name
+                    new_tracklet_names = list(df_tracklets.columns.levels[0])
+                    i_tracklet = new_tracklet_names.index(candidate_name)
+                else:
+                    raise ShouldBeUnreachable
+            successfully_split = True
+    else:
+        successfully_split = True
+        needs_split = False
+    return candidate_name, df_tracklets, i_tracklet, needs_split, successfully_split
 
 
 def combine_matched_tracklets(these_tracklet_names: List[str],

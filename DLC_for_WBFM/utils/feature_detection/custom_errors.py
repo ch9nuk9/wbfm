@@ -56,3 +56,9 @@ class NoNeuronsError(Exception):
     def __init__(self, message=""):
         self.message = "No neurons found; " + message
         super().__init__(self.message)
+
+
+class ShouldBeUnreachable(Exception):
+    def __init__(self, message=""):
+        self.message = "This code should be unreachable! " + message
+        super().__init__(self.message)
