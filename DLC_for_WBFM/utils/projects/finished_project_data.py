@@ -63,7 +63,7 @@ class ProjectData:
         if self.precedence_global2tracklet is None:
             self.precedence_global2tracklet = ['manual', 'automatic']
         if self.precedence_df_tracklets is None:
-            self.precedence_df_tracklets = ['manual', 'automatic']
+            self.precedence_df_tracklets = ['manual', 'wiggles', 'automatic']
 
     # Can be quite large, so don't read by default
     @cached_property
@@ -117,18 +117,12 @@ class ProjectData:
 
         possible_fnames = {
             'manual': track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname'),
+            'wiggles': track_cfg.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname'),
             'automatic': train_cfg.resolve_relative_path_from_config('df_3d_tracklets')}
         # Manual annotations take precedence by default
-        fname_precedence = self.precedence_global2tracklet
+        fname_precedence = self.precedence_df_tracklets
         df_all_tracklets = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                              this_reader=read_if_exists)
-
-        # df_all_tracklets = read_if_exists(manual_fname)
-        #
-        # if df_all_tracklets is None:
-        #     df_all_tracklets = read_if_exists(fname)
-        # else:
-        #     print(f"Read manually updated tracklets: {manual_fname}")
 
         return df_all_tracklets
 

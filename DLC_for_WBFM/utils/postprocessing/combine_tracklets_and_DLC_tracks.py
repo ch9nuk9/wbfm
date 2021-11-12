@@ -136,7 +136,7 @@ def calc_covering_from_distances(all_dist: list,
         except UnboundLocalError:
             logging.warning(f"No tracklets were candidates")
 
-    return covering_time_points, these_dist, covering_tracklet_names
+    return covering_time_points, these_dist, covering_tracklet_names, df_tracklets
 
 
 def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle, candidate_name,
@@ -288,9 +288,11 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     Parameters
     ----------
+    use_imputed_df
+    start_from_manual_matches
+    project_cfg
     track_config
     training_cfg
-    project_dir
     DEBUG
 
     Returns
@@ -305,8 +307,10 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     # Match tracklets to DLC neurons
     global_neuron_names = list(df_global_tracks.columns.levels[0])
+    num_initial_tracklets = df_tracklets.shape[1]
+    num_initial_matches = len(used_names)
 
-    # logging.info(f"{len(used_indices)} / {df_tracklets.shape[1]} tracklets matched from previous analysis")
+    logging.info(f"{num_initial_matches} / {num_initial_tracklets} tracklets matched from previous analysis")
     verbose = 0
 
     # Pre-make coordinates so that the dataframe is not continuously indexed
@@ -332,7 +336,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
                                            allowed_tracklet_endpoint_wiggle=allowed_tracklet_endpoint_wiggle,
                                            d_max=d_max, verbose=verbose)
         # covering_time_points, covering_ind, these_dist = out
-        _, _, covering_names = out
+        _, _, covering_names, df_tracklets = out
         # all_covering_ind.append(covering_ind)
         global2tracklet[global_name].extend(covering_names)
         used_names.update(covering_names)
@@ -343,7 +347,14 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
             logging.info("DEBUG: checking only 2 neurons")
             break
 
-    logging.info(f"{len(used_names)} / {df_tracklets.shape[1]} tracklets used in total")
+    num_final_tracklets = df_tracklets.shape[1]
+    num_final_matches = len(used_names)
+    logging.info(f"{num_final_matches} / {num_final_tracklets} tracklets matches "
+                 f"(up from: {num_initial_matches} / {num_initial_tracklets})")
+    if num_final_tracklets > num_initial_tracklets:
+        logging.info("Tracklet dataframe has been modified, so must be saved; this may take a while")
+        fname = track_config.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname')
+        track_config.h5_in_local_project(df_tracklets, fname)
     _save_tracklet_matches(global2tracklet, project_cfg.project_dir, track_config)
 
     # Combine and save
@@ -359,7 +370,8 @@ def final_tracks_from_tracklet_matches_from_config(track_config: SubfolderConfig
                                                    DEBUG=False):
 
     d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
-        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices = _unpack_tracklets_for_combining(
+        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices, allowed_tracklet_endpoint_wiggle\
+        = _unpack_tracklets_for_combining(
             project_cfg, training_cfg, track_config, use_imputed_df, start_from_manual_matches)
 
     # Rename to be sequential, like the reindexed segmentation
@@ -464,7 +476,7 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
         used_names = set()
         [used_names.update(names) for names in global2tracklet.values()]
         num_tracklets = len(list(df_tracklets.columns.levels[0]))
-        logging.info(f"Found previous tracklet matches with {len(used_names)}/{num_tracklets} matches")
+        # logging.info(f"Found previous tracklet matches with {len(used_names)}/{num_tracklets} matches")
         # TODO: don't allow these to be integers from the beginning
         global2tracklet = fix_global2tracklet_full_dict(df_tracklets, global2tracklet)
 
