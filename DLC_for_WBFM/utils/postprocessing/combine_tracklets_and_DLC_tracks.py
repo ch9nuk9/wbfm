@@ -89,7 +89,10 @@ def calc_covering_from_distances(all_dist: list,
             time_conflicts = get_time_overlap_of_candidate_tracklet(
                 candidate_name, covering_tracklet_names, df_tracklets
             )
-            needs_split = len(time_conflicts) > 0
+            if time_conflicts is None:
+                needs_split = False
+            else:
+                needs_split = len(time_conflicts) > 0
 
             if needs_split:
                 candidate_name, df_tracklets, i_tracklet, successfully_split = wiggle_tracklet_endpoint_to_remove_conflict(
