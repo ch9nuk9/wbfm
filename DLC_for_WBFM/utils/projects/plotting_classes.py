@@ -2,7 +2,8 @@ import logging
 import threading
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Union, Dict
+from pathlib import Path
+from typing import List, Union, Dict, Tuple
 from copy import deepcopy
 import numpy as np
 import pandas as pd
@@ -107,12 +108,17 @@ class TrackletAnnotator:
     current_neuron: str = None
     current_tracklet_name: Union[str, None] = None
 
+    tracklet_split_names: Dict[str, List[str]] = None
+    tracklet_split_times: Dict[str, List[Tuple[int, int]]] = None
+
     # Saving
     training_cfg: SubfolderConfigFile = None
     tracking_cfg: SubfolderConfigFile = None
 
     output_match_fname: str = None
     output_df_fname: str = None
+    tracklet_split_names_fname: str = None
+    tracklet_split_times_fname: str = None
 
     saving_lock: threading.Lock = threading.Lock()
 
@@ -126,13 +132,22 @@ class TrackletAnnotator:
             self.manual_global2tracklet_names = defaultdict(list)
         if self.manual_global2tracklet_removals is None:
             self.manual_global2tracklet_removals = defaultdict(list)
+        if self.tracklet_split_names is None:
+            self.tracklet_split_names = defaultdict(list)
+        if self.tracklet_split_times is None:
+            self.tracklet_split_times = defaultdict(list)
 
         match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
         self.output_match_fname = get_sequential_filename(match_fname)
         df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
         self.output_df_fname = get_sequential_filename(df_fname)
 
-        print(f"Output files: {match_fname}, {df_fname}")
+        splits_fname1 = Path(df_fname).parent.joinpath("split_names")
+        self.tracklet_split_names_fname = get_sequential_filename(str(splits_fname1))
+        splits_fname2 = splits_fname1.with_name("split_times")
+        self.tracklet_split_times_fname = get_sequential_filename(str(splits_fname2))
+
+        print(f"Output files: {match_fname}, {df_fname}, {splits_fname1}, {splits_fname2}")
 
     @property
     def combined_global2tracklet_dict(self):
@@ -303,6 +318,9 @@ class TrackletAnnotator:
             df_fname = self.tracking_cfg.unresolve_absolute_path(self.output_df_fname)
             self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
 
+            self.tracking_cfg.pickle_in_local_project(self.tracklet_split_names, self.tracklet_split_names_fname)
+            self.tracking_cfg.pickle_in_local_project(self.tracklet_split_times, self.tracklet_split_times_fname)
+
             logging.info("Saving successful! You may now quit")
             self.tracking_cfg.update_on_disk()
         finally:
@@ -339,6 +357,10 @@ class TrackletAnnotator:
                 self.current_tracklet_name = new_name
             else:
                 self.current_tracklet_name = old_name
+
+            # Save a record of the split
+            self.tracklet_split_names[old_name].append(new_name)
+            self.tracklet_split_times[old_name].append((i_time-1, i_time))
 
     def clear_current_tracklet(self):
         if self.current_tracklet_name is not None:
