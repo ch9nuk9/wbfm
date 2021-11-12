@@ -86,12 +86,18 @@ def calc_covering_from_distances(all_dist: list,
         is_nan = df_tracklets[candidate_name]['x'].isnull()
         newly_covered_times = list(t[~is_nan])
         if len(covering_time_points) > 0:
-            candidate_name, df_tracklets, i_tracklet, needs_split, successfully_split = wiggle_tracklet_endpoint_to_remove_conflict(
-                allowed_tracklet_endpoint_wiggle, candidate_name, covering_tracklet_names, df_tracklets, i_tracklet,
-                newly_covered_times)
+            time_conflicts = get_time_overlap_of_candidate_tracklet(
+                candidate_name, covering_tracklet_names, df_tracklets
+            )
+            needs_split = len(time_conflicts) > 0
 
-            if needs_split and not successfully_split:
-                continue
+            if needs_split:
+                candidate_name, df_tracklets, i_tracklet, successfully_split = wiggle_tracklet_endpoint_to_remove_conflict(
+                    allowed_tracklet_endpoint_wiggle, candidate_name, time_conflicts, df_tracklets, i_tracklet,
+                    newly_covered_times)
+
+                if not successfully_split:
+                    continue
 
             # if any([t in covering_time_points for t in newly_covered_times]):
             #     continue
@@ -113,12 +119,10 @@ def calc_covering_from_distances(all_dist: list,
 
 
 def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle, candidate_name,
-                                                covering_tracklet_names, df_tracklets, i_tracklet, newly_covered_times):
-    time_conflicts = get_time_overlap_of_candidate_tracklet(
-        candidate_name, covering_tracklet_names, df_tracklets
-    )
-    if len(time_conflicts) > 0:
-        needs_split = True
+                                                time_conflicts, df_tracklets, i_tracklet, newly_covered_times):
+    can_split = len(newly_covered_times) > (2 * allowed_tracklet_endpoint_wiggle)
+
+    if can_split:
         split_points = []
         split_modes = []  # Options: left or right
         logging.debug(f"Found conflicting time points for a promising tracklet, attempting wiggle: {time_conflicts}")
@@ -158,9 +162,9 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
                     raise ShouldBeUnreachable
             successfully_split = True
     else:
-        successfully_split = True
-        needs_split = False
-    return candidate_name, df_tracklets, i_tracklet, needs_split, successfully_split
+        successfully_split = False
+
+    return candidate_name, df_tracklets, i_tracklet, successfully_split
 
 
 def combine_matched_tracklets(these_tracklet_names: List[str],
@@ -273,7 +277,8 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
     """
 
     d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
-        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices = _unpack_tracklets_for_combining(
+        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices,\
+        allowed_tracklet_endpoint_wiggle = _unpack_tracklets_for_combining(
             project_cfg, training_cfg, track_config, use_imputed_df, start_from_manual_matches)
 
     # Match tracklets to DLC neurons
@@ -300,6 +305,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
         covering_time_points = get_already_covered_indices(df_tracklets, previous_matches)
         out = calc_covering_from_distances(dist, df_tracklets, used_indices,
                                            covering_time_points=covering_time_points,
+                                           allowed_tracklet_endpoint_wiggle=allowed_tracklet_endpoint_wiggle,
                                            d_max=d_max, verbose=verbose)
         # covering_time_points, covering_ind, these_dist = out
         _, covering_ind, _, covering_names = out
@@ -393,6 +399,7 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     d_max = track_config.config['final_3d_postprocessing']['max_dist']
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
     min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
+    allowed_tracklet_endpoint_wiggle = track_config.config['final_3d_postprocessing']['allowed_tracklet_endpoint_wiggle']
     keep_only_tracklets_in_final_tracks = track_config.config['final_3d_postprocessing'][
         'keep_only_tracklets_in_final_tracks']
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
@@ -447,7 +454,7 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     #     used_indices = set()
 
     return d_max, df_global_tracks, df_tracklets, min_overlap, output_df_fname, \
-        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices
+        keep_only_tracklets_in_final_tracks, global2tracklet, used_indices, allowed_tracklet_endpoint_wiggle
 
 
 def remove_overmatching(df, tol=1e-3):
