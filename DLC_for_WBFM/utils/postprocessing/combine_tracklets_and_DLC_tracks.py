@@ -55,6 +55,7 @@ def calc_covering_from_distances(all_dist: list,
                                  covering_tracklet_names=None,
                                  allowed_tracklet_endpoint_wiggle=0,
                                  d_max=5,
+                                 min_allowed_covering=2,
                                  verbose=0):
     """
     Given distances between a dlc track and all tracklets, make a time-unique covering from the tracklets
@@ -86,9 +87,13 @@ def calc_covering_from_distances(all_dist: list,
         this_distance = all_medians[i_tracklet]
         if this_distance > d_max:
             break
-        # Check time overlap, except first time
+
         is_nan = df_tracklets[candidate_name]['x'].isnull()
         newly_covered_times = list(t[~is_nan])
+        # Make sure long enough; splitting can sometime leave tiny tracklets
+        if len(all_dist[i_tracklet]) < min_allowed_covering:
+            continue
+        # Check time overlap, except first time
         if len(covering_time_points) > 0:
             time_conflicts = get_time_overlap_of_candidate_tracklet(
                 candidate_name, covering_tracklet_names, df_tracklets
@@ -99,6 +104,7 @@ def calc_covering_from_distances(all_dist: list,
                 needs_split = len(time_conflicts) > 0
 
             if needs_split:
+
                 logging.info("Attempting tracklet wiggling...")
                 candidate_name, df_tracklets, i_tracklet, successfully_split = wiggle_tracklet_endpoint_to_remove_conflict(
                     allowed_tracklet_endpoint_wiggle, candidate_name, time_conflicts, df_tracklets, i_tracklet,
