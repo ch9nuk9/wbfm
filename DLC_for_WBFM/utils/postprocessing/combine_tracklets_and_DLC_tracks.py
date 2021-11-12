@@ -73,7 +73,7 @@ def calc_covering_from_distances(all_dist: list,
     all_tracklet_names = list(df_tracklets.columns.levels[0])
 
     # TODO: refactor to remove indices, and only return names
-    covering_tracklet_ind = []
+    # covering_tracklet_ind = []
     t = df_tracklets.index
     assert len(t) == int(t[-1])+1, "Tracklet dataframe has missing indices, and will cause errors"
     these_dist = np.zeros_like(t, dtype=float)
@@ -91,7 +91,7 @@ def calc_covering_from_distances(all_dist: list,
         is_nan = df_tracklets[candidate_name]['x'].isnull()
         newly_covered_times = list(t[~is_nan])
         # Make sure long enough; splitting can sometime leave tiny tracklets
-        if len(all_dist[i_tracklet]) < min_allowed_covering:
+        if len(newly_covered_times) < min_allowed_covering:
             continue
         # Check time overlap, except first time
         if len(covering_time_points) > 0:
@@ -113,6 +113,9 @@ def calc_covering_from_distances(all_dist: list,
                 if not successfully_split:
                     logging.info("Tracklet is close by, but removed due to time conflict")
                     continue
+                else:
+                    is_nan = df_tracklets[candidate_name]['x'].isnull()
+                    newly_covered_times = list(t[~is_nan])
 
             # if any([t in covering_time_points for t in newly_covered_times]):
             #     continue
@@ -120,9 +123,9 @@ def calc_covering_from_distances(all_dist: list,
         # Save if the tracklet passes all conditions above
         newly_covered_times = np.array(newly_covered_times)
         covering_time_points.extend(newly_covered_times)
-        covering_tracklet_ind.append(i_tracklet)
+        # covering_tracklet_ind.append(i_tracklet)
         covering_tracklet_names.append(candidate_name)
-        these_dist[newly_covered_times] = all_dist[i_tracklet][newly_covered_times]
+        # these_dist[newly_covered_times] = all_dist[i_tracklet][newly_covered_times]
 
     if verbose >= 1:
         print(f"Covering of length {len(covering_time_points)} made from {len(covering_tracklet_names)} tracklets")
@@ -133,7 +136,7 @@ def calc_covering_from_distances(all_dist: list,
         except UnboundLocalError:
             logging.warning(f"No tracklets were candidates")
 
-    return covering_time_points, covering_tracklet_ind, these_dist, covering_tracklet_names
+    return covering_time_points, these_dist, covering_tracklet_names
 
 
 def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle, candidate_name,
@@ -329,7 +332,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
                                            allowed_tracklet_endpoint_wiggle=allowed_tracklet_endpoint_wiggle,
                                            d_max=d_max, verbose=verbose)
         # covering_time_points, covering_ind, these_dist = out
-        _, covering_ind, _, covering_names = out
+        _, _, covering_names = out
         # all_covering_ind.append(covering_ind)
         global2tracklet[global_name].extend(covering_names)
         used_names.update(covering_names)
