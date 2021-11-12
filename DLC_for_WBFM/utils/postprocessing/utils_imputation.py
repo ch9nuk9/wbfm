@@ -46,13 +46,8 @@ def is_spatial_column_name(c):
                 ('area' not in c.lower())
 
 
-def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20, random_state=0):
-    all_zero_columns = df_only_locations.columns[df_only_locations.count() == 0]
-    if len(all_zero_columns) > 0:
-        logging.info(f'Some columns are all nan, and are dropped: {all_zero_columns}')
-        df_no_all_nan = df_only_locations.dropna(axis=1, how='all')
-    else:
-        df_no_all_nan = df_only_locations
+def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20, random_state=0, max_iter=20):
+    all_nan_columns, df_no_all_nan = remove_all_nan_columns(df_only_locations)
     df_dat = df_no_all_nan.to_numpy()
 
     # This gray import must be present
@@ -62,7 +57,7 @@ def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20,
                                missing_values=np.nan,
                                verbose=1,
                                n_nearest_features=n_nearest_features,
-                               max_iter=10)
+                               max_iter=max_iter)
     scaler = StandardScaler()
     dat_normalized = scaler.fit_transform(df_dat)
     dat_sklearn = imputer.fit_transform(dat_normalized)
@@ -72,10 +67,24 @@ def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20,
     dat_sklearn = scaler.inverse_transform(dat_sklearn)
     df_sklearn = pd.DataFrame(data=dat_sklearn, columns=df_no_all_nan.columns)
 
-    for col in all_zero_columns:
-        df_sklearn[col] = np.nan
+    replace_all_nan_columns(all_nan_columns, df_sklearn)
 
     return df_sklearn
+
+
+def replace_all_nan_columns(all_nan_columns, df_sklearn):
+    for col in all_nan_columns:
+        df_sklearn[col] = np.nan
+
+
+def remove_all_nan_columns(df_only_locations):
+    all_nan_columns = df_only_locations.columns[df_only_locations.count() == 0]
+    if len(all_nan_columns) > 0:
+        logging.info(f'Some columns are all nan, and are dropped: {all_nan_columns}')
+        df_no_all_nan = df_only_locations.dropna(axis=1, how='all')
+    else:
+        df_no_all_nan = df_only_locations
+    return all_nan_columns, df_no_all_nan
 
 
 def update_dataframe_using_flat_names(df_old, df_new, old2new_names):
@@ -158,10 +167,9 @@ def get_distance_to_closest_neurons_over_time(project_data: ProjectData, which_n
 
     return np.array(all_dist)
 
+
 ## Getting variance
 # From: https://github.com/scikit-learn/scikit-learn/blob/e10edc3ddd94f49a48be02c73e68e359b3dad925/examples/impute/plot_multiple_imputation.py
-
-
 def get_results_chained_imputation(X_ampute, random_state=0, max_iter=10):
     # Impute incomplete data with IterativeImputer using single imputation
     # We perform MAX_ITER imputations and only use the last imputation.
@@ -176,10 +184,10 @@ def get_results_chained_imputation(X_ampute, random_state=0, max_iter=10):
     return X_imputed
 
 
-def coef_var_mice_imputation(X_ampute, n_imputations=5, max_iter=10):
+def estimates_and_variance_mice_imputation(X_ampute, n_imputations=5, max_iter=10):
     # Fill the data multiple times (different random seeds)
     f = lambda i: get_results_chained_imputation(X_ampute, random_state=i, max_iter=max_iter)
-    multiple_datasets = [f(i) for i in range(n_imputations)]
+    multiple_datasets = [f(i) for i in tqdm(list(range(n_imputations)))]
 
     point_estimates = np.mean(multiple_datasets, axis=0)
     var_estimates = np.var(multiple_datasets, axis=0)
