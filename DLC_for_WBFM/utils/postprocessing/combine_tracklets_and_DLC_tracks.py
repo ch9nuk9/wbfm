@@ -307,7 +307,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
 
     # Match tracklets to DLC neurons
     global_neuron_names = list(df_global_tracks.columns.levels[0])
-    num_initial_tracklets = df_tracklets.shape[1]
+    num_initial_tracklets = int(df_tracklets.shape[1]/4)
     num_initial_matches = len(used_names)
 
     logging.info(f"{num_initial_matches} / {num_initial_tracklets} tracklets matched from previous analysis")
@@ -347,7 +347,7 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
             logging.info("DEBUG: checking only 2 neurons")
             break
 
-    num_final_tracklets = df_tracklets.shape[1]
+    num_final_tracklets = int(df_tracklets.shape[1]/4)
     num_final_matches = len(used_names)
     logging.info(f"{num_final_matches} / {num_final_tracklets} tracklets matches "
                  f"(up from: {num_initial_matches} / {num_initial_tracklets})")
