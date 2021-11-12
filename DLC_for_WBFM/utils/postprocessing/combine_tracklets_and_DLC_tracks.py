@@ -95,11 +95,13 @@ def calc_covering_from_distances(all_dist: list,
                 needs_split = len(time_conflicts) > 0
 
             if needs_split:
+                logging.info("Attempting tracklet wiggling...")
                 candidate_name, df_tracklets, i_tracklet, successfully_split = wiggle_tracklet_endpoint_to_remove_conflict(
                     allowed_tracklet_endpoint_wiggle, candidate_name, time_conflicts, df_tracklets, i_tracklet,
                     newly_covered_times)
 
                 if not successfully_split:
+                    logging.info("Tracklet is close by, but removed due to time conflict")
                     continue
 
             # if any([t in covering_time_points for t in newly_covered_times]):
@@ -128,7 +130,7 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
     if can_split:
         split_points = []
         split_modes = []  # Options: left or right
-        logging.debug(f"Found conflicting time points for a promising tracklet, attempting wiggle: {time_conflicts}")
+        logging.info(f"Found conflicting time points for a promising tracklet, attempting wiggle: {time_conflicts}")
         for conflict_name, conflict_ind in time_conflicts.items():
             assert np.all(np.diff(conflict_ind) >= 0), "Indices must be sorted or will cause incorrect results"
             if len(conflict_ind) > allowed_tracklet_endpoint_wiggle:
@@ -164,6 +166,7 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
                 else:
                     raise ShouldBeUnreachable
             successfully_split = True
+            logging.info(f"Successfully split tracklet at points {split_points}")
     else:
         successfully_split = False
 
@@ -441,7 +444,8 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     else:
         used_indices = set()
         [used_indices.update(ind) for ind in global2tracklet.values()]
-        logging.info(f"Found previous tracklet matches with {len(used_indices)}/{int(df_tracklets.shape[1])} matches")
+        num_tracklets = len(list(df_tracklets.columns.levels[0]))
+        logging.info(f"Found previous tracklet matches with {len(used_indices)}/{num_tracklets} matches")
         # TODO: don't allow these to be integers from the beginning
         global2tracklet = fix_global2tracklet_full_dict(df_tracklets, global2tracklet)
 
