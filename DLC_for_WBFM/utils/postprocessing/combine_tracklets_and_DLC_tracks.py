@@ -6,7 +6,8 @@ from typing import List, Dict
 
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict, \
+    get_time_overlap_of_candidate_tracklet, split_tracklet
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
@@ -45,18 +46,30 @@ def calc_dist_if_overlap(this_tracklet: np.ndarray, min_overlap: int, this_globa
     return dist
 
 
-def calc_covering_from_distances(all_dist, df_tracklet, used_indices,
+def calc_covering_from_distances(all_dist: list,
+                                 df_tracklets: pd.DataFrame,
+                                 used_indices: set,
                                  covering_time_points=None,
-                                 d_max=5, verbose=0):
-    """Given distances between a dlc track and all tracklets, make a time-unique covering from the tracklets"""
+                                 allowed_tracklet_endpoint_wiggle=0,
+                                 d_max=5,
+                                 verbose=0):
+    """
+    Given distances between a dlc track and all tracklets, make a time-unique covering from the tracklets
+
+    if allowed_tracklet_endpoint_wiggle > 0, then:
+        If a tracklet fails to match due to time-collision (but is good based on distance), then:
+        Check if the removal of a few edge points (start or end) would remove the collision
+    """
     if covering_time_points is None:
         covering_time_points = []
     all_medians = list(map(np.nanmedian, all_dist))
     i_sorted_by_median_distance = np.argsort(all_medians)
-    all_tracklet_names = list(df_tracklet.columns.levels[0])
+    all_tracklet_names = list(df_tracklets.columns.levels[0])
 
+    # TODO: refactor to remove indices, and only return names
     covering_tracklet_ind = []
-    t = df_tracklet.index
+    covering_tracklet_names = []
+    t = df_tracklets.index
     assert len(t) == int(t[-1])+1, "Tracklet dataframe has missing indices, and will cause errors"
     these_dist = np.zeros_like(t, dtype=float)
 
@@ -68,25 +81,64 @@ def calc_covering_from_distances(all_dist, df_tracklet, used_indices,
         if all_medians[i_tracklet] > d_max:
             break
         # Check time overlap, except first time
-        name = all_tracklet_names[i_tracklet]
-        is_nan = df_tracklet[name]['x'].isnull()
+        candidate_name = all_tracklet_names[i_tracklet]
+        is_nan = df_tracklets[candidate_name]['x'].isnull()
         newly_covered_times = list(t[~is_nan])
         if len(covering_time_points) > 0:
-            if any([t in covering_time_points for t in newly_covered_times]):
-                continue
+            time_conflicts = get_time_overlap_of_candidate_tracklet(
+                candidate_name, covering_tracklet_names, df_tracklets
+            )
+            if len(time_conflicts) > 0:
+                split_points = []
+                split_modes = []  # Options: left or right
+                logging.debug(f"Found conflicting time points for a promising tracklet, attempting wiggle: {time_conflicts}")
+                for conflict_name, conflict_ind in time_conflicts.items():
+                    assert np.all(np.diff(conflict_ind) >= 0), "Indices must be sorted or will cause incorrect results"
+                    if len(conflict_ind) > allowed_tracklet_endpoint_wiggle:
+                        # Then there is too much conflict
+                        break
+                    elif conflict_ind[0] == newly_covered_times[0]:
+                        # Then the conflict is at the beginning, and short enough
+                        # Note: splitting keeps that time point on the latter (right) half of the two results
+                        split_points.append(conflict_ind[-1]+1)
+                        split_modes.append("keep_right")
+                    elif conflict_ind[-1] == newly_covered_times[-1]:
+                        # Then the conflict is at the end, and short enough
+                        split_points.append(conflict_ind[-1])
+                        split_modes.append("keep_left")
+                    else:
+                        # TODO: what if the conflict is in the middle of the tracklet?
+                        # TODO: what if the conflict is near the edge, but doesn't touch the exact edge frame?
+                        break
+                if len(split_points) < len(time_conflicts):
+                    continue
+                else:
+                    # Then we split the tracklet, and follow which name we keep
+                    for i_split, mode in zip(split_points, split_modes):
+                        df_tracklets, left_name, right_name = split_tracklet(df_tracklets, i_split, candidate_name)
+                        if mode == "keep_left":
+                            candidate_name = left_name
+                        elif mode == "keep_right":
+                            candidate_name = right_name
+                        else:
+                            raise ValueError
+                        pass
+
+            # if any([t in covering_time_points for t in newly_covered_times]):
+            #     continue
 
         # Save if the tracklet passes all conditions above
         newly_covered_times = np.array(newly_covered_times)
         covering_time_points.extend(newly_covered_times)
         covering_tracklet_ind.append(i_tracklet)
+        covering_tracklet_names.append(candidate_name)
         these_dist[newly_covered_times] = all_dist[i_tracklet][newly_covered_times]
 
     if verbose >= 1:
         print(f"Covering of length {len(covering_time_points)} made from {len(covering_tracklet_ind)} tracklets")
     if len(covering_time_points) == 0:
         logging.warning("No covering found, here are some diagnostics:")
-        # logging.warning(f"Minimum distance to other covering: {np.min(all_medians)}")
-        logging.warning(f"Looped up to tracklet {i_tracklet} with distance {all_medians[i_tracklet]}")
+        logging.warning(f"Looped up to tracklet {candidate_name} with distance {all_medians[i_tracklet]}")
 
     return covering_time_points, covering_tracklet_ind, these_dist
 
