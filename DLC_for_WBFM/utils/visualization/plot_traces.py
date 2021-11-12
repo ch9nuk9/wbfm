@@ -43,8 +43,8 @@ def make_grid_plot_from_project(project_data: ProjectData,
     options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
     for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
         options['neuron_name'] = neuron_name
-        y = project_data.calculate_traces(**options)
-        ax.plot(y, label=neuron_name)
+        t, y = project_data.calculate_traces(**options)
+        ax.plot(t, y, label=neuron_name)
         # For removing the lines from the legends:
         # https://stackoverflow.com/questions/25123127/how-do-you-just-show-the-text-label-in-plot-legend-e-g-remove-a-labels-line
         leg = ax.legend(loc='upper left', handlelength=0, handletextpad=0, fancybox=True)

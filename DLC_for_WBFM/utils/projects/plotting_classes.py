@@ -35,7 +35,13 @@ class TracePlotter:
     min_confidence: float = None
     background_per_pixel: float = None
 
+    tspan: list = None
+
     verbose: int = 1
+
+    def __post_init__(self):
+        if self.tspan is None:
+            self.tspan = list(range(self.red_traces.shape[0]))
 
     def calculate_traces(self, neuron_name: str):
         assert (self.channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {self.channel_mode}"

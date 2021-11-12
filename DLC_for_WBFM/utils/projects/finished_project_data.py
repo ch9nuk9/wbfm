@@ -296,7 +296,7 @@ class ProjectData:
             self.background_per_pixel
         )
         y = self.trace_plotter.calculate_traces(neuron_name)
-        return y
+        return self.trace_plotter.tspan, y
 
     def calculate_tracklets(self, neuron_name):
         # if self.tracklet_annotator is None:

@@ -325,13 +325,16 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def init_subplot_post_clear(self):
         self.time_line = None
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
-        self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
+        if self.changeTraceTrackletDropdown.currentText() == "traces":
+            self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
+        else:
+            self.static_ax.set_ylabel("z")
         self.color_using_behavior()
         self.subplot_is_initialized = True
 
     def initialize_trace_subplot(self):
         self.update_stored_time_series()
-        self.trace_line = self.static_ax.plot(self.y_trace_mode)[0]
+        self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
 
     def initialize_tracklet_subplot(self):
         # Designed for traces, but reuse and force z coordinate
@@ -339,7 +342,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.tracklet_lines = []
         self.update_stored_tracklets()
         for y in self.y_tracklets:
-            self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
+            this_line = self.static_ax.plot(self.tspan, y['z'])[0]
+            self.tracklet_lines.append(this_line)
+            # self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
         self.update_neuron_in_tracklet_annotator()
         # self.trace_line = self.static_ax.plot(self.y)[0]
 
@@ -467,11 +472,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             min_confidence = None
         filter_mode = self.changeTraceFilteringDropdown.currentText()
 
-        y = self.dat.calculate_traces(channel, calc_mode, name,
-                                      remove_outliers_activity,
-                                      filter_mode,
-                                      min_confidence=min_confidence)
+        t, y = self.dat.calculate_traces(channel, calc_mode, name,
+                                        remove_outliers_activity,
+                                        filter_mode,
+                                        min_confidence=min_confidence)
         self.y_trace_mode = y
+        self.tspan = t
 
     def update_stored_tracklets(self):
         name = self.current_name
