@@ -117,9 +117,13 @@ def calc_covering_from_distances(all_dist: list,
                     for i_split, mode in zip(split_points, split_modes):
                         df_tracklets, left_name, right_name = split_tracklet(df_tracklets, i_split, candidate_name)
                         if mode == "keep_left":
+                            # This is the same as the old name for now
                             candidate_name = left_name
                         elif mode == "keep_right":
+                            # Change the name AND the index
                             candidate_name = right_name
+                            new_tracklet_names = list(df_tracklets.columns.levels[0])
+                            i_tracklet = new_tracklet_names.index(candidate_name)
                         else:
                             raise ValueError
                         pass
@@ -135,12 +139,12 @@ def calc_covering_from_distances(all_dist: list,
         these_dist[newly_covered_times] = all_dist[i_tracklet][newly_covered_times]
 
     if verbose >= 1:
-        print(f"Covering of length {len(covering_time_points)} made from {len(covering_tracklet_ind)} tracklets")
+        print(f"Covering of length {len(covering_time_points)} made from {len(covering_tracklet_names)} tracklets")
     if len(covering_time_points) == 0:
         logging.warning("No covering found, here are some diagnostics:")
         logging.warning(f"Looped up to tracklet {candidate_name} with distance {all_medians[i_tracklet]}")
 
-    return covering_time_points, covering_tracklet_ind, these_dist
+    return covering_time_points, covering_tracklet_ind, these_dist, covering_tracklet_names
 
 
 def combine_matched_tracklets(these_tracklet_names: List[str],
@@ -282,9 +286,9 @@ def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderCo
                                            covering_time_points=covering_time_points,
                                            d_max=d_max, verbose=verbose)
         # covering_time_points, covering_ind, these_dist = out
-        _, covering_ind, _ = out
+        _, covering_ind, _, covering_names = out
         # all_covering_ind.append(covering_ind)
-        global2tracklet[global_name].extend(covering_ind)
+        global2tracklet[global_name].extend(covering_names)
         used_indices.update(covering_ind)
 
         if DEBUG and i > 0:
