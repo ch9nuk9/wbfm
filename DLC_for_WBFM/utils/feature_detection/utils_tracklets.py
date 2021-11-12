@@ -567,3 +567,49 @@ def fix_matches_to_use_keys_not_int(df_tracklet, these_tracklet_ind):
         logging.debug(f"Original list: {these_tracklet_ind}")
     assert all(map(isstr, these_tracklet_names)), f"Not all elements are strings: {these_tracklet_names}"
     return these_tracklet_names
+
+
+def get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_tracklet_names, df_tracklets):
+    df_candidate_tracklet = df_tracklets[candidate_tracklet_name]
+    times_candidate_tracklet = df_candidate_tracklet['z'].dropna().index
+    overlap_dict = {}
+    for name in current_tracklet_names:
+        current_tracklet = df_tracklets[name]
+        times_current_tracklet = current_tracklet['z'].dropna().index
+        intersection = times_candidate_tracklet.intersection(times_current_tracklet)
+        if len(intersection) > 0:
+            overlap_dict[name] = intersection
+    if len(overlap_dict) == 0:
+        return None
+    else:
+        return overlap_dict
+
+
+def get_next_tracklet_name(df_tracklets):
+    all_names = list(df_tracklets.columns.levels[0])
+    # Really want to make sure we are after all other names,
+    i_tracklet = int(1e6 + len(all_names) + 1)
+    build_tracklet_name = lambda i: f'neuron{i}'
+    new_name = build_tracklet_name(i_tracklet)
+    while new_name in all_names:
+        i_tracklet += 1
+        new_name = build_tracklet_name(i_tracklet)
+    return new_name
+
+
+def split_tracklet(all_tracklets, i_split, old_name):
+    left_name = old_name
+    this_tracklet = all_tracklets[[left_name]]
+    # Split
+    left_half = this_tracklet.copy()
+    right_half = this_tracklet.copy()
+    left_half.iloc[i_split:] = np.nan
+    right_half.iloc[:i_split] = np.nan
+    right_name = get_next_tracklet_name(all_tracklets)
+    right_half.rename(columns={left_name: right_name}, level=0, inplace=True)
+    print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
+    print(
+        f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
+    all_tracklets = pd.concat([all_tracklets, right_half], axis=1)
+    all_tracklets[left_name] = left_half[left_name]
+    return all_tracklets, left_name, right_name

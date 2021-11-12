@@ -7,6 +7,8 @@ from typing import List, Union, Dict, Tuple
 from copy import deepcopy
 import numpy as np
 import pandas as pd
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
+    split_tracklet
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
@@ -199,28 +201,17 @@ class TrackletAnnotator:
         else:
             return True
 
-    def get_dict_of_tracklet_time_conflicts(self, tracklet_name=None) -> Union[Dict[str, list], None]:
+    def get_dict_of_tracklet_time_conflicts(self, candidate_tracklet_name=None) -> Union[Dict[str, list], None]:
         # The tracklet shouldn't be in the manually annotated match, because it can't be added if there are conflicts
-        if tracklet_name is None:
-            tracklet_name = self.current_tracklet_name
-        if tracklet_name is None:
+        if candidate_tracklet_name is None:
+            candidate_tracklet_name = self.current_tracklet_name
+        if candidate_tracklet_name is None:
             return None
-        current_tracklet_names = self.combined_global2tracklet_dict[self.current_neuron]
-        df_target_tracklet = self.df_tracklets[tracklet_name]
-        times_target_tracklet = df_target_tracklet['z'].dropna().index
+        tracklet_dict = self.combined_global2tracklet_dict
+        current_tracklet_names = tracklet_dict[self.current_neuron]
+        df_tracklets = self.df_tracklets
 
-        all_overlaps = {}
-        for name in current_tracklet_names:
-            current_tracklet = self.df_tracklets[name]
-            times_current_tracklet = current_tracklet['z'].dropna().index
-            intersection = times_target_tracklet.intersection(times_current_tracklet)
-            if len(intersection) > 0:
-                all_overlaps[name] = intersection
-
-        if len(all_overlaps) == 0:
-            return None
-        else:
-            return all_overlaps
+        return get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_tracklet_names, df_tracklets)
 
     def time_of_next_conflict(self, i_start=0) -> Tuple[Union[int, None], Union[str, None]]:
         conflicts = self.get_dict_of_tracklet_time_conflicts()
@@ -344,7 +335,7 @@ class TrackletAnnotator:
         finally:
             self.saving_lock.release()
 
-    def split_current_tracklet(self, i_time, set_new_half_to_current=True):
+    def split_current_tracklet(self, i_split, set_new_half_to_current=True):
         # The current time is included in the "new half" of the tracklet
         # The newer half is added as a new index in the df_tracklet dataframe
         # And finally, the newer half is set as the current tracklet
@@ -353,48 +344,30 @@ class TrackletAnnotator:
             return
 
         with self.saving_lock:
+            # Left half stays as old name
             old_name = self.current_tracklet_name
-            this_tracklet = self.df_tracklets[[old_name]]
+            all_tracklets = self.df_tracklets
 
-            # Split
-            old_half = this_tracklet.copy()
-            new_half = this_tracklet.copy()
-
-            old_half.iloc[i_time:] = np.nan
-            new_half.iloc[:i_time] = np.nan
-            new_name = self.get_next_tracklet_name()
-            new_half.rename(columns={old_name: new_name}, level=0, inplace=True)
-
-            print(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_time}")
-            print(f"New non-nan lengths: new: {new_half[new_name]['z'].count()}, old:{old_half[old_name]['z'].count()}")
+            all_tracklets, left_name, right_name = split_tracklet(all_tracklets, i_split, old_name)
 
             # Save
-            self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
-            self.df_tracklets[old_name] = old_half[old_name]
+            # self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
+            # self.df_tracklets[old_name] = old_half[old_name]
+
+            self.df_tracklets = all_tracklets
             if set_new_half_to_current:
-                self.current_tracklet_name = new_name
+                self.current_tracklet_name = right_name
             else:
-                self.current_tracklet_name = old_name
+                self.current_tracklet_name = left_name
 
             # Save a record of the split
-            self.tracklet_split_names[old_name].append(new_name)
-            self.tracklet_split_times[old_name].append((i_time-1, i_time))
+            self.tracklet_split_names[left_name].append(right_name)
+            self.tracklet_split_times[left_name].append((i_split - 1, i_split))
 
     def clear_current_tracklet(self):
         if self.current_tracklet_name is not None:
             print(f"Cleared tracklet {self.current_tracklet_name}")
             self.current_tracklet_name = None
-
-    def get_next_tracklet_name(self):
-        all_names = list(self.df_tracklets.columns.levels[0])
-        # Really want to make sure we are after all other names,
-        i_tracklet = int(1e6 + len(all_names) + 1)
-        build_tracklet_name = lambda i: f'neuron{i}'
-        new_name = build_tracklet_name(i_tracklet)
-        while new_name in all_names:
-            i_tracklet += 1
-            new_name = build_tracklet_name(i_tracklet)
-        return new_name
 
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer,
                                            max_dist=10.0,
