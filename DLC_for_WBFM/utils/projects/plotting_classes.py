@@ -322,6 +322,7 @@ class TrackletAnnotator:
         logging.warning("Saving tracklet dataframe, DO NOT QUIT")
         print("Note: the GUI will still respond, but you can't split or save any tracklets")
         self.saving_lock.acquire(blocking=True)
+        logging.warning("Acquired saving lock; currently saving")
         t = threading.Thread(target=self.save_manual_matches_to_disk)
         t.start()
 
@@ -338,7 +339,7 @@ class TrackletAnnotator:
             self.tracking_cfg.pickle_in_local_project(self.tracklet_split_names, self.tracklet_split_names_fname)
             self.tracking_cfg.pickle_in_local_project(self.tracklet_split_times, self.tracklet_split_times_fname)
 
-            logging.info("Saving successful! You may now quit")
+            print("Saving successful! You may now quit")
             self.tracking_cfg.update_on_disk()
         finally:
             self.saving_lock.release()

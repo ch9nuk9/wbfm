@@ -243,9 +243,19 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     return match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates
 
 
-def get_putative_names_from_config(cfg: ModularProjectConfig):
+def get_putative_names_from_config(project_config: ModularProjectConfig):
+    """
 
-    project_data = ProjectData.load_final_project_data_from_config(cfg)
+    Parameters
+    ----------
+    project_config
+
+    Returns
+    -------
+
+    """
+
+    project_data = ProjectData.load_final_project_data_from_config(project_config)
     prediction_options, template, template_label = load_fdnc_options_and_template()
 
     all_only_top_dict = defaultdict(list)
@@ -299,7 +309,7 @@ def get_putative_names_from_config(cfg: ModularProjectConfig):
 
     # Save
     out_fname = os.path.join('4-traces', 'names_from_leifer_template.h5')
-    out_fname = cfg.resolve_relative_path(out_fname)
+    out_fname = project_config.resolve_relative_path(out_fname)
     df_out.to_hdf(out_fname, key='df_with_missing')
 
     out_fname = Path(out_fname).with_suffix('.csv')
