@@ -297,6 +297,9 @@ class TrackletAnnotator:
             print("Already not conflicting")
 
     def save_current_tracklet_to_neuron(self):
+        if self.current_tracklet_name is None:
+            print("No neuron selected")
+            return
         if self.is_current_tracklet_confict_free:
 
             with self.saving_lock:

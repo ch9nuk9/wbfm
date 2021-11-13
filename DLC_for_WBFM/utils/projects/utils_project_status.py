@@ -51,7 +51,7 @@ def check_training(project_path):
 
 def check_tracking(project_path):
     cfg = ModularProjectConfig(project_path)
-    tracking_cfg = cfg.get_traces_config()
+    tracking_cfg = cfg.get_tracking_config()
 
     try:
         all_to_check = [tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df')]
