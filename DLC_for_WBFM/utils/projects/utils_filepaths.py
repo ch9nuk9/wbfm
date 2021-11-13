@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pprint
 
+from DLC_for_WBFM.utils.feature_detection.custom_errors import UnknownValueError
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 
@@ -232,7 +233,13 @@ def load_file_according_to_precedence(fname_precedence: list,
     most_recent_modified_key = get_most_recently_modified(possible_fnames)
 
     for i, key in enumerate(fname_precedence):
-        fname = possible_fnames[key]
+        if key in possible_fnames:
+            fname = possible_fnames[key]
+        elif key == 'most_recent':
+            possible_fnames = possible_fnames[most_recent_modified_key]
+        else:
+            raise UnknownValueError(key)
+
         if Path(fname).exists():
             data = this_reader(fname)
             logging.info(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")

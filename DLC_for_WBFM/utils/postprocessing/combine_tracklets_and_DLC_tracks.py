@@ -6,7 +6,7 @@ from typing import List, Dict
 
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.feature_detection.custom_errors import ShouldBeUnreachable
+from DLC_for_WBFM.utils.feature_detection.custom_errors import ShouldBeUnreachableError
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict, \
     get_time_overlap_of_candidate_tracklet, split_tracklet
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -180,7 +180,7 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
                     new_tracklet_names = list(df_tracklets.columns.levels[0])
                     i_tracklet = new_tracklet_names.index(candidate_name)
                 else:
-                    raise ShouldBeUnreachable
+                    raise ShouldBeUnreachableError
             successfully_split = True
             logging.info(f"Successfully split tracklet at points {split_points}")
     else:

@@ -58,7 +58,13 @@ class NoNeuronsError(Exception):
         super().__init__(self.message)
 
 
-class ShouldBeUnreachable(Exception):
+class ShouldBeUnreachableError(Exception):
     def __init__(self, message=""):
         self.message = "This code should be unreachable! " + message
+        super().__init__(self.message)
+
+
+class UnknownValueError(Exception):
+    def __init__(self, value=""):
+        self.message = "fUnknown value passed: {value}"
         super().__init__(self.message)
