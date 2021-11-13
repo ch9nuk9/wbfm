@@ -4,7 +4,9 @@ import os
 import pickle
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Tuple
+from typing import Tuple, Dict
+
+import numpy as np
 import pandas as pd
 import pprint
 
@@ -224,15 +226,31 @@ def lexigraphically_sort(strs_with_numbers):
     return sorted(sorted(strs_with_numbers), key=len)
 
 
-def load_file_according_to_precedence(fname_precedence, possible_fnames, this_reader=read_if_exists):
+def load_file_according_to_precedence(fname_precedence: list,
+                                      possible_fnames: Dict[str, str],
+                                      this_reader: callable = read_if_exists):
+    most_recent_modified_key = get_most_recently_modified(possible_fnames)
+
     for i, key in enumerate(fname_precedence):
         fname = possible_fnames[key]
         if Path(fname).exists():
             data = this_reader(fname)
             logging.info(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
             logging.info(f"Read data from: {fname}")
+            if key != most_recent_modified_key:
+                logging.warning(f"Not using most recently modified file (mode {most_recent_modified_key})")
             break
     else:
         logging.info(f"Found no files of possibilities: {possible_fnames}")
         data = None
     return data
+
+
+def get_most_recently_modified(possible_fnames: Dict[str, str]) -> str:
+    all_mtimes, all_keys = [], []
+    for k, f in possible_fnames.items():
+        all_mtimes.append(os.path.getmtime(f))
+        all_keys.append(k)
+    most_recent_modified = np.argmax(all_mtimes)
+    most_recent_modified_key = all_keys[most_recent_modified]
+    return most_recent_modified_key
