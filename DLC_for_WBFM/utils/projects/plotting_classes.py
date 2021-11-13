@@ -162,6 +162,9 @@ class TrackletAnnotator:
         if self.tracklet_split_times is None:
             self.tracklet_split_times = defaultdict(list)
 
+        self.tracklet_split_names_fname = str(splits_names_fname)
+        self.tracklet_split_times_fname = str(splits_times_fname)
+
         # self.tracklet_split_times_fname = get_sequential_filename(str(splits_times_fname))
 
         print(f"Output files: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
