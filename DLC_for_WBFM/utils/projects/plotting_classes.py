@@ -148,8 +148,8 @@ class TrackletAnnotator:
         self.output_df_fname = get_sequential_filename(df_fname)
 
         # Read metadata (if found) and save as same name with suffix
-        splits_names_fname = Path(df_fname).parent.joinpath("split_names")
-        splits_times_fname = splits_names_fname.with_name("split_times")
+        splits_names_fname = Path(df_fname).parent.joinpath("split_names.pickle")
+        splits_times_fname = splits_names_fname.with_name("split_times.pickle")
 
         reader = pickle_load_binary
         self.tracklet_split_names = read_if_exists(splits_names_fname, reader=reader)
