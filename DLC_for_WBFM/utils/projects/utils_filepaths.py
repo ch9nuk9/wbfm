@@ -15,6 +15,14 @@ from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 
 
+def check_exists(abs_path, allow_overwrite):
+    if Path(abs_path).exists():
+        if allow_overwrite:
+            logging.warning("Overwriting existing file")
+        else:
+            raise FileExistsError
+
+
 @dataclass
 class ConfigFileWithProjectContext:
     self_path: str
@@ -43,18 +51,26 @@ class ConfigFileWithProjectContext:
     def to_json(self):
         return json.dumps(vars(self))
 
-    def pickle_in_local_project(self, data, relative_path: str):
+    def pickle_in_local_project(self, data, relative_path: str, allow_overwrite=True):
         abs_path = self.resolve_relative_path(relative_path)
         if not abs_path.endswith('.pickle'):
             abs_path += ".pickle"
+        logging.info(f"Saving at: {relative_path}")
+        check_exists(abs_path, allow_overwrite)
         with open(abs_path, 'wb') as f:
             pickle.dump(data, f)
 
-    def h5_in_local_project(self, data: pd.DataFrame, relative_path: str):
+    def h5_in_local_project(self, data: pd.DataFrame, relative_path: str, also_save_csv=False, allow_overwrite=True):
         abs_path = self.resolve_relative_path(relative_path)
         if not abs_path.endswith('.h5'):
             abs_path += ".h5"
+        logging.info(f"Saving at: {relative_path}")
+        check_exists(abs_path, allow_overwrite)
         data.to_hdf(abs_path, key="df_with_missing")
+
+        if also_save_csv:
+            csv_fname = Path(abs_path).with_suffix('.csv')
+            data.to_csv(csv_fname)
 
     def __repr__(self):
         pp = pprint.PrettyPrinter(indent=2)

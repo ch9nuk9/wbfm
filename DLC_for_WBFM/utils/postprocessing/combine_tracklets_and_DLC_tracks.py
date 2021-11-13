@@ -404,11 +404,12 @@ def get_already_covered_indices(df_tracklets, previous_matches):
 def _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config):
     with safe_cd(project_dir):
         # Actually save
-        logging.info(f"Saving to: {output_df_fname}")
-        combined_df.to_hdf(output_df_fname, key='df_with_missing')
+        track_config.h5_in_local_project(combined_df, output_df_fname, also_save_csv=True)
+        # logging.info(f"Saving to: {output_df_fname}")
+        # combined_df.to_hdf(output_df_fname, key='df_with_missing')
 
-        csv_fname = Path(output_df_fname).with_suffix('.csv')
-        combined_df.to_csv(csv_fname)
+        # csv_fname = Path(output_df_fname).with_suffix('.csv')
+        # combined_df.to_csv(csv_fname)
 
         if not DEBUG:
             # Save only df_fname in yaml; don't overwrite other fields
