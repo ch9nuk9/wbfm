@@ -26,10 +26,10 @@ else
 #  conda activate torch
 #  source activate torch
 
-  CMD="${CODE_PATH}/3b-combine_tracklets_and_dlc_tracks.py"
-  python $CMD $SUFFIX start_from_manual_matches=True
+#  CMD="${CODE_PATH}/3b-combine_tracklets_and_dlc_tracks.py"
+#  python $CMD $SUFFIX start_from_manual_matches=True
   CMD="${CODE_PATH}/3c-make_final_tracks_using_tracklet_matches.py"
-  python $CMD $SUFFIX start_from_manual_matches=False
+  python $CMD $SUFFIX start_from_manual_matches=True
 
 
   CMD="${CODE_PATH}/4a-match_tracks_and_segmentation.py"

@@ -262,6 +262,8 @@ def load_file_according_to_precedence(fname_precedence: list,
             logging.info(f"Read data from: {fname}")
             if key != most_recent_modified_key:
                 logging.warning(f"Not using most recently modified file (mode {most_recent_modified_key})")
+            else:
+                logging.info(f"Using most recently modified file")
             break
     else:
         logging.info(f"Found no files of possibilities: {possible_fnames}")
