@@ -249,7 +249,10 @@ def load_file_according_to_precedence(fname_precedence: list,
 def get_most_recently_modified(possible_fnames: Dict[str, str]) -> str:
     all_mtimes, all_keys = [], []
     for k, f in possible_fnames.items():
-        all_mtimes.append(os.path.getmtime(f))
+        if os.path.exists(f):
+            all_mtimes.append(os.path.getmtime(f))
+        else:
+            all_mtimes.append(0.0)
         all_keys.append(k)
     most_recent_modified = np.argmax(all_mtimes)
     most_recent_modified_key = all_keys[most_recent_modified]
