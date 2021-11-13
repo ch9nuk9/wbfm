@@ -13,8 +13,8 @@ done
 
 # Make conda functions available
 # https://github.com/conda/conda/issues/7980
-source /home/charles/anaconda3/etc/profile.d/conda.sh
-conda init bash
+#source /home/charles/anaconda3/etc/profile.d/conda.sh
+#conda init bash
 
 CODE_PATH="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
 SUFFIX="with project_path=$project_path"
@@ -24,7 +24,7 @@ if [ "$is_dry_run" ]; then
 else
 
 #  conda activate torch
-  source activate torch
+#  source activate torch
 
   CMD="${CODE_PATH}/3b-combine_tracklets_and_dlc_tracks.py"
   python $CMD $SUFFIX start_from_manual_matches=True
