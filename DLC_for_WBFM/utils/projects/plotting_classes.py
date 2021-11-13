@@ -13,7 +13,8 @@ from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
-from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort, SubfolderConfigFile, pickle_load_binary, \
+    read_if_exists
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename
 from DLC_for_WBFM.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
@@ -140,22 +141,30 @@ class TrackletAnnotator:
             self.manual_global2tracklet_names = defaultdict(list)
         if self.manual_global2tracklet_removals is None:
             self.manual_global2tracklet_removals = defaultdict(list)
-        if self.tracklet_split_names is None:
-            self.tracklet_split_names = defaultdict(list)
-        if self.tracklet_split_times is None:
-            self.tracklet_split_times = defaultdict(list)
 
         match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
         self.output_match_fname = get_sequential_filename(match_fname)
         df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
         self.output_df_fname = get_sequential_filename(df_fname)
 
-        splits_fname1 = Path(df_fname).parent.joinpath("split_names")
-        self.tracklet_split_names_fname = get_sequential_filename(str(splits_fname1))
-        splits_fname2 = splits_fname1.with_name("split_times")
-        self.tracklet_split_times_fname = get_sequential_filename(str(splits_fname2))
+        # Read metadata (if found) and save as same name with suffix
+        splits_names_fname = Path(df_fname).parent.joinpath("split_names")
+        splits_times_fname = splits_names_fname.with_name("split_times")
 
-        print(f"Output files: {match_fname}, {df_fname}, {splits_fname1}, {splits_fname2}")
+        reader = pickle_load_binary
+        self.tracklet_split_names = read_if_exists(splits_names_fname, reader=reader)
+        if self.tracklet_split_names is None:
+            self.tracklet_split_names = defaultdict(list)
+        # else:
+        #     # Do not overwrite old splits?
+        #     self.tracklet_split_names_fname = get_sequential_filename(str(splits_names_fname))
+        self.tracklet_split_times = read_if_exists(splits_times_fname, reader=reader)
+        if self.tracklet_split_times is None:
+            self.tracklet_split_times = defaultdict(list)
+
+        # self.tracklet_split_times_fname = get_sequential_filename(str(splits_times_fname))
+
+        print(f"Output files: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
     @property
     def combined_global2tracklet_dict(self):
