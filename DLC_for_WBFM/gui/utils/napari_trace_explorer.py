@@ -342,7 +342,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.tracklet_lines = []
         self.update_stored_tracklets()
         for y in self.y_tracklets:
-            this_line = self.static_ax.plot(self.tspan, y['z'])[0]
+            this_line = self.static_ax.plot(self.tspan[:-1], y['z'])[0]
             self.tracklet_lines.append(this_line)
             # self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
         self.update_neuron_in_tracklet_annotator()
