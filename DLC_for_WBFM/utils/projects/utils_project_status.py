@@ -50,15 +50,13 @@ def check_training(project_path):
 
 
 def check_tracking(project_path):
-    cfg, project_dir = _load_cfg(project_path)
+    cfg = ModularProjectConfig(project_path)
 
     try:
-        with safe_cd(project_dir):
-            tracking_folder = Path(cfg['subfolder_configs']['tracking']).parent
-            all_to_check = [osp.join(tracking_folder, 'full_3d_tracks.h5')]
-            all_exist = map(osp.exists, all_to_check)
+        all_to_check = [cfg.resolve_relative_path_from_config('final_3d_tracks_df')]
+        all_exist = map(osp.exists, all_to_check)
 
-            return all(all_exist)
+        return all(all_exist)
     except AssertionError:
         return False
 
