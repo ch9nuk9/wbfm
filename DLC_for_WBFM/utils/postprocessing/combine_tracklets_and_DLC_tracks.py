@@ -448,21 +448,23 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     df_tracklets = project_data.df_all_tracklets
     if not use_manual_matches:
         project_data.precedence_global2tracklet = ['automatic', 'manual']
+    if use_imputed_df:
+        project_data.precedence_tracks = ['imputed', 'automatic']
 
     with safe_cd(project_cfg.project_dir):
 
         subfolder = os.path.join('3-tracking', 'postprocessing')
         Path(subfolder).mkdir(exist_ok=True)
-        # TODO: add the tracklet fname to the config file
         # tracklet_fname = training_cfg.resolve_relative_path('all_tracklets.h5', prepend_subfolder=True)
-        if not use_imputed_df:
-            global_tracks_fname = track_config.resolve_relative_path_from_config('final_3d_tracks_df')
-        else:
-            global_tracks_fname = track_config.resolve_relative_path_from_config('missing_data_imputed_df')
-            logging.info(f"Reading from the imputed data, not the original global tracks: {global_tracks_fname}")
-
+        # if not use_imputed_df:
+        #     global_tracks_fname = track_config.resolve_relative_path_from_config('final_3d_tracks_df')
+        # else:
+        #     global_tracks_fname = track_config.resolve_relative_path_from_config('missing_data_imputed_df')
+        #     logging.info(f"Reading from the imputed data, not the original global tracks: {global_tracks_fname}")
         # df_tracklets: pd.DataFrame = read_if_exists(tracklet_fname)
-        df_global_tracks: pd.DataFrame = read_if_exists(global_tracks_fname)
+        # df_global_tracks: pd.DataFrame = read_if_exists(global_tracks_fname)
+
+        df_global_tracks = project_data.final_tracks
         logging.info(f"Combining {int(df_tracklets.shape[1]/4)} tracklets with {int(df_global_tracks.shape[1]/4)} neurons")
         df_global_tracks.replace(0, np.NaN, inplace=True)
 

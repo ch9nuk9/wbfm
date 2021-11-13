@@ -44,7 +44,7 @@ class ProjectData:
 
     red_traces: pd.DataFrame = None
     green_traces: pd.DataFrame = None
-    final_tracks: pd.DataFrame = None
+    # final_tracks: pd.DataFrame = None
 
     behavior_annotations: pd.DataFrame = None
     background_per_pixel: float = None
@@ -55,6 +55,7 @@ class ProjectData:
     # Precedence when multiple are available
     precedence_global2tracklet: list = None
     precedence_df_tracklets: list = None
+    precedence_tracks: list = None
 
     # Classes for more functionality
     trace_plotter: TracePlotter = None
@@ -65,16 +66,31 @@ class ProjectData:
             self.precedence_global2tracklet = track_cfg.config['precedence_global2tracklet']
         if self.precedence_df_tracklets is None:
             self.precedence_df_tracklets = track_cfg.config['precedence_df_tracklets']
+        if self.precedence_tracks is None:
+            self.precedence_tracks = track_cfg.config['precedence_tracks']
 
     # Can be quite large, so don't read by default
+    @cached_property
+    def final_tracks(self) -> pd.DataFrame:
+        tracking_cfg = self.project_config.get_tracking_config()
+
+        # Manual annotations take precedence by default
+        possible_fnames = dict(automatic=tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df'),
+                               imputed=tracking_cfg.resolve_relative_path_from_config('missing_data_imputed_df'))
+
+        fname_precedence = self.precedence_tracks
+        final_tracks = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                         this_reader=read_if_exists)
+        return final_tracks
+
     @cached_property
     def global2tracklet(self) -> dict:
         tracking_cfg = self.project_config.get_tracking_config()
 
-        # Manual annotations take precedence
-        possible_fnames = {
-            'manual': tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname'),
-            'automatic': tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')}
+        # Manual annotations take precedence by default
+        possible_fnames = dict(
+            manual=tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname'),
+            automatic=tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname'))
 
         fname_precedence = self.precedence_global2tracklet
         global2tracklet = load_file_according_to_precedence(fname_precedence, possible_fnames,
@@ -116,11 +132,11 @@ class ProjectData:
         train_cfg = self.project_config.get_training_config()
         track_cfg = self.project_config.get_tracking_config()
 
-        possible_fnames = {
-            'manual': track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname'),
-            'wiggle': track_cfg.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname'),
-            'automatic': train_cfg.resolve_relative_path_from_config('df_3d_tracklets')}
         # Manual annotations take precedence by default
+        possible_fnames = dict(
+            manual=track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname'),
+            wiggle=track_cfg.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname'),
+            automatic=train_cfg.resolve_relative_path_from_config('df_3d_tracklets'))
         fname_precedence = self.precedence_df_tracklets
         df_all_tracklets = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                              this_reader=read_if_exists)
@@ -206,7 +222,8 @@ class ProjectData:
         obj.reindexed_metadata_training = DetectedNeurons(reindexed_metadata_training_fname)
 
         # Read ahead of time because they may be needed for classes in the threading environment
-        obj.final_tracks = read_if_exists(final_tracks_fname)
+        _ = obj.final_tracks
+        # obj.final_tracks = read_if_exists(final_tracks_fname)
 
         # TODO: do not hardcode
         behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
