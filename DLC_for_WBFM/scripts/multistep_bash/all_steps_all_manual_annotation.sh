@@ -23,7 +23,8 @@ if [ "$is_dry_run" ]; then
   echo "Dry run with command: $CMD with project_path=$project_path"
 else
 
-  conda activate torch
+#  conda activate torch
+  source activate torch
 
   CMD="${CODE_PATH}/3b-combine_tracklets_and_dlc_tracks.py"
   python $CMD $SUFFIX start_from_manual_matches=True
