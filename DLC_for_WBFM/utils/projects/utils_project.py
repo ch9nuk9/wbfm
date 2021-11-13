@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from shutil import copytree
+import re
 from ruamel.yaml import YAML
 
 
@@ -43,13 +44,25 @@ def get_project_name(_config: dict) -> str:
 
 
 def get_sequential_filename(fname: str, verbose=1) -> str:
-    """Check if the file or dir exists, and if so, append an integer"""
+    """
+    Check if the file or dir exists, and if so, append an integer
+
+    Also check if this function has been used before, and remove the suffix
+    """
     i = 1
     fpath = Path(fname)
     if fpath.exists():
         if verbose >= 1:
             print(f"Original fname {fpath} exists, so will be suffixed")
         base_fname, suffix_fname = fpath.stem, fpath.suffix
+        # Check for previous application of this function
+        regex = r"-\d+$"
+        matches = list(re.finditer(regex, base_fname))
+        if len(matches) > 0:
+            base_fname = base_fname[:matches[0].start()]
+            if verbose >= 1:
+                print(f"Removed suffix {matches[0].group()}, so the basename is taken as: {base_fname}")
+
         new_base_fname = str(base_fname) + f"-{i}"
         candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
         while Path(candidate_fname).exists():
