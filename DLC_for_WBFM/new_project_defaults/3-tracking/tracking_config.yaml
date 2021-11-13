@@ -35,11 +35,18 @@ final_3d_postprocessing:
   allowed_tracklet_endpoint_wiggle: 3
   output_df_fname: 3-tracking/postprocessing/combined_3d_tracks.h5
 
+precedence_global2tracklet:
+  - manual
+  - automatic
 global2tracklet_matches_fname: 3-tracking/global2tracklet.pickle
 
+precedence_df_tracklets:
+  - manual
+  - wiggle
+  - automatic
 wiggle_split_tracklets_df_fname: 3-tracking/postprocessing/wiggle_split_tracklets.h5
-
 manual_correction_global2tracklet_fname: 3-tracking/manual_annotation/global2tracklet_manual.pickle
+
 manual_correction_tracklets_df_fname: 3-tracking/manual_annotation/manually_split_tracklets.h5
 manual_correction_3d_tracks_df_fname: 3-tracking/manual_annotation/combined_3d_tracks.h5 # Will be updated AFTER manual correction, not during
 

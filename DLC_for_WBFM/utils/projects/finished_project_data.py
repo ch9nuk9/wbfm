@@ -60,10 +60,11 @@ class ProjectData:
     trace_plotter: TracePlotter = None
 
     def __post_init__(self):
+        track_cfg = self.project_config.get_tracking_config()
         if self.precedence_global2tracklet is None:
-            self.precedence_global2tracklet = ['manual', 'automatic']
+            self.precedence_global2tracklet = track_cfg.config['precedence_global2tracklet']
         if self.precedence_df_tracklets is None:
-            self.precedence_df_tracklets = ['manual', 'wiggles', 'automatic']
+            self.precedence_df_tracklets = track_cfg.config['precedence_df_tracklets']
 
     # Can be quite large, so don't read by default
     @cached_property
