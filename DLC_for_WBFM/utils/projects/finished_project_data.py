@@ -118,7 +118,7 @@ class ProjectData:
 
         possible_fnames = {
             'manual': track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname'),
-            'wiggles': track_cfg.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname'),
+            'wiggle': track_cfg.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname'),
             'automatic': train_cfg.resolve_relative_path_from_config('df_3d_tracklets')}
         # Manual annotations take precedence by default
         fname_precedence = self.precedence_df_tracklets
