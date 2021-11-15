@@ -12,7 +12,7 @@ from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import make_3d_tracks_from_stack
 from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
-    combine_all_dlc_and_tracklet_coverings_from_config
+    match_dlc_and_tracklet_coverings_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
@@ -52,4 +52,4 @@ def make_full_tracks(_config, _run):
         make_3d_tracks_from_stack(track_cfg, DEBUG=DEBUG)
 
         # Necessary postprocessing step
-        combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, training_cfg, project_dir, DEBUG=DEBUG)
+        match_dlc_and_tracklet_coverings_from_config(track_cfg, training_cfg, project_dir, DEBUG=DEBUG)

@@ -107,7 +107,7 @@ rule combine_tracking_and_tracklets:
         expand("{dir}/{output}", output=config['output_3b'], dir=config['project_dir'])
     threads: 56
     shell:
-        "python {input.code_path}/postprocessing/3b-combine_tracklets_and_dlc_tracks.py with project_path={input.cfg}"
+        "python {input.code_path}/postprocessing/3b-match_tracklets_and_dlc_tracks.py with project_path={input.cfg}"
 
 #
 # Traces

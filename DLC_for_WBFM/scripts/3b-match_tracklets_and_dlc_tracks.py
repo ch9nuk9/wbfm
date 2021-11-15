@@ -13,7 +13,7 @@ from sacred.observers import TinyDbObserver
 
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
-    combine_all_dlc_and_tracklet_coverings_from_config
+    match_dlc_and_tracklet_coverings_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 # Initialize sacred experiment
@@ -44,7 +44,7 @@ def combine_tracks(_config, _run):
     track_cfg = _config['tracking_cfg']
     training_cfg = _config['training_cfg']
 
-    combine_all_dlc_and_tracklet_coverings_from_config(track_cfg, training_cfg, _config['cfg'],
-                                                       use_imputed_df=_config['use_imputed_df'],
-                                                       start_from_manual_matches=_config['start_from_manual_matches'],
-                                                       DEBUG=DEBUG)
+    match_dlc_and_tracklet_coverings_from_config(track_cfg, training_cfg, _config['cfg'],
+                                                 use_imputed_df=_config['use_imputed_df'],
+                                                 start_from_manual_matches=_config['start_from_manual_matches'],
+                                                 DEBUG=DEBUG)

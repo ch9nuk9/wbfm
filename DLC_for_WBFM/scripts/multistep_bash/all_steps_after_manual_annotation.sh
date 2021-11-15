@@ -26,8 +26,8 @@ else
 #  conda activate torch
 #  source activate torch
 
-#  CMD="${CODE_PATH}/3b-combine_tracklets_and_dlc_tracks.py"
-#  python $CMD $SUFFIX start_from_manual_matches=True
+#  CMD="${CODE_PATH}/3b-match_tracklets_and_dlc_tracks.py"
+#  python $CMD $SUFFIX start_from_manual_matches=Trueall_steps_after_manual_annotation.sh
   CMD="${CODE_PATH}/3c-make_final_tracks_using_tracklet_matches.py"
   python $CMD $SUFFIX start_from_manual_matches=True
 
