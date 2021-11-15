@@ -251,8 +251,8 @@ def load_file_according_to_precedence(fname_precedence: list,
     for i, key in enumerate(fname_precedence):
         if key in possible_fnames:
             fname = possible_fnames[key]
-        elif key == 'most_recent':
-            possible_fnames = possible_fnames[most_recent_modified_key]
+        elif key == 'newest':
+            fname = possible_fnames[most_recent_modified_key]
         else:
             raise UnknownValueError(key)
 

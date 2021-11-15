@@ -279,10 +279,10 @@ def combine_dlc_and_tracklets(new_tracklet_df, dlc_tracks):
     return final_track_df
 
 
-def combine_all_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFile,
-                                                       training_cfg: SubfolderConfigFile,
-                                                       project_cfg: ModularProjectConfig, use_imputed_df=False,
-                                                       start_from_manual_matches=True, DEBUG=False):
+def match_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFile,
+                                                 training_cfg: SubfolderConfigFile,
+                                                 project_cfg: ModularProjectConfig, use_imputed_df=False,
+                                                 start_from_manual_matches=True, DEBUG=False):
     """
     Improves tracking by combining DLC neurons with my short tracklets
 

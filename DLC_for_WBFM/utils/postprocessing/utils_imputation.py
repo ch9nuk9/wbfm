@@ -124,6 +124,7 @@ def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
     df_final.to_hdf(abs_fname, key='df_with_missing')
 
     rel_fname = tracks_config.unresolve_absolute_path(abs_fname)
+    logging.info(f"Saving output file at: {rel_fname}")
     tracks_config.config.update({'missing_data_imputed_df': rel_fname})
     tracks_config.update_on_disk()
 
@@ -131,6 +132,7 @@ def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
 def _unpack_for_imputing(tracks_config):
     fname = tracks_config.resolve_relative_path_from_config('final_3d_tracks_df')
     df_raw = read_if_exists(fname)
+    logging.info(f"Reading initial dataframe: {fname}")
     likelihood_thresh = tracks_config.config['missing_data_postprocessing']['likelihood_threshold']
     n_nearest_features = tracks_config.config['missing_data_postprocessing']['n_nearest_features']
     return df_raw, fname, likelihood_thresh, n_nearest_features

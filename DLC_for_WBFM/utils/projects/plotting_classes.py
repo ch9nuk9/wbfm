@@ -246,7 +246,9 @@ class TrackletAnnotator:
 
         if neuron_conflict is not None:
             print(f"Found next conflict with {neuron_conflict} at time {next_conflict_time}")
-        return int(next_conflict_time), neuron_conflict
+            return int(next_conflict_time), neuron_conflict
+        else:
+            return None, None
 
     def tracklet_has_time_overlap(self, tracklet_name=None):
         if tracklet_name is None:
