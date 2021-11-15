@@ -28,6 +28,7 @@ else
   CMD="${CODE_PATH}/3b-match_tracklets_and_dlc_tracks.py"
   python $CMD $SUFFIX start_from_manual_matches=True use_imputed_df=True
   # Now there are new matches
+  # TODO: need to properly use wiggle-modified tracklets
   CMD="${CODE_PATH}/3c-make_final_tracks_using_tracklet_matches.py"
   python $CMD $SUFFIX start_from_manual_matches=False use_imputed_df=True
 
