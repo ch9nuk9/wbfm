@@ -274,7 +274,7 @@ def load_file_according_to_precedence(fname_precedence: list,
 def get_most_recently_modified(possible_fnames: Dict[str, str]) -> str:
     all_mtimes, all_keys = [], []
     for k, f in possible_fnames.items():
-        if os.path.exists(f):
+        if f is not None and os.path.exists(f):
             all_mtimes.append(os.path.getmtime(f))
         else:
             all_mtimes.append(0.0)
