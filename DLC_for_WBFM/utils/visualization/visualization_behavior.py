@@ -1,8 +1,12 @@
+import logging
+
 import numpy as np
 from matplotlib import pyplot as plt
 
 
-def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none', DEBUG=False):
+def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
+                         cmap=None,
+                         DEBUG=False):
     """
     Shades current plot using a 3-code behavioral annotation:
         0 - FWD (no shade)
@@ -10,6 +14,10 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none', DEBUG=False):
         2 - Turn (red)
     """
 
+    if cmap is None:
+        cmap = {0: None,
+                1: 'darkgray',
+                2: 'red'}
     if ax is None:
         ax = plt.gca()
     bh = np.array(bh)
@@ -21,16 +29,24 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none', DEBUG=False):
         print(block_values)
         print(block_final_indices)
 
-    cmap = {0: None,
-            1: 'darkgray',
-            2: 'red'}
     if behaviors_to_ignore != 'none':
         for b in behaviors_to_ignore:
             cmap[b] = None
 
     block_start = 0
     for val, block_end in zip(block_values, block_final_indices):
-        color = cmap[val]
+        if val is None or np.isnan(val):
+            # block_start = block_end + 1
+            continue
+        try:
+            color = cmap[val]
+        except TypeError:
+            logging.warning(f"Ignored behavior of value: {val}")
+            # Just ignore
+            continue
+        # finally:
+        #     block_start = block_end + 1
+
         if DEBUG:
             print(color, val, block_start, block_end)
         if color is not None:

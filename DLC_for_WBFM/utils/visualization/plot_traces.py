@@ -4,6 +4,10 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.io
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, name2int
+from DLC_for_WBFM.utils.visualization.napari_utils import cast_int_or_nan
+from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 from matplotlib import transforms
 from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
@@ -32,18 +36,78 @@ def make_grid_plot_from_project(project_data: ProjectData,
     # Guess a good shape for subplots
     neuron_names.sort()
 
+    # Build functions to make a single subplot
+    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
+    get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
+    shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
+
+    make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func)
+
+    # Save final figure
+    fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
+    traces_cfg = project_data.project_config.get_traces_config()
+    out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+
+    save_grid_plot(out_fname)
+
+
+def make_grid_plot_from_leifer_file(fname: str,
+                                    channel_mode: str = 'all',
+                                    color_using_behavior=True):
+    if channel_mode == 'all':
+        all_modes = ['rRaw', 'gRaw', 'Ratio2']
+        opt = dict(fname=fname,
+                   color_using_behavior=color_using_behavior)
+        for mode in all_modes:
+            make_grid_plot_from_leifer_file(channel_mode=mode, **opt)
+        return
+
+    assert channel_mode in ['rRaw', 'gRaw', 'Ratio2']
+
+    data = scipy.io.loadmat(fname)
+
+    ethogram = [cast_int_or_nan(d) for d in data['behavior'][0][0][0]]
+    # ethogram_names = {-1: 'Reversal', 1: 'Forward', 2: 'Turn'}
+    ethogram_cmap = {-1: 'darkgray', 0: None, 1: None, 2: 'red'}
+
+    num_neurons, t = data[channel_mode].shape
+    neuron_names = [int2name(i+1) for i in range(num_neurons)]
+
+    # Build functions to make a single subplot
+    get_data_func = lambda neuron_name: (np.arange(t), data[channel_mode][name2int(neuron_name) - 1])
+    shade_plot_func = lambda axis: shade_using_behavior(ethogram, axis, cmap=ethogram_cmap)
+
+    make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func)
+
+    # Save final figure
+    out_fname = f"leifer_{channel_mode}_grid_plot.png"
+    out_fname = Path(fname).with_name(out_fname)
+
+    save_grid_plot(out_fname)
+
+
+def save_grid_plot(out_fname):
+    plt.subplots_adjust(left=0,
+                        bottom=0,
+                        right=1,
+                        top=1,
+                        wspace=0.0,
+                        hspace=0.0)
+    logging.info(f"Saving figure at: {out_fname}")
+    plt.savefig(out_fname, bbox_inches='tight', pad_inches=0)
+
+
+def make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func):
+    # Loop through neurons and plot
     num_neurons = len(neuron_names)
     num_columns = 5
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
     print(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
-
-    # Loop through neurons and plot
     fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 15), sharex=True, sharey=False)
-
-    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
     for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
-        options['neuron_name'] = neuron_name
-        t, y = project_data.calculate_traces(**options)
+        # options['neuron_name'] = neuron_name
+        # t, y = project_data.calculate_traces(**options)
+        t, y = get_data_func(neuron_name)
         ax.plot(t, y, label=neuron_name)
         # For removing the lines from the legends:
         # https://stackoverflow.com/questions/25123127/how-do-you-just-show-the-text-label-in-plot-legend-e-g-remove-a-labels-line
@@ -54,21 +118,7 @@ def make_grid_plot_from_project(project_data: ProjectData,
         ax.set_frame_on(False)
         ax.set_axis_off()
         if color_using_behavior:
-            project_data.shade_axis_using_behavior(ax)
-
-    # Save final figure
-    plt.subplots_adjust(left=0,
-                        bottom=0,
-                        right=1,
-                        top=1,
-                        wspace=0.0,
-                        hspace=0.0)
-
-    fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
-    traces_cfg = project_data.project_config.get_traces_config()
-    out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-    logging.info(f"Saving figure at: {out_fname}")
-    plt.savefig(out_fname, bbox_inches='tight', pad_inches=0)
+            shade_plot_func(ax)
 
 
 def OLD_make_grid_plot_from_project(traces_config,
