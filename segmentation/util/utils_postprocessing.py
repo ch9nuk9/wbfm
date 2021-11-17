@@ -413,15 +413,11 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation, plots=0, ver
     # initialize them differently so the optimization algorithm works better
     sigma = 3.0
     peaks, _ = find_peaks(y_data, distance=4)
-    if len(peaks) == 1:
-        peak0 = len(y_data) / 4.0
-        peak1 = peak0 * 3
-    elif len(peaks) == 2:
+    if len(peaks) == 2:
         peak0, peak1 = peaks
     else:
-        if verbose >= 1:
-            print("Peak initialization failed; aborting")
-        return None
+        peak0 = len(y_data) / 4.0
+        peak1 = peak0 * 3
     p0 = [np.mean(y_data), peak0, sigma, np.mean(y_data), peak1, sigma]
 
     try:
