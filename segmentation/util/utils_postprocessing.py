@@ -374,13 +374,17 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
     return brightness_dict, brightness_planes
 
 
-def calc_split_point_via_brightnesses(brightnesses, min_separation, plots=0, verbose=0) -> int:
+def calc_split_point_via_brightnesses(brightnesses, min_separation,
+                                      num_gaussians=2,
+                                      plots=0, verbose=0) -> int:
     """
     calculates the means of 2 gaussians underlying the neuron brightness distributions.
     It tries to match exactly 2 gaussians onto the brightness distribution of a tentative neuron.
 
     Parameters
     ----------
+    num_gaussians : int
+        Number of gaussians to fit [2 or 3]
     brightnesses : list
         List containing average brightness values of a tentative neuron
     min_separation : int
@@ -405,34 +409,47 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation, plots=0, ver
     # Adapt it to as many gaussians you may want
     # by copying the function with different A2,mu2,sigma2 parameters
 
-    def gauss2(x, *p):
-        A1, mu1, sigma1, A2, mu2, sigma2 = p
-        return A1*np.exp(-(x-mu1)**2/(2.*sigma1**2)) + A2*np.exp(-(x-mu2)**2/(2.*sigma2**2))
+    def gauss1(x, *p):
+        A1, mu1, sigma1 = p
+        return A1*np.exp(-(x-mu1)**2/(2.*sigma1**2))
 
-    # p0 is the initial guess for the fitting coefficients
-    # initialize them differently so the optimization algorithm works better
-    sigma = 3.0
-    peaks, _ = find_peaks(y_data, distance=min_separation/2)
-    if len(peaks) == 2:
-        peak0, peak1 = peaks
-    else:
-        peak0 = len(y_data) / 4.0
-        peak1 = peak0 * 3
-    p0 = [np.mean(y_data), peak0, sigma, np.mean(y_data), peak1, sigma]
+    def gauss2(x, *p):
+        return gauss1(x, *p[:3]) + gauss1(x, *p[3:])
+
+    # def gauss2(x, *p):
+    #     A1, mu1, sigma1, A2, mu2, sigma2 = p
+    #     return A1*np.exp(-(x-mu1)**2/(2.*sigma1**2)) + A2*np.exp(-(x-mu2)**2/(2.*sigma2**2))
+
+    def gauss3(x, *p):
+        return gauss1(x, *p[:3]) + gauss1(x, *p[3:6]) + gauss1(x, *p[6:])
+
+    p0 = get_initial_gaussian_peaks(min_separation, num_gaussians, y_data)
+
+    if num_gaussians == 2:
+        fit_func = gauss2
+    elif num_gaussians == 3:
+        fit_func = gauss3
 
     try:
         # optimize and in the end you will have 6 coeff (3 for each gaussian)
-        coeff, var_matrix = curve_fit(gauss2, x_data, y_data, p0=p0)
+        coeff, var_matrix = curve_fit(fit_func, x_data, y_data, p0=p0)
     except RuntimeError:
         if verbose >= 1:
             print('Oh oh, could not fit')
         return None
 
-    peaks_of_gaussians = [round(coeff[1]), round(coeff[4])]
-
+    if num_gaussians == 2:
+        peaks_of_gaussians = [round(coeff[1]), round(coeff[4])]
+    elif num_gaussians == 3:
+        peaks_of_gaussians = [round(coeff[1]), round(coeff[4]), round(coeff[7])]
     peaks_of_gaussians = sanity_checks_on_peaks(brightnesses, peaks_of_gaussians, verbose, y_data, min_separation)
 
-    split_point = calc_split_point_from_gaussians(peaks_of_gaussians, y_data)
+    if num_gaussians == 2:
+        split_point = calc_split_point_from_gaussians(peaks_of_gaussians, y_data)
+    elif num_gaussians == 3:
+        split_point1 = calc_split_point_from_gaussians(peaks_of_gaussians[:2], y_data)
+        split_point2 = calc_split_point_from_gaussians(peaks_of_gaussians[1:], y_data)
+        split_point = [split_point1, split_point2]
 
     if plots >= 1:
         # For debugging
@@ -443,14 +460,41 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation, plots=0, ver
     return split_point
 
 
-def sanity_checks_on_peaks(brightnesses, peaks_of_gaussians, verbose, y_data, min_separation):
+def get_initial_gaussian_peaks(min_separation, num_gaussians, y_data):
+    # p0 is the initial guess for the fitting coefficients
+    # initialize them differently so the optimization algorithm works better
+    sigma = min_separation / 2
+    peaks, _ = find_peaks(y_data, distance=sigma)
+    if num_gaussians == 2:
+        if len(peaks) == 2:
+            peak0, peak1 = peaks
+        else:
+            peak0 = len(y_data) / 4.0
+            peak1 = peak0 * 3
+        p0 = [np.mean(y_data), peak0, sigma, np.mean(y_data), peak1, sigma]
+    elif num_gaussians == 3:
+        if len(peaks) == 3:
+            peak0, peak1, peak2 = peaks
+        else:
+            peak0 = len(y_data) / 5.0
+            peak1 = peak0 * 2
+            peak2 = peak0 * 4
+        p0 = [np.mean(y_data), peak0, sigma,
+              np.mean(y_data), peak1, sigma,
+              np.mean(y_data), peak2, sigma]
+    else:
+        raise NotImplementedError
+    return p0
+
+
+def sanity_checks_on_peaks(brightnesses, peaks_of_gaussians: list, verbose, y_data, min_separation: int):
     if any([x < 0 or x > len(y_data) for x in peaks_of_gaussians]):
         # Positions outside the neuron
         if verbose >= 1:
             print(f'Error in brightness: Means = {peaks_of_gaussians} length of brightness list = {len(brightnesses)}')
             print("Impossible location; returning None")
         return None
-    elif np.abs(peaks_of_gaussians[1] - peaks_of_gaussians[0]) < min_separation:
+    elif any(np.abs(np.diff(peaks_of_gaussians)) < min_separation):
         if verbose >= 1:
             print(f'Peaks too close, aborting: Means = {peaks_of_gaussians}')
         return None
@@ -561,9 +605,10 @@ def split_long_neurons(mask_array,
 
             try:
                 x_split_local_coord = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id], min_separation, verbose=verbose - 1)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as err:
                 if verbose >= 1:
-                    print(f'! ValueError while splitting neuron {neuron_id}. Could not fit 2 Gaussians! Will continue.')
+                    print(f'Error while splitting neuron {neuron_id}: Could not fit 2 Gaussians! Will continue.')
+                    print(err)
                 continue
 
             # if neuron can be split
