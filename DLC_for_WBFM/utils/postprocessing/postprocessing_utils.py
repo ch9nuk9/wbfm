@@ -5,6 +5,7 @@ from itertools import product
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import tifffile
 from scipy import ndimage as ndi
 
@@ -359,13 +360,14 @@ def save_video4d(file, video4d, fontsize=20):
 ## Dataframes
 ##
 
-def filter_dataframe_using_likelihood(df, threshold, coords=None):
+def filter_dataframe_using_likelihood(df: pd.DataFrame, threshold, coords=None):
+    df_filtered = df.copy()
     if coords is None:
         coords = ['z', 'x', 'y']
 
-    neuron_names = list(df.columns.levels[0])
-    for n in tqdm(neuron_names):
-        bad_points = df[n]['likelihood'] < threshold
+    neuron_names = list(df_filtered.columns.levels[0])
+    for n in tqdm(neuron_names, leave=False):
+        bad_points = df_filtered[n]['likelihood'] < threshold
         for x in coords:
-            df.loc[bad_points, (n, x)] = np.nan
-    return df
+            df_filtered.loc[bad_points, (n, x)] = np.nan
+    return df_filtered
