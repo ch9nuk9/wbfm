@@ -412,7 +412,7 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation, plots=0, ver
     # p0 is the initial guess for the fitting coefficients
     # initialize them differently so the optimization algorithm works better
     sigma = 3.0
-    peaks, _ = find_peaks(y_data, distance=4)
+    peaks, _ = find_peaks(y_data, distance=min_separation/2)
     if len(peaks) == 2:
         peak0, peak1 = peaks
     else:
