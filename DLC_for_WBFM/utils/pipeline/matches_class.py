@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import dist2conf
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from scipy.optimize import linear_sum_assignment
 
@@ -15,6 +16,8 @@ class MatchesWithConfidence:
     indices1: list
     indices2: list
     confidence: list = None
+
+    dist2conf_gamma: float = None
 
     indices_have_offset: bool = True
 
@@ -64,6 +67,9 @@ class MatchesWithConfidence:
             return {(n0, n1): c for n0, n1, c in zip(self.names1, self.names2, self.confidence)
                     if c > conf_threshold}
 
+    def get_num_matches(self, conf_threshold=0.0):
+        return len(self.get_mapping_0_to_1(conf_threshold))
+
     @property
     def matches_with_conf(self):
         return np.array(np.hstack([self.indices1, self.indices2, self.confidence]))
@@ -75,7 +81,11 @@ class MatchesWithConfidence:
         return MatchesWithConfidence(i1, i2, matches_with_conf[:, 2])
 
     @staticmethod
-    def matches_from_distance_matrix(dist):
+    def matches_from_distance_matrix(dist, gamma=1.0):
         row_i, col_i = linear_sum_assignment(dist)
-        conf = [dist[i, j] for i, j in zip(row_i, col_i)]
-        return MatchesWithConfidence(row_i, col_i, conf)
+        all_dist = [dist[i, j] for i, j in zip(row_i, col_i)]
+        conf = dist2conf(np.array(all_dist), gamma=gamma)
+        return MatchesWithConfidence(row_i, col_i, conf, gamma)
+
+    def __repr__(self):
+        return f"MatchesWithConfidence class with {self.get_num_matches()} matches"
