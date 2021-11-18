@@ -67,6 +67,7 @@ leifer_params:
   use_multiple_templates: true
   core_options:
     topn: 3
+  num_random_templates: null
 
 use_pretrained_dlc: true
 

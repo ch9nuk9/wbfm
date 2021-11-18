@@ -8,6 +8,8 @@ import pandas as pd
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
+from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import matches_between_tracks, \
+    remove_outliers_to_combine_tracks
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, predict_label
 from tqdm.auto import tqdm
@@ -73,30 +75,6 @@ def track_using_fdnc(project_data: ProjectData,
             these_pts = project_data.get_centroids_as_numpy_training(i)
             return zimmer2leifer(these_pts)
 
-    # def _parallel_func(i_frame):
-    #
-    #     pts = project_dat.get_centroids_as_numpy(i_frame)
-    #     pts_scaled = zimmer2leifer(pts)
-    #     # Match
-    #     matches = predict_matches(test_pos=pts_scaled, **prediction_options)
-    #     matches = filter_matches(matches, match_confidence_threshold)
-    #
-    #     # For each match, save location
-    #     for m in matches:
-    #         this_unscaled_pt = pts[m[1]]
-    #         this_template_idx = m[0]
-    #
-    #         neuron_arrays[this_template_idx][i_frame, :3] = this_unscaled_pt
-    #         neuron_arrays[this_template_idx][i_frame, 3] = m[2]  # Match confidence
-
-    # Main loop
-    # with tqdm(total=len(num_frames)) as pbar:
-    #     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-    #         futures = {executor.submit(_parallel_func, i): i for i in range(num_frames)}
-    #         for future in concurrent.futures.as_completed(futures):
-    #             _ = future.result()
-    #             pbar.update(1)
-
     all_matches = []
     for i_frame in tqdm(range(num_frames), total=num_frames, leave=False):
         pts_scaled = get_pts(i_frame)
@@ -147,10 +125,26 @@ def generate_templates_from_training_data(project_data: ProjectData):
     return all_templates
 
 
+def generate_random_templates(project_data: ProjectData, num_templates, seed=42):
+    rng = np.random.default_rng(seed=seed)
+    template_ind = rng.integers(high=project_data.num_frames, size=num_templates)
+
+    all_templates = []
+    for i in template_ind:
+        custom_template = project_data.get_centroids_as_numpy(i)
+        all_templates.append(zimmer2leifer(custom_template))
+    return all_templates, template_ind
+
+
 def track_using_fdnc_multiple_templates(project_data: ProjectData,
                                         base_prediction_options,
-                                        match_confidence_threshold):
-    all_templates = generate_templates_from_training_data(project_data)
+                                        match_confidence_threshold,
+                                        use_random_templates=False,
+                                        num_templates=None):
+    if not use_random_templates:
+        all_templates = generate_templates_from_training_data(project_data)
+    else:
+        all_templates = generate_random_templates(project_data, num_templates=num_templates)
 
     def _parallel_func(template):
         # TODO: is pytorch thread safe?
@@ -192,7 +186,7 @@ def combine_multiple_template_matches(matches_per_template, min_conf=0.1):
 def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
                                  tracks_cfg: SubfolderConfigFile,
                                  DEBUG=False):
-    match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates = \
+    match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates, _ = \
         _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG)
 
     if use_multiple_templates:
@@ -207,19 +201,73 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
 
     logging.info("Saving tracks and matches")
     with safe_cd(project_cfg.project_dir):
-        _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg)
+        output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
+        _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg, output_df_fname)
 
 
-def _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg):
-    output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
+def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
+                                        tracks_cfg: SubfolderConfigFile,
+                                        DEBUG=False):
+    match_confidence_threshold, prediction_options, _, project_data, _, num_templates = \
+        _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG)
+
+    num_templates = 3
+    all_templates, template_ind = generate_random_templates(project_data, num_templates=num_templates)
+
+    # Track using one template at a time, and save them to disk
+    all_dfs = []
+    all_all_matches = []
+    logging.info("Tracking using multiple random templates")
+    for i, template in enumerate(all_templates):
+        all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold)
+
+        df = template_matches_to_dataframe(project_data, all_matches)
+
+        all_dfs.append(df)
+        all_all_matches.append(all_matches)
+
+    with safe_cd(project_cfg.project_dir):
+        for i, (df, all_matches) in enumerate(zip(all_dfs, all_all_matches)):
+            base_df_fname = Path(tracks_cfg.config['leifer_params']['output_df_fname'])
+            base_fname, suffix_fname = base_df_fname.stem, base_df_fname.suffix
+            new_base_fname = f"{base_df_fname}-{i}"
+            this_df_fname = base_df_fname.with_name(f"{new_base_fname}{str(suffix_fname)})")
+            _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg, this_df_fname)
+
+    # Then use the positions to create a dictionary of inter-template names
+    # TODO: Use multiple dataframes as the starting point
+    all_mappings = []
+    df1 = all_dfs[0]
+    for i, df2 in enumerate(all_dfs[1:]):
+        mapping = matches_between_tracks(df1, df2, user_inlier_mode=True,
+                                         inlier_gamma=100.0)
+        df2.rename(columns=mapping.get_mapping_1_to_0_names(), level=0, inplace=True)
+        all_mappings.append(mapping)
+
+    with safe_cd(project_cfg.project_dir):
+        fname = os.path.join('3-tracking', 'random_template_matches.pickle')
+        tracks_cfg.pickle_in_local_project(all_mappings, fname)
+
+    # Combine to make final tracks
+    # TODO: should I calculate the final matches?
+    df_combined = remove_outliers_to_combine_tracks(all_dfs)
+
+    with safe_cd(project_cfg.project_dir):
+        df_fname = Path(tracks_cfg.config['leifer_params']['output_df_fname'])
+        _save_tracks_and_matches([], df_combined, project_cfg, tracks_cfg, df_fname)
+
+
+def _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg, output_df_fname):
     Path(output_df_fname).parent.mkdir(exist_ok=True)
-    df.to_hdf(output_df_fname, key='df_with_missing')
+
+    tracks_cfg.h5_in_local_project(df, output_df_fname, also_save_csv=True)
+    # df.to_hdf(output_df_fname, key='df_with_missing')
 
     tracks_cfg.config['final_3d_tracks_df'] = str(output_df_fname)
     tracks_cfg.update_on_disk()
     # For later visualization
-    output_df_fname = Path(output_df_fname).with_suffix('.csv')
-    df.to_csv(str(output_df_fname))
+    # output_df_fname = Path(output_df_fname).with_suffix('.csv')
+    # df.to_csv(str(output_df_fname))
     output_pickle_fname = Path(output_df_fname).with_name('fdnc_matches.pickle')
     project_cfg.pickle_in_local_project(all_matches, output_pickle_fname)
 
@@ -227,6 +275,7 @@ def _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg):
 def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     use_zimmer_template = tracks_cfg.config['leifer_params']['use_zimmer_template']
     use_multiple_templates = tracks_cfg.config['leifer_params']['use_multiple_templates']
+    num_templates = tracks_cfg.config['leifer_params'].get('num_random_templates', None)
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     if DEBUG:
         project_data.project_config.config['dataset_params']['num_frames'] = 2
@@ -240,7 +289,7 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     fdnc_updates = tracks_cfg.config['leifer_params']['core_options']
     prediction_options.update(fdnc_updates)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
-    return match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates
+    return match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates, num_templates
 
 
 def get_putative_names_from_config(project_config: ModularProjectConfig):

@@ -17,6 +17,7 @@ from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coord
 ## Background subtraction
 ##
 from scipy.optimize import linear_sum_assignment
+from sklearn.neighbors import LocalOutlierFactor
 from tqdm.auto import tqdm
 
 
@@ -398,17 +399,17 @@ def matches_between_tracks(df1, df2, user_inlier_mode=False,
     leifer_names = list(df1.columns.levels[0])
     track_names = list(df2.columns.levels[0])
 
-    zxy_leifer2 = [df1[name][coords].to_numpy() for name in leifer_names]
-    zxy_tracks = [df2[name][coords].to_numpy() for name in track_names]
+    zxy1 = [df1[name][coords].to_numpy() for name in leifer_names]
+    zxy2 = [df2[name][coords].to_numpy() for name in track_names]
 
-    num_i, num_j = len(zxy_tracks), len(zxy_leifer2)
+    num_i, num_j = len(zxy1), len(zxy2)
     all_dist = np.zeros((num_i, num_j))
 
     # Have to do a custom loop because the input is 3d and cdist crashes
     if user_inlier_mode:
-        f = lambda i, j: distance_between_2_tracks(zxy_tracks[i], zxy_leifer2[j])
+        f = lambda i, j: distance_between_2_tracks(zxy1[i], zxy2[j])
     else:
-        f = lambda i, j: inlier_gamma / num_inliers_between_tracks(zxy_tracks[i], zxy_leifer2[j])
+        f = lambda i, j: inlier_gamma / num_inliers_between_tracks(zxy1[i], zxy2[j])
     for i in tqdm(range(num_i), leave=False):
         for j in range(num_j):
             all_dist[i, j] = f(i, j)
@@ -416,3 +417,53 @@ def matches_between_tracks(df1, df2, user_inlier_mode=False,
     matches_with_conf = MatchesWithConfidence.matches_from_distance_matrix(all_dist, gamma=dist2conf_gamma)
 
     return matches_with_conf
+
+
+def remove_outliers_to_combine_tracks(all_dfs_renamed):
+    """
+    Given a list of dataframes with full tracks and correct neuron names, combine all of them into one final track
+        Uses LocalOutlierFactor to detect and remove outlier points in 3d
+
+    Parameters
+    ----------
+    all_dfs_renamed
+
+    Returns
+    -------
+
+    """
+    df1 = all_dfs_renamed[0]
+
+    all_names = list(df1.columns.levels[0])
+    num_t = df1.shape[0]
+    coords = ['z', 'x', 'y']
+    outlier_model = LocalOutlierFactor(n_neighbors=1)
+
+    min_inliers = 1
+
+    dict_new_df = {}
+    for name in tqdm(all_names):
+        these_tracks = [df[name] for df in all_dfs_renamed]
+        new_zxy = np.zeros((num_t, 4))
+        new_zxy[:] = np.nan
+        for i in tqdm(range(num_t), leave=False):
+            these_pts = [track.loc[i, coords] for track in these_tracks if any(~np.isnan(track.loc[i, coords]))]
+            if len(these_pts) < 3:
+                continue
+            inlier_score = outlier_model.fit_predict(these_pts)
+            inliers = list(np.where(inlier_score == 1)[0].astype(int))
+            if len(inliers) > min_inliers:
+                new_pt = np.mean(np.vstack([these_pts[i] for i in inliers]), axis=0)
+                new_zxy[i, :3] = new_pt
+
+                these_conf = [track.loc[i, 'likelihood'] for track in these_tracks]
+                new_conf = np.mean(np.vstack([these_conf[i] for i in inliers]), axis=0)
+                new_zxy[i, 3] = new_conf
+
+        for i, c in enumerate(coords):
+            dict_new_df[(name, c)] = new_zxy[:, i]
+        dict_new_df[(name, 'likelihood')] = new_zxy[:, 3]
+
+    df_new = pd.DataFrame(dict_new_df)
+
+    return df_new
