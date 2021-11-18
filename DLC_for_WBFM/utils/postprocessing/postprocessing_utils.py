@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tifffile
+from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from scipy import ndimage as ndi
 
@@ -383,7 +384,14 @@ def distance_between_2_tracks(u, v):
     return np.nanmedian(np.sqrt(np.sum(np.square(u - v), axis=1)))
 
 
-def distance_between_all_tracks(df1, df2, distance_threshold=10):
+def num_inliers_between_tracks(u, v, inlier_threshold=1e-2):
+    dist = np.sqrt(np.sum(np.square(u - v), axis=1))
+    return len(np.where(dist < inlier_threshold)[0])
+
+
+def matches_between_tracks(df1, df2, user_inlier_mode=False,
+                           dist2conf_gamma=1.0,
+                           inlier_gamma=10.0) -> MatchesWithConfidence:
     coords = ['z', 'x', 'y']
 
     # Find matches between neuron names
@@ -394,17 +402,17 @@ def distance_between_all_tracks(df1, df2, distance_threshold=10):
     zxy_tracks = [df2[name][coords].to_numpy() for name in track_names]
 
     num_i, num_j = len(zxy_tracks), len(zxy_leifer2)
-
     all_dist = np.zeros((num_i, num_j))
 
     # Have to do a custom loop because the input is 3d and cdist crashes
-    for i in range(num_i):
+    if user_inlier_mode:
+        f = lambda i, j: distance_between_2_tracks(zxy_tracks[i], zxy_leifer2[j])
+    else:
+        f = lambda i, j: inlier_gamma / num_inliers_between_tracks(zxy_tracks[i], zxy_leifer2[j])
+    for i in tqdm(range(num_i), leave=False):
         for j in range(num_j):
-            all_dist[i, j] = distance_between_2_tracks(zxy_tracks[i], zxy_leifer2[j])
+            all_dist[i, j] = f(i, j)
 
-    row_i, col_i = linear_sum_assignment(all_dist)
-
-    matches_with_conf = [(int2name(i + 1), int2name(j + 1), all_dist[i, j]) for i, j in zip(row_i, col_i) if
-                        all_dist[i, j] < distance_threshold]
+    matches_with_conf = MatchesWithConfidence.matches_from_distance_matrix(all_dist, gamma=dist2conf_gamma)
 
     return matches_with_conf
