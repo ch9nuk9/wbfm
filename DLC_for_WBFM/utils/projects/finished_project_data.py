@@ -2,17 +2,13 @@ import concurrent
 import logging
 import os
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Tuple
-
 import napari
 import numpy as np
 import pandas as pd
 import zarr
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_matches_to_use_keys_not_int, \
-    fix_global2tracklet_full_dict
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
-
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAnnotator
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
