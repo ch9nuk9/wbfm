@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tifffile
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from scipy import ndimage as ndi
 
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d, get_crop_coords
@@ -14,6 +15,7 @@ from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coord
 ##
 ## Background subtraction
 ##
+from scipy.optimize import linear_sum_assignment
 from tqdm.auto import tqdm
 
 
@@ -371,3 +373,38 @@ def filter_dataframe_using_likelihood(df: pd.DataFrame, threshold, coords=None):
         for x in coords:
             df_filtered.loc[bad_points, (n, x)] = np.nan
     return df_filtered
+
+##
+## Match different IDs
+##
+
+
+def distance_between_2_tracks(u, v):
+    return np.nanmedian(np.sqrt(np.sum(np.square(u - v), axis=1)))
+
+
+def distance_between_all_tracks(df1, df2, distance_threshold=10):
+    coords = ['z', 'x', 'y']
+
+    # Find matches between neuron names
+    leifer_names = list(df1.columns.levels[0])
+    track_names = list(df2.columns.levels[0])
+
+    zxy_leifer2 = [df1[name][coords].to_numpy() for name in leifer_names]
+    zxy_tracks = [df2[name][coords].to_numpy() for name in track_names]
+
+    num_i, num_j = len(zxy_tracks), len(zxy_leifer2)
+
+    all_dist = np.zeros((num_i, num_j))
+
+    # Have to do a custom loop because the input is 3d and cdist crashes
+    for i in range(num_i):
+        for j in range(num_j):
+            all_dist[i, j] = distance_between_2_tracks(zxy_tracks[i], zxy_leifer2[j])
+
+    row_i, col_i = linear_sum_assignment(all_dist)
+
+    matches_with_conf = [(int2name(i + 1), int2name(j + 1), all_dist[i, j]) for i, j in zip(row_i, col_i) if
+                        all_dist[i, j] < distance_threshold]
+
+    return matches_with_conf
