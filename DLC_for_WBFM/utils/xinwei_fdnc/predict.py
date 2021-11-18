@@ -139,12 +139,8 @@ def generate_random_templates(project_data: ProjectData, num_templates, seed=42)
 def track_using_fdnc_multiple_templates(project_data: ProjectData,
                                         base_prediction_options,
                                         match_confidence_threshold,
-                                        use_random_templates=False,
                                         num_templates=None):
-    if not use_random_templates:
-        all_templates = generate_templates_from_training_data(project_data)
-    else:
-        all_templates = generate_random_templates(project_data, num_templates=num_templates)
+    all_templates = generate_templates_from_training_data(project_data)
 
     def _parallel_func(template):
         # TODO: is pytorch thread safe?
@@ -217,7 +213,7 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
     all_dfs = []
     all_all_matches = []
     logging.info("Tracking using multiple random templates")
-    for i, template in enumerate(all_templates):
+    for i, template in tqdm(enumerate(all_templates)):
         all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold)
 
         df = template_matches_to_dataframe(project_data, all_matches)
