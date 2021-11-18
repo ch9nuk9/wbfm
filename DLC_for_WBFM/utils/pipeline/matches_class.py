@@ -5,6 +5,10 @@ from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from scipy.optimize import linear_sum_assignment
 
 
+def reverse_dict(d):
+    return {v: k for k, v in d.items()}
+
+
 @dataclass
 class MatchesWithConfidence:
 
@@ -12,41 +16,57 @@ class MatchesWithConfidence:
     indices2: list
     confidence: list = None
 
+    indices_have_offset: bool = True
+
     @property
     def names1(self):
-        return [int2name(i + 1) for i in self.indices1]
+        if self.indices_have_offset:
+            return [int2name(i + 1) for i in self.indices1]
+        else:
+            return [int2name(i) for i in self.indices1]
 
     @property
     def names2(self):
-        return [int2name(i + 1) for i in self.indices2]
+        if self.indices_have_offset:
+            return [int2name(i + 1) for i in self.indices2]
+        else:
+            return [int2name(i) for i in self.indices2]
 
-    @property
-    def mapping_0_to_1(self):
-        return {n0: n1 for n0, n1 in zip(self.indices1, self.indices2)}
+    def get_mapping_0_to_1(self, conf_threshold=0.0):
+        if self.confidence is None:
+            return {n0: n1 for n0, n1 in zip(self.indices1, self.indices2)}
+        else:
+            return {n0: n1 for n0, n1, c in zip(self.indices1, self.indices2, self.confidence) if c > conf_threshold}
 
-    @property
-    def mapping_1_to_0(self):
-        return {n1: n0 for n0, n1 in zip(self.indices1, self.indices2)}
+    def get_mapping_1_to_0(self, conf_threshold=0.0):
+        return reverse_dict(self.get_mapping_0_to_1(conf_threshold))
 
-    @property
-    def mapping_0_to_1_names(self):
-        return {n0: n1 for n0, n1 in zip(self.names1, self.names2)}
+    def get_mapping_0_to_1_names(self, conf_threshold=0.0):
+        if self.confidence is None:
+            return {n0: n1 for n0, n1 in zip(self.names1, self.names2)}
+        else:
+            return {n0: n1 for n0, n1, c in zip(self.names1, self.names2, self.confidence) if c > conf_threshold}
 
-    @property
-    def mapping_1_to_0_names(self):
-        return {n1: n0 for n0, n1 in zip(self.names1, self.names2)}
+    def get_mapping_1_to_0_names(self, conf_threshold=0.0):
+        return reverse_dict(self.get_mapping_0_to_1_names(conf_threshold))
 
-    @property
-    def mapping_pair_to_conf(self):
-        return {(n0, n1): c for n0, n1, c in zip(self.indices1, self.indices2, self.likelihoods)}
+    def get_mapping_pair_to_conf(self, conf_threshold=0.0):
+        if self.confidence is None:
+            return None
+        else:
+            return {(n0, n1): c for n0, n1, c in zip(self.indices1, self.indices2, self.confidence)
+                    if c > conf_threshold}
 
-    @property
-    def mapping_pair_to_conf_names(self):
-        return {(n0, n1): c for n0, n1, c in zip(self.names1, self.names2, self.likelihoods)}
+    def get_mapping_pair_to_conf_names(self, conf_threshold=0.0):
+        if self.confidence is None:
+            return None
+        else:
+            return {(n0, n1): c for n0, n1, c in zip(self.names1, self.names2, self.confidence)
+                    if c > conf_threshold}
 
     @property
     def matches_with_conf(self):
-        return np.array(np.hstack([self.indices1, self.indices2, self.likelihoods]))
+        return np.array(np.hstack([self.indices1, self.indices2, self.confidence]))
 
     @staticmethod
     def matches_from_array(matches_with_conf):
