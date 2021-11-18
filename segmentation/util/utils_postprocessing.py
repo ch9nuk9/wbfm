@@ -1,6 +1,8 @@
 """
 Postprocessing functions for segmentation pipeline
 """
+from typing import List
+
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
@@ -376,7 +378,9 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
 
 def calc_split_point_via_brightnesses(brightnesses, min_separation,
                                       num_gaussians=2,
-                                      plots=0, verbose=0) -> int:
+                                      min_height=5,
+                                      plots=0, verbose=0,
+                                      return_all=False) -> int:
     """
     calculates the means of 2 gaussians underlying the neuron brightness distributions.
     It tries to match exactly 2 gaussians onto the brightness distribution of a tentative neuron.
@@ -414,13 +418,14 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
         return A1*np.exp(-(x-mu1)**2/(2.*sigma1**2))
 
     def gauss2(x, *p):
-        return gauss1(x, *p[:3]) + gauss1(x, *p[3:])
+        return gauss1(x, *p[1:4]) + gauss1(x, *p[4:]) + p[0]
 
     # def gauss2(x, *p):
     #     A1, mu1, sigma1, A2, mu2, sigma2 = p
     #     return A1*np.exp(-(x-mu1)**2/(2.*sigma1**2)) + A2*np.exp(-(x-mu2)**2/(2.*sigma2**2))
 
     def gauss3(x, *p):
+        raise NotImplementedError
         return gauss1(x, *p[:3]) + gauss1(x, *p[3:6]) + gauss1(x, *p[6:])
 
     p0 = get_initial_gaussian_peaks(min_separation, num_gaussians, y_data)
@@ -428,6 +433,8 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
     if num_gaussians == 2:
         fit_func = gauss2
     elif num_gaussians == 3:
+        if verbose >= 1:
+            print("Attempting to fit 3 gaussians")
         fit_func = gauss3
 
     try:
@@ -439,10 +446,12 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
         return None
 
     if num_gaussians == 2:
-        peaks_of_gaussians = [round(coeff[1]), round(coeff[4])]
+        peaks_of_gaussians = [round(coeff[2]), round(coeff[5])]
     elif num_gaussians == 3:
-        peaks_of_gaussians = [round(coeff[1]), round(coeff[4]), round(coeff[7])]
+        peaks_of_gaussians = [round(coeff[2]), round(coeff[5]), round(coeff[8])]
     peaks_of_gaussians = sanity_checks_on_peaks(brightnesses, peaks_of_gaussians, verbose, y_data, min_separation)
+    heights_of_gaussians = [round(coeff[1]), round(coeff[4])]
+    peaks_of_gaussians = sanity_checks_on_heights(heights_of_gaussians, peaks_of_gaussians, min_height, verbose)
 
     if num_gaussians == 2:
         split_point = calc_split_point_from_gaussians(peaks_of_gaussians, y_data)
@@ -451,11 +460,17 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
         split_point2 = calc_split_point_from_gaussians(peaks_of_gaussians[1:], y_data)
         split_point = [split_point1, split_point2]
 
-    if plots >= 1:
+    if plots >= 1 and num_gaussians == 2:
         # For debugging
-        g1, g2 = _plot_double_gaussian(coeff, gauss2, p0, peaks_of_gaussians, x_data, y_data)
-
-        return split_point, peaks_of_gaussians, g1, g2
+        if peaks_of_gaussians is None:
+            g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gaussians=2)
+        else:
+            g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gaussians=2)
+        if return_all:
+            return split_point, peaks_of_gaussians, y_data, g1, g2, coeff, p0
+        # elif return_all:
+        #     g1 = gauss1(x_data, *coeff[0:3])
+        #     return split_point, None, g1, None
 
     return split_point
 
@@ -484,6 +499,8 @@ def get_initial_gaussian_peaks(min_separation, num_gaussians, y_data):
               np.mean(y_data), peak2, sigma]
     else:
         raise NotImplementedError
+    # Background value
+    p0.insert(0, 15)
     return p0
 
 
@@ -502,6 +519,17 @@ def sanity_checks_on_peaks(brightnesses, peaks_of_gaussians: list, verbose, y_da
         return peaks_of_gaussians
 
 
+def sanity_checks_on_heights(heights_of_gaussians, peaks_of_gaussians, min_height, verbose):
+    if any(x < min_height for x in heights_of_gaussians):
+        # Tiny (non-physical) heights
+        if verbose >= 1:
+            print(f'Non-physical heights, returning None: {heights_of_gaussians}')
+        return None
+    else:
+        return peaks_of_gaussians
+
+
+
 def calc_split_point_from_gaussians(peaks_of_gaussians, y_data):
     if peaks_of_gaussians is None:
         return None
@@ -510,33 +538,36 @@ def calc_split_point_from_gaussians(peaks_of_gaussians, y_data):
     split_point, _ = find_peaks(-inter_peak_brightnesses)
     if len(split_point) > 0:
         split_point = int(split_point[0])
-        split_point += peaks_of_gaussians[0] + 1
+        split_point += peaks_of_gaussians[0] + 2
     else:
         # Plan b: Just take the average
-        split_point = int(np.mean(peaks_of_gaussians))
+        split_point = int(np.mean(peaks_of_gaussians)) + 1
     return split_point
 
 
-def _plot_double_gaussian(coeff, gauss2, p0, peaks_of_gaussians, x_data, y_data):
-    # plot each gaussian separately
-    pg1 = np.zeros_like(p0)
-    pg1[0:3] = coeff[0:3]
-    pg2 = np.zeros_like(p0)
-    pg2[0:3] = coeff[3:]
-    g1 = gauss2(x_data, *pg1)
-    g2 = gauss2(x_data, *pg2)
+def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gaussians):
+    background = coeff[0]
+    y_data -= background
+    coeff = coeff[1:]
+    g1 = gauss1(x_data, *coeff[:3])
+    if num_gaussians > 1:
+        g2 = gauss1(x_data, *coeff[3:])
+    else:
+        g2 = None
     plt.figure()
     plt.plot(x_data, y_data, label='Data')
     plt.plot(x_data, g1, label='Fit1')
-    plt.plot(x_data, g2, label='Fit2')
-    plt.scatter(peaks_of_gaussians, y_data[peaks_of_gaussians], c='red')
+    if num_gaussians > 1:
+        plt.plot(x_data, g2, label='Fit2')
+    if peaks_of_gaussians is not None:
+        plt.scatter(peaks_of_gaussians, y_data[peaks_of_gaussians], c='red')
     plt.title('brightness dist & underlying dists')
     plt.ylabel('brightness')
     plt.xlabel('slice')
     plt.legend(loc='upper right')
     plt.show()
     # plt.savefig(r'.\brightnesses_gaussian_fit.png')
-    return g1, g2
+    return g1, g2, y_data
 
 
 def split_long_neurons(mask_array,
@@ -566,8 +597,8 @@ def split_long_neurons(mask_array,
         neuron_brightnesses[neuron_ID] == [250, 340, 225]
     global_current_neuron : int
         Highest neuron ID in dataset + 1
-    maximum_length : int
-        Threshold for neuron length
+    maximum_length : int or list
+        Threshold for neuron length; if 2 values, then the second threshold will trigger an attempt to fit 3 gaussians
     neuron_z_planes : dict(list)
         Contains the Z-planes corresponding to the brightness values of each neuron
         neuron_ID = 1
@@ -597,14 +628,26 @@ def split_long_neurons(mask_array,
     """
     # if a neuron is too long (>12 slices), it will be cut off and a new neuron will be initialized
 
+    if np.isscalar(maximum_length):
+        length_for_2_gaussians = maximum_length
+        length_for_3_gaussians = np.inf
+    elif len(maximum_length) == 2:
+        length_for_2_gaussians, length_for_3_gaussians = maximum_length
+
     # iterate over neuron lengths dict, and if z >= 12, try to split it
     # TODO iterate over the dictionary itself
     new_neuron_lengths = {}
     for neuron_id, neuron_len in neuron_lengths.items():
-        if neuron_len > maximum_length:
+        if neuron_len > length_for_2_gaussians:
+            num_gaussians = 2
+            if neuron_len > length_for_3_gaussians:
+                num_gaussians = 3
 
             try:
-                x_split_local_coord = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id], min_separation, verbose=verbose - 1)
+                x_split_local_coord = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id],
+                                                                        min_separation,
+                                                                        num_gaussians=num_gaussians,
+                                                                        verbose=verbose - 1)
             except (ValueError, TypeError) as err:
                 if verbose >= 1:
                     print(f'Error while splitting neuron {neuron_id}: Could not fit 2 Gaussians! Will continue.')
@@ -613,32 +656,42 @@ def split_long_neurons(mask_array,
 
             # if neuron can be split
             if x_split_local_coord is not None:
-                # create new entry
-                global_current_neuron += 1
-                new_neuron_lengths[global_current_neuron] = neuron_lengths[neuron_id] - x_split_local_coord - 1
-
-                # update neuron lengths and brightnesses entries; 0-x_split = neuron 1
-                new_neuron_lengths[neuron_id] = x_split_local_coord + 1
-
-                # Convert the length to the z indices of the full mask, not local to the neurons
-                x_split_global_coord = x_split_local_coord + neuron_z_planes[neuron_id][0]
-
-                # update mask array with new mask IDs
-                for plane in mask_array[x_split_global_coord:]:
-                    if neuron_id in plane:
-                        inter_plane = plane == neuron_id
-                        plane[inter_plane] = global_current_neuron
-
-                # update brightnesses and brightness-planes dicts
-                neuron_brightnesses[global_current_neuron] = neuron_brightnesses[neuron_id][x_split_local_coord + 1:]
-                neuron_brightnesses[neuron_id] = neuron_brightnesses[neuron_id][:x_split_local_coord]
-
-                neuron_z_planes[global_current_neuron] = neuron_z_planes[neuron_id][x_split_local_coord + 1:]
-                neuron_z_planes[neuron_id] = neuron_z_planes[neuron_id][:x_split_local_coord]
+                if np.isscalar(x_split_local_coord):
+                    x_split_local_coord = [x_split_local_coord]
+                for i in x_split_local_coord:
+                    global_current_neuron = split_neuron_and_update_dicts(global_current_neuron, mask_array,
+                                                                          neuron_brightnesses, neuron_id, neuron_lengths,
+                                                                          neuron_z_planes, new_neuron_lengths,
+                                                                          i)
+                if verbose >= 1:
+                    print(f"Successfully Fit 2 gaussians to neuron {neuron_id} with split: {x_split_local_coord}")
+                    print(f"Additional neuron ID: {global_current_neuron}")
 
     neuron_lengths.update(new_neuron_lengths)
 
     return mask_array, neuron_lengths, neuron_brightnesses, global_current_neuron, neuron_z_planes
+
+
+def split_neuron_and_update_dicts(global_current_neuron, mask_array, neuron_brightnesses, neuron_id, neuron_lengths,
+                                  neuron_z_planes, new_neuron_lengths, x_split_local_coord):
+    # create new entry
+    global_current_neuron += 1
+    new_neuron_lengths[global_current_neuron] = neuron_lengths[neuron_id] - x_split_local_coord - 1
+    # update neuron lengths and brightnesses entries; 0-x_split = neuron 1
+    new_neuron_lengths[neuron_id] = x_split_local_coord + 1
+    # Convert the length to the z indices of the full mask, not local to the neurons
+    x_split_global_coord = x_split_local_coord + neuron_z_planes[neuron_id][0]
+    # update mask array with new mask IDs
+    for plane in mask_array[x_split_global_coord:]:
+        if neuron_id in plane:
+            inter_plane = plane == neuron_id
+            plane[inter_plane] = global_current_neuron
+    # update brightnesses and brightness-planes dicts
+    neuron_brightnesses[global_current_neuron] = neuron_brightnesses[neuron_id][x_split_local_coord + 1:]
+    neuron_brightnesses[neuron_id] = neuron_brightnesses[neuron_id][:x_split_local_coord]
+    neuron_z_planes[global_current_neuron] = neuron_z_planes[neuron_id][x_split_local_coord + 1:]
+    neuron_z_planes[neuron_id] = neuron_z_planes[neuron_id][:x_split_local_coord]
+    return global_current_neuron
 
 
 def remove_short_neurons(array, neuron_lengths, length_cutoff, brightness, neuron_planes):
