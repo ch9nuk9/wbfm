@@ -127,7 +127,7 @@ def generate_templates_from_training_data(project_data: ProjectData):
 
 def generate_random_templates(project_data: ProjectData, num_templates, seed=42):
     rng = np.random.default_rng(seed=seed)
-    template_ind = rng.integers(high=project_data.num_frames, size=num_templates)
+    template_ind = rng.integers(low=0, high=project_data.num_frames, size=num_templates)
 
     all_templates = []
     for i in template_ind:
@@ -211,7 +211,6 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
     match_confidence_threshold, prediction_options, _, project_data, _, num_templates = \
         _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG)
 
-    num_templates = 3
     all_templates, template_ind = generate_random_templates(project_data, num_templates=num_templates)
 
     # Track using one template at a time, and save them to disk
