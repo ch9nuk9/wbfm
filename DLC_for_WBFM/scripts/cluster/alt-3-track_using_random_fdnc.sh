@@ -11,6 +11,8 @@
 
 pwd; hostname; date
 
+DEBUG=0
+
 while getopts t:n:d: flag
 do
     case "${flag}" in
@@ -26,5 +28,5 @@ CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/alte
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $CMD with project_path=$project_path DEBUG=$DEBUG"
 else
-  python $CMD with project_path="$project_path"
+  python $CMD with project_path="$project_path" DEBUG="$DEBUG"
 fi
