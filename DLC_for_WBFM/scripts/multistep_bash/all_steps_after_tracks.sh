@@ -13,7 +13,7 @@ done
 
 # Make conda functions available
 # https://github.com/conda/conda/issues/7980
-source /home/charles/anaconda3/etc/profile.d/conda.sh
+#source /home/charles/anaconda3/etc/profile.d/conda.sh
 #conda activate my_env
 
 
@@ -24,7 +24,7 @@ if [ "$is_dry_run" ]; then
   echo "Dry run with command: $CMD with project_path=$project_path"
 else
 
-  conda activate torch
+#  conda activate torch
   CMD="${CODE_PATH}/4a-match_tracks_and_segmentation.py"
   python $CMD $SUFFIX
   CMD="${CODE_PATH}/4b-reindex_segmentation_full.py"

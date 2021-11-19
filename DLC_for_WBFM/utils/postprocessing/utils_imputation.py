@@ -46,14 +46,16 @@ def is_spatial_column_name(c):
                 ('area' not in c.lower())
 
 
-def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20, random_state=0, max_iter=20):
+def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20, random_state=0, max_iter=20,
+                         estimator=BayesianRidge()):
     all_nan_columns, df_no_all_nan = remove_all_nan_columns(df_only_locations)
     df_dat = df_no_all_nan.to_numpy()
 
     # This gray import must be present
     from sklearn.experimental import enable_iterative_imputer
     from sklearn.impute import IterativeImputer
-    imputer = IterativeImputer(random_state=random_state,
+    imputer = IterativeImputer(estimator=estimator,
+                               random_state=random_state,
                                missing_values=np.nan,
                                verbose=1,
                                n_nearest_features=n_nearest_features,
