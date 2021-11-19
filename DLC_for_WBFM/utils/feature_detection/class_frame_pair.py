@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 from dataclasses import dataclass
 import numpy as np
 import pandas as pd
@@ -53,6 +54,7 @@ class FramePairOptions:
             default_options.update(self.fdnc_options)
         self.fdnc_options = default_options
 
+
 @dataclass
 class FramePair:
     """Information connecting neurons in two ReferenceFrame objects"""
@@ -81,7 +83,7 @@ class FramePair:
     frame1: ReferenceFrame = None
 
     @property
-    def all_candidate_matches(self):
+    def all_candidate_matches(self) -> list:
         all_matches = self.feature_matches.copy()
         if self.options.add_affine_to_candidates:
             all_matches.extend(self.affine_matches)
@@ -92,7 +94,7 @@ class FramePair:
         return all_matches
 
     @property
-    def num_possible_matches(self):
+    def num_possible_matches(self) -> int:
         if self.frame0 is None:
             return np.nan
         return min(self.frame0.num_neurons(), self.frame1.num_neurons())
@@ -105,17 +107,18 @@ class FramePair:
         self.frame0.rebuild_keypoints()
         self.frame1.rebuild_keypoints()
 
+    def calc_final_matches(self, method='bipartite', **kwargs):
+        if method == 'bipartite':
+            return self.calc_final_matches_using_bipartite_matching(**kwargs)
+        elif method == 'unanimous':
+            return self.calc_final_matches_using_unanimous_voting(**kwargs)
+        else:
+            raise NotImplementedError
+
     def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None,
                                                     z_threshold=None) -> list:
         assert len(self.all_candidate_matches) > 0, "No candidate matches!"
-        if min_confidence is None:
-            min_confidence = self.options.min_confidence
-        else:
-            self.options.min_confidence = min_confidence
-        if z_threshold is None:
-            z_threshold = self.options.z_threshold
-        else:
-            self.options.z_threshold = z_threshold
+        z_threshold, min_confidence = self.use_defaults_if_none(min_confidence, z_threshold)
 
         try:
             matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches,
@@ -126,6 +129,51 @@ class FramePair:
             final_matches = []
         self.final_matches = final_matches
         return final_matches
+
+    def calc_final_matches_using_unanimous_voting(self, min_confidence: float = None,
+                                                  z_threshold=None) -> list:
+        assert len(self.all_candidate_matches) > 0, "No candidate matches!"
+        z_threshold, min_confidence = self.use_defaults_if_none(min_confidence, z_threshold)
+
+        candidates = self.all_candidate_matches
+        candidates = [c for c in candidates if c[2] > min_confidence]
+        candidates = self.filter_matches_using_z_threshold(candidates, z_threshold)
+
+        match_dict = defaultdict(list)
+        conf_dict = defaultdict(list)
+        for c in candidates:
+            if match_dict[c[0]]:
+                # Evaluates false if None or empty
+                if match_dict[c[0]] == c[1]:
+                    # Was the same match
+                    conf_dict[(c[0], c[1])].append(c[2])
+                else:
+                    # Must remove the match from both dictionaries
+                    match_dict[c[0]] = None
+                    conf_dict[(c[0], c[1])] = None
+            elif match_dict[c[0]] is None:
+                continue
+            else:
+                # Is empty (not yet matched)
+                match_dict[c[0]] = c[1]
+                conf_dict[(c[0], c[1])].append(c[2])
+
+        # conf_dict = {k: np.tanh(v) for k, v in conf_dict.items()}
+        final_matches = [[k0, k1, np.mean(v)] for (k0, k1), v in conf_dict.items() if v is not None]
+
+        self.final_matches = final_matches
+        return final_matches
+
+    def use_defaults_if_none(self, min_confidence, z_threshold):
+        if min_confidence is None:
+            min_confidence = self.options.min_confidence
+        else:
+            self.options.min_confidence = min_confidence
+        if z_threshold is None:
+            z_threshold = self.options.z_threshold
+        else:
+            self.options.z_threshold = z_threshold
+        return z_threshold, min_confidence
 
     def get_f0_to_f1_dict(self, matches=None):
         if matches is None:
@@ -153,7 +201,7 @@ class FramePair:
         fname = os.path.join(target_dir, fname)
         df.to_excel(fname, index=False)
 
-    def filter_matches_using_z_threshold(self, matches, z_threshold):
+    def filter_matches_using_z_threshold(self, matches, z_threshold) -> list:
         if z_threshold is None:
             return matches
         n0 = self.frame0.neuron_locs.copy()

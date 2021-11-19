@@ -14,17 +14,18 @@ tracker_params: # OPTIMIZE
 
 pairwise_matching_params:
   add_affine_to_candidates: true
-  affine_num_candidates: 3
+  affine_num_candidates: 1
   add_gp_to_candidates: true
-  gp_num_candidates: 3
-  add_fdnc_to_candidates: true
+  gp_num_candidates: 1
+  add_fdnc_to_candidates: false
   fdnc_options:
-    topn: 3
-  min_confidence: 0.4
+    topn: 1
+  min_confidence: 0.2
   z_threshold: 3
+  matching_method: unanimous  # Or bipartite; more robust if more than 1 candidate per method
 
 postprocessing_params:
-  min_length_to_save: 3
+  min_length_to_save: 5
 
 df_training_3d_tracks: 2-training_data/training_tracklets.h5
 df_3d_tracklets: 2-training_data/all_tracklets.h5
