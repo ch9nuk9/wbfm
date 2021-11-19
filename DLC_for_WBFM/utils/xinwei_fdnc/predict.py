@@ -229,7 +229,7 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
             default_df_fname = Path(tracks_cfg.config['leifer_params']['output_df_fname'])
             base_fname, suffix_fname = default_df_fname.stem, default_df_fname.suffix
             new_base_fname = f"{base_fname}-{i}"
-            this_df_fname = default_df_fname.with_name(f"{new_base_fname}{str(suffix_fname)})")
+            this_df_fname = default_df_fname.with_name(f"{new_base_fname}{str(suffix_fname)}")
 
             pickle_fname = Path(default_df_fname).with_name('random_template_matches.pickle')
             output_pickle_fname = get_sequential_filename(str(pickle_fname))
