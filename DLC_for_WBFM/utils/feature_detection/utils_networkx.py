@@ -160,7 +160,8 @@ def calc_bipartite_from_candidates(all_candidate_matches, min_confidence_after_s
 
 
 def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
-                                 max_dist: float = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+                                 max_dist: float = None,
+                                 gamma: float = 1.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Uses scipy implementation of linear_sum_assignment to calculate best matches
 
@@ -200,7 +201,7 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     #     [matches.pop(i) for i in to_remove]
 
     matches = np.array(matches)
-    conf = calc_confidence_from_distance_array_and_matches(cost_matrix, matches)
+    conf = calc_confidence_from_distance_array_and_matches(cost_matrix, matches, gamma)
     # conf = [conf_func(d) for d in match_dist]
 
     # Return matches twice to fit old function signature
@@ -215,12 +216,12 @@ def dist2conf(dist, gamma=1.0):
 #     return np.array([dist2conf_scalar(d) for d in dist])
 
 
-def calc_confidence_from_distance_array_and_matches(distance_matrix, matches):
+def calc_confidence_from_distance_array_and_matches(distance_matrix, matches, gamma=1.0):
     # Calculate confidences from distance
     conf = np.zeros((matches.shape[0], 1))
     for i, (m0, m1) in enumerate(matches):
         dist = distance_matrix[m0, m1]
-        conf[i] = dist2conf(dist)
+        conf[i] = dist2conf(dist, gamma)
     return conf
 
 
