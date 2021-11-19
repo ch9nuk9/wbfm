@@ -38,6 +38,7 @@ final_3d_postprocessing:
 precedence_tracks:
 - automatic
 - imputed
+- fdnc
 
 precedence_global2tracklet:
   - manual

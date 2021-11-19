@@ -71,8 +71,10 @@ class ProjectData:
         tracking_cfg = self.project_config.get_tracking_config()
 
         # Manual annotations take precedence by default
+        fname = tracking_cfg.config['leifer_params']['output_df_fname']
         possible_fnames = dict(automatic=tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df'),
-                               imputed=tracking_cfg.resolve_relative_path_from_config('missing_data_imputed_df'))
+                               imputed=tracking_cfg.resolve_relative_path_from_config('missing_data_imputed_df'),
+                               fdnc=tracking_cfg.resolve_relative_path(fname, prepend_subfolder=False))
 
         fname_precedence = self.precedence_tracks
         final_tracks = load_file_according_to_precedence(fname_precedence, possible_fnames,

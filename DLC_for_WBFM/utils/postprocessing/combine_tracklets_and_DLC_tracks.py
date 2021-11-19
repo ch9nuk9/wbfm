@@ -450,7 +450,7 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
     if not use_manual_matches:
         project_data.precedence_global2tracklet = ['automatic', 'manual']
     if use_imputed_df:
-        project_data.precedence_tracks = ['imputed', 'automatic']
+        project_data.precedence_tracks = ['imputed', 'automatic', 'fdnc']
 
     with safe_cd(project_cfg.project_dir):
 
