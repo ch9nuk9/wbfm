@@ -179,14 +179,15 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     cost_matrix = cdist(np.array(xyz0), np.array(xyz1), 'euclidean')
     # Scipy can't deal with np.inf, so we want to maximize, not minimize
     # (And set impossible values to 0.0)
-    inv_cost_matrix = 1.0 / (cost_matrix + 1e-6)
-    np.where(inv_cost_matrix < (1.0 / max_dist), 0.0, inv_cost_matrix)
-    inv_cost_matrix = np.nan_to_num(inv_cost_matrix)
+    # inv_cost_matrix = 1.0 / (cost_matrix + 1e-6)
+    # np.where(inv_cost_matrix < (1.0 / max_dist), 0.0, inv_cost_matrix)
+    # inv_cost_matrix = np.nan_to_num(inv_cost_matrix)
 
     try:
-        matches = linear_sum_assignment(inv_cost_matrix, maximize=True)
+        # matches = linear_sum_assignment(inv_cost_matrix, maximize=True)
+        matches = linear_sum_assignment(cost_matrix)
     except ValueError:
-        logging.info(inv_cost_matrix)
+        # logging.info(inv_cost_matrix)
         raise ValueError
     raw_matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     matches = raw_matches.copy()
