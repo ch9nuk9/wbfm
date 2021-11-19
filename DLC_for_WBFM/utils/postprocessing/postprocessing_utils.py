@@ -436,7 +436,7 @@ def remove_outliers_to_combine_tracks(all_dfs_renamed: List[pd.DataFrame]):
     """
     df1 = all_dfs_renamed[0]
 
-    all_names = list(df1.columns.levels[0])
+    final_neuron_names = list(df1.columns.levels[0])
     num_t = df1.shape[0]
     coords = ['z', 'x', 'y']
     outlier_model = LocalOutlierFactor(n_neighbors=int(len(all_dfs_renamed)/3))
@@ -444,7 +444,7 @@ def remove_outliers_to_combine_tracks(all_dfs_renamed: List[pd.DataFrame]):
     min_inliers = 1
 
     dict_new_df = {}
-    for name in tqdm(all_names):
+    for name in tqdm(final_neuron_names):
         these_tracks = [df[name] for df in all_dfs_renamed]
         new_zxy = np.zeros((num_t, 4))
         new_zxy[:] = np.nan

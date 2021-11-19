@@ -240,13 +240,15 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
     # Then use the positions to create a dictionary of inter-template names
     # TODO: Use multiple dataframes as the starting point
     all_mappings = []
-    df1 = all_dfs[0]
-    for i, df2 in enumerate(all_dfs[1:]):
-        mapping = matches_between_tracks(df1, df2, user_inlier_mode=True,
+    df0 = all_dfs[0]
+    for i, df1 in enumerate(all_dfs[1:]):
+        mapping = matches_between_tracks(df0, df1, user_inlier_mode=True,
                                          inlier_gamma=100.0)
-        # Add entries for unmatched neurons
+        # Remove entirely unmatched neurons, and map confidence-thresholded neurons to temporary names
         renaming_dict = mapping.get_mapping_1_to_0_with_unmatched_names()
-        df2.rename(columns=renaming_dict, level=0, inplace=True)
+        df1 = df1[df1.columns.levels[0].intersection(mapping.names1)]
+
+        df1.rename(columns=renaming_dict, level=0, inplace=True)
         all_mappings.append(mapping)
 
     with safe_cd(project_cfg.project_dir):
