@@ -10,7 +10,7 @@ from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import matches_between_tracks, \
     remove_outliers_to_combine_tracks
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_sequential_filename
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, predict_label
 from tqdm.auto import tqdm
 import torch
@@ -198,7 +198,10 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
     logging.info("Saving tracks and matches")
     with safe_cd(project_cfg.project_dir):
         output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
-        _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg, output_df_fname)
+
+        output_pickle_fname = Path(output_df_fname).with_name('fdnc_matches.pickle')
+        project_cfg.pickle_in_local_project(all_matches, str(output_pickle_fname))
+        _save_final_tracks(df, tracks_cfg, output_df_fname)
 
 
 def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
@@ -227,7 +230,12 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
             base_fname, suffix_fname = default_df_fname.stem, default_df_fname.suffix
             new_base_fname = f"{base_fname}-{i}"
             this_df_fname = default_df_fname.with_name(f"{new_base_fname}{str(suffix_fname)})")
-            _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg, this_df_fname)
+
+            pickle_fname = Path(default_df_fname).with_name('random_template_matches.pickle')
+            output_pickle_fname = get_sequential_filename(str(pickle_fname))
+            project_cfg.pickle_in_local_project(all_matches, output_pickle_fname)
+
+            _save_final_tracks(df, tracks_cfg, this_df_fname)
 
     # Then use the positions to create a dictionary of inter-template names
     # TODO: Use multiple dataframes as the starting point
@@ -244,27 +252,20 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
         tracks_cfg.pickle_in_local_project(all_mappings, fname)
 
     # Combine to make final tracks
-    # TODO: should I calculate the final matches?
+    # TODO: should I calculate the final neuron matches, not just tracks?
     df_combined = remove_outliers_to_combine_tracks(all_dfs)
 
     with safe_cd(project_cfg.project_dir):
         df_fname = Path(tracks_cfg.config['leifer_params']['output_df_fname'])
-        _save_tracks_and_matches([], df_combined, project_cfg, tracks_cfg, df_fname)
+        _save_final_tracks(df_combined, tracks_cfg, df_fname)
 
 
-def _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg, output_df_fname):
+def _save_final_tracks(df, tracks_cfg, output_df_fname):
     Path(output_df_fname).parent.mkdir(exist_ok=True)
 
     tracks_cfg.h5_in_local_project(df, output_df_fname, also_save_csv=True)
-    # df.to_hdf(output_df_fname, key='df_with_missing')
-
     tracks_cfg.config['final_3d_tracks_df'] = str(output_df_fname)
     tracks_cfg.update_on_disk()
-    # For later visualization
-    # output_df_fname = Path(output_df_fname).with_suffix('.csv')
-    # df.to_csv(str(output_df_fname))
-    output_pickle_fname = Path(output_df_fname).with_name('fdnc_matches.pickle')
-    project_cfg.pickle_in_local_project(all_matches, output_pickle_fname)
 
 
 def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
