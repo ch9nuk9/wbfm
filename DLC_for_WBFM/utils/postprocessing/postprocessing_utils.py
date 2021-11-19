@@ -445,7 +445,12 @@ def remove_outliers_to_combine_tracks(all_dfs_renamed: List[pd.DataFrame]):
 
     dict_new_df = {}
     for name in tqdm(final_neuron_names):
-        these_tracks = [df[name] for df in all_dfs_renamed]
+        these_tracks = []
+        for df in all_dfs_renamed:
+            try:
+                these_tracks.append(df[name])
+            except KeyError:
+                continue
         new_zxy = np.zeros((num_t, 4))
         new_zxy[:] = np.nan
         for i in tqdm(range(num_t), leave=False):
