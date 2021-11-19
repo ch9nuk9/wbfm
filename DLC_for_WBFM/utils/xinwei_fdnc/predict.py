@@ -61,8 +61,7 @@ def track_using_fdnc(project_data: ProjectData,
                      prediction_options,
                      template,
                      match_confidence_threshold,
-                     full_video_not_training=True,
-                     DEBUG=False) -> list:
+                     full_video_not_training=True) -> list:
     if full_video_not_training:
         num_frames = project_data.num_frames
 
@@ -76,9 +75,6 @@ def track_using_fdnc(project_data: ProjectData,
             these_pts = project_data.get_centroids_as_numpy_training(i)
             return zimmer2leifer(these_pts)
 
-    if DEBUG:
-        num_frames = 3
-
     all_matches = []
     for i_frame in tqdm(range(num_frames), total=num_frames, leave=False):
         pts_scaled = get_pts(i_frame)
@@ -91,7 +87,7 @@ def track_using_fdnc(project_data: ProjectData,
 
 def template_matches_to_dataframe(project_data: ProjectData,
                                   all_matches: list):
-    num_frames = project_data.num_frames
+    num_frames = len(all_matches)
     coords = ['z', 'x', 'y', 'likelihood']
     sz = (num_frames, len(coords))
     neuron_arrays = defaultdict(lambda: np.zeros(sz))
@@ -218,8 +214,7 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
     all_all_matches = []
     logging.info("Tracking using multiple random templates")
     for i, template in tqdm(enumerate(all_templates)):
-        all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold,
-                                       DEBUG=DEBUG)
+        all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold)
 
         df = template_matches_to_dataframe(project_data, all_matches)
 
@@ -278,7 +273,7 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     num_templates = tracks_cfg.config['leifer_params'].get('num_random_templates', None)
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     if DEBUG:
-        project_data.project_config.config['dataset_params']['num_frames'] = 2
+        project_data.project_config.config['dataset_params']['num_frames'] = 3
     if use_zimmer_template:
         # TODO: use a hand-curated segmentation
         custom_template = project_data.get_centroids_as_numpy(0)
