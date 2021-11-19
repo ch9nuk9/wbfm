@@ -105,13 +105,13 @@ def calc_covering_from_distances(all_dist: list,
 
             if needs_split and allowed_tracklet_endpoint_wiggle > 0:
 
-                logging.info("Attempting tracklet wiggling...")
+                # logging.info("Attempting tracklet wiggling...")
                 candidate_name, df_tracklets, i_tracklet, successfully_split = wiggle_tracklet_endpoint_to_remove_conflict(
                     allowed_tracklet_endpoint_wiggle, candidate_name, time_conflicts, df_tracklets, i_tracklet,
                     newly_covered_times)
 
                 if not successfully_split:
-                    logging.info("Tracklet is close by, but removed due to time conflict")
+                    # logging.info("Tracklet is close by, but removed due to time conflict")
                     continue
                 else:
                     is_nan = df_tracklets[candidate_name]['x'].isnull()
