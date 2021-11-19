@@ -11,11 +11,12 @@
 
 pwd; hostname; date
 
-while getopts t:n: flag
+while getopts t:n:d: flag
 do
     case "${flag}" in
         t) project_path=${OPTARG};;
         n) is_dry_run=${OPTARG};;
+        d) DEBUG=${OPTARG};;
         *) raise error "Unknown flag"
     esac
 done
@@ -23,7 +24,7 @@ done
 CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/alternate/3a-track_using_random_fdnc.py"
 
 if [ "$is_dry_run" ]; then
-  echo "Dry run with command: $CMD with project_path=$project_path"
+  echo "Dry run with command: $CMD with project_path=$project_path DEBUG=$DEBUG"
 else
   python $CMD with project_path="$project_path"
 fi
