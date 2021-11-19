@@ -276,7 +276,8 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
     for i, i_frame in tqdm(enumerate(which_frames)):
         matches = []
         for i_row, neuron_df in subset_df.iterrows():
-            i_tracklet = neuron_df['all_ind_local'][i].astype(int)
+            # i_tracklet = neuron_df['all_ind_local'][i].astype(int)
+            i_tracklet = int(neuron_df['all_ind_local'][i])
             seg_ind = segmentation_metadata[i_frame].index[i_tracklet].astype(int)
             # Do keep the (very large) index from the tracklet df
             global_ind = neuron_df['clust_ind'] + 1
