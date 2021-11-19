@@ -2,6 +2,8 @@ import warnings
 from itertools import product
 
 # from matplotlib_scalebar.scalebar import ScaleBar
+from typing import List
+
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
@@ -419,7 +421,7 @@ def matches_between_tracks(df1, df2, user_inlier_mode=False,
     return matches_with_conf
 
 
-def remove_outliers_to_combine_tracks(all_dfs_renamed):
+def remove_outliers_to_combine_tracks(all_dfs_renamed: List[pd.DataFrame]):
     """
     Given a list of dataframes with full tracks and correct neuron names, combine all of them into one final track
         Uses LocalOutlierFactor to detect and remove outlier points in 3d
@@ -450,7 +452,10 @@ def remove_outliers_to_combine_tracks(all_dfs_renamed):
             these_pts = [track.loc[i, coords] for track in these_tracks if any(~np.isnan(track.loc[i, coords]))]
             if len(these_pts) < 3:
                 continue
-            inlier_score = outlier_model.fit_predict(these_pts)
+            try:
+                inlier_score = outlier_model.fit_predict(these_pts)
+            except ValueError:
+                print(these_pts)
             inliers = list(np.where(inlier_score == 1)[0].astype(int))
             if len(inliers) > min_inliers:
                 new_pt = np.mean(np.vstack([these_pts[i] for i in inliers]), axis=0)

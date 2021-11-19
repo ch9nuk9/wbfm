@@ -22,14 +22,14 @@ class MatchesWithConfidence:
     indices_have_offset: bool = True
 
     @property
-    def names1(self):
+    def names0(self):
         if self.indices_have_offset:
             return [int2name(i + 1) for i in self.indices1]
         else:
             return [int2name(i) for i in self.indices1]
 
     @property
-    def names2(self):
+    def names1(self):
         if self.indices_have_offset:
             return [int2name(i + 1) for i in self.indices2]
         else:
@@ -46,9 +46,9 @@ class MatchesWithConfidence:
 
     def get_mapping_0_to_1_names(self, conf_threshold=0.0):
         if self.confidence is None:
-            return {n0: n1 for n0, n1 in zip(self.names1, self.names2)}
+            return {n0: n1 for n0, n1 in zip(self.names0, self.names1)}
         else:
-            return {n0: n1 for n0, n1, c in zip(self.names1, self.names2, self.confidence) if c > conf_threshold}
+            return {n0: n1 for n0, n1, c in zip(self.names0, self.names1, self.confidence) if c > conf_threshold}
 
     def get_mapping_1_to_0_names(self, conf_threshold=0.0):
         return reverse_dict(self.get_mapping_0_to_1_names(conf_threshold))
@@ -60,11 +60,24 @@ class MatchesWithConfidence:
             return {(n0, n1): c for n0, n1, c in zip(self.indices1, self.indices2, self.confidence)
                     if c > conf_threshold}
 
+    def get_mapping_0_to_1_with_unmatched_names(self, conf_threshold=0.0):
+        # Generates a new name with suffix '_unmatched' if the neuron is found in index0, but has no match
+        mapping = self.get_mapping_0_to_1_names(conf_threshold)
+        update_mapping = {n0: f"{n0}_unmatched" for n0 in self.names0 if n0 not in mapping}
+        mapping.update(update_mapping)
+        return mapping
+
+    def get_mapping_1_to_0_with_unmatched_names(self, conf_threshold=0.0):
+        mapping = self.get_mapping_1_to_0_names(conf_threshold)
+        update_mapping = {n1: f"{n1}_unmatched" for n1 in self.names1 if n1 not in mapping}
+        mapping.update(update_mapping)
+        return mapping
+
     def get_mapping_pair_to_conf_names(self, conf_threshold=0.0):
         if self.confidence is None:
             return None
         else:
-            return {(n0, n1): c for n0, n1, c in zip(self.names1, self.names2, self.confidence)
+            return {(n0, n1): c for n0, n1, c in zip(self.names0, self.names1, self.confidence)
                     if c > conf_threshold}
 
     def get_num_matches(self, conf_threshold=0.0):

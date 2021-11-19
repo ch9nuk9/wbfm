@@ -244,7 +244,9 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
     for i, df2 in enumerate(all_dfs[1:]):
         mapping = matches_between_tracks(df1, df2, user_inlier_mode=True,
                                          inlier_gamma=100.0)
-        df2.rename(columns=mapping.get_mapping_1_to_0_names(), level=0, inplace=True)
+        # Add entries for unmatched neurons
+        renaming_dict = mapping.get_mapping_1_to_0_with_unmatched_names()
+        df2.rename(columns=renaming_dict, level=0, inplace=True)
         all_mappings.append(mapping)
 
     with safe_cd(project_cfg.project_dir):
