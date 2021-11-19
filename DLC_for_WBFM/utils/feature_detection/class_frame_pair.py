@@ -160,6 +160,9 @@ class FramePair:
 
         # conf_dict = {k: np.tanh(v) for k, v in conf_dict.items()}
         final_matches = [[k0, k1, np.mean(v)] for (k0, k1), v in conf_dict.items() if v is not None]
+        # Use bipartite matching to remove overmatching
+        matches, conf, _ = calc_bipartite_from_candidates(final_matches)
+        final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
 
         self.final_matches = final_matches
         return final_matches

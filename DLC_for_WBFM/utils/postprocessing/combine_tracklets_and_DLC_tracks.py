@@ -146,7 +146,7 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
     if can_split:
         split_points = []
         split_modes = []  # Options: left or right
-        logging.info(f"Found conflicting time points for a promising tracklet, attempting wiggle: {time_conflicts}")
+        # logging.info(f"Found conflicting time points for a promising tracklet, attempting wiggle: {time_conflicts}")
         for conflict_name, conflict_ind in time_conflicts.items():
             assert np.all(np.diff(conflict_ind) >= 0), "Indices must be sorted or will cause incorrect results"
             if len(conflict_ind) > allowed_tracklet_endpoint_wiggle:
