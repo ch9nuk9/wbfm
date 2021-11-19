@@ -61,7 +61,8 @@ def track_using_fdnc(project_data: ProjectData,
                      prediction_options,
                      template,
                      match_confidence_threshold,
-                     full_video_not_training=True) -> list:
+                     full_video_not_training=True,
+                     DEBUG=False) -> list:
     if full_video_not_training:
         num_frames = project_data.num_frames
 
@@ -74,6 +75,9 @@ def track_using_fdnc(project_data: ProjectData,
         def get_pts(i):
             these_pts = project_data.get_centroids_as_numpy_training(i)
             return zimmer2leifer(these_pts)
+
+    if DEBUG:
+        num_frames = 3
 
     all_matches = []
     for i_frame in tqdm(range(num_frames), total=num_frames, leave=False):
@@ -214,7 +218,8 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
     all_all_matches = []
     logging.info("Tracking using multiple random templates")
     for i, template in tqdm(enumerate(all_templates)):
-        all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold)
+        all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold,
+                                       DEBUG=DEBUG)
 
         df = template_matches_to_dataframe(project_data, all_matches)
 
