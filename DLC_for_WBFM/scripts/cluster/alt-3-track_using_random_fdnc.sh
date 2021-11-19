@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-#SBATCH --job-name=fdnc_tracking
+#SBATCH --job-name=fdnc_random_tracking
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
-#SBATCH --time=6:00:00
+#SBATCH --time=24:00:00
 #SBATCH --mem=8G
 #SBATCH --partition=gpu
 # #SBATCH --cpus-per-task=8
