@@ -91,8 +91,8 @@ class ProjectData:
         fname_precedence = self.precedence_global2tracklet
         global2tracklet = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                             this_reader=pickle_load_binary)
-
-        global2tracklet = fix_global2tracklet_full_dict(self.df_all_tracklets, global2tracklet)
+        if global2tracklet is not None:
+            global2tracklet = fix_global2tracklet_full_dict(self.df_all_tracklets, global2tracklet)
         return global2tracklet
 
     @cached_property
