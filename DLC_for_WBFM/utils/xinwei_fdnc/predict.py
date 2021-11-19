@@ -228,10 +228,10 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
 
     with safe_cd(project_cfg.project_dir):
         for i, (df, all_matches) in enumerate(zip(all_dfs, all_all_matches)):
-            base_df_fname = Path(tracks_cfg.config['leifer_params']['output_df_fname'])
-            base_fname, suffix_fname = base_df_fname.stem, base_df_fname.suffix
-            new_base_fname = f"{base_df_fname}-{i}"
-            this_df_fname = base_df_fname.with_name(f"{new_base_fname}{str(suffix_fname)})")
+            default_df_fname = Path(tracks_cfg.config['leifer_params']['output_df_fname'])
+            base_fname, suffix_fname = default_df_fname.stem, default_df_fname.suffix
+            new_base_fname = f"{base_fname}-{i}"
+            this_df_fname = default_df_fname.with_name(f"{new_base_fname}{str(suffix_fname)})")
             _save_tracks_and_matches(all_matches, df, project_cfg, tracks_cfg, this_df_fname)
 
     # Then use the positions to create a dictionary of inter-template names

@@ -437,7 +437,7 @@ def remove_outliers_to_combine_tracks(all_dfs_renamed):
     all_names = list(df1.columns.levels[0])
     num_t = df1.shape[0]
     coords = ['z', 'x', 'y']
-    outlier_model = LocalOutlierFactor(n_neighbors=1)
+    outlier_model = LocalOutlierFactor(n_neighbors=int(len(all_dfs_renamed)/3))
 
     min_inliers = 1
 
