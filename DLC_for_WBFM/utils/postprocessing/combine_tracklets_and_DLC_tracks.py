@@ -68,8 +68,9 @@ def calc_covering_from_distances(all_dist: list,
         covering_time_points = []
     if covering_tracklet_names is None:
         covering_tracklet_names = []
-    all_medians = list(map(np.nanmedian, all_dist))
-    i_sorted_by_median_distance = np.argsort(all_medians)
+    # all_medians = list(map(np.nanmedian, all_dist))
+    all_summarized_dist = list(map(lambda x: np.nanquantile(x, 0.1), all_dist))
+    i_sorted_by_median_distance = np.argsort(all_summarized_dist)
     all_tracklet_names = list(df_tracklets.columns.levels[0])
 
     # TODO: refactor to remove indices, and only return names
@@ -84,7 +85,7 @@ def calc_covering_from_distances(all_dist: list,
         if candidate_name in used_names:
             continue
         # Check distance; break because they are sorted by distance
-        this_distance = all_medians[i_tracklet]
+        this_distance = all_summarized_dist[i_tracklet]
         if this_distance > d_max:
             break
 
