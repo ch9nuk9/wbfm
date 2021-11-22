@@ -7,6 +7,19 @@ zimmer_um_per_pixel_z = 1
 leifer_um_per_unit = 84
 
 
+def zimmer2physical(vol0_zxy: np.ndarray) -> np.ndarray:
+    # xy, then z
+    xy_in_um = vol0_zxy[:, [1, 2]] * zimmer_um_per_pixel_xy
+    xy_in_physical = xy_in_um
+
+    z_in_um = vol0_zxy[:, [0]] * zimmer_um_per_pixel_z
+    z_in_physical = z_in_um
+
+    zxy_in_phyical = np.hstack([z_in_physical, xy_in_physical])
+
+    return zxy_in_phyical
+
+
 def zimmer2leifer(vol0_zxy: np.ndarray) -> np.ndarray:
     """ Target: 1 unit = 84 um"""
     #
