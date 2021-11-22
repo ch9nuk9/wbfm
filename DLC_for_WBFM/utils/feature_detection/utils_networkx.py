@@ -160,7 +160,8 @@ def calc_bipartite_from_candidates(all_candidate_matches, min_confidence_after_s
 
 
 def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
-                                 max_dist: float = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+                                 max_dist: float = None,
+                                 gamma: float = 1.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Uses scipy implementation of linear_sum_assignment to calculate best matches
 
@@ -179,14 +180,15 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     cost_matrix = cdist(np.array(xyz0), np.array(xyz1), 'euclidean')
     # Scipy can't deal with np.inf, so we want to maximize, not minimize
     # (And set impossible values to 0.0)
-    inv_cost_matrix = 1.0 / (cost_matrix + 1e-6)
-    np.where(inv_cost_matrix < (1.0 / max_dist), 0.0, inv_cost_matrix)
-    inv_cost_matrix = np.nan_to_num(inv_cost_matrix)
+    # inv_cost_matrix = 1.0 / (cost_matrix + 1e-6)
+    # np.where(inv_cost_matrix < (1.0 / max_dist), 0.0, inv_cost_matrix)
+    # inv_cost_matrix = np.nan_to_num(inv_cost_matrix)
 
     try:
-        matches = linear_sum_assignment(inv_cost_matrix, maximize=True)
+        # matches = linear_sum_assignment(inv_cost_matrix, maximize=True)
+        matches = linear_sum_assignment(cost_matrix)
     except ValueError:
-        logging.info(inv_cost_matrix)
+        # logging.info(inv_cost_matrix)
         raise ValueError
     raw_matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     matches = raw_matches.copy()
@@ -199,7 +201,7 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
     #     [matches.pop(i) for i in to_remove]
 
     matches = np.array(matches)
-    conf = calc_confidence_from_distance_array_and_matches(cost_matrix, matches)
+    conf = calc_confidence_from_distance_array_and_matches(cost_matrix, matches, gamma)
     # conf = [conf_func(d) for d in match_dist]
 
     # Return matches twice to fit old function signature
@@ -214,12 +216,12 @@ def dist2conf(dist, gamma=1.0):
 #     return np.array([dist2conf_scalar(d) for d in dist])
 
 
-def calc_confidence_from_distance_array_and_matches(distance_matrix, matches):
+def calc_confidence_from_distance_array_and_matches(distance_matrix, matches, gamma=1.0):
     # Calculate confidences from distance
     conf = np.zeros((matches.shape[0], 1))
     for i, (m0, m1) in enumerate(matches):
         dist = distance_matrix[m0, m1]
-        conf[i] = dist2conf(dist)
+        conf[i] = dist2conf(dist, gamma)
     return conf
 
 
