@@ -47,7 +47,9 @@ def is_spatial_column_name(c):
 
 
 def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20, random_state=0, max_iter=20,
-                         estimator=BayesianRidge()):
+                         estimator=BayesianRidge(), imputer_kwargs=None, to_scale=True):
+    if imputer_kwargs is None:
+        imputer_kwargs = {}
     all_nan_columns, df_no_all_nan = remove_all_nan_columns(df_only_locations)
     df_dat = df_no_all_nan.to_numpy()
 
@@ -59,19 +61,21 @@ def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20,
                                missing_values=np.nan,
                                verbose=1,
                                n_nearest_features=n_nearest_features,
-                               max_iter=max_iter)
-    scaler = StandardScaler()
-    dat_normalized = scaler.fit_transform(df_dat)
-    dat_sklearn = imputer.fit_transform(dat_normalized)
-    # if dat_sklearn.shape[0] != dat_normalized.shape[0]:
-    #     logging.warning("Column of all nan; will cause imputation errors")
-    #     raise ParameterTooStringentError('likelihood_thresh', '')
-    dat_sklearn = scaler.inverse_transform(dat_sklearn)
+                               max_iter=max_iter,
+                               **imputer_kwargs)
+    if to_scale:
+        scaler = StandardScaler()
+        dat_normalized = scaler.fit_transform(df_dat)
+        dat_sklearn = imputer.fit_transform(dat_normalized)
+        dat_sklearn = scaler.inverse_transform(dat_sklearn)
+    else:
+        dat_sklearn = imputer.fit_transform(df_dat)
+        scaler = None
     df_sklearn = pd.DataFrame(data=dat_sklearn, columns=df_no_all_nan.columns)
 
     df_sklearn = replace_all_nan_columns(all_nan_columns, df_sklearn)
 
-    return df_sklearn
+    return df_sklearn, imputer, scaler
 
 
 def replace_all_nan_columns(all_nan_columns, df_sklearn):
@@ -117,7 +121,7 @@ def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
     df_only_locations, old2new_names = df_of_only_locations(df_filtered)
 
     # Impute and update
-    df_imputed = scale_impute_descale(df_only_locations, n_nearest_features)
+    df_imputed = scale_impute_descale(df_only_locations, n_nearest_features)[0]
     df_final = update_dataframe_using_flat_names(df_raw, df_imputed, old2new_names)
 
     # Save
