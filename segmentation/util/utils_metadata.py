@@ -53,6 +53,7 @@ def get_metadata_dictionary(masks, original_vol):
     df = pd.DataFrame(index=neurons,
                       columns=['total_brightness', 'neuron_volume', 'centroids', 'all_values'])
 
+    # TODO: refactor regionprops outside of list
     for n in neurons:
         neuron_mask = masks == n
         neuron_vol = np.count_nonzero(neuron_mask)

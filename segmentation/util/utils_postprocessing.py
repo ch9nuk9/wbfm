@@ -529,7 +529,6 @@ def sanity_checks_on_heights(heights_of_gaussians, peaks_of_gaussians, min_heigh
         return peaks_of_gaussians
 
 
-
 def calc_split_point_from_gaussians(peaks_of_gaussians, y_data):
     if peaks_of_gaussians is None:
         return None
