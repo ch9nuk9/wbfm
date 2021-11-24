@@ -7,7 +7,7 @@ from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.xinwei_fdnc.predict import track_using_fdnc_from_config
+from DLC_for_WBFM.utils.nn_utils.fdnc_predict import track_using_fdnc_from_config
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

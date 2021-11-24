@@ -12,7 +12,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates, dist2conf
-from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer, flatten_nested_list
+from DLC_for_WBFM.utils.nn_utils.data_formatting import zimmer2leifer, flatten_nested_list
 
 
 @dataclass
@@ -45,7 +45,7 @@ class FramePairOptions:
     z_to_xy_ratio: float = 3.0
 
     def __post_init__(self):
-        from DLC_for_WBFM.utils.xinwei_fdnc.predict import load_fdnc_options
+        from DLC_for_WBFM.utils.nn_utils.fdnc_predict import load_fdnc_options
         default_options = load_fdnc_options()
 
         if self.fdnc_options is None:

@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Experiment tracking
 import sacred
-from DLC_for_WBFM.utils.xinwei_fdnc.predict import get_putative_names_from_config
+from DLC_for_WBFM.utils.nn_utils.fdnc_predict import get_putative_names_from_config
 from sacred import Experiment
 
 # main function

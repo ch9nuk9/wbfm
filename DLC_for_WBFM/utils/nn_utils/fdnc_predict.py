@@ -18,7 +18,7 @@ import torch
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
-from DLC_for_WBFM.utils.xinwei_fdnc.formatting import zimmer2leifer
+from DLC_for_WBFM.utils.nn_utils.data_formatting import zimmer2leifer
 
 default_package_path = "/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID"
 
