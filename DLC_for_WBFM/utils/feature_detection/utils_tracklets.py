@@ -446,10 +446,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
                 return match_key, k, v
         return None, None, None
 
-    # Main storage, with fewer columns
-    # columns = ['clust_ind', 'all_ind_local', 'all_xyz',
-    #            'all_prob', 'slice_ind']
-    # clust_df = pd.DataFrame(columns=columns)
+    # List of dataframes that will be concatenated
     all_dfs = []
 
     # Individual tracks
@@ -490,8 +487,8 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
             for i_pair in remaining_frame_pair_indices:
                 next_match_key = (i_pair, i_pair + 1)
                 next_match_dict = dict_of_match_dicts.get(next_match_key, {})
-                # next_match_dict = dict_of_match_dicts[next_match_key]
                 if i1 in next_match_dict:
+                    # These lines are just saving this match
                     i0, i1 = i1, next_match_dict[i1]
                     i_frame = next_match_key[1]
 
