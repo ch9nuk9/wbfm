@@ -12,6 +12,8 @@ import torch
 import pandas as pd
 from DLC_for_WBFM.utils.nn_utils.siamese import Siamese
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+import wandb
+# !wandb login
 
 
 logging.info("Loading initial data...")
@@ -30,6 +32,8 @@ df_long_tracklets = df.loc[to_keep].copy()
 
 logging.info("Initializing network and hyperparameters...")
 model = Siamese(embedding_dim=16)
+wandb.init(project='debuggingnn')
+wandb.watch(model, log='all')
 
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 criterion = nn.TripletMarginLoss(margin=1.0)
@@ -41,6 +45,8 @@ epochs = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 if device == 'cuda':
     print("Found cuda!")
+else:
+    print("Did not find cuda")
 clip_value = 5
 
 logging.info("Running network...")
@@ -73,6 +79,7 @@ for epoch in tqdm(range(epochs), desc="Epochs"):
         if np.isnan(this_loss):
             print("Loss is nan, stopping")
             break
+        wandb.log({'Loss': this_loss})
     all_losses.extend(running_loss)
 
     logging.info("Saving network...")

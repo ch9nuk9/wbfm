@@ -1,7 +1,12 @@
+import os
+import pickle
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from skimage.measure import regionprops
 import torch
+from torch.utils.data import Dataset
 
 
 def get_bbox_data(i_tracklet, df, project_data, t_local=None, target_sz=np.array([8, 64, 64])):
@@ -96,3 +101,54 @@ def build_train_loader_batch(df, project_data, max_iters=100, batch_size=4):
             all_d1.append(d1)
             all_d2.append(d2)
         yield torch.cat(all_d0, 0), torch.cat(all_d1, 0), None, torch.cat(all_d2, 0), None
+
+
+def save_training_data(df, project_data, num_triplets=1000):
+    # Saves to disk for use with pytorch DataLoader class
+    single_loader = build_train_loader(df, project_data, max_iters=num_triplets)
+
+    relative_dir = 'nn_training'
+    out_dir = os.path.join(project_data.project_dir, relative_dir)
+    Path(out_dir).mkdir(exist_ok=True)
+
+    # all_subfolders = []
+    # all_label_triplets = []
+    metadata_dict = {}
+    for i, (d0, d1, label1, d2, label2) in enumerate(single_loader):
+        # all_label_triplets.append([label1, label1, label2])
+        subfolder = os.path.join(out_dir, f"triplet_{i}")
+        Path(subfolder).mkdir(exist_ok=False)
+        fname1 = os.path.join(subfolder, "anchor.pt")
+        torch.save(d0, fname1)
+        fname2 = os.path.join(subfolder, "positive.pt")
+        torch.save(d1, fname2)
+        fname3 = os.path.join(subfolder, "negative.pt")
+        torch.save(d2, fname3)
+
+        metadata_dict[subfolder] = [label1, label1, label2]
+        # all_subfolders.append(subfolder)
+        # all_fname_triplets.append([fname1, fname2, fname3])
+
+    fname = os.path.join(relative_dir, 'metadata.pickle')
+    project_data.project_config.pickle_in_local_project(metadata_dict, fname)
+
+
+class NeuronTripletDataset(Dataset):
+    def __init__(self, training_dir):
+        self.training_dir = training_dir
+        with open(os.path.join(training_dir, 'metadata.pickle'), 'rb') as f:
+            self.metadata_dict = pickle.load(f)
+        self.subfolders = list(self.metadata_dict.keys())
+
+    def __len__(self):
+        return len(self.metadata_dict)
+
+    def __getitem__(self, idx):
+        subfolder = self.subfolders[idx]
+        fnames = ["anchor.pt", "positive.pt", "negative.pt"]
+        data = [torch.load(os.path.join(subfolder, f)) for f in fnames]
+        data = [torch.squeeze(d, dim=0) for d in data]  # Needed for batches
+        labels = self.metadata_dict[subfolder]
+
+        # labels[0] == labels[1]
+        return data[0], data[1], labels[1], data[2], labels[2]
