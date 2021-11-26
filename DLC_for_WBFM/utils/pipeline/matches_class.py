@@ -13,33 +13,51 @@ def reverse_dict(d):
 @dataclass
 class MatchesWithConfidence:
 
-    indices1: list
-    indices2: list
+    indices0: list = None
+    indices1: list = None
     confidence: list = None
 
     dist2conf_gamma: float = None
 
     indices_have_offset: bool = True
 
+    # TODO
+    reason_for_matches: list = None
+
     @property
     def names0(self):
+        if self.indices_have_offset:
+            return [int2name(i + 1) for i in self.indices0]
+        else:
+            return [int2name(i) for i in self.indices0]
+
+    @property
+    def names1(self):
         if self.indices_have_offset:
             return [int2name(i + 1) for i in self.indices1]
         else:
             return [int2name(i) for i in self.indices1]
 
-    @property
-    def names1(self):
-        if self.indices_have_offset:
-            return [int2name(i + 1) for i in self.indices2]
-        else:
-            return [int2name(i) for i in self.indices2]
+    def __post_init__(self):
+        if self.indices0 is None:
+            self.indices0 = []
+        if self.indices1 is None:
+            self.indices1 = []
+        if self.confidence is None:
+            self.confidence = []
+
+    def add_match(self, new_match):
+        assert len(new_match) == 3
+
+        self.indices0.append(new_match[0])
+        self.indices1.append(new_match[1])
+        self.confidence.append(new_match[2])
 
     def get_mapping_0_to_1(self, conf_threshold=0.0):
         if self.confidence is None:
-            return {n0: n1 for n0, n1 in zip(self.indices1, self.indices2)}
+            return {n0: n1 for n0, n1 in zip(self.indices0, self.indices1)}
         else:
-            return {n0: n1 for n0, n1, c in zip(self.indices1, self.indices2, self.confidence) if c > conf_threshold}
+            return {n0: n1 for n0, n1, c in zip(self.indices0, self.indices1, self.confidence) if c > conf_threshold}
 
     def get_mapping_1_to_0(self, conf_threshold=0.0):
         return reverse_dict(self.get_mapping_0_to_1(conf_threshold))
@@ -57,7 +75,7 @@ class MatchesWithConfidence:
         if self.confidence is None:
             return None
         else:
-            return {(n0, n1): c for n0, n1, c in zip(self.indices1, self.indices2, self.confidence)
+            return {(n0, n1): c for n0, n1, c in zip(self.indices0, self.indices1, self.confidence)
                     if c > conf_threshold}
 
     def get_mapping_0_to_1_with_unmatched_names(self, conf_threshold=0.0):
@@ -85,7 +103,7 @@ class MatchesWithConfidence:
 
     @property
     def matches_with_conf(self):
-        return np.array(np.hstack([self.indices1, self.indices2, self.confidence]))
+        return np.array(np.hstack([self.indices0, self.indices1, self.confidence]))
 
     @staticmethod
     def matches_from_array(matches_with_conf):

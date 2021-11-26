@@ -14,6 +14,8 @@ import pandas as pd
 from DLC_for_WBFM.utils.nn_utils.siamese import Siamese
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 import wandb
+from torch.utils.data import random_split
+
 # !wandb login
 
 
@@ -53,16 +55,20 @@ num_labels = 1028  # Tracklets are treated as different neurons
 
 model = Siamese(embedding_dim=embedding_dim)
 
-optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=0.001)
 metric = ArcMarginProduct(embedding_dim, num_labels, easy_margin=True, device=device)
+optimizer = optim.Adam([{'params': model.parameters()}, {'params': metric.parameters()}],
+                       lr=0.001, weight_decay=0.0001)
 # metric = None
 criterion = nn.TripletMarginLoss(margin=1.0)
 # criterion = torch.jit.script(TripletLoss())
 # criterion = torch.jit.script(nn.CrossEntropyLoss())
 training_folder = os.path.join(project_data.project_dir, 'nn_training')
 training_opt = {'batch_size': 8}
+# TODO: Just using a small subset for now
 training_dataset = NeuronTripletDataset(training_folder, remap_labels=True)
-train_loader = DataLoader(training_dataset, **training_opt)
+small_dataset, large_dataset = random_split(training_dataset, [100, 900], generator=torch.Generator().manual_seed(42))
+train_loader = DataLoader(small_dataset, **training_opt)
+# train_loader = DataLoader(training_dataset, **training_opt)
 
 # clip_value = 5
 
@@ -111,11 +117,11 @@ with wandb.init(project="debuggingnn", entity="charlesfieseler"):
             if np.isnan(this_loss):
                 print("Loss is nan, stopping")
                 break
-            wandb.log({'Loss': this_loss})
         all_losses.extend(running_loss)
+        wandb.log({'Loss': this_loss})
 
-        logging.info("Saving network...")
         if epoch % 10 == 0:
+            logging.info("Saving network...")
             fname = os.path.join(project_data.project_dir, f'siamese_epoch{epoch}')
             fname = get_sequential_filename(fname)
             torch.save(model.state_dict(), fname)
