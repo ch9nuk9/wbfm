@@ -35,3 +35,7 @@ old/example-feature-workflow/feature_alignment/Extract_traces.ipynb
 DLC_for_WBFM/new_project_defaults/snakemake/.snakemake/
 *.out.*
 *.out
+/DLC_for_WBFM/notebooks/alternative_ideas/wandb/*
+/DLC_for_WBFM/scripts/nn_training/wandb/*
+/DLC_for_WBFM/logs/*
+/DLC_for_WBFM/scratch/*
