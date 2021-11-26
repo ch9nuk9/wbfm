@@ -35,6 +35,8 @@ class ArcMarginProduct(nn.Module):
         self.th = math.cos(math.pi - m)
         self.mm = math.sin(math.pi - m) * m
 
+        self.device = device
+
     def forward(self, input, label):
         # --------------------------- cos(theta) & phi(theta) ---------------------------
         cosine = F.linear(F.normalize(input), F.normalize(self.weight))
@@ -74,6 +76,8 @@ class AddMarginProduct(nn.Module):
         self.m = m
         self.weight = Parameter(torch.FloatTensor(out_features, in_features))
         nn.init.xavier_uniform_(self.weight)
+
+        self.device = device
 
     def forward(self, input, label):
         # --------------------------- cos(theta) & phi(theta) ---------------------------

@@ -1,11 +1,8 @@
 # Load a project and data, then train a Siamese network
 import logging
 import os
-from random import random
-
 import numpy as np
 import torch.optim as optim
-from DLC_for_WBFM.utils.nn_utils.data_loading import build_train_loader_batch
 from DLC_for_WBFM.utils.nn_utils.losses import ArcMarginProduct
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename
 from tqdm.auto import tqdm
@@ -22,9 +19,9 @@ import wandb
 
 seed = 43
 
-random.seed(seed)
-torch.manual_seed(0)
-np.random.seed(0)
+# random.seed(seed)
+torch.manual_seed(seed)
+np.random.seed(seed)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
