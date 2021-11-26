@@ -134,11 +134,17 @@ def save_training_data(df, project_data, num_triplets=1000):
 
 
 class NeuronTripletDataset(Dataset):
-    def __init__(self, training_dir):
+
+    def __init__(self, training_dir, remap_labels=False):
         self.training_dir = training_dir
         with open(os.path.join(training_dir, 'metadata.pickle'), 'rb') as f:
             self.metadata_dict = pickle.load(f)
         self.subfolders = list(self.metadata_dict.keys())
+
+        # The raw labels could be very very large, corresponding to the tracklets they came from
+        self.remap_labels = remap_labels
+        self.label_mapping = {}
+        self.current_label = 0
 
     def __len__(self):
         return len(self.metadata_dict)
@@ -149,6 +155,15 @@ class NeuronTripletDataset(Dataset):
         data = [torch.load(os.path.join(subfolder, f)) for f in fnames]
         data = [torch.squeeze(d, dim=0) for d in data]  # Needed for batches
         labels = self.metadata_dict[subfolder]
+        if self.remap_labels:
+            new_labels = []
+            for label in labels:
+                if label not in self.label_mapping:
+                    self.label_mapping[label] = self.current_label
+                    self.current_label += 1
+                new_labels.append(self.label_mapping[label])
+        else:
+            new_labels = labels
 
-        # labels[0] == labels[1]
-        return data[0], data[1], labels[1], data[2], labels[2]
+        # expect: labels[0] == labels[1]
+        return data[0], data[1], new_labels[1], data[2], new_labels[2]

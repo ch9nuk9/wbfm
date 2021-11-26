@@ -6,6 +6,7 @@ class Siamese(nn.Module):
     def __init__(self, embedding_dim=4096):
         super(Siamese, self).__init__()
         self.conv = nn.Sequential(
+            nn.BatchNorm3d(1),
             nn.Conv3d(1, 64, 4, padding=3),  # 64@8*64*64
             nn.BatchNorm3d(64),
             nn.LeakyReLU(inplace=True),
