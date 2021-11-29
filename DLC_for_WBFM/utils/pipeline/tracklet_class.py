@@ -14,8 +14,9 @@ class TrackedNeuron:
 
     name: str
     initialization_frame: int
+    # initialization_neuron_name: str
 
-    tracklet_matches: MatchesWithConfidence = MatchesWithConfidence()
+    tracklet_matches: MatchesWithConfidence = None
     tracklet_covering_ind: list = None
 
     verbose: int = 0
@@ -23,6 +24,8 @@ class TrackedNeuron:
     def __post_init__(self):
         if self.tracklet_covering_ind is None:
             self.tracklet_covering_ind = []
+        if self.tracklet_matches is None:
+            self.tracklet_matches = MatchesWithConfidence()
 
     # For use when assigning matches and iterating over time
     @property
@@ -67,15 +70,21 @@ class TrackedWorm:
 
         return new_neuron
 
-    def tracks_with_gap_at_or_after_time(self, t):
+    def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, str]:
         return {name: neuron for name, neuron in self.neurons.items() if t > neuron.next_gap}
 
 
 @dataclass
 class TrackletDictionary:
 
-    data: pd.DataFrame
+    df_tracklets_zxy: pd.DataFrame
     segmentation_metadata: DetectedNeurons
+
+    df_tracklet_matches: pd.DataFrame = None
+
+    @property
+    def all_tracklet_names(self):
+        return self.df_tracklets_zxy.columns.get_level_values(0).drop_duplicates()
 
     def get_closest_tracklet_to_point(self,
                                       i_time,
@@ -83,7 +92,7 @@ class TrackletDictionary:
                                       nbr_obj: NearestNeighbors = None,
                                       nonnan_ind=None,
                                       verbose=0):
-        df_tracklets = self.data
+        df_tracklets = self.df_tracklets_zxy
         # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
         all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))
 
@@ -118,3 +127,7 @@ class TrackletDictionary:
         # TODO: Directly use the neuron id - tracklet id matching dataframe
         target_pt = self.segmentation_metadata.mask_index_to_zxy(i_time, seg_ind)
         return self.get_closest_tracklet_to_point(i_time, target_pt)
+
+    def get_neuron_index_within_tracklet(self, i_tracklet, t_local):
+        this_tracklet = self.df_tracklet_matches.loc[i_tracklet]
+        return this_tracklet['all_ind_local'][t_local]

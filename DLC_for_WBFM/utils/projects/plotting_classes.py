@@ -199,7 +199,7 @@ class TrackletAnnotator:
 
         if self.verbose >= 1:
             self.print_current_status(neuron_name)
-        these_tracklets = [self.df_tracklet_obj.data[name] for name in these_names]
+        these_tracklets = [self.df_tracklet_obj.df_tracklets_zxy[name] for name in these_names]
 
         return these_tracklets
 
@@ -229,7 +229,7 @@ class TrackletAnnotator:
             return None
         tracklet_dict = self.combined_global2tracklet_dict
         current_tracklet_names = tracklet_dict[self.current_neuron]
-        df_tracklets = self.df_tracklet_obj.data
+        df_tracklets = self.df_tracklet_obj.df_tracklets_zxy
 
         return get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_tracklet_names, df_tracklets)
 
@@ -348,7 +348,7 @@ class TrackletAnnotator:
             match_fname = self.tracking_cfg.unresolve_absolute_path(self.output_match_fname)
             self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
 
-            self.tracking_cfg.h5_in_local_project(self.df_tracklet_obj.data, self.output_df_fname)
+            self.tracking_cfg.h5_in_local_project(self.df_tracklet_obj.df_tracklets_zxy, self.output_df_fname)
             df_fname = self.tracking_cfg.unresolve_absolute_path(self.output_df_fname)
             self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
 
@@ -371,7 +371,7 @@ class TrackletAnnotator:
         with self.saving_lock:
             # Left half stays as old name
             old_name = self.current_tracklet_name
-            all_tracklets = self.df_tracklet_obj.data
+            all_tracklets = self.df_tracklet_obj.df_tracklets_zxy
 
             all_tracklets, left_name, right_name = split_tracklet(all_tracklets, i_split, old_name)
 
@@ -379,7 +379,7 @@ class TrackletAnnotator:
             # self.df_tracklet_obj.data = pd.concat([self.df_tracklet_obj.data, new_half], axis=1)
             # self.df_tracklet_obj.data[old_name] = old_half[old_name]
 
-            self.df_tracklet_obj.data = all_tracklets
+            self.df_tracklet_obj.df_tracklets_zxy = all_tracklets
             if set_new_half_to_current:
                 self.current_tracklet_name = right_name
             else:
@@ -434,7 +434,7 @@ class TrackletAnnotator:
                     # self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
                     self.refresh_callback()
 
-                df_single_track = self.df_tracklet_obj.data[tracklet_name]
+                df_single_track = self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]
                 if self.verbose >= 1:
                     print(f"Adding tracklet of length {df_single_track['z'].count()}")
                 if self.to_add_layer_to_viewer:
