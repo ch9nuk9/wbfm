@@ -167,6 +167,11 @@ class ProjectData:
     def _load_tracklet_related_properties(self):
         _ = self.df_all_tracklets
         _ = self.tracklet_annotator
+        _ = self.raw_clust
+
+    def _load_frame_related_properties(self):
+        _ = self.raw_frames
+        _ = self.raw_matches
 
     @property
     def num_frames(self):
@@ -197,7 +202,8 @@ class ProjectData:
                                 tracking_cfg: SubfolderConfigFile,
                                 traces_cfg: SubfolderConfigFile,
                                 project_dir,
-                                to_load_tracklets):
+                                to_load_tracklets=False,
+                                to_load_frames=False):
         # Initialize object in order to use cached properties
         obj = ProjectData(project_dir, cfg)
 
@@ -237,6 +243,8 @@ class ProjectData:
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
                     ex.submit(obj._load_tracklet_related_properties)
+                if to_load_frames:
+                    ex.submit(obj._load_frame_related_properties)
                 red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader).result()
                 green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()
@@ -276,14 +284,14 @@ class ProjectData:
         return obj
 
     @staticmethod
-    def load_final_project_data_from_config(project_path, to_load_tracklets=False):
+    def load_final_project_data_from_config(project_path, **kwargs):
         if isinstance(project_path, (str, os.PathLike)):
             args = ProjectData.unpack_config_file(project_path)
-            return ProjectData._load_data_from_configs(*args, to_load_tracklets=to_load_tracklets)
+            return ProjectData._load_data_from_configs(*args, **kwargs)
         elif isinstance(project_path, ModularProjectConfig):
             project_path = project_path.self_path
             args = ProjectData.unpack_config_file(project_path)
-            return ProjectData._load_data_from_configs(*args, to_load_tracklets=to_load_tracklets)
+            return ProjectData._load_data_from_configs(*args, **kwargs)
         elif isinstance(project_path, ProjectData):
             return project_path
         else:
