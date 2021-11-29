@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, name2int
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
@@ -21,6 +21,10 @@ class TrackedNeuron:
 
     verbose: int = 0
 
+    @property
+    def neuron_ind(self):
+        return name2int(self.name) - 1
+
     def __post_init__(self):
         if self.tracklet_covering_ind is None:
             self.tracklet_covering_ind = []
@@ -32,15 +36,15 @@ class TrackedNeuron:
     def next_gap(self):
         return self.tracklet_covering_ind[-1] + 1
 
-    def add_tracklet(self, tracklet_name, confidence, tracklet: pd.DataFrame):
-        self.tracklet_matches.add_match([self.name, tracklet_name, confidence])
+    def add_tracklet(self, i_tracklet, confidence, tracklet: pd.DataFrame):
+        self.tracklet_matches.add_match([self.neuron_ind, i_tracklet, confidence])
 
         tracklet_covering = np.where(tracklet['z'].notnull())[0]
         self.tracklet_covering_ind.extend(tracklet_covering)
         # self.next_gap = tracklet_covering[-1] + 1
 
         if self.verbose >= 2:
-            print(f"Added tracklet {tracklet_name} to neuron {self.name} with next gap currently: {self.next_gap}")
+            print(f"Added tracklet {i_tracklet} to neuron {self.name} with next gap currently: {self.next_gap}")
 
 
 @dataclass
@@ -70,7 +74,7 @@ class TrackedWorm:
 
         return new_neuron
 
-    def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, str]:
+    def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, TrackedNeuron]:
         return {name: neuron for name, neuron in self.neurons.items() if t > neuron.next_gap}
 
 

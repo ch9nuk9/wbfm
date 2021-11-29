@@ -7,3 +7,7 @@ def int2name(i_neuron: int):
 
 def name2int(name_neuron):
     return int(name_neuron.split('_')[1])
+
+
+def int2name_deprecated(i_neuron: int):
+    return f"neuron{i_neuron}"
