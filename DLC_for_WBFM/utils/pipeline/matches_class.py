@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from types import Union
+from typing import List
 
 import numpy as np
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import dist2conf
@@ -19,26 +20,25 @@ class MatchesWithConfidence:
     confidence: list = None
 
     dist2conf_gamma: float = None
-    indices_have_offset: list = None
+    indices_have_offset: List[bool] = None
+    int2name_funcs: List[callable] = None
 
     # TODO
     reason_for_matches: list = None
 
-    int2name_func: callable = None
-
     @property
     def names0(self):
         if self.indices_have_offset[0]:
-            return [self.int2name_func(i + 1) for i in self.indices0]
+            return [self.int2name_funcs[0](i + 1) for i in self.indices0]
         else:
-            return [self.int2name_func(i) for i in self.indices0]
+            return [self.int2name_funcs[0](i) for i in self.indices0]
 
     @property
     def names1(self):
         if self.indices_have_offset[1]:
-            return [self.int2name_func(i + 1) for i in self.indices1]
+            return [self.int2name_funcs[1](i + 1) for i in self.indices1]
         else:
-            return [self.int2name_func(i) for i in self.indices1]
+            return [self.int2name_funcs[1](i) for i in self.indices1]
 
     def __post_init__(self):
         if self.indices0 is None:
@@ -47,8 +47,8 @@ class MatchesWithConfidence:
             self.indices1 = []
         if self.confidence is None:
             self.confidence = []
-        if self.int2name_func is None:
-            self.int2name_func = int2name
+        if self.int2name_funcs is None:
+            self.int2name_funcs = [int2name, int2name]
         try:
             # Should be two element list, but may be passed as a bool
             if len(self.indices_have_offset) == 1:

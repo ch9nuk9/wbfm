@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, name2int
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, name2int, int2name_deprecated
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
@@ -29,7 +29,8 @@ class TrackedNeuron:
         if self.tracklet_covering_ind is None:
             self.tracklet_covering_ind = []
         if self.tracklet_matches is None:
-            self.tracklet_matches = MatchesWithConfidence()
+            self.tracklet_matches = MatchesWithConfidence(indices_have_offset=[False, True],
+                                                          int2name_funcs=[int2name_deprecated, int2name])
 
     # For use when assigning matches and iterating over time
     @property
