@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet
+from DLC_for_WBFM.utils.pipeline.tracklet_class import TrackletDictionary
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
@@ -106,7 +107,8 @@ class TracePlotter:
 @dataclass
 class TrackletAnnotator:
 
-    df_tracklets: pd.DataFrame
+    # df_tracklets: pd.DataFrame
+    df_tracklet_obj: TrackletDictionary
     global2tracklet: Dict[str, List[str]]
     # df_final_tracks: pd.DataFrame
     segmentation_metadata: DetectedNeurons
@@ -187,8 +189,8 @@ class TrackletAnnotator:
             raise ValueError("Must pass neuron name explicitly or have one saved in the object")
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
         these_names = self.global2tracklet[neuron_name].copy()
-        # all_tracklet_names = lexigraphically_sort(list(self.df_tracklets.columns.levels[0]))
-        # all_tracklet_names = list(self.df_tracklets.columns.levels[0])
+        # all_tracklet_names = lexigraphically_sort(list(self.df_tracklet_obj.data.columns.levels[0]))
+        # all_tracklet_names = list(self.df_tracklet_obj.data.columns.levels[0])
 
         # these_names = [all_tracklet_names[i] for i in tracklet_ind]
         these_names.extend(self.manual_global2tracklet_names[neuron_name])
@@ -197,7 +199,7 @@ class TrackletAnnotator:
 
         if self.verbose >= 1:
             self.print_current_status(neuron_name)
-        these_tracklets = [self.df_tracklets[name] for name in these_names]
+        these_tracklets = [self.df_tracklet_obj.data[name] for name in these_names]
 
         return these_tracklets
 
@@ -227,7 +229,7 @@ class TrackletAnnotator:
             return None
         tracklet_dict = self.combined_global2tracklet_dict
         current_tracklet_names = tracklet_dict[self.current_neuron]
-        df_tracklets = self.df_tracklets
+        df_tracklets = self.df_tracklet_obj.data
 
         return get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_tracklet_names, df_tracklets)
 
@@ -346,7 +348,7 @@ class TrackletAnnotator:
             match_fname = self.tracking_cfg.unresolve_absolute_path(self.output_match_fname)
             self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
 
-            self.tracking_cfg.h5_in_local_project(self.df_tracklets, self.output_df_fname)
+            self.tracking_cfg.h5_in_local_project(self.df_tracklet_obj.data, self.output_df_fname)
             df_fname = self.tracking_cfg.unresolve_absolute_path(self.output_df_fname)
             self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
 
@@ -369,15 +371,15 @@ class TrackletAnnotator:
         with self.saving_lock:
             # Left half stays as old name
             old_name = self.current_tracklet_name
-            all_tracklets = self.df_tracklets
+            all_tracklets = self.df_tracklet_obj.data
 
             all_tracklets, left_name, right_name = split_tracklet(all_tracklets, i_split, old_name)
 
             # Save
-            # self.df_tracklets = pd.concat([self.df_tracklets, new_half], axis=1)
-            # self.df_tracklets[old_name] = old_half[old_name]
+            # self.df_tracklet_obj.data = pd.concat([self.df_tracklet_obj.data, new_half], axis=1)
+            # self.df_tracklet_obj.data[old_name] = old_half[old_name]
 
-            self.df_tracklets = all_tracklets
+            self.df_tracklet_obj.data = all_tracklets
             if set_new_half_to_current:
                 self.current_tracklet_name = right_name
             else:
@@ -412,7 +414,7 @@ class TrackletAnnotator:
             if self.verbose >= 1:
                 print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
                       f"and position {event.position[1:]}")
-            dist, ind, tracklet_name = self.get_tracklet_from_segmentation_index(
+            dist, ind, tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
                 i_time=int(event.position[0]),
                 seg_ind=seg_index
             )
@@ -432,7 +434,7 @@ class TrackletAnnotator:
                     # self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
                     self.refresh_callback()
 
-                df_single_track = self.df_tracklets[tracklet_name]
+                df_single_track = self.df_tracklet_obj.data[tracklet_name]
                 if self.verbose >= 1:
                     print(f"Adding tracklet of length {df_single_track['z'].count()}")
                 if self.to_add_layer_to_viewer:
@@ -444,43 +446,3 @@ class TrackletAnnotator:
             else:
                 if self.verbose >= 1:
                     print(f"Tracklet too far away; not adding")
-
-    def get_closest_tracklet_to_point(self,
-                                      i_time,
-                                      target_pt,
-                                      nbr_obj: NearestNeighbors = None,
-                                      nonnan_ind=None,
-                                      verbose=0):
-        df_tracklets = self.df_tracklets
-        # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
-        all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))
-
-        if any(np.isnan(target_pt)):
-            dist, ind_global_coords, tracklet_name = np.inf, None, None
-        else:
-            if nbr_obj is None:
-                all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, 4))
-                nonnan_ind = ~np.isnan(all_zxy).any(axis=1)
-                all_zxy = all_zxy[nonnan_ind][:, :3]
-                if verbose >= 1:
-                    print(f"Creating nearest neighbor object with {all_zxy.shape[0]} neurons")
-                    print(f"And test point: {target_pt}")
-                    if verbose >= 2:
-                        candidate_names = [n for i, n in enumerate(all_tracklet_names) if nonnan_ind[i]]
-                        print(f"These tracklets were possible: {candidate_names}")
-                nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(all_zxy)
-            dist, ind_local_coords = nbr_obj.kneighbors([target_pt], n_neighbors=1)
-            ind_local_coords = ind_local_coords[0][0]
-            if verbose >= 1:
-                print(ind_local_coords)
-                print(f"Closest point is: {all_zxy[ind_local_coords, :]}")
-            ind_global_coords = np.where(nonnan_ind)[0][ind_local_coords]
-            tracklet_name = all_tracklet_names[ind_global_coords]
-
-        return dist, ind_global_coords, tracklet_name
-
-    def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
-
-        # TODO: Directly use the neuron id - tracklet id matching dataframe
-        target_pt = self.segmentation_metadata.mask_index_to_zxy(i_time, seg_ind)
-        return self.get_closest_tracklet_to_point(i_time, target_pt)
