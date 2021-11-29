@@ -118,5 +118,12 @@ class MatchesWithConfidence:
         conf = dist2conf(np.array(all_dist), gamma=gamma)
         return MatchesWithConfidence(row_i, col_i, conf, gamma)
 
+    @staticmethod
+    def matches_from_array_of_triplets(array):
+        array = np.array([np.array(match) for match in array])
+        row_i, col_i = array[:, 0], array[:, 1]
+        conf = array[:, 2]
+        return MatchesWithConfidence(row_i, col_i, conf)
+
     def __repr__(self):
         return f"MatchesWithConfidence class with {self.get_num_matches()} matches"
