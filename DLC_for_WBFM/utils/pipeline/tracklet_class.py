@@ -45,47 +45,16 @@ class TrackedNeuron:
         # self.next_gap = tracklet_covering[-1] + 1
 
         if self.verbose >= 2:
-            print(f"Added tracklet {i_tracklet} to neuron {self.name} with next gap currently: {self.next_gap}")
+            print(f"Added tracklet {i_tracklet} to neuron {self.name} with next gap: {self.next_gap}")
 
 
 @dataclass
-class TrackedWorm:
-
-    neurons: Dict[str, TrackedNeuron] = None
-
-    verbose: int = 0
-
-    @property
-    def num_neurons(self):
-        return len(self.neurons)
-
-    def get_next_neuron_name(self):
-        return int2name(self.num_neurons + 1)
-
-    def __post_init__(self):
-        if self.neurons is None:
-            self.neurons = {}
-
-    def initialize_new_neuron(self, name=None, initialization_frame=0):
-        if name is None:
-            name = self.get_next_neuron_name()
-
-        new_neuron = TrackedNeuron(name, initialization_frame, verbose=self.verbose-1)
-        self.neurons[name] = new_neuron
-
-        return new_neuron
-
-    def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, TrackedNeuron]:
-        return {name: neuron for name, neuron in self.neurons.items() if t > neuron.next_gap}
-
-
-@dataclass
-class TrackletDictionary:
+class DetectedTrackletsAndNeurons:
 
     df_tracklets_zxy: pd.DataFrame
     segmentation_metadata: DetectedNeurons
 
-    df_tracklet_matches: pd.DataFrame = None
+    df_tracklet_matches: pd.DataFrame = None  # Custom dataframe format containing raw neuron indices
 
     @property
     def all_tracklet_names(self):
@@ -136,3 +105,35 @@ class TrackletDictionary:
     def get_neuron_index_within_tracklet(self, i_tracklet, t_local):
         this_tracklet = self.df_tracklet_matches.loc[i_tracklet]
         return this_tracklet['all_ind_local'][t_local]
+
+
+@dataclass
+class TrackedWorm:
+
+    tracked_neurons: Dict[str, TrackedNeuron] = None
+    detections: DetectedTrackletsAndNeurons = None
+
+    verbose: int = 0
+
+    @property
+    def num_neurons(self):
+        return len(self.tracked_neurons)
+
+    def get_next_neuron_name(self):
+        return int2name(self.num_neurons + 1)
+
+    def __post_init__(self):
+        if self.tracked_neurons is None:
+            self.tracked_neurons = {}
+
+    def initialize_new_neuron(self, name=None, initialization_frame=0):
+        if name is None:
+            name = self.get_next_neuron_name()
+
+        new_neuron = TrackedNeuron(name, initialization_frame, verbose=self.verbose-1)
+        self.tracked_neurons[name] = new_neuron
+
+        return new_neuron
+
+    def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, TrackedNeuron]:
+        return {name: neuron for name, neuron in self.tracked_neurons.items() if t > neuron.next_gap}

@@ -9,6 +9,8 @@ import pandas as pd
 import zarr
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
+
+from DLC_for_WBFM.utils.pipeline.tracklet_class import DetectedTrackletsAndNeurons
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAnnotator
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
@@ -147,8 +149,10 @@ class ProjectData:
         training_cfg = self.project_config.get_training_config()
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
 
+        tracklet_obj = DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata)
+
         obj = TrackletAnnotator(
-            self.df_all_tracklets,
+            tracklet_obj,
             self.global2tracklet,
             segmentation_metadata=self.segmentation_metadata,
             tracking_cfg=tracking_cfg,

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet
-from DLC_for_WBFM.utils.pipeline.tracklet_class import TrackletDictionary
+from DLC_for_WBFM.utils.pipeline.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
@@ -108,7 +108,7 @@ class TracePlotter:
 class TrackletAnnotator:
 
     # df_tracklets: pd.DataFrame
-    df_tracklet_obj: TrackletDictionary
+    df_tracklet_obj: DetectedTrackletsAndNeurons
     global2tracklet: Dict[str, List[str]]
     # df_final_tracks: pd.DataFrame
     segmentation_metadata: DetectedNeurons
