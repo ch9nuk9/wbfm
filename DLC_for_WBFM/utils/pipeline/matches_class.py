@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from types import Union
 from typing import List
 
 import numpy as np
+from networkx import Graph
+
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import dist2conf
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
 from scipy.optimize import linear_sum_assignment
@@ -130,3 +131,27 @@ class MatchesWithConfidence:
 
     def __repr__(self):
         return f"MatchesWithConfidence class with {self.get_num_matches()} matches"
+
+
+class GraphWithNames(Graph):
+    ind2names: dict
+
+    def __init__(self, ind2names=None):
+        if ind2names is None:
+            ind2names = {}
+
+        self.ind2names = ind2names
+
+        super().__init__()
+
+    @property
+    def names2ind(self):
+        return {v: k for k, v in self.ind2names.items()}
+
+    def __contains__(self, n):
+        if self.has_node(n):  # Calls the super class
+            return True
+        elif n in self.ind2names.values():
+            return True
+        else:
+            return False
