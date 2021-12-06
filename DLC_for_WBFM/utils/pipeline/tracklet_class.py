@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Dict
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence
+from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence, MatchesAsGraph
 from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, name2int, int2name_deprecated
 from segmentation.util.utils_metadata import DetectedNeurons
@@ -53,6 +53,7 @@ class DetectedTrackletsAndNeurons:
 
     df_tracklets_zxy: pd.DataFrame
     segmentation_metadata: DetectedNeurons
+    global2tracklet: MatchesAsGraph = None
 
     df_tracklet_matches: pd.DataFrame = None  # Custom dataframe format containing raw neuron indices
 

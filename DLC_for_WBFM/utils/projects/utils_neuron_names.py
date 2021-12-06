@@ -11,3 +11,12 @@ def name2int(name_neuron):
 
 def int2name_deprecated(i_neuron: int):
     return f"neuron{i_neuron}"
+
+
+def int2name_using_mode(i_neuron: int, mode: str):
+    if mode == 'neuron':
+        return int2name(i_neuron)
+    elif mode == 'tracklet':
+        return int2name_deprecated(i_neuron)
+    else:
+        raise NotImplementedError

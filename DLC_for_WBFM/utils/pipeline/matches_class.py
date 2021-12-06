@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple, Dict
 
 import numpy as np
 from networkx import Graph
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import dist2conf
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, int2name_using_mode
 from scipy.optimize import linear_sum_assignment
 
 
@@ -133,12 +133,22 @@ class MatchesWithConfidence:
         return f"MatchesWithConfidence class with {self.get_num_matches()} matches"
 
 
-class GraphWithNames(Graph):
-    ind2names: dict
+class MatchesAsGraph(Graph):
+    ind2names: Dict[Tuple, str]  # Tuple notation is (frame #, neuron #)
 
-    def __init__(self, ind2names=None):
+    offset_convention: List[bool] = None  # Whether has offset or not
+    naming_convention: List[str] = None  # Will name nodes to keep them unique; can also be tracklet
+    name_prefixes: List[str] = None
+
+    def __init__(self, ind2names=None, name_prefixes=None, naming_convention=None, offset_convention=None):
         if ind2names is None:
             ind2names = {}
+        if name_prefixes is None:
+            self.name_prefixes = ['frame', 'frame']
+        if naming_convention is None:
+            self.naming_convention = ['neuron', 'neuron']
+        if offset_convention is None:
+            self.offset_convention = [True, True]
 
         self.ind2names = ind2names
 
@@ -151,7 +161,48 @@ class GraphWithNames(Graph):
     def __contains__(self, n):
         if self.has_node(n):  # Calls the super class
             return True
-        elif n in self.ind2names.values():
-            return True
         else:
-            return False
+            try:
+                if self.has_node(self.tuple2name(n[0], n[1])):
+                    return True
+            except IndexError:
+                return False
+            finally:
+                return False
+
+    def tuple2name(self, group_ind, ind):
+        if self.offset_convention[group_ind]:
+            ind += 1
+        name = int2name_using_mode(ind, self.naming_convention[group_ind])
+        return f"{self.name_prefixes[group_ind]}_{group_ind}_{name}"
+
+    def name2tuple(self, name):
+        group_ind, ind = int(name.split('_')[1]), int(name.split('_')[3])
+        if self.offset_convention[group_ind]:
+            ind -= 1
+        return group_ind, ind
+
+    def add_match(self, new_match):
+        assert len(new_match) == 3
+
+        n0, n1, conf = new_match
+
+        name0 = self.tuple2name(0, n0)
+        name1 = self.tuple2name(1, n1)
+
+        self.add_weighted_edges_from([(name0, name1, conf)])
+
+    def get_match(self, group_and_ind=None, name=None):
+        if name is not None and group_and_ind is not None:
+            print("Specify either the indices as a tuple, or the full name, not both")
+            raise NotImplementedError
+        if group_and_ind is not None:
+            name = self.tuple2name(*group_and_ind)
+
+        matches = list(self.neighbors(name))
+        if len(matches) > 1:
+            print("More than one match found")
+            raise NotImplementedError
+        return matches[0]
+
+
