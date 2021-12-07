@@ -48,6 +48,9 @@ class NeuronComposedOfTracklets:
         if self.verbose >= 2:
             print(f"Added tracklet {i_tracklet} to neuron {self.name} with next gap: {self.next_gap}")
 
+    def __repr__(self):
+        return f"Neuron {self.name} (index={self.neuron_ind}) with {len(self.neuron2tracklets)} tracklets"
+
 
 @dataclass
 class DetectedTrackletsAndNeurons:
@@ -138,3 +141,11 @@ class TrackedWorm:
 
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
+
+    def __repr__(self):
+        short_message = f"Worm with {self.num_neurons} neurons"
+        if self.verbose == 0:
+            return short_message
+        else:
+            return f"{short_message}"
+

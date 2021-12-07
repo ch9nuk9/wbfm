@@ -1,8 +1,9 @@
+import logging
 from dataclasses import dataclass
 from typing import List, Tuple, Dict
 
 import numpy as np
-from networkx import Graph
+from networkx import Graph, NetworkXError
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import dist2conf
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, int2name_using_mode
@@ -118,8 +119,12 @@ class MatchesWithConfidence:
 
     @staticmethod
     def matches_from_array(matches_with_conf):
-        i1 = [int(m) for m in matches_with_conf[:, 0]]
-        i2 = [int(m) for m in matches_with_conf[:, 1]]
+        try:
+            i1 = [int(m) for m in matches_with_conf[:, 0]]
+            i2 = [int(m) for m in matches_with_conf[:, 1]]
+        except TypeError:
+            i1 = [int(m) for m in np.array(matches_with_conf[:, 0])]
+            i2 = [int(m) for m in np.array(matches_with_conf[:, 1])]
         return MatchesWithConfidence(i1, i2, matches_with_conf[:, 2])
 
     @staticmethod
@@ -235,7 +240,11 @@ class MatchesAsGraph(Graph):
 
     def get_all_matches(self, group_and_ind=None, name=None):
         name = self.process_query(group_and_ind, name)
-        return list(self.neighbors(name))
+        try:
+            return list(self.neighbors(name))
+        except NetworkXError:
+            logging.debug("No match found")
+            return None
 
     def process_query(self, group_and_ind, name):
         if name is not None and group_and_ind is not None:
@@ -246,3 +255,6 @@ class MatchesAsGraph(Graph):
         return name
 
 
+def get_tracklet_name_from_full_name(name):
+    """Assume name is like: bipartite_1_trackletGroup_1_neuron228"""
+    return name.split('_')[-1]
