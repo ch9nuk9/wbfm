@@ -10,13 +10,13 @@ from sklearn.neighbors import NearestNeighbors
 
 
 @dataclass
-class TrackedNeuron:
+class NeuronComposedOfTracklets:
 
     name: str
     initialization_frame: int
     # initialization_neuron_name: str
 
-    tracklet_matches: MatchesWithConfidence = None
+    neuron2tracklets: MatchesAsGraph = None
     tracklet_covering_ind: list = None
 
     verbose: int = 0
@@ -28,9 +28,10 @@ class TrackedNeuron:
     def __post_init__(self):
         if self.tracklet_covering_ind is None:
             self.tracklet_covering_ind = []
-        if self.tracklet_matches is None:
-            self.tracklet_matches = MatchesWithConfidence(indices_have_offset=[False, True],
-                                                          int2name_funcs=[int2name_deprecated, int2name])
+        if self.neuron2tracklets is None:
+            self.neuron2tracklets = MatchesAsGraph(offset_convention=[True, False],
+                                                   naming_convention=['neuron', 'tracklet'],
+                                                   name_prefixes=['neuron', 'trackletGroup'])
 
     # For use when assigning matches and iterating over time
     @property
@@ -38,7 +39,7 @@ class TrackedNeuron:
         return self.tracklet_covering_ind[-1] + 1
 
     def add_tracklet(self, i_tracklet, confidence, tracklet: pd.DataFrame):
-        self.tracklet_matches.add_match([self.neuron_ind, i_tracklet, confidence])
+        self.neuron2tracklets.add_match([self.neuron_ind, i_tracklet, confidence])
 
         tracklet_covering = np.where(tracklet['z'].notnull())[0]
         self.tracklet_covering_ind.extend(tracklet_covering)
@@ -53,7 +54,6 @@ class DetectedTrackletsAndNeurons:
 
     df_tracklets_zxy: pd.DataFrame
     segmentation_metadata: DetectedNeurons
-    global2tracklet: MatchesAsGraph = None
 
     df_tracklet_matches: pd.DataFrame = None  # Custom dataframe format containing raw neuron indices
 
@@ -111,30 +111,30 @@ class DetectedTrackletsAndNeurons:
 @dataclass
 class TrackedWorm:
 
-    tracked_neurons: Dict[str, TrackedNeuron] = None
+    global_name_to_neuron: Dict[str, NeuronComposedOfTracklets] = None
     detections: DetectedTrackletsAndNeurons = None
 
     verbose: int = 0
 
     @property
     def num_neurons(self):
-        return len(self.tracked_neurons)
+        return len(self.global_name_to_neuron)
 
     def get_next_neuron_name(self):
         return int2name(self.num_neurons + 1)
 
     def __post_init__(self):
-        if self.tracked_neurons is None:
-            self.tracked_neurons = {}
+        if self.global_name_to_neuron is None:
+            self.global_name_to_neuron = {}
 
     def initialize_new_neuron(self, name=None, initialization_frame=0):
         if name is None:
             name = self.get_next_neuron_name()
 
-        new_neuron = TrackedNeuron(name, initialization_frame, verbose=self.verbose-1)
-        self.tracked_neurons[name] = new_neuron
+        new_neuron = NeuronComposedOfTracklets(name, initialization_frame, verbose=self.verbose - 1)
+        self.global_name_to_neuron[name] = new_neuron
 
         return new_neuron
 
-    def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, TrackedNeuron]:
-        return {name: neuron for name, neuron in self.tracked_neurons.items() if t > neuron.next_gap}
+    def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
+        return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
