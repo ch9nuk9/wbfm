@@ -223,26 +223,33 @@ class MatchesAsGraph(Graph):
         #     ind -= 1
         return bipartite_ind, group_ind, local_ind
 
-    def add_match(self, new_match, group_ind0=0, group_ind1=1):
+    def add_match_if_not_present(self, new_match, group_ind0=0, group_ind1=1, metadata=None):
         assert len(new_match) == 3
 
         n0, n1, conf = new_match
 
-        name0 = self.tuple2name(bipartite_ind=0, local_ind=n0, group_ind=group_ind0)
-        name1 = self.tuple2name(bipartite_ind=1, local_ind=n1, group_ind=group_ind1)
+        name0 = self.tuple2name(bipartite_ind=0, group_ind=group_ind0, local_ind=n0)
+        name1 = self.tuple2name(bipartite_ind=1, group_ind=group_ind1, local_ind=n1)
 
-        self.add_node(name0, bipartite=0, local_ind=n0, group_ind=group_ind0)
-        self.add_node(name1, bipartite=1, local_ind=n0, group_ind=group_ind0)
-        self.add_weighted_edges_from([(name0, name1, conf)])
+        if self.has_edge(name0, name1):
+            return False
+        else:
+            self.add_node(name0, bipartite=0, group_ind=group_ind0, local_ind=n0)
+            self.add_node(name1, bipartite=1, group_ind=group_ind0, local_ind=n0)
+            self.add_weighted_edges_from([(name0, name1, conf)], metadata=metadata)
+            return True
 
     def get_unique_match(self, group_and_ind=None, name=None):
         name = self.process_query(group_and_ind, name)
 
         matches = self.get_all_matches(name=name)
-        if len(matches) > 1:
+        if matches is None:
+            return None
+        elif len(matches) > 1:
             print("More than one match found")
             raise NotImplementedError
-        return matches[0]
+        else:
+            return matches[0]
 
     def get_all_matches(self, group_and_ind=None, name=None):
         name = self.process_query(group_and_ind, name)

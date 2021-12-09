@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from typing import List, Dict
 import numpy as np
 import pandas as pd
+from tqdm.auto import tqdm
+
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence, MatchesAsGraph
 from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, name2int, int2name_deprecated
@@ -38,18 +40,21 @@ class NeuronComposedOfTracklets:
     def next_gap(self):
         return self.tracklet_covering_ind[-1] + 1
 
-    def add_tracklet(self, i_tracklet, confidence, tracklet: pd.DataFrame):
-        self.neuron2tracklets.add_match([self.neuron_ind, i_tracklet, confidence])
+    def add_tracklet(self, i_tracklet, confidence, tracklet: pd.DataFrame, metadata=None):
+        is_match_added = self.neuron2tracklets.add_match_if_not_present([self.neuron_ind, i_tracklet, confidence],
+                                                                        metadata=metadata)
 
-        tracklet_covering = np.where(tracklet['z'].notnull())[0]
-        self.tracklet_covering_ind.extend(tracklet_covering)
-        # self.next_gap = tracklet_covering[-1] + 1
+        if is_match_added:
+            tracklet_covering = np.where(tracklet['z'].notnull())[0]
+            self.tracklet_covering_ind.extend(tracklet_covering)
+            # self.next_gap = tracklet_covering[-1] + 1
 
-        if self.verbose >= 2:
-            print(f"Added tracklet {i_tracklet} to neuron {self.name} with next gap: {self.next_gap}")
+            if self.verbose >= 2:
+                print(f"Added tracklet {i_tracklet} to neuron {self.name} with next gap: {self.next_gap}")
 
     def __repr__(self):
-        return f"Neuron {self.name} (index={self.neuron_ind}) with {len(self.neuron2tracklets)} tracklets"
+        return f"Neuron {self.name} (index={self.neuron_ind}) with {len(self.neuron2tracklets) - 1} tracklets " \
+               f"from time {self.initialization_frame} to {self.next_gap}"
 
 
 @dataclass
@@ -58,7 +63,25 @@ class DetectedTrackletsAndNeurons:
     df_tracklets_zxy: pd.DataFrame
     segmentation_metadata: DetectedNeurons
 
+    local_neuron_to_tracklet: MatchesAsGraph = None
     df_tracklet_matches: pd.DataFrame = None  # Custom dataframe format containing raw neuron indices
+
+    def __post_init__(self):
+        if self.df_tracklet_matches is not None:
+            local_neuron_to_tracklet = MatchesAsGraph(offset_convention=[True, False],
+                                                      naming_convention=['neuron', 'tracklet'],
+                                                      name_prefixes=['frame', 'trackletGroup'])
+
+            for i, row in tqdm(self.df_tracklet_matches.iterrows(), total=len(self.df_tracklet_matches)):
+                i_tracklet = int(row['clust_ind'])
+                for i_local_frame, (i_local_neuron, i_global_frame) in enumerate(
+                        zip(row['all_ind_local'], row['slice_ind'])):
+                    try:
+                        conf = row['all_prob'][i_local_frame]
+                    except IndexError:
+                        conf = np.nan
+                    local_neuron_to_tracklet.add_match_if_not_present([i_local_neuron, i_tracklet, conf],
+                                                                      group_ind0=i_global_frame)
 
     @property
     def all_tracklet_names(self):
