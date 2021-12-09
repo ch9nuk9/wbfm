@@ -200,7 +200,13 @@ class MatchesAsGraph(Graph):
         """
         if self.offset_convention[bipartite_ind]:
             local_ind += 1
-        name = int2name_using_mode(local_ind, self.naming_convention[bipartite_ind])
+        naming_convention = self.naming_convention[bipartite_ind]
+        if callable(naming_convention):
+            name = naming_convention(local_ind)
+        elif isinstance(naming_convention, str):
+            name = int2name_using_mode(local_ind, naming_convention)
+        else:
+            raise TypeError(f"naming_convention must be callable or string; was {naming_convention}")
         prefix = f"bipartite_{bipartite_ind}_{self.name_prefixes[bipartite_ind]}"
         if group_ind is None:
             return f"{prefix}_{bipartite_ind}_{name}"
