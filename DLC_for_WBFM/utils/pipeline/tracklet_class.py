@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Dict
+
+import networkx as nx
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -179,6 +181,9 @@ class TrackedWorm:
 
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
+
+    def compose_global_neuron_and_tracklet_graph(self):
+        return nx.compose_all([g.neuron2tracklets for g in self.global_name_to_neuron.values()])
 
     def __repr__(self):
         short_message = f"Worm with {self.num_neurons} neurons"
