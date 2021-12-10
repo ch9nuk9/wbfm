@@ -92,6 +92,9 @@ class DetectedNeurons:
     _segmentation_metadata: Dict[str, pd.DataFrame] = None
     _num_frames: int = None
 
+    _brightnesses_cache: dict = None
+    _volumes_cache: dict = None
+
     @property
     def segmentation_metadata(self):
         assert Path(self.detection_fname).exists(), f"{self.detection_fname} doesn't exist!"
@@ -116,12 +119,16 @@ class DetectedNeurons:
     def get_all_brightnesses(self, i_volume: int, is_relative_index=False):
         if is_relative_index:
             i_volume = self.correct_relative_index(i_volume)
-        return self.segmentation_metadata[i_volume]['total_brightness']
+        if i_volume not in self._brightnesses_cache:
+            self._brightnesses_cache[i_volume] = self.segmentation_metadata[i_volume]['total_brightness']
+        return self._brightnesses_cache[i_volume]
 
     def get_all_volumes(self, i_volume: int, is_relative_index=False):
         if is_relative_index:
             i_volume = self.correct_relative_index(i_volume)
-        return self.segmentation_metadata[i_volume]['neuron_volume']
+        if i_volume not in self._volumes_cache:
+            self._volumes_cache[i_volume] = self.segmentation_metadata[i_volume]['neuron_volume']
+        return self._volumes_cache[i_volume]
 
     def get_normalized_intensity(self, i_volume: int, background_per_pixel=14, is_relative_index=False):
         if is_relative_index:
