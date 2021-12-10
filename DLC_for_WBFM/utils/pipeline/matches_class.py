@@ -223,7 +223,10 @@ class MatchesAsGraph(Graph):
         #     ind -= 1
         return bipartite_ind, group_ind, local_ind
 
-    def add_match_if_not_present(self, new_match, group_ind0=0, group_ind1=1, metadata=None):
+    def add_match_if_not_present(self, new_match, group_ind0=0, group_ind1=1,
+                                 node0_metadata=None,
+                                 node1_metadata=None,
+                                 edge_metadata=None):
         assert len(new_match) == 3
 
         n0, n1, conf = new_match
@@ -234,9 +237,9 @@ class MatchesAsGraph(Graph):
         if self.has_edge(name0, name1):
             return False
         else:
-            self.add_node(name0, bipartite=0, group_ind=group_ind0, local_ind=n0)
-            self.add_node(name1, bipartite=1, group_ind=group_ind0, local_ind=n0)
-            self.add_weighted_edges_from([(name0, name1, conf)], metadata=metadata)
+            self.add_node(name0, bipartite=0, group_ind=group_ind0, local_ind=n0, metadata=node0_metadata)
+            self.add_node(name1, bipartite=1, group_ind=group_ind0, local_ind=n0, metadata=node1_metadata)
+            self.add_weighted_edges_from([(name0, name1, conf)], metadata=edge_metadata)
             return True
 
     def get_unique_match(self, group_and_ind=None, name=None):

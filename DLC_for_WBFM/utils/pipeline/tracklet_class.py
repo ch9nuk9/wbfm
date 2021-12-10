@@ -14,8 +14,8 @@ from sklearn.neighbors import NearestNeighbors
 @dataclass
 class NeuronComposedOfTracklets:
 
-    name: str
-    initialization_frame: int
+    name: str = None
+    initialization_frame: int = None
     # initialization_neuron_name: str
 
     neuron2tracklets: MatchesAsGraph = None
@@ -41,11 +41,14 @@ class NeuronComposedOfTracklets:
         return self.tracklet_covering_ind[-1] + 1
 
     def add_tracklet(self, i_tracklet, confidence, tracklet: pd.DataFrame, metadata=None):
+        tracklet_name = tracklet.columns.get_level_values(0).drop_duplicates()[0]
         is_match_added = self.neuron2tracklets.add_match_if_not_present([self.neuron_ind, i_tracklet, confidence],
-                                                                        metadata=metadata)
+                                                                        node0_metadata=self.name,
+                                                                        node1_metadata=tracklet_name,
+                                                                        edge_metadata=metadata)
 
         if is_match_added:
-            tracklet_covering = np.where(tracklet['z'].notnull())[0]
+            tracklet_covering = np.where(tracklet[tracklet_name]['z'].notnull())[0]
             self.tracklet_covering_ind.extend(tracklet_covering)
             # self.next_gap = tracklet_covering[-1] + 1
 
