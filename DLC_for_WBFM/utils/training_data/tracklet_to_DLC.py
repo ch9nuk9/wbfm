@@ -116,10 +116,14 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
 
         # Use original segmentation object to get data about the raw mask and brightness
         this_local_ind = row['all_ind_local']
+        # NOTE: these local indices start at 0, which are direct list indices, not the dataframe indices
         this_brightness, this_volume = [], []
         for i_local, i_frame in zip(this_local_ind, which_frames):
-            this_brightness.append(segmentation_metadata.get_all_brightnesses(i_frame)[i_local])
-            this_volume.append(segmentation_metadata.get_all_volumes(i_frame)[i_local])
+            this_brightness.append(segmentation_metadata.get_all_brightnesses(i_frame).iloc[i_local])
+            this_volume.append(segmentation_metadata.get_all_volumes(i_frame).iloc[i_local])
+        this_brightness = np.expand_dims(np.array(this_brightness), -1)
+        this_volume = np.expand_dims(np.array(this_volume), -1)
+        this_local_ind = np.expand_dims(np.array(this_local_ind), -1)
 
         # Combine all
         coords = np.hstack([zxy, confidence, this_local_ind, this_brightness, this_volume])
