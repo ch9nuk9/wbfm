@@ -95,6 +95,12 @@ class DetectedNeurons:
     _brightnesses_cache: dict = None
     _volumes_cache: dict = None
 
+    def __post_init__(self):
+        if self._brightnesses_cache is None:
+            self._brightnesses_cache = {}
+        if self._volumes_cache is None:
+            self._volumes_cache = {}
+
     @property
     def segmentation_metadata(self):
         assert Path(self.detection_fname).exists(), f"{self.detection_fname} doesn't exist!"
