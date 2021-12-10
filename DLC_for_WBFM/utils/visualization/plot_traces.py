@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, name2int
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron
 from DLC_for_WBFM.utils.visualization.napari_utils import cast_int_or_nan
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 from matplotlib import transforms
@@ -71,10 +71,10 @@ def make_grid_plot_from_leifer_file(fname: str,
     ethogram_cmap = {-1: 'darkgray', 0: None, 1: None, 2: 'red'}
 
     num_neurons, t = data[channel_mode].shape
-    neuron_names = [int2name(i+1) for i in range(num_neurons)]
+    neuron_names = [int2name_neuron(i + 1) for i in range(num_neurons)]
 
     # Build functions to make a single subplot
-    get_data_func = lambda neuron_name: (np.arange(t), data[channel_mode][name2int(neuron_name) - 1])
+    get_data_func = lambda neuron_name: (np.arange(t), data[channel_mode][name2int_neuron(neuron_name) - 1])
     shade_plot_func = lambda axis: shade_using_behavior(ethogram, axis, cmap=ethogram_cmap)
 
     make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func)

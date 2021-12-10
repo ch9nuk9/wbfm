@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet
 
 
 def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
@@ -68,9 +69,9 @@ def calculate_best_covering_from_tracklets(dlc_df: pd.DataFrame, num_training_fr
     return best_window, y
 
 
-def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
+def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None):
     """
-    Converts a dataframe of my tracklets to DLC format
+    Converts a dataframe of my tracklets to a format with all scalar elements
 
     Assumes that all neurons exist for all frames (e.g. the output from build_subset_df())
 
@@ -81,12 +82,21 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
 
     all_dfs = []
 
+    def is_valid(df, ind):
+        which_frames = df.at[ind, 'slice_ind']
+        is_too_short = len(which_frames) < min_length
+        if is_too_short:
+            return False
+        else:
+            return True
+
     logging.info("Converting to pandas multi-index format")
     for ind, row in tqdm(df.iterrows(), total=df.shape[0]):
-        which_frames = df.at[ind, 'slice_ind']
-        if len(which_frames) < min_length:
+        if not is_valid(df, ind):
             continue
-        bodypart = f'neuron{ind}'
+
+        which_frames = df.at[ind, 'slice_ind']
+        bodypart = int2name_tracklet(ind)
         try:
             confidence = row['all_prob']
         except KeyError:
@@ -96,11 +106,14 @@ def convert_training_dataframe_to_dlc_format(df, min_length=10, scorer=None):
             # Then I didn't save confidences, so just set to 1
             confidence = np.ones((len(zxy), 1))
         coords = np.hstack([zxy, confidence])
+
+
+        column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_id', 'brightness_red', 'volume']
         if scorer is not None:
-            index = pd.MultiIndex.from_product([[scorer], [bodypart], ['z', 'x', 'y', 'likelihood']],
+            index = pd.MultiIndex.from_product([[scorer], [bodypart], column_names],
                                                names=['scorer', 'bodyparts', 'coords'])
         else:
-            index = pd.MultiIndex.from_product([[bodypart], ['z', 'x', 'y', 'likelihood']],
+            index = pd.MultiIndex.from_product([[bodypart], column_names],
                                                names=['bodyparts', 'coords'])
         frame = pd.DataFrame(coords, columns=index, index=which_frames)
         all_dfs.append(frame)
@@ -138,8 +151,8 @@ def save_training_data_as_dlc_format(training_config: SubfolderConfigFile, DEBUG
                   'max_z_dist': None,
                   'verbose': 1}
     subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
-    training_df = convert_training_dataframe_to_dlc_format(subset_df,
-                                                           min_length=min_length_to_save, scorer=None)
+    training_df = convert_training_dataframe_to_scalar_format(subset_df,
+                                                              min_length=min_length_to_save, scorer=None)
 
     out_fname = training_config.resolve_relative_path("training_data_tracks.h5", prepend_subfolder=True)
     training_df.to_hdf(out_fname, 'df_with_missing')
@@ -182,7 +195,7 @@ def alt_save_all_tracklets_as_dlc_format(train_cfg: SubfolderConfigFile,
     raw_fname = train_cfg.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'), prepend_subfolder=True)
     df_raw = pd.read_pickle(raw_fname)
 
-    df = convert_training_dataframe_to_dlc_format(df_raw, min_length=min_length, scorer=None)
+    df = convert_training_dataframe_to_scalar_format(df_raw, min_length=min_length, scorer=None)
     # If there are no tracklets on some frames, then there will be gaps in the indices and it will cause errors
     df = fill_missing_indices_with_nan(df)
 

@@ -10,7 +10,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile, \
     pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_dlc_format
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_scalar_format
 
 ###
 ### For use with produces tracklets (step 2 of pipeline)
@@ -80,7 +80,7 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
     # Convert to easier format and save
     min_length = training_config.config['postprocessing_params']['min_length_to_save']
-    df_dlc_format = convert_training_dataframe_to_dlc_format(df_custom_format, min_length=min_length, scorer=None)
+    df_dlc_format = convert_training_dataframe_to_scalar_format(df_custom_format, min_length=min_length, scorer=None)
     save_all_tracklets(df_custom_format, df_dlc_format, training_config)
 
 

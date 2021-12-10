@@ -14,7 +14,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches
     calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile, pickle_load_binary
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 
 
 def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
@@ -212,7 +212,7 @@ def region_props_one_volume(this_mask_volume,
     for this_red, this_green in zip(red_props, green_props):
         seg_index = this_red['label']
         # final_index = mask2final_name[seg_index]
-        key_base = (int2name(seg_index), )
+        key_base = (int2name_neuron(seg_index),)
 
         for this_prop in props_to_save:
             key = key_base + (this_prop,)

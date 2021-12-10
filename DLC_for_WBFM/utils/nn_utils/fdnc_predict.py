@@ -17,7 +17,7 @@ import torch
 
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 from DLC_for_WBFM.utils.nn_utils.data_formatting import zimmer2leifer
 
 default_package_path = "/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID"
@@ -107,7 +107,7 @@ def template_matches_to_dataframe(project_data: ProjectData,
     for i_template, data in neuron_arrays.items():
         for i_col, coord_name in enumerate(coords):
             # Note: these neuron names are final for all subsequent steps
-            k = (int2name(i_template + 1), coord_name)
+            k = (int2name_neuron(i_template + 1), coord_name)
             new_dict[k] = data[:, i_col]
 
     df = pd.DataFrame(new_dict)
@@ -317,7 +317,7 @@ def get_putative_names_from_config(project_config: ModularProjectConfig):
         template_top1 = labels[0]
 
         for i_neuron, neuron_top_candidate in enumerate(template_top1):
-            name = int2name(i_neuron + 1)
+            name = int2name_neuron(i_neuron + 1)
             neuron_key = (name,)
             for i_name_or_conf in range(2):
                 if i_name_or_conf == 0:

@@ -6,7 +6,7 @@ import numpy as np
 from networkx import Graph, NetworkXError
 
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import dist2conf
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, int2name_using_mode
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, int2name_using_mode
 from scipy.optimize import linear_sum_assignment
 
 
@@ -50,7 +50,7 @@ class MatchesWithConfidence:
         if self.confidence is None:
             self.confidence = []
         if self.int2name_funcs is None:
-            self.int2name_funcs = [int2name, int2name]
+            self.int2name_funcs = [int2name_neuron, int2name_neuron]
         try:
             # Should be two element list, but may be passed as a bool
             if len(self.indices_have_offset) == 1:

@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence, MatchesAsGraph
 from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name, name2int, int2name_deprecated
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron, int2name_deprecated
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
@@ -25,7 +25,7 @@ class NeuronComposedOfTracklets:
 
     @property
     def neuron_ind(self):
-        return name2int(self.name) - 1
+        return name2int_neuron(self.name) - 1
 
     def __post_init__(self):
         if self.tracklet_covering_ind is None:
@@ -150,7 +150,7 @@ class TrackedWorm:
         return len(self.global_name_to_neuron)
 
     def get_next_neuron_name(self):
-        return int2name(self.num_neurons + 1)
+        return int2name_neuron(self.num_neurons + 1)
 
     def __post_init__(self):
         if self.global_name_to_neuron is None:

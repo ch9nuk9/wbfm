@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import tifffile
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 from scipy import ndimage as ndi
 
 from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_coords3d, get_crop_coords
