@@ -72,7 +72,10 @@ class MatchesWithConfidence:
             return {n0: n1 for n0, n1, c in zip(self.indices0, self.indices1, self.confidence) if c > conf_threshold}
 
     def get_mapping_1_to_0(self, conf_threshold=0.0):
-        return reverse_dict(self.get_mapping_0_to_1(conf_threshold))
+        if self.confidence is None:
+            return {n1: n0 for n0, n1 in zip(self.indices0, self.indices1)}
+        else:
+            return {n1: n0 for n0, n1, c in zip(self.indices0, self.indices1, self.confidence) if c > conf_threshold}
 
     def get_mapping_0_to_1_names(self, conf_threshold=0.0):
         if self.confidence is None:
@@ -81,7 +84,10 @@ class MatchesWithConfidence:
             return {n0: n1 for n0, n1, c in zip(self.names0, self.names1, self.confidence) if c > conf_threshold}
 
     def get_mapping_1_to_0_names(self, conf_threshold=0.0):
-        return reverse_dict(self.get_mapping_0_to_1_names(conf_threshold))
+        if self.confidence is None:
+            return {n1: n0 for n0, n1 in zip(self.names0, self.names1)}
+        else:
+            return {n1: n0 for n0, n1, c in zip(self.names0, self.names1, self.confidence) if c > conf_threshold}
 
     def get_mapping_pair_to_conf(self, conf_threshold=0.0):
         if self.confidence is None:
