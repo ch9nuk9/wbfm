@@ -33,7 +33,7 @@ class NeuronComposedOfTracklets:
         if self.neuron2tracklets is None:
             self.neuron2tracklets = MatchesAsGraph(offset_convention=[True, False],
                                                    naming_convention=['neuron', 'tracklet'],
-                                                   name_prefixes=['neuron', 'trackletGroup'])
+                                                   name_prefixes=['frame', 'trackletGroup'])
 
     # For use when assigning matches and iterating over time
     @property
@@ -135,6 +135,15 @@ class DetectedTrackletsAndNeurons:
     def get_neuron_index_within_tracklet(self, i_tracklet, t_local):
         this_tracklet = self.df_tracklet_matches.loc[i_tracklet]
         return this_tracklet['all_ind_local'][t_local]
+
+    def get_tracklet_from_neuron_and_time(self, i_local_neuron, i_time):
+        df = self.df_tracklets_zxy
+        mask = df.loc[i_time, (slice(None), 'raw_neuron_id')] == i_local_neuron
+        try:
+            ind = np.where(mask)[0][0]
+            return ind, self.all_tracklet_names[ind]
+        except IndexError:
+            return None, None
 
 
 @dataclass
