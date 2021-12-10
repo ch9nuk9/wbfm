@@ -72,4 +72,4 @@ def produce_training_data(_config, _run):
     with safe_cd(project_config.project_dir):
         recalculate_metadata_from_config(segment_cfg, project_config, DEBUG)
 
-        save_training_data_as_dlc_format(training_cfg, DEBUG=DEBUG)
+        save_training_data_as_dlc_format(training_cfg, segment_cfg, DEBUG=DEBUG)

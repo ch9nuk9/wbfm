@@ -6,8 +6,8 @@ def int2name_neuron(i_neuron: int):
 
 
 def int2name_tracklet(i_tracklet: int):
-    assert 0 <= i_tracklet, f"Value {i_tracklet} not supported"
-    return f"tracklet_{i_tracklet:03d}"
+    assert 0 <= i_tracklet <= 1000000, f"Value {i_tracklet} not supported"
+    return f"tracklet_{i_tracklet:07d}"
 
 
 def name2int_neuron(name_neuron):

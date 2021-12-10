@@ -144,7 +144,9 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
     return new_df
 
 
-def save_training_data_as_dlc_format(training_config: SubfolderConfigFile, DEBUG=False):
+def save_training_data_as_dlc_format(training_config: SubfolderConfigFile,
+                                     segmentation_config: SubfolderConfigFile,
+                                     DEBUG=False):
     """
     Takes my training data from my tracklet format and saves as a DLC dataframe
 
@@ -159,7 +161,8 @@ def save_training_data_as_dlc_format(training_config: SubfolderConfigFile, DEBUG
     """
     logging.info("Saving training data as DLC format")
 
-    df, min_length_to_save = _unpack_config_training_data_conversion(training_config)
+    df, min_length_to_save, segmentation_metadata = _unpack_config_training_data_conversion(
+        training_config, segmentation_config)
 
     # Get the frames chosen as training data, or recalculate
     num_frames = len(df)
@@ -172,7 +175,9 @@ def save_training_data_as_dlc_format(training_config: SubfolderConfigFile, DEBUG
                   'verbose': 1}
     subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
     training_df = convert_training_dataframe_to_scalar_format(subset_df,
-                                                              min_length=min_length_to_save, scorer=None)
+                                                              min_length=min_length_to_save,
+                                                              scorer=None,
+                                                              segmentation_metadata=segmentation_metadata)
 
     out_fname = training_config.resolve_relative_path("training_data_tracks.h5", prepend_subfolder=True)
     training_df.to_hdf(out_fname, 'df_with_missing')
@@ -184,12 +189,16 @@ def save_training_data_as_dlc_format(training_config: SubfolderConfigFile, DEBUG
     training_df.to_csv(str(out_fname))
 
 
-def _unpack_config_training_data_conversion(training_config):
+def _unpack_config_training_data_conversion(training_config, segmentation_config):
     min_length_to_save = training_config.config['postprocessing_params']['min_length_to_save']
     fname = os.path.join('raw', 'clust_df_dat.pickle')
     fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
     df = pd.read_pickle(fname)
-    return df, min_length_to_save
+
+    seg_metadata_fname = segmentation_config.resolve_relative_path_from_config('output_metadata')
+    segmentation_metadata = DetectedNeurons(seg_metadata_fname)
+
+    return df, min_length_to_save, segmentation_metadata
 
 
 def alt_save_all_tracklets_as_dlc_format(train_cfg: SubfolderConfigFile,
