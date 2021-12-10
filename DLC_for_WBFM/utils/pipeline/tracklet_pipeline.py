@@ -4,6 +4,7 @@ import os.path as osp
 import pickle
 from pathlib import Path
 import pandas as pd
+from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
@@ -46,6 +47,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
 
 
 def postprocess_and_build_matches_from_config(project_config: ModularProjectConfig,
+                                              segmentation_config: SubfolderConfigFile,
                                               training_config: SubfolderConfigFile, DEBUG):
     """
     Starting with pairwise matches of neurons between sequential Frame objects, postprocess the matches and generate
@@ -62,8 +64,8 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
     """
     # Load data
-    all_frame_dict, all_frame_pairs, z_threshold, min_confidence, matching_method = \
-        _unpack_config_for_tracklets(training_config)
+    all_frame_dict, all_frame_pairs, z_threshold, min_confidence, matching_method, segmentation_metadata = \
+        _unpack_config_for_tracklets(training_config, segmentation_config)
 
     # Sanity check
     val = len(all_frame_pairs)
@@ -80,7 +82,10 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
     # Convert to easier format and save
     min_length = training_config.config['postprocessing_params']['min_length_to_save']
-    df_dlc_format = convert_training_dataframe_to_scalar_format(df_custom_format, min_length=min_length, scorer=None)
+    df_dlc_format = convert_training_dataframe_to_scalar_format(df_custom_format,
+                                                                min_length=min_length,
+                                                                scorer=None,
+                                                                segmentation_metadata=segmentation_metadata)
     save_all_tracklets(df_custom_format, df_dlc_format, training_config)
 
 
@@ -118,7 +123,7 @@ def save_all_tracklets(df, df_dlc_format, training_config):
         # training_df.to_excel(out_fname)
 
 
-def _unpack_config_for_tracklets(training_config):
+def _unpack_config_for_tracklets(training_config, segmentation_config):
     params = training_config.config['pairwise_matching_params']
     z_threshold = params['z_threshold']
     min_confidence = params['min_confidence']
@@ -132,7 +137,10 @@ def _unpack_config_for_tracklets(training_config):
     fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
     all_frame_dict = pickle_load_binary(fname)
 
-    return all_frame_dict, all_frame_pairs, z_threshold, min_confidence, matching_method
+    seg_metadata_fname = segmentation_config.resolve_relative_path_from_config('output_metadata')
+    segmentation_metadata = DetectedNeurons(seg_metadata_fname)
+
+    return all_frame_dict, all_frame_pairs, z_threshold, min_confidence, matching_method, segmentation_metadata
 
 
 def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):

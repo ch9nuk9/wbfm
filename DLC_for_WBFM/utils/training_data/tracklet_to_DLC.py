@@ -1,13 +1,13 @@
 import logging
 import os
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet
 
 
@@ -69,7 +69,8 @@ def calculate_best_covering_from_tracklets(dlc_df: pd.DataFrame, num_training_fr
     return best_window, y
 
 
-def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None):
+def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
+                                                segmentation_metadata: DetectedNeurons = None):
     """
     Converts a dataframe of my tracklets to a format with all scalar elements
 
@@ -81,6 +82,8 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None):
     """
 
     all_dfs = []
+    if segmentation_metadata is None:
+        raise NotImplementedError("New: Must pass segmentation metadata")
 
     def is_valid(df, ind):
         which_frames = df.at[ind, 'slice_ind']
@@ -91,10 +94,12 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None):
             return True
 
     logging.info("Converting to pandas multi-index format")
+    logging.info("Involves reading the original metadata, so may take a while")
     for ind, row in tqdm(df.iterrows(), total=df.shape[0]):
         if not is_valid(df, ind):
             continue
 
+        # Get basic position and confidence data
         which_frames = df.at[ind, 'slice_ind']
         bodypart = int2name_tracklet(ind)
         try:
@@ -105,8 +110,19 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None):
         if len(confidence) == 0:
             # Then I didn't save confidences, so just set to 1
             confidence = np.ones((len(zxy), 1))
-        coords = np.hstack([zxy, confidence])
+        elif len(confidence) == len(zxy) - 1:
+            # The confidence usually corresponds to the match, therefore is one shorter
+            confidence.append(0.0)
 
+        # Use original segmentation object to get data about the raw mask and brightness
+        this_local_ind = row['all_ind_local']
+        this_brightness, this_volume = [], []
+        for i_local, i_frame in zip(this_local_ind, which_frames):
+            this_brightness.append(segmentation_metadata.get_all_brightnesses(i_frame)[i_local])
+            this_volume.append(segmentation_metadata.get_all_volumes(i_frame)[i_local])
+
+        # Combine all
+        coords = np.hstack([zxy, confidence, this_local_ind, this_brightness, this_volume])
 
         column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_id', 'brightness_red', 'volume']
         if scorer is not None:

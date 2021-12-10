@@ -30,6 +30,7 @@ def cfg(project_path, DEBUG):
     project_dir = cfg.project_dir
 
     train_cfg = cfg.get_training_config()
+    segmentation_config = cfg.get_segmentation_config()
 
     log_dir = cfg.get_log_dir()
     log_fname = os.path.join(log_dir, '2-training_data_warnings.log')
@@ -47,9 +48,11 @@ def produce_training_data(_config, _run):
     DEBUG = _config['DEBUG']
     project_config = _config['cfg']
     train_cfg = _config['train_cfg']
+    segmentation_config = _config['segmentation_config']
 
     postprocess_and_build_matches_from_config(
         project_config,
+        segmentation_config,
         train_cfg,
         DEBUG=DEBUG
     )
