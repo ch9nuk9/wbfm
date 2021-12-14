@@ -11,7 +11,7 @@ from collections import defaultdict
 from tqdm.auto import tqdm
 
 
-def long_range_matches_from_config(project_path, verbose = 2):
+def long_range_matches_from_config(project_path, verbose=2):
     # project_path = "/home/charles/dlc_stacks/worm3-newseg-2021_11_17/project_config.yaml"
 
     project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True, to_load_frames=True)
@@ -43,6 +43,10 @@ def long_range_matches_from_config(project_path, verbose = 2):
     df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching)
 
     # SAVE
+    track_config = project_data.project_config.get_tracking_config()
+
+    output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
+    track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
 
 
 def extend_tracks_using_similar_postures(all_frames, frame_pair_options, reference_posture,
@@ -57,12 +61,12 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
     indices_to_check = [i for i in indices_to_check if i < len(all_frames)]
     for i_next_similar_posture in tqdm(indices_to_check):
 
-        tracks_with_gap = worm_obj.tracks_with_gap_at_or_after_time(i_next_similar_posture)
-        if not tracks_with_gap:
-            continue
+        # Just always loop through all tracks, even if they (theoretically) don't have a gap
+        # tracks_with_gap = worm_obj.tracks_with_gap_at_or_after_time(i_next_similar_posture)
+        # if not tracks_with_gap:
+        #     continue
 
         # Then do one volume-volume match to try and continue all ended tracklets
-        # i_next_similar_posture = reference_posture.get_next_close_index(t)
         pair_indices = (anchor_ind, i_next_similar_posture)
         long_range_pair = all_long_range_matches.get(pair_indices, None)
         if long_range_pair is None:
@@ -84,7 +88,8 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
         mapping_to_confidence = long_range_matches.get_mapping_pair_to_conf()
 
         tracks_that_are_filled = 0
-        for track_name, track in tracks_with_gap.items():
+        for track_name, track in tqdm(worm_obj.global_name_to_neuron.items(), total=worm_obj.num_neurons, leave=False):
+        # for track_name, track in tracks_with_gap.items():
 
             # From the starting neuron, get the long-range match
             i_starting_neuron = track.neuron_ind
@@ -110,7 +115,7 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
             tracks_that_are_filled += 1
 
         if verbose >= 2:
-            print(f"At time {i_next_similar_posture}, extended {tracks_that_are_filled}/{len(tracks_with_gap)} tracks")
+            print(f"At time {i_next_similar_posture}, extended {tracks_that_are_filled} tracks")
 
 
 def initialize_worm_object(all_tracklet_names, df_tracklets, raw_clust, segmentation_metadata):
