@@ -48,7 +48,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     # Main loop: Match segmentations to tracks
     # Also: get connected red brightness and mask
     # Initialize multi-index dataframe for data
-    frame_list = list(range(params_start_volume, num_frames + params_start_volume))
+    # TODO: Why is this one frame too short?
+    frame_list = list(range(params_start_volume, num_frames + params_start_volume - 1))
     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
     logging.info("Matching segmentation and tracked positions...")
     if DEBUG:

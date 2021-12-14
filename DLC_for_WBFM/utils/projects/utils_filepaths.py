@@ -11,7 +11,7 @@ import pandas as pd
 import pprint
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import UnknownValueError
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
+from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config, get_sequential_filename
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 
 
@@ -51,21 +51,27 @@ class ConfigFileWithProjectContext:
     def to_json(self):
         return json.dumps(vars(self))
 
-    def pickle_in_local_project(self, data, relative_path: str, allow_overwrite=True):
+    def pickle_in_local_project(self, data, relative_path: str,
+                            allow_overwrite=True, make_sequential_filename=False):
         abs_path = self.resolve_relative_path(relative_path)
         if not abs_path.endswith('.pickle'):
             abs_path += ".pickle"
+        if make_sequential_filename:
+            abs_path = get_sequential_filename(abs_path)
         logging.info(f"Saving at: {relative_path}")
         check_exists(abs_path, allow_overwrite)
         with open(abs_path, 'wb') as f:
             pickle.dump(data, f)
 
-    def h5_in_local_project(self, data: pd.DataFrame, relative_path: str, allow_overwrite=True, also_save_csv=False):
+    def h5_in_local_project(self, data: pd.DataFrame, relative_path: str,
+                            allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):
         abs_path = self.resolve_relative_path(relative_path)
         if not abs_path.endswith('.h5'):
             abs_path += ".h5"
         logging.info(f"Saving at: {relative_path}")
         check_exists(abs_path, allow_overwrite)
+        if make_sequential_filename:
+            abs_path = get_sequential_filename(abs_path)
         data.to_hdf(abs_path, key="df_with_missing")
 
         if also_save_csv:
