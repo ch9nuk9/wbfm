@@ -3,21 +3,23 @@ from skimage import transform
 
 
 def get_scale_fluo_to_behavior():
-    #calculate scale
-    ##pixel size in um
+    # pixel sizes in um
     img1_px_size = 0.325
     img2_px_size = 2.4
+    # img2_px_size = 2.3
     scale = img1_px_size / img2_px_size
     # print('scale is :', scale)
     return scale
 
 
 def get_rotation_fluo_to_behavior():
+    # return np.pi / 2.05
     return np.pi / 1.85
 
 
 def get_translation_fluo_to_behavior():
-    return (430, 330)  # (680,1000)
+    # return 430, 310  # (680,1000)
+    return 430, 330  # (680,1000)
 
 
 def get_full_transformation_fluo_to_behavior():

@@ -5,6 +5,7 @@ import pandas as pd
 from dataclasses import dataclass
 
 from matplotlib import pyplot as plt
+from skimage import transform
 from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
@@ -85,3 +86,65 @@ class WormReferencePosture:
         else:
             logging.warning(f"Found no close indices after the query ({i_start})")
             return None
+
+
+@dataclass
+class WormSinglePosture:
+    neuron_zxy: np.ndarray
+    centerline: np.ndarray
+
+    centerline_neighbors: NearestNeighbors = None
+    neuron_neighbors: NearestNeighbors = None
+
+    def __post_init__(self):
+        self.centerline_neighbors = NearestNeighbors(n_neighbors=2).fit(self.centerline)
+        self.neuron_neighbors = NearestNeighbors(n_neighbors=5).fit(self.neuron_zxy)
+
+    def get_closest_centerline_point(self, anchor_pt):
+        n_neighbors = 1
+        closest_centerline_dist, closest_centerline_ind = self.centerline_neighbors.kneighbors(
+            anchor_pt[1:].reshape(1, -1), n_neighbors)
+        closest_centerline_pt = self.centerline[closest_centerline_ind[0][0], :]
+
+        return closest_centerline_pt, closest_centerline_ind
+
+    def get_transformation_using_centerline_tangent(self, anchor_pt):
+        closest_centerline_pt, closest_centerline_ind = self.get_closest_centerline_point(anchor_pt)
+
+        centerline_tangent = self.centerline[closest_centerline_ind[0][0] + 1, :] - closest_centerline_pt
+        angle = np.arctan2(centerline_tangent[0], centerline_tangent[1])
+        # angle = np.angle(centerline_tangent[0] + 1j * centerline_tangent[1])
+        print(
+            f"Rotation angle of {angle} with centerline index {closest_centerline_ind} and tangent {centerline_tangent} (pt={closest_centerline_pt})")
+        matrix = transform.EuclideanTransform(rotation=angle)
+
+        return matrix
+
+    def get_neighbors(self, anchor_pt, n_neighbors):
+        neighbor_dist, neighbor_ind = self.neuron_neighbors.kneighbors(anchor_pt.reshape(1, -1), n_neighbors + 1)
+        # Closest neighbor is itself
+        neighbor_dist = neighbor_dist[0][1:]
+        neighbor_ind = neighbor_ind[0][1:]
+        neighbors_zxy = self.neuron_zxy[neighbor_ind, :]
+
+        return neighbors_zxy, neighbor_ind
+
+    def get_neighbors_in_local_coordinate_system(self, i_anchor, n_neighbors=10):
+        anchor_pt = self.neuron_zxy[i_anchor]
+        neighbors_zxy, neighbor_ind = self.get_neighbors(anchor_pt, n_neighbors)
+
+        matrix = self.get_transformation_using_centerline_tangent(anchor_pt)
+        new_pts = transform.matrix_transform(neighbors_zxy[:, 1:] - anchor_pt[1:], matrix.params)
+
+        # TODO: add z back in
+        return new_pts
+
+    def get_all_neurons_in_local_coordinate_system(self, i_anchor, n_neighbors=10):
+        anchor_pt = self.neuron_zxy[i_anchor]
+
+        matrix = self.get_transformation_using_centerline_tangent(anchor_pt)
+        new_pts = transform.matrix_transform(self.neuron_zxy[:, 1:] - anchor_pt[1:], matrix.params)
+
+        # TODO: add z back in
+        return new_pts
+    
