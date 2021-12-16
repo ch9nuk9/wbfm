@@ -13,12 +13,17 @@ from sklearn.neighbors import NearestNeighbors
 
 @dataclass
 class WormFullVideoPosture:
-
-    filename: str
+    filename_curvature: str
+    filename_x: str
+    filename_y: str
 
     curvature: pd.DataFrame = None
+    centerlineX: pd.DataFrame = None
+    centerlineY: pd.DataFrame = None
     pca_i_start: int = 10
     pca_i_end: int = -10
+
+    fps: int = 32
 
     @cached_property
     def pca_projections(self):
@@ -29,7 +34,9 @@ class WormFullVideoPosture:
         return pca_proj
 
     def __post_init__(self):
-        self.curvature = pd.read_csv(self.filename)
+        self.centerlineX = pd.read_csv(self.filename_x, header=None)
+        self.centerlineY = pd.read_csv(self.filename_y, header=None)
+        self.curvature = pd.read_csv(self.filename_curvature, header=None)
 
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
@@ -37,6 +44,11 @@ class WormFullVideoPosture:
         c = np.arange(self.curvature.shape[0]) / 1e6
         plt.scatter(self.pca_projections[:, 0], self.pca_projections[:, 1], self.pca_projections[:, 2], c=c)
         plt.colorbar()
+
+    def get_centerline_for_time(self, t):
+        c_x = self.centerlineX.iloc[t * self.fps]
+        c_y = self.centerlineY.iloc[t * self.fps]
+        return np.vstack([c_x, c_y]).T
 
 
 @dataclass
@@ -114,8 +126,7 @@ class WormSinglePosture:
         centerline_tangent = self.centerline[closest_centerline_ind[0][0] + 1, :] - closest_centerline_pt
         angle = np.arctan2(centerline_tangent[0], centerline_tangent[1])
         # angle = np.angle(centerline_tangent[0] + 1j * centerline_tangent[1])
-        print(
-            f"Rotation angle of {angle} with centerline index {closest_centerline_ind} and tangent {centerline_tangent} (pt={closest_centerline_pt})")
+        # print(f"Rotation angle of {angle} with centerline index {closest_centerline_ind} and tangent {centerline_tangent} (pt={closest_centerline_pt})")
         matrix = transform.EuclideanTransform(rotation=angle)
 
         return matrix
@@ -136,8 +147,12 @@ class WormSinglePosture:
         matrix = self.get_transformation_using_centerline_tangent(anchor_pt)
         new_pts = transform.matrix_transform(neighbors_zxy[:, 1:] - anchor_pt[1:], matrix.params)
 
+        new_pts_zxy = np.zeros_like(neighbors_zxy)
+        new_pts_zxy[:, 0] = neighbors_zxy[:, 0]
+        new_pts_zxy[:, 1] = new_pts[:, 0]
+        new_pts_zxy[:, 2] = new_pts[:, 1]
         # TODO: add z back in
-        return new_pts
+        return new_pts_zxy
 
     def get_all_neurons_in_local_coordinate_system(self, i_anchor, n_neighbors=10):
         anchor_pt = self.neuron_zxy[i_anchor]
@@ -147,4 +162,3 @@ class WormSinglePosture:
 
         # TODO: add z back in
         return new_pts
-    

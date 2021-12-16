@@ -55,3 +55,15 @@ def get_full_transformation_behavior_to_fluo():
         translation=translation2)
 
     return tform2
+
+
+def transform_neuron_point_cloud(pts):
+    tform2 = get_full_transformation_fluo_to_behavior()
+    pts_transformed = transform.matrix_transform(pts[:, [2, 1]], tform2.params)
+
+    new_pts = np.zeros_like(pts)
+    new_pts[:, 0] = pts[:, 0]
+    new_pts[:, 1] = pts_transformed[:, 1]
+    new_pts[:, 2] = pts_transformed[:, 0]
+
+    return new_pts
