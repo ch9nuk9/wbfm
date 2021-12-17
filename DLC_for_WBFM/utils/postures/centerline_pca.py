@@ -151,14 +151,17 @@ class WormSinglePosture:
         new_pts_zxy[:, 0] = neighbors_zxy[:, 0]
         new_pts_zxy[:, 1] = new_pts[:, 0]
         new_pts_zxy[:, 2] = new_pts[:, 1]
-        # TODO: add z back in
         return new_pts_zxy
 
-    def get_all_neurons_in_local_coordinate_system(self, i_anchor, n_neighbors=10):
+    def get_all_neurons_in_local_coordinate_system(self, i_anchor):
         anchor_pt = self.neuron_zxy[i_anchor]
 
         matrix = self.get_transformation_using_centerline_tangent(anchor_pt)
         new_pts = transform.matrix_transform(self.neuron_zxy[:, 1:] - anchor_pt[1:], matrix.params)
 
-        # TODO: add z back in
+        new_pts_zxy = np.zeros_like(self.neuron_zxy)
+        new_pts_zxy[:, 0] = self.neuron_zxy[:, 0]
+        new_pts_zxy[:, 1] = new_pts[:, 0]
+        new_pts_zxy[:, 2] = new_pts[:, 1]
+
         return new_pts
