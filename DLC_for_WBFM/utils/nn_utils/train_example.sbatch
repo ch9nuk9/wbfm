@@ -3,6 +3,7 @@
 #SBATCH --job-name=leifer_pre_training   # Job name
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Run a single task
+#SBATCH --cpus-per-task=8
 #SBATCH --qos=short             # Time limit hrs:min:sec
 #SBATCH --output=leifer_pre_training.out    # Standard output and error log
 #SBATCH --time=2:00:00

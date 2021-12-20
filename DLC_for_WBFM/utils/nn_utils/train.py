@@ -50,8 +50,8 @@ if __name__ == "__main__":
     # train the model.
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", default=64, type=int)
-    parser.add_argument("--log_every", default=50, type=int)
-    parser.add_argument("--valid_niter", default=500, type=int,
+    parser.add_argument("--log_every", default=200, type=int)
+    parser.add_argument("--valid_niter", default=1000, type=int,
                         help="perform validation after how many iterations")
     parser.add_argument("--model_path", default="fDNC/model", type=str)
     parser.add_argument("--lr_decay", default=0.5, type=float, help="learning rate decay")
@@ -114,6 +114,7 @@ if __name__ == "__main__":
 
     num_trial = 0
     train_iter = patience = cum_loss = report_loss = cum_tgt_words = report_tgt_words = 0
+    entropy_loss = 0
     cum_examples = report_examples = epoch = valid_num = 0
     hist_valid_scores = []
     train_time = begin_time = time.time()
@@ -140,8 +141,9 @@ if __name__ == "__main__":
 
             batch_loss, _ = model(pt_batch, match_dict=match_dict, ref_idx=data_batch['ref_i'], mode='train')
              #batch_loss = example_losses.sum()
+            entropy_term = batch_loss['loss_entropy'] / batch_loss['num_unlabel']
             loss = batch_loss['loss'] / batch_loss['num'] + args.stn_lam * batch_loss['reg_stn'] + \
-                   args.fstn_lam * batch_loss['reg_fstn'] + args.lamb_entropy * batch_loss['loss_entropy'] / batch_loss['num_unlabel']
+                   args.fstn_lam * batch_loss['reg_fstn'] + args.lamb_entropy * entropy_term
             loss.backward()
             # print('batch loss:{}'.format(batch_loss['loss'] / batch_loss['num']))
             # print('reg_stn:{}'.format(batch_loss['reg_stn'].item()))
@@ -155,6 +157,7 @@ if __name__ == "__main__":
             batch_losses_val = batch_loss['loss'].item()
             report_loss += batch_losses_val
             cum_loss += batch_losses_val
+            entropy_loss += entropy_term
 
             # omitting leading `<s>`
             tgt_words_num_to_predict = batch_loss['num']
@@ -164,11 +167,12 @@ if __name__ == "__main__":
             cum_examples += batch_size
 
             if train_iter % args.log_every == 0:
-                print('epoch %d (%d / %d), iter %d, avg. loss %.2f, avg. ppl %.2f '
+                print('epoch %d (%d / %d), iter %d, avg. loss %.2f, avg. ppl %.2f, entr. loss %.2f, '
                       'cum. examples %d, speed %.2f words/sec, time elapsed %.2f sec' %
                       (epoch, current_iter, batch_num, train_iter,
                        report_loss / report_examples,
                        math.exp(report_loss / report_tgt_words),
+                       entropy_loss,
                        cum_examples,
                        report_tgt_words / (time.time() - train_time),
                        time.time() - begin_time))
