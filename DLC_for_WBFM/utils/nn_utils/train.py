@@ -7,6 +7,7 @@ import math
 import time
 import os
 import numpy as np
+from tqdm.auto import tqdm
 
 
 def evaluate_ppl(model, dev_data_loader):
@@ -116,15 +117,15 @@ if __name__ == "__main__":
     hist_valid_scores = []
     train_time = begin_time = time.time()
 
-    while True:
-        epoch += 1
+    for epoch in tqdm(range(1, args.max_epoch)):
+        # epoch += 1
         batch_num = train_data.batch_num
         current_iter = 0
 
         if train_data_loader.dataset.shuffle:
             train_data_loader.dataset.shuffle_batch()
         #for pt1_batch, pt2_batch, match_batch in batch_iter(train_data, batch_size=args.batch_size, shuffle=True):
-        for batch_idx, data_batch in enumerate(train_data_loader):
+        for batch_idx, data_batch in enumerate(tqdm(train_data_loader)):
             #for pt_batch, match_dict in train_data.batch_iter():
             pt_batch = data_batch['pt_batch']
             match_dict = data_batch['match_dict']
@@ -231,9 +232,9 @@ if __name__ == "__main__":
                         # reset patience
                         patience = 0
 
-            if epoch == args.max_epoch:
-                print('reached maximum number of epochs!')
-                exit(0)
+            # if epoch == args.max_epoch:
+            #     print('reached maximum number of epochs!')
+            #     exit(0)
             #print('finish one batch:{}'.format(time.time() - tic))
     #train_data
 
