@@ -29,5 +29,5 @@ OUTPUT_PATH="/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID/fDNC/model/clus
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $CMD"
 else
-  python $CMD --train_path "$(DATA_PATH)/train_synthetic" --eval_path "$(DATA_PATH)/validation_synthetic" --model_path "$(OUTPUT_PATH)"
+  python $CMD --train_path "${DATA_PATH}/train_synthetic" --eval_path "${DATA_PATH}/validation_synthetic" --model_path "${OUTPUT_PATH}"
 fi
