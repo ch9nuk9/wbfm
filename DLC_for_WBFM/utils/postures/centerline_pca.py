@@ -164,4 +164,4 @@ class WormSinglePosture:
         new_pts_zxy[:, 1] = new_pts[:, 0]
         new_pts_zxy[:, 2] = new_pts[:, 1]
 
-        return new_pts
+        return new_pts_zxy
