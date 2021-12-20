@@ -69,6 +69,7 @@ if __name__ == "__main__":
     parser.add_argument("--p_rotate", default=1, type=int)
     parser.add_argument("--f_trans", default=1, type=int)
     parser.add_argument("--cuda", default=1, type=int)
+    parser.add_argument("--cuda_device_index", default=0, type=int)
     parser.add_argument("--train_path", default="../Data/train", type=str)
     parser.add_argument("--eval_path", default="../Data/test", type=str)
     parser.add_argument("--data_mode", default="all", type=str)
@@ -93,7 +94,7 @@ if __name__ == "__main__":
     train_data_loader = DataLoader(train_data, shuffle=False, num_workers=1, collate_fn=train_data.custom_collate_fn)
     dev_data_loader = DataLoader(dev_data, shuffle=False, num_workers=1, collate_fn=dev_data.custom_collate_fn)
 
-    device = torch.device("cuda:0" if cuda else "cpu")
+    device = torch.device(f"cuda:{args.cuda_device_index}" if cuda else "cpu")
 
     model = NIT_Registration(input_dim=3, n_hidden=args.n_hidden, n_layer=args.n_layer, p_rotate=args.p_rotate,
                              feat_trans=args.f_trans, cuda=cuda)
@@ -125,7 +126,7 @@ if __name__ == "__main__":
         if train_data_loader.dataset.shuffle:
             train_data_loader.dataset.shuffle_batch()
         #for pt1_batch, pt2_batch, match_batch in batch_iter(train_data, batch_size=args.batch_size, shuffle=True):
-        for batch_idx, data_batch in enumerate(tqdm(train_data_loader)):
+        for batch_idx, data_batch in enumerate(tqdm(train_data_loader, leave=False)):
             #for pt_batch, match_dict in train_data.batch_iter():
             pt_batch = data_batch['pt_batch']
             match_dict = data_batch['match_dict']
