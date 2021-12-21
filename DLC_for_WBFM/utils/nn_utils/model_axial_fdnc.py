@@ -1,51 +1,57 @@
 # A version of the leifer fdnc model using axial transformers instead of basic ones
 import torch
-from torch.autograd import Variable
-from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.nn.utils
 import torch.nn.functional as F
 import numpy as np
-import os
-import glob
+from DLC_for_WBFM.utils.external.transformers import RectAxialEncoder
 from fDNC.src.model import PointTransFeat
 
 
-class NIT(nn.Module):
+class NITAxial(nn.Module):
     """ Simple Neuron Id transformer:
         - Transformer
     """
 
-    def __init__(self, input_dim, n_hidden, n_layer=6, cuda=True, p_rotate=False, feat_trans=False):
+    def __init__(self, input_dim, n_hidden, n_layer=6,
+                 length_to_pad=200,  # Pads all input to be length_to_pad x 3; should more more than the number of neurons
+                 cuda=True,
+                 p_rotate=False, feat_trans=False):
         """ Init Model
 
         """
-        super(NIT, self).__init__()
+        super(NITAxial, self).__init__()
 
-        self.p_rotate = p_rotate
-        self.feat_trans = feat_trans
-        self.input_dim = input_dim
-        self.n_hidden = n_hidden
+        # self.p_rotate = p_rotate
+        # self.feat_trans = feat_trans
+        self.input_dim = input_dim  # Used?
+        # self.n_hidden = n_hidden
         self.n_layer = n_layer
         self.cuda = cuda
-        self.fc_outlier = nn.Linear(n_hidden, 1)
-        # Linear Layer with bias), project 3d coordinate into hidden dimension.
-        self.point_f = PointTransFeat(rotate=self.p_rotate, feature_transform=feat_trans,
-                                      input_dim=input_dim, hidden_d=n_hidden)
+        self.length_to_pad = length_to_pad
+        # self.fc_outlier = nn.Linear(n_hidden, 1)
+        # NEW: no projection to hidden 1d layer
+        # Linear Layer with bias, project 3d coordinate into hidden dimension.
+        # self.point_f = PointTransFeat(rotate=self.p_rotate, feature_transform=feat_trans,
+        #                               input_dim=input_dim, hidden_d=n_hidden)
 
-        self.enc_l = nn.TransformerEncoderLayer(d_model=n_hidden, nhead=8)
-        self.model = nn.TransformerEncoder(self.enc_l, n_layer)
+        # NEW: axial encoder
+        # self.enc_l = nn.TransformerEncoderLayer(d_model=n_hidden, nhead=8)
+        # self.model = nn.TransformerEncoder(self.enc_l, n_layer)
+        self.model = RectAxialEncoder(in_channels=1, dim_h=length_to_pad, dim_w=3, blocks=n_hidden, heads=8)
 
+        # TODO: pass device directly
         self.device = torch.device("cuda:0" if cuda else "cpu")
 
     def encode(self, pts_padded, pts_length):
         # pts_padded should be of (b, num_pts, 3)
         # pts_proj = self.h_projection(pts_padded)
-        pts_proj = self.point_f(pts_padded.transpose(2, 1))
-        pts_proj = pts_proj.transpose(2, 1)
-        mask = self.generate_sent_masks(pts_proj, pts_length)
+        # pts_proj = self.point_f(pts_padded.transpose(2, 1))
+        # pts_proj = pts_proj.transpose(2, 1)
+        # mask = self.generate_sent_masks(pts_proj, pts_length)
         # add the src_key_mask need to test.
-        pts_encode = self.model(pts_proj.transpose(dim0=0, dim1=1), src_key_padding_mask=mask)
+        # pts_encode = self.model(pts_proj.transpose(dim0=0, dim1=1), src_key_padding_mask=mask)
+        pts_encode = self.model(pts_padded.transpose(dim0=0, dim1=1))
 
         return pts_encode.transpose(dim0=0, dim1=1)
 
@@ -64,23 +70,23 @@ class NIT(nn.Module):
             enc_masks[e_id, src_len:] = True
         return enc_masks.to(self.device)
 
-    def encode_pos(self, pts):
-        """ Take a mini-batch of "source" and "target" points, compute the encoded hidden code for each
-        neurons.
-        @param pts1 (List[List[x, y, z]]): list of source points set
-        @param pts2 (List[List[x, y, z]]): list of target points set
-
-        @returns scores (Tensor): a variable/tensor of shape (b, ) representing the
-                                    log-likelihood of generating the gold-standard target sentence for
-                                    each example in the input batch. Here b = batch size.
-        """
-        # Compute sentence lengths
-        pts_lengths = [len(s) for s in pts]
-        # pts_padded should be of dimension (
-        pts_padded = self.to_input_tensor(pts)
-
-        pts_encode = self.encode(pts_padded, pts_lengths)
-        return pts_encode
+    # def encode_pos(self, pts):
+    #     """ Take a mini-batch of "source" and "target" points, compute the encoded hidden code for each
+    #     neurons.
+    #     @param pts1 (List[List[x, y, z]]): list of source points set
+    #     @param pts2 (List[List[x, y, z]]): list of target points set
+    #
+    #     @returns scores (Tensor): a variable/tensor of shape (b, ) representing the
+    #                                 log-likelihood of generating the gold-standard target sentence for
+    #                                 each example in the input batch. Here b = batch size.
+    #     """
+    #     # Compute sentence lengths
+    #     # pts_lengths = [len(s) for s in pts]
+    #     # pts_padded should be of dimension (
+    #     pts_padded = self.to_input_tensor(pts)
+    #
+    #     pts_encode = self.encode(pts_padded, pts_length=None)
+    #     return pts_encode
 
     def forward(self, pts, match_dict=None, ref_idx=0, mode='train'):
         """ Take a mini-batch of "source" and "target" points, compute the encoded hidden code for each
@@ -95,7 +101,8 @@ class NIT(nn.Module):
         # Compute sentence lengths
         pts_lengths = [len(s) for s in pts]
         # pts_padded should be of dimension (
-        pts_padded = self.to_input_tensor(pts)
+        # pts_padded = self.to_input_tensor(pts)
+        pts_padded = self.pad_to_target_length(pts)
 
         pts_encode = self.encode(pts_padded, pts_lengths)
 
@@ -160,6 +167,23 @@ class NIT(nn.Module):
 
         return loss_dict, output_pairs
 
+    def pad_to_target_length(self, pts, pad_pt=None):
+        if pad_pt is None:
+            pad_pt = [0, 0, 0]
+        padding_var = []
+        for s in pts:
+            length_difference = self.length_to_pad - len(s)
+            if length_difference > 0:
+                padded = [pad_pt] * length_difference
+                s = torch.tensor(torch.cat([s, padded]))
+            elif length_difference < 0:
+                s = s[:length_difference]
+            padding_var.append(s)
+            # padded[:len(s)] = s
+            # padding_var.append(padded)
+        output_tensor = torch.tensor(padding_var, dtype=torch.float, device=self.device)
+        return output_tensor  # torch.t(sents_var)
+
     def to_input_tensor(self, pts, pad_pt=[0, 0, 0]):
         sents_padded = []
         max_len = max(len(s) for s in pts)
@@ -178,7 +202,7 @@ class NIT(nn.Module):
         """
         params = torch.load(model_path, map_location=lambda storage, loc: storage)
         args = params['args']
-        model = NIT(**args)
+        model = NITAxial(**args)
         model.load_state_dict(params['state_dict'])
 
         return model
@@ -198,13 +222,13 @@ class NIT(nn.Module):
         torch.save(params, path)
 
 
-class NIT_Registration(NIT):
+class NITAxialRegistration(NITAxial):
     """ Neuron Id transformer for registration between two datasets:
         - Transformer
     """
 
     def __init__(self, input_dim, n_hidden, n_layer=6, cuda=True, p_rotate=False, feat_trans=False):
-        super(NIT_Registration, self).__init__(input_dim, n_hidden, n_layer, cuda, p_rotate, feat_trans)
+        super(NITAxialRegistration, self).__init__(input_dim, n_hidden, n_layer, cuda, p_rotate, feat_trans)
         self.point_f = PointTransFeat(rotate=self.p_rotate, feature_transform=feat_trans,
                                       input_dim=input_dim, hidden_d=n_hidden)
         self.n_hidden = n_hidden
