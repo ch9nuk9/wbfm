@@ -24,10 +24,8 @@ def visualize_tracks(neurons0, neurons1, matches=None, trivial_matches=False, to
 
     """
     import open3d as o3d
-    n0, pc_n0, tree_neurons0 = build_neuron_tree(neurons0, to_mirror=False)
-    n1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror=False)
-    pc_n0.paint_uniform_color([0.5, 0.5, 0.5])
-    pc_n1.paint_uniform_color([0, 0, 0])
+
+    n0, n1, pc_n0, pc_n1 = build_pair_of_point_clouds(neurons0, neurons1)
 
     # Plot lines from initial neuron to target
     points = np.vstack((pc_n0.points, pc_n1.points))
@@ -73,6 +71,14 @@ def visualize_tracks(neurons0, neurons1, matches=None, trivial_matches=False, to
     return to_draw
 
 
+def build_pair_of_point_clouds(neurons0, neurons1):
+    n0, pc_n0, tree_neurons0 = build_neuron_tree(neurons0, to_mirror=False)
+    n1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror=False)
+    pc_n0.paint_uniform_color([0.5, 0.5, 0.5])
+    pc_n1.paint_uniform_color([0, 0, 0])
+    return n0, n1, pc_n0, pc_n1
+
+
 def visualize_tracks_simple(pc0, pc1, matches):
     import open3d as o3d
     pc0.paint_uniform_color([1, 0, 0])
@@ -84,6 +90,30 @@ def visualize_tracks_simple(pc0, pc1, matches):
     o3d.visualization.draw_geometries([line_set, pc0, pc1])
 
     return line_set
+
+
+def visualize_tracks_two_matches(neurons0, neurons1, match0, match1, offset=None):
+    if offset is None:
+        offset = np.array([0.001, 0, 0])
+    import open3d as o3d
+    n0, n1, pc0, pc1 = build_pair_of_point_clouds(neurons0, neurons1)
+
+    # Plot lines from initial neuron to target
+    lines0 = build_line_set_from_matches(pc0, pc1, match0)
+    c0 = [[0, 1, 0] for _ in range(len(match0))]
+    lines0.colors = o3d.utility.Vector3dVector(c0)
+
+    pc0.translate(offset)
+    pc1.translate(offset)
+    lines1 = build_line_set_from_matches(pc0, pc1, match1)
+    c1 = [[1, 0, 0] for _ in range(len(match1))]
+    lines1.colors = o3d.utility.Vector3dVector(c1)
+    pc0.translate(-offset)
+    pc1.translate(offset)
+
+    o3d.visualization.draw_geometries([lines0, lines1, pc0, pc1])
+
+    return lines0, lines1
 
 
 def visualize_tracks_multiple_matches(all_pc, all_matches):

@@ -398,12 +398,14 @@ class ProjectData:
     def correct_relative_index(self, i):
         return self.which_training_frames[i]
 
-    def napari_of_single_match(self, pair, which_matches='final_matches'):
+    def napari_of_single_match(self, pair, which_matches='final_matches', this_match=None):
         import napari
         from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
 
-        raw_red_data = self.red_data[pair[0]:pair[1] + 1, ...]
-        this_match = self.raw_matches[pair]
+        if this_match is None:
+            this_match = self.raw_matches[pair]
+        raw_red_data = np.stack([self.red_data[pair[0], ...], self.red_data[pair[1], ...]])
+        # raw_red_data = self.red_data[pair[0]:pair[1] + 1, ...]
         n0_zxy_raw = this_match.frame0.neuron_locs
         n1_zxy_raw = this_match.frame1.neuron_locs
 
