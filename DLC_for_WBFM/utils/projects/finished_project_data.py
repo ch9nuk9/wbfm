@@ -376,6 +376,17 @@ class ProjectData:
         final_pts = np.vstack([matched_pts, pts_to_add])
         return final_pts
 
+    # def calc_matched_point_clouds(self, pair):
+    #     match = self.raw_matches[pair]
+    #     pts0, pts1 = [], []
+    #     n0, n1 = self.get_centroids_as_numpy(pair[0]), self.get_centroids_as_numpy(pair[1])
+    #     for m in match.final_matches:
+    #         pts0.append(n0[m[0]])
+    #         pts1.append(n1[m[1]])
+    #
+    #     pts0, pts1 = np.array(pts0), np.array(pts1)
+    #     return pts0, pts1
+
     def get_distance_to_closest_neuron(self, i_frame, target_pt, nbr_obj=None):
         # TODO: refactor to segmentation class?
         if nbr_obj is None:
