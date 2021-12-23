@@ -11,7 +11,7 @@ from collections import defaultdict
 from tqdm.auto import tqdm
 
 
-def long_range_matches_from_config(project_path, verbose=2):
+def long_range_matches_from_config(project_path, to_save=True, verbose=2):
     # project_path = "/home/charles/dlc_stacks/worm3-newseg-2021_11_17/project_config.yaml"
 
     project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True, to_load_frames=True)
@@ -25,8 +25,10 @@ def long_range_matches_from_config(project_path, verbose=2):
 
     # TODO: move the centerlines to config files
     fname = "/project/neurobiology/zimmer/wbfm/centerline/wbfm_ulises_centerline_for_charlie/2021-03-04_16-17-30_worm3_ZIM2051-_spline_K.csv"
+    fname_X = "/project/neurobiology/zimmer/wbfm/centerline/wbfm_ulises_centerline_for_charlie/2021-03-04_16-17-30_worm3_ZIM2051-_spline_X_coords.csv"
+    fname_Y = "/project/neurobiology/zimmer/wbfm/centerline/wbfm_ulises_centerline_for_charlie/2021-03-04_16-17-30_worm3_ZIM2051-_spline_Y_coords.csv"
 
-    full_posture = WormFullVideoPosture(fname)
+    full_posture = WormFullVideoPosture(fname, fname_X, fname_Y)
     reference_posture = WormReferencePosture(0, full_posture)
 
     # Initialize TrackedNeurons at 0, and initialize the TrackedWorm
@@ -35,18 +37,21 @@ def long_range_matches_from_config(project_path, verbose=2):
 
     worm_obj = initialize_worm_object(all_tracklet_names, df_tracklets, raw_clust, segmentation_metadata)
 
-    extend_tracks_using_similar_postures(all_frames, frame_pair_options, reference_posture,
-                                         verbose, worm_obj)
+    all_long_range_matches = extend_tracks_using_similar_postures(all_frames, frame_pair_options,
+                                                                  reference_posture, verbose, worm_obj)
 
     global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
     final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
     df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching)
 
     # SAVE
-    track_config = project_data.project_config.get_tracking_config()
+    if to_save:
+        track_config = project_data.project_config.get_tracking_config()
 
-    output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
-    track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
+        output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
+        track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
+
+    return df_new, final_matching, global_tracklet_neuron_graph, worm_obj, all_long_range_matches
 
 
 def extend_tracks_using_similar_postures(all_frames, frame_pair_options, reference_posture,
@@ -116,6 +121,8 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
 
         if verbose >= 2:
             print(f"At time {i_next_similar_posture}, extended {tracks_that_are_filled} tracks")
+
+    return all_long_range_matches
 
 
 def initialize_worm_object(all_tracklet_names, df_tracklets, raw_clust, segmentation_metadata):
