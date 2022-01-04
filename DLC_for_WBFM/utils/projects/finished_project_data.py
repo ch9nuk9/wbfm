@@ -2,11 +2,13 @@ import concurrent
 import logging
 import os
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, List
 import napari
 import numpy as np
 import pandas as pd
 import zarr
+
+from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
 
@@ -109,7 +111,7 @@ class ProjectData:
         return frames
 
     @cached_property
-    def raw_matches(self):
+    def raw_matches(self) -> List[FramePair]:
         logging.info("First time loading the raw matches, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'match_dat.pickle')
@@ -409,16 +411,20 @@ class ProjectData:
     def correct_relative_index(self, i):
         return self.which_training_frames[i]
 
-    def napari_of_single_match(self, pair, which_matches='final_matches', this_match=None):
+    def napari_of_single_match(self, pair, which_matches='final_matches', this_match=None,
+                               rigidly_align_volumetric_images=False):
         import napari
         from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
 
         if this_match is None:
             this_match = self.raw_matches[pair]
-        raw_red_data = np.stack([self.red_data[pair[0], ...], self.red_data[pair[1], ...]])
-        # raw_red_data = self.red_data[pair[0]:pair[1] + 1, ...]
-        n0_zxy_raw = this_match.frame0.neuron_locs
-        n1_zxy_raw = this_match.frame1.neuron_locs
+        dat0, dat1 = self.red_data[pair[0], ...], self.red_data[pair[1], ...]
+        n0_zxy_raw = this_match.pts0_preprocessed  # May be rotated
+        n1_zxy_raw = this_match.pts1
+        if rigidly_align_volumetric_images:
+            # Note: could read the data using the match object, but that would reopen the zarr filestream
+            dat0 = this_match.rigidly_align_volumetric_images(volume0=dat0)
+        raw_red_data = np.stack([dat0, dat1])
 
         list_of_matches = getattr(this_match, which_matches)
         all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy_raw, n1_zxy_raw)
