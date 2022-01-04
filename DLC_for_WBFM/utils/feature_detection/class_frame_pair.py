@@ -5,11 +5,12 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 import pandas as pd
+from napari.utils.transforms import Affine
 
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError, AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
@@ -83,6 +84,9 @@ class FramePair:
     # Frame classes
     frame0: ReferenceFrame = None
     frame1: ReferenceFrame = None
+
+    # For global rigid pre-rotation
+    rigid_rotation_matrix: np.ndarray = None
 
     @property
     def all_candidate_matches(self) -> list:
@@ -237,7 +241,7 @@ class FramePair:
 
         return matches
 
-    def calc_matched_point_clouds(self):
+    def matched_neurons_as_point_clouds(self):
         """Returns 2 numpy arrays of zxy point clouds, aligned as matched by final_matches"""
         pts0, pts1 = [], []
         n0, n1 = self.frame0.neuron_locs, self.frame1.neuron_locs
@@ -248,14 +252,24 @@ class FramePair:
         pts0, pts1 = np.array(pts0), np.array(pts1)
         return pts0, pts1
 
-    def calc_alignment_between_point_clouds(self, pts0=None, pts1=None):
-        if pts0 is None:
-            pts0, pts1 = self.calc_matched_point_clouds()
-        val, h, inliers = cv2.estimateAffine3D(pts0, pts1, confidence=0.999)
+    def calc_or_get_alignment_between_matched_neurons(self, pts0=None, pts1=None, recalculate_alignment=True):
 
-        return val, h, inliers
+        if recalculate_alignment:
+            if pts0 is None:
+                pts0, pts1 = self.matched_neurons_as_point_clouds()
+            val, h, inliers = cv2.estimateAffine3D(pts0, pts1, confidence=0.999)
+            self.rigid_rotation_matrix = h
 
-    def align_point_clouds(self, index_to_align=0):
+        else:
+            h = self.rigid_rotation_matrix
+
+        if h is None:
+            raise AnalysisOutOfOrderError("match.align_point_clouds(recalculate_alignment=True)")
+
+        return h
+
+    def align_point_clouds(self, index_to_align=0, recalculate_alignment=True):
+
         if index_to_align == 0:
             raw_cloud = self.frame0.neuron_locs
             target_cloud = self.frame1.neuron_locs
@@ -263,22 +277,29 @@ class FramePair:
             # TODO
             raise NotImplementedError
             # raw_cloud = self.frame1.neuron_locs
-        val, h, inliers = self.calc_alignment_between_point_clouds()
+        h = self.calc_or_get_alignment_between_matched_neurons(recalculate_alignment=recalculate_alignment)
+
         transformed_cloud = cv2.transform(np.array([raw_cloud]), h)[0]
 
         return transformed_cloud, target_cloud, raw_cloud
 
-    # def align_volumetric_images(self, index_to_align=0):
-    #     if index_to_align == 0:
-    #         raw_volume = self.frame0.get_raw_data()
-    #         target_volume = self.frame1.get_raw_data()
-    #     else:
-    #         # TODO
-    #         raise NotImplementedError
-    #     val, h, inliers = self.calc_alignment_between_point_clouds()
-    #     transformed_cloud = cv2.transform(np.array([raw_cloud]), h)[0]
-    #
-    #     return transformed_cloud, target_cloud, raw_cloud
+    def align_volumetric_images(self, volume0=None, recalculate_alignment=True):
+        """
+        Aligns the entire volume using the (possibly non-final) neuron matches
+
+        Returns the 3d Affine transformed version of the volume0, which can be passed
+        Also returns the intermediate products (rotation) and the raw
+        """
+
+        h = self.calc_or_get_alignment_between_matched_neurons(recalculate_alignment=recalculate_alignment)
+        napari_affine = Affine(affine_matrix=np.vstack([h, [0, 0, 0, 1]]))
+
+        if volume0 is None:
+            volume0 = self.frame0.get_raw_data()
+
+        volume0_rotated = napari_affine.func(volume0)
+
+        return volume0_rotated, volume0
 
     def print_candidates_by_method(self):
         num_matches = len(self.feature_matches)
