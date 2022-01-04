@@ -1,12 +1,13 @@
 import os
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Tuple
 
 import cv2
 import numpy as np
 import pandas as pd
 from napari.utils.transforms import Affine
-
+from backports.cached_property import cached_property
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
@@ -26,6 +27,7 @@ class FramePairOptions:
     embedding_use_GMS: bool = False
     crossCheck: bool = True
 
+    # Second: local affine method
     add_affine_to_candidates: bool = False
     start_plane: int = 4
     num_features_per_plane: int = 10000
@@ -35,10 +37,12 @@ class FramePairOptions:
     allow_z_change: bool = False
     affine_num_candidates: int = 1
 
+    # Third: gaussian process method
     add_gp_to_candidates: bool = False
     starting_matches: str = 'affine_matches'
     gp_num_candidates: int = 1
 
+    # Fourth: neural network (transformer)
     add_fdnc_to_candidates: bool = False
     fdnc_options: dict = None
 
@@ -46,6 +50,9 @@ class FramePairOptions:
     z_threshold: float = None
     min_confidence: float = 0.001
     z_to_xy_ratio: float = 3.0
+
+    # New: rotation of the entire image as preprocessing
+    preprocess_using_global_rotation: bool = False
 
     def __post_init__(self):
         from DLC_for_WBFM.utils.nn_utils.fdnc_predict import load_fdnc_options
@@ -87,6 +94,8 @@ class FramePair:
 
     # For global rigid pre-rotation
     rigid_rotation_matrix: np.ndarray = None
+    dat0_preprocessed: np.ndarray = None
+    pts0_preprocessed: np.ndarray = None
 
     @property
     def all_candidate_matches(self) -> list:
@@ -104,6 +113,36 @@ class FramePair:
         if self.frame0 is None:
             return np.nan
         return min(self.frame0.num_neurons(), self.frame1.num_neurons())
+
+    @cached_property
+    def dat0(self):
+        return self.frame0.get_raw_data()
+
+    @cached_property
+    def dat1(self):
+        return self.frame1.get_raw_data()
+
+    def preprocess_data(self):
+        """Preprocesses the volumetric data, if applicable options are True"""
+        if self.options.preprocess_using_global_rotation:
+            self.dat0_preprocessed, _ = self.align_volumetric_images()
+            self.pts0_preprocessed, _, _ = self.align_point_clouds()
+        else:
+            self.dat0_preprocessed = self.dat0
+            self.pts0_preprocessed = np.array(self.frame0.neuron_locs)
+            # No other options at this time
+            pass
+
+    def __getstate__(self):
+        # Modify pickling, following:
+        # https://docs.python.org/3/library/pickle.html#handling-stateful-objects
+        # Also similar to this solution: https://www.ianlewis.org/en/pickling-objects-cached-properties
+        state = self.__dict__.copy()
+        # Remove the unpicklable entries.
+        del state['dat0']
+        del state['dat1']
+        del state['dat0_preprocessed']
+        return state
 
     def prep_for_pickle(self):
         self.frame0.prep_for_pickle()
@@ -268,7 +307,8 @@ class FramePair:
 
         return h
 
-    def align_point_clouds(self, index_to_align=0, recalculate_alignment=True):
+    def align_point_clouds(self, index_to_align=0, recalculate_alignment=True) -> \
+            Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
         if index_to_align == 0:
             raw_cloud = self.frame0.neuron_locs
@@ -281,9 +321,9 @@ class FramePair:
 
         transformed_cloud = cv2.transform(np.array([raw_cloud]), h)[0]
 
-        return transformed_cloud, target_cloud, raw_cloud
+        return np.array(transformed_cloud), np.array(target_cloud), np.array(raw_cloud)
 
-    def align_volumetric_images(self, volume0=None, recalculate_alignment=True):
+    def align_volumetric_images(self, volume0=None, recalculate_alignment=True) -> Tuple[np.ndarray, np.ndarray]:
         """
         Aligns the entire volume using the (possibly non-final) neuron matches
 
@@ -371,7 +411,8 @@ class FramePair:
         # Generate keypoints and match per slice
         frame0, frame1 = self.frame0, self.frame1
         # TODO: should I reread the data here?
-        dat0, dat1 = frame0.get_raw_data(), frame1.get_raw_data()
+        dat0, dat1 = self.dat0, self.dat1
+        # dat0, dat1 = frame0.get_raw_data(), frame1.get_raw_data()
         # Transpose because opencv needs it
         dat0 = np.transpose(dat0, axes=(0, 2, 1))
         dat1 = np.transpose(dat1, axes=(0, 2, 1))
@@ -427,7 +468,6 @@ class FramePair:
         # Actually match
         options = {'matches_with_conf': starting_matches, 'n_neighbors': n_neighbors}
         gp_matches, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)
-        # gp_matches = recursive_cast_matches_as_array(gp_matches, gamma=1.0)
         self.gp_matches = gp_matches
         self.all_gps = all_gps
         self.gp_pushed_locations = gp_pushed
@@ -443,6 +483,9 @@ class FramePair:
     def _match_using_feature_embedding(self, matches_to_keep=1.0, use_GMS=False, crossCheck=True):
         """
         Requires the frame objects to have been correctly initialized, i.e. their neurons need a feature embedding
+
+        Uses direct brute force matching to match the neurons given these embeddings, then postprocesses using GMS to
+        make sure they reflect a locally consistent motion field
         """
         frame0, frame1 = self.frame0, self.frame1
         # First, get feature matches
