@@ -94,8 +94,8 @@ class FramePair:
 
     # For global rigid pre-rotation
     rigid_rotation_matrix: np.ndarray = None
-    dat0_preprocessed: np.ndarray = None
-    pts0_preprocessed: np.ndarray = None
+    _dat0_preprocessed: np.ndarray = None
+    _pts0_preprocessed: np.ndarray = None
 
     @property
     def all_candidate_matches(self) -> list:
@@ -122,15 +122,29 @@ class FramePair:
     def dat1(self):
         return self.frame1.get_raw_data()
 
+    @property
+    def dat0_preprocessed(self):
+        # Returns most-updated version
+        if self._dat0_preprocessed is None:
+            return self.dat0
+        else:
+            return self._dat0_preprocessed
+
+    @property
+    def pts0_preprocessed(self):
+        # Returns most-updated version
+        if self._pts0_preprocessed is None:
+            return np.array(self.frame0.neuron_locs)
+        else:
+            return self._pts0_preprocessed
+
     def preprocess_data(self):
         """Preprocesses the volumetric data, if applicable options are True"""
         if self.options.preprocess_using_global_rotation:
-            self.dat0_preprocessed, _ = self.align_volumetric_images()
-            self.pts0_preprocessed, _, _ = self.align_point_clouds()
+            self._dat0_preprocessed, _ = self.rigidly_align_volumetric_images()
+            self._pts0_preprocessed, _, _ = self.rigidly_align_point_clouds()
         else:
-            self.dat0_preprocessed = self.dat0
-            self.pts0_preprocessed = np.array(self.frame0.neuron_locs)
-            # No other options at this time
+            # No other options at this time; leave the entries as None
             pass
 
     def __getstate__(self):
@@ -141,7 +155,7 @@ class FramePair:
         # Remove the unpicklable entries.
         del state['dat0']
         del state['dat1']
-        del state['dat0_preprocessed']
+        del state['_dat0_preprocessed']
         return state
 
     def prep_for_pickle(self):
@@ -307,23 +321,21 @@ class FramePair:
 
         return h
 
-    def align_point_clouds(self, index_to_align=0, recalculate_alignment=True) -> \
+    def rigidly_align_point_clouds(self, index_to_align=0, recalculate_alignment=True) -> \
             Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
         if index_to_align == 0:
             raw_cloud = self.frame0.neuron_locs
             target_cloud = self.frame1.neuron_locs
         else:
-            # TODO
             raise NotImplementedError
-            # raw_cloud = self.frame1.neuron_locs
         h = self.calc_or_get_alignment_between_matched_neurons(recalculate_alignment=recalculate_alignment)
 
         transformed_cloud = cv2.transform(np.array([raw_cloud]), h)[0]
 
         return np.array(transformed_cloud), np.array(target_cloud), np.array(raw_cloud)
 
-    def align_volumetric_images(self, volume0=None, recalculate_alignment=True) -> Tuple[np.ndarray, np.ndarray]:
+    def rigidly_align_volumetric_images(self, volume0=None, recalculate_alignment=True) -> Tuple[np.ndarray, np.ndarray]:
         """
         Aligns the entire volume using the (possibly non-final) neuron matches
 
@@ -387,6 +399,40 @@ class FramePair:
         else:
             print(f"Neuron not matched using {method_name} method")
 
+    def match_using_feature_embedding(self):
+        # Default method; always call this
+        obj = self.options
+        opt = dict(matches_to_keep=obj.embedding_matches_to_keep,
+                   use_GMS=obj.embedding_use_GMS,
+                   crossCheck=obj.crossCheck)
+        self._match_using_feature_embedding(**opt)
+
+    def _match_using_feature_embedding(self, matches_to_keep=1.0, use_GMS=False, crossCheck=True):
+        """
+        Requires the frame objects to have been correctly initialized, i.e. their neurons need a feature embedding
+
+        Uses direct brute force matching to match the neurons given these embeddings, then postprocesses using GMS to
+        make sure they reflect a locally consistent motion field
+        """
+        frame0, frame1 = self.frame0, self.frame1
+        # New: Might pre-align the features using rigid rotation
+        #   This should not affect the core matches, but may strongly affect the GMS postprocessing
+        pts0, pts1 = self.pts0_preprocessed, frame1.neuron_locs
+        # First, get feature matches
+        neuron_embedding_matches = match_known_features(frame0.all_features,
+                                                        frame1.all_features,
+                                                        pts0,
+                                                        pts1,
+                                                        frame0.vol_shape[1:],
+                                                        frame1.vol_shape[1:],
+                                                        matches_to_keep=matches_to_keep,
+                                                        use_GMS=use_GMS,
+                                                        crossCheck=crossCheck)
+        # With neuron embeddings, the keypoints are the neurons
+        neuron_embedding_matches_with_conf = cast_matches_as_array(neuron_embedding_matches, gamma=1.0)
+        self.feature_matches = neuron_embedding_matches_with_conf
+        self.keypoint_matches = neuron_embedding_matches_with_conf  # Overwritten by affine match, if used
+
     def match_using_local_affine(self):
         if not self.options.add_affine_to_candidates:
             return
@@ -410,8 +456,8 @@ class FramePair:
                                   num_candidates):
         # Generate keypoints and match per slice
         frame0, frame1 = self.frame0, self.frame1
-        # TODO: should I reread the data here?
-        dat0, dat1 = self.dat0, self.dat1
+        # New: dat0 may be rigidly rotated to align with dat1
+        dat0, dat1 = self.dat0_preprocessed, self.dat1
         # dat0, dat1 = frame0.get_raw_data(), frame1.get_raw_data()
         # Transpose because opencv needs it
         dat0 = np.transpose(dat0, axes=(0, 2, 1))
@@ -460,9 +506,8 @@ class FramePair:
             raise ValueError(f"Unknown starting matches: {starting_matches_name}")
 
         # Can start with any matched point clouds, but not more than ~100 matches otherwise it's way too slow
-        frame0, frame1 = self.frame0, self.frame1
-        n0 = frame0.neuron_locs.copy()
-        n1 = frame1.neuron_locs.copy()
+        # New: n0 may be rigidly prealigned
+        n0, n1 = self.pts0_preprocessed, self.frame1.neuron_locs.copy()
         n0[:, 0] *= self.options.z_to_xy_ratio
         n1[:, 0] *= self.options.z_to_xy_ratio
         # Actually match
@@ -472,37 +517,6 @@ class FramePair:
         self.all_gps = all_gps
         self.gp_pushed_locations = gp_pushed
 
-    def match_using_feature_embedding(self):
-        # Default method; always call this
-        obj = self.options
-        opt = dict(matches_to_keep=obj.embedding_matches_to_keep,
-                   use_GMS=obj.embedding_use_GMS,
-                   crossCheck=obj.crossCheck)
-        self._match_using_feature_embedding(**opt)
-
-    def _match_using_feature_embedding(self, matches_to_keep=1.0, use_GMS=False, crossCheck=True):
-        """
-        Requires the frame objects to have been correctly initialized, i.e. their neurons need a feature embedding
-
-        Uses direct brute force matching to match the neurons given these embeddings, then postprocesses using GMS to
-        make sure they reflect a locally consistent motion field
-        """
-        frame0, frame1 = self.frame0, self.frame1
-        # First, get feature matches
-        neuron_embedding_matches = match_known_features(frame0.all_features,
-                                                        frame1.all_features,
-                                                        frame0.neuron_locs,
-                                                        frame1.neuron_locs,
-                                                        frame0.vol_shape[1:],
-                                                        frame1.vol_shape[1:],
-                                                        matches_to_keep=matches_to_keep,
-                                                        use_GMS=use_GMS,
-                                                        crossCheck=crossCheck)
-        # With neuron embeddings, the keypoints are the neurons
-        neuron_embedding_matches_with_conf = cast_matches_as_array(neuron_embedding_matches, gamma=1.0)
-        self.feature_matches = neuron_embedding_matches_with_conf
-        self.keypoint_matches = neuron_embedding_matches_with_conf  # Overwritten by affine match, if used
-
     def match_using_fdnc(self):
         if not self.options.add_fdnc_to_candidates:
             return
@@ -511,9 +525,10 @@ class FramePair:
 
     def _match_using_fdnc(self, prediction_options):
         from fDNC.src.DNC_predict import predict_matches
-        frame0, frame1 = self.frame0, self.frame1
-        template_pos = zimmer2leifer(np.array(frame0.neuron_locs))
-        test_pos = zimmer2leifer(np.array(frame1.neuron_locs))
+        # New: n0 may be rigidly prealigned
+        n0, n1 = self.pts0_preprocessed, self.frame1.neuron_locs.copy()
+        template_pos = zimmer2leifer(np.array(n0))
+        test_pos = zimmer2leifer(np.array(n1))
 
         _, matches_with_conf = predict_matches(test_pos=test_pos, template_pos=template_pos, **prediction_options)
         if prediction_options['topn'] is not None:
@@ -547,11 +562,6 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame, frame1: ReferenceFrame, f
 
     # Create class, then call member functions
     frame_pair = FramePair(options=frame_pair_options, frame0=frame0, frame1=frame1)
-    # frame_pair = FramePair(frame0=frame0, frame1=frame1,
-    #                        add_affine_to_candidates=add_affine_to_candidates,
-    #                        add_gp_to_candidates=add_gp_to_candidates,
-    #                        min_confidence=min_confidence)
-
     # Core matching algorithm
     frame_pair.match_using_feature_embedding()
 
@@ -586,6 +596,6 @@ def calc_FramePair_like(pair: FramePair, frame0: ReferenceFrame = None, frame1: 
         frame1 = pair.frame1
 
     new_pair = calc_FramePair_from_Frames(frame0, frame1, metadata)
-    new_pair.calc_final_matches_using_bipartite_matching(pair.options.min_confidence)
+    new_pair.calc_final_matches()
 
     return new_pair
