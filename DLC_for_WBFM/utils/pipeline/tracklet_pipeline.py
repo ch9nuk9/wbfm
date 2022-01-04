@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 from segmentation.util.utils_metadata import DetectedNeurons
 
+from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePairOptions
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile, \
@@ -159,6 +160,7 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
         tracker_params['start_volume'] = project_config.config['dataset_params']['start_volume']
 
     pairwise_matches_params = training_config.config['pairwise_matching_params'].copy()
+    pairwise_matches_params = FramePairOptions(**pairwise_matches_params)
     tracker_params['preprocessing_settings'] = None
 
     video_fname = project_config.config['preprocessed_red']

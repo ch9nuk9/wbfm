@@ -565,6 +565,10 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame, frame1: ReferenceFrame, f
     # Core matching algorithm
     frame_pair.match_using_feature_embedding()
 
+    # May not change anything, based on frame_pair_options
+    # TODO: redo the feature alignment here?
+    frame_pair.preprocess_data()
+
     # Add additional candidates; the class checks if they are used
     frame_pair.match_using_local_affine()
     frame_pair.match_using_gp()

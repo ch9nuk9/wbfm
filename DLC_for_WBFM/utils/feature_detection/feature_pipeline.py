@@ -499,7 +499,7 @@ def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
 def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames: int = 10,
                              z_depth_neuron_encoding: float = 5.0,
                              preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
-                             pairwise_matches_params: dict = None,
+                             pairwise_matches_params: FramePairOptions = None,
                              external_detections: str = None, verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
     """
     Detects and tracks neurons using opencv-based feature matching
@@ -548,12 +548,11 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
 
     all_frame_pairs = {}
     frame_range = range(start_volume + 1, end_volume)
-    match_opt = FramePairOptions(**pairwise_matches_params)
     logging.info(f"Calculating Frame pairs for frames:  {start_volume+1}, {end_volume}")
     for i_frame in tqdm(frame_range):
         key = (i_frame - 1, i_frame)
         frame0, frame1 = all_frame_dict[key[0]], all_frame_dict[key[1]]
-        this_pair = calc_FramePair_from_Frames(frame0, frame1, match_opt)
+        this_pair = calc_FramePair_from_Frames(frame0, frame1, frame_pair_options=pairwise_matches_params)
 
         all_frame_pairs[key] = this_pair
 

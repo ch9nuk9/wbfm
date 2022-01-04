@@ -23,6 +23,7 @@ pairwise_matching_params:
   min_confidence: 0.2
   z_threshold: 3
   matching_method: unanimous  # Or bipartite; more robust if more than 1 candidate per method
+  preprocess_using_global_rotation: False
 
 postprocessing_params:
   min_length_to_save: 5
