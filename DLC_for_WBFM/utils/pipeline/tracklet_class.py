@@ -191,4 +191,3 @@ class TrackedWorm:
             return short_message
         else:
             return f"{short_message}"
-

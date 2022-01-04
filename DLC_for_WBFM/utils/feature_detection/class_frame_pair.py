@@ -123,6 +123,14 @@ class FramePair:
         return self.frame1.get_raw_data()
 
     @property
+    def pts0(self):
+        return self.frame0.neuron_locs
+
+    @property
+    def pts1(self):
+        return self.frame1.neuron_locs
+
+    @property
     def dat0_preprocessed(self):
         # Returns most-updated version
         if self._dat0_preprocessed is None:
@@ -134,7 +142,7 @@ class FramePair:
     def pts0_preprocessed(self):
         # Returns most-updated version
         if self._pts0_preprocessed is None:
-            return np.array(self.frame0.neuron_locs)
+            return np.array(self.pts0)
         else:
             return self._pts0_preprocessed
 
@@ -266,8 +274,8 @@ class FramePair:
     def filter_matches_using_z_threshold(self, matches, z_threshold) -> list:
         if z_threshold is None:
             return matches
-        n0 = self.frame0.neuron_locs.copy()
-        n1 = self.frame1.neuron_locs.copy()
+        n0 = self.pts0.copy()
+        n1 = self.pts1.copy()
 
         def _delta_z(m):
             return np.abs(n0[m[0]][0] - n1[m[1]][0])
@@ -297,7 +305,7 @@ class FramePair:
     def matched_neurons_as_point_clouds(self):
         """Returns 2 numpy arrays of zxy point clouds, aligned as matched by final_matches"""
         pts0, pts1 = [], []
-        n0, n1 = self.frame0.neuron_locs, self.frame1.neuron_locs
+        n0, n1 = self.pts0, self.pts1
         for m in self.final_matches:
             pts0.append(n0[m[0]])
             pts1.append(n1[m[1]])
@@ -325,8 +333,8 @@ class FramePair:
             Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
         if index_to_align == 0:
-            raw_cloud = self.frame0.neuron_locs
-            target_cloud = self.frame1.neuron_locs
+            raw_cloud = self.pts0
+            target_cloud = self.pts1
         else:
             raise NotImplementedError
         h = self.calc_or_get_alignment_between_matched_neurons(recalculate_alignment=recalculate_alignment)
@@ -335,7 +343,8 @@ class FramePair:
 
         return np.array(transformed_cloud), np.array(target_cloud), np.array(raw_cloud)
 
-    def rigidly_align_volumetric_images(self, volume0=None, recalculate_alignment=True) -> Tuple[np.ndarray, np.ndarray]:
+    def rigidly_align_volumetric_images(self, volume0=None, recalculate_alignment=True) -> \
+            Tuple[np.ndarray, np.ndarray]:
         """
         Aligns the entire volume using the (possibly non-final) neuron matches
 
@@ -347,7 +356,7 @@ class FramePair:
         napari_affine = Affine(affine_matrix=np.vstack([h, [0, 0, 0, 1]]))
 
         if volume0 is None:
-            volume0 = self.frame0.get_raw_data()
+            volume0 = self.dat0
 
         volume0_rotated = napari_affine.func(volume0)
 
@@ -417,7 +426,7 @@ class FramePair:
         frame0, frame1 = self.frame0, self.frame1
         # New: Might pre-align the features using rigid rotation
         #   This should not affect the core matches, but may strongly affect the GMS postprocessing
-        pts0, pts1 = self.pts0_preprocessed, frame1.neuron_locs
+        pts0, pts1 = self.pts0_preprocessed, self.pts1
         # First, get feature matches
         neuron_embedding_matches = match_known_features(frame0.all_features,
                                                         frame1.all_features,
@@ -458,7 +467,6 @@ class FramePair:
         frame0, frame1 = self.frame0, self.frame1
         # New: dat0 may be rigidly rotated to align with dat1
         dat0, dat1 = self.dat0_preprocessed, self.dat1
-        # dat0, dat1 = frame0.get_raw_data(), frame1.get_raw_data()
         # Transpose because opencv needs it
         dat0 = np.transpose(dat0, axes=(0, 2, 1))
         dat1 = np.transpose(dat1, axes=(0, 2, 1))
@@ -507,7 +515,7 @@ class FramePair:
 
         # Can start with any matched point clouds, but not more than ~100 matches otherwise it's way too slow
         # New: n0 may be rigidly prealigned
-        n0, n1 = self.pts0_preprocessed, self.frame1.neuron_locs.copy()
+        n0, n1 = self.pts0_preprocessed, self.pts1.copy()
         n0[:, 0] *= self.options.z_to_xy_ratio
         n1[:, 0] *= self.options.z_to_xy_ratio
         # Actually match
@@ -526,7 +534,7 @@ class FramePair:
     def _match_using_fdnc(self, prediction_options):
         from fDNC.src.DNC_predict import predict_matches
         # New: n0 may be rigidly prealigned
-        n0, n1 = self.pts0_preprocessed, self.frame1.neuron_locs.copy()
+        n0, n1 = self.pts0_preprocessed, self.pts1.copy()
         template_pos = zimmer2leifer(np.array(n0))
         test_pos = zimmer2leifer(np.array(n1))
 
