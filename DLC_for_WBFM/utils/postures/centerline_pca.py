@@ -86,7 +86,9 @@ class WormReferencePosture:
         pts, neighboring_ind = self.nearest_neighbor_obj.radius_neighbors(self.reference_posture,
                                                                           radius=self.posture_radius)
         neighboring_ind = neighboring_ind[0]
-        neighboring_ind = np.round(neighboring_ind / self.frames_per_volume).astype(int)
+        # Use the behavioral posture corresponding to the middle (usually plane 15) of the fluorescence recording
+        offset = int(self.frames_per_volume / 2)
+        neighboring_ind = np.round((neighboring_ind + offset) / self.frames_per_volume).astype(int)
         neighboring_ind = list(set(neighboring_ind))
         neighboring_ind.sort()
         return neighboring_ind
