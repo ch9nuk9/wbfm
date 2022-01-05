@@ -598,8 +598,8 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame, frame1: ReferenceFrame, f
 
     # May not change anything, based on frame_pair_options
     # TODO: redo the feature alignment here?
-    frame_pair.calc_final_matches()  # Temporary, using just the feature matches above
-    frame_pair.preprocess_data()
+    # frame_pair.calc_final_matches()  # Temporary, using just the feature matches above
+    # frame_pair.preprocess_data()
 
     # Add additional candidates; the class checks if they are used
     frame_pair.match_using_local_affine()

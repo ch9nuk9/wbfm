@@ -419,15 +419,15 @@ class ProjectData:
             this_match: FramePair = self.raw_matches[pair]
 
         dat0, dat1 = self.red_data[pair[0], ...], self.red_data[pair[1], ...]
+        this_match.load_raw_data(dat0, dat1)
         if rigidly_align_volumetric_images:
-            # Ensure that both point cloud and data have
-            this_match.load_raw_data(dat0, dat1)
+            # Ensure that both point cloud and data have rotations
             this_match.preprocess_data(force_rotation=True)
-
             # Load the rotated versions
             n0_zxy = this_match.pts0_preprocessed  # May be rotated
             dat0 = this_match.dat0_preprocessed
         else:
+            # Keep the non-rotated versions
             n0_zxy = this_match.pts0
 
         n1_zxy = this_match.pts1
