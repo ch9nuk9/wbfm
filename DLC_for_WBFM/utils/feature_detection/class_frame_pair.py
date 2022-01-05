@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Tuple
-
+import scipy.ndimage as ndi
 import cv2
 import numpy as np
 import pandas as pd
@@ -358,7 +358,11 @@ class FramePair:
         if volume0 is None:
             volume0 = self.dat0
 
-        volume0_rotated = napari_affine.func(volume0)
+        # For some reason this doesn't work directly
+        # volume0_rotated = napari_affine.func(volume0)
+        volume0_rotated = ndi.affine_transform(volume0,
+                                               np.linalg.inv(napari_affine.affine_matrix),
+                                               output_shape=volume0.shape, order=5)
 
         return volume0_rotated, volume0
 

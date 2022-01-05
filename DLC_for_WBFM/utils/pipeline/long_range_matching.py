@@ -86,7 +86,7 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
             if verbose >= 3:
                 print(f"Reusing matches for pair: {pair_indices}")
 
-        # Build convinience class
+        # Build convenience class
         long_range_pair.calc_final_matches()
         long_range_matches = MatchesWithConfidence.matches_from_array(np.array(long_range_pair.final_matches))
         mapping_to_long_range = long_range_matches.get_mapping_0_to_1()
