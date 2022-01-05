@@ -103,11 +103,14 @@ class FramePair:
     def all_candidate_matches(self) -> list:
         all_matches = self.feature_matches.copy()
         if self.options.add_affine_to_candidates:
-            all_matches.extend(self.affine_matches)
+            if self.affine_matches is not None:
+                all_matches.extend(self.affine_matches)
         if self.options.add_gp_to_candidates:
-            all_matches.extend(self.gp_matches)
+            if self.gp_matches is not None:
+                all_matches.extend(self.gp_matches)
         if self.options.add_fdnc_to_candidates:
-            all_matches.extend(self.fdnc_matches)
+            if self.fdnc_matches is not None:
+                all_matches.extend(self.fdnc_matches)
         return all_matches
 
     @property
@@ -595,12 +598,15 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame, frame1: ReferenceFrame, f
 
     # May not change anything, based on frame_pair_options
     # TODO: redo the feature alignment here?
+    frame_pair.calc_final_matches()  # Temporary, using just the feature matches above
     frame_pair.preprocess_data()
 
     # Add additional candidates; the class checks if they are used
     frame_pair.match_using_local_affine()
     frame_pair.match_using_gp()
     frame_pair.match_using_fdnc()
+
+    frame_pair.calc_final_matches()
 
     return frame_pair
 
