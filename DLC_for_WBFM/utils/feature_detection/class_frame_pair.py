@@ -96,6 +96,8 @@ class FramePair:
     rigid_rotation_matrix: np.ndarray = None
     _dat0_preprocessed: np.ndarray = None
     _pts0_preprocessed: np.ndarray = None
+    _dat0: np.ndarray = None
+    _dat1: np.ndarray = None
 
     @property
     def all_candidate_matches(self) -> list:
@@ -114,13 +116,17 @@ class FramePair:
             return np.nan
         return min(self.frame0.num_neurons(), self.frame1.num_neurons())
 
-    @cached_property
+    @property
     def dat0(self):
-        return self.frame0.get_raw_data()
+        if self._dat0 is None:
+            self._dat0 = self.frame0.get_raw_data()
+        return self._dat0
 
-    @cached_property
+    @property
     def dat1(self):
-        return self.frame1.get_raw_data()
+        if self._dat1 is None:
+            self._dat1 = self.frame1.get_raw_data()
+        return self._dat1
 
     @property
     def pts0(self):
@@ -146,6 +152,16 @@ class FramePair:
         else:
             return self._pts0_preprocessed
 
+    def load_raw_data(self, dat0=None, dat1=None):
+        if dat0 is None:
+            _ = self.dat0
+        else:
+            self._dat0 = dat0
+        if dat1 is None:
+            _ = self.dat1
+        else:
+            self._dat1 = dat1
+
     def preprocess_data(self):
         """Preprocesses the volumetric data, if applicable options are True"""
         if self.options.preprocess_using_global_rotation:
@@ -161,8 +177,8 @@ class FramePair:
         # Also similar to this solution: https://www.ianlewis.org/en/pickling-objects-cached-properties
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
-        del state['dat0']
-        del state['dat1']
+        del state['_dat0']
+        del state['_dat1']
         del state['_dat0_preprocessed']
         return state
 
