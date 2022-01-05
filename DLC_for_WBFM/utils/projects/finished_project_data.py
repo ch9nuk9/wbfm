@@ -425,29 +425,32 @@ class ProjectData:
             this_match.preprocess_data(force_rotation=True)
 
             # Load the rotated versions
-            n0_zxy_raw = this_match.pts0_preprocessed  # May be rotated
+            n0_zxy = this_match.pts0_preprocessed  # May be rotated
             dat0 = this_match.dat0_preprocessed
         else:
-            n0_zxy_raw = this_match.pts0
+            n0_zxy = this_match.pts0
 
-        n1_zxy_raw = this_match.pts1
+        n1_zxy = this_match.pts1
         # if rigidly_align_volumetric_images:
         #     # Note: could read the data using the match object, but that would reopen the zarr filestream
         #     dat0, _ = this_match.rigidly_align_volumetric_images(volume0=dat0)
         raw_red_data = np.stack([dat0, dat1])
 
         list_of_matches = getattr(this_match, which_matches)
-        all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy_raw, n1_zxy_raw)
+        all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy)
 
         v = napari.view_image(raw_red_data, ndisplay=3)
-        v.add_points(n0_zxy_raw, size=3, face_color='green', symbol='x', n_dimensional=True)
-        v.add_points(n1_zxy_raw, size=3, face_color='blue', symbol='o', n_dimensional=True)
+        v.add_points(n0_zxy, size=3, face_color='green', symbol='x', n_dimensional=True)
+        v.add_points(n1_zxy, size=3, face_color='blue', symbol='o', n_dimensional=True)
         v.add_tracks(all_tracks_list, head_length=2, name=which_matches)
 
-        # Add text overlay
+        # Add text overlay; temporarily change the neuron locations on the frame
+        original_zxy = this_match.frame0.neuron_locs
+        this_match.frame0.neuron_locs = n0_zxy
         frames = {0: this_match.frame0, 1: this_match.frame1}
         options = napari_labels_from_frames(frames, num_frames=2, to_flip_zxy=False)
         v.add_points(**options)
+        this_match.frame0.neuron_locs = original_zxy
 
         return v
 
