@@ -411,19 +411,29 @@ class ProjectData:
     def correct_relative_index(self, i):
         return self.which_training_frames[i]
 
-    def napari_of_single_match(self, pair, which_matches='final_matches', this_match=None,
+    def napari_of_single_match(self, pair, which_matches='final_matches', this_match: FramePair = None,
                                rigidly_align_volumetric_images=False):
         import napari
         from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
-
         if this_match is None:
-            this_match = self.raw_matches[pair]
+            this_match: FramePair = self.raw_matches[pair]
+
         dat0, dat1 = self.red_data[pair[0], ...], self.red_data[pair[1], ...]
-        n0_zxy_raw = this_match.pts0_preprocessed  # May be rotated
-        n1_zxy_raw = this_match.pts1
         if rigidly_align_volumetric_images:
-            # Note: could read the data using the match object, but that would reopen the zarr filestream
-            dat0, _ = this_match.rigidly_align_volumetric_images(volume0=dat0)
+            # Ensure that both point cloud and data have
+            this_match.load_raw_data(dat0, dat1)
+            this_match.preprocess_data(force_rotation=True)
+
+            # Load the rotated versions
+            n0_zxy_raw = this_match.pts0_preprocessed  # May be rotated
+            dat0 = this_match.dat0_preprocessed
+        else:
+            n0_zxy_raw = this_match.pts0
+
+        n1_zxy_raw = this_match.pts1
+        # if rigidly_align_volumetric_images:
+        #     # Note: could read the data using the match object, but that would reopen the zarr filestream
+        #     dat0, _ = this_match.rigidly_align_volumetric_images(volume0=dat0)
         raw_red_data = np.stack([dat0, dat1])
 
         list_of_matches = getattr(this_match, which_matches)

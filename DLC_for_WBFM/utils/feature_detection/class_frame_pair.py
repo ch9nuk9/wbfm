@@ -162,9 +162,9 @@ class FramePair:
         else:
             self._dat1 = dat1
 
-    def preprocess_data(self):
+    def preprocess_data(self, force_rotation=False):
         """Preprocesses the volumetric data, if applicable options are True"""
-        if self.options.preprocess_using_global_rotation:
+        if force_rotation or self.options.preprocess_using_global_rotation:
             self._dat0_preprocessed, _ = self.rigidly_align_volumetric_images()
             self._pts0_preprocessed, _, _ = self.rigidly_align_point_clouds()
         else:
