@@ -1,5 +1,13 @@
+from collections import defaultdict
+
 import numpy as np
+import pandas as pd
 from fDNC.src.DNC_predict import filter_matches
+from matplotlib import pyplot as plt
+from tqdm.auto import tqdm
+import seaborn as sns
+from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 
 
 def calc_true_positive(gt: dict, test: dict):
@@ -71,3 +79,62 @@ def get_confidences_of_tp_and_outliers(m_final):
             conf_outliers.append(m0toconf_dict[m0])
 
     return conf_tp, conf_outliers
+
+##
+## Using manually_tracked ground truth
+##
+TRACKED_IND = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 16, 21, 26, 30, 31, 32, 33, 34, 35, 39, 41, 42, 43, 44, 45, 46, 47, 49, 53, 55, 56, 61, 62, 71, 72, 75, 82, 84, 86, 95]
+
+
+def calc_all_dist(df1, df2):
+    # Check if they are same neuron, i.e. right on top of each other
+    df1.replace(0.0, np.nan, inplace=True)
+    df2.replace(0.0, np.nan, inplace=True)
+    df_norm = np.sqrt(np.square(df1 - df2).sum(axis=1, min_count=1))
+
+    num_total1 = df1.count()[0]
+    num_total2 = df2.count()[0]
+    num_total_total = df_norm.count()
+
+    return df_norm.to_numpy(), num_total1, num_total2, num_total_total
+
+
+def calc_accuracy(all_dist, dist_tol=1e-2):
+    num_matches = len(np.where(all_dist < dist_tol)[0])
+    num_mismatches = len(np.where(all_dist > dist_tol)[0])
+    num_nan_total = len(np.where(np.isnan(all_dist))[0])
+
+    return num_matches, num_mismatches, num_nan_total
+
+
+def plot_histogram_at_likelihood_thresh(df_tracks, df_leifer, likelihood_thresh):
+    df_leifer_filter = filter_dataframe_using_likelihood(df_leifer, likelihood_thresh)
+    coords = ['z', 'x', 'y']
+    tracked_names = [int2name_neuron(i) for i in TRACKED_IND]
+
+    all_dist_dict = {}
+    all_total1 = {}
+    all_total2 = {}
+    for name in tqdm(tracked_names, leave=False):
+        df1, df2 = df_tracks[name][coords].copy(), df_leifer_filter[name][coords].copy()
+        all_dist_dict[name], all_total1[name], all_total2[name], _  = calc_all_dist(df1, df2)
+
+    num_t = df_tracks.shape[0]
+    all_acc_dict = defaultdict(list)
+    for name in tqdm(tracked_names, leave=False):
+        matches, mismatches, nan = calc_accuracy(all_dist_dict[name])
+        num_total1, num_total2 = all_total1[name], all_total2[name]
+        all_acc_dict['matches'].append(matches / num_t)
+        all_acc_dict['matches_to_gt_nonnan'].append(matches / num_total1)
+        all_acc_dict['mismatches'].append(mismatches / num_t)
+        all_acc_dict['nan_in_fdnc'].append((num_t - num_total2) / num_t)
+
+    df_all_acc = pd.DataFrame(all_acc_dict, index=tracked_names)
+
+    dat = [df_all_acc['matches_to_gt_nonnan'], df_all_acc['mismatches'], df_all_acc['nan_in_fdnc']]
+
+    sns.histplot(dat, stat="percent", multiple="stack")
+    plt.ylabel("Percent neurons")
+    plt.xlabel("Performance")
+
+    plt.title(f"Likelihood threshold: {likelihood_thresh}")
