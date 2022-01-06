@@ -155,6 +155,15 @@ class FramePair:
         else:
             return self._pts0_preprocessed
 
+    @property
+    def vector_field(self):
+        pts0 = self.pts0_preprocessed
+        pts1 = self.pts1
+        vec_field = []
+        for m in self.final_matches:
+            vec_field.append(pts1[m[1]] - pts0[m[0]])
+        return np.array(vec_field), pts0, pts1
+
     def load_raw_data(self, dat0=None, dat1=None):
         if dat0 is None:
             _ = self.dat0
@@ -386,6 +395,7 @@ class FramePair:
         return volume0_rotated, volume0
 
     def print_candidates_by_method(self):
+        """Prints the total number of candidates, but not the exact matches"""
         num_matches = len(self.feature_matches)
         print(f"Found {num_matches} candidates via feature matching")
         num_matches = len(self.affine_matches)
@@ -424,12 +434,12 @@ class FramePair:
         if m0 in aff_dict:
             if aff_dict[m0] == m1:
                 conf = self.get_pair_to_conf_dict(this_method_matches)[(m0, m1)]
-                print(f"Same match from {method_name} method with confidence: {conf}")
+                print(f"Same match as {method_name} method with confidence: {conf}")
             else:
                 conf = self.get_pair_to_conf_dict(this_method_matches)[(m0, aff_dict[m0])]
-                print(f"Different match from {method_name} method: {aff_dict[m0]} with confidence: {conf}")
+                print(f"Different match than {method_name} method: {aff_dict[m0]} with confidence: {conf}")
         else:
-            print(f"Neuron not matched using {method_name} method")
+            print(f"Neuron {m0} not matched using {method_name} method")
 
     def match_using_feature_embedding(self):
         # Default method; always call this

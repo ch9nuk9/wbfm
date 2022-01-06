@@ -431,9 +431,6 @@ class ProjectData:
             n0_zxy = this_match.pts0
 
         n1_zxy = this_match.pts1
-        # if rigidly_align_volumetric_images:
-        #     # Note: could read the data using the match object, but that would reopen the zarr filestream
-        #     dat0, _ = this_match.rigidly_align_volumetric_images(volume0=dat0)
         raw_red_data = np.stack([dat0, dat1])
 
         list_of_matches = getattr(this_match, which_matches)

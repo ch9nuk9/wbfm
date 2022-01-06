@@ -1,12 +1,10 @@
 import logging
 from dataclasses import dataclass
 from typing import Tuple, Union
-
 import cv2
 import numpy as np
 import zarr
 from tqdm.auto import tqdm
-
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from DLC_for_WBFM.utils.feature_detection.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
     AnalysisOutOfOrderError, DeprecationError
