@@ -23,7 +23,9 @@ from DLC_for_WBFM.utils.visualization.utils_plot_traces import build_trace_facto
 def make_grid_plot_from_project(project_data: ProjectData,
                                 channel_mode: str,
                                 calculation_mode: str,
-                                color_using_behavior=True):
+                                neuron_names_to_plot: list = None,
+                                color_using_behavior=True,
+                                to_save=True):
     if channel_mode == 'all':
         all_modes = ['red', 'green', 'ratio']
         opt = dict(project_data=project_data,
@@ -32,7 +34,10 @@ def make_grid_plot_from_project(project_data: ProjectData,
         for mode in all_modes:
             make_grid_plot_from_project(channel_mode=mode, **opt)
         return
-    neuron_names = list(set(project_data.green_traces.columns.get_level_values(0)))
+    if neuron_names_to_plot is not None:
+        neuron_names = neuron_names_to_plot
+    else:
+        neuron_names = list(set(project_data.green_traces.columns.get_level_values(0)))
     # Guess a good shape for subplots
     neuron_names.sort()
 
@@ -44,11 +49,12 @@ def make_grid_plot_from_project(project_data: ProjectData,
     make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func)
 
     # Save final figure
-    fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
-    traces_cfg = project_data.project_config.get_traces_config()
-    out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+    if to_save:
+        fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
+        traces_cfg = project_data.project_config.get_traces_config()
+        out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
-    save_grid_plot(out_fname)
+        save_grid_plot(out_fname)
 
 
 def make_grid_plot_from_leifer_file(fname: str,
