@@ -133,8 +133,11 @@ def plot_histogram_at_likelihood_thresh(df_tracks, df_leifer, likelihood_thresh)
 
     dat = [df_all_acc['matches_to_gt_nonnan'], df_all_acc['mismatches'], df_all_acc['nan_in_fdnc']]
 
-    sns.histplot(dat, stat="percent", multiple="stack")
-    plt.ylabel("Percent neurons")
-    plt.xlabel("Performance")
+    sns.histplot(dat, common_norm=False, stat="percent", multiple="stack")
+    # sns.histplot(dat, multiple="stack")
+    plt.ylabel("Percent of true neurons")
+    plt.xlabel("Accuracy (various metrics)")
 
     plt.title(f"Likelihood threshold: {likelihood_thresh}")
+
+    return dat
