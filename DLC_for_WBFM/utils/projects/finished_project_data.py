@@ -451,18 +451,26 @@ class ProjectData:
 
         return v
 
-    def add_layers_to_viewer(self, viewer, which_layers='all'):
+    def add_layers_to_viewer(self, viewer, which_layers='all', to_remove_flyback=True):
         if which_layers == 'all':
             which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation']
         print("Finished loading data, starting napari...")
+        if to_remove_flyback:
+            clipping_list = [{'position': [2, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
+        else:
+            clipping_list = []
+
         if 'red' in which_layers:
-            viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red')
+            viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red',
+                             contrast_limits=[0, 110],
+                             experimental_clipping_planes=clipping_list)
         if 'green' in which_layers:
-            viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False)
+            viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
+                             experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
             viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
         if self.segmentation is not None and 'Colored segmentation' in which_layers:
-            viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4)
+            viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4, visible=False)
 
         # Add a text overlay
         df = self.red_traces

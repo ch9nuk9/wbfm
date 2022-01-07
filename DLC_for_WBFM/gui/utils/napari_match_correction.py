@@ -106,6 +106,7 @@ def build_napari_match_corrector(project_config, excel_path, DEBUG=False):
     # Build Napari and add widgets
     print("Finished loading data, starting napari...")
     viewer.add_image(ui.dat.red_data, name="Red data", opacity=0.5, colormap='red', visible=True)
+                     # experimental_clipping_planes=[{'position': [1,0,0], 'normal':[1,0,0], 'enabled':True}])
     viewer.add_labels(ui.dat.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
     if ui.dat.segmentation is not None:
         viewer.add_labels(ui.dat.segmentation, name="Colored segmentation", opacity=0.4, visible=False)
