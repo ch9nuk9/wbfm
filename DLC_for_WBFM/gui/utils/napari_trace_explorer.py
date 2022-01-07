@@ -158,8 +158,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         point_layer_data, track_layer_data = self.get_track_data()
 
         points_opt = dict(face_color='blue', size=4)
-        self.viewer.add_points(point_layer_data, name="final_track", n_dimensional=True, symbol='cross', **points_opt)
-        self.viewer.add_tracks(track_layer_data, name="track_of_point")
+        self.viewer.add_points(point_layer_data, name="final_track", n_dimensional=True, symbol='cross', **points_opt,
+                               visible=False)
+        self.viewer.add_tracks(track_layer_data, name="track_of_point", visible=False)
         zoom_using_viewer(self.viewer, layer_name='final_track', zoom=10)
 
         layer_to_add_callback = self.viewer.layers['Raw segmentation']
