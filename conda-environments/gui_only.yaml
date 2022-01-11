@@ -1,0 +1,28 @@
+# gui_only.yaml
+
+# Made by Charles Fieseler
+#Please see AUTHORS for contributors.
+
+# update:  conda env update -f gui_only.yaml
+
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - pip
+  - opencv
+  - scikit-image
+  - pip:
+    - tables
+    - openpyxl
+    - zarr
+    - open3d
+    - ruamel.yaml
+    - networkx
+    - pyqt5
+    - pyqt5-tools
+    - napari[all]
+    - easydict
+    - pytest
+    - backports.cached_property
