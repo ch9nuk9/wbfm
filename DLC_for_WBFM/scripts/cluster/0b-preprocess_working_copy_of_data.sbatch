@@ -6,8 +6,7 @@
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --time=6:00:00
 #SBATCH --mem=16G
-#SBATCH --partition=cpu
-# #SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=8
 
 pwd; hostname; date
 
