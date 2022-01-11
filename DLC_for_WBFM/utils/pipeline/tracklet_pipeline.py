@@ -42,7 +42,7 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
     _, tracker_params, pairwise_matches_params = _unpack_config_frame2frame_matches(
         DEBUG, project_config, training_config)
     start_volume = tracker_params['start_volume']
-    end_volume = tracker_params['end_volume']
+    end_volume = start_volume + tracker_params['num_frames']
     all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
 
     with safe_cd(project_config.project_dir):
@@ -175,7 +175,6 @@ def _unpack_config_for_tracklets(training_config, segmentation_config):
 
 
 def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
-    # Make tracklets
     # Get options
     tracker_params = training_config.config['tracker_params'].copy()
     if 'num_frames' in training_config.config['tracker_params']:
