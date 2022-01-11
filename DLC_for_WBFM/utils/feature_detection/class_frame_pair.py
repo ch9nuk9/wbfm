@@ -47,6 +47,7 @@ class FramePairOptions:
     fdnc_options: dict = None
 
     # For filtering / postprocessing the matches
+    matching_method: str = 'bipartite'
     z_threshold: float = None
     min_confidence: float = 0.001
     z_to_xy_ratio: float = 3.0
@@ -202,7 +203,9 @@ class FramePair:
         self.frame0.rebuild_keypoints()
         self.frame1.rebuild_keypoints()
 
-    def calc_final_matches(self, method='bipartite', **kwargs):
+    def calc_final_matches(self, method=None, **kwargs):
+        if method is None:
+            method = self.options.matching_method
         if method == 'bipartite':
             return self.calc_final_matches_using_bipartite_matching(**kwargs)
         elif method == 'unanimous':

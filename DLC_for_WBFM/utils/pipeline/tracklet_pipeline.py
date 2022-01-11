@@ -65,7 +65,7 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
     """
     # Load data
-    all_frame_dict, all_frame_pairs, z_threshold, min_confidence, matching_method, segmentation_metadata = \
+    all_frame_dict, all_frame_pairs, z_threshold, min_confidence, segmentation_metadata = \
         _unpack_config_for_tracklets(training_config, segmentation_config)
 
     # Sanity check
@@ -76,7 +76,7 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
     # Calculate and save in both raw and dataframe format
     df_custom_format = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs,
-                                                                    z_threshold, min_confidence, matching_method)
+                                                                    z_threshold, min_confidence)
     # Overwrite intermediate products, because the pair objects save the postprocessing options
     with safe_cd(training_config.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs)
@@ -91,11 +91,11 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
 
 def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence,
-                                                 matching_method, verbose=0):
+                                                 verbose=0):
     # Also updates the matches of the object
     opt = dict(z_threshold=z_threshold, min_confidence=min_confidence)
     logging.info(f"Postprocessing pairwise matches using confidence threshold {min_confidence} and z threshold: {z_threshold}")
-    all_matches_list = {k: pair.calc_final_matches(method=matching_method, **opt)
+    all_matches_list = {k: pair.calc_final_matches(**opt)
                         for k, pair in tqdm(all_frame_pairs.items())}
     logging.info("Extracting locations of neurons")
     all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
@@ -128,7 +128,7 @@ def _unpack_config_for_tracklets(training_config, segmentation_config):
     params = training_config.config['pairwise_matching_params']
     z_threshold = params['z_threshold']
     min_confidence = params['min_confidence']
-    matching_method = params['matching_method']
+    # matching_method = params['matching_method']
 
     fname = os.path.join('raw', 'match_dat.pickle')
     fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
@@ -141,7 +141,7 @@ def _unpack_config_for_tracklets(training_config, segmentation_config):
     seg_metadata_fname = segmentation_config.resolve_relative_path_from_config('output_metadata')
     segmentation_metadata = DetectedNeurons(seg_metadata_fname)
 
-    return all_frame_dict, all_frame_pairs, z_threshold, min_confidence, matching_method, segmentation_metadata
+    return all_frame_dict, all_frame_pairs, z_threshold, min_confidence, segmentation_metadata
 
 
 def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
