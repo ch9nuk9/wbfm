@@ -401,6 +401,17 @@ class TrackletAnnotator:
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
+            print("Event modifiers")
+            print(event.modifiers)
+            # The modifiers field is a list of Key objects
+            # Class definition: https://github.com/vispy/vispy/blob/ef982591e223fff09d91d8c2697489c7193a85aa/vispy/util/keys.py
+            print([m.name for m in event.modifiers])
+            if 'Alt' in [m.name for m in event.modifiers]:
+                logging.info("Unset Segmentation-click interaction triggered (modifier=alt)")
+                # TODO: Add different function
+            else:
+                logging.info("Tracklet segmentation-click interaction triggered")
+
             seg_index = layer.get_value(
                 position=event.position,
                 view_direction=event.view_direction,
@@ -409,6 +420,7 @@ class TrackletAnnotator:
             )
 
             if seg_index is None or seg_index == 0:
+                print("Event triggered on background; returning")
                 return
 
             if self.verbose >= 1:
@@ -445,4 +457,4 @@ class TrackletAnnotator:
                     print(df_single_track.dropna(inplace=False))
             else:
                 if self.verbose >= 1:
-                    print(f"Tracklet too far away; not adding")
+                    print(f"WARNING: Tracklet too far away; not adding anything")

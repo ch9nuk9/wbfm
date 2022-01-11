@@ -83,12 +83,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
         self.vbox3.addWidget(self.changeTrackingOutlierSpinBox)
 
-        self._setup_shortcut_buttons()
+        self._setup_shortcut_buttons()  # Box 4
+        # self._setup_segmentation_buttons()  # Box 5
 
         self.verticalLayout.addWidget(self.groupBox1)
         self.verticalLayout.addWidget(self.groupBox2)
         self.verticalLayout.addWidget(self.groupBox3)
         self.verticalLayout.addWidget(self.groupBox4)
+        # self.verticalLayout.addWidget(self.groupBox5)
 
         self.initialize_track_layers()
         self.initialize_shortcuts()
@@ -137,6 +139,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk (S)")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
+
+    # def _setup_segmentation_buttons(self):
+    #     # WIP
+    #     # TODO: way to turn these off!
+    #     self.groupBox4 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
 
     def change_neurons(self):
         self.update_dataframe_using_points()
@@ -566,6 +573,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
 def napari_trace_explorer(project_data: ProjectData,
                           viewer: napari.Viewer = None,
                           to_print_fps: bool = False):
+    """Current function for building the explorer (1/11/2022)"""
     print("Starting GUI setup")
     ui = NapariTraceExplorer(project_data)
     # Build Napari and add widgets
