@@ -190,9 +190,12 @@ class FramePair:
         # Also similar to this solution: https://www.ianlewis.org/en/pickling-objects-cached-properties
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
-        del state['_dat0']
-        del state['_dat1']
-        del state['_dat0_preprocessed']
+        if '_dat0' in state:
+            del state['_dat0']
+        if '_dat1' in state:
+            del state['_dat1']
+        if '_dat0_preprocessed' in state:
+            del state['_dat0_preprocessed']
         return state
 
     def prep_for_pickle(self):
