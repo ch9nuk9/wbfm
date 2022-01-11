@@ -20,7 +20,7 @@ do
 done
 
 
-CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/0a-create_new_project.py"
+CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/0b-preprocess_working_copy_of_data.py"
 
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $CMD with project_path=$project_path"
