@@ -514,10 +514,38 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
     else:
         # TODO: better way to get datatype
         dtype = 'uint8'
+
+    # Build frames
+    end_volume = start_volume + num_frames
+    all_frame_dict = calculate_frame_objects_full_video(external_detections, start_volume, end_volume,
+                                                        video_fname, z_depth_neuron_encoding)
+
+    # Match
+    if verbose >= 1:
+        print("Building initial frame...")
+    all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
+
+    return all_frame_pairs, all_frame_dict
+
+
+def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume):
+    all_frame_pairs = {}
+    frame_range = range(start_volume + 1, end_volume)
+    logging.info(f"Calculating Frame pairs for frames:  {start_volume + 1}, {end_volume}")
+    for i_frame in tqdm(frame_range):
+        key = (i_frame - 1, i_frame)
+        frame0, frame1 = all_frame_dict[key[0]], all_frame_dict[key[1]]
+        this_pair = calc_FramePair_from_Frames(frame0, frame1, frame_pair_options=pairwise_matches_params)
+
+        all_frame_pairs[key] = this_pair
+    return all_frame_pairs
+
+
+def calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
+                                       z_depth_neuron_encoding):
     # Get initial volume; settings are same for all
     vid_dat = zarr.open(video_fname)
     vol_shape = vid_dat[0, ...].shape
-
     all_detected_neurons = DetectedNeurons(external_detections)
 
     def _build_frame(frame_ind: int) -> ReferenceFrame:
@@ -529,10 +557,8 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
         return f
 
     # Build all frames initially, then match
-    end_volume = start_volume + num_frames
     frame_range = range(start_volume, end_volume)
     all_frame_dict = dict()
-
     logging.info(f"Calculating Frame objects for frames: {start_volume}, {end_volume}")
     with tqdm(total=len(frame_range)) as pbar:
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
@@ -541,22 +567,7 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
                 i_frame = futures[future]
                 all_frame_dict[i_frame] = future.result()
                 pbar.update(1)
-
-    # Match
-    if verbose >= 1:
-        print("Building initial frame...")
-
-    all_frame_pairs = {}
-    frame_range = range(start_volume + 1, end_volume)
-    logging.info(f"Calculating Frame pairs for frames:  {start_volume+1}, {end_volume}")
-    for i_frame in tqdm(frame_range):
-        key = (i_frame - 1, i_frame)
-        frame0, frame1 = all_frame_dict[key[0]], all_frame_dict[key[1]]
-        this_pair = calc_FramePair_from_Frames(frame0, frame1, frame_pair_options=pairwise_matches_params)
-
-        all_frame_pairs[key] = this_pair
-
-    return all_frame_pairs, all_frame_dict
+    return all_frame_dict
 
 
 # def OLD_track_via_reference_frames(video_fname,
