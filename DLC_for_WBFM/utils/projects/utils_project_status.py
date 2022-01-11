@@ -1,6 +1,5 @@
 import os.path as osp
 from pathlib import Path
-from sacred.observers import TinyDbReader
 
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, get_project_of_substep
@@ -79,6 +78,8 @@ def check_traces(project_path):
 
 
 def print_sacred_log(project_path: str) -> None:
+    from sacred.observers import TinyDbReader
+
     cfg = ModularProjectConfig(project_path)
 
     reader = TinyDbReader(cfg.get_log_dir())
