@@ -808,7 +808,7 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
 
     """
 
-    ## Method 1: Gaussian fitting
+    # Method 1: Gaussian fitting
 
     # Calculate the brightness per plane
     brightness_per_plane = []
@@ -840,7 +840,7 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
                                                        which_neuron_keeps_original, x_split_local_coord)
         return new_full_mask
 
-    ## Method 2: dot product between planes and refit gaussian
+    # Method 2: dot product between planes and refit gaussian
     planes_with_single_neuron = []
     for i, plane in enumerate(full_mask):
         if i_target in plane:
@@ -867,7 +867,7 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
 
         return new_full_mask
 
-    ## Method 3: centroid discontinuity?
+    # Method 3: centroid discontinuity?
 
     return None
 
