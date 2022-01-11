@@ -1,6 +1,7 @@
 """
 Postprocessing functions for segmentation pipeline
 """
+import logging
 from typing import List
 
 import numpy as np
@@ -336,7 +337,7 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
         {neuron #: [global Z planes]}
 
     """
-    if verbose>= 1:
+    if verbose >= 1:
         print('Start with brightness calculations')
     # add default dict
     brightness_dict = defaultdict(list)
@@ -393,12 +394,19 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
         List containing average brightness values of a tentative neuron
     min_separation : int
         Minimum separation between the peaks for them to count as "real"
+    min_height : int
+        Used in postprocessing to make sure one height isn't extremely tiny
     plots :
         flag for plotting
     verbose : int
         flag for print statements. Increasing by 1, increases depth by 1
 
     Returns
+    -------
+    split_point : int
+        The split point in the same coordinate system as brightnesses
+
+    OLD:
     -------
     means : list
         list of means of 2 underlying gaussians, IF they could be fitted
@@ -415,7 +423,7 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
 
     def gauss1(x, *p):
         A1, mu1, sigma1 = p
-        return A1*np.exp(-(x-mu1)**2/(2.*sigma1**2))
+        return A1 * np.exp(-(x - mu1) ** 2 / (2. * sigma1 ** 2))
 
     def gauss2(x, *p):
         return gauss1(x, *p[1:4]) + gauss1(x, *p[4:]) + p[0]
@@ -659,7 +667,8 @@ def split_long_neurons(mask_array,
                     x_split_local_coord = [x_split_local_coord]
                 for i in x_split_local_coord:
                     global_current_neuron = split_neuron_and_update_dicts(global_current_neuron, mask_array,
-                                                                          neuron_brightnesses, neuron_id, neuron_lengths,
+                                                                          neuron_brightnesses, neuron_id,
+                                                                          neuron_lengths,
                                                                           neuron_z_planes, new_neuron_lengths,
                                                                           i)
                 if verbose >= 1:
@@ -771,3 +780,72 @@ def remove_border(masks, border=100):
     masks[:, :, (y_sz - border):] = 0
 
     return masks
+
+
+##
+## For interactive post-processing
+##
+def split_neuron_interactive(full_mask, red_volume, i_target,
+                             min_separation,
+                             which_neuron_keeps_original='top'):
+    """
+    A user will decide that "i_target" definitely needs to be split, so this will try all possible methods to do so
+
+    TODO: the metadata must be recalculated
+
+    Parameters
+    ----------
+    min_separation
+    red_volume
+    full_mask
+    i_target
+    which_neuron_keeps_original
+
+    Returns
+    -------
+
+    """
+
+    ## Method 1: Gaussian fitting
+
+    # Calculate the brightness per plane
+    brightness_per_plane = []
+    planes_where_neuron_exists = []
+    individual_plane_masks = []
+    for i, plane in enumerate(full_mask):
+        if i_target in full_mask:
+            plane_mask = plane == i_target
+            plane_red = red_volume[i]
+            brightness_per_plane.append(np.sum(plane_red[plane_mask]))
+            planes_where_neuron_exists.append(i)
+            individual_plane_masks.append(plane_mask)
+    assert len(brightness_per_plane) > 0, f"Neuron {i_target} not found!"
+
+    # Fit gaussians
+    x_split_local_coord = calc_split_point_via_brightnesses(brightness_per_plane,
+                                                            min_separation=min_separation, min_height=5)
+
+    # Check for success
+    if x_split_local_coord is None:
+        logging.warning("Could not split using Gaussian method")
+        raise ValueError
+
+    # Actual split
+    # TODO: Should the split ind go in top neuron?
+    new_neuron_id = np.max(full_mask) + 1
+    new_full_mask = full_mask.copy()
+    for i_local, i_z in enumerate(planes_where_neuron_exists):
+        if i_local > x_split_local_coord and which_neuron_keeps_original == 'top':
+            this_plane = new_full_mask[i_z]
+            this_plane[individual_plane_masks[i_local]] = new_neuron_id
+            new_full_mask[i_z] = this_plane
+        elif i_local <= x_split_local_coord and which_neuron_keeps_original == 'bottom':
+            this_plane = new_full_mask[i_z]
+            this_plane[individual_plane_masks[i_local]] = new_neuron_id
+            new_full_mask[i_z] = this_plane
+
+    ## Method 2: just the middle?
+
+    ## Method 3: centroid discontinuity?
+
+    return new_full_mask
