@@ -292,6 +292,7 @@ def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
 ##
 ## Full pipeline function
 ##
+
 def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames: int = 10,
                              z_depth_neuron_encoding: float = 5.0,
                              preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),

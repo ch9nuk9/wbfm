@@ -7,7 +7,7 @@ import pandas as pd
 from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePairOptions
-from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video
+from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile, \
     pickle_load_binary
@@ -18,6 +18,35 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_da
 ### For use with produces tracklets (step 2 of pipeline)
 ###
 from tqdm.auto import tqdm
+
+
+def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
+                                           training_config: SubfolderConfigFile,
+                                           DEBUG: bool = False) -> None:
+    """Substep if the frames exist, but the matches are corrupted or need to be redone"""
+    logging.info(f"Producing tracklets")
+
+    raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
+                                                      prepend_subfolder=True)
+    if os.path.exists(raw_fname):
+        raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
+
+    frame_fname = training_config.resolve_relative_path(os.path.join('raw', 'frame_dat.pickle'),
+                                                        prepend_subfolder=True)
+    if not os.path.exists(frame_fname):
+        raise FileNotFoundError
+    else:
+        all_frame_dict = pickle_load_binary(frame_fname)
+
+    # Intermediate products: pairwise matches between frames
+    _, tracker_params, pairwise_matches_params = _unpack_config_frame2frame_matches(
+        DEBUG, project_config, training_config)
+    start_volume = tracker_params['start_volume']
+    end_volume = tracker_params['end_volume']
+    all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
+
+    with safe_cd(project_config.project_dir):
+        _save_matches_and_frames(all_frame_dict, all_frame_pairs)
 
 
 def partial_track_video_using_config(project_config: ModularProjectConfig,
@@ -31,6 +60,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     See new_project_defaults/2-training_data/training_data_config.yaml
     See also track_neurons_full_video()
     """
+
     logging.info(f"Producing tracklets")
 
     raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
