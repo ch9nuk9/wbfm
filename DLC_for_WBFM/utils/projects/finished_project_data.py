@@ -179,6 +179,9 @@ class ProjectData:
         _ = self.raw_frames
         _ = self.raw_matches
 
+    def _load_segmentation_related_properties(self):
+        _ = self.segmentation_metadata.segmentation_metadata
+
     @property
     def num_frames(self):
         return self.project_config.config['dataset_params']['num_frames']
@@ -209,7 +212,8 @@ class ProjectData:
                                 traces_cfg: SubfolderConfigFile,
                                 project_dir,
                                 to_load_tracklets=False,
-                                to_load_frames=False):
+                                to_load_frames=False,
+                                to_load_segmentation_metadata=False):
         # Initialize object in order to use cached properties
         obj = ProjectData(project_dir, cfg)
 
@@ -251,6 +255,8 @@ class ProjectData:
                     ex.submit(obj._load_tracklet_related_properties)
                 if to_load_frames:
                     ex.submit(obj._load_frame_related_properties)
+                if to_load_segmentation_metadata:
+                    ex.submit(obj._load_segmentation_related_properties)
                 red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader).result()
                 green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()
