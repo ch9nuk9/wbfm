@@ -243,7 +243,8 @@ class ProjectData:
         behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
         behavior_fname = cfg.resolve_relative_path(behavior_fname)
 
-        zarr_reader = lambda fname: zarr.open(fname, mode='r')
+        zarr_reader_readonly = lambda fname: zarr.open(fname, mode='r')
+        zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
         # Note: when running on the cluster the raw data isn't (for now) accessible
@@ -257,17 +258,17 @@ class ProjectData:
                     ex.submit(obj._load_frame_related_properties)
                 if to_load_segmentation_metadata:
                     ex.submit(obj._load_segmentation_related_properties)
-                red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader).result()
-                green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader).result()
+                red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader_readonly).result()
+                green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader_readonly).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
                 df_training_tracklets = ex.submit(read_if_exists, df_training_tracklets_fname).result()
-                reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader).result()
+                reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader_readonly).result()
                 # reindexed_metadata_training = ex.submit(read_if_exists,
                 #                                         reindexed_metadata_training_fname, pickle_load_binary).result()
                 # final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
-                raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader).result()
-                segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader).result()
+                raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
+                segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_readonly).result()
                 # seg_metadata: dict = ex.submit(pickle_load_binary, seg_metadata_fname).result()
                 behavior_annotations = ex.submit(read_if_exists, behavior_fname, excel_reader).result()
 
