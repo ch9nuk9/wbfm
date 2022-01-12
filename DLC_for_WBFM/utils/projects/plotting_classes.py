@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Union, Dict, Tuple
 from copy import deepcopy
+
+import napari
 import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
@@ -12,10 +14,9 @@ from DLC_for_WBFM.utils.feature_detection.utils_tracklets import get_time_overla
 from DLC_for_WBFM.utils.pipeline.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
-
+from segmentation.util.utils_postprocessing import split_neuron_interactive
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
-from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort, SubfolderConfigFile, pickle_load_binary, \
-    read_if_exists
+from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, pickle_load_binary, read_if_exists
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename
 from DLC_for_WBFM.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
@@ -132,6 +133,11 @@ class TrackletAnnotator:
     tracklet_split_times_fname: str = None
 
     saving_lock: threading.Lock = threading.Lock()
+
+    # New: for segmentation interactive splitting
+    candidate_mask: np.ndarray = None
+    time_of_candidate: int = None
+    index_of_original_neuron: int = None
 
     # Visualization options
     refresh_callback: callable = None
@@ -394,23 +400,13 @@ class TrackletAnnotator:
             print(f"Cleared tracklet {self.current_tracklet_name}")
             self.current_tracklet_name = None
 
-    def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer,
+    def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer: napari.Viewer,
                                            max_dist=10.0,
                                            refresh_callback=None):
         self.refresh_callback = refresh_callback
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
-            print("Event modifiers")
-            print(event.modifiers)
-            # The modifiers field is a list of Key objects
-            # Class definition: https://github.com/vispy/vispy/blob/ef982591e223fff09d91d8c2697489c7193a85aa/vispy/util/keys.py
-            print([m.name for m in event.modifiers])
-            if 'Alt' in [m.name for m in event.modifiers]:
-                logging.info("Unset Segmentation-click interaction triggered (modifier=alt)")
-                # TODO: Add different function
-            else:
-                logging.info("Tracklet segmentation-click interaction triggered")
 
             seg_index = layer.get_value(
                 position=event.position,
@@ -418,6 +414,34 @@ class TrackletAnnotator:
                 dims_displayed=event.dims_displayed,
                 world=True
             )
+            time_index = int(event.position[0])
+            # print("Event modifiers")
+            # print(event.modifiers)
+            # The modifiers field is a list of Key objects
+            # Class definition: https://github.com/vispy/vispy/blob/ef982591e223fff09d91d8c2697489c7193a85aa/vispy/util/keys.py
+            # print([m.name for m in event.modifiers])
+            if 'Alt' in [m.name for m in event.modifiers]:
+                logging.info("Unset Segmentation-click interaction triggered (modifier=alt)")
+                # TODO: Add different function
+                # TODO: user-defined kwargs
+                full_mask = viewer.layers['Raw segmentation'].data[time_index]
+                red_volume = viewer.layers['Red data'].data[time_index]
+                new_full_mask = split_neuron_interactive(full_mask, red_volume, seg_index,
+                                                         min_separation=1,
+                                                         which_neuron_keeps_original='top', verbose=2)
+
+                # Add as a new candidate layer
+                layer_name = f"Candidate_split_of_n{seg_index}_at_t{time_index}"
+                viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0)
+
+                # Save for later combining with original mask
+                self.candidate_mask = new_full_mask
+                self.time_of_candidate = time_index
+                self.index_of_original_neuron = seg_index
+
+                return
+            else:
+                logging.info("Tracklet segmentation-click interaction triggered")
 
             if seg_index is None or seg_index == 0:
                 print("Event triggered on background; returning")
@@ -427,7 +451,7 @@ class TrackletAnnotator:
                 print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
                       f"and position {event.position[1:]}")
             dist, ind, tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
-                i_time=int(event.position[0]),
+                i_time=time_index,
                 seg_ind=seg_index
             )
             # dist, ind, tracklet_name = self.get_closest_tracklet_to_point(
