@@ -13,7 +13,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2trac
 from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.utils.pipeline.tracklet_class import DetectedTrackletsAndNeurons
-from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAnnotator
+from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
@@ -153,7 +153,7 @@ class ProjectData:
 
         tracklet_obj = DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata)
 
-        obj = TrackletAnnotator(
+        obj = TrackletAndSegmentationAnnotator(
             tracklet_obj,
             self.global2tracklet,
             segmentation_metadata=self.segmentation_metadata,
@@ -352,6 +352,14 @@ class ProjectData:
         for pair, obj in frame_matches.items():
             matches = obj.modify_confidences_using_image_features(**opt)
             obj.final_matches = matches
+
+    def modify_segmentation_using_manual_correction(self):
+        # TODO: save the list of split neurons in separate pickle
+        new_mask = self.tracklet_annotator.candidate_mask
+        t = self.tracklet_annotator.time_of_candidate
+
+        logging.info(f"Updating raw segmentation at t= {t}")
+        self.raw_segmentation[t, ...] = new_mask
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:

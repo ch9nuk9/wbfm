@@ -172,9 +172,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
         self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
 
-        # self.splitSegmentationHint = QtWidgets.QLabel()
-        # self.splitSegmentationHint.setText("CTRL-click to segment automatically, \n"
-        #                                    "ALT-click to manually set the split point")
+        self.splitSegmentationHint = QtWidgets.QLabel(self.groupBox5)
+        self.splitSegmentationHint.setText("CTRL-click to segment automatically, \n"
+                                           "ALT-click to manually set the split point")
         # self.vbox5.addWidget(self.splitSegmentationHint)
 
         # self.splitSegmentationMethodButton = QtWidgets.QComboBox()
@@ -246,7 +246,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             widget.setEnabled(to_be_interactive)
 
     def modify_segmentation_using_manual_correction(self):
-        pass
+        self.dat.modify_segmentation_using_manual_correction()
 
     def initialize_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()

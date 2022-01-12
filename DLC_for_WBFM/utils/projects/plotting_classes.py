@@ -106,7 +106,7 @@ class TracePlotter:
 
 
 @dataclass
-class TrackletAnnotator:
+class TrackletAndSegmentationAnnotator:
 
     # df_tracklets: pd.DataFrame
     df_tracklet_obj: DetectedTrackletsAndNeurons
@@ -134,7 +134,7 @@ class TrackletAnnotator:
 
     saving_lock: threading.Lock = threading.Lock()
 
-    # New: for segmentation interactive splitting
+    # New: for interactive segmentation splitting
     candidate_mask: np.ndarray = None
     time_of_candidate: int = None
     index_of_original_neuron: int = None
