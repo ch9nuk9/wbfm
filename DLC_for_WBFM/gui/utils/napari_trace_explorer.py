@@ -101,6 +101,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # BOX 4: general shortcuts
         self.groupBox4 = QtWidgets.QGroupBox("Shortcuts", self.verticalLayoutWidget)
         self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox4)
+
         self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
         self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
         self.vbox4.addWidget(self.refreshButton)
@@ -145,17 +146,35 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # WIP
         # TODO: way to turn these off!
         self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
-        self.vbox5 = QtWidgets.QVBoxLayout(self.groupBox5)
+        # self.vbox5 = QtWidgets.QVBoxLayout(self.groupBox5)
+        self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
 
-        self.splitSegmentationMethodButton = QtWidgets.QComboBox()
-        self.splitSegmentationMethodButton.addItems(["Gaussian", "Manual"])
-        self.splitSegmentationMethodButton.currentIndexChanged.connect(self.update_segmentation_interactivity)
-        self.vbox5.addWidget(self.splitSegmentationMethodButton)
+        # self.splitSegmentationHint = QtWidgets.QLabel()
+        # self.splitSegmentationHint.setText("CTRL-click to segment automatically, \n"
+        #                                    "ALT-click to manually set the split point")
+        # self.vbox5.addWidget(self.splitSegmentationHint)
+
+        # self.splitSegmentationMethodButton = QtWidgets.QComboBox()
+        # self.splitSegmentationMethodButton.addItems(["Gaussian", "Manual"])
+        # self.splitSegmentationMethodButton.currentIndexChanged.connect(self.update_segmentation_interactivity)
+        # self.vbox5.addWidget(self.splitSegmentationMethodButton)
 
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
-        self.splitSegmentationManualSliceButton.setRange(2, 12)  # TODO
+        self.splitSegmentationManualSliceButton.setRange(2, 12)  # TODO: look at actual z depth of neuron
         self.splitSegmentationManualSliceButton.valueChanged.connect(self.update_segmentation_interactivity)
-        self.vbox5.addWidget(self.splitSegmentationManualSliceButton)
+        self.formlayout5.addRow("Manual slice index: ", self.splitSegmentationManualSliceButton)
+
+        self.splitSegmentationKeepOriginalIndexButton = QtWidgets.QComboBox()
+        self.splitSegmentationKeepOriginalIndexButton.addItems(["Top", "Bottom"])
+        self.splitSegmentationKeepOriginalIndexButton.currentIndexChanged.connect(self.update_segmentation_interactivity)
+        self.formlayout5.addRow("Which side keeps original index: ", self.splitSegmentationKeepOriginalIndexButton)
+
+        self.splitSegmentationSaveButton = QtWidgets.QPushButton("Save")
+        self.splitSegmentationSaveButton.pressed.connect(self.modify_segmentation_using_manual_correction)
+        self.formlayout5.addRow("Finalize candidate mask: ", self.splitSegmentationSaveButton)
+
+
+        self.update_segmentation_interactivity()
 
     def change_neurons(self):
         self.update_dataframe_using_points()
@@ -175,9 +194,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_segmentation_interactivity(self):
         self.dat.tracklet_annotator.segmentation_options = dict(
-            method=self.splitSegmentationMethodButton.currentText(),
+            which_neuron_keeps_original=self.splitSegmentationKeepOriginalIndexButton.currentText(),
+            # method=self.splitSegmentationMethodButton.currentText(),
             x_split_local_coord=self.splitSegmentationManualSliceButton.value()
         )
+
+    def modify_segmentation_using_manual_correction(self):
+        pass
 
     def initialize_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()

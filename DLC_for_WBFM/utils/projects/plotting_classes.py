@@ -179,7 +179,6 @@ class TrackletAnnotator:
 
         if self.segmentation_options is None:
             self.segmentation_options = dict(
-                method='Gaussian',
                 x_split_local_coord=None
             )
 
@@ -418,6 +417,7 @@ class TrackletAnnotator:
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
 
+            # Get information about clicked-on neuron
             seg_index = layer.get_value(
                 position=event.position,
                 view_direction=event.view_direction,
@@ -425,24 +425,38 @@ class TrackletAnnotator:
                 world=True
             )
             time_index = int(event.position[0])
-            # print("Event modifiers")
-            # print(event.modifiers)
+            if seg_index is None or seg_index == 0:
+                print("Event triggered on background; returning")
+                return
+
+            if self.verbose >= 1:
+                print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
+                      f"and position {event.position[1:]}")
+
+            # Decide which mode: segmentation or tracklet
+
             # The modifiers field is a list of Key objects
             # Class definition: https://github.com/vispy/vispy/blob/ef982591e223fff09d91d8c2697489c7193a85aa/vispy/util/keys.py
-            # print([m.name for m in event.modifiers])
-            if 'Alt' in [m.name for m in event.modifiers]:
-                logging.info("Unset Segmentation-click interaction triggered (modifier=alt)")
-                # TODO: Add different function
-                # TODO: user-defined kwargs
+            print([m.name for m in event.modifiers])
+            if 'alt' in [m.name.lower() for m in event.modifiers]:
+                split_method = "Manual"
+            elif 'control' in [m.name.lower() for m in event.modifiers]:
+                split_method = "Gaussian"
+            else:
+                split_method = None
+            segment_mode_not_tracklet_mode = split_method is not None
+
+            if segment_mode_not_tracklet_mode:
                 full_mask = viewer.layers['Raw segmentation'].data[time_index]
                 red_volume = viewer.layers['Red data'].data[time_index]
                 new_full_mask = split_neuron_interactive(full_mask, red_volume, seg_index,
                                                          min_separation=2,
-                                                         which_neuron_keeps_original='top',
                                                          verbose=3,
+                                                         method=split_method,
                                                          **self.segmentation_options)
 
                 if new_full_mask is None:
+                    logging.debug("Did not split")
                     return
                 # Add as a new candidate layer
                 layer_name = f"Candidate_split_of_n{seg_index}_at_t{time_index}"
@@ -457,13 +471,7 @@ class TrackletAnnotator:
             else:
                 logging.info("Tracklet segmentation-click interaction triggered")
 
-            if seg_index is None or seg_index == 0:
-                print("Event triggered on background; returning")
-                return
-
-            if self.verbose >= 1:
-                print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
-                      f"and position {event.position[1:]}")
+            # Split tracklet, not segmentation
             dist, ind, tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
                 i_time=time_index,
                 seg_ind=seg_index
