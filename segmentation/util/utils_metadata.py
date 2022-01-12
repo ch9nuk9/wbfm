@@ -152,6 +152,18 @@ class DetectedNeurons:
         self._volumes_cache.pop(i_volume, None)
         self._brightnesses_cache.pop(i_volume, None)
 
+    def overwrite_original_detection_file(self):
+        backup_fname = Path(self.detection_fname).with_name("backup_metadata.pickle")
+        if not os.exists(backup_fname):
+            shutil.copy(self.detection_fname, backup_fname)
+        else:
+            # Assume the backup was already copied
+            pass
+        logging.warning(f"Overwriting original file; backup saved at {backup_fname}")
+        with open(self.detection_fname, 'wb') as f:
+            # Note: dict of dataframes
+            self._segmentation_metadata = pickle.dump(f)
+
     def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> np.ndarray:
         """
         Designed to be used with centroids detected using a different pipeline
