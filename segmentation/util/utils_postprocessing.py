@@ -833,13 +833,13 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
 
         # Fit gaussians
         if verbose > 2:
-            to_save_plot = True
+            opt = {'to_save_plot': True, 'plots': True}
         else:
-            to_save_plot = False
+            opt = {'to_save_plot': False, 'plots': False}
         x_split_local_coord = calc_split_point_via_brightnesses(brightness_per_plane,
                                                                 min_separation=min_separation,
                                                                 min_height=1,
-                                                                to_save_plot=to_save_plot)
+                                                                **opt)
         # Check for success
         if x_split_local_coord is None:
             logging.warning("Could not split using Gaussian method")
@@ -866,13 +866,13 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
 
         # Fit gaussians
         if verbose > 2:
-            to_save_plot=True
+            opt = {'to_save_plot': True, 'plots': True}
         else:
-            to_save_plot = False
+            opt = {'to_save_plot': False, 'plots': False}
         x_split_local_coord = calc_split_point_via_brightnesses(all_dots,
                                                                 min_separation=min_separation,
                                                                 min_height=0,
-                                                                to_save_plot=to_save_plot)
+                                                                **opt)
 
         # Check for success
         if x_split_local_coord is None:
