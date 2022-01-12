@@ -77,6 +77,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         self.vbox3.addWidget(self.changeTrackingOutlierCheckBox)
 
+        # TODO: spin box must be integers
         self.changeTrackingOutlierSpinBox = QtWidgets.QSpinBox()
         self.changeTrackingOutlierSpinBox.setRange(0, 1)
         self.changeTrackingOutlierSpinBox.setSingleStep(0.1)
@@ -84,13 +85,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.vbox3.addWidget(self.changeTrackingOutlierSpinBox)
 
         self._setup_shortcut_buttons()  # Box 4
-        # self._setup_segmentation_buttons()  # Box 5
+        self._setup_segmentation_buttons()  # Box 5
 
         self.verticalLayout.addWidget(self.groupBox1)
         self.verticalLayout.addWidget(self.groupBox2)
         self.verticalLayout.addWidget(self.groupBox3)
         self.verticalLayout.addWidget(self.groupBox4)
-        # self.verticalLayout.addWidget(self.groupBox5)
+        self.verticalLayout.addWidget(self.groupBox5)
 
         self.initialize_track_layers()
         self.initialize_shortcuts()
@@ -140,10 +141,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
 
-    # def _setup_segmentation_buttons(self):
-    #     # WIP
-    #     # TODO: way to turn these off!
-    #     self.groupBox4 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
+    def _setup_segmentation_buttons(self):
+        # WIP
+        # TODO: way to turn these off!
+        self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
+        self.vbox5 = QtWidgets.QVBoxLayout(self.groupBox5)
+
+        self.splitSegmentationMethodButton = QtWidgets.QComboBox()
+        self.splitSegmentationMethodButton.addItems(["Gaussian", "Manual"])
+        self.splitSegmentationMethodButton.currentIndexChanged.connect(self.update_segmentation_interactivity)
+        self.vbox5.addWidget(self.splitSegmentationMethodButton)
+
+        self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
+        self.splitSegmentationManualSliceButton.setRange(2, 12)  # TODO
+        self.splitSegmentationManualSliceButton.valueChanged.connect(self.update_segmentation_interactivity)
+        self.vbox5.addWidget(self.splitSegmentationManualSliceButton)
 
     def change_neurons(self):
         self.update_dataframe_using_points()
@@ -160,6 +172,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_neuron_in_tracklet_annotator(self):
         self.dat.tracklet_annotator.current_neuron = self.changeNeuronsDropdown.currentText()
+
+    def update_segmentation_interactivity(self):
+        self.dat.tracklet_annotator.segmentation_options = dict(
+            method=self.splitSegmentationMethodButton.currentText(),
+            x_split_local_coord=self.splitSegmentationManualSliceButton.value()
+        )
 
     def initialize_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -563,7 +581,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
 
     # Build object that has all the data
-    project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True)
+    project_data = ProjectData.load_final_project_data_from_config(project_path,
+                                                                   to_load_tracklets=True,
+                                                                   to_load_segmentation_metadata=True)
     napari_trace_explorer(project_data, to_print_fps=to_print_fps)
 
     # Note: don't use this in jupyter

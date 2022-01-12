@@ -139,6 +139,8 @@ class TrackletAnnotator:
     time_of_candidate: int = None
     index_of_original_neuron: int = None
 
+    segmentation_options: dict = None
+
     # Visualization options
     refresh_callback: callable = None
     to_add_layer_to_viewer: bool = True
@@ -174,6 +176,12 @@ class TrackletAnnotator:
         self.tracklet_split_times_fname = str(splits_times_fname)
 
         # self.tracklet_split_times_fname = get_sequential_filename(str(splits_times_fname))
+
+        if self.segmentation_options is None:
+            self.segmentation_options = dict(
+                method='Gaussian',
+                x_split_local_coord=None
+            )
 
         print(f"Output files: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
@@ -431,7 +439,8 @@ class TrackletAnnotator:
                 new_full_mask = split_neuron_interactive(full_mask, red_volume, seg_index,
                                                          min_separation=2,
                                                          which_neuron_keeps_original='top',
-                                                         verbose=3)
+                                                         verbose=3,
+                                                         **self.segmentation_options)
 
                 if new_full_mask is None:
                     return
