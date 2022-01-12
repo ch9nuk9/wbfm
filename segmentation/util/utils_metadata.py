@@ -146,6 +146,12 @@ class DetectedNeurons:
     def correct_relative_index(self, i):
         return self.which_frames[i]
 
+    def modify_segmentation_metadata(self, i_volume, new_masks, red_volume):
+        self.segmentation_metadata[i_volume] = get_metadata_dictionary(new_masks, red_volume)
+
+        self._volumes_cache.pop(i_volume, None)
+        self._brightnesses_cache.pop(i_volume, None)
+
     def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> np.ndarray:
         """
         Designed to be used with centroids detected using a different pipeline
