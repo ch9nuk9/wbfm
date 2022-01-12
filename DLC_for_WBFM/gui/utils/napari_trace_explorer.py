@@ -56,6 +56,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.changeInteractivityCheckbox = QtWidgets.QCheckBox("Turn on interactivity?")
         self.changeInteractivityCheckbox.stateChanged.connect(self.update_interactivity)
+        self.vbox2.addWidget(self.changeInteractivityCheckbox)
 
         # More complex boxes:
 
@@ -230,6 +231,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         to_be_interactive = self.changeInteractivityCheckbox.isChecked()
 
         self.dat.tracklet_annotator.is_currently_interactive = to_be_interactive
+
+        if to_be_interactive:
+            self.groupBox4.setTitle("Tracklet Correction (currently enabled)")
+            self.groupBox5.setTitle("Segmentation Correction (currently enabled)")
+        else:
+            self.groupBox4.setTitle("Tracklet Correction (currently disabled)")
+            self.groupBox5.setTitle("Segmentation Correction (currently disabled)")
 
         for widget in self.list_of_segmentation_correction_widgets:
             widget.setEnabled(to_be_interactive)
