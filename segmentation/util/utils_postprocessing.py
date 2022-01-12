@@ -381,6 +381,7 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
                                       num_gaussians=2,
                                       min_height=5,
                                       plots=0, verbose=0,
+                                      to_save_plot=0,
                                       return_all=False) -> int:
     """
     calculates the means of 2 gaussians underlying the neuron brightness distributions.
@@ -474,6 +475,8 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
             g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gaussians=2)
         else:
             g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gaussians=2)
+        if to_save_plot:
+            plt.savefig(f"split_at_{split_point}_with_{num_gaussians}gaussian_fit.png")
         if return_all:
             return split_point, peaks_of_gaussians, y_data, g1, g2, coeff, p0
         # elif return_all:
@@ -786,10 +789,11 @@ def remove_border(masks, border=100):
 ## For interactive post-processing
 ##
 def split_neuron_interactive(full_mask, red_volume, i_target,
-                             min_separation=0,
+                             min_separation=2,
                              which_neuron_keeps_original='top',
-                             method_prioritization=None,
-                             verbose=0):
+                             method='gaussian',
+                             verbose=0,
+                             **kwargs):
     """
     A user will decide that "i_target" definitely needs to be split, so this will try all possible methods to do so
 
@@ -808,64 +812,81 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
 
     """
 
-    # Method 1: Gaussian fitting
+    if method == 'gaussian':
+        # Method 1: Gaussian fitting
+        # Calculate the brightness per plane
+        brightness_per_plane = []
+        planes_where_neuron_exists = []
+        individual_plane_masks = []
+        for i, plane in enumerate(full_mask):
+            if i_target in plane:
+                plane_mask = plane == i_target
+                plane_red = red_volume[i]
+                brightness_per_plane.append(np.sum(plane_red[plane_mask]))
+                planes_where_neuron_exists.append(i)
+                individual_plane_masks.append(plane_mask)
+        assert len(brightness_per_plane) > 0, f"Neuron {i_target} not found!"
 
-    # Calculate the brightness per plane
-    brightness_per_plane = []
-    planes_where_neuron_exists = []
-    individual_plane_masks = []
-    for i, plane in enumerate(full_mask):
-        if i_target in plane:
-            plane_mask = plane == i_target
-            plane_red = red_volume[i]
-            brightness_per_plane.append(np.sum(plane_red[plane_mask]))
-            planes_where_neuron_exists.append(i)
-            individual_plane_masks.append(plane_mask)
-    assert len(brightness_per_plane) > 0, f"Neuron {i_target} not found!"
+        # Fit gaussians
+        if verbose > 2:
+            to_save_plot=True
+        x_split_local_coord = calc_split_point_via_brightnesses(brightness_per_plane,
+                                                                min_separation=min_separation,
+                                                                min_height=1,
+                                                                to_save_plot=to_save_plot)
+        # Check for success
+        if x_split_local_coord is None:
+            logging.warning("Could not split using Gaussian method")
+        elif verbose >= 1:
+            print(f"Split point is {x_split_local_coord} using gaussian method")
 
-    # Fit gaussians
-    x_split_local_coord = calc_split_point_via_brightnesses(brightness_per_plane,
-                                                            min_separation=min_separation,
-                                                            min_height=1)
+            # Actual split
+            # TODO: Should the split ind go in top neuron?
+            new_full_mask = update_neuron_within_full_mask(full_mask, individual_plane_masks, planes_where_neuron_exists,
+                                                           which_neuron_keeps_original, x_split_local_coord)
+            return new_full_mask
 
-    # Check for success
-    if x_split_local_coord is None:
-        logging.warning("Could not split using Gaussian method")
-    elif verbose >= 1:
-        print(f"Split point is {x_split_local_coord} using gaussian method")
+    elif method == 'spatial_dot_product':
+        # Method 2: dot product between planes and refit gaussian
+        planes_with_single_neuron = []
+        for i, plane in enumerate(full_mask):
+            if i_target in plane:
+                plane_mask = plane == i_target
+                plane_red = red_volume[i]
+                planes_with_single_neuron.append(np.where(plane_mask, plane_red, 0))
+        all_dots = []
+        for i in range(len(planes_with_single_neuron) - 1):
+            all_dots.append(np.linalg.norm(planes_with_single_neuron[i] * planes_with_single_neuron[i + 1]))
 
-        # Actual split
-        # TODO: Should the split ind go in top neuron?
+        # Fit gaussians
+        if verbose > 2:
+            to_save_plot=True
+        x_split_local_coord = calc_split_point_via_brightnesses(all_dots,
+                                                                min_separation=min_separation,
+                                                                min_height=0,
+                                                                to_save_plot=to_save_plot)
+
+        # Check for success
+        if x_split_local_coord is None:
+            logging.warning("Could not split using Gaussian method")
+        elif verbose >= 1:
+            x_split_local_coord += 0.5
+            print(f"Split point is {x_split_local_coord} using dot-product gaussian method")
+
+            new_full_mask = update_neuron_within_full_mask(full_mask, individual_plane_masks, planes_where_neuron_exists,
+                                                           which_neuron_keeps_original, x_split_local_coord)
+
+            return new_full_mask
+
+    elif method == 'manual':
+        x_split_local_coord = kwargs['x_split_local_coord']
         new_full_mask = update_neuron_within_full_mask(full_mask, individual_plane_masks, planes_where_neuron_exists,
                                                        which_neuron_keeps_original, x_split_local_coord)
-        return new_full_mask
-
-    # Method 2: dot product between planes and refit gaussian
-    planes_with_single_neuron = []
-    for i, plane in enumerate(full_mask):
-        if i_target in plane:
-            plane_mask = plane == i_target
-            plane_red = red_volume[i]
-            planes_with_single_neuron.append(np.where(plane_mask, plane_red, 0))
-    all_dots = []
-    for i in range(len(planes_with_single_neuron) - 1):
-        all_dots.append(np.linalg.norm(planes_with_single_neuron[i] * planes_with_single_neuron[i + 1]))
-
-    # Fit gaussians
-    x_split_local_coord = calc_split_point_via_brightnesses(all_dots,
-                                                            min_separation=min_separation, min_height=0)
-
-    # Check for success
-    if x_split_local_coord is None:
-        logging.warning("Could not split using Gaussian method")
-    elif verbose >= 1:
-        x_split_local_coord += 0.5
-        print(f"Split point is {x_split_local_coord} using dot-product gaussian method")
-
-        new_full_mask = update_neuron_within_full_mask(full_mask, individual_plane_masks, planes_where_neuron_exists,
-                                                       which_neuron_keeps_original, x_split_local_coord)
 
         return new_full_mask
+
+    else:
+        raise NotImplementedError(f"Unrecognized method {method}")
 
     # Method 3: centroid discontinuity?
 
