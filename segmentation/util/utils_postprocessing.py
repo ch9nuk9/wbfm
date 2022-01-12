@@ -476,7 +476,11 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
         else:
             g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gaussians=2)
         if to_save_plot:
-            plt.savefig(f"split_at_{split_point}_with_{num_gaussians}gaussian_fit.png")
+            fname = f"split_at_{split_point}_with_{num_gaussians}gaussian_fit.png"
+            print(f"Saving figure at : {fname}")
+            plt.savefig(fname)
+        else:
+            print("Plotted but did not save image")
         if return_all:
             return split_point, peaks_of_gaussians, y_data, g1, g2, coeff, p0
         # elif return_all:
@@ -829,7 +833,9 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
 
         # Fit gaussians
         if verbose > 2:
-            to_save_plot=True
+            to_save_plot = True
+        else:
+            to_save_plot = False
         x_split_local_coord = calc_split_point_via_brightnesses(brightness_per_plane,
                                                                 min_separation=min_separation,
                                                                 min_height=1,
@@ -861,6 +867,8 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
         # Fit gaussians
         if verbose > 2:
             to_save_plot=True
+        else:
+            to_save_plot = False
         x_split_local_coord = calc_split_point_via_brightnesses(all_dots,
                                                                 min_separation=min_separation,
                                                                 min_height=0,
