@@ -40,7 +40,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # BOX 2: overall mode options
         # Change traces (dropdown)
-        self.groupBox2 = QtWidgets.QGroupBox("Channel selection", self.verticalLayoutWidget)
+        self.groupBox2 = QtWidgets.QGroupBox("Channel and Mode selection", self.verticalLayoutWidget)
         self.vbox2 = QtWidgets.QVBoxLayout(self.groupBox2)
         self.changeChannelDropdown = QtWidgets.QComboBox()
         self.changeChannelDropdown.addItems(['green', 'red', 'ratio'])
@@ -53,37 +53,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceTrackletDropdown.currentIndexChanged.connect(self.change_trace_tracklet_mode)
         self.vbox2.addWidget(self.changeTraceTrackletDropdown)
 
-        # BOX 3: Trace filtering / display options
-        # Change traces (dropdown)
-        self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
-        self.vbox3 = QtWidgets.QVBoxLayout(self.groupBox3)
-        self.changeTraceCalculationDropdown = QtWidgets.QComboBox()
-        self.changeTraceCalculationDropdown.addItems(['integration', 'z', 'volume', 'likelihood'])
-        self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
-        self.vbox3.addWidget(self.changeTraceCalculationDropdown)
-
-        # Change trace filtering (checkbox)
-        self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
-        self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
-        self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
-        self.vbox3.addWidget(self.changeTraceFilteringDropdown)
-
-        # Change trace outlier removal (dropdown)
-        self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox("Remove outliers (activity)?")
-        self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
-        self.vbox3.addWidget(self.changeTraceOutlierCheckBox)
-
-        self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox("Remove outliers (tracking confidence)?")
-        self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
-        self.vbox3.addWidget(self.changeTrackingOutlierCheckBox)
-
-        # TODO: spin box must be integers
-        self.changeTrackingOutlierSpinBox = QtWidgets.QSpinBox()
-        self.changeTrackingOutlierSpinBox.setRange(0, 1)
-        self.changeTrackingOutlierSpinBox.setSingleStep(0.1)
-        self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
-        self.vbox3.addWidget(self.changeTrackingOutlierSpinBox)
-
+        self._setup_trace_filtering_buttons()  # Box 3
         self._setup_shortcut_buttons()  # Box 4
         self._setup_segmentation_buttons()  # Box 5
 
@@ -97,9 +67,44 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.initialize_shortcuts()
         self.initialize_trace_or_tracklet_subplot()
 
+    def _setup_trace_filtering_buttons(self):
+        # Change traces (dropdown)
+        self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
+        # self.vbox3 = QtWidgets.QVBoxLayout(self.groupBox3)
+        self.formlayout3 = QtWidgets.QFormLayout(self.groupBox3)
+
+        self.changeTraceCalculationDropdown = QtWidgets.QComboBox()
+        self.changeTraceCalculationDropdown.addItems(['integration', 'z', 'volume', 'likelihood'])
+        self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
+        self.formlayout3.addRow("Trace calculation (y axis):", self.changeTraceCalculationDropdown)
+        # Change trace filtering (checkbox)
+        self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
+        self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
+        self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
+        # self.vbox3.addWidget(self.changeTraceFilteringDropdown)
+        self.formlayout3.addRow("Trace filtering:", self.changeTraceFilteringDropdown)
+        # Change trace outlier removal (dropdown)
+        self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox()
+        self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
+        # self.vbox3.addWidget(self.changeTraceOutlierCheckBox)
+        self.formlayout3.addRow("Remove outliers (activity)?", self.changeTraceOutlierCheckBox)
+
+        self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
+        self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
+        # self.vbox3.addWidget(self.changeTrackingOutlierCheckBox)
+        self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
+
+        # TODO: spin box must be integers
+        self.changeTrackingOutlierSpinBox = QtWidgets.QSpinBox()
+        self.changeTrackingOutlierSpinBox.setRange(0, 1)
+        self.changeTrackingOutlierSpinBox.setSingleStep(0.1)
+        self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
+        # self.vbox3.addWidget(self.changeTrackingOutlierSpinBox)
+        self.formlayout3.addRow("Outlier threshold:", self.changeTrackingOutlierSpinBox)
+
     def _setup_shortcut_buttons(self):
         # BOX 4: general shortcuts
-        self.groupBox4 = QtWidgets.QGroupBox("Shortcuts", self.verticalLayoutWidget)
+        self.groupBox4 = QtWidgets.QGroupBox("Tracklet Correction", self.verticalLayoutWidget)
         self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox4)
 
         self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
@@ -146,7 +151,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # WIP
         # TODO: way to turn these off!
         self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
-        # self.vbox5 = QtWidgets.QVBoxLayout(self.groupBox5)
         self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
 
         # self.splitSegmentationHint = QtWidgets.QLabel()
