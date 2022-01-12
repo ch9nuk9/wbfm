@@ -578,9 +578,9 @@ def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_poi
         plt.plot(x_data, g2, label='Fit2')
     if peaks_of_gaussians is not None:
         plt.scatter(peaks_of_gaussians, y_data[peaks_of_gaussians], c='red')
-    plt.title('brightness dist & underlying dists')
-    plt.ylabel('brightness')
-    plt.xlabel('slice')
+    plt.title('Brightness across z with candidate split ')
+    plt.ylabel('Brightness (sum of pixels in segmented plane)')
+    plt.xlabel('Slice (z)')
     plt.legend(loc='upper right')
     plt.xticks(x_data)
     plt.grid(True, axis='x')
@@ -821,26 +821,26 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
 
     """
 
-    if method == 'gaussian':
-        # Method 1: Gaussian fitting
-        # Calculate the brightness per plane
-        brightness_per_plane = []
-        planes_where_neuron_exists = []
-        individual_plane_masks = []
-        for i, plane in enumerate(full_mask):
-            if i_target in plane:
-                plane_mask = plane == i_target
-                plane_red = red_volume[i]
-                brightness_per_plane.append(np.sum(plane_red[plane_mask]))
-                planes_where_neuron_exists.append(i)
-                individual_plane_masks.append(plane_mask)
-        assert len(brightness_per_plane) > 0, f"Neuron {i_target} not found!"
+    # Calculate the brightness per plane (used in all methods)
+    brightness_per_plane = []
+    planes_where_neuron_exists = []
+    individual_plane_masks = []
+    for i, plane in enumerate(full_mask):
+        if i_target in plane:
+            plane_mask = plane == i_target
+            plane_red = red_volume[i]
+            brightness_per_plane.append(np.sum(plane_red[plane_mask]))
+            planes_where_neuron_exists.append(i)
+            individual_plane_masks.append(plane_mask)
+    assert len(brightness_per_plane) > 0, f"Neuron {i_target} not found!"
 
-        # Fit gaussians
-        if verbose > 2:
-            opt = {'to_save_plot': True, 'plots': True}
-        else:
-            opt = {'to_save_plot': False, 'plots': False}
+    if verbose > 2:
+        opt = {'to_save_plot': True, 'plots': True}
+    else:
+        opt = {'to_save_plot': False, 'plots': False}
+
+    if method.lower() == 'gaussian':
+        # Method 1: Gaussian fitting
         x_split_local_coord = calc_split_point_via_brightnesses(brightness_per_plane,
                                                                 min_separation=min_separation,
                                                                 min_height=1,
@@ -857,7 +857,7 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
                                                            which_neuron_keeps_original, x_split_local_coord)
             return new_full_mask
 
-    elif method == 'spatial_dot_product':
+    elif method.lower() == 'spatial_dot_product':
         # Method 2: dot product between planes and refit gaussian
         planes_with_single_neuron = []
         for i, plane in enumerate(full_mask):
@@ -870,10 +870,6 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
             all_dots.append(np.linalg.norm(planes_with_single_neuron[i] * planes_with_single_neuron[i + 1]))
 
         # Fit gaussians
-        if verbose > 2:
-            opt = {'to_save_plot': True, 'plots': True}
-        else:
-            opt = {'to_save_plot': False, 'plots': False}
         x_split_local_coord = calc_split_point_via_brightnesses(all_dots,
                                                                 min_separation=min_separation,
                                                                 min_height=0,
@@ -891,7 +887,7 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
 
             return new_full_mask
 
-    elif method == 'manual':
+    elif method.lower() == 'manual':
         x_split_local_coord = kwargs['x_split_local_coord']
         new_full_mask = update_neuron_within_full_mask(full_mask, individual_plane_masks, planes_where_neuron_exists,
                                                        which_neuron_keeps_original, x_split_local_coord)
@@ -911,11 +907,11 @@ def update_neuron_within_full_mask(full_mask, individual_plane_masks, planes_whe
     new_neuron_id = np.max(full_mask) + 1
     new_full_mask = full_mask.copy()
     for i_local, i_z in enumerate(planes_where_neuron_exists):
-        if i_local > x_split_local_coord and which_neuron_keeps_original == 'top':
+        if i_local > x_split_local_coord and which_neuron_keeps_original.lower() == 'top':
             this_plane = new_full_mask[i_z]
             this_plane[individual_plane_masks[i_local]] = new_neuron_id
             new_full_mask[i_z] = this_plane
-        elif i_local <= x_split_local_coord and which_neuron_keeps_original == 'bottom':
+        elif i_local <= x_split_local_coord and which_neuron_keeps_original.lower() == 'bottom':
             this_plane = new_full_mask[i_z]
             this_plane[individual_plane_masks[i_local]] = new_neuron_id
             new_full_mask[i_z] = this_plane
