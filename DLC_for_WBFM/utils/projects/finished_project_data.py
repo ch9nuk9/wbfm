@@ -11,14 +11,13 @@ import zarr
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
-
 from DLC_for_WBFM.utils.pipeline.tracklet_class import DetectedTrackletsAndNeurons
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 from scipy.spatial.distance import cdist
-from segmentation.util.utils_metadata import DetectedNeurons
+from segmentation.util.utils_metadata import DetectedNeurons, get_metadata_dictionary
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
     SubfolderConfigFile, load_file_according_to_precedence
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -359,8 +358,15 @@ class ProjectData:
         new_mask = self.tracklet_annotator.candidate_mask
         t = self.tracklet_annotator.time_of_candidate
 
-        logging.info(f"Updating raw segmentation at t= {t}")
+        logging.info(f"Updating raw segmentation at t = {t}...")
         self.raw_segmentation[t, ...] = new_mask
+
+        logging.info("Updating metadata and writing to disk...")
+        red_volume = self.red_data[t, ...]
+        self.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
+        self.segmentation_metadata.overwrite_original_detection_file()
+
+        logging.info("Metadata modified successfully")
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:
