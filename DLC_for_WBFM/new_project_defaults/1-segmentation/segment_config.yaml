@@ -24,7 +24,7 @@ postprocessing_params:
 
 # Output
 output_folder: 1-segmentation # Only used for initial writing
-output_masks: 1-segmentation/masks.btf
+output_masks: 1-segmentation/masks.zarr
 output_metadata: 1-segmentation/metadata.pickle
 
 # Printing
