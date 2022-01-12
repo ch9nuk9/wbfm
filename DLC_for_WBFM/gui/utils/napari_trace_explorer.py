@@ -171,11 +171,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # TODO: way to turn these off!
         self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
         self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
+        self.vbox5 = QtWidgets.QVBoxLayout()
 
         self.splitSegmentationHint = QtWidgets.QLabel(self.groupBox5)
         self.splitSegmentationHint.setText("CTRL-click to segment automatically, \n"
                                            "ALT-click to manually set the split point")
-        # self.vbox5.addWidget(self.splitSegmentationHint)
+        self.vbox5.addWidget(self.splitSegmentationHint)
 
         # self.splitSegmentationMethodButton = QtWidgets.QComboBox()
         # self.splitSegmentationMethodButton.addItems(["Gaussian", "Manual"])
