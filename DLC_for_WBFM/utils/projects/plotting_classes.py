@@ -146,6 +146,8 @@ class TrackletAnnotator:
     to_add_layer_to_viewer: bool = True
     verbose: int = 1
 
+    is_currently_interactive: bool = True
+
     def __post_init__(self):
         if self.manual_global2tracklet_names is None:
             self.manual_global2tracklet_names = defaultdict(list)
@@ -416,6 +418,10 @@ class TrackletAnnotator:
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
+
+            if not self.is_currently_interactive:
+                logging.warning("Click received, but interactivity is turned off")
+                return
 
             # Get information about clicked-on neuron
             seg_index = layer.get_value(

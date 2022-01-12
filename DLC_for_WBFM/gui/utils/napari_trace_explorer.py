@@ -42,6 +42,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Change traces (dropdown)
         self.groupBox2 = QtWidgets.QGroupBox("Channel and Mode selection", self.verticalLayoutWidget)
         self.vbox2 = QtWidgets.QVBoxLayout(self.groupBox2)
+
         self.changeChannelDropdown = QtWidgets.QComboBox()
         self.changeChannelDropdown.addItems(['green', 'red', 'ratio'])
         self.changeChannelDropdown.currentIndexChanged.connect(self.update_trace_subplot)
@@ -53,9 +54,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceTrackletDropdown.currentIndexChanged.connect(self.change_trace_tracklet_mode)
         self.vbox2.addWidget(self.changeTraceTrackletDropdown)
 
+        self.changeInteractivityCheckbox = QtWidgets.QCheckBox("Turn on interactivity?")
+        self.changeInteractivityCheckbox.stateChanged.connect(self.update_interactivity)
+
+        # More complex boxes:
+
         self._setup_trace_filtering_buttons()  # Box 3
-        self._setup_shortcut_buttons()  # Box 4
-        self._setup_segmentation_buttons()  # Box 5
+        self._setup_tracklet_correction_shortcut_buttons()  # Box 4
+        self._setup_segmentation_correction_buttons()  # Box 5
 
         self.verticalLayout.addWidget(self.groupBox1)
         self.verticalLayout.addWidget(self.groupBox2)
@@ -66,11 +72,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.initialize_track_layers()
         self.initialize_shortcuts()
         self.initialize_trace_or_tracklet_subplot()
+        self.update_interactivity()
 
     def _setup_trace_filtering_buttons(self):
         # Change traces (dropdown)
         self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
-        # self.vbox3 = QtWidgets.QVBoxLayout(self.groupBox3)
         self.formlayout3 = QtWidgets.QFormLayout(self.groupBox3)
 
         self.changeTraceCalculationDropdown = QtWidgets.QComboBox()
@@ -81,17 +87,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
         self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
-        # self.vbox3.addWidget(self.changeTraceFilteringDropdown)
         self.formlayout3.addRow("Trace filtering:", self.changeTraceFilteringDropdown)
         # Change trace outlier removal (dropdown)
         self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox()
         self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
-        # self.vbox3.addWidget(self.changeTraceOutlierCheckBox)
         self.formlayout3.addRow("Remove outliers (activity)?", self.changeTraceOutlierCheckBox)
 
         self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
         self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
-        # self.vbox3.addWidget(self.changeTrackingOutlierCheckBox)
         self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
 
         # TODO: spin box must be integers
@@ -99,10 +102,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTrackingOutlierSpinBox.setRange(0, 1)
         self.changeTrackingOutlierSpinBox.setSingleStep(0.1)
         self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
-        # self.vbox3.addWidget(self.changeTrackingOutlierSpinBox)
         self.formlayout3.addRow("Outlier threshold:", self.changeTrackingOutlierSpinBox)
 
-    def _setup_shortcut_buttons(self):
+    def _setup_tracklet_correction_shortcut_buttons(self):
         # BOX 4: general shortcuts
         self.groupBox4 = QtWidgets.QGroupBox("Tracklet Correction", self.verticalLayoutWidget)
         self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox4)
@@ -147,7 +149,23 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
 
-    def _setup_segmentation_buttons(self):
+        self.list_of_tracklet_correction_widgets = [
+            self.refreshButton,
+            self.printTrackletsButton,
+            self.zoom1Button,
+            self.zoom2Button,
+            self.zoom3Button,
+            self.zoom4Button,
+            self.splitTrackletButton1,
+            self.splitTrackletButton2,
+            self.clearTrackletButton,
+            self.removeTrackletButton1,
+            self.removeTrackletButton2,
+            self.appendTrackletButton,
+            self.saveTrackletsButton
+        ]
+
+    def _setup_segmentation_correction_buttons(self):
         # WIP
         # TODO: way to turn these off!
         self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
@@ -165,20 +183,25 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
         self.splitSegmentationManualSliceButton.setRange(2, 12)  # TODO: look at actual z depth of neuron
-        self.splitSegmentationManualSliceButton.valueChanged.connect(self.update_segmentation_interactivity)
+        self.splitSegmentationManualSliceButton.valueChanged.connect(self.update_segmentation_options)
         self.formlayout5.addRow("Manual slice index: ", self.splitSegmentationManualSliceButton)
 
         self.splitSegmentationKeepOriginalIndexButton = QtWidgets.QComboBox()
         self.splitSegmentationKeepOriginalIndexButton.addItems(["Top", "Bottom"])
-        self.splitSegmentationKeepOriginalIndexButton.currentIndexChanged.connect(self.update_segmentation_interactivity)
+        self.splitSegmentationKeepOriginalIndexButton.currentIndexChanged.connect(self.update_segmentation_options)
         self.formlayout5.addRow("Which side keeps original index: ", self.splitSegmentationKeepOriginalIndexButton)
 
         self.splitSegmentationSaveButton = QtWidgets.QPushButton("Save")
         self.splitSegmentationSaveButton.pressed.connect(self.modify_segmentation_using_manual_correction)
         self.formlayout5.addRow("Finalize candidate mask: ", self.splitSegmentationSaveButton)
 
+        self.update_segmentation_options()
 
-        self.update_segmentation_interactivity()
+        self.list_of_segmentation_correction_widgets = [
+            self.splitSegmentationManualSliceButton,
+            self.splitSegmentationKeepOriginalIndexButton,
+            self.splitSegmentationSaveButton
+        ]
 
     def change_neurons(self):
         self.update_dataframe_using_points()
@@ -196,12 +219,23 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_neuron_in_tracklet_annotator(self):
         self.dat.tracklet_annotator.current_neuron = self.changeNeuronsDropdown.currentText()
 
-    def update_segmentation_interactivity(self):
+    def update_segmentation_options(self):
         self.dat.tracklet_annotator.segmentation_options = dict(
             which_neuron_keeps_original=self.splitSegmentationKeepOriginalIndexButton.currentText(),
             # method=self.splitSegmentationMethodButton.currentText(),
             x_split_local_coord=self.splitSegmentationManualSliceButton.value()
         )
+
+    def update_interactivity(self):
+        to_be_interactive = self.changeInteractivityCheckbox.isChecked()
+
+        self.dat.tracklet_annotator.is_currently_interactive = to_be_interactive
+
+        for widget in self.list_of_segmentation_correction_widgets:
+            widget.setEnabled(to_be_interactive)
+
+        for widget in self.list_of_tracklet_correction_widgets:
+            widget.setEnabled(to_be_interactive)
 
     def modify_segmentation_using_manual_correction(self):
         pass
