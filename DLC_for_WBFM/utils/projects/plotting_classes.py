@@ -399,6 +399,8 @@ class TrackletAnnotator:
         if self.current_tracklet_name is not None:
             print(f"Cleared tracklet {self.current_tracklet_name}")
             self.current_tracklet_name = None
+        else:
+            print("No current tracklet; this button did nothing")
 
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer: napari.Viewer,
                                            max_dist=10.0,
@@ -427,9 +429,12 @@ class TrackletAnnotator:
                 full_mask = viewer.layers['Raw segmentation'].data[time_index]
                 red_volume = viewer.layers['Red data'].data[time_index]
                 new_full_mask = split_neuron_interactive(full_mask, red_volume, seg_index,
-                                                         min_separation=1,
-                                                         which_neuron_keeps_original='top', verbose=2)
+                                                         min_separation=2,
+                                                         which_neuron_keeps_original='top',
+                                                         verbose=3)
 
+                if new_full_mask is None:
+                    return
                 # Add as a new candidate layer
                 layer_name = f"Candidate_split_of_n{seg_index}_at_t{time_index}"
                 viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0)
