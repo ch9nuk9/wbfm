@@ -579,8 +579,8 @@ def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_poi
     if peaks_of_gaussians is not None:
         plt.scatter(peaks_of_gaussians, y_data[peaks_of_gaussians], c='red')
     plt.title('Brightness across z with candidate split ')
-    plt.ylabel('Brightness (sum of pixels in segmented plane)')
-    plt.xlabel('Slice (z)')
+    plt.ylabel('Brightness (sum of pixels in each segmented plane)')
+    plt.xlabel('Z slice (starts at top of current neuron not volume)')
     plt.legend(loc='upper right')
     plt.xticks(x_data)
     plt.grid(True, axis='x')
