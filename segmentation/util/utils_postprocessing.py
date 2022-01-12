@@ -471,10 +471,12 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
 
     if plots >= 1 and num_gaussians == 2:
         # For debugging
-        if peaks_of_gaussians is None:
-            g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gaussians=2)
-        else:
-            g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gaussians=2)
+        # if peaks_of_gaussians is None:
+        #     g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_point,
+        #                                      num_gaussians=2)
+        # else:
+        g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_point,
+                                         num_gaussians=2)
         if to_save_plot:
             fname = f"split_at_{split_point}_with_{num_gaussians}gaussian_fit.png"
             print(f"Saving figure at : {fname}")
@@ -490,9 +492,9 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
     return split_point
 
 
-def get_initial_gaussian_peaks(min_separation, num_gaussians, y_data):
+def get_initial_gaussian_peaks(min_separation, num_gaussians, y_data, background_val=15):
     # p0 is the initial guess for the fitting coefficients
-    # initialize them differently so the optimization algorithm works better
+    # initialize the two gaussians differently so the optimization algorithm works better
     sigma = min_separation / 2
     peaks, _ = find_peaks(y_data, distance=sigma)
     if num_gaussians == 2:
@@ -515,7 +517,7 @@ def get_initial_gaussian_peaks(min_separation, num_gaussians, y_data):
     else:
         raise NotImplementedError
     # Background value
-    p0.insert(0, 15)
+    p0.insert(0, background_val)
     return p0
 
 
@@ -559,7 +561,7 @@ def calc_split_point_from_gaussians(peaks_of_gaussians, y_data):
     return split_point
 
 
-def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gaussians):
+def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_point, num_gaussians):
     background = coeff[0]
     y_data -= background
     coeff = coeff[1:]
@@ -571,6 +573,7 @@ def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gauss
     plt.figure()
     plt.plot(x_data, y_data, label='Data')
     plt.plot(x_data, g1, label='Fit1')
+    plt.plot([split_point, split_point], [0, np.max(y_data)], 'k', label="Split point")
     if num_gaussians > 1:
         plt.plot(x_data, g2, label='Fit2')
     if peaks_of_gaussians is not None:
@@ -579,6 +582,8 @@ def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, num_gauss
     plt.ylabel('brightness')
     plt.xlabel('slice')
     plt.legend(loc='upper right')
+    plt.xticks(x_data)
+    plt.grid(True, axis='x')
     plt.show()
     # plt.savefig(r'.\brightnesses_gaussian_fit.png')
     return g1, g2, y_data
