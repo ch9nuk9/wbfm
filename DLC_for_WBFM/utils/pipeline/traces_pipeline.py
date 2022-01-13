@@ -76,7 +76,8 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
         params_start_volume
     )
 
-    df_green, df_red = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons, red_all_neurons)
+    df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)
+    df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
 
     # TODO: make sure these are strings
     final_neuron_names = list(df_red.columns.levels[0])

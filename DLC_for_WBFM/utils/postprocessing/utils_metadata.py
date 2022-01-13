@@ -109,27 +109,23 @@ def regionprops_one_volume_one_channel(mask, data, props_to_save):
     return neurons_one_volume
 
 
-def _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons, red_all_neurons):
+def _convert_nested_dict_to_dataframe(coords, frame_list, nested_dict_all_neurons):
     # Convert nested dict of volumes to final dataframes
     sz_one_neuron = len(frame_list)
-    i_start = min(list(red_all_neurons.keys()))
-    tmp_red = defaultdict(lambda: np.zeros(sz_one_neuron))
-    tmp_green = defaultdict(lambda: np.zeros(sz_one_neuron))
-    volume_indices = list(red_all_neurons.keys())
+    i_start = min(list(nested_dict_all_neurons.keys()))
+    tmp_neurons = defaultdict(lambda: np.zeros(sz_one_neuron))
+    volume_indices = list(nested_dict_all_neurons.keys())
     volume_indices.sort()
     for i_vol in volume_indices:
-        red_props, green_props = red_all_neurons[i_vol], green_all_neurons[i_vol]
+        props = nested_dict_all_neurons[i_vol]
         i_vol_numpy = i_vol - i_start
-        for key in red_props.keys():
+        for key in props.keys():
             if 'weighted_centroid' in key:
                 # Later formatting expects this to be split, i.e. z x y are separate columns
                 for i, c in enumerate(coords):
                     new_key = (key[0], c)
-                    tmp_red[new_key][i_vol_numpy] = red_props[key][i]
-                    tmp_green[new_key][i_vol_numpy] = green_props[key][i]
+                    tmp_neurons[new_key][i_vol_numpy] = props[key][i]
             else:
-                tmp_red[key][i_vol_numpy] = red_props[key]
-                tmp_green[key][i_vol_numpy] = green_props[key]
-    df_red = pd.DataFrame(tmp_red, index=volume_indices)
-    df_green = pd.DataFrame(tmp_green, index=volume_indices)
-    return df_green, df_red
+                tmp_neurons[key][i_vol_numpy] = props[key]
+    df_neurons = pd.DataFrame(tmp_neurons, index=volume_indices)
+    return df_neurons
