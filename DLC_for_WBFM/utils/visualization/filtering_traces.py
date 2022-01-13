@@ -54,11 +54,11 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel):
                 y_raw = df_tmp[i]['intensity_image']
                 vol = df_tmp[i]['area']
             return y_raw - background_per_pixel * vol
-    elif calculation_mode == 'max':
-        def calc_single_trace(i, df_tmp):
-            y_raw = df_tmp[i]['all_values']
-            f = lambda x: np.max(x, initial=np.nan)
-            return y_raw.apply(f) - background_per_pixel
+    # elif calculation_mode == 'max':
+    #     def calc_single_trace(i, df_tmp):
+    #         y_raw = df_tmp[i]['all_values']
+    #         f = lambda x: np.max(x, initial=np.nan)
+    #         return y_raw.apply(f) - background_per_pixel
     elif calculation_mode == 'mean':
         def calc_single_trace(i, df_tmp):
             try:

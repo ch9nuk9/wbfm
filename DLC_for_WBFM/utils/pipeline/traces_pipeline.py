@@ -100,9 +100,9 @@ def make_mask2final_mapping(all_matches: dict):
     return mask2final_name_per_volume
 
 
-def _pool_parallel_func(i_and_name, options):
-    i, new_name = i_and_name
-    return _pool_calc_trace_from_mask_one_neuron(i=i, new_name=new_name, **options)
+# def _pool_parallel_func(i_and_name, options):
+#     i, new_name = i_and_name
+#     return _pool_calc_trace_from_mask_one_neuron(i=i, new_name=new_name, **options)
 
 
 def _pool_get_dlc_zxy_one_neuron(t, new_name, dlc_name_mapping, dlc_tracks):
@@ -112,64 +112,64 @@ def _pool_get_dlc_zxy_one_neuron(t, new_name, dlc_name_mapping, dlc_tracks):
     return all_dlc_zxy
 
 
-def _pool_calc_trace_from_mask_one_neuron(frame_list, green_video, red_video,
-                                     i, new_name, params_start_volume,
-                                     reindexed_masks,
-                                     dlc_name_mapping,
-                                     dlc_tracks):
-    all_green_dfs_one_neuron = []
-    all_red_dfs_one_neuron = []
-    i_mask_ind = i + 1
-    for i_volume in tqdm(frame_list, leave=False):
-        this_zxy_dlc = _pool_get_dlc_zxy_one_neuron(i_volume, new_name, dlc_name_mapping, dlc_tracks)
-        # Prepare mask (segmentation)
-        i_mask = i_volume - params_start_volume
-        this_mask_volume = reindexed_masks[i_mask, ...]
-        this_mask_neuron = (this_mask_volume == i_mask_ind)
+# def _pool_calc_trace_from_mask_one_neuron(frame_list, green_video, red_video,
+#                                      i, new_name, params_start_volume,
+#                                      reindexed_masks,
+#                                      dlc_name_mapping,
+#                                      dlc_tracks):
+#     all_green_dfs_one_neuron = []
+#     all_red_dfs_one_neuron = []
+#     i_mask_ind = i + 1
+#     for i_volume in tqdm(frame_list, leave=False):
+#         this_zxy_dlc = _pool_get_dlc_zxy_one_neuron(i_volume, new_name, dlc_name_mapping, dlc_tracks)
+#         # Prepare mask (segmentation)
+#         i_mask = i_volume - params_start_volume
+#         this_mask_volume = reindexed_masks[i_mask, ...]
+#         this_mask_neuron = (this_mask_volume == i_mask_ind)
+#
+#         # Green then red
+#         this_green_volume = green_video[i_volume, ...]
+#         df_green_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
+#                                                                   i_mask_ind, i_volume,
+#                                                                   this_green_volume, this_mask_neuron)
+#         this_red_volume = red_video[i_volume, ...]
+#         df_red_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
+#                                                                 i_mask_ind, i_volume,
+#                                                                 this_red_volume, this_mask_neuron)
+#         all_green_dfs_one_neuron.append(df_green_one_frame)
+#         all_red_dfs_one_neuron.append(df_red_one_frame)
+#     df_green_one_neuron = pd.concat(all_green_dfs_one_neuron, axis=0)
+#     df_red_one_neuron = pd.concat(all_red_dfs_one_neuron, axis=0)
+#     return df_green_one_neuron, df_red_one_neuron
 
-        # Green then red
-        this_green_volume = green_video[i_volume, ...]
-        df_green_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
-                                                                  i_mask_ind, i_volume,
-                                                                  this_green_volume, this_mask_neuron)
-        this_red_volume = red_video[i_volume, ...]
-        df_red_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
-                                                                i_mask_ind, i_volume,
-                                                                this_red_volume, this_mask_neuron)
-        all_green_dfs_one_neuron.append(df_green_one_frame)
-        all_red_dfs_one_neuron.append(df_red_one_frame)
-    df_green_one_neuron = pd.concat(all_green_dfs_one_neuron, axis=0)
-    df_red_one_neuron = pd.concat(all_red_dfs_one_neuron, axis=0)
-    return df_green_one_neuron, df_red_one_neuron
 
-
-def calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_video, red_video,
-                                    i, new_name, params_start_volume,
-                                    reindexed_masks):
-    all_green_dfs_one_neuron = []
-    all_red_dfs_one_neuron = []
-    i_mask_ind = i + 1
-    for i_volume in tqdm(frame_list, leave=False):
-        this_zxy_dlc = _get_dlc_zxy_one_neuron(i_volume, new_name)
-        # Prepare mask (segmentation)
-        i_mask = i_volume - params_start_volume
-        this_mask_volume = reindexed_masks[i_mask, ...]
-        this_mask_neuron = (this_mask_volume == i_mask_ind)
-
-        # Green then red
-        this_green_volume = green_video[i_volume, ...]
-        df_green_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
-                                                                  i_mask_ind, i_volume,
-                                                                  this_green_volume, this_mask_neuron)
-        this_red_volume = red_video[i_volume, ...]
-        df_red_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
-                                                                i_mask_ind, i_volume,
-                                                                this_red_volume, this_mask_neuron)
-        all_green_dfs_one_neuron.append(df_green_one_frame)
-        all_red_dfs_one_neuron.append(df_red_one_frame)
-    df_green_one_neuron = pd.concat(all_green_dfs_one_neuron, axis=0)
-    df_red_one_neuron = pd.concat(all_red_dfs_one_neuron, axis=0)
-    return df_green_one_neuron, df_red_one_neuron
+# def calc_trace_from_mask_one_neuron(_get_dlc_zxy_one_neuron, frame_list, green_video, red_video,
+#                                     i, new_name, params_start_volume,
+#                                     reindexed_masks):
+#     all_green_dfs_one_neuron = []
+#     all_red_dfs_one_neuron = []
+#     i_mask_ind = i + 1
+#     for i_volume in tqdm(frame_list, leave=False):
+#         this_zxy_dlc = _get_dlc_zxy_one_neuron(i_volume, new_name)
+#         # Prepare mask (segmentation)
+#         i_mask = i_volume - params_start_volume
+#         this_mask_volume = reindexed_masks[i_mask, ...]
+#         this_mask_neuron = (this_mask_volume == i_mask_ind)
+#
+#         # Green then red
+#         this_green_volume = green_video[i_volume, ...]
+#         df_green_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
+#                                                                   i_mask_ind, i_volume,
+#                                                                   this_green_volume, this_mask_neuron)
+#         this_red_volume = red_video[i_volume, ...]
+#         df_red_one_frame = extract_traces_using_reindexed_masks(new_name, this_zxy_dlc,
+#                                                                 i_mask_ind, i_volume,
+#                                                                 this_red_volume, this_mask_neuron)
+#         all_green_dfs_one_neuron.append(df_green_one_frame)
+#         all_red_dfs_one_neuron.append(df_red_one_frame)
+#     df_green_one_neuron = pd.concat(all_green_dfs_one_neuron, axis=0)
+#     df_red_one_neuron = pd.concat(all_red_dfs_one_neuron, axis=0)
+#     return df_green_one_neuron, df_red_one_neuron
 
 
 def _save_traces_as_hdf_and_update_configs(final_neuron_names: list,
@@ -278,15 +278,15 @@ def _initialize_dataframe(all_neuron_names: List[str], frame_list: List[int]) ->
     df_red = pd.DataFrame(empty_dat,
                           columns=m_index,
                           index=frame_list)
-    for name in all_neuron_names:
-        # Allow saving numpy arrays in the column
-        df_red[(name, 'all_values')] = df_red[(name, 'all_values')].astype('object')
+    # for name in all_neuron_names:
+    #     # Allow saving numpy arrays in the column
+    #     df_red[(name, 'all_values')] = df_red[(name, 'all_values')].astype('object')
     return df_red
 
 
 def _get_multiindex(all_neuron_names: List[str]) -> pd.MultiIndex:
     save_names = ['brightness', 'volume',
-                  'all_values',
+                  # 'all_values',
                   'i_reindexed_segmentation',
                   'z_dlc', 'x_dlc', 'y_dlc',
                   'match_confidence']
@@ -296,37 +296,37 @@ def _get_multiindex(all_neuron_names: List[str]) -> pd.MultiIndex:
     return m_index
 
 
-def extract_traces_using_reindexed_masks(d_name: str, zxy_dlc: np.ndarray,
-                                         i_mask: int, i_volume: int,
-                                         video_volume: np.ndarray,
-                                         this_mask_neuron: np.ndarray, confidence: float = 0.0) -> pd.DataFrame:
-    i = i_volume
-    # Get brightness from green volume and mask
-    # Use reindexed mask instead of original index mask
-    volume = np.count_nonzero(this_mask_neuron)
-    if volume > 0:
-        all_values = video_volume[this_mask_neuron]
-        brightness = np.sum(all_values)
-    else:
-        brightness = np.nan
-        volume = np.nan
-        all_values = []
-
-    # Save in dataframe
-    df_as_dict = {
-        (d_name, 'brightness'): brightness,
-        (d_name, 'volume'): volume,
-        (d_name, 'all_values'): [all_values],
-        (d_name, 'i_reindexed_segmentation'): i_mask,
-        (d_name, 'z_dlc'): zxy_dlc[0],
-        (d_name, 'x_dlc'): zxy_dlc[1],
-        (d_name, 'y_dlc'): zxy_dlc[2],
-        (d_name, 'match_confidence'): confidence,
-    }
-
-    df = pd.DataFrame(df_as_dict, index=[i])
-
-    return df
+# def extract_traces_using_reindexed_masks(d_name: str, zxy_dlc: np.ndarray,
+#                                          i_mask: int, i_volume: int,
+#                                          video_volume: np.ndarray,
+#                                          this_mask_neuron: np.ndarray, confidence: float = 0.0) -> pd.DataFrame:
+#     i = i_volume
+#     # Get brightness from green volume and mask
+#     # Use reindexed mask instead of original index mask
+#     volume = np.count_nonzero(this_mask_neuron)
+#     if volume > 0:
+#         all_values = video_volume[this_mask_neuron]
+#         brightness = np.sum(all_values)
+#     else:
+#         brightness = np.nan
+#         volume = np.nan
+#         all_values = []
+#
+#     # Save in dataframe
+#     df_as_dict = {
+#         (d_name, 'brightness'): brightness,
+#         (d_name, 'volume'): volume,
+#         (d_name, 'all_values'): [all_values],
+#         (d_name, 'i_reindexed_segmentation'): i_mask,
+#         (d_name, 'z_dlc'): zxy_dlc[0],
+#         (d_name, 'x_dlc'): zxy_dlc[1],
+#         (d_name, 'y_dlc'): zxy_dlc[2],
+#         (d_name, 'match_confidence'): confidence,
+#     }
+#
+#     df = pd.DataFrame(df_as_dict, index=[i])
+#
+#     return df
 
 
 def _save_locations_in_df(d_name, df, i, zxy_dlc, conf):
