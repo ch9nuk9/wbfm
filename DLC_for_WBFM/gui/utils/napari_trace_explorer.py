@@ -110,8 +110,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox4 = QtWidgets.QGroupBox("Tracklet Correction", self.verticalLayoutWidget)
         self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox4)
 
-        self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet for neuron")
+        self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet attached to neuron")
         self.vbox4.addWidget(self.trackletHint1)
+        self.trackletHint2 = QtWidgets.QLabel("NOTE: only raw segmentation layer is interactive")
+        self.vbox4.addWidget(self.trackletHint2)
 
         self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
         self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
@@ -153,7 +155,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
 
-        self.saveTrackletsStatusLabel = QtWidgets.QLabel("No tracklet loaded")
+        self.saveTrackletsStatusLabel = QtWidgets.QLabel("STATUS: No tracklet loaded")
         self.vbox4.addWidget(self.saveTrackletsStatusLabel)
 
         self.list_of_tracklet_correction_widgets = [
@@ -185,6 +187,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationHint2 = QtWidgets.QLabel()
         self.splitSegmentationHint2.setText("Split using manual slice index")
         self.formlayout5.addRow("Alt-click:", self.splitSegmentationHint2)
+        self.splitSegmentationHint3 = QtWidgets.QLabel("Only raw segmentation layer is interactive")
+        self.formlayout5.addRow("NOTE:" , self.splitSegmentationHint3)
 
         # self.splitSegmentationMethodButton = QtWidgets.QComboBox()
         # self.splitSegmentationMethodButton.addItems(["Gaussian", "Manual"])
@@ -400,6 +404,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.dat.tracklet_annotator.save_current_tracklet_to_neuron()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
+        self.update_tracklet_status_label()
 
     def print_tracklets(self):
         self.dat.tracklet_annotator.print_current_status()
@@ -537,9 +542,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_tracklet_status_label(self):
         if self.dat.tracklet_annotator.current_neuron is None:
-            update_string = "No tracklet or neuron selected"
+            update_string = "STATUS: No tracklet selected"
         else:
-            update_string = f"Currently selected tracklet: {self.dat.tracklet_annotator.current_tracklet_name}"
+            update_string = f"STATUS: Selected tracklet is {self.dat.tracklet_annotator.current_tracklet_name}"
         self.saveTrackletsStatusLabel.setText(update_string)
 
     def finish_subplot_update(self, title):
