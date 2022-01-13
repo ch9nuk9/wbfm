@@ -202,29 +202,52 @@ def region_props_one_volume(this_mask_volume,
         props_to_save = ['area', 'weighted_centroid', 'image_intensity', 'label']
 
     """
-    red_neurons_one_volume = {}
-    green_neurons_one_volume = {}
     props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label']
+    red_neurons_one_volume = regionprops_one_volume_one_channel(this_mask_volume, this_red_volume, props_to_save)
+    green_neurons_one_volume = regionprops_one_volume_one_channel(this_mask_volume, this_green_volume, props_to_save)
 
-    # Green then red
-    green_props = measure.regionprops(this_mask_volume, intensity_image=this_green_volume)
-    red_props = measure.regionprops(this_mask_volume, intensity_image=this_red_volume)
+    # red_neurons_one_volume = {}
+    # green_neurons_one_volume = {}
+    #
+    # # Green then red
+    # green_props = measure.regionprops(this_mask_volume, intensity_image=this_green_volume)
+    # red_props = measure.regionprops(this_mask_volume, intensity_image=this_red_volume)
+    #
+    # for this_red, this_green in zip(red_props, green_props):
+    #     seg_index = this_red['label']
+    #     # final_index = mask2final_name[seg_index]
+    #     key_base = (int2name_neuron(seg_index),)
+    #
+    #     for this_prop in props_to_save:
+    #         key = key_base + (this_prop,)
+    #         if this_prop == 'intensity_image':
+    #             red_neurons_one_volume[key] = np.sum(this_red[this_prop])
+    #             green_neurons_one_volume[key] = np.sum(this_green[this_prop])
+    #         else:
+    #             red_neurons_one_volume[key] = this_red[this_prop]
+    #             green_neurons_one_volume[key] = this_green[this_prop]
 
-    for this_red, this_green in zip(red_props, green_props):
-        seg_index = this_red['label']
+    return red_neurons_one_volume, green_neurons_one_volume
+
+
+def regionprops_one_volume_one_channel(mask, data, props_to_save):
+    neurons_one_volume = {}
+    props = measure.regionprops(mask, intensity_image=data)
+
+    for this_neuron in props:
+        seg_index = this_neuron['label']
         # final_index = mask2final_name[seg_index]
         key_base = (int2name_neuron(seg_index),)
 
         for this_prop in props_to_save:
             key = key_base + (this_prop,)
             if this_prop == 'intensity_image':
-                red_neurons_one_volume[key] = np.sum(this_red[this_prop])
-                green_neurons_one_volume[key] = np.sum(this_green[this_prop])
+                neurons_one_volume[key] = np.sum(this_neuron[this_prop])
             else:
-                red_neurons_one_volume[key] = this_red[this_prop]
-                green_neurons_one_volume[key] = this_green[this_prop]
+                neurons_one_volume[key] = this_neuron[this_prop]
 
-    return red_neurons_one_volume, green_neurons_one_volume
+    return neurons_one_volume
+
 
 
 def _pool_parallel_func(i_and_name, options):
