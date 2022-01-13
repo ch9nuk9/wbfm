@@ -4,6 +4,7 @@ The metadata generator for the segmentation pipeline
 import concurrent.futures
 import logging
 import pickle
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
@@ -11,10 +12,9 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 import zarr
+from segmentation.util.utils_config_files import _unpack_config_file
 from skimage.measure import label, regionprops
 from tqdm import tqdm
-
-from segmentation.util.utils_config_files import _unpack_config_file
 
 
 def get_metadata_dictionary(masks, original_vol):
@@ -154,7 +154,7 @@ class DetectedNeurons:
 
     def overwrite_original_detection_file(self):
         backup_fname = Path(self.detection_fname).with_name("backup_metadata.pickle")
-        if not os.exists(backup_fname):
+        if not backup_fname.exists():
             shutil.copy(self.detection_fname, backup_fname)
         else:
             # Assume the backup was already copied
@@ -162,7 +162,7 @@ class DetectedNeurons:
         logging.warning(f"Overwriting original file; backup saved at {backup_fname}")
         with open(self.detection_fname, 'wb') as f:
             # Note: dict of dataframes
-            self._segmentation_metadata = pickle.dump(f)
+            pickle.dump(self._segmentation_metadata, f)
 
     def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> np.ndarray:
         """
