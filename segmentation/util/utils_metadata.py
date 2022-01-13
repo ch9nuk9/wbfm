@@ -5,9 +5,12 @@ import concurrent.futures
 import logging
 import pickle
 import shutil
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
+from DLC_for_WBFM.utils.postprocessing.utils_metadata import regionprops_one_volume_one_channel
+from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron
 
 import numpy as np
 import pandas as pd
@@ -17,7 +20,7 @@ from skimage.measure import label, regionprops
 from tqdm import tqdm
 
 
-def get_metadata_dictionary(masks, original_vol):
+def OLD_get_metadata_dictionary(masks, original_vol):
     """
     Creates a dataframe with metadata ('total_brightness', 'neuron_volume', 'centroids') for a volume
     Parameters
@@ -77,6 +80,27 @@ def get_metadata_dictionary(masks, original_vol):
         # df.at[n, 'pixel_counts'] = counts
 
     return df
+
+
+def get_metadata_dictionary(masks, original_vol):
+
+    props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label']
+    props = regionprops_one_volume_one_channel(masks, original_vol, props_to_save)
+
+    # Convert back to old (Niklas) style
+    dict_of_rows = defaultdict(list)
+    for k, v in props.items():
+        idx = name2int_neuron(k[0])
+        # column_name = k[1]
+
+        # Assume the entries were originally added in regionprops order
+        dict_of_rows[idx].append(v)
+
+    # NOTE: deprecates "all_values"
+    new_names = ['neuron_volume', 'centroids', 'total_brightness', 'label']
+    df_metadata = pd.DataFrame.from_dict(dict_of_rows, orient='index', columns=new_names)
+
+    return df_metadata
 
 
 def centroids_from_dict_of_dataframes(dict_of_dataframes, i_volume) -> np.ndarray:
