@@ -118,19 +118,32 @@ Basically there are two types of problems, with two solutions:
 
 1. A perfect tracklet was not assigned to the neuron
 2. A tracklet had a mistake and needs to be split
+3. A completely incorrect tracklet was assigned to the neuron
 
-Use the following workflow to fix them:
+Use the following basic workflow to fix them:
 1. With the "Raw segmentation layer" highlighted, click on a neuron
    1. This will load the tracklet associated with that segmentation
    2. In addition, a new Napari layer will appear showing the position of the tracklet across time
+   3. NOTE: for the 3rd case, you are trying to click on the incorrect neuron, to select the incorrect tracklet for removal
 2. Check the correctness of the tracklet
 3. Case 1: the tracklet is perfect
    1. Use the button to save the current tracklet to the current neuron, and continue
+   2. If there is a conflict, see below
 4. Case 2: the tracklet jumps between neurons
    1. Use the "Split tracklet" buttons to remove the jumps
    2. When it is correct, save it to the current neuron
+   3. If there is a conflict, see below
+5. Case 3: the tracklet is added, but shouldn't be
+   1. Use the "remove tracklet from all neurons" button
+   2. No additional saving is needed
 
 Note that many tracklet problems are in fact due to segmentation problems, described below.
+
+#### Fixing tracklet conflicts
+
+Currently, the gui will not allow you to save a tracklet if there are time points that overlap with other tracklets.
+Thus, you must either a) shorten the current tracklet to fit, or b) remove conflicting tracklets.
+Use the shortcut and buttons to do so, then save.
 
 #### Segmentation workflow
 
@@ -149,3 +162,7 @@ In that case, the following workflow is suggested:
    3. Check that it is correct, and save to RAM (button)
 5. As often as possible, Save to disk
    1. Note that this can take some time (~20 seconds)
+   
+### Known issues
+
+See the GUI label on the main github repository 
