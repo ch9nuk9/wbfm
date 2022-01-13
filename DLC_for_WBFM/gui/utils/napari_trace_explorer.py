@@ -110,6 +110,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox4 = QtWidgets.QGroupBox("Tracklet Correction", self.verticalLayoutWidget)
         self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox4)
 
+        self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet for neuron")
+        self.vbox4.addWidget(self.trackletHint1)
+
         self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
         self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
         self.vbox4.addWidget(self.refreshButton)
@@ -149,6 +152,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk (S)")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
+
+        self.saveTrackletsStatusLabel = QtWidgets.QLabel("No tracklet loaded")
+        self.vbox4.addWidget(self.saveTrackletsStatusLabel)
 
         self.list_of_tracklet_correction_widgets = [
             self.refreshButton,
@@ -365,7 +371,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             print("No conflict point found; not moving")
 
-
     def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
@@ -530,6 +535,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.init_subplot_post_clear()
         self.finish_subplot_update(title)
 
+    def update_tracklet_status_label(self):
+        if self.dat.tracklet_annotator.current_neuron is None:
+            update_string = "No tracklet or neuron selected"
+        else:
+            update_string = f"Currently selected tracklet: {self.dat.tracklet_annotator.current_tracklet_name}"
+        self.saveTrackletsStatusLabel.setText(update_string)
+
     def finish_subplot_update(self, title):
         self.static_ax.set_title(title)
         self.color_using_behavior()
@@ -590,6 +602,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         tracklets = self.dat.calculate_tracklets(name)
         print(f"Found {len(tracklets)} tracklets for {name}")
         self.y_tracklets = tracklets
+
+        self.update_tracklet_status_label()
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsDropdown.currentText()
