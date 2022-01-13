@@ -358,15 +358,14 @@ class ProjectData:
         new_mask = self.tracklet_annotator.candidate_mask
         t = self.tracklet_annotator.time_of_candidate
 
-        logging.info(f"Updating raw segmentation at t = {t}...")
+        print(f"Updating raw segmentation at t = {t}...")
         self.raw_segmentation[t, ...] = new_mask
 
-        logging.info("Updating metadata and writing to disk...")
+        print("Updating metadata, but NOT writing to disk...")
         red_volume = self.red_data[t, ...]
         self.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
-        self.segmentation_metadata.overwrite_original_detection_file()
 
-        logging.info("Metadata modified successfully")
+        logging.debug("Metadata modified successfully")
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:

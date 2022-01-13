@@ -195,16 +195,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationKeepOriginalIndexButton.currentIndexChanged.connect(self.update_segmentation_options)
         self.formlayout5.addRow("Which side keeps original index: ", self.splitSegmentationKeepOriginalIndexButton)
 
-        self.splitSegmentationSaveButton = QtWidgets.QPushButton("Save")
-        self.splitSegmentationSaveButton.pressed.connect(self.modify_segmentation_using_manual_correction)
-        self.formlayout5.addRow("Finalize candidate mask: ", self.splitSegmentationSaveButton)
+        self.splitSegmentationSaveButton1 = QtWidgets.QPushButton("Save to RAM")
+        self.splitSegmentationSaveButton1.pressed.connect(self.modify_segmentation_using_manual_correction)
+        self.formlayout5.addRow("Save candidate mask: ", self.splitSegmentationSaveButton1)
+
+        self.splitSegmentationSaveButton2 = QtWidgets.QPushButton("Save to disk")
+        self.splitSegmentationSaveButton2.pressed.connect(self.modify_segmentation_on_disk)
+        self.formlayout5.addRow("Finalize all masks:", self.splitSegmentationSaveButton2)
 
         self.update_segmentation_options()
 
         self.list_of_segmentation_correction_widgets = [
             self.splitSegmentationManualSliceButton,
             self.splitSegmentationKeepOriginalIndexButton,
-            self.splitSegmentationSaveButton
+            self.splitSegmentationSaveButton1,
+            self.splitSegmentationSaveButton2
         ]
 
     def change_neurons(self):
@@ -250,6 +255,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def modify_segmentation_using_manual_correction(self):
         self.dat.modify_segmentation_using_manual_correction()
+
+    def modify_segmentation_on_disk(self):
+        self.dat.segmentation_metadata.overwrite_original_detection_file()
 
     def initialize_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
