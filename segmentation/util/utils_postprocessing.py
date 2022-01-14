@@ -452,6 +452,9 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
     except RuntimeError:
         if verbose >= 1:
             print('Oh oh, could not fit')
+        if plots >= 1:
+            fig = _plot_just_data(x_data, y_data)
+            plt.show()
         return None
 
     if num_gaussians == 2:
@@ -470,12 +473,7 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
         split_point = [split_point1, split_point2]
 
     if plots >= 1 and num_gaussians == 2:
-        # For debugging
-        # if peaks_of_gaussians is None:
-        #     g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_point,
-        #                                      num_gaussians=2)
-        # else:
-        g1, g2, y_data = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_point,
+        g1, g2, y_data, fig = _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_point,
                                          num_gaussians=2)
         if to_save_plot:
             fname = f"split_at_{split_point}_with_{num_gaussians}gaussian_fit.png"
@@ -490,6 +488,18 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
         #     return split_point, None, g1, None
 
     return split_point
+
+
+def _plot_just_data(x_data, y_data):
+    fig = plt.figure()
+    plt.plot(x_data, y_data, label='Data')
+    plt.title('Brightness across z')
+    plt.ylabel('Brightness (sum of pixels in each segmented plane)')
+    plt.xlabel('Z slice (starts at top of current neuron not volume)')
+    plt.legend(loc='upper right')
+    plt.xticks(x_data)
+    plt.grid(True, axis='x')
+    return fig
 
 
 def get_initial_gaussian_peaks(min_separation, num_gaussians, y_data, background_val=15):
@@ -570,23 +580,14 @@ def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_poi
         g2 = gauss1(x_data, *coeff[3:])
     else:
         g2 = None
-    plt.figure()
-    plt.plot(x_data, y_data, label='Data')
+    fig = _plot_just_data(x_data, y_data)
     plt.plot(x_data, g1, label='Fit1')
     plt.plot([split_point, split_point], [0, np.max(y_data)], 'k', label="Split point")
     if num_gaussians > 1:
         plt.plot(x_data, g2, label='Fit2')
     if peaks_of_gaussians is not None:
         plt.scatter(peaks_of_gaussians, y_data[peaks_of_gaussians], c='red')
-    plt.title('Brightness across z with candidate split ')
-    plt.ylabel('Brightness (sum of pixels in each segmented plane)')
-    plt.xlabel('Z slice (starts at top of current neuron not volume)')
-    plt.legend(loc='upper right')
-    plt.xticks(x_data)
-    plt.grid(True, axis='x')
-    plt.show()
-    # plt.savefig(r'.\brightnesses_gaussian_fit.png')
-    return g1, g2, y_data
+    return g1, g2, y_data, fig
 
 
 def split_long_neurons(mask_array,
