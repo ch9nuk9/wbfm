@@ -15,6 +15,7 @@ dependencies:
   - scikit-image
   - pip:
     - tables
+    - sklearn
     - openpyxl
     - zarr
     - open3d
