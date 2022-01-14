@@ -418,6 +418,14 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
     y_data = np.array(brightnesses, dtype=float)
     x_data = np.array(np.arange(len(y_data)), dtype=int)
 
+    if len(y_data) < 8:
+        logging.warning(f"Trying to split a neuron that is too short ({len(y_data)}); aborting")
+        if plots >= 1:
+            fig = _plot_just_data(x_data, y_data)
+            plt.title("Neuron that is too small to split")
+            plt.show()
+        return None
+
     # Define model function to be used to fit to the data above:
     # Adapt it to as many gaussians you may want
     # by copying the function with different A2,mu2,sigma2 parameters
@@ -454,6 +462,7 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
             print('Oh oh, could not fit')
         if plots >= 1:
             fig = _plot_just_data(x_data, y_data)
+            plt.title("Neuron that could not be fit with 2 gaussians")
             plt.show()
         return None
 
