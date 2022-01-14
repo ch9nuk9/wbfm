@@ -1,5 +1,7 @@
 # DEFAULT definitions (do not edit!)
-# Preprocessing settings
+
+# Removing planes, especially flyback
+starting_plane: 1
 
 # Filtering
 do_filtering: false
