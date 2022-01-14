@@ -1,45 +1,65 @@
 # GUIs for Whole Brain Freely Moving
 
-## Starting out: progress_gui
+## If you have a working installation
 
-All GUIs are designed to be accessed from the "progress gui".
+If you do NOT have a working installation, read the next section.
 
+All GUIs are designed to be accessed from the "progress gui". 
 This can be accessed by running "progress_gui.py", for example:
 
 ```commandline
-python progress_gui.py --project_path ~/dlc_stacks/worm3-gui_demo/project_config.yaml
+python progress_gui.py --project_path /path/to/your/project/project_config.yaml
 ```
 
 This command will bring a small GUI up that displays the status of the target project, with buttons to open more complex GUIs.
 Those will be described in the next major section.
 
-This command works with 3 assumptions:
-1. You are in a terminal in this folder
-2. You are in the proper conda environment
-3. You have initialized a project at ~/dlc_stacks/worm3-gui_demo/project_config.yaml
+This command works with 4 assumptions:
+1. You are NOT on the cluster (this gui can only be run locally)
+2. You are in a terminal in this folder (/dlc_for_wbfm/DLC_for_WBFM/gui/)
+3. You are in the proper conda environment
+4. You have initialized a project at /path/to/your/project/project_config.yaml
 
 Instructions to satisfy these assumptions are in the next sections.
 
+## Installation
+
 ### Terminal setup
 
-If you are on linux or mac, a terminal is included. On Windows I suggest git bash
+If you are on linux or mac, a terminal is included. 
+On Windows I suggest anaconda prompt (this comes with an anaconda installation) or git bash
 
-### Installation
+Either way, you should begin by installing anaconda if you don't already have it:
+https://www.anaconda.com/products/individual
 
 #### Step 1
 In the folder conda-environments, there is a specific environment for this purpose: "gui_only.yaml"
 
-If you are in a terminal, you can use this to create the proper conda environment:
+If you are in a terminal, you can use this to create the proper conda environment. 
+NOTE: you must clone this repository first, and cd to it (i.e. replace the path below with yours):
 
 ```commandline
-conda create -f gui_only.yaml
+cd /scratch/zimmer/Charles/github_repos/dlc_for_wbfm/conda-environments
+
+conda env create -f gui_only.yaml --name gui_only
 ```
 
+Note: this will take a while, ~5 minutes.
+
 #### Step 2
+
+Activate the environment. This means that later package installations and commands you run can see all the packages you just installed!
+
+```commandline
+conda activate gui_only
+```
+
+#### Step 3
 After the overall packages are installed, the zimmer group private packages need to be installed:
 
 1. git clone dlc_for_wbfm and segmentation (from https://github.com/Zimmer-lab)
-2. run ```pip install -e .``` in each main folder
+2. cd to the main folder of each repository, and run ```pip install -e .```
+   1. Note: you will run ```pip``` twice, and it is very fast
 
 ### Project initialization
 
@@ -73,7 +93,7 @@ The following layers below to this level:
 1. Red data - Raw mscarlet layer
 2. Green data - Raw gcamp layer
 3. Neuron IDs - Numbers displayed on top of the neurons
-4. Colored segmentation - Segmentation as colored by tracks. This is a subset of the next layer 
+4. Colored segmentation - Segmentation as colored by tracks. This is a subset of the next layer (Raw segmentation) 
 5. Raw segmentation - Original segmentation, before tracking. Note that this layer can be interactive
 
 #### Detailed level - Single neuron
