@@ -134,10 +134,10 @@ class TrackletAndSegmentationAnnotator:
 
     saving_lock: threading.Lock = threading.Lock()
 
-    # New: for interactive segmentation splitting
+    # New: for interactive segmentation splitting and merging
     candidate_mask: np.ndarray = None
     time_of_candidate: int = None
-    index_of_original_neuron: int = None
+    indices_of_original_neurons: List[int] = None
 
     segmentation_options: dict = None
 
@@ -183,6 +183,9 @@ class TrackletAndSegmentationAnnotator:
             self.segmentation_options = dict(
                 x_split_local_coord=None
             )
+
+        if self.indices_of_original_neurons is None:
+            self.indices_of_original_neurons = []
 
         print(f"Output files: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
@@ -443,39 +446,39 @@ class TrackletAndSegmentationAnnotator:
 
             # The modifiers field is a list of Key objects
             # Class definition: https://github.com/vispy/vispy/blob/ef982591e223fff09d91d8c2697489c7193a85aa/vispy/util/keys.py
-            print([m.name for m in event.modifiers])
-            if 'alt' in [m.name.lower() for m in event.modifiers]:
-                split_method = "Manual"
-            elif 'control' in [m.name.lower() for m in event.modifiers]:
+            # print([m.name for m in event.modifiers])
+            click_modifiers = [m.name.lower() for m in event.modifiers]
+            if 'control' in click_modifiers:
+                # Just add neuron, no automatic splitting
+                self.append_segmentation_to_list(time_index, seg_index)
+                segment_mode_not_tracklet_mode = True
+            elif 'alt' in click_modifiers:
+                # Shortcut for clearing all neurons, adding this one, and attempting to split
+                self.clear_currently_selected_segmentations()
+                self.append_segmentation_to_list(time_index, seg_index)
                 split_method = "Gaussian"
+                self.split_current_neuron_and_add_napari_layer(viewer, split_method)
+                segment_mode_not_tracklet_mode = True
             else:
-                split_method = None
-            segment_mode_not_tracklet_mode = split_method is not None
+                segment_mode_not_tracklet_mode = False
 
             if segment_mode_not_tracklet_mode:
-                full_mask = viewer.layers['Raw segmentation'].data[time_index]
-                red_volume = viewer.layers['Red data'].data[time_index]
-                new_full_mask = split_neuron_interactive(full_mask, red_volume, seg_index,
-                                                         min_separation=2,
-                                                         verbose=3,
-                                                         method=split_method,
-                                                         **self.segmentation_options)
-
-                if new_full_mask is None:
-                    logging.debug("Did not split")
-                    return
-                # Add as a new candidate layer
-                layer_name = f"Candidate_split_of_n{seg_index}_at_t{time_index}"
-                viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0)
-
-                # Save for later combining with original mask
-                self.candidate_mask = new_full_mask
-                self.time_of_candidate = time_index
-                self.index_of_original_neuron = seg_index
-
                 return
-            else:
-                logging.info("Tracklet segmentation-click interaction triggered")
+
+            # if 'alt' in [m.name.lower() for m in event.modifiers]:
+            #     split_method = "Manual"
+            # elif 'control' in [m.name.lower() for m in event.modifiers]:
+            #     split_method = "Gaussian"
+            # else:
+            #     split_method = None
+            # segment_mode_not_tracklet_mode = split_method is not None
+            # 
+            # if segment_mode_not_tracklet_mode:
+            #     self.split_current_neuron_and_add_napari_layer(viewer, split_method)
+            # 
+            #     return
+            # else:
+            #     logging.info("Tracklet segmentation-click interaction triggered")
 
             # Split tracklet, not segmentation
             dist, ind, tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
@@ -510,3 +513,43 @@ class TrackletAndSegmentationAnnotator:
             else:
                 if self.verbose >= 1:
                     print(f"WARNING: Tracklet too far away; not adding anything")
+
+    def split_current_neuron_and_add_napari_layer(self, viewer, split_method):
+        seg_index = self.indices_of_original_neurons
+        if len(seg_index) > 1:
+            print("Multiple neurons selected, splitting is ambiguous... returning")
+            return
+        else:
+            seg_index = seg_index[0]
+            time_index = self.time_of_candidate
+
+        full_mask = viewer.layers['Raw segmentation'].data[time_index]
+        red_volume = viewer.layers['Red data'].data[time_index]
+        new_full_mask = split_neuron_interactive(full_mask, red_volume, seg_index,
+                                                 min_separation=2,
+                                                 verbose=3,
+                                                 method=split_method,
+                                                 **self.segmentation_options)
+        split_succeeded = new_full_mask is not None
+        if split_succeeded:
+            # Add as a new candidate layer
+            layer_name = f"Candidate_split_of_n{seg_index}_at_t{time_index}"
+            viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0)
+
+            # Save for later combining with original mask
+            self.candidate_mask = new_full_mask
+
+    def clear_currently_selected_segmentations(self):
+        self.time_of_candidate = None
+        self.indices_of_original_neurons = []
+
+    def append_segmentation_to_list(self, time_index, seg_index):
+        if self.time_of_candidate is None:
+            self.time_of_candidate = time_index
+            self.indices_of_original_neurons = [seg_index]
+        else:
+            if self.time_of_candidate == time_index:
+                self.indices_of_original_neurons.append(seg_index)
+                print(f"Added neuron to list; current neurons: {self.indices_of_original_neurons}")
+            else:
+                logging.warning("Attempt to add segmentations of different time points; not supported")
