@@ -178,7 +178,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # WIP
         # TODO: way to turn these off!
         self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
-        # self.vbox5 = QtWidgets.QVBoxLayout(self.groupBox5)
         self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
 
         self.splitSegmentationHint1 = QtWidgets.QLabel()
@@ -190,11 +189,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationHint3 = QtWidgets.QLabel("Only raw segmentation layer is interactive")
         self.formlayout5.addRow("NOTE:" , self.splitSegmentationHint3)
 
-        # self.splitSegmentationMethodButton = QtWidgets.QComboBox()
-        # self.splitSegmentationMethodButton.addItems(["Gaussian", "Manual"])
-        # self.splitSegmentationMethodButton.currentIndexChanged.connect(self.update_segmentation_interactivity)
-        # self.vbox5.addWidget(self.splitSegmentationMethodButton)
-
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
         self.splitSegmentationManualSliceButton.setRange(2, 12)  # TODO: look at actual z depth of neuron
         self.splitSegmentationManualSliceButton.valueChanged.connect(self.update_segmentation_options)
@@ -205,6 +199,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationKeepOriginalIndexButton.currentIndexChanged.connect(self.update_segmentation_options)
         self.formlayout5.addRow("Which side keeps original index: ", self.splitSegmentationKeepOriginalIndexButton)
 
+        self.clearSelectedSegmentationsButton = QtWidgets.QPushButton("Clear")
+        self.clearSelectedSegmentationsButton.pressed.connect(self.clear_current_segmentations)
+        self.formlayout5.addRow("Remove selected segmentations: ", self.clearSelectedSegmentationsButton)
+
+        self.splitSegmentationManualButton = QtWidgets.QPushButton("Manually split")
+        self.splitSegmentationManualButton.pressed.connect(self.split_segmentation_manual)
+        self.formlayout5.addRow("Produce candidate mask: ", self.splitSegmentationManualButton)
+
+        self.splitSegmentationAutomaticButton = QtWidgets.QPushButton("Automatically split")
+        self.splitSegmentationAutomaticButton.pressed.connect(self.split_segmentation_automatic)
+        self.formlayout5.addRow("Produce candidate mask: ", self.splitSegmentationAutomaticButton)
+
+        self.mergeSegmentationButton = QtWidgets.QPushButton("Merge selected")
+        self.mergeSegmentationButton.pressed.connect(self.dat.tracklet_annotator.merge_current_neurons)
+        self.formlayout5.addRow("Produce candidate mask: ", self.mergeSegmentationButton)
+
         self.splitSegmentationSaveButton1 = QtWidgets.QPushButton("Save to RAM")
         self.splitSegmentationSaveButton1.pressed.connect(self.modify_segmentation_using_manual_correction)
         self.formlayout5.addRow("Save candidate mask: ", self.splitSegmentationSaveButton1)
@@ -213,13 +223,20 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationSaveButton2.pressed.connect(self.modify_segmentation_on_disk)
         self.formlayout5.addRow("Finalize all masks:", self.splitSegmentationSaveButton2)
 
+        self.saveSegmentationStatusLabel = QtWidgets.QLabel("STATUS: No segmentation loaded")
+        self.vbox4.addWidget(self.saveSegmentationStatusLabel)
+
         self.update_segmentation_options()
 
         self.list_of_segmentation_correction_widgets = [
             self.splitSegmentationManualSliceButton,
             self.splitSegmentationKeepOriginalIndexButton,
+            self.clearSelectedSegmentationsButton,
+            self.splitSegmentationManualButton,
+            self.splitSegmentationAutomaticButton,
+            self.mergeSegmentationButton,
             self.splitSegmentationSaveButton1,
-            self.splitSegmentationSaveButton2
+            self.splitSegmentationSaveButton2,
         ]
 
     def change_neurons(self):
@@ -265,9 +282,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def modify_segmentation_using_manual_correction(self):
         self.dat.modify_segmentation_using_manual_correction()
+        self.dat.tracklet_annotator.clear_currently_selected_segmentations()
+        self.update_segmentation_status_label()
 
     def modify_segmentation_on_disk(self):
         self.dat.segmentation_metadata.overwrite_original_detection_file()
+
+    def split_segmentation_manual(self):
+        self.dat.tracklet_annotator.split_current_neuron_and_add_napari_layer(self.viewer, split_method="Manual")
+
+    def split_segmentation_automatic(self):
+        self.dat.tracklet_annotator.split_current_neuron_and_add_napari_layer(self.viewer, split_method="Gaussian")
+
+    def clear_current_segmentations(self):
+        self.dat.tracklet_annotator.clear_currently_selected_segmentations()
+        self.update_segmentation_status_label()
 
     def initialize_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -279,10 +308,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         zoom_using_viewer(self.viewer, layer_name='final_track', zoom=10)
 
         layer_to_add_callback = self.viewer.layers['Raw segmentation']
+        callbacks = [self.update_trace_or_tracklet_subplot,
+                     self.update_segmentation_status_label,
+                     self.update_tracklet_status_label]
         self.dat.tracklet_annotator.connect_tracklet_clicking_callback(
             layer_to_add_callback,
             self.viewer,
-            refresh_callback=self.update_trace_or_tracklet_subplot
+            refresh_callbacks=callbacks
         )
         self.update_neuron_in_tracklet_annotator()
 
@@ -546,6 +578,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             update_string = f"STATUS: Selected tracklet is {self.dat.tracklet_annotator.current_tracklet_name}"
         self.saveTrackletsStatusLabel.setText(update_string)
+
+    def update_segmentation_status_label(self):
+        if self.dat.tracklet_annotator.indices_of_original_neurons is None:
+            update_string = "STATUS: No segmentations selected"
+        else:
+            update_string = f"STATUS: Selected segmentations is/are: " \
+                            f"{self.dat.tracklet_annotator.indices_of_original_neurons}"
+        self.saveSegmentationStatusLabel.setText(update_string)
 
     def finish_subplot_update(self, title):
         self.static_ax.set_title(title)
