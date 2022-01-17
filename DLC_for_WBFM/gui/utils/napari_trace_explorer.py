@@ -1,6 +1,12 @@
 # Display more informative error messages
 # https://www.tutorialexample.com/fix-pyqt-gui-application-crashed-while-no-error-message-displayed-a-beginner-guide-pyqt-tutorial/
 import cgitb
+import logging
+
+from PyQt5.QtWidgets import QApplication
+
+logger = logging.getLogger('traceExplorerLogger')
+logger.setLevel(logging.INFO)
 import sys
 cgitb.enable(format='text')
 
@@ -25,9 +31,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.dat = project_data
+        logger.info("Finished initializing Trace Explorer object")
 
     def setupUi(self, viewer: napari.Viewer):
 
+        logger.info("Starting main UI setup")
         # Load dataframe and path to outputs
         self.viewer = viewer
         neuron_names = list(self.dat.red_traces.columns.levels[0])
@@ -79,6 +87,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.initialize_shortcuts()
         self.initialize_trace_or_tracklet_subplot()
         self.update_interactivity()
+
+        logger.info("Finished main UI setup")
 
     def _setup_trace_filtering_buttons(self):
         # Change traces (dropdown)
@@ -725,13 +735,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
 
     # Build object that has all the data
+    app = QApplication([])
+
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=True,
                                                                    to_load_segmentation_metadata=True)
-    napari_trace_explorer(project_data, to_print_fps=to_print_fps)
+    ui, viewer = napari_trace_explorer(project_data, to_print_fps=to_print_fps)
 
     # Note: don't use this in jupyter
     napari.run()
+    app.exec_()
+    logger.info("Quitting")
 
 
 def napari_trace_explorer(project_data: ProjectData,
@@ -739,20 +753,19 @@ def napari_trace_explorer(project_data: ProjectData,
                           to_print_fps: bool = False):
     """Current function for building the explorer (1/11/2022)"""
     print("Starting GUI setup")
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
 
+    # Build Napari and add data layers
     ui = NapariTraceExplorer(project_data)
-    # Build Napari and add widgets
     if viewer is None:
+        logger.info("Creating a new Napari window")
         viewer = napari.Viewer(ndisplay=3)
     ui.dat.add_layers_to_viewer(viewer)
+
     # Actually dock my additional gui elements
     ui.setupUi(viewer)
     viewer.window.add_dock_widget(ui)
     ui.show()
 
-    MainWindow.show()
     print("Finished GUI setup. If nothing is showing, trying quitting and running again")
     if to_print_fps:
         # From: https://github.com/napari/napari/issues/836

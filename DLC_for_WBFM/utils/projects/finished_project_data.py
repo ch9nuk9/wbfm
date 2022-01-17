@@ -474,7 +474,7 @@ class ProjectData:
     def add_layers_to_viewer(self, viewer, which_layers='all', to_remove_flyback=True):
         if which_layers == 'all':
             which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation']
-        print("Finished loading data, starting napari...")
+        logging.info(f"Finished loading data, adding following layers: {which_layers}")
         if to_remove_flyback:
             clipping_list = [{'position': [2, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
         else:
@@ -496,6 +496,8 @@ class ProjectData:
         df = self.red_traces
         options = napari_labels_from_traces_dataframe(df)
         viewer.add_points(**options)
+
+        logging.info("Finished adding layers to napari")
 
     def __repr__(self):
         return f"=======================================\n\
