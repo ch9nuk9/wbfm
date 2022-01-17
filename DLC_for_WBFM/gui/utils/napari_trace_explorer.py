@@ -28,12 +28,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def __init__(self, project_data: ProjectData):
         super(QtWidgets.QWidget, self).__init__()
-        # self.verticalLayoutWidget = QtWidgets.QWidget(self)
-        # self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
-        self.scrollArea = QScrollArea(self.verticalLayoutWidget)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.scrollArea.setWidget(self.verticalLayoutWidget)
         self.dat = project_data
         logger.info("Finished initializing Trace Explorer object")
 
@@ -92,6 +88,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.initialize_shortcuts()
         self.initialize_trace_or_tracklet_subplot()
         self.update_interactivity()
+
+        # # self.verticalLayoutWidget = QtWidgets.QWidget(self)
+        # self.scrollArea = QScrollArea(self.verticalLayoutWidget)
+        # # self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        # self.scrollArea.setWidget(self.groupBox5)
+        # self.scrollArea.setWidgetResizable(True)
+        # self.groupBox5.adjustSize()
+        # self.verticalLayout.addWidget(self.groupBox5)
 
         logger.info("Finished main UI setup")
 
