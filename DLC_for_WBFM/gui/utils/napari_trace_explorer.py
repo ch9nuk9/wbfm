@@ -89,14 +89,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.initialize_trace_or_tracklet_subplot()
         self.update_interactivity()
 
-        # # self.verticalLayoutWidget = QtWidgets.QWidget(self)
-        # self.scrollArea = QScrollArea(self.verticalLayoutWidget)
-        # # self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        # self.scrollArea.setWidget(self.groupBox5)
-        # self.scrollArea.setWidgetResizable(True)
-        # self.groupBox5.adjustSize()
-        # self.verticalLayout.addWidget(self.groupBox5)
-
         logger.info("Finished main UI setup")
 
     def _setup_trace_filtering_buttons(self):
