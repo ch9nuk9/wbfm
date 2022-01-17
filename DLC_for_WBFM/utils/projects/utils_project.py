@@ -132,7 +132,6 @@ def load_config(config_fname: typing.Union[str, pathlib.Path]) -> dict:
 
     return cfg
 
-
 #####################
 # Synchronizing config files
 #####################

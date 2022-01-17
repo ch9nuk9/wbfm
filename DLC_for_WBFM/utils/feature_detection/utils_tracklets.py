@@ -456,7 +456,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
     clust_ind = 0
     if verbose >= 1:
         print(f"Searching through total possible matches: {total_possible_matches}")
-    with tqdm(total=total_possible_matches) as pbar:
+    with tqdm(total=total_possible_matches, leave=False) as pbar:
         while True:
             # Choose a starting point, and initialize lists
             match_key, i0, i1 = get_start_match(dict_of_match_dicts)
