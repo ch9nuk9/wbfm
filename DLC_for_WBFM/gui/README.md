@@ -17,6 +17,8 @@ Those will be described in the next major section.
 This command works with 4 assumptions:
 1. You are NOT on the cluster (this gui can only be run locally)
 2. You are in a terminal in this folder (/dlc_for_wbfm/DLC_for_WBFM/gui/)
+   1. Example command:
+   2. ```cd /dlc_for_wbfm/DLC_for_WBFM/gui/```
 3. You are in the proper conda environment
 4. You have initialized a project at /path/to/your/project/project_config.yaml
 
@@ -69,21 +71,23 @@ See the main README file for instructions, or use a pre-generated project
 
 First, open the progress gui as described above.
 
-Then, the most complex gui can be accessed using the "tracesVis" button.
+Then, the most complex gui can be accessed using the __tracesVis__ button.
 
 This opens a new Napari window with several layers, designed to be used to view and modify the tracking and segmentation.
+This may take some time, ~30 seconds.
+If it takes longer, quit it and try again.
 
 ### Overall explanation
 
-This GUI displays information at 2 scales:
-1. An overview of the entire worm body
-2. More detail about a specific neuron
-
-In addition, there are 4 areas with different information:
+When you open the GUI, you will see 4 areas:
 1. Left - Napari layers
 2. Center - Main 3d data
 3. Right - Menus and buttons
-4. Bottom - Matplotlib graph
+4. Bottom - Graph graph
+
+Abstractly, this GUI is designed to present information at a high level and a detailed level:
+1. An overview of the entire worm body
+2. More detail about a specific neuron
 
 First I will explain the Napari layers:
 
@@ -125,7 +129,7 @@ The basic steps are as follows:
 4. Navigate to the time point with the problem
    1. Many shortcuts are provided
    2. Note that if the neuron is tracked, the main view will be centered on that neuron
-5. Fix the problem (described in next section)
+5. Fix the problem (READ NEXT SECTION)
 6. Save the current tracklet
 7. Find a new problem, and repeat 4-6
 8. When the neuron is fully tracked, save the manual annotations to disk
@@ -141,19 +145,20 @@ Basically there are two types of problems, with two solutions:
 3. A completely incorrect tracklet was assigned to the neuron
 
 Use the following basic workflow to fix them:
-1. With the "Raw segmentation layer" highlighted, click on a neuron
+1. Confirm the checkbox: "Turn on interactivity?"
+2. With the "Raw segmentation layer" highlighted, click on a neuron
    1. This will load the tracklet associated with that segmentation
    2. In addition, a new Napari layer will appear showing the position of the tracklet across time
    3. NOTE: for the 3rd case, you are trying to click on the incorrect neuron, to select the incorrect tracklet for removal
-2. Check the correctness of the tracklet
-3. Case 1: the tracklet is perfect
+3. Check the correctness of the tracklet
+4. Case 1: the tracklet is perfect
    1. Use the button to save the current tracklet to the current neuron, and continue
    2. If there is a conflict, see below
-4. Case 2: the tracklet jumps between neurons
+5. Case 2: the tracklet jumps between neurons
    1. Use the "Split tracklet" buttons to remove the jumps
    2. When it is correct, save it to the current neuron
    3. If there is a conflict, see below
-5. Case 3: the tracklet is added, but shouldn't be
+6. Case 3: the tracklet is added, but shouldn't be
    1. Use the "remove tracklet from all neurons" button
    2. No additional saving is needed
 
@@ -183,6 +188,19 @@ In that case, the following workflow is suggested:
 5. As often as possible, Save to disk
    1. Note that this can take some time (~20 seconds)
    
-### Known issues
+## Napari tips and tricks
+
+In the 3d view, shift-drag (mouse drag) will translate the view.
+Basic click will rotate the view.
+
+Each layer has many advanced features, like opacity and blending.
+Especially when looking at multiple layers, you should experiment with these to get a good workflow.
+
+Make sure you highlight the "Raw segmentation" layer when you want interactivity!
+
+
+
+
+## Known issues
 
 See the GUI label on the main github repository 

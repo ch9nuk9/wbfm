@@ -31,6 +31,10 @@ class PreprocessingSettings:
     Designed to be used with the ReferenceFrame class
     """
 
+    # Plane removal, especially flyback
+    raw_number_of_planes: int = None
+    starting_plane: int = None
+
     # Filtering
     do_filtering: bool = False
     filter_opt: List = field(default_factory=lambda: {'high_freq': 2.0, 'low_freq': 5000.0})
@@ -81,7 +85,7 @@ class PreprocessingSettings:
             self.all_warp_matrices = pickle.load(f)
 
 
-def perform_preprocessing(dat_raw: np.ndarray,
+def perform_preprocessing(single_volume_raw: np.ndarray,
                           preprocessing_settings: PreprocessingSettings,
                           which_frame: int = None) -> np.ndarray:
     """
@@ -92,35 +96,34 @@ def perform_preprocessing(dat_raw: np.ndarray,
 
     s = preprocessing_settings
     if s is None:
-        return dat_raw
+        return single_volume_raw
+
+    if s.starting_plane is not None:
+        single_volume_raw = single_volume_raw[s.starting_plane:, ...]
 
     if s.do_filtering:
-        dat_raw = filter_stack(dat_raw, s.filter_opt)
+        single_volume_raw = filter_stack(single_volume_raw, s.filter_opt)
 
     if s.do_mirroring:
-        # print(dat_raw.shape)
-        # np.save('before_flip.npy', dat_raw)
-        dat_raw = np.flip(dat_raw, axis=-1)
-        # np.save('after_flip.npy', dat_raw)
-        # print(dat_raw.shape)
+        single_volume_raw = np.flip(single_volume_raw, axis=-1)
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:
-            dat_raw, warp_matrices_dict = align_stack(dat_raw)
+            single_volume_raw, warp_matrices_dict = align_stack(single_volume_raw)
             if s.to_save_warp_matrices:
                 s.all_warp_matrices[which_frame] = warp_matrices_dict
         else:
             assert len(s.all_warp_matrices) > 0
             warp_matrices_dict = s.all_warp_matrices[which_frame]
-            dat_raw = align_stack_using_previous_results(dat_raw, warp_matrices_dict)
+            single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
-        dat_raw = ndi.maximum_filter(dat_raw, size=(mini_max_size, 1, 1))
+        single_volume_raw = ndi.maximum_filter(single_volume_raw, size=(mini_max_size, 1, 1))
 
-    dat_raw = (dat_raw * s.alpha).astype(s.final_dtype)
+    single_volume_raw = (single_volume_raw * s.alpha).astype(s.final_dtype)
 
-    return dat_raw
+    return single_volume_raw
 
 
 def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, video_fname: str,
@@ -170,9 +173,8 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     with tifffile.TiffFile(video_fname) as vid_stream:
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
-                # print("Applying preprocessing:")
-                # print(p)
-                preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream, read_lock)
+                preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream,
+                                                              read_lock)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in frame_list}
@@ -213,17 +215,15 @@ def _get_video_options(config, video_fname):
 
 
 def get_and_preprocess(i, num_slices, p, start_volume, video_fname, read_lock=None):
+    if p.raw_number_of_planes is not None:
+        num_slices = p.raw_number_of_planes
     if read_lock is None:
-        dat_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
+        single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
     else:
         with read_lock:
-            dat_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
+            single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
-        # print("Applying preprocessing:")
-        # print(p)
-        return perform_preprocessing(dat_raw, p, i)
+        return perform_preprocessing(single_volume_raw, p, i)
     else:
-        # print("SKIPPING preprocessing:")
-        # print(p)
-        return dat_raw
+        return single_volume_raw
