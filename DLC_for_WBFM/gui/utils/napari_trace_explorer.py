@@ -227,7 +227,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.formlayout5.addRow("Produce candidate mask: ", self.splitSegmentationAutomaticButton)
 
         self.mergeSegmentationButton = QtWidgets.QPushButton("Merge selected")
-        self.mergeSegmentationButton.pressed.connect(self.dat.tracklet_annotator.merge_current_neurons)
+        self.mergeSegmentationButton.pressed.connect(self.merge_segmentation)
         self.formlayout5.addRow("Produce candidate mask: ", self.mergeSegmentationButton)
 
         self.splitSegmentationSaveButton1 = QtWidgets.QPushButton("Save to RAM")
@@ -308,6 +308,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def split_segmentation_automatic(self):
         self.dat.tracklet_annotator.split_current_neuron_and_add_napari_layer(self.viewer, split_method="Gaussian")
+
+    def merge_segmentation(self):
+        self.dat.tracklet_annotator.merge_current_neurons(self.viewer)
 
     def clear_current_segmentations(self):
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
