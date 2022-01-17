@@ -1,7 +1,8 @@
 # DEFAULT definitions (do not edit!)
 
 # Removing planes, especially flyback
-starting_plane: 1
+raw_number_of_planes: null
+starting_plane: null
 
 # Filtering
 do_filtering: false

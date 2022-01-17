@@ -32,6 +32,7 @@ class PreprocessingSettings:
     """
 
     # Plane removal, especially flyback
+    raw_number_of_planes: int = None
     starting_plane: int = None
 
     # Filtering
@@ -213,7 +214,9 @@ def _get_video_options(config, video_fname):
     return sz, vid_opt
 
 
-def get_and_preprocess(i, num_slices, p, start_volume, video_fname, read_lock=None, starting_plane=None):
+def get_and_preprocess(i, num_slices, p, start_volume, video_fname, read_lock=None):
+    if p.raw_number_of_planes is not None:
+        num_slices = p.raw_number_of_planes
     if read_lock is None:
         single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
     else:
