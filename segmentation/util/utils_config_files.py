@@ -17,6 +17,8 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     metadata_fname = segment_cfg.config['output_metadata']
     output_dir = segment_cfg.config['output_folder']
     mask_fname, metadata_fname = get_output_fnames(video_path, output_dir, mask_fname, metadata_fname)
+    metadata_fname = segment_cfg.unresolve_absolute_path(metadata_fname)
+    mask_fname = segment_cfg.unresolve_absolute_path(mask_fname)
     # Save settings
     segment_cfg.config['output_masks'] = mask_fname
     segment_cfg.config['output_metadata'] = metadata_fname
