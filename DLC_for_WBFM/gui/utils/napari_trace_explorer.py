@@ -1,4 +1,7 @@
-import logging
+# Display more informative error messages
+# https://www.tutorialexample.com/fix-pyqt-gui-application-crashed-while-no-error-message-displayed-a-beginner-guide-pyqt-tutorial/
+import cgitb
+cgitb.enable(format='text')
 import napari
 import numpy as np
 import pandas as pd
