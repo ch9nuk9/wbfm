@@ -1,5 +1,8 @@
+import logging
 import threading
 import stardist.models
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
+
 import segmentation.util.utils_postprocessing as post
 import numpy as np
 from tqdm import tqdm
@@ -358,7 +361,11 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         print(f"After large area removal: {len(np.unique(masks)) - 1}")
 
     if not stitch_via_watershed:
-        stitched_masks, intermediates = post.bipartite_stitching(masks, verbose=verbose)
+        try:
+            stitched_masks, intermediates = post.bipartite_stitching(masks, verbose=verbose)
+        except NoMatchesError:
+            logging.warning("No between-plane matches found; skipping this volume")
+            return np.zeros_like(masks)
         if verbose >= 1:
             print(f"After stitching: {len(np.unique(stitched_masks)) - 1}")
         neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
