@@ -1,7 +1,9 @@
 # Display more informative error messages
 # https://www.tutorialexample.com/fix-pyqt-gui-application-crashed-while-no-error-message-displayed-a-beginner-guide-pyqt-tutorial/
 import cgitb
+import sys
 cgitb.enable(format='text')
+
 import napari
 import numpy as np
 import pandas as pd
@@ -737,6 +739,9 @@ def napari_trace_explorer(project_data: ProjectData,
                           to_print_fps: bool = False):
     """Current function for building the explorer (1/11/2022)"""
     print("Starting GUI setup")
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+
     ui = NapariTraceExplorer(project_data)
     # Build Napari and add widgets
     if viewer is None:
@@ -746,7 +751,9 @@ def napari_trace_explorer(project_data: ProjectData,
     ui.setupUi(viewer)
     viewer.window.add_dock_widget(ui)
     ui.show()
-    print("Finished GUI setup")
+
+    MainWindow.show()
+    print("Finished GUI setup. If nothing is showing, trying quitting and running again")
     if to_print_fps:
         # From: https://github.com/napari/napari/issues/836
         def fps_status(viewer, x):
