@@ -3,7 +3,7 @@
 import cgitb
 import logging
 
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QScrollArea
 
 logger = logging.getLogger('traceExplorerLogger')
 logger.setLevel(logging.INFO)
@@ -28,8 +28,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def __init__(self, project_data: ProjectData):
         super(QtWidgets.QWidget, self).__init__()
+        # self.verticalLayoutWidget = QtWidgets.QWidget(self)
+        # self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
+        self.scrollArea = QScrollArea(self.verticalLayoutWidget)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.scrollArea.setWidget(self.verticalLayoutWidget)
         self.dat = project_data
         logger.info("Finished initializing Trace Explorer object")
 
@@ -67,7 +71,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceTrackletDropdown.currentIndexChanged.connect(self.change_trace_tracklet_mode)
         self.vbox2.addWidget(self.changeTraceTrackletDropdown)
 
-        self.changeInteractivityCheckbox = QtWidgets.QCheckBox("Turn on interactivity?")
+        self.changeInteractivityCheckbox = QtWidgets.QCheckBox("Turn on interactivity? "
+                                                               "NOTE: only Raw_segmentation layer is interactive")
         self.changeInteractivityCheckbox.stateChanged.connect(self.update_interactivity)
         self.vbox2.addWidget(self.changeInteractivityCheckbox)
 
@@ -127,8 +132,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet attached to neuron")
         self.vbox4.addWidget(self.trackletHint1)
-        self.trackletHint2 = QtWidgets.QLabel("NOTE: only raw segmentation layer is interactive")
-        self.vbox4.addWidget(self.trackletHint2)
 
         self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
         self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
@@ -190,8 +193,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         ]
 
     def _setup_segmentation_correction_buttons(self):
-        # WIP
-        # TODO: way to turn these off!
         self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
         self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
 
@@ -201,11 +202,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationHint2 = QtWidgets.QLabel()
         self.splitSegmentationHint2.setText("Split using manual slice index")
         self.formlayout5.addRow("Alt-click:", self.splitSegmentationHint2)
-        self.splitSegmentationHint3 = QtWidgets.QLabel("Only raw segmentation layer is interactive")
-        self.formlayout5.addRow("NOTE:" , self.splitSegmentationHint3)
 
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
-        self.splitSegmentationManualSliceButton.setRange(2, 12)  # TODO: look at actual z depth of neuron
+        self.splitSegmentationManualSliceButton.setRange(1, 20)  # TODO: look at actual z depth of neuron
         self.splitSegmentationManualSliceButton.valueChanged.connect(self.update_segmentation_options)
         self.formlayout5.addRow("Manual slice index: ", self.splitSegmentationManualSliceButton)
 
@@ -238,8 +237,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationSaveButton2.pressed.connect(self.modify_segmentation_on_disk)
         self.formlayout5.addRow("Finalize all masks:", self.splitSegmentationSaveButton2)
 
-        self.saveSegmentationStatusLabel = QtWidgets.QLabel("STATUS: No segmentation loaded")
-        self.vbox4.addWidget(self.saveSegmentationStatusLabel)
+        self.saveSegmentationStatusLabel = QtWidgets.QLabel("No segmentation loaded")
+        self.formlayout5.addRow("STATUS: ", self.saveSegmentationStatusLabel)
 
         self.update_segmentation_options()
 
@@ -599,9 +598,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_segmentation_status_label(self):
         if self.dat.tracklet_annotator.indices_of_original_neurons is None:
-            update_string = "STATUS: No segmentations selected"
+            update_string = "No segmentations selected"
         else:
-            update_string = f"STATUS: Selected segmentations is/are: " \
+            update_string = f"Selected segmentations is/are: " \
                             f"{self.dat.tracklet_annotator.indices_of_original_neurons}"
         self.saveSegmentationStatusLabel.setText(update_string)
 
@@ -749,6 +748,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
     napari.run()
     app.exec_()
     logger.info("Quitting")
+    sys.exit()
 
 
 def napari_trace_explorer(project_data: ProjectData,
