@@ -40,4 +40,4 @@ def main(_config, _run):
     project_cfg = _config['cfg']
 
     with safe_cd(_config['project_dir']):
-        recalculate_metadata_from_config(segment_cfg, project_cfg, _config['DEBUG'])
+        recalculate_metadata_from_config(segment_cfg, project_cfg, name_mode='neuron', DEBUG=_config['DEBUG'])

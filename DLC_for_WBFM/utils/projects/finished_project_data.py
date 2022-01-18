@@ -68,7 +68,17 @@ class ProjectData:
         if self.precedence_tracks is None:
             self.precedence_tracks = track_cfg.config['precedence_tracks']
 
-    # Can be quite large, so don't read by default
+    @cached_property
+    def intermediate_global_tracks(self) -> pd.DataFrame:
+        tracking_cfg = self.project_config.get_tracking_config()
+
+        # Manual annotations take precedence by default
+        fname = tracking_cfg.config['leifer_params']['output_df_fname']
+        fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=False)
+
+        global_tracks = read_if_exists(fname)
+        return global_tracks
+
     @cached_property
     def final_tracks(self) -> pd.DataFrame:
         tracking_cfg = self.project_config.get_tracking_config()
@@ -473,8 +483,9 @@ class ProjectData:
 
     def add_layers_to_viewer(self, viewer, which_layers='all', to_remove_flyback=True):
         if which_layers == 'all':
-            which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation']
-        print("Finished loading data, starting napari...")
+            which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation',
+                            'Neuron ID', 'Intermediate global ID']
+        logging.info(f"Finished loading data, adding following layers: {which_layers}")
         if to_remove_flyback:
             clipping_list = [{'position': [2, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
         else:
@@ -488,14 +499,25 @@ class ProjectData:
             viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
-            viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
-        if self.segmentation is not None and 'Colored segmentation' in which_layers:
+            viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.8, visible=False)
+        if 'Colored segmentation' in which_layers and self.segmentation is not None:
             viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4, visible=False)
 
         # Add a text overlay
-        df = self.red_traces
-        options = napari_labels_from_traces_dataframe(df)
-        viewer.add_points(**options)
+        if 'Neuron ID' in which_layers:
+            df = self.red_traces
+            options = napari_labels_from_traces_dataframe(df)
+            viewer.add_points(**options)
+
+        if 'Intermediate global ID' in which_layers and self.intermediate_global_tracks is not None:
+            df = self.intermediate_global_tracks
+            options = napari_labels_from_traces_dataframe(df)
+            options['name'] = 'Intermediate global IDs'
+            options['text']['color'] = 'green'
+            options['visible'] = False
+            viewer.add_points(**options)
+
+        logging.info("Finished adding layers to napari")
 
     def __repr__(self):
         return f"=======================================\n\
@@ -503,19 +525,19 @@ Project data for directory:\n\
 {self.project_dir} \n\
 =======================================\n\
 Found the following raw data files:\n\
-red_data: {self.red_data is not None}\n\
-green_data: {self.green_data is not None}\n\
+red_data:                 {self.red_data is not None}\n\
+green_data:               {self.green_data is not None}\n\
 ============Segmentation===============\n\
-raw_segmentation: {self.raw_segmentation is not None}\n\
-segmentation: {self.segmentation is not None}\n\
+raw_segmentation:         {self.raw_segmentation is not None}\n\
+segmentation:             {self.segmentation is not None}\n\
 ============Tracklets==================\n\
-df_training_tracklets: {self.df_training_tracklets is not None}\n\
+df_training_tracklets:    {self.df_training_tracklets is not None}\n\
 reindexed_masks_training: {self.reindexed_masks_training is not None}\n\
 ============Traces=====================\n\
-red_traces: {self.red_traces is not None}\n\
-green_traces: {self.green_traces is not None}\n\
-final_tracks: {self.final_tracks is not None}\n\
-behavior_annotations: {self.behavior_annotations is not None}\n"
+red_traces:               {self.red_traces is not None}\n\
+green_traces:             {self.green_traces is not None}\n\
+final_tracks:             {self.final_tracks is not None}\n\
+behavior_annotations:     {self.behavior_annotations is not None}\n"
 
 
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:

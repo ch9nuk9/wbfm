@@ -7,7 +7,7 @@ import zarr
 from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from DLC_for_WBFM.utils.feature_detection.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
-    AnalysisOutOfOrderError, DeprecationError
+    AnalysisOutOfOrderError, DeprecationError, NoNeuronsError
 from DLC_for_WBFM.utils.feature_detection.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
@@ -69,7 +69,10 @@ class ReferenceFrame:
         return [key for key, val in iter_tmp if val == which_neuron]
 
     def num_neurons(self):
-        return self.neuron_locs.shape[0]
+        if self.neuron_locs is not None:
+            return self.neuron_locs.shape[0]
+        else:
+            return 0
 
     def get_raw_data(self) -> np.ndarray:
         if self._raw_data is None:
@@ -104,10 +107,10 @@ class ReferenceFrame:
             neuron_locs = detected_neurons.detect_neurons_from_file(i, numpy_not_list=False)
 
         if len(neuron_locs) == 0:
-            logging.warning("No neurons detected... check data settings")
-            # TODO: do not just raise an error, but instead skip rest of analysis
-            raise ValueError
+            raise NoNeuronsError("No neurons detected... check data settings")
+
         self.neuron_locs = neuron_locs
+        return neuron_locs
 
     def copy_neurons_to_keypoints(self):
         """ Explicitly a different method for backwards compatibility"""
@@ -315,7 +318,7 @@ class ReferenceFrame:
 
     def prep_for_pickle(self):
         """Deletes the cv2.Keypoints (the locations are stored though)"""
-        if len(self.keypoints) > 0:
+        if self.keypoints is not None and len(self.keypoints) > 0:
             # self.check_data_desyncing()
             self.keypoints = []
         self._raw_data = None
@@ -396,7 +399,11 @@ def build_reference_frame_encoding(metadata=None, all_detected_neurons: Detected
     frame = ReferenceFrame(**metadata, preprocessing_settings=None)
 
     # Build keypoints (in this case, neurons directly)
-    frame.detect_or_import_neurons(all_detected_neurons)
+    try:
+        frame.detect_or_import_neurons(all_detected_neurons)
+    except NoNeuronsError:
+        # TODO: does this cause later errors if there are no neurons?
+        return frame
     frame.copy_neurons_to_keypoints()
 
     # Calculate encodings

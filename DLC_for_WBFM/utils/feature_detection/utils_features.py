@@ -13,6 +13,8 @@ from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
 ##
 ## First, extract features and match
 ##
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoNeuronsError, NoMatchesError
+
 
 def convert_to_grayscale(im1):
     try:
@@ -587,8 +589,7 @@ def build_features_and_match_2volumes(dat0, dat1,
         all_match_offsets.append([len(all_locs0), len(all_locs1)])
 
     if len(all_matches) == 0:
-        logging.warning("No matches found on any planes; this probably means the z depth was set incorrectly or that "
-                        "this images are empty")
-        raise ValueError
+        raise NoMatchesError("No matches found on any planes; "
+                             "probably, the z depth was set incorrectly or these images are empty")
 
     return np.array(all_locs0), np.array(all_locs1), all_kp0, all_kp1, all_matches, all_match_offsets

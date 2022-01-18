@@ -7,11 +7,13 @@ from datetime import date
 
 # Experiment tracking
 import sacred
+
+from DLC_for_WBFM.utils.pipeline.traces_pipeline import extract_traces_of_training_data_from_config
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from sacred import Experiment
-from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format, \
+    modify_config_files_for_training_data
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 from segmentation.util.utils_metadata import recalculate_metadata_from_config
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
@@ -61,15 +63,10 @@ def produce_training_data(_config, _run):
         DEBUG=DEBUG
     )
 
-    # TODO
-    # Modify the config files so that we process the training data instead of the main masks
-    segment_cfg.config['output_masks'] = training_cfg.config['reindexed_masks']
-    segment_cfg.config['output_metadata'] = training_cfg.config['reindexed_metadata']
-    project_config.config['dataset_params']['num_frames'] = training_cfg.config['training_data_3d']['num_training_frames']
-    start_volume = training_cfg.config['training_data_3d']['which_frames'][0]
-    project_config.config['dataset_params']['start_volume'] = start_volume
+    modify_config_files_for_training_data(project_config, segment_cfg, training_cfg)
 
     with safe_cd(project_config.project_dir):
-        recalculate_metadata_from_config(segment_cfg, project_config, DEBUG)
+        recalculate_metadata_from_config(segment_cfg, project_config, name_mode='tracklet', DEBUG=DEBUG)
 
-        save_training_data_as_dlc_format(training_cfg, segment_cfg, DEBUG=DEBUG)
+        extract_traces_of_training_data_from_config(project_config, training_cfg)
+        # save_training_data_as_dlc_format(training_cfg, segment_cfg, DEBUG=DEBUG)

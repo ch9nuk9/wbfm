@@ -42,7 +42,12 @@ class ConfigFileWithProjectContext:
     def unresolve_absolute_path(self, val: str) -> str:
         if val is None:
             return None
-        return str(Path(val).relative_to(self.project_dir))
+        # NOTE: is_relative_to() only works for python >= 3.9
+        # if Path(val).is_relative_to(self.project_dir):
+        try:
+            return str(Path(val).relative_to(self.project_dir))
+        except ValueError:
+            return val
 
     def update_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)

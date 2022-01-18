@@ -293,6 +293,7 @@ def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
 ## Full pipeline function
 ##
 
+
 def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames: int = 10,
                              z_depth_neuron_encoding: float = 5.0,
                              preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
@@ -312,17 +313,16 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
         # TODO: better way to get datatype
         dtype = 'uint8'
 
-    # Build frames
+    # Build frames, then match them
     end_volume = start_volume + num_frames
     all_frame_dict = calculate_frame_objects_full_video(external_detections, start_volume, end_volume,
                                                         video_fname, z_depth_neuron_encoding)
 
-    # Match
-    if verbose >= 1:
-        print("Building initial frame...")
-    all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
-
-    return all_frame_pairs, all_frame_dict
+    try:
+        all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
+        return all_frame_pairs, all_frame_dict
+    finally:
+        return None, all_frame_dict
 
 
 def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume):

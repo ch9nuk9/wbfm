@@ -1,14 +1,15 @@
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import Dict
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence, MatchesAsGraph
+from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_standard_zxy_format
+from DLC_for_WBFM.utils.pipeline.matches_class import MatchesAsGraph
 from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron, int2name_deprecated
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
@@ -101,17 +102,16 @@ class DetectedTrackletsAndNeurons:
                                       nbr_obj: NearestNeighbors = None,
                                       nonnan_ind=None,
                                       verbose=0):
-        df_tracklets = self.df_tracklets_zxy
-        # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
+        df_tracklets = dataframe_to_standard_zxy_format(self.df_tracklets_zxy)
         all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))
 
         if any(np.isnan(target_pt)):
             dist, ind_global_coords, tracklet_name = np.inf, None, None
         else:
             if nbr_obj is None:
-                all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, 4))
+                all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, 3))
                 nonnan_ind = ~np.isnan(all_zxy).any(axis=1)
-                all_zxy = all_zxy[nonnan_ind][:, :3]
+                all_zxy = all_zxy[nonnan_ind]
                 if verbose >= 1:
                     print(f"Creating nearest neighbor object with {all_zxy.shape[0]} neurons")
                     print(f"And test point: {target_pt}")

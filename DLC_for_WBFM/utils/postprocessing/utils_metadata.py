@@ -1,21 +1,24 @@
 import concurrent
 from collections import defaultdict
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
 from skimage import measure
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_using_mode
 
 
 def region_props_all_volumes(reindexed_masks, red_video, green_video,
                              frame_list,
-                             params_start_volume):
+                             params_start_volume,
+                             name_mode) -> Tuple[dict, dict]:
     """
 
     Parameters
     ----------
+    name_mode
     reindexed_masks
     red_video
     green_video
@@ -51,7 +54,8 @@ def region_props_all_volumes(reindexed_masks, red_video, green_video,
         red_one_vol, green_one_vol = region_props_one_volume(
             this_mask_volume,
             this_red_volume,
-            this_green_volume
+            this_green_volume,
+            name_mode
         )
         red_all_neurons[i_volume] = red_one_vol
         green_all_neurons[i_volume] = green_one_vol
@@ -68,11 +72,13 @@ def region_props_all_volumes(reindexed_masks, red_video, green_video,
 
 def region_props_one_volume(this_mask_volume,
                             this_red_volume,
-                            this_green_volume):
+                            this_green_volume,
+                            name_mode):
     """
 
     Parameters
     ----------
+    name_mode
     this_green_volume
     this_mask_volume
     this_red_volume
@@ -84,20 +90,21 @@ def region_props_one_volume(this_mask_volume,
 
     """
     props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label']
-    red_neurons_one_volume = regionprops_one_volume_one_channel(this_mask_volume, this_red_volume, props_to_save)
-    green_neurons_one_volume = regionprops_one_volume_one_channel(this_mask_volume, this_green_volume, props_to_save)
+    opt = dict(name_mode=name_mode, props_to_save=props_to_save)
+    red_neurons_one_volume = regionprops_one_volume_one_channel(this_mask_volume, this_red_volume, **opt)
+    green_neurons_one_volume = regionprops_one_volume_one_channel(this_mask_volume, this_green_volume, **opt)
 
     return red_neurons_one_volume, green_neurons_one_volume
 
 
-def regionprops_one_volume_one_channel(mask, data, props_to_save):
+def regionprops_one_volume_one_channel(mask, data, props_to_save, name_mode):
     neurons_one_volume = {}
     props = measure.regionprops(mask, intensity_image=data)
 
     for this_neuron in props:
         seg_index = this_neuron['label']
         # final_index = mask2final_name[seg_index]
-        key_base = (int2name_neuron(seg_index),)
+        key_base = (int2name_using_mode(seg_index, name_mode),)
 
         for this_prop in props_to_save:
             key = key_base + (this_prop,)
@@ -109,7 +116,7 @@ def regionprops_one_volume_one_channel(mask, data, props_to_save):
     return neurons_one_volume
 
 
-def _convert_nested_dict_to_dataframe(coords, frame_list, nested_dict_all_neurons):
+def _convert_nested_dict_to_dataframe(coords: list, frame_list: list, nested_dict_all_neurons: dict):
     # Convert nested dict of volumes to final dataframes
     sz_one_neuron = len(frame_list)
     i_start = min(list(nested_dict_all_neurons.keys()))

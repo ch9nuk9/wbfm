@@ -12,6 +12,8 @@ import pandas as pd
 ##
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
+
 
 def create_new_track(i0, i1,
                      i0_xyz,
@@ -412,7 +414,8 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
     Expects DICT for pairwise_matches_dict
     """
-    assert len(pairwise_matches_dict) > 0, "No matches found"
+    if len(pairwise_matches_dict) == 0:
+        raise NoMatchesError("No matches found")
     assert len(list(pairwise_matches_dict.keys())[0]) == 2, "Dictionary should be indexed by a tuple"
     assert len(
         list(pairwise_matches_dict.values())) >= 2, "Dictionary should contain match indices, confidence optional"
@@ -453,7 +456,7 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
     clust_ind = 0
     if verbose >= 1:
         print(f"Searching through total possible matches: {total_possible_matches}")
-    with tqdm(total=total_possible_matches) as pbar:
+    with tqdm(total=total_possible_matches, leave=False) as pbar:
         while True:
             # Choose a starting point, and initialize lists
             match_key, i0, i1 = get_start_match(dict_of_match_dicts)

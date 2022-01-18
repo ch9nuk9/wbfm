@@ -1,4 +1,5 @@
 import logging
+import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable, List
@@ -60,7 +61,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
 
 def extract_traces_using_config(project_cfg: SubfolderConfigFile,
                                 traces_cfg: SubfolderConfigFile,
-                                DEBUG):
+                                name_mode='neuron',
+                                DEBUG=False):
     """
     Final step that loops through original data and extracts traces using labeled masks
     """
@@ -73,7 +75,8 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
         project_data.red_data,
         project_data.green_data,
         frame_list,
-        params_start_volume
+        params_start_volume,
+        name_mode
     )
 
     df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)
@@ -83,6 +86,35 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
     final_neuron_names = list(df_red.columns.levels[0])
 
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
+
+
+def extract_traces_of_training_data_from_config(project_cfg: SubfolderConfigFile,
+                                                training_cfg: SubfolderConfigFile,
+                                                name_mode='tracklet'):
+    """Principally used for positions, but the rest could be useful for quality control"""
+    # Note that the training config works with the same function as step 4c for getting the local masks
+    coords, reindexed_masks, frame_list, params_start_volume = \
+        _unpack_configs_for_extraction(project_cfg, training_cfg)
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+
+    red_all_neurons, green_all_neurons = region_props_all_volumes(
+        reindexed_masks,
+        project_data.red_data,
+        project_data.green_data,
+        frame_list,
+        params_start_volume,
+        name_mode
+    )
+
+    # Save as single final dataframe
+    df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)
+    df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
+    df_green_subset = df_green.loc(axis=1)[:, 'intensity_image'].copy()
+    df_green_subset.rename(mapper={'intensity_image': 'intensity_image_green'}, axis=1, level=1, inplace=True)
+    df_combined = df_red.join(df_green_subset)
+
+    fname = os.path.join("2-training_data", "training_data_tracks.h5")
+    training_cfg.h5_in_local_project(df_combined, fname, also_save_csv=True)
 
 
 def make_mask2final_mapping(all_matches: dict):
