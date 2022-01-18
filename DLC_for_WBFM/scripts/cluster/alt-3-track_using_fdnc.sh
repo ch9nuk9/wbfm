@@ -10,6 +10,7 @@
 # #SBATCH --cpus-per-task=8
 
 pwd; hostname; date
+module load cudnn/7.6.5
 
 while getopts t:n: flag
 do
