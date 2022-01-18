@@ -7,6 +7,8 @@ from datetime import date
 
 # Experiment tracking
 import sacred
+
+from DLC_for_WBFM.utils.pipeline.traces_pipeline import extract_traces_of_training_data_from_config
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from sacred import Experiment
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
@@ -66,4 +68,5 @@ def produce_training_data(_config, _run):
     with safe_cd(project_config.project_dir):
         recalculate_metadata_from_config(segment_cfg, project_config, name_mode='tracklet', DEBUG=DEBUG)
 
-        save_training_data_as_dlc_format(training_cfg, segment_cfg, DEBUG=DEBUG)
+        extract_traces_of_training_data_from_config(project_config, training_cfg)
+        # save_training_data_as_dlc_format(training_cfg, segment_cfg, DEBUG=DEBUG)

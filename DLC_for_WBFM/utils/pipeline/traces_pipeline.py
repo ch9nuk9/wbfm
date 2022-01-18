@@ -87,6 +87,33 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
 
 
+def extract_traces_of_training_data_from_config(project_cfg: SubfolderConfigFile,
+                                                training_cfg: SubfolderConfigFile,
+                                                name_mode='tracklet'):
+    """Principally used for positions, but the rest could be useful for quality control"""
+    # Note that the training config works with the same function as step 4c for getting the local masks
+    coords, reindexed_masks, frame_list, params_start_volume = \
+        _unpack_configs_for_extraction(project_cfg, training_cfg)
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+
+    red_all_neurons, green_all_neurons = region_props_all_volumes(
+        reindexed_masks,
+        project_data.red_data,
+        project_data.green_data,
+        frame_list,
+        params_start_volume,
+        name_mode
+    )
+
+    # Save as single final value
+    df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)
+    df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
+    df_combined = df_red
+    df_combined['intensity_image_green'] = df_green['intensity_image']
+
+    training_cfg.h5_in_local_project(df_combined, "training_data_tracks.h5", also_save_csv=True)
+
+
 def make_mask2final_mapping(all_matches: dict):
     mask2final_name_per_volume = {}
 
