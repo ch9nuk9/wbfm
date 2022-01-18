@@ -106,7 +106,7 @@ def template_matches_to_dataframe(project_data: ProjectData,
     new_dict = {}
     for i_template, data in neuron_arrays.items():
         for i_col, coord_name in enumerate(coords):
-            # Note: these neuron names are final for all subsequent steps
+            # NOTE: these neuron names are final for all subsequent steps
             k = (int2name_neuron(i_template + 1), coord_name)
             new_dict[k] = data[:, i_col]
 

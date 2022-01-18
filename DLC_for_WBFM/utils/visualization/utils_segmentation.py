@@ -238,6 +238,7 @@ def all_matches_to_lookup_tables(all_matches: dict, min_confidence=None) -> dict
 def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
                                             segment_cfg: SubfolderConfigFile,
                                             training_cfg: SubfolderConfigFile,
+                                            keep_raw_segmentation_index=True,
                                             DEBUG=False):
     """
     Using tracklets and full segmentation, produces a small video (zarr) with neurons colored by track
@@ -279,9 +280,12 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
             # i_tracklet = neuron_df['all_ind_local'][i].astype(int)
             i_tracklet = int(neuron_df['all_ind_local'][i])
             seg_ind = segmentation_metadata[i_frame].index[i_tracklet].astype(int)
-            # Do keep the (very large) index from the tracklet df
-            global_ind = neuron_df['clust_ind'] + 1
-            # global_ind = i_row + 1
+            if keep_raw_segmentation_index:
+                # Do keep the (very large) index from the tracklet df
+                global_ind = neuron_df['clust_ind'] + 1
+            else:
+                # These will NOT be the final names of the neurons if fdnc is used
+                global_ind = i_row + 1
             matches.append([global_ind, seg_ind])
         all_matches[i_frame] = np.array(matches)
 
