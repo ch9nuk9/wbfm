@@ -82,10 +82,10 @@ def OLD_get_metadata_dictionary(masks, original_vol):
     return df
 
 
-def get_metadata_dictionary(masks, original_vol):
+def get_metadata_dictionary(masks, original_vol, name_mode='neuron'):
 
     props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label']
-    props = regionprops_one_volume_one_channel(masks, original_vol, props_to_save)
+    props = regionprops_one_volume_one_channel(masks, original_vol, props_to_save, name_mode=name_mode)
 
     # Convert back to old (Niklas) style
     dict_of_rows = defaultdict(list)
@@ -222,7 +222,7 @@ class DetectedNeurons:
         return np.array(self.segmentation_metadata[i_time].iloc[seg_index]['centroids'])
 
 
-def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
+def recalculate_metadata_from_config(segment_cfg, project_cfg, name_mode, DEBUG=False):
     """
 
     Given a project that contains a segmentation, recalculate the metadata
@@ -254,11 +254,12 @@ def recalculate_metadata_from_config(segment_cfg, project_cfg, DEBUG=False):
     if DEBUG:
         frame_list = frame_list[:2]
 
-    calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
+    calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname, name_mode=name_mode)
 
 
 def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat: zarr.Array,
-                             metadata_fname: str) -> None:
+                             metadata_fname: str,
+                             name_mode='neuron') -> None:
     """
     Calculates metadata once segmentation is finished
 
@@ -266,6 +267,7 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
 
     Parameters
     ----------
+    name_mode
     frame_list
     masks_zarr
     video_dat
@@ -287,7 +289,7 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
             i_mask, i_vol = i_both
             masks = masks_zarr[i_mask, :, :, :]
             volume = video_dat[i_vol, ...]
-            metadata[i_vol] = get_metadata_dictionary(masks, volume)
+            metadata[i_vol] = get_metadata_dictionary(masks, volume, name_mode=name_mode)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
             futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
