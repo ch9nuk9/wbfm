@@ -21,9 +21,13 @@ do
 done
 
 CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/3a-track_using_fdnc.py"
+LOG="fdnc_tracking.log"
 
 if [ "$is_dry_run" ]; then
-  echo "Dry run with command: $CMD with project_path=$project_path"
+  echo "Dry run with command: $CMD with project_path=$project_path" > $LOG
 else
   python $CMD with project_path="$project_path"
 fi
+
+date
+echo "Finished"
