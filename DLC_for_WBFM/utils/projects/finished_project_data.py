@@ -500,7 +500,7 @@ class ProjectData:
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
             viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
-        if self.segmentation is not None and 'Colored segmentation' in which_layers:
+        if 'Colored segmentation' in which_layers and self.segmentation is not None:
             viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4, visible=False)
 
         # Add a text overlay
@@ -509,7 +509,7 @@ class ProjectData:
             options = napari_labels_from_traces_dataframe(df)
             viewer.add_points(**options)
 
-        if 'Intermediate global ID' in which_layers:
+        if 'Intermediate global ID' in which_layers and self.intermediate_global_tracks is not None:
             df = self.intermediate_global_tracks
             options = napari_labels_from_traces_dataframe(df)
             options['name'] = 'Intermediate global IDs'

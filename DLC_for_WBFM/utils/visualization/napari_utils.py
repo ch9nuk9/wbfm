@@ -57,7 +57,7 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
             elif 'label' in df[n]:
                 label_vec = [cast_int_or_nan(i) for i in df[n]['label']]
             else:
-                label_vec = [name2int_neuron(name) for name in all_neurons]
+                label_vec = [name2int_neuron(n) for _ in range(t_vec.shape[0])]
 
         all_t_zxy = np.vstack([all_t_zxy, t_zxy])
         properties['label'].extend(label_vec)
