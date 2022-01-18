@@ -464,31 +464,11 @@ class TrackletAndSegmentationAnnotator:
                 [callback() for callback in self.refresh_callbacks]
                 return
 
-            # if 'alt' in [m.name.lower() for m in event.modifiers]:
-            #     split_method = "Manual"
-            # elif 'control' in [m.name.lower() for m in event.modifiers]:
-            #     split_method = "Gaussian"
-            # else:
-            #     split_method = None
-            # segment_mode_not_tracklet_mode = split_method is not None
-            # 
-            # if segment_mode_not_tracklet_mode:
-            #     self.split_current_neuron_and_add_napari_layer(viewer, split_method)
-            # 
-            #     return
-            # else:
-            #     logging.info("Tracklet segmentation-click interaction triggered")
-
             # Split tracklet, not segmentation
             dist, ind, tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
                 i_time=time_index,
                 seg_ind=seg_index
             )
-            # dist, ind, tracklet_name = self.get_closest_tracklet_to_point(
-            #     i_time=int(event.position[0]),
-            #     target_pt=event.position[1:],
-            #     verbose=1
-            # )
 
             dist = dist[0][0]
             if self.verbose >= 1:
@@ -497,7 +477,6 @@ class TrackletAndSegmentationAnnotator:
             if dist < max_dist:
                 self.current_tracklet_name = tracklet_name
                 if self.current_neuron is not None:
-                    # self.manual_global2tracklet_names[self.current_neuron].append(tracklet_name)
                     [callback() for callback in self.refresh_callbacks]
 
                 df_single_track = self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]
