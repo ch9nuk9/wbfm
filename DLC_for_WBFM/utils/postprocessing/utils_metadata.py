@@ -1,18 +1,19 @@
 import concurrent
 from collections import defaultdict
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
 from skimage import measure
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, int2name_using_mode
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_using_mode
 
 
 def region_props_all_volumes(reindexed_masks, red_video, green_video,
                              frame_list,
                              params_start_volume,
-                             name_mode):
+                             name_mode) -> Tuple[dict, dict]:
     """
 
     Parameters
@@ -115,7 +116,7 @@ def regionprops_one_volume_one_channel(mask, data, props_to_save, name_mode):
     return neurons_one_volume
 
 
-def _convert_nested_dict_to_dataframe(coords, frame_list, nested_dict_all_neurons):
+def _convert_nested_dict_to_dataframe(coords: list, frame_list: list, nested_dict_all_neurons: dict):
     # Convert nested dict of volumes to final dataframes
     sz_one_neuron = len(frame_list)
     i_start = min(list(nested_dict_all_neurons.keys()))

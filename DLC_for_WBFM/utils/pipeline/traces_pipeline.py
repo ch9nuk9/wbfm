@@ -1,4 +1,5 @@
 import logging
+import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable, List
@@ -105,13 +106,15 @@ def extract_traces_of_training_data_from_config(project_cfg: SubfolderConfigFile
         name_mode
     )
 
-    # Save as single final value
+    # Save as single final dataframe
     df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)
     df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
-    df_combined = df_red
-    df_combined['intensity_image_green'] = df_green['intensity_image']
+    df_green_subset = df_green.loc(axis=1)[:, 'intensity_image'].copy()
+    df_green_subset.rename(mapper={'intensity_image': 'intensity_image_green'}, axis=1, level=1, inplace=True)
+    df_combined = df_red.join(df_green_subset)
 
-    training_cfg.h5_in_local_project(df_combined, "training_data_tracks.h5", also_save_csv=True)
+    fname = os.path.join("2-training_data", "training_data_tracks.h5")
+    training_cfg.h5_in_local_project(df_combined, fname, also_save_csv=True)
 
 
 def make_mask2final_mapping(all_matches: dict):
