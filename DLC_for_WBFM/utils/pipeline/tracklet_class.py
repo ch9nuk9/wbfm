@@ -104,12 +104,13 @@ class DetectedTrackletsAndNeurons:
         df_tracklets = self.df_tracklets_zxy
         # target_pt = df_tracks[which_neuron].iloc[i_time][:3]
         all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))
+        num_columns = len(df_tracklets[all_tracklet_names[0]].columns)
 
         if any(np.isnan(target_pt)):
             dist, ind_global_coords, tracklet_name = np.inf, None, None
         else:
             if nbr_obj is None:
-                all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, 4))
+                all_zxy = np.reshape(df_tracklets.iloc[i_time, :].to_numpy(), (-1, num_columns))
                 nonnan_ind = ~np.isnan(all_zxy).any(axis=1)
                 all_zxy = all_zxy[nonnan_ind][:, :3]
                 if verbose >= 1:
