@@ -200,11 +200,14 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> None:
     subfolder = osp.join('2-training_data', 'raw')
     Path(subfolder).mkdir(exist_ok=True)
-    fname = osp.join(subfolder, 'match_dat.pickle')
-    [p.prep_for_pickle() for p in all_frame_pairs.values()]
-    with open(fname, 'wb') as f:
-        pickle.dump(all_frame_pairs, f)
+
     fname = osp.join(subfolder, 'frame_dat.pickle')
     [frame.prep_for_pickle() for frame in all_frame_dict.values()]
     with open(fname, 'wb') as f:
         pickle.dump(all_frame_dict, f)
+
+    if all_frame_pairs is not None:
+        fname = osp.join(subfolder, 'match_dat.pickle')
+        [p.prep_for_pickle() for p in all_frame_pairs.values()]
+        with open(fname, 'wb') as f:
+            pickle.dump(all_frame_pairs, f)
