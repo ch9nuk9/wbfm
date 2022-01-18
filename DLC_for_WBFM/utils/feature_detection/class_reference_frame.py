@@ -69,7 +69,10 @@ class ReferenceFrame:
         return [key for key, val in iter_tmp if val == which_neuron]
 
     def num_neurons(self):
-        return self.neuron_locs.shape[0]
+        if self.neuron_locs is not None:
+            return self.neuron_locs.shape[0]
+        else:
+            return 0
 
     def get_raw_data(self) -> np.ndarray:
         if self._raw_data is None:

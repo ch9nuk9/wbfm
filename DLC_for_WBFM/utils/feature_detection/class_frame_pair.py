@@ -168,7 +168,7 @@ class FramePair:
     def check_both_frames_valid(self):
         """For now, just check the number of neurons detected in the frames"""
         is_valid = True
-        if self.num_possible_matches == 0:
+        if self.num_possible_matches == 0 or np.isnan(self.num_possible_matches):
             is_valid = False
         return is_valid
 
