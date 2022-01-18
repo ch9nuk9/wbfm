@@ -499,7 +499,7 @@ class ProjectData:
             viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
-            viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.4, visible=False)
+            viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.8, visible=False)
         if 'Colored segmentation' in which_layers and self.segmentation is not None:
             viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4, visible=False)
 
@@ -513,7 +513,7 @@ class ProjectData:
             df = self.intermediate_global_tracks
             options = napari_labels_from_traces_dataframe(df)
             options['name'] = 'Intermediate global IDs'
-            options['text']['color'] = 'black'
+            options['text']['color'] = 'green'
             options['visible'] = False
             viewer.add_points(**options)
 
