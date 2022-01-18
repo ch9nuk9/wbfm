@@ -60,7 +60,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
 
 def extract_traces_using_config(project_cfg: SubfolderConfigFile,
                                 traces_cfg: SubfolderConfigFile,
-                                DEBUG):
+                                name_mode='neuron',
+                                DEBUG=False):
     """
     Final step that loops through original data and extracts traces using labeled masks
     """
@@ -73,7 +74,8 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
         project_data.red_data,
         project_data.green_data,
         frame_list,
-        params_start_volume
+        params_start_volume,
+        name_mode
     )
 
     df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)

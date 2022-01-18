@@ -682,3 +682,13 @@ def build_dlc_annotation_one_dlc3d_subset(row,
     frame = pd.DataFrame(coords, columns=m_index, index=index)
 
     return frame
+
+
+def modify_config_files_for_training_data(project_config, segment_cfg, training_cfg):
+    # Modify the config files so that we process the training data instead of the main masks
+    segment_cfg.config['output_masks'] = training_cfg.config['reindexed_masks']
+    segment_cfg.config['output_metadata'] = training_cfg.config['reindexed_metadata']
+    project_config.config['dataset_params']['num_frames'] = training_cfg.config['training_data_3d'][
+        'num_training_frames']
+    start_volume = training_cfg.config['training_data_3d']['which_frames'][0]
+    project_config.config['dataset_params']['start_volume'] = start_volume
