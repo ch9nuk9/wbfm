@@ -335,7 +335,7 @@ def build_subset_df_from_tracklets(clust_df,
             del which_neurons_dict[i]
     which_neurons_df = sub_df[to_keep]
     if verbose >= 1:
-        print(f"Keeping {len(which_neurons_df)}/{len(clust_df)} tracklets")
+        print(f"Keeping {len(which_neurons_df)}/{len(clust_df)} tracklets as identifiable neurons")
     if len(which_neurons_df) == 0:
         # Preserve dataframe format
         return which_neurons_df
