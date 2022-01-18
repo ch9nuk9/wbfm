@@ -68,7 +68,17 @@ class ProjectData:
         if self.precedence_tracks is None:
             self.precedence_tracks = track_cfg.config['precedence_tracks']
 
-    # Can be quite large, so don't read by default
+    @cached_property
+    def intermediate_global_tracks(self) -> pd.DataFrame:
+        tracking_cfg = self.project_config.get_tracking_config()
+
+        # Manual annotations take precedence by default
+        fname = tracking_cfg.config['leifer_params']['output_df_fname']
+        fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=False)
+
+        global_tracks = read_if_exists(fname)
+        return global_tracks
+
     @cached_property
     def final_tracks(self) -> pd.DataFrame:
         tracking_cfg = self.project_config.get_tracking_config()
@@ -473,7 +483,8 @@ class ProjectData:
 
     def add_layers_to_viewer(self, viewer, which_layers='all', to_remove_flyback=True):
         if which_layers == 'all':
-            which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation']
+            which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation',
+                            'Neuron ID', 'Intermediate global ID']
         logging.info(f"Finished loading data, adding following layers: {which_layers}")
         if to_remove_flyback:
             clipping_list = [{'position': [2, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
@@ -493,9 +504,16 @@ class ProjectData:
             viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4, visible=False)
 
         # Add a text overlay
-        df = self.red_traces
-        options = napari_labels_from_traces_dataframe(df)
-        viewer.add_points(**options)
+        if 'Neuron ID' in which_layers:
+            df = self.red_traces
+            options = napari_labels_from_traces_dataframe(df)
+            viewer.add_points(**options)
+
+        if 'Intermediate global ID' in which_layers:
+            df = self.intermediate_global_tracks
+            options = napari_labels_from_traces_dataframe(df)
+            options['name'] = 'Intermediate global IDs'
+            viewer.add_points(**options)
 
         logging.info("Finished adding layers to napari")
 
