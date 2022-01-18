@@ -513,6 +513,8 @@ class ProjectData:
             df = self.intermediate_global_tracks
             options = napari_labels_from_traces_dataframe(df)
             options['name'] = 'Intermediate global IDs'
+            options['text']['color'] = 'black'
+            options['visible'] = False
             viewer.add_points(**options)
 
         logging.info("Finished adding layers to napari")
