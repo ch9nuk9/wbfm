@@ -500,7 +500,11 @@ class FramePair:
                        min_matches=obj.min_matches,
                        allow_z_change=obj.allow_z_change,
                        num_candidates=obj.affine_num_candidates)
-            self._match_using_local_affine(**opt)
+            try:
+                self._match_using_local_affine(**opt)
+            except NoMatchesError:
+                # Probably just a low quality image, no major problem
+                return
 
     def _match_using_local_affine(self, start_plane,
                                   num_features_per_plane,
