@@ -137,6 +137,11 @@ def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None):
         to_remove = np.zeros_like(zxy_array[:, 0], dtype=bool)
     zxy_array[to_remove, :] = 0
 
+    # Also remove values that are entirely nan
+    rows_not_nan = ~(np.isnan(zxy_array)[:, 0])
+    zxy_array = zxy_array[rows_not_nan, :]
+    t_array = t_array[rows_not_nan, :]
+
     all_tracks_list.append(np.hstack([t_array, zxy_array]))
     all_tracks_array = np.vstack(all_tracks_list)
 
