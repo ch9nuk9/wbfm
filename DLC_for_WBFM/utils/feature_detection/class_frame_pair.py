@@ -165,6 +165,13 @@ class FramePair:
             vec_field.append(pts1[m[1]] - pts0[m[0]])
         return np.array(vec_field), pts0, pts1
 
+    def check_both_frames_valid(self):
+        """For now, just check the number of neurons detected in the frames"""
+        is_valid = True
+        if self.num_possible_matches == 0:
+            is_valid = False
+        return is_valid
+
     def load_raw_data(self, dat0=None, dat1=None):
         if dat0 is None:
             _ = self.dat0
@@ -609,6 +616,9 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame, frame1: ReferenceFrame, f
 
     # Create class, then call member functions
     frame_pair = FramePair(options=frame_pair_options, frame0=frame0, frame1=frame1)
+    if not frame_pair.check_both_frames_valid():
+        # In particular, no neurons detected in at least one frame
+        return frame_pair
     # Core matching algorithm
     frame_pair.match_using_feature_embedding()
 
