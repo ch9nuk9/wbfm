@@ -48,7 +48,7 @@ In total, you will install 4 things: 2 environments and 2 custom packages
 
 1. Red channel (tracking) in a single bigtiff file
 2. Green channel (signal) in a single bigtiff file
-3. 2 conda environments (see main README for installation instructions)
+3. 2 conda environments (see above for installation instructions)
 
 ## Full workflow with commands and approximate times
 
