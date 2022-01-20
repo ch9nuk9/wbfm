@@ -106,7 +106,10 @@ class FramePair:
 
     @property
     def all_candidate_matches(self) -> list:
-        all_matches = self.feature_matches.copy()
+        if self.feature_matches is not None:
+            all_matches = self.feature_matches.copy()
+        else:
+            all_matches = []
         if self.options.add_affine_to_candidates:
             if self.affine_matches is not None:
                 all_matches.extend(self.affine_matches)
