@@ -320,7 +320,7 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
     try:
         all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
         return all_frame_pairs, all_frame_dict
-    except [ValueError, NoNeuronsError, NoMatchesError] as e:
+    except (ValueError, NoNeuronsError, NoMatchesError) as e:
         logging.warning("Error in frame pair matching; quitting gracefully and saving the frame pairs:")
         print(e)
     finally:

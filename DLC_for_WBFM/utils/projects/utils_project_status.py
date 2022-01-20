@@ -57,7 +57,7 @@ def check_tracking(project_path):
         all_exist = map(osp.exists, all_to_check)
 
         return all(all_exist)
-    except AssertionError:
+    except (AssertionError, TypeError):
         return False
 
 
