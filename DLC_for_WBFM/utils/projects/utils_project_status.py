@@ -1,7 +1,7 @@
 import os.path as osp
 from pathlib import Path
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, get_project_of_substep
 
 

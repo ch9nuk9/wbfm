@@ -12,7 +12,7 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 # main function
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import update_all_pose_configs
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False

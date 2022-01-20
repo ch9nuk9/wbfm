@@ -3,26 +3,17 @@ import logging
 import os
 import pickle
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Tuple, Dict
+from pathlib import Path
+from typing import Tuple
 
-import numpy as np
 import pandas as pd
 import pprint
 
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePairOptions
-from DLC_for_WBFM.utils.feature_detection.custom_errors import UnknownValueError
 from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
+from DLC_for_WBFM.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config, get_sequential_filename
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-
-
-def check_exists(abs_path, allow_overwrite):
-    if Path(abs_path).exists():
-        if allow_overwrite:
-            logging.warning("Overwriting existing file")
-        else:
-            raise FileExistsError
 
 
 @dataclass
@@ -180,52 +171,6 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return Path(resolve_mounted_path_in_current_os(self.config[key]))
 
 
-def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
-    """
-    Removes windows-specific mounted drive names (Y:, D:, etc.) and replaces them with the networked system equivalent
-
-    Does nothing if the path is relative
-
-    Note: This is specific to the Zimmer lab, as of 23.06.2021 (at the IMP)
-    """
-    is_abs = PurePosixPath(path).is_absolute() or PureWindowsPath(path).is_absolute()
-    if not is_abs:
-        return path
-
-    if verbose >= 1:
-        print(f"Checking path {path} on os {os.name}...")
-
-    # Swap mounted drive locations
-    # UPDATE REGULARLY
-    mounted_drive_dict = {
-        'Y:': "/groups/zimmer"
-    }
-
-    for win_drive, linux_drive in mounted_drive_dict.items():
-        is_linux = "ix" in os.name.lower()
-        is_windows_style = path.startswith(win_drive)
-        is_windows = os.name.lower() == "windows" or os.name.lower() == "nt"
-        is_linux_style = path.startswith(linux_drive)
-
-        if is_linux and is_windows_style:
-            path = path.replace(win_drive, linux_drive)
-            path = str(Path(path).resolve())
-        if is_windows and is_linux_style:
-            path = path.replace(linux_drive, win_drive)
-            path = str(Path(path).resolve())
-
-    # Check for unreachable local drives
-    local_drives = ['C:', 'D:']
-    if "ix" in os.name.lower():
-        for drive in local_drives:
-            if path.startswith(drive):
-                raise FileNotFoundError("File mounted to local drive; network system can't find it")
-
-    if verbose >= 1:
-        print(f"Resolved path to {path}")
-    return path
-
-
 def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
     # For now, does NOT overwrite anything on disk
     project_cfg = load_config(project_path)
@@ -251,66 +196,3 @@ def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> Subfolde
     train_cfg.config['tracker_params']['external_detections'] = metadata_path
 
     return train_cfg
-
-
-def read_if_exists(filename, reader=pd.read_hdf):
-    if filename is None:
-        return None
-    elif os.path.exists(filename):
-        return reader(filename)
-    else:
-        logging.warning(f"Did not find file {filename}")
-        return None
-
-
-def pickle_load_binary(fname):
-    with open(fname, 'rb') as f:
-        dat = pickle.load(f)
-    return dat
-
-
-def lexigraphically_sort(strs_with_numbers):
-    # From: https://stackoverflow.com/questions/35728760/python-sorting-string-numbers-not-lexicographically
-    # Note: works with strings like 'neuron0' 'neuron10' etc.
-    return sorted(sorted(strs_with_numbers), key=len)
-
-
-def load_file_according_to_precedence(fname_precedence: list,
-                                      possible_fnames: Dict[str, str],
-                                      this_reader: callable = read_if_exists):
-    most_recent_modified_key = get_most_recently_modified(possible_fnames)
-
-    for i, key in enumerate(fname_precedence):
-        if key in possible_fnames:
-            fname = possible_fnames[key]
-        elif key == 'newest':
-            fname = possible_fnames[most_recent_modified_key]
-        else:
-            raise UnknownValueError(key)
-
-        if fname is not None and Path(fname).exists():
-            data = this_reader(fname)
-            logging.info(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
-            logging.info(f"Read data from: {fname}")
-            if key != most_recent_modified_key:
-                logging.warning(f"Not using most recently modified file (mode {most_recent_modified_key})")
-            else:
-                logging.info(f"Using most recently modified file")
-            break
-    else:
-        logging.info(f"Found no files of possibilities: {possible_fnames}")
-        data = None
-    return data
-
-
-def get_most_recently_modified(possible_fnames: Dict[str, str]) -> str:
-    all_mtimes, all_keys = [], []
-    for k, f in possible_fnames.items():
-        if f is not None and os.path.exists(f):
-            all_mtimes.append(os.path.getmtime(f))
-        else:
-            all_mtimes.append(0.0)
-        all_keys.append(k)
-    most_recent_modified = np.argmax(all_mtimes)
-    most_recent_modified_key = all_keys[most_recent_modified]
-    return most_recent_modified_key

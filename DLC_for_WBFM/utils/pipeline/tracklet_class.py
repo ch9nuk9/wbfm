@@ -8,7 +8,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_standard_zxy_format
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesAsGraph
-from DLC_for_WBFM.utils.projects.utils_filepaths import lexigraphically_sort
+from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors

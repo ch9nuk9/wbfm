@@ -10,7 +10,7 @@ from sacred.observers import TinyDbObserver
 
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_dlc_training_from_tracklets
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

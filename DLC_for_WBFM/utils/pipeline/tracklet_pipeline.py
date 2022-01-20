@@ -9,8 +9,8 @@ from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePairOptions
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile, \
-    pickle_load_binary
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_scalar_format
 

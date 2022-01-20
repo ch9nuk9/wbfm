@@ -11,7 +11,8 @@ import zarr
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, ModularProjectConfig, pickle_load_binary
+from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
+from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames

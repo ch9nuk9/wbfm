@@ -7,7 +7,7 @@ from tqdm import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet
 
 

@@ -16,7 +16,7 @@ from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_
     modify_config_files_for_training_data
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 from segmentation.util.utils_metadata import recalculate_metadata_from_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 
 from sacred import SETTINGS
 SETTINGS.CAPTURE_MODE = 'sys' # Capture stdout

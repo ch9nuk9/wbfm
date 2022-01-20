@@ -12,7 +12,7 @@ from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrde
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
     build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC
 from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
 from DLC_for_WBFM.utils.pipeline.paths_to_external_resources import get_pretrained_network_path
 
 ##

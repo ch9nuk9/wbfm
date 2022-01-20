@@ -16,7 +16,7 @@ import napari
 import zarr
 from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer_from_config
 from PyQt5 import QtCore, QtWidgets
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd

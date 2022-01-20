@@ -3,7 +3,7 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.tests.global_vars_for_tests import project_path
 import pytest
 

@@ -12,7 +12,7 @@ from tqdm import tqdm
 from DLC_for_WBFM.utils.postprocessing.utils_metadata import region_props_all_volumes, _convert_nested_dict_to_dataframe
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 
 
 def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,

@@ -17,7 +17,7 @@ from tqdm.auto import tqdm
 import torch
 
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 
 default_package_path = "/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID"
