@@ -193,10 +193,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
 
         self.splitSegmentationHint1 = QtWidgets.QLabel()
-        self.splitSegmentationHint1.setText("Split Automatically")
+        self.splitSegmentationHint1.setText("Select segmentation")
         self.formlayout5.addRow("Control-click:", self.splitSegmentationHint1)
         self.splitSegmentationHint2 = QtWidgets.QLabel()
-        self.splitSegmentationHint2.setText("Split using manual slice index")
+        self.splitSegmentationHint2.setText("Select segmentation and try to split")
         self.formlayout5.addRow("Alt-click:", self.splitSegmentationHint2)
 
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
@@ -596,7 +596,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.dat.tracklet_annotator.indices_of_original_neurons is None:
             update_string = "No segmentations selected"
         else:
-            update_string = f"Selected segmentations is/are: " \
+            update_string = f"Selected segmentation(s): " \
                             f"{self.dat.tracklet_annotator.indices_of_original_neurons}"
         self.saveSegmentationStatusLabel.setText(update_string)
 
