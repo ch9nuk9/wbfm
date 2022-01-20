@@ -1,5 +1,4 @@
 import logging
-import random
 from collections import defaultdict
 from typing import Tuple, Dict
 import concurrent.futures
@@ -17,19 +16,18 @@ from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_ne
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, \
     match_centroids_using_tree
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name, \
-    calc_bipartite_matches
+from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import add_all_good_components, \
     is_ordered_subset
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 from segmentation.util.utils_metadata import DetectedNeurons
 
 ##
 ## Full pipeline
 ##
+
 
 def track_neurons_two_volumes(dat0,
                               dat1,
