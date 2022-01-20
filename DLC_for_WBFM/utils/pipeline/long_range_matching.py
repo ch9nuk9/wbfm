@@ -35,7 +35,7 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
     # Get all tracklets that start at t=0
     all_tracklet_names = df_tracklets.columns.get_level_values(0).drop_duplicates()
 
-    worm_obj = initialize_worm_object(all_tracklet_names, df_tracklets, raw_clust, segmentation_metadata)
+    worm_obj = initialize_worm_object(df_tracklets, raw_clust, segmentation_metadata)
 
     all_long_range_matches = extend_tracks_using_similar_postures(all_frames, frame_pair_options,
                                                                   reference_posture, verbose, worm_obj)
@@ -125,18 +125,12 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
     return all_long_range_matches
 
 
-def initialize_worm_object(all_tracklet_names, df_tracklets, raw_clust, segmentation_metadata):
+def initialize_worm_object(df_tracklets, raw_clust, segmentation_metadata):
     detections = DetectedTrackletsAndNeurons(df_tracklets,
                                              segmentation_metadata,
                                              df_tracklet_matches=raw_clust)
     worm_obj = TrackedWorm(detections=detections, verbose=1)
-    for i, name in enumerate(all_tracklet_names):
-        tracklet = df_tracklets[[name]]
-        # Assume tracklets are ordered, such that the first tracklet which starts at t>0 mean all the rest do
-        if np.isnan(tracklet[name]['z'].iloc[0]):
-            break
-        new_neuron = worm_obj.initialize_new_neuron()
-        new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
+    worm_obj.initialize_neurons_at_time_0()
     return worm_obj
 
 

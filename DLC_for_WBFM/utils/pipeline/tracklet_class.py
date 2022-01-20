@@ -179,6 +179,15 @@ class TrackedWorm:
 
         return new_neuron
 
+    def initialize_neurons_at_time_0(self):
+        for i, name in enumerate(self.detections.all_tracklet_names):
+            tracklet = self.detections.df_tracklets_zxy[name]
+            # Assume tracklets are ordered, such that the first tracklet which starts at t>0 mean all the rest do
+            if np.isnan(tracklet[name]['z'].iloc[0]):
+                break
+            new_neuron = self.initialize_new_neuron()
+            new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
+
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
 

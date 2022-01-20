@@ -161,16 +161,18 @@ class ProjectData:
         training_cfg = self.project_config.get_training_config()
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
 
-        tracklet_obj = DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata)
-
         obj = TrackletAndSegmentationAnnotator(
-            tracklet_obj,
+            self.tracklets_and_neurons_class,
             self.global2tracklet,
             segmentation_metadata=self.segmentation_metadata,
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg
         )
         return obj
+
+    @cached_property
+    def tracklets_and_neurons_class(self):
+        return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata)
 
     @cached_property
     def df_fdnc_tracks(self):
