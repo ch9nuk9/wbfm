@@ -11,6 +11,7 @@ import pandas as pd
 import pprint
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import UnknownValueError
+from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config, get_sequential_filename
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
 
@@ -141,6 +142,13 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     def get_traces_config(self):
         fname = Path(self.config['subfolder_configs']['traces'])
         return SubfolderConfigFile(*self._check_path_and_load_config(fname))
+
+    def get_physical_unit_conversion_class(self):
+        if 'physical_units' in self.config:
+            return PhysicalUnitConversion(**self.config['physical_units'])
+        else:
+            logging.warning("Using default physical unit conversions")
+            return PhysicalUnitConversion()
 
     def _check_path_and_load_config(self, subconfig_path: Path) -> Tuple[str, dict, str, str]:
         if subconfig_path.is_absolute():

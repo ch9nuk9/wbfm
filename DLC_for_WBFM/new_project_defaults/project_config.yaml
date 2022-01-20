@@ -30,6 +30,9 @@ dataset_params:
   # As of April 2021
   red_and_green_mirrored: True
 
+physical_units:
+  zimmer_um_per_pixel_z: 1.0  # in um; CHANGE ME
+
 ###################
 # Project status and steps
 ###################
