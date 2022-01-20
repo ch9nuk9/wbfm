@@ -229,7 +229,8 @@ class FramePair:
 
     def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None,
                                                     z_threshold=None) -> list:
-        assert len(self.all_candidate_matches) > 0, "No candidate matches!"
+        if len(self.all_candidate_matches) == 0:
+            return []
         z_threshold, min_confidence = self.use_defaults_if_none(min_confidence, z_threshold)
 
         try:
@@ -244,7 +245,8 @@ class FramePair:
 
     def calc_final_matches_using_unanimous_voting(self, min_confidence: float = None,
                                                   z_threshold=None) -> list:
-        assert len(self.all_candidate_matches) > 0, "No candidate matches!"
+        if len(self.all_candidate_matches) == 0:
+            return []
         z_threshold, min_confidence = self.use_defaults_if_none(min_confidence, z_threshold)
 
         candidates = self.all_candidate_matches
