@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#SBATCH --job-name=combine_tracks
+#SBATCH --job-name=combine_tracklets
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --time=4:00:00
@@ -18,7 +18,7 @@ do
     esac
 done
 
-CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/3b-combine_tracklets_and_dlc_tracks.py"
+CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/3b-match_tracklets_and_dlc_tracks.py"
 
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $CMD with project_path=$project_path"
