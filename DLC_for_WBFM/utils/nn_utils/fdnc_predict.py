@@ -8,6 +8,7 @@ import pandas as pd
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
+from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import matches_between_tracks, \
     remove_outliers_to_combine_tracks
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_sequential_filename
@@ -18,7 +19,6 @@ import torch
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
-from DLC_for_WBFM.utils.nn_utils.data_formatting import zimmer2leifer
 
 default_package_path = "/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID"
 
@@ -61,19 +61,20 @@ def track_using_fdnc(project_data: ProjectData,
                      prediction_options,
                      template,
                      match_confidence_threshold,
-                     full_video_not_training=True) -> list:
+                     full_video_not_training=True,
+                     physical_unit_conversion: PhysicalUnitConversion = None) -> list:
     if full_video_not_training:
         num_frames = project_data.num_frames
 
         def get_pts(i):
             these_pts = project_data.get_centroids_as_numpy(i)
-            return zimmer2leifer(these_pts)
+            return physical_unit_conversion.zimmer2leifer(these_pts)
     else:
         num_frames = project_data.reindexed_metadata_training.num_frames
 
         def get_pts(i):
             these_pts = project_data.get_centroids_as_numpy_training(i)
-            return zimmer2leifer(these_pts)
+            return physical_unit_conversion.zimmer2leifer(these_pts)
 
     all_matches = []
     for i_frame in tqdm(range(num_frames), total=num_frames, leave=False):
@@ -115,36 +116,40 @@ def template_matches_to_dataframe(project_data: ProjectData,
     return df
 
 
-def generate_templates_from_training_data(project_data: ProjectData):
+def generate_templates_from_training_data(project_data: ProjectData, physical_unit_conversion: PhysicalUnitConversion):
     all_templates = []
     num_templates = project_data.reindexed_metadata_training.num_frames
 
     for i in range(num_templates):
         custom_template = project_data.get_centroids_as_numpy_training(i)
-        all_templates.append(zimmer2leifer(custom_template))
+        all_templates.append(physical_unit_conversion.zimmer2leifer(custom_template))
     return all_templates
 
 
-def generate_random_templates(project_data: ProjectData, num_templates, seed=42):
+def generate_random_templates(project_data: ProjectData, num_templates,
+                              physical_unit_conversion: PhysicalUnitConversion, seed=42):
     rng = np.random.default_rng(seed=seed)
     template_ind = rng.integers(low=0, high=project_data.num_frames, size=num_templates)
 
     all_templates = []
     for i in template_ind:
         custom_template = project_data.get_centroids_as_numpy(i)
-        all_templates.append(zimmer2leifer(custom_template))
+        all_templates.append(physical_unit_conversion.zimmer2leifer(custom_template))
     return all_templates, template_ind
 
 
 def track_using_fdnc_multiple_templates(project_data: ProjectData,
                                         base_prediction_options,
                                         match_confidence_threshold,
-                                        num_templates=None):
-    all_templates = generate_templates_from_training_data(project_data)
+                                        num_templates=None,
+                                        physical_unit_conversion: PhysicalUnitConversion = None):
+    all_templates = generate_templates_from_training_data(project_data,
+                                                          physical_unit_conversion=physical_unit_conversion)
 
     def _parallel_func(template):
         # TODO: is pytorch thread safe?
-        return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold)
+        return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold,
+                                physical_unit_conversion=physical_unit_conversion)
 
     max_workers = round(project_data.reindexed_metadata_training.num_frames / 2)
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -182,15 +187,18 @@ def combine_multiple_template_matches(matches_per_template, min_conf=0.1):
 def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
                                  tracks_cfg: SubfolderConfigFile,
                                  DEBUG=False):
-    match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates, _ = \
+    match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates, \
+    _, physical_unit_conversion = \
         _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG)
 
     if use_multiple_templates:
         logging.info("Tracking using multiple templates")
-        all_matches = track_using_fdnc_multiple_templates(project_data, prediction_options, match_confidence_threshold)
+        all_matches = track_using_fdnc_multiple_templates(project_data, prediction_options, match_confidence_threshold,
+                                                          physical_unit_conversion=physical_unit_conversion)
     else:
         logging.info("Tracking using single template")
-        all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold)
+        all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold,
+                                       physical_unit_conversion=physical_unit_conversion)
 
     logging.info("Converting matches to dataframe format")
     df = template_matches_to_dataframe(project_data, all_matches)
@@ -207,10 +215,12 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
 def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
                                         tracks_cfg: SubfolderConfigFile,
                                         DEBUG=False):
-    match_confidence_threshold, prediction_options, _, project_data, _, num_templates = \
+    """WIP; not currently used"""
+    match_confidence_threshold, prediction_options, _, project_data, _, num_templates, physical_unit_conversion = \
         _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG)
 
-    all_templates, template_ind = generate_random_templates(project_data, num_templates=num_templates)
+    all_templates, template_ind = generate_random_templates(project_data, num_templates=num_templates,
+                                                            physical_unit_conversion=physical_unit_conversion)
 
     # Track using one template at a time, and save them to disk
     all_dfs = []
@@ -279,17 +289,20 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     if DEBUG:
         project_data.project_config.config['dataset_params']['num_frames'] = 3
+    physical_unit_conversion = project_cfg.get_physical_unit_conversion_class()
     if use_zimmer_template:
         # TODO: use a hand-curated segmentation
         custom_template = project_data.get_centroids_as_numpy(0)
-        custom_template = zimmer2leifer(custom_template)
+        custom_template = physical_unit_conversion.zimmer2leifer(custom_template)
     else:
         custom_template = None
     prediction_options, template, _ = load_fdnc_options_and_template(custom_template=custom_template)
     fdnc_updates = tracks_cfg.config['leifer_params']['core_options']
     prediction_options.update(fdnc_updates)
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
-    return match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates, num_templates
+
+    return match_confidence_threshold, prediction_options, template, project_data, \
+           use_multiple_templates, num_templates, physical_unit_conversion
 
 
 def get_putative_names_from_config(project_config: ModularProjectConfig):
@@ -306,13 +319,14 @@ def get_putative_names_from_config(project_config: ModularProjectConfig):
 
     project_data = ProjectData.load_final_project_data_from_config(project_config)
     prediction_options, template, template_label = load_fdnc_options_and_template()
+    physical_unit_conversion = project_config.get_physical_unit_conversion_class()
 
     all_only_top_dict = defaultdict(list)
     num_templates = project_data.reindexed_metadata_training.num_frames
 
     for i_template in tqdm(range(num_templates)):
         pts = project_data.get_centroids_as_numpy_training(i_template)
-        pts = zimmer2leifer(pts)
+        pts = physical_unit_conversion.zimmer2leifer(pts)
         labels = predict_label(test_pos=pts, template_pos=template, template_label=template_label, **prediction_options)
         template_top1 = labels[0]
 

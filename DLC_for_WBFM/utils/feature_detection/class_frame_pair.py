@@ -589,8 +589,8 @@ class FramePair:
         from fDNC.src.DNC_predict import predict_matches
         # New: n0 may be rigidly prealigned
         n0, n1 = self.pts0_preprocessed, self.pts1.copy()
-        template_pos = zimmer2leifer(np.array(n0))
-        test_pos = zimmer2leifer(np.array(n1))
+        template_pos = self.options.physical_unit_conversion.zimmer2leifer(np.array(n0))
+        test_pos = self.options.physical_unit_conversion.zimmer2leifer(np.array(n1))
 
         _, matches_with_conf = predict_matches(test_pos=test_pos, template_pos=template_pos, **prediction_options)
         if prediction_options['topn'] is not None:
