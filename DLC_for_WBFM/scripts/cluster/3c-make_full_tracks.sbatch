@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-#SBATCH --job-name=dlc_tracking   # Job name
+#SBATCH --job-name=make_final_tracks   # Job name
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
-#SBATCH --output=dlc_tracking.out    # Standard output and error log
+#SBATCH --output=make_final_tracks.out    # Standard output and error log
 #SBATCH --time=6:00:00
 #SBATCH --partition=gpu
 #SBATCH --mem=16G
@@ -23,7 +23,7 @@ do
     esac
 done
 
-CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/3c-make_full_tracks.py"
+CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/3c-make_final_tracks_using_tracklet_matches.py"
 
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $CMD with project_path=$project_path"
