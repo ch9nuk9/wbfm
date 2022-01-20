@@ -14,7 +14,7 @@ from pathlib import Path
 
 import napari
 import zarr
-from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer_from_config
+from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer_from_config, napari_trace_explorer
 from PyQt5 import QtCore, QtWidgets
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
@@ -23,10 +23,13 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
     check_traces
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_full_data
-from DLC_for_WBFM.utils.projects.finished_project_data import napari_of_training_data
+from DLC_for_WBFM.utils.projects.finished_project_data import napari_of_training_data, ProjectData
 
 
-class Ui_MainWindow(object):
+class UiMainWindow(object):
+
+    def __init__(self, app=None):
+        self.parent_qtapp = app
 
     def setupUi(self, MainWindow, project_path):
         MainWindow.setObjectName("MainWindow")
@@ -321,9 +324,13 @@ class Ui_MainWindow(object):
         self.viewer, _, _ = napari_of_training_data(self.cfg)
 
     def open_traces_gui(self):
-
-        self.traces_gui = QtWidgets.QMainWindow()
-        napari_trace_explorer_from_config(self.project_file)
+        # Build object that has all the data
+        project_data = ProjectData.load_final_project_data_from_config(self.project_file,
+                                                                       to_load_tracklets=True,
+                                                                       to_load_segmentation_metadata=True)
+        ui, viewer = napari_trace_explorer(project_data, to_print_fps=True)
+        self.viewer = viewer
+        self.viewer.show()
 
 
 if __name__ == "__main__":
@@ -337,7 +344,7 @@ if __name__ == "__main__":
     # Basic setup
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
+    ui = UiMainWindow(app)
     # Get project settings
     project_path = args.project_path
     # Actually build window

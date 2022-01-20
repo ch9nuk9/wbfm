@@ -730,11 +730,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
+def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None):
+    # A parent QT application must be initialized first
+    if app is None:
+        started_new_app = True
+        app = QApplication([])
+    else:
+        started_new_app = False
 
     # Build object that has all the data
-    app = QApplication([])
-
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=True,
                                                                    to_load_segmentation_metadata=True)
@@ -742,7 +746,8 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
 
     # Note: don't use this in jupyter
     napari.run()
-    app.exec_()
+    if started_new_app:
+        app.exec_()
     logger.info("Quitting")
     sys.exit()
 
