@@ -11,6 +11,7 @@ from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair, cal
     FramePairOptions
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame, \
     build_reference_frame_encoding
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError, NoNeuronsError
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, \
     calc_all_bipartite_matches, calc_neuron_using_voronoi
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
@@ -321,6 +322,9 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
     try:
         all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
         return all_frame_pairs, all_frame_dict
+    except [ValueError, NoNeuronsError, NoMatchesError] as e:
+        logging.warning("Error in frame pair matching; quitting gracefully and saving the frame pairs:")
+        print(e)
     finally:
         return None, all_frame_dict
 
