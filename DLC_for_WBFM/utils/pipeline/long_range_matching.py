@@ -130,7 +130,7 @@ def initialize_worm_object(df_tracklets, raw_clust, segmentation_metadata):
                                              segmentation_metadata,
                                              df_tracklet_matches=raw_clust)
     worm_obj = TrackedWorm(detections=detections, verbose=1)
-    worm_obj.initialize_neurons_at_time_0()
+    worm_obj.initialize_neurons_at_time(t=0)
     return worm_obj
 
 

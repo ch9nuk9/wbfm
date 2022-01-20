@@ -230,13 +230,23 @@ class TrackedWorm:
 
         return new_neuron
 
-    def initialize_neurons_at_time_0(self):
+    def initialize_neurons_at_time(self, t=0):
         for i, name in enumerate(self.detections.all_tracklet_names):
             # this tracklet should still have a multi-level index
             tracklet = self.detections.df_tracklets_zxy[[name]]
             # Assume tracklets are ordered, such that the first tracklet which starts at t>0 mean all the rest do
-            if np.isnan(tracklet[name]['z'].iloc[0]):
+            if np.isnan(tracklet[name]['z'].iloc[t]):
                 break
+            new_neuron = self.initialize_new_neuron()
+            new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
+
+    def initialize_neurons_from_training_data(self, df_training_data):
+        training_tracklet_names = list(df_training_data.columns.levels[0])
+        # TODO: do these match up with the fdnc tracking names?
+        # neuron_names = [int2name_neuron(i+1) for i in range(len(training_tracklet_names))]
+        for i, name in enumerate(training_tracklet_names):
+            # this tracklet should still have a multi-level index
+            tracklet = self.detections.df_tracklets_zxy[[name]]
             new_neuron = self.initialize_new_neuron()
             new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
 
