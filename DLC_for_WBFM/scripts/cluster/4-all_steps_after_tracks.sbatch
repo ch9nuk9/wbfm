@@ -6,7 +6,6 @@
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=make_traces.out    # Standard output and error log
 #SBATCH --time=4:00:00
-#SBATCH --partition=cpu
 #SBATCH --mem=16G
 
 pwd; hostname; date
