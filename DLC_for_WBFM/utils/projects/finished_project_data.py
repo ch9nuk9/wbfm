@@ -200,7 +200,6 @@ class ProjectData:
 
     @property
     def which_training_frames(self):
-        # TODO: change this to just load on init?
         train_cfg = self.project_config.get_training_config()
         return train_cfg.config['training_data_3d']['which_frames']
 
@@ -394,11 +393,11 @@ class ProjectData:
     def get_centroids_as_numpy_training(self, i_frame: int, is_relative_index=True) -> np.ndarray:
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
         if is_relative_index:
-            i_frame = self.correct_relative_index(i_frame)
+            i_frame = self.correct_relative_training_index(i_frame)
         return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
 
     def get_centroids_as_numpy_training_with_unmatched(self, i_rel: int):
-        i_abs = self.correct_relative_index(i_rel)
+        i_abs = self.correct_relative_training_index(i_rel)
         matched_pts = self.reindexed_metadata_training.detect_neurons_from_file(i_abs)
         all_pts = self.segmentation_metadata.detect_neurons_from_file(i_abs)
 
@@ -441,7 +440,7 @@ class ProjectData:
 
         return dist
 
-    def correct_relative_index(self, i):
+    def correct_relative_training_index(self, i):
         return self.which_training_frames[i]
 
     def napari_of_single_match(self, pair, which_matches='final_matches', this_match: FramePair = None,
