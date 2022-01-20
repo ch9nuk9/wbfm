@@ -1,9 +1,12 @@
+import logging
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, List
 
 import networkx as nx
 import numpy as np
 import pandas as pd
+import sklearn
+from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_standard_zxy_format
@@ -24,6 +27,11 @@ class NeuronComposedOfTracklets:
     neuron2tracklets: MatchesAsGraph = None
     tracklet_covering_ind: list = None
 
+    # For detecting outliers in candidate additional tracklet matches
+    base_classifier: sklearn.svm._classes.OneClassSVM = None
+    classifier_rejection_threshold: float = 0.0
+    fields_to_classify: list = None
+
     verbose: int = 0
 
     @property
@@ -37,19 +45,32 @@ class NeuronComposedOfTracklets:
             self.neuron2tracklets = MatchesAsGraph(offset_convention=[True, False],
                                                    naming_convention=['neuron', 'tracklet'],
                                                    name_prefixes=['frame', 'trackletGroup'])
+        if self.fields_to_classify is None:
+            self.fields_to_classify = ['z', 'volume']
+            # fields_to_classify = ['z', 'volume', 'brightness_red'] # Is red stable enough?
 
     # For use when assigning matches and iterating over time
     @property
     def next_gap(self):
         return self.tracklet_covering_ind[-1] + 1
 
-    def add_tracklet(self, i_tracklet, confidence, tracklet: pd.DataFrame, metadata=None):
+    def add_tracklet(self, i_tracklet, confidence, tracklet: pd.DataFrame, metadata=None,
+                     check_using_classifier=False):
         tracklet_name = tracklet.columns.get_level_values(0).drop_duplicates()[0]
+        passed_classifier_check = True
+        if check_using_classifier:
+            if self.base_classifier:
+                passed_classifier_check = self.check_new_tracklet_using_classifier(tracklet[tracklet_name])
+            else:
+                logging.warning("Classifier requested but not initialized")
+        if not passed_classifier_check:
+            logging.debug("Tracklet did not pass classifier check")
+            return
+
         is_match_added = self.neuron2tracklets.add_match_if_not_present([self.neuron_ind, i_tracklet, confidence],
                                                                         node0_metadata=self.name,
                                                                         node1_metadata=tracklet_name,
                                                                         edge_metadata=metadata)
-
         if is_match_added:
             tracklet_covering = np.where(tracklet[tracklet_name]['z'].notnull())[0]
             self.tracklet_covering_ind.extend(tracklet_covering)
@@ -57,6 +78,33 @@ class NeuronComposedOfTracklets:
 
             if self.verbose >= 2:
                 print(f"Added tracklet {i_tracklet} to neuron {self.name} with next gap: {self.next_gap}")
+
+    def initialize_tracklet_classifier(self, list_of_tracklets):
+        """This object doesn't see the raw tracklet data, so it must be sent in the call"""
+
+        x = [tracklet[self.fields_to_classify].dropna().to_numpy() for tracklet in list_of_tracklets]
+        if len(x) > 1:
+            x = np.vstack(x)
+        else:
+            x = x[0]
+        min_pts = 10
+        assert x.shape[0] > min_pts, "Neuron needs more points to build a classifier"
+        self.base_classifier = OneClassSVM(nu=0.1).fit(x)
+
+    def check_new_tracklet_using_classifier(self, candidate_tracklet):
+        y = candidate_tracklet[self.fields_to_classify]
+        predictions = self.base_classifier.predict(y)  # -1 means outlier
+        if np.mean(predictions) < self.classifier_rejection_threshold:
+            return False
+        else:
+            return True
+
+
+    def get_raw_tracklet_names(self):
+        network_names = self.neuron2tracklets.get_all_matches((0, 0))
+        nodes = self.neuron2tracklets.nodes()
+        tracklet_names = [nodes[n]['metadata'] for n in network_names]
+        return tracklet_names
 
     def __repr__(self):
         return f"Neuron {self.name} (index={self.neuron_ind}) with {len(self.neuron2tracklets) - 1} tracklets " \
@@ -150,6 +198,9 @@ class DetectedTrackletsAndNeurons:
         except IndexError:
             return None, None
 
+    def __repr__(self):
+        return f"DetectedTrackletsAndNeurons object with {len(self.all_tracklet_names)} tracklets"
+
 
 @dataclass
 class TrackedWorm:
@@ -181,7 +232,8 @@ class TrackedWorm:
 
     def initialize_neurons_at_time_0(self):
         for i, name in enumerate(self.detections.all_tracklet_names):
-            tracklet = self.detections.df_tracklets_zxy[name]
+            # this tracklet should still have a multi-level index
+            tracklet = self.detections.df_tracklets_zxy[[name]]
             # Assume tracklets are ordered, such that the first tracklet which starts at t>0 mean all the rest do
             if np.isnan(tracklet[name]['z'].iloc[0]):
                 break
@@ -190,6 +242,12 @@ class TrackedWorm:
 
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
+
+    def get_tracklets_for_neuron(self, neuron_name) -> List[pd.DataFrame]:
+        neuron = self.global_name_to_neuron[neuron_name]
+        tracklet_names = neuron.get_raw_tracklet_names()
+        list_of_tracklets = [self.detections.df_tracklets_zxy[n] for n in tracklet_names]
+        return list_of_tracklets
 
     def compose_global_neuron_and_tracklet_graph(self):
         return nx.compose_all([g.neuron2tracklets for g in self.global_name_to_neuron.values()])

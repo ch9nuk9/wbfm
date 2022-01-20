@@ -151,6 +151,8 @@ class MatchesAsGraph(Graph):
     naming_convention: List[str]  # Will name nodes to keep them unique; can also be tracklet
     name_prefixes: List[str]
 
+    # node2raw_names: Dict[str, str] = None
+
     def __init__(self, ind2names=None, name_prefixes=None, naming_convention=None, offset_convention=None):
         if ind2names is None:
             ind2names = {}
@@ -160,6 +162,8 @@ class MatchesAsGraph(Graph):
             naming_convention = ['neuron', 'neuron']
         if offset_convention is None:
             offset_convention = [True, True]
+        # if self.node2raw_names is None:
+        #     self.node2raw_names = {}
 
         self.ind2names = ind2names
         self.name_prefixes = name_prefixes
@@ -215,9 +219,14 @@ class MatchesAsGraph(Graph):
             raise TypeError(f"naming_convention must be callable or string; was {naming_convention}")
         prefix = f"bipartite_{bipartite_ind}_{self.name_prefixes[bipartite_ind]}"
         if group_ind is None:
-            return f"{prefix}_{bipartite_ind}_{name}"
+            node_name = f"{prefix}_{bipartite_ind}_{name}"
         else:
-            return f"{prefix}_{group_ind}_{name}"
+            node_name = f"{prefix}_{bipartite_ind}_{name}"
+        # NOTE: this name is actually generated new, thus may not be the true raw name
+        # ... but should be, if the naming conventions are the same
+        # self.node2raw_names[node_name] = name
+        # INSTEAD: use the 'metadata' field of the nodes
+        return node_name
 
     def name2tuple(self, name):
         # NOTE: doesn't tell you which bipartite element this came from
@@ -275,6 +284,9 @@ class MatchesAsGraph(Graph):
         if group_and_ind is not None:
             name = self.tuple2name(*group_and_ind)
         return name
+
+    def __repr__(self):
+        return f"MatchesAsGraph object with {len(self.nodes)} nodes and {len(self.edges)} edges"
 
 
 def get_tracklet_name_from_full_name(name):
