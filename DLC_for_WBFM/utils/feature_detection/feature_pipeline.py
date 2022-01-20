@@ -249,45 +249,45 @@ def create_dict_from_matches(self):
     self.local2global = local2global
 
 
-def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
-    """
-    Registers a single frame to a set of references
-    """
-
-    # Build a map from this frame's indices to the global neuron frame
-    all_global_matches = []
-    all_conf = []
-    for ref_frame_ind, ref in reference_set.reference_frames.items():
-        # Get matches (coordinates are local to this reference frame)
-        # OPTMIZE: only attempt to check the subset of reference neurons
-        local_matches, conf, _, _ = calc_FramePair_from_Frames(this_frame, ref, None)
-        # Convert to global coordinates
-        global_matches = []
-        global_conf = []
-        l2g = reference_set.local2global
-        for m, c in zip(local_matches, conf):
-            # Check each match between the test frame and the current ref
-            ref_neuron_ind = m[1]
-            global_ind = l2g.get((ref_frame_ind, ref_neuron_ind), None)
-            # The matched neuron may not be part of the actual reference set
-            if global_ind is not None and c > min_conf:
-                global_matches.append([m[0], global_ind])
-                global_conf.append(c)
-        all_global_matches.append(global_matches)
-        all_conf.append(conf)
-
-    # Different approach: bipartite matching between reference set and each frame
-    edges_dict = defaultdict(int)
-    for frame_match, frame_conf in zip(all_global_matches, all_conf):
-        for neuron_matches, neuron_conf in zip(frame_match, frame_conf):
-            key = (neuron_matches[0], neuron_matches[1])
-            # COMBAK: add conf
-            edges_dict[key] += neuron_conf
-    edges = [[k[0], k[1], v] for k, v in edges_dict.items()]
-    all_bp_matches = calc_bipartite_matches(edges)
-
-    # TODO: fix last return value
-    return all_bp_matches, all_conf, edges
+# def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
+#     """
+#     Registers a single frame to a set of references
+#     """
+#
+#     # Build a map from this frame's indices to the global neuron frame
+#     all_global_matches = []
+#     all_conf = []
+#     for ref_frame_ind, ref in reference_set.reference_frames.items():
+#         # Get matches (coordinates are local to this reference frame)
+#         # OPTMIZE: only attempt to check the subset of reference neurons
+#         local_matches, conf, _, _ = calc_FramePair_from_Frames(this_frame, ref, None)
+#         # Convert to global coordinates
+#         global_matches = []
+#         global_conf = []
+#         l2g = reference_set.local2global
+#         for m, c in zip(local_matches, conf):
+#             # Check each match between the test frame and the current ref
+#             ref_neuron_ind = m[1]
+#             global_ind = l2g.get((ref_frame_ind, ref_neuron_ind), None)
+#             # The matched neuron may not be part of the actual reference set
+#             if global_ind is not None and c > min_conf:
+#                 global_matches.append([m[0], global_ind])
+#                 global_conf.append(c)
+#         all_global_matches.append(global_matches)
+#         all_conf.append(conf)
+#
+#     # Different approach: bipartite matching between reference set and each frame
+#     edges_dict = defaultdict(int)
+#     for frame_match, frame_conf in zip(all_global_matches, all_conf):
+#         for neuron_matches, neuron_conf in zip(frame_match, frame_conf):
+#             key = (neuron_matches[0], neuron_matches[1])
+#             # COMBAK: add conf
+#             edges_dict[key] += neuron_conf
+#     edges = [[k[0], k[1], v] for k, v in edges_dict.items()]
+#     all_bp_matches = calc_bipartite_matches(edges)
+#
+#     # TODO: fix last return value
+#     return all_bp_matches, all_conf, edges
 
 ##
 ## Full pipeline function

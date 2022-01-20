@@ -17,6 +17,7 @@ from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_feat
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates, dist2conf
 from DLC_for_WBFM.utils.nn_utils.data_formatting import zimmer2leifer, flatten_nested_list
+from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
 
 
 @dataclass
@@ -51,6 +52,9 @@ class FramePairOptions:
     z_threshold: float = None
     min_confidence: float = 0.001
     z_to_xy_ratio: float = 3.0
+
+    # Physical unit conversion; required for leifer network
+    physical_unit_conversion: PhysicalUnitConversion = None
 
     # New: rotation of the entire image as preprocessing
     preprocess_using_global_rotation: bool = False

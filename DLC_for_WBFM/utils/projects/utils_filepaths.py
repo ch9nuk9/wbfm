@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pprint
 
+from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePairOptions
 from DLC_for_WBFM.utils.feature_detection.custom_errors import UnknownValueError
 from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config, get_sequential_filename
@@ -143,12 +144,24 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = Path(self.config['subfolder_configs']['traces'])
         return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
-    def get_physical_unit_conversion_class(self):
+    def get_physical_unit_conversion_class(self) -> PhysicalUnitConversion:
         if 'physical_units' in self.config:
             return PhysicalUnitConversion(**self.config['physical_units'])
         else:
             logging.warning("Using default physical unit conversions")
             return PhysicalUnitConversion()
+
+    def get_frame_pair_options(self, training_config=None) -> FramePairOptions:
+        if training_config is None:
+            training_config = self.get_training_config()
+        pairwise_matches_params = training_config.config['pairwise_matching_params'].copy()
+        pairwise_matches_params = FramePairOptions(**pairwise_matches_params)
+
+        physical_units = self.config['physical_units']
+        physical_unit_conversion = PhysicalUnitConversion(**physical_units)
+        pairwise_matches_params.physical_unit_conversion = physical_unit_conversion
+
+        return pairwise_matches_params
 
     def _check_path_and_load_config(self, subconfig_path: Path) -> Tuple[str, dict, str, str]:
         if subconfig_path.is_absolute():

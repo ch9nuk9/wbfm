@@ -3,12 +3,15 @@ from sklearn.preprocessing import StandardScaler
 
 zimmer_fluroscence_um_per_pixel_xy = 0.325
 zimmer_behavior_um_per_pixel_xy = 2.4
-zimmer_um_per_pixel_z = 1
+ZIMMER_UM_PER_PIXEL_Z = 1
 
 leifer_um_per_unit = 84
 
 
-def zimmer2physical_fluorescence(vol0_zxy: np.ndarray) -> np.ndarray:
+def zimmer2physical_fluorescence(vol0_zxy: np.ndarray,
+                                 zimmer_um_per_pixel_z : float = None) -> np.ndarray:
+    if zimmer_um_per_pixel_z is None:
+        zimmer_um_per_pixel_z = zimmer_um_per_pixel_z
     # xy, then z
     xy_in_um = vol0_zxy[:, [1, 2]] * zimmer_fluroscence_um_per_pixel_xy
     xy_in_physical = xy_in_um
