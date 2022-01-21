@@ -34,14 +34,13 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     final_neuron_names = list(dlc_tracks.columns.levels[0])
     assert 'neuron0' not in final_neuron_names, "Neuron0 found; 0 is reserved for background... check original " \
                                                 "dataframe generation and indexing"
-
     coords = ['z', 'x', 'y']
 
-    def _get_dlc_zxy(t):
-        all_dlc_zxy = np.zeros((len(final_neuron_names), 3))
+    def _get_zxy_from_pandas(t):
+        all_zxy = np.zeros((len(final_neuron_names), 3))
         for i, name in enumerate(final_neuron_names):
-            all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
-        return all_dlc_zxy
+            all_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
+        return all_zxy
 
     # Main loop: Match segmentations to tracks
     # Also: get connected red brightness and mask
@@ -52,8 +51,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     logging.info("Matching segmentation and tracked positions...")
     if DEBUG:
         frame_list = frame_list[:2]  # Shorten (to avoid break)
-    calculate_segmentation_and_dlc_matches(_get_dlc_zxy, all_matches, frame_list, max_dist,
-                                           project_data, z_to_xy_ratio, DEBUG=DEBUG)
+    match_segmentation_and_tracks(_get_zxy_from_pandas, all_matches, frame_list, max_dist,
+                                  project_data, z_to_xy_ratio, DEBUG=DEBUG)
 
     relative_fname = traces_cfg.config['all_matches']
     project_cfg.pickle_in_local_project(all_matches, relative_fname)
@@ -224,17 +223,17 @@ def _save_traces_as_hdf_and_update_configs(final_neuron_names: list,
     # edit_config(traces_cfg.config['self_path'], traces_cfg)
 
 
-def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
-                                           all_matches: defaultdict,
-                                           frame_list: list,
-                                           max_dist: float,
-                                           project_data: ProjectData,
-                                           z_to_xy_ratio: float, DEBUG: bool = False) -> None:
+def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
+                                  all_matches: defaultdict,
+                                  frame_list: list,
+                                  max_dist: float,
+                                  project_data: ProjectData,
+                                  z_to_xy_ratio: float, DEBUG: bool = False) -> None:
     """
 
     Parameters
     ----------
-    _get_dlc_zxy
+    _get_zxy_from_pandas
     all_matches
     frame_list
     max_dist
@@ -248,7 +247,7 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
     for i_volume in tqdm(frame_list):
         # Get DLC point cloud
         # NOTE: This dataframe starts at 0, not start_volume
-        zxy0 = _get_dlc_zxy(i_volume)
+        zxy0 = _get_zxy_from_pandas(i_volume)
         # TODO: use physical units and align between z and xy
         # zxy0[:, 0] *= z_to_xy_ratio
         zxy1 = project_data.get_centroids_as_numpy(i_volume)
