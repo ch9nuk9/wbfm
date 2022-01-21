@@ -8,7 +8,7 @@ from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet, name2int_neuron_and_tracklet
 
 
 def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
@@ -254,6 +254,8 @@ def build_subset_df_from_tracklets(clust_df,
     """
     Build a dataframe that is a subset of a larger dataframe
 
+    clust_df is my custom dataframe format
+
     Only keep the tracklets that pass the time and z requirements:
         - Cover each frame in which_frames
         - Not too far from which_z
@@ -296,9 +298,9 @@ def build_subset_df_from_tracklets(clust_df,
 
     def keep_subset(this_ind_dict, old_ind):
         new_ind = []
-        for i in this_ind_dict:
+        for _i in this_ind_dict:
             try:
-                new_ind.append(old_ind[i])
+                new_ind.append(old_ind[_i])
             except KeyError:
                 continue
         return new_ind
@@ -692,3 +694,10 @@ def modify_config_files_for_training_data(project_config, segment_cfg, training_
         'num_training_frames']
     start_volume = training_cfg.config['training_data_3d']['which_frames'][0]
     project_config.config['dataset_params']['start_volume'] = start_volume
+
+
+def translate_training_names_to_raw_names(df_training_data):
+    offset_names = list(df_training_data.columns.levels[0])
+    ind = [name2int_neuron_and_tracklet(n) for n in offset_names]
+    training_tracklet_names = [int2name_tracklet(i - 1) for i in ind]
+    return training_tracklet_names

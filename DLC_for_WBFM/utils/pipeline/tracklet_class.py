@@ -12,9 +12,11 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_standard_zxy_format
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesAsGraph
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
+
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import translate_training_names_to_raw_names
 
 
 @dataclass
@@ -36,7 +38,7 @@ class NeuronComposedOfTracklets:
 
     @property
     def neuron_ind(self):
-        return name2int_neuron(self.name) - 1
+        return name2int_neuron_and_tracklet(self.name) - 1
 
     def __post_init__(self):
         if self.tracklet_covering_ind is None:
@@ -241,7 +243,7 @@ class TrackedWorm:
             new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
 
     def initialize_neurons_from_training_data(self, df_training_data):
-        training_tracklet_names = list(df_training_data.columns.levels[0])
+        training_tracklet_names = translate_training_names_to_raw_names(df_training_data)
         # TODO: do these match up with the fdnc tracking names?
         # neuron_names = [int2name_neuron(i+1) for i in range(len(training_tracklet_names))]
         for i, name in enumerate(training_tracklet_names):

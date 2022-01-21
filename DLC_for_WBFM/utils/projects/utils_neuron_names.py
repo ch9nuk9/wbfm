@@ -10,7 +10,7 @@ def int2name_tracklet(i_tracklet: int):
     return f"tracklet_{i_tracklet:07d}"
 
 
-def name2int_neuron(name_neuron):
+def name2int_neuron_and_tracklet(name_neuron):
     return int(name_neuron.split('_')[1])
 
 

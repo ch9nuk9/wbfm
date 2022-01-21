@@ -240,9 +240,13 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
                                             segment_cfg: SubfolderConfigFile,
                                             training_cfg: SubfolderConfigFile,
                                             keep_raw_segmentation_index=True,
+                                            add_one_to_raw_tracklet_index=True,
                                             DEBUG=False):
     """
     Using tracklets and full segmentation, produces a small video (zarr) with neurons colored by track
+
+    Note: the tracklet indices will NOT be the same as the original dataframe
+    ... but they will be the same as the segmentation
     """
     logging.info("Reindexing segmentation (only training volumes)")
 
@@ -283,7 +287,11 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
             seg_ind = segmentation_metadata[i_frame].index[i_tracklet].astype(int)
             if keep_raw_segmentation_index:
                 # Do keep the (very large) index from the tracklet df
-                global_ind = neuron_df['clust_ind'] + 1
+                # BUT, this can't be 0 because it is the same as the segmentation index (background is 0)
+                if add_one_to_raw_tracklet_index:
+                    global_ind = neuron_df['clust_ind'] + 1
+                else:
+                    raise NotImplementedError("Currently, 1 must be added")
             else:
                 # These will NOT be the final names of the neurons if fdnc is used
                 global_ind = i_row + 1
