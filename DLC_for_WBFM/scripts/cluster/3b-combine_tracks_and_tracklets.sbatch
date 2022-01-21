@@ -5,6 +5,7 @@
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --time=4:00:00
 #SBATCH --mem=8G
+#SBATCH --output=combine_tracklets.out    # Standard output and error log
 # #SBATCH --cpus-per-task=4
 
 pwd; hostname; date
