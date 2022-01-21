@@ -18,6 +18,8 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_project
+import cgitb
+cgitb.enable(format='text')
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

@@ -4,6 +4,8 @@ The top level function for producing training data via feature-based tracking
 import logging
 import os
 from datetime import date
+import cgitb
+cgitb.enable(format='text')
 
 # Experiment tracking
 import sacred

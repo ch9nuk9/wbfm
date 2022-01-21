@@ -1,7 +1,8 @@
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
-
+import cgitb
+cgitb.enable(format='text')
 from DLC_for_WBFM.utils.projects.utils_project import build_project_structure
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False

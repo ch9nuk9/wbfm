@@ -15,6 +15,8 @@ from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
     match_dlc_and_tracklet_coverings_from_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+import cgitb
+cgitb.enable(format='text')
 
 # Initialize sacred experiment
 ex = Experiment()

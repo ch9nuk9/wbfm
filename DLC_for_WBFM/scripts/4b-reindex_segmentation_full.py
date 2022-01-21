@@ -12,6 +12,8 @@ from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
+import cgitb
+cgitb.enable(format='text')
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

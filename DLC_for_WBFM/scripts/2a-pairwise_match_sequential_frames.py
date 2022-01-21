@@ -15,6 +15,8 @@ from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectCon
 
 from sacred import SETTINGS
 SETTINGS.CAPTURE_MODE = 'sys'  # Capture stdout
+import cgitb
+cgitb.enable(format='text')
 
 # Initialize sacred experiment
 ex = Experiment()
