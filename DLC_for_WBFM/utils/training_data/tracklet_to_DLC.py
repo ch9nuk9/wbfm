@@ -87,14 +87,14 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
 
     def is_valid(df, ind):
         which_frames = df.at[ind, 'slice_ind']
-        is_too_short = len(which_frames) < min_length
+        is_too_short = np.isscalar(which_frames) or len(which_frames) < min_length
         if is_too_short:
             return False
         else:
             return True
 
     logging.info("Converting to pandas multi-index format")
-    logging.info("Involves reading the original metadata, so may take a while")
+    # logging.info("Involves reading the original metadata, so may take a while")
     for ind, row in tqdm(df.iterrows(), total=df.shape[0]):
         if not is_valid(df, ind):
             continue

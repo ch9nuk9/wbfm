@@ -559,7 +559,7 @@ def add_empty_rows_to_correct_index(final_df, empty_ind):
     #
     # BUT it also should be done sequentially, because an empty 94.5 only makese sense if the previous empty 91 and 92 are filled
 
-    logging.info("Correcting indices due to empty volumes")
+    logging.info(f"Correcting indices due to {len(empty_ind)} empty volumes")
     df_index_corrected = final_df.copy()
     for i in tqdm(empty_ind, leave=False):
         new_empty_row = pd.DataFrame(np.nan, columns=final_df.columns, index=[i + 0.5])
