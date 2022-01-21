@@ -146,6 +146,14 @@ class DetectedNeurons:
         ind.sort()
         return ind
 
+    @property
+    def volumes_with_no_neurons(self) -> list:
+        empty_ind = []
+        for t in self.which_frames:
+            if len(self.detect_neurons_from_file(int(t))) == 0:
+                empty_ind.append(t)
+        return empty_ind
+
     def get_all_brightnesses(self, i_volume: int, is_relative_index=False):
         if is_relative_index:
             i_volume = self.correct_relative_index(i_volume)
