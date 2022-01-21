@@ -272,6 +272,8 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
         masks = zarr.open(fname)
 
     logging.info("Convert dataframe to matches per frame")
+    # NOTE: only works with updated tracklet dataframe
+    # neuron_df['raw_neuron_id']
     all_matches = {}
     for i, i_frame in tqdm(enumerate(which_frames)):
         matches = []

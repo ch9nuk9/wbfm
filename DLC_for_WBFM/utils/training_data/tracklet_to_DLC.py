@@ -258,7 +258,7 @@ def build_subset_df_from_tracklets(df_tracklets, which_frames, verbose=0):
 
     """
 
-    df_time_subset = df_tracklets.loc(axis=1)[:, 'z'].iloc[which_frames]
+    df_time_subset = df_tracklets.loc(axis=1)[:, 'z'].loc[which_frames]
     isnan_idx = df_time_subset.isna().sum() == 0
     isnan_idx = isnan_idx.droplevel(1)
     to_keep = [idx for idx in isnan_idx.index if isnan_idx[idx]]
