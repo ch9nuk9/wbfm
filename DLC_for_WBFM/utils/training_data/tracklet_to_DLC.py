@@ -340,6 +340,7 @@ def build_subset_df_from_tracklets(clust_df,
     which_neurons_df = sub_df[to_keep]
     if verbose >= 1:
         print(f"Keeping {len(which_neurons_df)}/{len(clust_df)} tracklets as identifiable neurons")
+        logging.debug(f"Neurons that are kept: {which_neurons_dict.keys()}")
     if len(which_neurons_df) == 0:
         # Preserve dataframe format
         return which_neurons_df
@@ -354,7 +355,7 @@ def build_subset_df_from_tracklets(clust_df,
     ####################
     # Build the subset
     ####################
-    out_df['clust_ind'] = out_df['clust_ind'].astype(int)
+    # out_df['clust_ind'] = out_df['clust_ind'].astype(int)
 
     # All 4 fields that were renamed
     f0 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_ind_local_old'])
