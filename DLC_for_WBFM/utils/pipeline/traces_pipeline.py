@@ -251,7 +251,7 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
         # TODO: use physical units and align between z and xy
         # zxy0[:, 0] *= z_to_xy_ratio
         zxy1 = project_data.get_centroids_as_numpy(i_volume)
-        if len(zxy1) == 0:
+        if len(zxy1) == 0 or len(zxy0) == 0:
             continue
         # zxy1[:, 0] *= z_to_xy_ratio
         # Get matches

@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError, NoNeuronsError
 from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import matches_between_tracks, \
@@ -68,6 +68,8 @@ def track_using_fdnc(project_data: ProjectData,
 
         def get_pts(i):
             these_pts = project_data.get_centroids_as_numpy(i)
+            if len(these_pts) == 0:
+                raise NoNeuronsError
             return physical_unit_conversion.zimmer2leifer(these_pts)
     else:
         num_frames = project_data.reindexed_metadata_training.num_frames
@@ -78,16 +80,19 @@ def track_using_fdnc(project_data: ProjectData,
 
     all_matches = []
     for i_frame in tqdm(range(num_frames), total=num_frames, leave=False):
-        pts_scaled = get_pts(i_frame)
-        matches, _ = predict_matches(test_pos=pts_scaled, template_pos=template, **prediction_options)
-        matches = filter_matches(matches, match_confidence_threshold)
-        all_matches.append(matches)
-
+        try:
+            pts_scaled = get_pts(i_frame)
+            matches, _ = predict_matches(test_pos=pts_scaled, template_pos=template, **prediction_options)
+            matches = filter_matches(matches, match_confidence_threshold)
+            all_matches.append(matches)
+        except NoNeuronsError:
+            all_matches.append([])
     return all_matches
 
 
 def template_matches_to_dataframe(project_data: ProjectData,
                                   all_matches: list):
+    """Correct null value within all_matches is []"""
     num_frames = len(all_matches)
     coords = ['z', 'x', 'y', 'likelihood']
     sz = (num_frames, len(coords))
@@ -163,6 +168,7 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
 
 
 def combine_multiple_template_matches(matches_per_template, min_conf=0.1):
+    """Correct value for empty matches in matches_per_template is []"""
     final_matches = []
     num_frames = len(matches_per_template[0])
     num_templates = len(matches_per_template)
@@ -177,7 +183,6 @@ def combine_multiple_template_matches(matches_per_template, min_conf=0.1):
             matches, conf, _ = calc_bipartite_from_candidates(candidate_matches, min_confidence_after_sum=min_conf)
             match_and_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
         except NoMatchesError:
-            # TODO: does this cause future errors?
             match_and_conf = []
         final_matches.append(match_and_conf)
 
@@ -228,7 +233,6 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
     logging.info("Tracking using multiple random templates")
     for i, template in tqdm(enumerate(all_templates)):
         all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold)
-
         df = template_matches_to_dataframe(project_data, all_matches)
 
         all_dfs.append(df)
@@ -291,7 +295,7 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
         project_data.project_config.config['dataset_params']['num_frames'] = 3
     physical_unit_conversion = project_cfg.get_physical_unit_conversion_class()
     if use_zimmer_template:
-        # TODO: use a hand-curated segmentation
+        # TODO: use a hand-curated segmentation or read from config
         custom_template = project_data.get_centroids_as_numpy(0)
         custom_template = physical_unit_conversion.zimmer2leifer(custom_template)
     else:
