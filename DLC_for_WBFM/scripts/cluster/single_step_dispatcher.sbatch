@@ -4,7 +4,7 @@
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
-#SBATCH --output=single_step.out    # Standard output and error log
+#SBATCH --output=log_single_step.out    # Standard output and error log
 #SBATCH --time=6:00:00
 #SBATCH --mem=8G
 #SBATCH --partition=gpu
@@ -34,6 +34,9 @@ CMD_DICT["3b"]="3b-match_tracklets_and_dlc_tracks.py"
 CMD_DICT["3c"]="3c-make_final_tracks_using_tracklet_matches.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
+
+echo "Running step $step_reference using full command:"
+echo $CMD
 
 LOG="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/cluster/fdnc_tracking.log"
 
