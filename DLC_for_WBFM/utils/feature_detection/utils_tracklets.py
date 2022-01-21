@@ -406,7 +406,7 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
 ##
 
 def build_tracklets_dfs(pairwise_matches_dict: dict,
-                        zxy_per_neuron_per_frame: list = None,
+                        zxy_per_neuron_per_frame: dict = None,
                         slice_offset: int = 0,
                         verbose=0) -> pd.DataFrame:
     """
@@ -535,7 +535,37 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
             clust_ind += 1
 
     final_df = pd.concat(all_dfs, ignore_index=True, axis=0)
+
+    empty_ind = []
+    for k, v in zxy_per_neuron_per_frame.items():
+        if v is None:
+            empty_ind.append(k)
+
+    final_df = add_empty_rows_to_correct_index(final_df, zxy_per_neuron_per_frame)
+
     return final_df
+
+
+def add_empty_rows_to_correct_index(final_df, empty_ind):
+    if len(empty_ind) == 0:
+        return final_df
+    # Create empty rows at each index, then reset the index
+    # Note: if there sequential indices that are missed, then the new indices need to be BEFORE the current dataframe
+    # e.g.:
+    #  Current dataframe has 90, 91, 92
+    #  But, 91 and 92 are empty and need to be inserted back in
+    #  Therefore the new temporary indices for the empty rows should be 90.1, 90.2 (or something between 90 and 91)
+    #  But if 94 was then empty (but not 93), the new index should be 94.5
+    #
+    # BUT it also should be done sequentially, because an empty 94.5 only makese sense if the previous empty 91 and 92 are filled
+
+    logging.info("Correcting indices due to empty volumes")
+    df_index_corrected = final_df.copy()
+    for i in tqdm(empty_ind, leave=False):
+        new_empty_row = pd.DataFrame(np.nan, columns=final_df.columns, index=[i + 0.5])
+        df_index_corrected = df_index_corrected.append(new_empty_row, ignore_index=False)
+        df_index_corrected = df_index_corrected.sort_index().reset_index(drop=True)
+    return df_index_corrected
 
 
 def fix_global2tracklet_full_dict(df_tracklets, global2tracklet) -> Dict[str, List[str]]:
