@@ -541,13 +541,14 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
         if v is None:
             empty_ind.append(k)
 
-    final_df = add_empty_rows_to_correct_index(final_df, zxy_per_neuron_per_frame)
+    final_df = add_empty_rows_to_correct_index(final_df, empty_ind)
 
     return final_df
 
 
 def add_empty_rows_to_correct_index(final_df, empty_ind):
     if len(empty_ind) == 0:
+        logging.info("No empty indices to correct")
         return final_df
     # Create empty rows at each index, then reset the index
     # Note: if there sequential indices that are missed, then the new indices need to be BEFORE the current dataframe
@@ -561,8 +562,8 @@ def add_empty_rows_to_correct_index(final_df, empty_ind):
 
     logging.info(f"Correcting indices due to {len(empty_ind)} empty volumes")
     df_index_corrected = final_df.copy()
-    for i in tqdm(empty_ind, leave=False):
-        new_empty_row = pd.DataFrame(np.nan, columns=final_df.columns, index=[i + 0.5])
+    for i in tqdm(empty_ind):
+        new_empty_row = pd.DataFrame(np.nan, columns=df_index_corrected.columns, index=[i + 0.5])
         df_index_corrected = df_index_corrected.append(new_empty_row, ignore_index=False)
         df_index_corrected = df_index_corrected.sort_index().reset_index(drop=True)
     return df_index_corrected
