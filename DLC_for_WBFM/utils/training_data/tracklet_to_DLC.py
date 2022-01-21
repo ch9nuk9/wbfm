@@ -7,6 +7,7 @@ from tqdm import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import add_empty_rows_to_correct_index
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet, name2int_neuron_and_tracklet
 
@@ -94,7 +95,6 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
             return True
 
     logging.info("Converting to pandas multi-index format")
-    # logging.info("Involves reading the original metadata, so may take a while")
     for ind, row in tqdm(df.iterrows(), total=df.shape[0]):
         if not is_valid(df, ind):
             continue
@@ -140,6 +140,9 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
     if len(all_dfs) == 0:
         raise ParameterTooStringentError(min_length, 'min_length')
     new_df = pd.concat(all_dfs, axis=1)
+
+    empty_ind = segmentation_metadata.volumes_with_no_neurons
+    new_df = add_empty_rows_to_correct_index(new_df, empty_ind)
 
     return new_df
 

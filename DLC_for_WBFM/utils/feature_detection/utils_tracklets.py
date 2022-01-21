@@ -536,12 +536,12 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
 
     final_df = pd.concat(all_dfs, ignore_index=True, axis=0)
 
-    empty_ind = []
-    for k, v in zxy_per_neuron_per_frame.items():
-        if v is None:
-            empty_ind.append(k)
-
-    final_df = add_empty_rows_to_correct_index(final_df, empty_ind)
+    # empty_ind = []
+    # for k, v in zxy_per_neuron_per_frame.items():
+    #     if v is None:
+    #         empty_ind.append(k)
+    #
+    # final_df = add_empty_rows_to_correct_index(final_df, empty_ind)
 
     return final_df
 
