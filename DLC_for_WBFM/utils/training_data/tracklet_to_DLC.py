@@ -161,24 +161,18 @@ def save_training_data_as_dlc_format(training_config: SubfolderConfigFile,
     """
     logging.info("Saving training data as DLC format")
 
-    df, min_length_to_save, segmentation_metadata = _unpack_config_training_data_conversion(
+    df_tracklets, df_clust, min_length_to_save, segmentation_metadata = _unpack_config_training_data_conversion(
         training_config, segmentation_config)
 
     # Get the frames chosen as training data, or recalculate
-    num_frames = len(df)
-    which_frames = list(get_or_recalculate_which_frames(DEBUG, df, num_frames, training_config))
+    num_frames = len(df_tracklets)
+    which_frames = list(get_or_recalculate_which_frames(DEBUG, df_clust, num_frames, training_config))
 
     # Build a sub-df with only the relevant neurons; all slices
-    # Todo: connect up to actually tracked z slices?
-    subset_opt = {'which_z': None,
-                  'max_z_dist': None,
-                  'verbose': 1}
-    subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
-    training_df = convert_training_dataframe_to_scalar_format(subset_df,
-                                                              min_length=min_length_to_save,
-                                                              scorer=None,
-                                                              segmentation_metadata=segmentation_metadata)
+    subset_df = build_subset_df_from_tracklets(df_tracklets, which_frames)
+    training_df = subset_df
 
+    # Save
     out_fname = training_config.resolve_relative_path("training_data_tracks.h5", prepend_subfolder=True)
     training_df.to_hdf(out_fname, 'df_with_missing')
 
@@ -193,12 +187,15 @@ def _unpack_config_training_data_conversion(training_config, segmentation_config
     min_length_to_save = training_config.config['postprocessing_params']['min_length_to_save']
     fname = os.path.join('raw', 'clust_df_dat.pickle')
     fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
-    df = pd.read_pickle(fname)
+    df_clust = pd.read_pickle(fname)
+
+    fname = training_config.resolve_relative_path_from_config('df_3d_tracklets')
+    df_tracklets: pd.DataFrame = pd.read_hdf(fname)
 
     seg_metadata_fname = segmentation_config.resolve_relative_path_from_config('output_metadata')
     segmentation_metadata = DetectedNeurons(seg_metadata_fname)
 
-    return df, min_length_to_save, segmentation_metadata
+    return df_tracklets, df_clust, min_length_to_save, segmentation_metadata
 
 
 def alt_save_all_tracklets_as_dlc_format(train_cfg: SubfolderConfigFile,
@@ -246,7 +243,32 @@ def fill_missing_indices_with_nan(df):
     return df
 
 
-def build_subset_df_from_tracklets(clust_df,
+def build_subset_df_from_tracklets(df_tracklets, which_frames, verbose=0):
+    """
+    Build a subset dataframe that only contains tracklets that have no nan frames for ALL of which_frames
+
+    Parameters
+    ----------
+    df_tracklets
+    which_frames
+    verbose
+
+    Returns
+    -------
+
+    """
+
+    df_time_subset = df_tracklets.loc(axis=1)[:, 'z'].iloc[which_frames]
+    isnan_idx = df_time_subset.isna().sum() == 0
+    isnan_idx = isnan_idx.droplevel(1)
+    to_keep = [idx for idx in isnan_idx.index if isnan_idx[idx]]
+
+    df_subset = df_tracklets[to_keep]
+    df_subset = df_subset.reindex(columns=to_keep, level=0)  # Otherwise the dropped names remain
+    return df_subset
+
+
+def OLD_build_subset_df_from_tracklets(clust_df,
                                    which_frames,
                                    which_z=None,
                                    max_z_dist=1,

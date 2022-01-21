@@ -15,7 +15,7 @@ from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFi
 from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
-    get_or_recalculate_which_frames
+    get_or_recalculate_which_frames, _unpack_config_training_data_conversion
 
 
 def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
@@ -252,23 +252,17 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
 
     num_frames = cfg.config['dataset_params']['num_frames']
 
+    df_tracklets, df_clust, min_length_to_save, segmentation_metadata = _unpack_config_training_data_conversion(
+        training_cfg, segment_cfg)
+
     # Get ALL matches to the segmentation, then subset
     with safe_cd(cfg.project_dir):
-        # TODO: not hardcoded
-        fname = os.path.join('raw', 'clust_df_dat.pickle')
-        fname = training_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        df = pd.read_pickle(fname)
 
         # Get the frames chosen as training data, or recalculate
-        which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, training_cfg)
-        # logging.log(f"Which frames to use for training data: {which_frames}")
+        which_frames = get_or_recalculate_which_frames(DEBUG, df_clust, num_frames, training_cfg)
 
-        # Build a sub-df with only the relevant neurons; all slices
-        # Todo: connect up to actually tracked z slices?
-        subset_opt = {'which_z': None,
-                      'max_z_dist': None,
-                      'verbose': 1}
-        subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
+        # Build a sub-df with only the relevant neurons; all time slices
+        subset_df = build_subset_df_from_tracklets(df_tracklets, which_frames)
 
         # TODO: refactor using DetectedNeurons class
         fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
