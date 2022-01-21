@@ -5,7 +5,8 @@ from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-
+import cgitb
+cgitb.enable(format='text')
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.nn_utils.fdnc_predict import track_using_fdnc_from_config
 

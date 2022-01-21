@@ -1,15 +1,12 @@
 # Display more informative error messages
 # https://www.tutorialexample.com/fix-pyqt-gui-application-crashed-while-no-error-message-displayed-a-beginner-guide-pyqt-tutorial/
 import cgitb
+cgitb.enable(format='text')
 import logging
-
 from PyQt5.QtWidgets import QApplication, QScrollArea
-
 logger = logging.getLogger('traceExplorerLogger')
 logger.setLevel(logging.INFO)
 import sys
-cgitb.enable(format='text')
-
 import napari
 import numpy as np
 import pandas as pd
