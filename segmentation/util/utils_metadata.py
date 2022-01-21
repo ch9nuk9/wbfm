@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 from DLC_for_WBFM.utils.postprocessing.utils_metadata import regionprops_one_volume_one_channel
-from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron
+from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 import numpy as np
 import pandas as pd
@@ -90,7 +90,7 @@ def get_metadata_dictionary(masks, original_vol, name_mode='neuron'):
     # Convert back to old (Niklas) style
     dict_of_rows = defaultdict(list)
     for k, v in props.items():
-        idx = name2int_neuron(k[0])
+        idx = name2int_neuron_and_tracklet(k[0])
         # column_name = k[1]
 
         # Assume the entries were originally added in regionprops order
