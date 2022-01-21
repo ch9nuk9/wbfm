@@ -219,6 +219,13 @@ class TrackedWorm:
         else:
             return len(self.global_name_to_neuron)
 
+    @property
+    def neuron_names(self):
+        if self.global_name_to_neuron is None:
+            return []
+        else:
+            return list(self.global_name_to_neuron.keys())
+
     def get_next_neuron_name(self):
         return int2name_neuron(self.num_neurons + 1)
 

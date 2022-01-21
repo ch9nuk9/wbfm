@@ -188,7 +188,7 @@ class TrackletAndSegmentationAnnotator:
         if self.indices_of_original_neurons is None:
             self.indices_of_original_neurons = []
 
-        print(f"Output files: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
+        print(f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
     @property
     def combined_global2tracklet_dict(self):
