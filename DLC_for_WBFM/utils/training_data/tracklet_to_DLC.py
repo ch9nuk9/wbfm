@@ -286,6 +286,8 @@ def build_subset_df_from_tracklets(clust_df,
         Return: local indices within the test_frame to keep
             Note that this is per-tracklet
         """
+        if np.isscalar(test_frames):
+            return None
         test_frames_set = set(test_frames)
         local2global_ind = {}
         for f in which_frames:
