@@ -354,6 +354,8 @@ def build_subset_df_from_tracklets(clust_df,
     ####################
     # Build the subset
     ####################
+    out_df['clust_ind'] = out_df['clust_ind'].astype(int)
+
     # All 4 fields that were renamed
     f0 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_ind_local_old'])
     out_df['all_ind_local'] = out_df.apply(f0, axis=1)
