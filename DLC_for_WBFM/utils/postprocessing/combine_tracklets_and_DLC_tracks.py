@@ -307,7 +307,7 @@ def match_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFi
         allowed_tracklet_endpoint_wiggle = _unpack_tracklets_for_combining(
             project_cfg, training_cfg, track_config, use_imputed_df, start_from_manual_matches)
 
-    # Match tracklets to DLC neurons
+    # Match tracklets to global neurons (which have noisy tracks)
     global_neuron_names = list(df_global_tracks.columns.levels[0])
     num_initial_tracklets = int(df_tracklets.shape[1]/4)
     num_initial_matches = len(used_names)
@@ -320,7 +320,7 @@ def match_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFi
     all_tracklet_names = list(df_tracklets.columns.levels[0])
     list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in all_tracklet_names]
 
-    logging.info("Calculating distances between tracklets and DLC tracks")
+    logging.info("Calculating distances between tracklets and global tracks")
     for i, global_name in enumerate(tqdm(global_neuron_names)):
 
         # TODO: use confidence of dlc tracks
