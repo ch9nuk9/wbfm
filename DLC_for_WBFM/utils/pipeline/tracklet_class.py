@@ -66,8 +66,8 @@ class NeuronComposedOfTracklets:
             else:
                 logging.warning("Classifier requested but not initialized")
         if not passed_classifier_check:
-            logging.debug("Tracklet did not pass classifier check")
-            return
+            # logging.debug("Tracklet did not pass classifier check")
+            return False
 
         is_match_added = self.neuron2tracklets.add_match_if_not_present([self.neuron_ind, i_tracklet, confidence],
                                                                         node0_metadata=self.name,
