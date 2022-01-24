@@ -103,7 +103,7 @@ class NeuronComposedOfTracklets:
 
     def get_raw_tracklet_names(self):
         this_neuron_name = self.neuron2tracklets.raw_name_to_network_name(self.name)
-        network_names = self.neuron2tracklets.get_all_matches(this_neuron_name)
+        network_names = self.neuron2tracklets.get_all_matches(name=this_neuron_name)
         nodes = self.neuron2tracklets.nodes()
         tracklet_names = [nodes[n]['metadata'] for n in network_names]
         return tracklet_names

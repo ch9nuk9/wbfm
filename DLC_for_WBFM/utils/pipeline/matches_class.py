@@ -289,7 +289,7 @@ class MatchesAsGraph(Graph):
         node_names = list(self)
         nodes = self.nodes(data=True)
         for name, node in zip(node_names, nodes):
-            if raw_name == node['metadata']:
+            if raw_name == node[1]['metadata']:
                 return name
         else:
             return None
