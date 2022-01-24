@@ -534,21 +534,20 @@ class ProjectData:
         return f"=======================================\n\
 Project data for directory:\n\
 {self.project_dir} \n\
-=======================================\n\
-Found the following raw data files:\n\
+Found the following data files:\n\
+============Raw========================\n\
 red_data:                 {self.red_data is not None}\n\
 green_data:               {self.green_data is not None}\n\
+============Annotations================\n\
+behavior_annotations:     {self.behavior_annotations is not None}\n\
+============Training================\n\
+df_training_tracklets:    {self.df_training_tracklets is not None}\n\
 ============Segmentation===============\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
-segmentation:             {self.segmentation is not None}\n\
-============Tracklets==================\n\
-df_training_tracklets:    {self.df_training_tracklets is not None}\n\
-reindexed_masks_training: {self.reindexed_masks_training is not None}\n\
+colored_segmentation:     {self.segmentation is not None}\n\
 ============Traces=====================\n\
 red_traces:               {self.red_traces is not None}\n\
-green_traces:             {self.green_traces is not None}\n\
-final_tracks:             {self.final_tracks is not None}\n\
-behavior_annotations:     {self.behavior_annotations is not None}\n"
+green_traces:             {self.green_traces is not None}\n"
 
 
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
