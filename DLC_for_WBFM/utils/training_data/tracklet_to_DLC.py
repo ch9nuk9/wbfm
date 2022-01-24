@@ -727,7 +727,9 @@ def modify_config_files_for_training_data(project_config, segment_cfg, training_
 
 
 def translate_training_names_to_raw_names(df_training_data):
-    offset_names = list(df_training_data.columns.levels[0])
-    ind = [name2int_neuron_and_tracklet(n) for n in offset_names]
-    training_tracklet_names = [int2name_tracklet(i - 1) for i in ind]
-    return training_tracklet_names
+    """As of 1/24/2022, the columns should have the SAME names"""
+    return list(df_training_data.columns.levels[0])
+    # offset_names = list(df_training_data.columns.levels[0])
+    # ind = [name2int_neuron_and_tracklet(n) for n in offset_names]
+    # training_tracklet_names = [int2name_tracklet(i - 1) for i in ind]
+    # return training_tracklet_names
