@@ -278,7 +278,7 @@ class TrackedWorm:
         list_of_tracklets = [self.detections.df_tracklets_zxy[n] for n in tracklet_names]
         return list_of_tracklets
 
-    def compose_global_neuron_and_tracklet_graph(self) -> nx.Graph:
+    def compose_global_neuron_and_tracklet_graph(self) -> MatchesAsGraph:
         return nx.compose_all([g.neuron2tracklets for g in self.global_name_to_neuron.values()])
 
     def __repr__(self):

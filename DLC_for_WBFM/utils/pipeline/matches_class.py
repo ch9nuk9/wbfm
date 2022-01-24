@@ -295,6 +295,9 @@ class MatchesAsGraph(Graph):
         else:
             return None
 
+    def get_nodes_of_class(self, i_class):
+        return {n for n, d in self.nodes(data=True) if d["bipartite"] == i_class}
+
     def __repr__(self):
         return f"MatchesAsGraph object with {len(self.nodes)} nodes and {len(self.edges)} edges"
 
