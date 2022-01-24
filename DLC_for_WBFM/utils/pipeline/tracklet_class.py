@@ -62,7 +62,7 @@ class NeuronComposedOfTracklets:
         passed_classifier_check = True
         if check_using_classifier:
             if self.base_classifier:
-                passed_classifier_check = self.check_new_tracklet_using_classifier(tracklet[tracklet_name])
+                passed_classifier_check = self.check_new_tracklet_using_classifier(tracklet[tracklet_name].dropna())
             else:
                 logging.warning("Classifier requested but not initialized")
         if not passed_classifier_check:
@@ -80,6 +80,8 @@ class NeuronComposedOfTracklets:
 
             if self.verbose >= 2:
                 print(f"Added tracklet {i_tracklet} to neuron {self.name} with next gap: {self.next_gap}")
+
+        return is_match_added
 
     def initialize_tracklet_classifier(self, list_of_tracklets):
         """This object doesn't see the raw tracklet data, so it must be sent in the call"""

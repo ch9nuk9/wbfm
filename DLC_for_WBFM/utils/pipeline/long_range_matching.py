@@ -1,7 +1,12 @@
+import logging
+
 import numpy as np
+
+from DLC_for_WBFM.utils.external.utils_networkx import dist2conf
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import calc_FramePair_from_Frames
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.pipeline.tracklet_class import DetectedTrackletsAndNeurons, TrackedWorm
+from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import calc_global_track_to_tracklet_distances
 from DLC_for_WBFM.utils.postures.centerline_pca import WormFullVideoPosture, WormReferencePosture
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 import networkx as nx
@@ -52,6 +57,76 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
         track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
 
     return df_new, final_matching, global_tracklet_neuron_graph, worm_obj, all_long_range_matches
+
+
+def extend_tracks_using_global_tracking(project_data: ProjectData,
+                                        min_overlap=5, d_max=5, verbose=0):
+    """
+    For each neuron, get the relevant global track
+    Then calculate all track-tracklet distances, using percent inliers
+    If passes threshold 1:
+      Then check z/volume threshold 2:
+        Directly add the tracklets to the neurons within worm_obj
+      Else simply do not add
+
+    After this function, do b_matching
+
+    Parameters
+    ----------
+    project_data
+    min_overlap
+    d_max
+    verbose
+
+    Returns
+    -------
+    No return value; neurons contain all information
+
+    """
+    df_global_tracks = project_data.intermediate_global_tracks
+    df_tracklets = project_data.df_all_tracklets
+    # Pre-make coordinates so that the dataframe is not continuously indexed
+    coords = ['z', 'x', 'y']
+    all_tracklet_names = list(df_tracklets.columns.levels[0])
+    list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
+
+    used_names = []
+
+    logging.info("Initializing worm object with neurons...")
+    tracklets_and_neurons_class = project_data.tracklets_and_neurons_class
+    worm_obj = TrackedWorm(detections=tracklets_and_neurons_class, verbose=1)
+    worm_obj.initialize_all_neuron_tracklet_classifiers()
+    if verbose >= 1:
+        print("Initialized worm object:")
+        print(worm_obj)
+
+    for name, neuron in tqdm(worm_obj.global_name_to_neuron.items()):
+
+        # New: use the track as produced by the global tracking
+        # TODO: confirm that the worm_obj has the same neuron names as leifer
+        this_global_track = df_global_tracks[name]
+
+        # TODO: calculate distance using percent inliers
+        dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy, all_tracklet_names,
+                                                       used_names,
+                                                       min_overlap=min_overlap)
+
+        # Loop through candidates, and attempt to add
+        all_summarized_dist = list(map(lambda x: np.nanquantile(x, 0.1), dist))
+        i_sorted_by_median_distance = np.argsort(all_summarized_dist)
+
+        for i_tracklet in i_sorted_by_median_distance:
+            # Check distance; break because they are sorted by distance
+            this_distance = all_summarized_dist[i_tracklet]
+            if this_distance > d_max:
+                print(f"Breaking at distance: {this_distance}")
+                break
+
+            candidate_name = all_tracklet_names[i_tracklet]
+            candidate_tracklet = df_tracklets[[candidate_name]]
+            conf = dist2conf(this_distance)
+            is_match_added = neuron.add_tracklet(i_tracklet, conf, candidate_tracklet, metadata=candidate_name,
+                                                 check_using_classifier=True)
 
 
 def extend_tracks_using_similar_postures(all_frames, frame_pair_options, reference_posture,
