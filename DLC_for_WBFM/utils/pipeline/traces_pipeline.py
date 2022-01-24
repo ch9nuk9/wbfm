@@ -97,6 +97,7 @@ def extract_traces_of_training_data_from_config(project_cfg: SubfolderConfigFile
     which_frames = project_data.which_training_frames
 
     df_train = build_subset_df_from_tracklets(df, which_frames)
+    df_train = df_train.dropna().reset_index(drop=True)
 
     # Note that the training config works with the same function as step 4c for getting the local masks
     # coords, reindexed_masks, frame_list, params_start_volume = \
