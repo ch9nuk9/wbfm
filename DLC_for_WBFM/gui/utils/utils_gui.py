@@ -77,9 +77,12 @@ def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_pas
         tzxy = get_zxy_from_single_neuron_layer(viewer.layers[layer_name], t)
     else:
         tzxy = get_zxy_from_multi_neuron_layer(viewer.layers[layer_name], t, ind_within_layer)
-    # tzxy = viewer.layers[layer_name].data[t]
-
-    # Data may be incorrect (but t should be good)
+    # TODO: better way to check for nesting
+    if len(tzxy) == 1:
+        tzxy = tzxy[0]
+    if len(tzxy) == 1:
+        tzxy = tzxy[0]
+    # Data may be actually a null value (but t should be good)
     is_positive = tzxy[2] > 0 and tzxy[3] > 0
     is_finite = not all(np.isnan(tzxy))
 
