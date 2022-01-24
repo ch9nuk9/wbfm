@@ -203,6 +203,10 @@ class ProjectData:
         train_cfg = self.project_config.get_training_config()
         return train_cfg.config['training_data_3d']['which_frames']
 
+    @property
+    def num_training_frames(self):
+        return len(self.which_training_frames)
+
     @staticmethod
     def unpack_config_file(project_path):
         cfg = ModularProjectConfig(project_path)

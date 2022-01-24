@@ -72,7 +72,7 @@ def track_using_fdnc(project_data: ProjectData,
                 raise NoNeuronsError
             return physical_unit_conversion.zimmer2leifer(these_pts)
     else:
-        num_frames = project_data.reindexed_metadata_training.num_frames
+        num_frames = project_data.num_training_frames
 
         def get_pts(i):
             these_pts = project_data.get_centroids_as_numpy_training(i)
@@ -123,7 +123,7 @@ def template_matches_to_dataframe(project_data: ProjectData,
 
 def generate_templates_from_training_data(project_data: ProjectData, physical_unit_conversion: PhysicalUnitConversion):
     all_templates = []
-    num_templates = project_data.reindexed_metadata_training.num_frames
+    num_templates = project_data.num_training_frames
 
     for i in range(num_templates):
         custom_template = project_data.get_centroids_as_numpy_training(i)
@@ -156,7 +156,7 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
         return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold,
                                 physical_unit_conversion=physical_unit_conversion)
 
-    max_workers = round(project_data.reindexed_metadata_training.num_frames / 2)
+    max_workers = round(project_data.num_training_frames / 2)
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         submitted_jobs = [executor.submit(_parallel_func, template) for template in all_templates]
         matches_per_template = [job.result() for job in submitted_jobs]
@@ -326,7 +326,7 @@ def get_putative_names_from_config(project_config: ModularProjectConfig):
     physical_unit_conversion = project_config.get_physical_unit_conversion_class()
 
     all_only_top_dict = defaultdict(list)
-    num_templates = project_data.reindexed_metadata_training.num_frames
+    num_templates = project_data.num_training_frames
 
     for i_template in tqdm(range(num_templates)):
         pts = project_data.get_centroids_as_numpy_training(i_template)
