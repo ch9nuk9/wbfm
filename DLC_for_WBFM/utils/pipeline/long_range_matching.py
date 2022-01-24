@@ -62,13 +62,14 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
 def global_track_matches_from_config(project_path, to_save=True, verbose=2):
     project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True)
     df_tracklets = project_data.df_all_tracklets
-    segmentation_metadata = project_data.segmentation_metadata
-    raw_clust = project_data.raw_clust
+    tracklets_and_neurons_class = project_data.tracklets_and_neurons_class
     df_global_tracks = project_data.intermediate_global_tracks
+    df_training_data = project_data.df_training_tracklets
 
     all_tracklet_names = df_tracklets.columns.get_level_values(0).drop_duplicates()
 
-    worm_obj = initialize_worm_object(df_tracklets, raw_clust, segmentation_metadata)
+    worm_obj = TrackedWorm(detections=tracklets_and_neurons_class, verbose=verbose)
+    worm_obj.initialize_neurons_from_training_data(df_training_data)
     worm_obj.initialize_all_neuron_tracklet_classifiers()
     if verbose >= 1:
         print("Initialized worm object:")

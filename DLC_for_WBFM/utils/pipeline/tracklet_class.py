@@ -83,7 +83,7 @@ class NeuronComposedOfTracklets:
 
         return is_match_added
 
-    def initialize_tracklet_classifier(self, list_of_tracklets):
+    def initialize_tracklet_classifier(self, list_of_tracklets, min_pts=10):
         """This object doesn't see the raw tracklet data, so it must be sent in the call"""
 
         x = [tracklet[self.fields_to_classify].dropna().to_numpy() for tracklet in list_of_tracklets]
@@ -91,8 +91,7 @@ class NeuronComposedOfTracklets:
             x = np.vstack(x)
         else:
             x = x[0]
-        min_pts = 10
-        assert x.shape[0] > min_pts, "Neuron needs more points to build a classifier"
+        assert x.shape[0] >= min_pts, "Neuron needs more points to build a classifier"
         self.base_classifier = OneClassSVM(nu=0.1).fit(x)
 
     def check_new_tracklet_using_classifier(self, candidate_tracklet):
