@@ -59,7 +59,8 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
     return df_new, final_matching, global_tracklet_neuron_graph, worm_obj, all_long_range_matches
 
 
-def global_track_matches_from_config(project_path, to_save=True, verbose=2):
+def global_track_matches_from_config(project_path, to_save=True, verbose=2, DEBUG=False):
+    # Initialize project data and unpack
     project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True)
     df_tracklets = project_data.df_all_tracklets
     tracklets_and_neurons_class = project_data.tracklets_and_neurons_class
@@ -74,9 +75,11 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=2):
     if verbose >= 1:
         print(f"Initialized worm object: {worm_obj}")
 
+    # Add all candidates to neurons
     extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj,
                                         min_overlap=5, d_max=5, verbose=verbose)
 
+    # Create
     global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
     final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
     df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching,
@@ -128,7 +131,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     # Reserve any tracklets the neurons were initialized with (i.e. the training data)
     used_names = set()
     for _, neuron in worm_obj.global_name_to_neuron.items():
-        used_names.add(neuron.get_raw_tracklet_names())
+        used_names.update(neuron.get_raw_tracklet_names())
 
     # Add new tracklets
     for name, neuron in tqdm(worm_obj.global_name_to_neuron.items()):
