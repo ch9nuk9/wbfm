@@ -285,10 +285,19 @@ class MatchesAsGraph(Graph):
             name = self.tuple2name(*group_and_ind)
         return name
 
+    def raw_name_to_network_name(self, raw_name):
+        node_names = list(self)
+        nodes = self.nodes(data=True)
+        for name, node in zip(node_names, nodes):
+            if raw_name == node['metadata']:
+                return name
+        else:
+            return None
+
     def __repr__(self):
         return f"MatchesAsGraph object with {len(self.nodes)} nodes and {len(self.edges)} edges"
 
 
-def get_tracklet_name_from_full_name(name):
-    """Assume name is like: bipartite_1_trackletGroup_1_neuron228"""
-    return name.split('_')[-1]
+# def get_tracklet_name_from_full_name(name):
+#     """Assume name is like: bipartite_1_trackletGroup_1_neuron228"""
+#     return name.split('_')[-1]

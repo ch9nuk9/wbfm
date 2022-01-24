@@ -102,7 +102,8 @@ class NeuronComposedOfTracklets:
             return True
 
     def get_raw_tracklet_names(self):
-        network_names = self.neuron2tracklets.get_all_matches((0, 0))
+        this_neuron_name = self.neuron2tracklets.raw_name_to_network_name(self.name)
+        network_names = self.neuron2tracklets.get_all_matches(this_neuron_name)
         nodes = self.neuron2tracklets.nodes()
         tracklet_names = [nodes[n]['metadata'] for n in network_names]
         return tracklet_names
@@ -262,6 +263,11 @@ class TrackedWorm:
             new_neuron = self.initialize_new_neuron(initialization_frame=initialization_frame)
             new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
 
+    def initialize_all_neuron_tracklet_classifiers(self):
+        for name, neuron in self.global_name_to_neuron.items():
+            list_of_tracklets = self.get_tracklets_for_neuron(name)
+            neuron.initialize_tracklet_classifier(list_of_tracklets)
+
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
 
@@ -271,7 +277,7 @@ class TrackedWorm:
         list_of_tracklets = [self.detections.df_tracklets_zxy[n] for n in tracklet_names]
         return list_of_tracklets
 
-    def compose_global_neuron_and_tracklet_graph(self):
+    def compose_global_neuron_and_tracklet_graph(self) -> nx.Graph:
         return nx.compose_all([g.neuron2tracklets for g in self.global_name_to_neuron.values()])
 
     def __repr__(self):
