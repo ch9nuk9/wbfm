@@ -17,7 +17,6 @@ from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletA
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
-from scipy.spatial.distance import cdist
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
@@ -41,7 +40,6 @@ class ProjectData:
 
     df_training_tracklets: pd.DataFrame = None
     reindexed_masks_training: zarr.Array = None
-    reindexed_metadata_training: DetectedNeurons = None
 
     red_traces: pd.DataFrame = None
     green_traces: pd.DataFrame = None
@@ -248,8 +246,6 @@ class ProjectData:
         # Metadata uses class from segmentation package, which does lazy loading itself
         seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         obj.segmentation_metadata = DetectedNeurons(seg_metadata_fname)
-        reindexed_metadata_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_metadata')
-        obj.reindexed_metadata_training = DetectedNeurons(reindexed_metadata_training_fname)
 
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
@@ -400,35 +396,6 @@ class ProjectData:
         assert is_relative_index, "Only relative supported"
 
         return dataframe_to_numpy_zxy_single_frame(self.df_training_tracklets, t=i_frame)
-        # if is_relative_index:
-        #     i_frame = self.correct_relative_training_index(i_frame)
-        # return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
-
-    def get_centroids_as_numpy_training_with_unmatched(self, i_rel: int):
-        logging.warning("NOT UPDATED")
-        i_abs = self.correct_relative_training_index(i_rel)
-        matched_pts = self.reindexed_metadata_training.detect_neurons_from_file(i_abs)
-        all_pts = self.segmentation_metadata.detect_neurons_from_file(i_abs)
-
-        # Any points that do not have a near-identical match in matched_pts are unmatched
-        # These will be appended
-        tol = 2.0
-        ind_unmatched = ~np.any(cdist(all_pts, matched_pts) < tol, axis=1)
-
-        pts_to_add = all_pts[ind_unmatched, :]
-        final_pts = np.vstack([matched_pts, pts_to_add])
-        return final_pts
-
-    # def calc_matched_point_clouds(self, pair):
-    #     match = self.raw_matches[pair]
-    #     pts0, pts1 = [], []
-    #     n0, n1 = self.get_centroids_as_numpy(pair[0]), self.get_centroids_as_numpy(pair[1])
-    #     for m in match.final_matches:
-    #         pts0.append(n0[m[0]])
-    #         pts1.append(n1[m[1]])
-    #
-    #     pts0, pts1 = np.array(pts0), np.array(pts1)
-    #     return pts0, pts1
 
     def get_distance_to_closest_neuron(self, i_frame, target_pt, nbr_obj=None):
         # TODO: refactor to segmentation class?
