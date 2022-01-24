@@ -405,6 +405,7 @@ class ProjectData:
         # return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
 
     def get_centroids_as_numpy_training_with_unmatched(self, i_rel: int):
+        logging.warning("NOT UPDATED")
         i_abs = self.correct_relative_training_index(i_rel)
         matched_pts = self.reindexed_metadata_training.detect_neurons_from_file(i_abs)
         all_pts = self.segmentation_metadata.detect_neurons_from_file(i_abs)
