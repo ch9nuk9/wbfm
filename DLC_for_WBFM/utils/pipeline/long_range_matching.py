@@ -89,6 +89,10 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=2):
         output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
         track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
 
+        updates = {'final_3d_tracks_df': str(output_df_fname)}
+        track_config.config.update(updates)
+        track_config.update_on_disk()
+
     return df_new, final_matching, global_tracklet_neuron_graph, worm_obj
 
 
