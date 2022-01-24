@@ -325,8 +325,9 @@ def b_matching_via_node_copying(global_tracklet_neuron_graph):
             neuron_copy_name = name0
             tracklet_raw_name = name1
         else:
-            tracklet_raw_name = name0
-            neuron_copy_name = name1
+            continue
+            # tracklet_raw_name = name0
+            # neuron_copy_name = name1
 
         # Get the names as they are in the graph above
         # Note that all the copies of the neurons do NOT have the same weights to a given tracklet
