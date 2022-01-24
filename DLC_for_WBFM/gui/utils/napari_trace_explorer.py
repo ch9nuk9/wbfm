@@ -387,13 +387,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def max_time(self):
         return len(self.dat.final_tracks) - 1
 
+    @property
+    def zoom_opt(self):
+        return dict(
+            zoom=None,
+            layer_is_full_size_and_single_neuron=False,
+            layer_name='final_track'
+        )
+
     def zoom_next(self, viewer=None):
         change_viewer_time_point(self.viewer, dt=1, a_max=self.max_time)
-        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+        zoom_using_viewer(self.viewer, **self.zoom_opt)
 
     def zoom_previous(self, viewer=None):
         change_viewer_time_point(self.viewer, dt=-1, a_max=self.max_time)
-        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+        zoom_using_viewer(self.viewer, **self.zoom_opt)
 
     def zoom_to_next_nan(self, viewer=None):
         y_on_plot = self.y_on_plot
@@ -402,7 +410,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             if np.isnan(y_on_plot[i]):
                 t_target = i
                 change_viewer_time_point(self.viewer, t_target=t_target - 1)
-                zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+                zoom_using_viewer(self.viewer, **self.zoom_opt)
                 break
         else:
             print("No nan point found; not moving")
@@ -413,7 +421,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         if conflict_neuron is not None:
             change_viewer_time_point(self.viewer, t_target=t)
-            zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+            zoom_using_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No conflict point found; not moving")
 

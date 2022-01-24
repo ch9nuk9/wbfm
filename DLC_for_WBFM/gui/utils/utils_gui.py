@@ -70,10 +70,10 @@ def array2qt(img):
 
 
 def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_past', zoom=None,
-                      layer_is_single_neuron=True, ind_within_layer=None) -> None:
+                      layer_is_full_size_and_single_neuron=True, ind_within_layer=None) -> None:
     # Get current point
     t = viewer.dims.current_step[0]
-    if layer_is_single_neuron:
+    if layer_is_full_size_and_single_neuron:
         tzxy = get_zxy_from_single_neuron_layer(viewer.layers[layer_name], t)
     else:
         tzxy = get_zxy_from_multi_neuron_layer(viewer.layers[layer_name], t, ind_within_layer)
@@ -100,6 +100,7 @@ def get_zxy_from_single_neuron_layer(layer, t, ind_within_layer=None):
 
 def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer):
     # e.g. text labels, with all neurons in a time point in a row (thus t is no longer a direct index)
+    # Or, if nans have been dropped from an otherwise full-size layer
     ind = layer.data[:, 0] == t
     return layer.data[ind, :][ind_within_layer, :]
 
