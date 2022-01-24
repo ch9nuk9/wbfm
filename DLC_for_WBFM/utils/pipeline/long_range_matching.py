@@ -96,6 +96,10 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=2, DEBU
         track_config.config.update(updates)
         track_config.update_on_disk()
 
+        output_fname = track_config.config['global2tracklet_matches_fname']
+        global2tracklet = final_matching.get_mapping_0_to_1(unique=False)
+        track_config.pickle_in_local_project(global2tracklet, output_fname, make_sequential_filename=True)
+
     return df_new, final_matching, global_tracklet_neuron_graph, worm_obj
 
 

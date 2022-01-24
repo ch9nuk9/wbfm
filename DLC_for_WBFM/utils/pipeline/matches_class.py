@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Tuple, Dict
 
@@ -65,11 +66,20 @@ class MatchesWithConfidence:
         self.indices1.append(new_match[1])
         self.confidence.append(new_match[2])
 
-    def get_mapping_0_to_1(self, conf_threshold=0.0):
-        if self.confidence is None:
-            return {n0: n1 for n0, n1 in zip(self.indices0, self.indices1)}
+    def get_mapping_0_to_1(self, conf_threshold=0.0, unique=False):
+        if unique:
+            if self.confidence is None:
+                return {n0: n1 for n0, n1 in zip(self.indices0, self.indices1)}
+            else:
+                return {n0: n1 for n0, n1, c in zip(self.indices0, self.indices1, self.confidence) if c > conf_threshold}
         else:
-            return {n0: n1 for n0, n1, c in zip(self.indices0, self.indices1, self.confidence) if c > conf_threshold}
+            mapping = defaultdict(list)
+            if self.confidence is None:
+                [mapping[n0].append(n1) for n0, n1 in zip(self.indices0, self.indices1)]
+            else:
+                [mapping[n0].append(n1) for n0, n1, c in zip(self.indices0, self.indices1, self.confidence)
+                 if c > conf_threshold]
+        return mapping
 
     def get_mapping_1_to_0(self, conf_threshold=0.0):
         if self.confidence is None:
