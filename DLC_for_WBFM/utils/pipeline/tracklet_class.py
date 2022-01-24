@@ -101,7 +101,6 @@ class NeuronComposedOfTracklets:
         else:
             return True
 
-
     def get_raw_tracklet_names(self):
         network_names = self.neuron2tracklets.get_all_matches((0, 0))
         nodes = self.neuron2tracklets.nodes()
@@ -249,7 +248,7 @@ class TrackedWorm:
             # Assume tracklets are ordered, such that the first tracklet which starts at t>0 mean all the rest do
             if np.isnan(tracklet[name]['z'].iloc[t]):
                 break
-            new_neuron = self.initialize_new_neuron()
+            new_neuron = self.initialize_new_neuron(initialization_frame=t)
             new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
 
     def initialize_neurons_from_training_data(self, df_training_data):
@@ -259,7 +258,8 @@ class TrackedWorm:
         for i, name in enumerate(training_tracklet_names):
             # this tracklet should still have a multi-level index
             tracklet = self.detections.df_tracklets_zxy[[name]]
-            new_neuron = self.initialize_new_neuron()
+            initialization_frame = tracklet.first_valid_index()
+            new_neuron = self.initialize_new_neuron(initialization_frame=initialization_frame)
             new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
 
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
