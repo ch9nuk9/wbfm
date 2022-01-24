@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import zarr
 
+from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
@@ -396,9 +397,12 @@ class ProjectData:
 
     def get_centroids_as_numpy_training(self, i_frame: int, is_relative_index=True) -> np.ndarray:
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
-        if is_relative_index:
-            i_frame = self.correct_relative_training_index(i_frame)
-        return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
+        assert is_relative_index, "Only relative supported"
+
+        return dataframe_to_numpy_zxy_single_frame(self.df_training_tracklets, t=i_frame)
+        # if is_relative_index:
+        #     i_frame = self.correct_relative_training_index(i_frame)
+        # return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
 
     def get_centroids_as_numpy_training_with_unmatched(self, i_rel: int):
         i_abs = self.correct_relative_training_index(i_rel)

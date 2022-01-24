@@ -13,6 +13,6 @@ def dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy=False) -> pd.DataFra
     return df_tracklets
 
 
-def dataframe_to_numpy_zxy_format(df_tracklets, flip_xy=False) -> np.ndarray:
-    df_zxy = dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy)
+def dataframe_to_numpy_zxy_single_frame(df_tracklets, t, flip_xy=False) -> np.ndarray:
+    df_zxy = dataframe_to_dataframe_zxy_format(df_tracklets.iloc[[t], :], flip_xy)
     return df_zxy.to_numpy().reshape(-1, 3)
