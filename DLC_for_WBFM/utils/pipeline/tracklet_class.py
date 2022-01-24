@@ -40,6 +40,10 @@ class NeuronComposedOfTracklets:
     def neuron_ind(self):
         return name2int_neuron_and_tracklet(self.name) - 1
 
+    @property
+    def name_in_graph(self):
+        return self.neuron2tracklets.raw_name_to_network_name(self.name)
+
     def __post_init__(self):
         if self.tracklet_covering_ind is None:
             self.tracklet_covering_ind = []
@@ -250,8 +254,10 @@ class TrackedWorm:
             # Assume tracklets are ordered, such that the first tracklet which starts at t>0 mean all the rest do
             if np.isnan(tracklet[name]['z'].iloc[t]):
                 break
+            i_tracklet = name2int_neuron_and_tracklet(name)
+            confidence = 1.0
             new_neuron = self.initialize_new_neuron(initialization_frame=t)
-            new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
+            new_neuron.add_tracklet(i_tracklet, confidence, tracklet, metadata=f"Initial tracklet")
 
     def initialize_neurons_from_training_data(self, df_training_data):
         training_tracklet_names = translate_training_names_to_raw_names(df_training_data)
@@ -261,8 +267,10 @@ class TrackedWorm:
             # this tracklet should still have a multi-level index
             tracklet = self.detections.df_tracklets_zxy[[name]]
             initialization_frame = tracklet.first_valid_index()
+            i_tracklet = name2int_neuron_and_tracklet(name)
+            confidence = 1.0
             new_neuron = self.initialize_new_neuron(initialization_frame=initialization_frame)
-            new_neuron.add_tracklet(i, 1.0, tracklet, metadata=f"Initial tracklet")
+            new_neuron.add_tracklet(i_tracklet, confidence, tracklet, metadata=f"Initial tracklet")
 
     def initialize_all_neuron_tracklet_classifiers(self):
         for name, neuron in self.global_name_to_neuron.items():
@@ -279,7 +287,7 @@ class TrackedWorm:
         return list_of_tracklets
 
     def compose_global_neuron_and_tracklet_graph(self) -> MatchesAsGraph:
-        return nx.compose_all([g.neuron2tracklets for g in self.global_name_to_neuron.values()])
+        return nx.compose_all([neuron.neuron2tracklets for neuron in self.global_name_to_neuron.values()])
 
     def __repr__(self):
         short_message = f"Worm with {self.num_neurons} neurons"

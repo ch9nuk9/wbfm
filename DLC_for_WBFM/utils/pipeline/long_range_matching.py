@@ -166,6 +166,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
             conf = dist2conf(this_distance)
             is_match_added = neuron.add_tracklet(i_tracklet, conf, candidate_tracklet, metadata=candidate_name,
                                                  check_using_classifier=True)
+
         if verbose >= 2:
             print(f"{num_candidate_neurons} candidate tracklets")
             print(f"Tracklets added to make neuron: {neuron}")
