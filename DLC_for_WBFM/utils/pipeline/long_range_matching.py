@@ -59,8 +59,40 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
     return df_new, final_matching, global_tracklet_neuron_graph, worm_obj, all_long_range_matches
 
 
-def extend_tracks_using_global_tracking(project_data: ProjectData,
-                                        min_overlap=5, d_max=5, verbose=0):
+def global_track_matches_from_config(project_path, to_save=True, verbose=2):
+    project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True)
+    df_tracklets = project_data.df_all_tracklets
+    segmentation_metadata = project_data.segmentation_metadata
+    raw_clust = project_data.raw_clust
+    df_global_tracks = project_data.intermediate_global_tracks
+
+    all_tracklet_names = df_tracklets.columns.get_level_values(0).drop_duplicates()
+
+    worm_obj = initialize_worm_object(df_tracklets, raw_clust, segmentation_metadata)
+    worm_obj.initialize_all_neuron_tracklet_classifiers()
+    if verbose >= 1:
+        print("Initialized worm object:")
+        print(worm_obj)
+
+    extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj,
+                                        min_overlap=5, d_max=5)
+
+    global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
+    final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
+    df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching)
+
+    # SAVE
+    if to_save:
+        track_config = project_data.project_config.get_tracking_config()
+
+        output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
+        track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
+
+    return df_new, final_matching, global_tracklet_neuron_graph, worm_obj
+
+
+def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj: TrackedWorm,
+                                        min_overlap=5, d_max=5):
     """
     For each neuron, get the relevant global track
     Then calculate all track-tracklet distances, using percent inliers
@@ -83,8 +115,6 @@ def extend_tracks_using_global_tracking(project_data: ProjectData,
     No return value; neurons contain all information
 
     """
-    df_global_tracks = project_data.intermediate_global_tracks
-    df_tracklets = project_data.df_all_tracklets
     # Pre-make coordinates so that the dataframe is not continuously indexed
     coords = ['z', 'x', 'y']
     all_tracklet_names = list(df_tracklets.columns.levels[0])
@@ -92,19 +122,11 @@ def extend_tracks_using_global_tracking(project_data: ProjectData,
 
     used_names = []
 
-    logging.info("Initializing worm object with neurons...")
-    tracklets_and_neurons_class = project_data.tracklets_and_neurons_class
-    worm_obj = TrackedWorm(detections=tracklets_and_neurons_class, verbose=1)
-    worm_obj.initialize_all_neuron_tracklet_classifiers()
-    if verbose >= 1:
-        print("Initialized worm object:")
-        print(worm_obj)
-
     for name, neuron in tqdm(worm_obj.global_name_to_neuron.items()):
 
         # New: use the track as produced by the global tracking
         # TODO: confirm that the worm_obj has the same neuron names as leifer
-        this_global_track = df_global_tracks[name]
+        this_global_track = df_global_tracks[name][coords][:-1].replace(0.0, np.nan).to_numpy(float)
 
         # TODO: calculate distance using percent inliers
         dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy, all_tracklet_names,
