@@ -38,5 +38,4 @@ def combine_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    # TODO: do I need the imputed df option here?
     global_track_matches_from_config(_config['project_path'], DEBUG=DEBUG)

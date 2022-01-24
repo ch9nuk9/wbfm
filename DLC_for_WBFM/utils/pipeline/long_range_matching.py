@@ -77,7 +77,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=2, DEBU
 
     # Add all candidates to neurons
     extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj,
-                                        min_overlap=5, d_max=5, verbose=verbose)
+                                        min_overlap=5, d_max=5, verbose=verbose, DEBUG=DEBUG)
 
     # Create
     global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
@@ -100,7 +100,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=2, DEBU
 
 
 def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj: TrackedWorm,
-                                        min_overlap=5, d_max=5, verbose=0):
+                                        min_overlap=5, d_max=5, verbose=0, DEBUG=False):
     """
     For each neuron, get the relevant global track
     Then calculate all track-tracklet distances, using percent inliers
@@ -165,6 +165,9 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         if verbose >= 2:
             print(f"{num_candidate_neurons} candidate tracklets")
             print(f"Tracklets added to make neuron: {neuron}")
+
+        if DEBUG:
+            break
 
 
 def extend_tracks_using_similar_postures(all_frames, frame_pair_options, reference_posture,
@@ -287,9 +290,10 @@ def b_matching_via_node_copying(global_tracklet_neuron_graph):
 
     NOTE: assumes the 'metadata' field of the nodes should be used as the final match names
     """
+    logging.info("Matching using b_matching_via_node_copying")
     neuron_nodes = global_tracklet_neuron_graph.get_nodes_of_class(0)
     tracklet_nodes = global_tracklet_neuron_graph.get_nodes_of_class(1)
-    global_tracklet_neuron_graph_with_copies = nx.Graph(global_tracklet_neuron_graph.subgraph(tracklet_nodes))
+    global_tracklet_neuron_graph_with_copies = global_tracklet_neuron_graph.subgraph(tracklet_nodes).copy()
     new_name_to_original_name = dict()
     for n in neuron_nodes:
         original_edges = list(global_tracklet_neuron_graph.edges(n, data=True))
@@ -304,8 +308,9 @@ def b_matching_via_node_copying(global_tracklet_neuron_graph):
             global_tracklet_neuron_graph_with_copies.add_edges_from(new_edges)
 
     # Do normal bipartite matching, such that each tracklet gets a match to some copy of a neuron
+    # Note: the neuron copies don't have metadata set
     g = global_tracklet_neuron_graph_with_copies
-    extended_tracklet_nodes = {n for n, d in g.nodes(data=True) if d["bipartite"] == 1}
+    extended_tracklet_nodes = {n for n, d in g.nodes(data=True) if "tracklet" in n}
     matching_with_copies = nx.bipartite.maximum_matching(g, top_nodes=extended_tracklet_nodes)
 
     # Collapse the added copies back to the original neuron, to get a many-to-one matching
@@ -319,7 +324,7 @@ def b_matching_via_node_copying(global_tracklet_neuron_graph):
             neuron_copy_name = name1
 
         # Get the names as they are in the graph above
-        # Note that all the copies of the neurons have the same weights to a given tracklet
+        # Note that all the copies of the neurons do NOT have the same weights to a given tracklet
         neuron_raw_name = new_name_to_original_name[neuron_copy_name]
         weight = global_tracklet_neuron_graph[neuron_raw_name][tracklet_raw_name]['weight']
 
