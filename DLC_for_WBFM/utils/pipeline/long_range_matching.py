@@ -121,8 +121,12 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     all_tracklet_names = list(df_tracklets.columns.levels[0])
     list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
 
+    # Each neuron has at least one tracklet already
     used_names = []
+    for _, neuron in worm_obj.global_name_to_neuron.items():
+        used_names.extend(neuron.get_raw_tracklet_names())
 
+    # Add new tracklets
     for name, neuron in tqdm(worm_obj.global_name_to_neuron.items()):
 
         # New: use the track as produced by the global tracking
