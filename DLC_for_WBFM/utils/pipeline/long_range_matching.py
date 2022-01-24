@@ -134,7 +134,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         used_names.update(neuron.get_raw_tracklet_names())
 
     # Add new tracklets
-    for name, neuron in tqdm(worm_obj.global_name_to_neuron.items()):
+    for i, (name, neuron) in enumerate(tqdm(worm_obj.global_name_to_neuron.items())):
 
         # New: use the track as produced by the global tracking
         # TODO: confirm that the worm_obj has the same neuron names as leifer
@@ -166,7 +166,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
             print(f"{num_candidate_neurons} candidate tracklets")
             print(f"Tracklets added to make neuron: {neuron}")
 
-        if DEBUG:
+        if DEBUG and i > 2:
             break
 
 
