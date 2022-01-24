@@ -141,7 +141,7 @@ class MatchesWithConfidence:
         return MatchesWithConfidence(row_i, col_i, conf, gamma)
 
     def __repr__(self):
-        return f"MatchesWithConfidence class matching {len(self.get_mapping_0_to_1())} class A and " \
+        return f"MatchesWithConfidence class with {len(self.get_mapping_0_to_1())} class A and " \
                f"{len(self.get_mapping_1_to_0())} class B matched objects, with {len(self.indices0)} edges"
 
 
@@ -299,7 +299,8 @@ class MatchesAsGraph(Graph):
         return {n for n, d in self.nodes(data=True) if d["bipartite"] == i_class}
 
     def __repr__(self):
-        return f"MatchesAsGraph object with {len(self.nodes)} nodes and {len(self.edges)} edges"
+        return f"MatchesAsGraph object with {len(self.get_nodes_of_class(0))} class A nodes and " \
+               f"{len(self.get_nodes_of_class(1))} class B nodes, with {len(self.edges)} edges"
 
 
 # def get_tracklet_name_from_full_name(name):

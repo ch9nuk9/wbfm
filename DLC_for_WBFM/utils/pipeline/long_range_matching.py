@@ -125,10 +125,10 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     all_tracklet_names = list(df_tracklets.columns.levels[0])
     list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
 
-    # Each neuron has at least one tracklet already
-    used_names = []
+    # Reserve any tracklets the neurons were initialized with (i.e. the training data)
+    used_names = set()
     for _, neuron in worm_obj.global_name_to_neuron.items():
-        used_names.extend(neuron.get_raw_tracklet_names())
+        used_names.add(neuron.get_raw_tracklet_names())
 
     # Add new tracklets
     for name, neuron in tqdm(worm_obj.global_name_to_neuron.items()):
@@ -138,26 +138,29 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         this_global_track = df_global_tracks[name][coords][:-1].replace(0.0, np.nan).to_numpy(float)
 
         # TODO: calculate distance using percent inliers
-        dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy, all_tracklet_names,
-                                                       used_names,
+        dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy,
                                                        min_overlap=min_overlap)
 
         # Loop through candidates, and attempt to add
         all_summarized_dist = list(map(lambda x: np.nanquantile(x, 0.1), dist))
         i_sorted_by_median_distance = np.argsort(all_summarized_dist)
-
-        for i_tracklet in i_sorted_by_median_distance:
+        num_candidate_neurons = 0
+        for num_candidate_neurons, i_tracklet in enumerate(i_sorted_by_median_distance):
+            # Check if this was used before
+            candidate_name = all_tracklet_names[i_tracklet]
+            if candidate_name in used_names:
+                continue
             # Check distance; break because they are sorted by distance
             this_distance = all_summarized_dist[i_tracklet]
             if this_distance > d_max:
                 break
 
-            candidate_name = all_tracklet_names[i_tracklet]
             candidate_tracklet = df_tracklets[[candidate_name]]
             conf = dist2conf(this_distance)
             is_match_added = neuron.add_tracklet(i_tracklet, conf, candidate_tracklet, metadata=candidate_name,
                                                  check_using_classifier=True)
         if verbose >= 2:
+            print(f"{num_candidate_neurons} candidate tracklets")
             print(f"Tracklets added to make neuron: {neuron}")
 
 
@@ -295,12 +298,13 @@ def b_matching_via_node_copying(global_tracklet_neuron_graph):
 
             # Add a copy of the node for each edge, which has all the original edges
             new_edges = [[new_name, e[1], e[2]] for e in original_edges]
-
             global_tracklet_neuron_graph_with_copies.add_edges_from(new_edges)
-    # Do normal bipartite matching, such that each tracklet gets a match
-    extended_tracklet_nodes = {n for n, d in global_tracklet_neuron_graph.nodes(data=True) if d["bipartite"] == 1}
-    matching_with_copies = nx.bipartite.maximum_matching(global_tracklet_neuron_graph_with_copies,
-                                                         top_nodes=extended_tracklet_nodes)
+
+    # Do normal bipartite matching, such that each tracklet gets a match to some copy of a neuron
+    g = global_tracklet_neuron_graph_with_copies
+    extended_tracklet_nodes = {n for n, d in g.nodes(data=True) if d["bipartite"] == 1}
+    matching_with_copies = nx.bipartite.maximum_matching(g, top_nodes=extended_tracklet_nodes)
+
     # Collapse the added copies back to the original neuron, to get a many-to-one matching
     final_matching = MatchesWithConfidence()
     for name0, name1 in matching_with_copies.items():
@@ -312,6 +316,7 @@ def b_matching_via_node_copying(global_tracklet_neuron_graph):
             neuron_copy_name = name1
 
         # Get the names as they are in the graph above
+        # Note that all the copies of the neurons have the same weights to a given tracklet
         neuron_raw_name = new_name_to_original_name[neuron_copy_name]
         weight = global_tracklet_neuron_graph[neuron_raw_name][tracklet_raw_name]['weight']
 

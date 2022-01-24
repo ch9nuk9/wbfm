@@ -18,19 +18,15 @@ from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_sequential_filename
 
 
-def calc_global_track_to_tracklet_distances(this_global_track: np.ndarray, list_tracklets_zxy: list, all_tracklet_names: list,
-                                            used_names=None, min_overlap: int = 0):
+def calc_global_track_to_tracklet_distances(this_global_track: np.ndarray, list_tracklets_zxy: list,
+                                            min_overlap: int = 0):
     """For one DLC neuron, calculate distances between that track and all tracklets"""
 
-    if used_names is None:
-        used_names = set()
     all_dist = []
-    for name, this_tracklet in zip(all_tracklet_names, list_tracklets_zxy):
+    for this_tracklet in list_tracklets_zxy:
         # Check for already belonging to another track
-        if name not in used_names:
-            dist = calc_dist_if_overlap(this_tracklet, min_overlap, this_global_track)
-        else:
-            dist = np.inf
+        dist = calc_dist_if_overlap(this_tracklet, min_overlap, this_global_track)
+
         all_dist.append(dist)
     return all_dist
 
@@ -326,7 +322,7 @@ def match_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFi
         this_global_track = df_global_tracks[global_name][coords].to_numpy()
         # TODO: make the tracklets the proper length before this
         this_global_track = this_global_track[:-1, :]
-        dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy, all_tracklet_names, used_names,
+        dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy,
                                                        min_overlap=min_overlap)
         previous_matches = global2tracklet[global_name]
         covering_time_points = get_already_covered_indices(df_tracklets, previous_matches)
