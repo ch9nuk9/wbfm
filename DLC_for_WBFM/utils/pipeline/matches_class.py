@@ -141,7 +141,8 @@ class MatchesWithConfidence:
         return MatchesWithConfidence(row_i, col_i, conf, gamma)
 
     def __repr__(self):
-        return f"MatchesWithConfidence class with {self.get_num_matches()} matches"
+        return f"MatchesWithConfidence class matching {len(self.get_mapping_0_to_1())} class A and " \
+               f"{len(self.get_mapping_1_to_0())} class B matched objects, with {len(self.indices0)} edges"
 
 
 class MatchesAsGraph(Graph):
