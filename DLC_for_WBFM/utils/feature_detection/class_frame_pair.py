@@ -7,7 +7,6 @@ import cv2
 import numpy as np
 import pandas as pd
 from napari.utils.transforms import Affine
-from backports.cached_property import cached_property
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
@@ -15,8 +14,8 @@ from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError, A
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates, dist2conf
-from DLC_for_WBFM.utils.nn_utils.data_formatting import zimmer2leifer, flatten_nested_list
+from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candidates, dist2conf
+from DLC_for_WBFM.utils.nn_utils.data_formatting import flatten_nested_list
 from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
 
 

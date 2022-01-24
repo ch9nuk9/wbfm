@@ -1,9 +1,8 @@
-from typing import Dict
 import cv2
 import numpy as np
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches, calc_nearest_neighbor_matches
+from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
 
 
 def propagate_via_affine_model(which_neuron: int,

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError, NoNeuronsError
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates
+from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import matches_between_tracks, \
     remove_outliers_to_combine_tracks

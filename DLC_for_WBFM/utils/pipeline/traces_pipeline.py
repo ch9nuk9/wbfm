@@ -10,7 +10,7 @@ import zarr
 from tqdm import tqdm
 
 from DLC_for_WBFM.utils.postprocessing.utils_metadata import region_props_all_volumes, _convert_nested_dict_to_dataframe
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_nearest_neighbor_matches
+from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets

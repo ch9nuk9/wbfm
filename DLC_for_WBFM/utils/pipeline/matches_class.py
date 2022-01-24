@@ -5,7 +5,7 @@ from typing import List, Tuple, Dict
 import numpy as np
 from networkx import Graph, NetworkXError
 
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import dist2conf
+from DLC_for_WBFM.utils.external.utils_networkx import dist2conf
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, int2name_using_mode
 from scipy.optimize import linear_sum_assignment
 

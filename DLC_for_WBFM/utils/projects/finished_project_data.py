@@ -18,7 +18,7 @@ from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_fr
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 from scipy.spatial.distance import cdist
-from segmentation.util.utils_metadata import DetectedNeurons, get_metadata_dictionary
+from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
     load_file_according_to_precedence

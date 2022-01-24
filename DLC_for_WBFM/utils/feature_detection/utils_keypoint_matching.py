@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches
+from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches
 
 
 ##

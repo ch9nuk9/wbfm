@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 from networkx.algorithms.community import k_clique_communities
 
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, \
+from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, \
     unpack_node_name, is_one_neuron_per_frame
 
 

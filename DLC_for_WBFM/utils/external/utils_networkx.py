@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, List
+from typing import Tuple
 
 import networkx as nx
 import numpy as np
