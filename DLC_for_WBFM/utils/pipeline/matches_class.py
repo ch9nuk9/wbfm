@@ -311,10 +311,10 @@ class MatchesAsGraph(Graph):
         # else:
         #     self._raw2network_names = {}
 
-        node_names = list(self)
-        nodes = self.nodes(data=True)
-        for name, node in zip(node_names, nodes):
-            if raw_name == node[1]['metadata']:
+        # node_names = list(self)
+        nodes = dict(self.nodes(data=True))
+        for name, node in nodes.items():
+            if raw_name == node['metadata']:
                 # self._raw2network_names[raw_name] = name
                 return name
         else:

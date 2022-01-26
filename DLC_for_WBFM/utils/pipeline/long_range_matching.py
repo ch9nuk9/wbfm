@@ -175,7 +175,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
 
             candidate_tracklet = df_tracklets[[candidate_name]]
             conf = dist2conf(this_distance)
-            is_match_added = neuron.add_tracklet(i_tracklet, conf, candidate_tracklet, metadata=candidate_name,
+            is_match_added = neuron.add_tracklet(conf, candidate_tracklet, metadata=candidate_name,
                                                  check_using_classifier=True)
 
         if verbose >= 2:
@@ -237,14 +237,13 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
 
             # From the long-range match (including frame information), get the tracklet
             # For now, just accept it
-            matched_tracklet_ind, matched_tracklet_name = worm_obj.detections.get_tracklet_from_neuron_and_time(i_matched_neuron,
-                                                                                                       i_next_similar_posture)
+            _, matched_tracklet_name = worm_obj.detections.get_tracklet_from_neuron_and_time(i_matched_neuron,
+                                                                                             i_next_similar_posture)
             if matched_tracklet_name is None:
                 # i.e. there was a neuron match, but it doesn't belong to any tracklet
                 continue
             matched_tracklet_df = worm_obj.detections.df_tracklets_zxy[[matched_tracklet_name]]
-            track.add_tracklet(matched_tracklet_ind,
-                               confidence=conf,
+            track.add_tracklet(confidence=conf,
                                tracklet=matched_tracklet_df,
                                metadata=f"Match due to pair {pair_indices}; original name {matched_tracklet_name}")
 

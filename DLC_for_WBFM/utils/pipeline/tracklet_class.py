@@ -60,9 +60,10 @@ class NeuronComposedOfTracklets:
     def next_gap(self):
         return self.tracklet_covering_ind[-1] + 1
 
-    def add_tracklet(self, i_tracklet, confidence, tracklet: pd.DataFrame, metadata=None,
+    def add_tracklet(self, confidence, tracklet: pd.DataFrame, metadata=None,
                      check_using_classifier=False):
         tracklet_name = tracklet.columns.get_level_values(0).drop_duplicates()[0]
+        i_tracklet = name2int_neuron_and_tracklet(tracklet_name)
         passed_classifier = True
         if check_using_classifier:
             if self.base_classifier:
@@ -254,10 +255,9 @@ class TrackedWorm:
             # Assume tracklets are ordered, such that the first tracklet which starts at t>0 mean all the rest do
             if np.isnan(tracklet[name]['z'].iloc[t]):
                 break
-            i_tracklet = name2int_neuron_and_tracklet(name)
             confidence = 1.0
             new_neuron = self.initialize_new_neuron(initialization_frame=t)
-            new_neuron.add_tracklet(i_tracklet, confidence, tracklet, metadata=name)
+            new_neuron.add_tracklet(confidence, tracklet, metadata=name)
 
     def initialize_neurons_from_training_data(self, df_training_data):
         training_tracklet_names = translate_training_names_to_raw_names(df_training_data)
@@ -267,10 +267,9 @@ class TrackedWorm:
             # this tracklet should still have a multi-level index
             tracklet = self.detections.df_tracklets_zxy[[name]]
             initialization_frame = tracklet.first_valid_index()
-            i_tracklet = name2int_neuron_and_tracklet(name)
             confidence = 1.0
             new_neuron = self.initialize_new_neuron(initialization_frame=initialization_frame)
-            new_neuron.add_tracklet(i_tracklet, confidence, tracklet, metadata=name)
+            new_neuron.add_tracklet(confidence, tracklet, metadata=name)
 
     def initialize_all_neuron_tracklet_classifiers(self):
         for name, neuron in self.global_name_to_neuron.items():
