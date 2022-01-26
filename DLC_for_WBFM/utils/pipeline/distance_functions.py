@@ -31,13 +31,20 @@ def calc_dist_if_overlap(this_tracklet: np.ndarray, min_overlap: int, this_globa
 
 
 def summarize_distances_quantile(all_dists):
-    return list(map(lambda x: np.nanquantile(x, 0.1), all_dists))
+    out = []
+    for d in all_dists:
+        if np.isscalar(d) and not np.isfinite(d):
+            out.append(np.nan)
+            continue
+        out.append(np.nanquantile(d, 0.1))
+    return np.array(out)
+    # return list(map(lambda x: np.nanquantile(x, 0.1), all_dists))
 
 
 def summarize_distances_outlier_percent(all_dists):
     out = []
     for d in all_dists:
-        if not np.isfinite(d):
+        if np.isscalar(d) and not np.isfinite(d):
             out.append(np.nan)
             continue
         len_d = len(d)
