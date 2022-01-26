@@ -299,6 +299,52 @@ def combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_mat
     return df_new
 
 
+def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets):
+    """
+    As an alternative to b_matching_via_node_copying, do a separate bipartite matching problem on the small subgraphs of
+    tracklets defined for each time point
+
+    Note that this nearly but not completely enforces time-uniqueness
+
+    Returns
+    -------
+
+    """
+    bipartite_slice_matches = MatchesWithConfidence()
+
+    neuron_nodes = global_tracklet_neuron_graph.get_nodes_of_class(0)
+    t_list = list(range(df_tracklets.shape[0]))
+
+    for t in tqdm(t_list):
+        df_at_time = df_tracklets.loc[[t], :]
+        names_at_time = get_names_from_df(df_at_time.dropna(axis=1))
+        names_at_time.sort()
+
+        # Convert raw tracklet names to node names
+        tracklet_names = [global_tracklet_neuron_graph.raw_name_to_network_name(n) for n in names_at_time]
+
+        # Also add the neurons
+        network_names_at_time = tracklet_names.copy()
+        network_names_at_time.extend(neuron_nodes)
+
+        # Build subgraph and do matching
+        subgraph = global_tracklet_neuron_graph.subgraph(network_names_at_time).copy()
+        subgraph_matching = nx.bipartite.maximum_matching(subgraph, top_nodes=tracklet_names)
+
+        # Get confidence, and add them back to the new object
+        for k, v in subgraph_matching.items():
+            # This dict has matches in both directions
+            if k not in neuron_nodes:
+                continue
+
+            k_raw = subgraph.network_name_to_raw_name(k)
+            v_raw = subgraph.network_name_to_raw_name(v)
+            conf = subgraph.get_edge_data(k, v)['weight']
+
+            bipartite_slice_matches.add_match([k_raw, v_raw, conf])
+
+    return bipartite_slice_matches
+
 def b_matching_via_node_copying(global_tracklet_neuron_graph):
     """
     Copy the bipartite=0 nodes so that this becomes a normal bipartite matching problem,
