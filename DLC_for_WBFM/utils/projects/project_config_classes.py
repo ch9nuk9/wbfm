@@ -193,6 +193,6 @@ def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> Subfolde
     # Add external detections
     if not os.path.exists(metadata_path):
         raise FileNotFoundError("Could not find external annotations")
-    train_cfg.config['tracker_params']['external_detections'] = metadata_path
+    train_cfg.config['tracker_params']['external_detections'] = segment_cfg.unresolve_absolute_path(metadata_path)
 
     return train_cfg
