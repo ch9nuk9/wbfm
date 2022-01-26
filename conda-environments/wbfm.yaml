@@ -1,11 +1,11 @@
-# fdnc.yaml
+# wbfm.yaml
 
 # Made by Charles Fieseler for intended use with:
 # fDNC
 #https://github.com/XinweiYu/fDNC_Neuron_ID
 #Please see AUTHORS for contributors.
 
-# update:  conda env update -f fdnc.yaml
+# update:  conda env update -f wbfm.yaml
 
 channels:
   - conda-forge
