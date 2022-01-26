@@ -6,6 +6,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import sklearn
+from matplotlib import pyplot as plt
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
@@ -30,7 +32,8 @@ class NeuronComposedOfTracklets:
     tracklet_covering_ind: list = None
 
     # For detecting outliers in candidate additional tracklet matches
-    base_classifier: sklearn.svm._classes.OneClassSVM = None
+    classifier: sklearn.svm._classes.OneClassSVM = None
+    scaler: sklearn.preprocessing._data.StandardScaler = None
     classifier_rejection_threshold: float = 0.0
     fields_to_classify: list = None
 
@@ -67,8 +70,8 @@ class NeuronComposedOfTracklets:
         i_tracklet = name2int_neuron_and_tracklet(tracklet_name)
         passed_classifier = True
         if check_using_classifier:
-            if self.base_classifier:
-                passed_classifier = self.check_new_tracklet_using_classifier(tracklet[tracklet_name].dropna())
+            if self.classifier:
+                passed_classifier, _ = self.check_new_tracklet_using_classifier(tracklet[tracklet_name].dropna())
             else:
                 logging.warning("Classifier requested but not initialized")
         if not passed_classifier:
@@ -98,15 +101,20 @@ class NeuronComposedOfTracklets:
         else:
             x = x[0]
         assert x.shape[0] >= min_pts, "Neuron needs more points to build a classifier"
-        self.base_classifier = OneClassSVM(nu=0.1).fit(x)
+
+        self.scaler = StandardScaler()
+        x = self.scaler.fit_transform(x)
+        self.classifier = OneClassSVM(nu=0.05, gamma=0.05, kernel='rbf').fit(x)
 
     def check_new_tracklet_using_classifier(self, candidate_tracklet: pd.DataFrame):
         y = candidate_tracklet[self.fields_to_classify]
-        predictions = self.base_classifier.predict(y.values)  # -1 means outlier
-        if np.mean(predictions) < self.classifier_rejection_threshold:
-            return False
+        y = self.scaler.transform(y.values)
+        predictions = self.classifier.predict(y)  # -1 means outlier
+        fraction_outliers = np.mean(predictions)
+        if fraction_outliers < self.classifier_rejection_threshold:
+            return False, fraction_outliers
         else:
-            return True
+            return True, fraction_outliers
 
     def get_raw_tracklet_names(self):
         this_neuron_name = self.neuron2tracklets.raw_name_to_network_name(self.name)
@@ -114,6 +122,23 @@ class NeuronComposedOfTracklets:
         nodes = self.neuron2tracklets.nodes()
         tracklet_names = [nodes[n]['metadata'] for n in network_names]
         return tracklet_names
+
+    def plot_classifier_boundary(self):
+        """Assumes z and volume are the classifier coordinates"""
+
+        # xx, yy = np.meshgrid(np.linspace(0, 30, 1500), np.linspace(100, 1000, 1500))
+        xx, yy = np.meshgrid(np.linspace(-5, 5, 500), np.linspace(-5, 5, 500))
+        Z = self.classifier.decision_function(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
+
+        # Send back to original data space
+        xy = self.scaler.inverse_transform(np.c_[xx.ravel(), yy.ravel()])
+        xx, yy = xy[:, 0], xy[:, 1]
+        xx = xx.reshape(Z.shape)
+        yy = yy.reshape(Z.shape)
+
+        plt.contourf(xx, yy, Z, levels=np.linspace(Z.min(), 0, 7), cmap=plt.cm.PuBu)
+        a = plt.contour(xx, yy, Z, levels=[0], linewidths=2, colors="darkred")
 
     def __repr__(self):
         return f"Neuron {self.name} (index={self.neuron_ind}) with {len(self.neuron2tracklets) - 1} tracklets " \
