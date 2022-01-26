@@ -68,7 +68,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=2, DEBU
     df_global_tracks = project_data.intermediate_global_tracks
     df_training_data = project_data.df_training_tracklets
 
-    all_tracklet_names = df_tracklets.columns.get_level_values(0).drop_duplicates()
+    all_tracklet_names = get_names_from_df(df_tracklets)
 
     worm_obj = TrackedWorm(detections=tracklets_and_neurons_class, verbose=verbose)
     worm_obj.initialize_neurons_from_training_data(df_training_data)
@@ -154,9 +154,10 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         # TODO: confirm that the worm_obj has the same neuron names as leifer
         this_global_track = df_global_tracks[name][coords][:-1].replace(0.0, np.nan).to_numpy(float)
 
+        # TODO: inlier-based distance
         dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy,
-                                                       min_overlap=min_overlap,
-                                                       outlier_threshold=outlier_threshold)
+                                                       min_overlap=min_overlap)
+                                                       # outlier_threshold=outlier_threshold)
 
         # Loop through candidates, and attempt to add
         all_summarized_dist = summarize_distances_quantile(dist)
@@ -268,7 +269,6 @@ def initialize_worm_object(df_tracklets, raw_clust, segmentation_metadata):
 def combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching, num_neurons):
     # Finally, make the full dataframe
     # Initialize using the index and column structure of the tracklets
-    # TODO: Add a column for tracklet ID
     tmp_names = all_tracklet_names[:num_neurons]
     df_new = df_tracklets.loc[:, tmp_names].copy()
     neuron_names = list(set(final_matching.indices0))
@@ -280,20 +280,21 @@ def combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_mat
     max_t = len(df_tracklets)
     id_vector = np.zeros(max_t)
     # Actually join
-    for tracklet_name, neuron_name in tqdm(final_matching.get_mapping_1_to_0().items()):
-        this_tracklet = df_tracklets[tracklet_name]
-        # Preprocess the tracklet dataframe to have an additional column: the id of the tracklet
+    for neuron_name, tracklet_list in tqdm(final_matching.get_mapping_0_to_1(unique=False).items()):
+        for tracklet_name in tracklet_list:
+            this_tracklet = df_tracklets[tracklet_name]
+            # Preprocess the tracklet dataframe to have an additional column: the id of the tracklet
 
-        nonzero_ind = this_tracklet['z'].notnull()
-        tracklet_id = int(tracklet_name.split('_')[-1])
+            nonzero_ind = this_tracklet['z'].notnull()
+            tracklet_id = int(tracklet_name.split('_')[-1])
 
-        df_new[neuron_name] = df_new[neuron_name].combine_first(this_tracklet)
-        try:
-            df_new.loc[nonzero_ind, (neuron_name, 'raw_tracklet_id')] = tracklet_id
-        except KeyError:
-            id_vector[:] = np.nan
-            id_vector[nonzero_ind] = tracklet_id
-            df_new[neuron_name, 'raw_tracklet_id'] = id_vector
+            df_new[neuron_name] = df_new[neuron_name].combine_first(this_tracklet)
+            try:
+                df_new.loc[nonzero_ind, (neuron_name, 'raw_tracklet_id')] = tracklet_id
+            except KeyError:
+                id_vector[:] = np.nan
+                id_vector[nonzero_ind] = tracklet_id
+                df_new[neuron_name, 'raw_tracklet_id'] = id_vector
 
     return df_new
 
