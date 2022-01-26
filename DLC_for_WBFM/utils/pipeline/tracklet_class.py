@@ -63,13 +63,13 @@ class NeuronComposedOfTracklets:
     def add_tracklet(self, i_tracklet, confidence, tracklet: pd.DataFrame, metadata=None,
                      check_using_classifier=False):
         tracklet_name = tracklet.columns.get_level_values(0).drop_duplicates()[0]
-        passed_classifier_check = True
+        passed_classifier = True
         if check_using_classifier:
             if self.base_classifier:
-                passed_classifier_check = self.check_new_tracklet_using_classifier(tracklet[tracklet_name].dropna())
+                passed_classifier = self.check_new_tracklet_using_classifier(tracklet[tracklet_name].dropna().values)
             else:
                 logging.warning("Classifier requested but not initialized")
-        if not passed_classifier_check:
+        if not passed_classifier:
             # logging.debug("Tracklet did not pass classifier check")
             return False
 
