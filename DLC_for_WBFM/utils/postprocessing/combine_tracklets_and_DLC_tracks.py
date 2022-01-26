@@ -6,9 +6,11 @@ from typing import List, Dict
 
 import numpy as np
 import pandas as pd
+
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ShouldBeUnreachableError
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict, \
     get_time_overlap_of_candidate_tracklet, split_tracklet
+from DLC_for_WBFM.utils.pipeline.distance_functions import calc_global_track_to_tracklet_distances
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
@@ -16,32 +18,6 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_sequential_filename
-
-
-def calc_global_track_to_tracklet_distances(this_global_track: np.ndarray, list_tracklets_zxy: list,
-                                            min_overlap: int = 0):
-    """For one DLC neuron, calculate distances between that track and all tracklets"""
-
-    all_dist = []
-    for this_tracklet in list_tracklets_zxy:
-        # Check for already belonging to another track
-        dist = calc_dist_if_overlap(this_tracklet, min_overlap, this_global_track)
-
-        all_dist.append(dist)
-    return all_dist
-
-
-def calc_dist_if_overlap(this_tracklet: np.ndarray, min_overlap: int, this_global_track: np.ndarray):
-    this_diff = this_tracklet - this_global_track
-
-    # Check for enough common data points
-    # num_common_pts = this_diff['x'].notnull().sum()
-    num_common_pts = np.count_nonzero(~np.isnan(this_diff[:, 0]))
-    if num_common_pts >= min_overlap:
-        dist = np.linalg.norm(this_diff, axis=1)
-    else:
-        dist = np.inf
-    return dist
 
 
 def calc_covering_from_distances(all_dist: list,

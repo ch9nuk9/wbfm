@@ -12,6 +12,7 @@ from scipy.spatial.distance import cdist
 from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.pipeline.distance_functions import dist2conf, calc_confidence_from_distance_array_and_matches
 
 
 def calc_bipartite_matches(all_candidate_matches, verbose=0):
@@ -206,23 +207,6 @@ def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
 
     # Return matches twice to fit old function signature
     return matches, conf, np.array(raw_matches)
-
-
-def dist2conf(dist, gamma=1.0):
-    return np.tanh(gamma / (dist + 1e-6))
-
-
-# def dist2conf_vector(dist):
-#     return np.array([dist2conf_scalar(d) for d in dist])
-
-
-def calc_confidence_from_distance_array_and_matches(distance_matrix, matches, gamma=1.0):
-    # Calculate confidences from distance
-    conf = np.zeros((matches.shape[0], 1))
-    for i, (m0, m1) in enumerate(matches):
-        dist = distance_matrix[m0, m1]
-        conf[i] = dist2conf(dist, gamma)
-    return conf
 
 
 def calc_nearest_neighbor_matches(zxy0: np.ndarray,
