@@ -157,13 +157,13 @@ class MatchesWithConfidence:
 
 
 class MatchesAsGraph(Graph):
-    ind2names: Dict[Tuple, str]  # Tuple notation is (frame #, neuron #)
-
-    offset_convention: List[bool]  # Whether has offset or not
-    naming_convention: List[str]  # Will name nodes to keep them unique; can also be tracklet
-    name_prefixes: List[str]
-
-    _raw2network_names: Dict[str, str] = None
+    # ind2names: Dict[Tuple, str]  # Tuple notation is (frame #, neuron #)
+    #
+    # offset_convention: List[bool]  # Whether has offset or not
+    # naming_convention: List[str]  # Will name nodes to keep them unique; can also be tracklet
+    # name_prefixes: List[str]
+    #
+    # _raw2network_names: Dict[str, str]
 
     def __init__(self, ind2names=None, name_prefixes=None, naming_convention=None, offset_convention=None):
         if ind2names is None:
@@ -174,13 +174,14 @@ class MatchesAsGraph(Graph):
             naming_convention = ['neuron', 'neuron']
         if offset_convention is None:
             offset_convention = [True, True]
-        if self._raw2network_names is None:
-            self._raw2network_names = {}
 
-        self.ind2names = ind2names
-        self.name_prefixes = name_prefixes
-        self.naming_convention = naming_convention
-        self.offset_convention = offset_convention
+        self._raw2network_names: Dict[str, str] = {}
+
+        self.ind2names: Dict[Tuple, str] = ind2names
+        self.name_prefixes: List[str] = name_prefixes
+        # Will name nodes to keep them unique; can also be tracklet
+        self.naming_convention: List[str] = naming_convention
+        self.offset_convention: List[bool] = offset_convention
 
         super().__init__()
 
@@ -303,8 +304,12 @@ class MatchesAsGraph(Graph):
         return name
 
     def raw_name_to_network_name(self, raw_name):
-        if raw_name in self._raw2network_names:
-            return self._raw2network_names[raw_name]
+        # TODO: only needed because I have some objects initialized with the old code
+        if self._raw2network_names is not None:
+            if raw_name in self._raw2network_names:
+                return self._raw2network_names[raw_name]
+        else:
+            self._raw2network_names = {}
 
         node_names = list(self)
         nodes = self.nodes(data=True)
