@@ -204,3 +204,5 @@ def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> Non
         [p.prep_for_pickle() for p in all_frame_pairs.values()]
         with open(fname, 'wb') as f:
             pickle.dump(all_frame_pairs, f)
+    else:
+        logging.warning(f"all_frame_pairs is None; this step will need to be rerun")
