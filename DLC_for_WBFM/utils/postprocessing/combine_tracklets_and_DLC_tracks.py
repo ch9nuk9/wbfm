@@ -7,6 +7,7 @@ from typing import List, Dict
 import numpy as np
 import pandas as pd
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ShouldBeUnreachableError
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict, \
     get_time_overlap_of_candidate_tracklet, split_tracklet
