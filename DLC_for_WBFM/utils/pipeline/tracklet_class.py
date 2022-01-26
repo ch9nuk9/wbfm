@@ -158,7 +158,7 @@ class DetectedTrackletsAndNeurons:
                                       nonnan_ind=None,
                                       verbose=0):
         df_tracklets = dataframe_to_dataframe_zxy_format(self.df_tracklets_zxy)
-        all_tracklet_names = lexigraphically_sort(list(df_tracklets.columns.levels[0]))
+        all_tracklet_names = lexigraphically_sort(get_names_from_df(df_tracklets))
 
         if any(np.isnan(target_pt)):
             dist, ind_global_coords, tracklet_name = np.inf, None, None

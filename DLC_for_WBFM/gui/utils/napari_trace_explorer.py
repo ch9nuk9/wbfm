@@ -1,6 +1,9 @@
 # Display more informative error messages
 # https://www.tutorialexample.com/fix-pyqt-gui-application-crashed-while-no-error-message-displayed-a-beginner-guide-pyqt-tutorial/
 import cgitb
+
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+
 cgitb.enable(format='text')
 import logging
 from PyQt5.QtWidgets import QApplication, QScrollArea
@@ -35,7 +38,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         logger.info("Starting main UI setup")
         # Load dataframe and path to outputs
         self.viewer = viewer
-        neuron_names = list(self.dat.red_traces.columns.levels[0])
+        neuron_names = get_names_from_df(self.dat.red_traces)
         self.current_name = neuron_names[0]
 
         # BOX 1: Change neurons (dropdown)

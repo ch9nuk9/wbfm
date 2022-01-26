@@ -16,3 +16,8 @@ def dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy=False) -> pd.DataFra
 def dataframe_to_numpy_zxy_single_frame(df_tracklets, t, flip_xy=False) -> np.ndarray:
     df_zxy = dataframe_to_dataframe_zxy_format(df_tracklets.iloc[[t], :], flip_xy)
     return df_zxy.to_numpy().reshape(-1, 3)
+
+
+def get_names_from_df(df):
+    """If you do .columns.levels[0] it will not return the update properly!"""
+    return list(set(df.columns.get_level_values(0)))

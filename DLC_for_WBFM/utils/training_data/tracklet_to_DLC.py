@@ -6,6 +6,7 @@ import pandas as pd
 from tqdm import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import add_empty_rows_to_correct_index
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
@@ -420,7 +421,7 @@ def build_subset_df_from_3dDLC(dlc3d_dlc: pd.DataFrame,
 
     """
 
-    neuron_names = list(dlc3d_dlc.columns.levels[0])
+    neuron_names = get_names_from_df(dlc3d_dlc)
     names_to_keep = []
 
     for name in neuron_names:
@@ -630,7 +631,7 @@ def build_dlc_annotation_from_3dDLC(subset_df: pd.DataFrame,
                'scorer': scorer,
                'verbose': verbose - 1}
 
-    neuron_names = list(subset_df.columns.levels[0])  # This returns columns that no longer exist
+    neuron_names = get_names_from_df(subset_df)
     neuron_names = [n for n in neuron_names if n in subset_df]
 
     for name in tqdm(neuron_names):
@@ -728,7 +729,7 @@ def modify_config_files_for_training_data(project_config, segment_cfg, training_
 
 def translate_training_names_to_raw_names(df_training_data):
     """As of 1/24/2022, the columns should have the SAME names"""
-    return list(df_training_data.columns.levels[0])
+    return get_names_from_df(df_training_data)
     # offset_names = list(df_training_data.columns.levels[0])
     # ind = [name2int_neuron_and_tracklet(n) for n in offset_names]
     # training_tracklet_names = [int2name_tracklet(i - 1) for i in ind]

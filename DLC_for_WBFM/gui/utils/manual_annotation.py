@@ -8,6 +8,7 @@ import zarr
 from PyQt5 import QtWidgets
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_which_frames
@@ -26,7 +27,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.viewer = viewer
         self.output_dir = output_dir
         self.df = df
-        neuron_names = list(df.columns.levels[0])
+        neuron_names = get_names_from_df(df)
         self.current_name = neuron_names[0]
 
         # Change neurons (dropdown)

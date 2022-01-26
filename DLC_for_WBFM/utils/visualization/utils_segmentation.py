@@ -8,6 +8,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import zarr
+
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 from tqdm.auto import tqdm
 
@@ -277,7 +279,7 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
 
     logging.info("Convert dataframe to matches per frame")
     # NOTE: only works with updated tracklet dataframe
-    tracklet_names = list(subset_df.columns.levels[0])
+    tracklet_names = get_names_from_df(subset_df)
 
     all_matches = {}
     for t in which_frames:

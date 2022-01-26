@@ -9,6 +9,7 @@ import pandas as pd
 import zarr
 from tqdm import tqdm
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.postprocessing.utils_metadata import region_props_all_volumes, _convert_nested_dict_to_dataframe
 from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -32,7 +33,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
     # Match -> Reindex raw segmentation -> Get traces
-    final_neuron_names = list(dlc_tracks.columns.levels[0])
+    final_neuron_names = get_names_from_df(dlc_tracks)
     assert 'neuron0' not in final_neuron_names, "Neuron0 found; 0 is reserved for background... check original " \
                                                 "dataframe generation and indexing"
     coords = ['z', 'x', 'y']
@@ -83,7 +84,7 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
     df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
 
     # TODO: make sure these are strings
-    final_neuron_names = list(df_red.columns.levels[0])
+    final_neuron_names = get_names_from_df(df_red)
 
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
 

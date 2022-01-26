@@ -137,7 +137,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     """
     # Pre-make coordinates so that the dataframe is not continuously indexed
     coords = ['z', 'x', 'y']
-    all_tracklet_names = list(df_tracklets.columns.levels[0])
+    all_tracklet_names = get_names_from_df(df_tracklets)
     list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
 
     # Reserve any tracklets the neurons were initialized with (i.e. the training data)

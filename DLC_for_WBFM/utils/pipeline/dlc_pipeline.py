@@ -10,6 +10,7 @@ import zarr
 from scipy.spatial.distance import pdist
 from tqdm import tqdm
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
     update_pose_config, create_dlc_project, get_annotations_matching_video_in_folder, \
@@ -426,7 +427,7 @@ def _analyze_video_and_save_tracks(DEBUG: bool, all_dfs: List[pd.DataFrame], dlc
     df_scorer = df.columns.values[0][0]
     df = df[df_scorer]
     # TODO: combine neurons that are the same
-    new_names = df.columns.levels[0]  # Do NOT rename neurons
+    new_names = get_names_from_df(df)  # Do NOT rename neurons
     # i_neuron_new = i_neuron + len(df.columns.levels[0])
     # neuron_range = range(i_neuron, i_neuron_new)
     # i_neuron = i_neuron_new

@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError, NoNeuronsError
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
@@ -260,7 +261,8 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
                                          inlier_gamma=100.0)
         # Remove entirely unmatched neurons, and map confidence-thresholded neurons to temporary names
         renaming_dict = mapping.get_mapping_1_to_0_with_unmatched_names()
-        df1 = df1[df1.columns.levels[0].intersection(mapping.names1)]
+        old_names = set(get_names_from_df(df1))
+        df1 = df1[old_names.intersection(mapping.names1)]
 
         df1.rename(columns=renaming_dict, level=0, inplace=True)
         all_mappings.append(mapping)
@@ -346,7 +348,7 @@ def get_putative_names_from_config(project_config: ModularProjectConfig):
                 all_only_top_dict[key].append(val)
 
     df_candidate_names = pd.DataFrame(all_only_top_dict)
-    raw_names = list(df_candidate_names.columns.levels[0])
+    raw_names = get_names_from_df(df_candidate_names)
     all_match_dict = {}
     all_conf_dict = {}
     for n in raw_names:

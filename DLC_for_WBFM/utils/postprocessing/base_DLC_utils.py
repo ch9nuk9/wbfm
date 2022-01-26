@@ -6,6 +6,8 @@ import pandas as pd
 ##
 ## Reading DeepLabCut
 ##
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+
 
 def xy_from_dlc_dat(fname, which_neuron=0, num_frames=100):
     xy_ind = range(which_neuron * 3, which_neuron * 3 + 2)
@@ -23,7 +25,7 @@ def xy_from_dlc_dat(fname, which_neuron=0, num_frames=100):
         # TODO: check if I need the above
         dlc_table = pd.read_hdf(fname)
         scorer = 'feature_tracker'  # WARNING: SHOULDN'T BE HARD CODED
-        neuron_names = dlc_table[scorer].columns.levels[0]
+        neuron_names = get_names_from_df(dlc_table[scorer])
         name = neuron_names[which_neuron]
 
         this_xy = np.array(dlc_table[scorer][name].iloc[:, :2])

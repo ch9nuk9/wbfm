@@ -12,6 +12,7 @@ import pandas as pd
 ##
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 
 
@@ -581,7 +582,7 @@ def fix_matches_to_use_keys_not_int(df_tracklet, these_tracklet_ind):
         # logging.debug(f"First key: {these_tracklet_ind[0]}")
         these_tracklet_names = list(set(these_tracklet_ind))
     else:
-        raw_tracklet_names = list(df_tracklet.columns.levels[0])
+        raw_tracklet_names = get_names_from_df(df_tracklet)
         these_tracklet_names = []
         for i_or_name in these_tracklet_ind:
             if i_or_name in these_tracklet_names:
@@ -617,7 +618,7 @@ def get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_trac
 
 
 def get_next_tracklet_name(df_tracklets):
-    all_names = list(df_tracklets.columns.levels[0])
+    all_names = get_names_from_df(df_tracklets)
     # Really want to make sure we are after all other names,
     i_tracklet = int(1e6 + len(all_names) + 1)
     build_tracklet_name = lambda i: f'neuron{i}'
