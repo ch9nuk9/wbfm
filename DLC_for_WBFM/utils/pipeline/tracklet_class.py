@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format
+from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesAsGraph
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
