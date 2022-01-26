@@ -77,7 +77,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         print(f"Initialized worm object: {worm_obj}")
 
     # TODO: properly import parameters
-    # Add all candidates to neurons
+    logging.info("Adding all tracklet candidates to neurons")
     extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj,
                                         min_overlap=5, d_max=5, outlier_threshold=1.0, verbose=verbose, DEBUG=DEBUG)
 
@@ -280,6 +280,7 @@ def combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_mat
     max_t = len(df_tracklets)
     id_vector = np.zeros(max_t)
     # Actually join
+    logging.info("Combining tracklets into full dataframe")
     for neuron_name, tracklet_list in tqdm(final_matching.get_mapping_0_to_1(unique=False).items()):
         for tracklet_name in tracklet_list:
             this_tracklet = df_tracklets[tracklet_name]
@@ -315,6 +316,7 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
     neuron_nodes = global_tracklet_neuron_graph.get_nodes_of_class(0)
     t_list = list(range(df_tracklets.shape[0]))
 
+    logging.info("Bipartite matching for each time slice subgraph")
     for t in tqdm(t_list):
         df_at_time = df_tracklets.loc[[t], :]
         names_at_time = get_names_from_df(df_at_time.dropna(axis=1))
