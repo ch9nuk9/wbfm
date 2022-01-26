@@ -7,7 +7,6 @@
 
 # update:  conda env update -f fdnc.yaml
 
-name: fdnc
 channels:
   - conda-forge
   - defaults
@@ -29,7 +28,7 @@ dependencies:
   - networkx
   - pip:
     - sacred
-    - napari
+    - napari[all]
     - tables
     - ruamel.yaml
     - hashfs
