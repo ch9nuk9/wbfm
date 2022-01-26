@@ -187,6 +187,9 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
 
     video_fname = project_config.config['preprocessed_red']
 
+    metadata_fname = tracker_params['external_detections']
+    tracker_params['external_detections'] = training_config.resolve_relative_path(metadata_fname)
+
     return video_fname, tracker_params, pairwise_matches_params
 
 
