@@ -3,6 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Tuple, Dict
 
+import networkx as nx
 import numpy as np
 from networkx import Graph, NetworkXError
 
@@ -252,13 +253,18 @@ class MatchesAsGraph(Graph):
     def add_match_if_not_present(self, new_match, group_ind0=0, group_ind1=1,
                                  node0_metadata=None,
                                  node1_metadata=None,
-                                 edge_metadata=None):
+                                 edge_metadata=None,
+                                 convert_ind_to_names=True):
         assert len(new_match) == 3
 
         n0, n1, conf = new_match
 
-        name0 = self.tuple2name(bipartite_ind=0, group_ind=group_ind0, local_ind=n0)
-        name1 = self.tuple2name(bipartite_ind=1, group_ind=group_ind1, local_ind=n1)
+        if convert_ind_to_names:
+            name0 = self.tuple2name(bipartite_ind=0, group_ind=group_ind0, local_ind=n0)
+            name1 = self.tuple2name(bipartite_ind=1, group_ind=group_ind1, local_ind=n1)
+        else:
+            name0 = n0
+            name1 = n1
 
         if self.has_edge(name0, name1):
             return False
@@ -309,8 +315,16 @@ class MatchesAsGraph(Graph):
         else:
             return None
 
+    def network_name_to_raw_name(self, network_name):
+        return dict(self.nodes(data=True))[network_name]['metadata']
+
     def get_nodes_of_class(self, i_class):
         return {n for n, d in self.nodes(data=True) if d["bipartite"] == i_class}
+
+    def draw(self):
+        top = self.get_nodes_of_class(0)
+        pos = nx.bipartite_layout(self, top)
+        nx.draw(self, pos=pos)
 
     def __repr__(self):
         return f"MatchesAsGraph object with {len(self.get_nodes_of_class(0))} class A nodes and " \
