@@ -60,7 +60,7 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
     return df_new, final_matching, global_tracklet_neuron_graph, worm_obj, all_long_range_matches
 
 
-def global_track_matches_from_config(project_path, to_save=True, verbose=2, DEBUG=False):
+def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBUG=False):
     # Initialize project data and unpack
     project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True)
     df_tracklets = project_data.df_all_tracklets
@@ -170,7 +170,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
                 continue
             # Check distance; break because they are sorted by distance
             this_distance = all_summarized_dist[i_tracklet]
-            if this_distance > d_max:
+            if this_distance > d_max or np.isnan(this_distance):
                 break
 
             candidate_tracklet = df_tracklets[[candidate_name]]

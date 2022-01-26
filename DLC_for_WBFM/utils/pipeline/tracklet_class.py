@@ -62,6 +62,7 @@ class NeuronComposedOfTracklets:
 
     def add_tracklet(self, confidence, tracklet: pd.DataFrame, metadata=None,
                      check_using_classifier=False):
+        assert np.isfinite(confidence), f"A finite confidence value must be passed, not {confidence}"
         tracklet_name = tracklet.columns.get_level_values(0).drop_duplicates()[0]
         i_tracklet = name2int_neuron_and_tracklet(tracklet_name)
         passed_classifier = True
