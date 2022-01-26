@@ -47,7 +47,10 @@ def summarize_distances_outlier_percent(all_dists):
 
 
 def dist2conf(dist, gamma=1.0):
-    return np.tanh(gamma / (dist + 1e-6))
+    if dist == 0.0:
+        return 1.0
+    else:
+        return np.tanh(gamma / (dist + 1e-6))
 
 
 def confidence_using_tracklet_lengths(length, percent_inliers,
