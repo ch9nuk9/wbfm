@@ -19,7 +19,7 @@ cgitb.enable(format='text')
 
 # Initialize sacred experiment
 ex = Experiment()
-ex.add_config(project_path=None, use_imputed_df=False, start_from_manual_matches=True, DEBUG=False)
+ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
