@@ -66,7 +66,7 @@ class NeuronComposedOfTracklets:
         passed_classifier = True
         if check_using_classifier:
             if self.base_classifier:
-                passed_classifier = self.check_new_tracklet_using_classifier(tracklet[tracklet_name].dropna().values)
+                passed_classifier = self.check_new_tracklet_using_classifier(tracklet[tracklet_name].dropna())
             else:
                 logging.warning("Classifier requested but not initialized")
         if not passed_classifier:
@@ -98,9 +98,9 @@ class NeuronComposedOfTracklets:
         assert x.shape[0] >= min_pts, "Neuron needs more points to build a classifier"
         self.base_classifier = OneClassSVM(nu=0.1).fit(x)
 
-    def check_new_tracklet_using_classifier(self, candidate_tracklet):
+    def check_new_tracklet_using_classifier(self, candidate_tracklet: pd.DataFrame):
         y = candidate_tracklet[self.fields_to_classify]
-        predictions = self.base_classifier.predict(y)  # -1 means outlier
+        predictions = self.base_classifier.predict(y.values)  # -1 means outlier
         if np.mean(predictions) < self.classifier_rejection_threshold:
             return False
         else:

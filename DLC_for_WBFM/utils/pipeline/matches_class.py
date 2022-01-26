@@ -162,8 +162,8 @@ class MatchesAsGraph(Graph):
     # offset_convention: List[bool]  # Whether has offset or not
     # naming_convention: List[str]  # Will name nodes to keep them unique; can also be tracklet
     # name_prefixes: List[str]
-    #
-    # _raw2network_names: Dict[str, str]
+
+    _raw2network_names: Dict[str, str]
 
     def __init__(self, ind2names=None, name_prefixes=None, naming_convention=None, offset_convention=None):
         if ind2names is None:
@@ -305,17 +305,17 @@ class MatchesAsGraph(Graph):
 
     def raw_name_to_network_name(self, raw_name):
         # TODO: only needed because I have some objects initialized with the old code
-        if self._raw2network_names is not None:
-            if raw_name in self._raw2network_names:
-                return self._raw2network_names[raw_name]
-        else:
-            self._raw2network_names = {}
+        # if self._raw2network_names is not None:
+        #     if raw_name in self._raw2network_names:
+        #         return self._raw2network_names[raw_name]
+        # else:
+        #     self._raw2network_names = {}
 
         node_names = list(self)
         nodes = self.nodes(data=True)
         for name, node in zip(node_names, nodes):
             if raw_name == node[1]['metadata']:
-                self._raw2network_names[raw_name] = name
+                # self._raw2network_names[raw_name] = name
                 return name
         else:
             return None
