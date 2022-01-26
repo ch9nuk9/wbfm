@@ -83,7 +83,8 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 
     # Create
     global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
-    final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
+    # final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
+    final_matching = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets)
     df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching,
                                               num_neurons=worm_obj.num_neurons)
 
@@ -343,6 +344,7 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
             bipartite_slice_matches.add_match([k_raw, v_raw, conf])
 
     return bipartite_slice_matches
+
 
 def b_matching_via_node_copying(global_tracklet_neuron_graph):
     """
