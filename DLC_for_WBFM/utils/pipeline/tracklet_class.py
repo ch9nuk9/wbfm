@@ -286,6 +286,13 @@ class TrackedWorm:
         list_of_tracklets = [self.detections.df_tracklets_zxy[n] for n in tracklet_names]
         return list_of_tracklets
 
+    def get_full_track_for_neuron(self, neuron_name) -> pd.DataFrame:
+        list_of_tracklets = self.get_tracklets_for_neuron(neuron_name)
+        df = list_of_tracklets[0].copy()
+        for df2 in list_of_tracklets[1:]:
+            df = df.combine_first(df2)
+        return df
+
     def compose_global_neuron_and_tracklet_graph(self) -> MatchesAsGraph:
         return nx.compose_all([neuron.neuron2tracklets for neuron in self.global_name_to_neuron.values()])
 
