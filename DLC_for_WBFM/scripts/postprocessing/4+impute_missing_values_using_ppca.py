@@ -11,7 +11,7 @@ import sacred
 from sacred import Experiment
 
 # main function
-from DLC_for_WBFM.utils.postprocessing.position_postprocessing import impute_missing_values_using_config
+from DLC_for_WBFM.utils.general.postprocessing.position_postprocessing import impute_missing_values_using_config
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
 # Initialize sacred experiment

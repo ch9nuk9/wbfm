@@ -1,7 +1,6 @@
 import concurrent.futures
 import logging
 import os
-import pickle
 from collections import defaultdict
 from pathlib import Path
 
@@ -10,12 +9,11 @@ import pandas as pd
 import zarr
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
-from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
-from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames, _unpack_config_training_data_conversion
@@ -323,7 +321,7 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
     # Initialize new array
     new_sz = list(masks.shape)
     new_sz[0] = len(which_frames)
-    out_fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
+    out_fname = os.path.join('2-tracklets', 'reindexed_masks.zarr')
     out_fname = cfg.resolve_relative_path(out_fname)
     new_masks = zarr.open_like(masks, path=out_fname, shape=new_sz)
 

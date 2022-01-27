@@ -1,7 +1,7 @@
 # Default parameters for creating a new project
 # Do not edit!
 
-self_path: 2-training_data/training_data_config.yaml # for programmatic updating
+self_path: 2-tracklets/training_data_config.yaml # for programmatic updating
 
 #########################
 # Tracking settings
@@ -28,10 +28,10 @@ pairwise_matching_params:
 postprocessing_params:
   min_length_to_save: 5
 
-df_training_3d_tracks: 2-training_data/training_data_tracks.h5
-df_3d_tracklets: 2-training_data/all_tracklets.h5
-reindexed_masks: 2-training_data/reindexed_masks.zarr
-reindexed_metadata: 2-training_data/reindexed_metadata.pickle
+df_training_3d_tracks: 2-tracklets/training_data_tracks.h5
+df_3d_tracklets: 2-tracklets/all_tracklets.h5
+reindexed_masks: 2-tracklets/reindexed_masks.zarr
+reindexed_metadata: 2-tracklets/reindexed_metadata.pickle
 
 # Which frames have enough tracklets to be used for DLC later
 training_data_3d:

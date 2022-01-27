@@ -1,8 +1,6 @@
 """
 """
 
-from pathlib import Path
-
 # Experiment tracking
 import sacred
 from sacred import Experiment
@@ -11,7 +9,7 @@ from sacred import Experiment
 from sacred.observers import TinyDbObserver
 
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import remove_overmatched_tracks_using_config
+from DLC_for_WBFM.utils.general.postprocessing.combine_tracklets_and_DLC_tracks import remove_overmatched_tracks_using_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 
 # Initialize sacred experiment

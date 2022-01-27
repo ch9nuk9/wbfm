@@ -31,7 +31,7 @@ logging.info("Loading initial data...")
 fname = "/scratch/zimmer/Charles/dlc_stacks/worm3-newseg-2021_11_17/project_config.yaml"
 
 project_data = ProjectData.load_final_project_data_from_config(fname)
-fname = "/scratch/zimmer/Charles/dlc_stacks/worm3-newseg-2021_11_17/2-training_data/raw/clust_df_dat.pickle"
+fname = "/scratch/zimmer/Charles/dlc_stacks/worm3-newseg-2021_11_17/2-tracklets/raw/clust_df_dat.pickle"
 df = pd.read_pickle(fname)
 
 ## NOTE: use a previously saved and preprocessed dataset

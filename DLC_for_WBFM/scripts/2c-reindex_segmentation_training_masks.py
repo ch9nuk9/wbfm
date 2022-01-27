@@ -10,7 +10,7 @@ cgitb.enable(format='text')
 # Experiment tracking
 import sacred
 
-from DLC_for_WBFM.utils.pipeline.traces_pipeline import extract_traces_of_training_data_from_config
+from DLC_for_WBFM.utils.traces.traces_pipeline import extract_traces_of_training_data_from_config
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from sacred import Experiment
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch

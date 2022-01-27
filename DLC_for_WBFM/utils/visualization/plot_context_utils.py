@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ipywidgets import interact
 
-from DLC_for_WBFM.utils.postprocessing.base_DLC_utils import xy_from_dlc_dat
-from DLC_for_WBFM.utils.postprocessing.base_cropping_utils import get_crop_from_avi
-from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual
+from DLC_for_WBFM.utils.general.postprocessing.base_DLC_utils import xy_from_dlc_dat
+from DLC_for_WBFM.utils.general.postprocessing.base_cropping_utils import get_crop_from_avi
+from DLC_for_WBFM.utils.general.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual
 from DLC_for_WBFM.utils.visualization.utils_plot_traces import set_big_font
 
 

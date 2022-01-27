@@ -5,7 +5,7 @@ import numpy as np
 import tifffile
 import zarr
 
-from DLC_for_WBFM.utils.preprocessing.utils_tif import preprocess_all_frames_using_config, PreprocessingSettings
+from DLC_for_WBFM.utils.general.preprocessing.utils_tif import preprocess_all_frames_using_config, PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
 

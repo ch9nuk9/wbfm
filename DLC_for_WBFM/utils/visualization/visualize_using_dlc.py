@@ -6,7 +6,7 @@ from deeplabcut.utils.make_labeled_video import CreateVideo
 from deeplabcut.utils.video_processor import VideoProcessorCV as vp
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
+from DLC_for_WBFM.utils.general.preprocessing.utils_tif import perform_preprocessing
 
 
 ##
@@ -151,7 +151,7 @@ def save_dlc_annotations(scorer, df_fname, new_dlc_df, project_folder=None, c=No
 
 
 ##
-## Full pipeline: from dataframe to video
+## Full traces: from dataframe to video
 ##
 
 # def create_video_from_annotations(config, df_fname,
@@ -252,7 +252,7 @@ def save_dlc_annotations(scorer, df_fname, new_dlc_df, project_folder=None, c=No
 
 
 ##
-## Secondary pipeline: create training data
+## Secondary traces: create training data
 ##
 
 

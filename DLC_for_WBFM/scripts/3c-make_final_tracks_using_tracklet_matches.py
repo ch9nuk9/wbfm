@@ -2,19 +2,14 @@
 The top level function for producing dlc tracks in 3d
 """
 
-from pathlib import Path
-
 # Experiment tracking
 import sacred
 from sacred import Experiment
 
 # main function
-from sacred.observers import TinyDbObserver
 
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.pipeline.long_range_matching import global_track_matches_from_config
-from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
-    match_dlc_and_tracklet_coverings_from_config, final_tracks_from_tracklet_matches_from_config
+from DLC_for_WBFM.utils.neuron_matching.long_range_matching import global_track_matches_from_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 import cgitb
 cgitb.enable(format='text')

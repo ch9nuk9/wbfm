@@ -7,7 +7,7 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.feature_detection.custom_errors import UnknownValueError
+from DLC_for_WBFM.utils.general.custom_errors import UnknownValueError
 
 
 def check_exists(abs_path, allow_overwrite):

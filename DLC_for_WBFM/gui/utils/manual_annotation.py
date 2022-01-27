@@ -204,14 +204,14 @@ def create_manual_correction_gui(cfg: ModularProjectConfig,
     """
     project_dir = cfg.project_dir
 
-    annotation_output_name = os.path.join(project_dir, '2-training_data', 'manual_tracking',
+    annotation_output_name = os.path.join(project_dir, '2-tracklets', 'manual_tracking',
                                           f'corrected_tracks-{corrector_name}.h5')
     if Path(annotation_output_name).exists():
         raise FileExistsError(f"File already {annotation_output_name} exists! Please rename or delete")
 
     with safe_cd(project_dir):
 
-        fname = os.path.join('2-training_data', 'raw', 'clust_df_dat.pickle')
+        fname = os.path.join('2-tracklets', 'raw', 'clust_df_dat.pickle')
         df_raw_matches = pd.read_pickle(fname)
 
         # Get the frames chosen as training data, or recalculate
@@ -223,7 +223,7 @@ def create_manual_correction_gui(cfg: ModularProjectConfig,
         fname = segment_cfg.config['output_masks']
         raw_segmentation = zarr.open(fname)
 
-        fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
+        fname = os.path.join('2-tracklets', 'reindexed_masks.zarr')
         if Path(fname).exists():
             colored_segmentation = zarr.open(fname)
         else:
@@ -233,7 +233,7 @@ def create_manual_correction_gui(cfg: ModularProjectConfig,
             # Use the output of my tracker
             fname = training_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
             df_initial_annotations = pd.read_hdf(fname)
-            # fname = os.path.join('2-training_data', 'training_data_tracks.h5')
+            # fname = os.path.join('2-tracklets', 'training_data_tracks.h5')
             # TODO: not hardcoded experimenter
             # df = pd.read_hdf(fname)['Charlie'].copy()
         else:
@@ -253,7 +253,7 @@ def create_manual_correction_gui(cfg: ModularProjectConfig,
     if colored_segmentation is not None:
         viewer.add_labels(colored_segmentation)
 
-    output_dir = os.path.join("2-training_data", "manual_tracking")
+    output_dir = os.path.join("2-tracklets", "manual_tracking")
     ui = manual_annotation_widget()
     ui.setupUi(df_initial_annotations, output_dir, viewer, annotation_output_name)
 

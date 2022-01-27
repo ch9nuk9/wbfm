@@ -7,11 +7,10 @@ import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 # main function
-from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import make_3d_tracks_from_stack
-from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
+from DLC_for_WBFM.utils.traces.dlc_pipeline import make_3d_tracks_from_stack
+from DLC_for_WBFM.utils.general.postprocessing.combine_tracklets_and_DLC_tracks import \
     match_dlc_and_tracklet_coverings_from_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd

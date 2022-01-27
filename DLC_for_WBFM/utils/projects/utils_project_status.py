@@ -38,7 +38,7 @@ def check_training(project_path):
 
     try:
         with safe_cd(project_dir):
-            training_folder = Path(cfg['subfolder_configs']['training_data']).parent
+            training_folder = Path(cfg['subfolder_configs']['tracklets']).parent
             file_names = ['clust_df_dat.pickle', 'frame_dat.pickle', 'match_dat.pickle']
             all_to_check = map(lambda file: osp.join(training_folder, 'raw', file), file_names)
             all_exist = map(osp.exists, all_to_check)

@@ -8,11 +8,9 @@ from datetime import date
 # Experiment tracking
 import sacred
 from sacred import Experiment
-from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import partial_track_video_using_config, \
-    postprocess_and_build_matches_from_config
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, update_path_to_segmentation_in_config
+from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import postprocess_and_build_matches_from_config
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 
 from sacred import SETTINGS
 SETTINGS.CAPTURE_MODE = 'sys'  # Capture stdout

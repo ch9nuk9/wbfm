@@ -9,11 +9,11 @@ from typing import Tuple
 import pandas as pd
 import pprint
 
-from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePairOptions
-from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
+from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePairOptions
+from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config, get_sequential_filename
-from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
+from DLC_for_WBFM.utils.general.preprocessing.utils_tif import PreprocessingSettings
 
 
 @dataclass
@@ -119,7 +119,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
     def get_training_config(self):
-        fname = Path(self.config['subfolder_configs']['training_data'])
+        fname = Path(self.config['subfolder_configs']['tracklets'])
         return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
     def get_tracking_config(self):

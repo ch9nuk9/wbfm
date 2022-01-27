@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
-from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError, NoNeuronsError
+from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, NoNeuronsError
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candidates
-from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
-from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import matches_between_tracks, \
+from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
+from DLC_for_WBFM.utils.general.postprocessing.postprocessing_utils import matches_between_tracks, \
     remove_outliers_to_combine_tracks
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_sequential_filename
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, predict_label

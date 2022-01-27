@@ -41,7 +41,7 @@ subfolder_configs:
   # Copy from external_libraries package
   segmentation: 1-segmentation/segment_config.yaml
   # Outputs of this package
-  training_data: 2-training_data/training_data_config.yaml
+  training_data: 2-tracklets/training_data_config.yaml
   tracking: 3-tracking/tracking_config.yaml
   traces: 4-traces/traces_config.yaml
 

@@ -11,8 +11,8 @@ from scipy.spatial.distance import cdist
 ##
 from sklearn.neighbors import NearestNeighbors
 
-from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
-from DLC_for_WBFM.utils.pipeline.distance_functions import dist2conf, calc_confidence_from_distance_array_and_matches
+from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.general.distance_functions import dist2conf, calc_confidence_from_distance_array_and_matches
 
 
 def calc_bipartite_matches(all_candidate_matches, verbose=0):

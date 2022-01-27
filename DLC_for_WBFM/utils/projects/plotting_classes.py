@@ -9,11 +9,10 @@ from copy import deepcopy
 import napari
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
+from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet
-from DLC_for_WBFM.utils.pipeline.tracklet_class import DetectedTrackletsAndNeurons
+from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
-from sklearn.neighbors import NearestNeighbors
 from segmentation.util.utils_postprocessing import split_neuron_interactive
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile

@@ -2,8 +2,6 @@
 The top level function for initializing a stack of DLC projects
 """
 
-from pathlib import Path
-
 # Experiment tracking
 import sacred
 from sacred import Experiment
@@ -13,7 +11,7 @@ from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
 # main function
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.preprocessing.DLC_utils import update_all_pose_configs
+from DLC_for_WBFM.utils.general.preprocessing.DLC_utils import update_all_pose_configs
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
