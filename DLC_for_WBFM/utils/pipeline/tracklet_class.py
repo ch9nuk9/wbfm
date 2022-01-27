@@ -13,7 +13,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
     get_names_of_conflicting_dataframes
-from DLC_for_WBFM.utils.pipeline.matches_class import MatchesAsGraph
+from DLC_for_WBFM.utils.pipeline.matches_class import MatchesAsGraph, MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from segmentation.util.utils_metadata import DetectedNeurons
@@ -306,6 +306,18 @@ class TrackedWorm:
             list_of_tracklets = self.get_tracklets_for_neuron(name)
             neuron.initialize_tracklet_classifier(list_of_tracklets)
 
+    def reinitialize_all_neurons_from_final_matching(self, final_matching: MatchesWithConfidence):
+        # TODO: don't just overwrite old neurons
+        neuron2tracklet = final_matching.get_mapping_0_to_1()
+        match2conf = final_matching.get_mapping_pair_to_conf()
+        for neuron_name, tracklet_list in tqdm(neuron2tracklet.items()):
+            new_neuron = NeuronComposedOfTracklets(neuron_name, initialization_frame=0, verbose=self.verbose - 1)
+            for tracklet_name in tracklet_list:
+                conf = match2conf[(neuron_name, tracklet_name)]
+                tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
+                new_neuron.add_tracklet(conf, tracklet, metadata=tracklet_name, check_using_classifier=False)
+            self.global_name_to_neuron[neuron_name] = new_neuron
+
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
 
@@ -372,7 +384,7 @@ class TrackedWorm:
                 [neuron.neuron2tracklets.get_edge_data(neuron_network_name, t)['weight'] for t in these_names])
         return overlapping_confidences, overlapping_tracklet_names
 
-    def plot_tracklets_for_neuron(self, neuron_name, with_names=True, plot_field='z'):
+    def plot_tracklets_for_neuron(self, neuron_name, with_names=True, with_confidence=True, plot_field='z'):
         tracklet_list = self.get_tracklets_for_neuron(neuron_name)
         neuron = self.global_name_to_neuron[neuron_name]
         tracklet_names = neuron.get_raw_tracklet_names()
@@ -383,10 +395,18 @@ class TrackedWorm:
             plt.plot(y)
             plt.ylabel(plot_field)
 
-            if with_names:
+            if with_names or with_confidence:
                 x0 = t.first_valid_index()
                 y0 = t.at[x0, plot_field]
-                plt.annotate(name, (x0, y0))
+                if with_names:
+                    annotation_str = name
+                else:
+                    annotation_str = ""
+                if with_confidence:
+                    edge = (neuron.name_in_graph, neuron.neuron2tracklets.raw_name_to_network_name(name))
+                    conf = neuron.neuron2tracklets.get_edge_data(*edge)['weight']
+                    annotation_str = f"{annotation_str} conf={conf}"
+                plt.annotate(annotation_str, (x0, y0))
         plt.title(f"Tracklets for {neuron_name}")
 
     def compose_global_neuron_and_tracklet_graph(self) -> MatchesAsGraph:

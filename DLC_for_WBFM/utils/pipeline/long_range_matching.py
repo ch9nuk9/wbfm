@@ -348,7 +348,8 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
             new_match = [k_raw, v_raw, conf]
 
             if not bipartite_slice_matches.match_already_exists(new_match):
-                bipartite_slice_matches.add_match(new_match)
+                reason = f"Time={t}"
+                bipartite_slice_matches.add_match(new_match, reason)
 
     return bipartite_slice_matches
 

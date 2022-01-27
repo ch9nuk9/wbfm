@@ -27,8 +27,7 @@ class MatchesWithConfidence:
     indices_have_offset: List[bool] = None
     int2name_funcs: List[callable] = None
 
-    # TODO
-    reason_for_matches: list = None
+    match_metadata: Dict = None
 
     @property
     def names0(self):
@@ -60,12 +59,14 @@ class MatchesWithConfidence:
         except TypeError:
             self.indices_have_offset = [self.indices_have_offset, self.indices_have_offset]
 
-    def add_match(self, new_match):
+    def add_match(self, new_match, metadata=""):
         assert len(new_match) == 3
 
         self.indices0.append(new_match[0])
         self.indices1.append(new_match[1])
         self.confidence.append(new_match[2])
+
+        self.match_metadata[(new_match[0], new_match[1])] = metadata
 
     def match_already_exists(self, new_match):
         map0_1 = self.get_mapping_0_to_1(unique=False)
