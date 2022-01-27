@@ -67,6 +67,10 @@ class MatchesWithConfidence:
         self.indices1.append(new_match[1])
         self.confidence.append(new_match[2])
 
+    def match_already_exists(self, new_match):
+        map0_1 = self.get_mapping_0_to_1(unique=False)
+        return new_match[1] in map0_1[new_match[0]]
+
     def get_mapping_0_to_1(self, conf_threshold=0.0, unique=False):
         if unique:
             if self.confidence is None:

@@ -81,8 +81,10 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj,
                                         min_overlap=5, min_confidence=0.2, outlier_threshold=1.0, verbose=verbose, DEBUG=DEBUG)
 
-    # Create
+    # Build candidate graph, then postprocess it
     global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
+    # worm_obj.remove_conflicting_tracklets_from_all_neurons()
+    # worm_obj.update_time_covering_ind_for_all_neurons()
     # final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
     final_matching = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets)
     df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching,
@@ -343,8 +345,10 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
             k_raw = subgraph.network_name_to_raw_name(k)
             v_raw = subgraph.network_name_to_raw_name(v)
             conf = subgraph.get_edge_data(k, v)['weight']
+            new_match = [k_raw, v_raw, conf]
 
-            bipartite_slice_matches.add_match([k_raw, v_raw, conf])
+            if not bipartite_slice_matches.match_already_exists(new_match):
+                bipartite_slice_matches.add_match(new_match)
 
     return bipartite_slice_matches
 
