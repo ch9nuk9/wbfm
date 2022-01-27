@@ -7,7 +7,7 @@ from DLC_for_WBFM.utils.feature_detection.class_frame_pair import calc_FramePair
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.pipeline.tracklet_class import DetectedTrackletsAndNeurons, TrackedWorm
 from DLC_for_WBFM.utils.pipeline.distance_functions import calc_global_track_to_tracklet_distances, \
-    summarize_distances_quantile, dist2conf
+    summarize_distances_quantile, dist2conf, summarize_confidences_outlier_percent
 from DLC_for_WBFM.utils.postures.centerline_pca import WormFullVideoPosture, WormReferencePosture
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 import networkx as nx
@@ -79,7 +79,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     # TODO: properly import parameters
     logging.info("Adding all tracklet candidates to neurons")
     extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj,
-                                        min_overlap=5, d_max=5, outlier_threshold=1.0, verbose=verbose, DEBUG=DEBUG)
+                                        min_overlap=5, min_confidence=0.2, outlier_threshold=1.0, verbose=verbose, DEBUG=DEBUG)
 
     # Create
     global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
@@ -115,7 +115,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 
 
 def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj: TrackedWorm,
-                                        min_overlap=5, d_max=5, outlier_threshold=1.0, verbose=0, DEBUG=False):
+                                        min_overlap=5, min_confidence=0.2, outlier_threshold=1.0, verbose=0, DEBUG=False):
     """
     For each neuron, get the relevant global track
     Then calculate all track-tracklet distances, using percent inliers
@@ -130,7 +130,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     ----------
     project_data
     min_overlap
-    d_max
+    min_confidence
     verbose
 
     Returns
@@ -155,28 +155,29 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         # TODO: confirm that the worm_obj has the same neuron names as leifer
         this_global_track = df_global_tracks[name][coords][:-1].replace(0.0, np.nan).to_numpy(float)
 
-        # TODO: inlier-based distance
         dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy,
                                                        min_overlap=min_overlap)
                                                        # outlier_threshold=outlier_threshold)
 
         # Loop through candidates, and attempt to add
-        all_summarized_dist = summarize_distances_quantile(dist)
-        i_sorted_by_median_distance = np.argsort(all_summarized_dist)
+        all_summarized_conf = summarize_confidences_outlier_percent(dist, outlier_threshold=outlier_threshold)
+        i_sorted_by_confidence = np.argsort(-all_summarized_conf) # Reverse sort, but keep nans at the end
+        # all_summarized_dist = summarize_distances_quantile(dist)
+        # i_sorted_by_median_distance = np.argsort(all_summarized_dist)
         num_candidate_neurons = 0
-        for num_candidate_neurons, i_tracklet in enumerate(i_sorted_by_median_distance):
+        for num_candidate_neurons, i_tracklet in enumerate(i_sorted_by_confidence):
             # Check if this was used before
             candidate_name = all_tracklet_names[i_tracklet]
             if candidate_name in used_names:
                 continue
             # Check distance; break because they are sorted by distance
-            this_distance = all_summarized_dist[i_tracklet]
-            if this_distance > d_max or np.isnan(this_distance):
+            this_confidence = all_summarized_conf[i_tracklet]
+            if this_confidence < min_confidence or np.isnan(this_confidence):
                 break
 
             candidate_tracklet = df_tracklets[[candidate_name]]
-            conf = dist2conf(this_distance)
-            is_match_added = neuron.add_tracklet(conf, candidate_tracklet, metadata=candidate_name,
+            # conf = dist2conf(this_confidence)
+            is_match_added = neuron.add_tracklet(this_confidence, candidate_tracklet, metadata=candidate_name,
                                                  check_using_classifier=True)
 
         if verbose >= 2:
