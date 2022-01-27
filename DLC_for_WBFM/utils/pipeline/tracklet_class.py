@@ -322,6 +322,15 @@ class TrackedWorm:
             df = df.combine_first(df2)
         return df
 
+    def update_time_covering_ind_for_neuron(self, neuron_name):
+        neuron = self.global_name_to_neuron[neuron_name]
+        df = self.get_full_track_for_neuron(neuron_name)
+        neuron.tracklet_covering_ind = list(df.dropna().index)
+
+    def update_time_covering_ind_for_all_neurons(self):
+        for name in self.global_name_to_neuron.keys():
+            self.update_time_covering_ind_for_neuron(name)
+
     def remove_conflicting_tracklets_from_all_neurons(self, verbose=0):
         for name in self.global_name_to_neuron.keys():
             self.remove_conflicting_tracklets_from_neuron(name, verbose=verbose-1)
