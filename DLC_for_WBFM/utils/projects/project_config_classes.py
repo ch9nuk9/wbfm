@@ -119,7 +119,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
     def get_training_config(self):
-        fname = Path(self.config['subfolder_configs']['tracklets'])
+        fname = Path(self.config['subfolder_configs']['training_data'])
         return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
     def get_tracking_config(self):
