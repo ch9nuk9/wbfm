@@ -331,7 +331,7 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
 
         # Build subgraph and do matching
         subgraph = global_tracklet_neuron_graph.subgraph(network_names_at_time).copy()
-        subgraph_matching = nx.bipartite.maximum_matching(subgraph, top_nodes=tracklet_names)
+        subgraph_matching = nx.bipartite.maximum_matching(subgraph, top_nodes=neuron_nodes)
 
         # Get confidence, and add them back to the new object
         for k, v in subgraph_matching.items():
