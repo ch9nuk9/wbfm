@@ -11,16 +11,16 @@ bbox_fname: null
 # Segmentation
 segmentation_params:
   stardist_model_name: lukas
-  zero_out_borders: true
+  zero_out_borders: false
 
 # Postprocessing
 postprocessing_params:
-  upper_length_threshold: 10 # Designed for a total z height of ~32 planes
+  upper_length_threshold: 8 # Designed for a total z height of ~32 planes
   lower_length_threshold: 3 # Designed for a total z height of ~32 planes
   to_remove_border: false
   border_width_to_remove: 0
   to_remove_dim_slices: true
-  min_separation: 6 # Designed for a total z height of ~32 planes
+  min_separation: 4 # Designed for a total z height of ~32 planes
 
 # Output
 output_folder: 1-segmentation # Only used for initial writing
