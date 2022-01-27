@@ -37,7 +37,7 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
         if os.name == 'nt':
             folder = Path(r'P:/neurobiology/zimmer/wbfm/TrainedStardist')
         else:
-            folder = Path('/scratch/neurobiology/zimmer/wbfm/TrainedStardist')
+            folder = Path('/scratch/zimmer/wbfm/TrainedStardist')
 
     # available models' aliases
     sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d', 'charlie_3d_party']
