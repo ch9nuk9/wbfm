@@ -59,10 +59,7 @@ def summarize_confidences_outlier_percent(all_dists, outlier_threshold=1.0):
 
 
 def dist2conf(dist, gamma=1.0):
-    if dist == 0.0:
-        return 1.0
-    else:
-        return np.tanh(gamma / (dist + 1e-6))
+    return np.tanh(gamma / (dist + 1e-3))
 
 
 def confidence_using_tracklet_lengths(length, percent_inliers,
