@@ -14,7 +14,9 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from segmentation.util.utils_pipeline import segment_video_using_config_2d, segment_video_using_config_3d
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, synchronize_segment_config
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, synchronize_segment_config
+import cgitb
+cgitb.enable(format='text')
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment

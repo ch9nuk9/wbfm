@@ -1,11 +1,13 @@
 import logging
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Tuple, Dict
 
+import networkx as nx
 import numpy as np
 from networkx import Graph, NetworkXError
 
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import dist2conf
+from DLC_for_WBFM.utils.pipeline.distance_functions import dist2conf
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, int2name_using_mode
 from scipy.optimize import linear_sum_assignment
 
@@ -65,11 +67,20 @@ class MatchesWithConfidence:
         self.indices1.append(new_match[1])
         self.confidence.append(new_match[2])
 
-    def get_mapping_0_to_1(self, conf_threshold=0.0):
-        if self.confidence is None:
-            return {n0: n1 for n0, n1 in zip(self.indices0, self.indices1)}
+    def get_mapping_0_to_1(self, conf_threshold=0.0, unique=False):
+        if unique:
+            if self.confidence is None:
+                return {n0: n1 for n0, n1 in zip(self.indices0, self.indices1)}
+            else:
+                return {n0: n1 for n0, n1, c in zip(self.indices0, self.indices1, self.confidence) if c > conf_threshold}
         else:
-            return {n0: n1 for n0, n1, c in zip(self.indices0, self.indices1, self.confidence) if c > conf_threshold}
+            mapping = defaultdict(list)
+            if self.confidence is None:
+                [mapping[n0].append(n1) for n0, n1 in zip(self.indices0, self.indices1)]
+            else:
+                [mapping[n0].append(n1) for n0, n1, c in zip(self.indices0, self.indices1, self.confidence)
+                 if c > conf_threshold]
+        return mapping
 
     def get_mapping_1_to_0(self, conf_threshold=0.0):
         if self.confidence is None:
@@ -141,15 +152,18 @@ class MatchesWithConfidence:
         return MatchesWithConfidence(row_i, col_i, conf, gamma)
 
     def __repr__(self):
-        return f"MatchesWithConfidence class with {self.get_num_matches()} matches"
+        return f"MatchesWithConfidence class with {len(self.get_mapping_0_to_1())} class A and " \
+               f"{len(self.get_mapping_1_to_0())} class B matched objects, with {len(self.indices0)} edges"
 
 
 class MatchesAsGraph(Graph):
-    ind2names: Dict[Tuple, str]  # Tuple notation is (frame #, neuron #)
+    # ind2names: Dict[Tuple, str]  # Tuple notation is (frame #, neuron #)
+    #
+    # offset_convention: List[bool]  # Whether has offset or not
+    # naming_convention: List[str]  # Will name nodes to keep them unique; can also be tracklet
+    # name_prefixes: List[str]
 
-    offset_convention: List[bool]  # Whether has offset or not
-    naming_convention: List[str]  # Will name nodes to keep them unique; can also be tracklet
-    name_prefixes: List[str]
+    _raw2network_names: Dict[str, str]
 
     def __init__(self, ind2names=None, name_prefixes=None, naming_convention=None, offset_convention=None):
         if ind2names is None:
@@ -161,10 +175,13 @@ class MatchesAsGraph(Graph):
         if offset_convention is None:
             offset_convention = [True, True]
 
-        self.ind2names = ind2names
-        self.name_prefixes = name_prefixes
-        self.naming_convention = naming_convention
-        self.offset_convention = offset_convention
+        self._raw2network_names: Dict[str, str] = {}
+
+        self.ind2names: Dict[Tuple, str] = ind2names
+        self.name_prefixes: List[str] = name_prefixes
+        # Will name nodes to keep them unique; can also be tracklet
+        self.naming_convention: List[str] = naming_convention
+        self.offset_convention: List[bool] = offset_convention
 
         super().__init__()
 
@@ -215,9 +232,14 @@ class MatchesAsGraph(Graph):
             raise TypeError(f"naming_convention must be callable or string; was {naming_convention}")
         prefix = f"bipartite_{bipartite_ind}_{self.name_prefixes[bipartite_ind]}"
         if group_ind is None:
-            return f"{prefix}_{bipartite_ind}_{name}"
+            node_name = f"{prefix}_{bipartite_ind}_{name}"
         else:
-            return f"{prefix}_{group_ind}_{name}"
+            node_name = f"{prefix}_{bipartite_ind}_{name}"
+        # NOTE: this name is actually generated new, thus may not be the true raw name
+        # ... but should be, if the naming conventions are the same
+        # self.node2raw_names[node_name] = name
+        # INSTEAD: use the 'metadata' field of the nodes
+        return node_name
 
     def name2tuple(self, name):
         # NOTE: doesn't tell you which bipartite element this came from
@@ -232,13 +254,18 @@ class MatchesAsGraph(Graph):
     def add_match_if_not_present(self, new_match, group_ind0=0, group_ind1=1,
                                  node0_metadata=None,
                                  node1_metadata=None,
-                                 edge_metadata=None):
+                                 edge_metadata=None,
+                                 convert_ind_to_names=True):
         assert len(new_match) == 3
 
         n0, n1, conf = new_match
 
-        name0 = self.tuple2name(bipartite_ind=0, group_ind=group_ind0, local_ind=n0)
-        name1 = self.tuple2name(bipartite_ind=1, group_ind=group_ind1, local_ind=n1)
+        if convert_ind_to_names:
+            name0 = self.tuple2name(bipartite_ind=0, group_ind=group_ind0, local_ind=n0)
+            name1 = self.tuple2name(bipartite_ind=1, group_ind=group_ind1, local_ind=n1)
+        else:
+            name0 = n0
+            name1 = n1
 
         if self.has_edge(name0, name1):
             return False
@@ -276,7 +303,39 @@ class MatchesAsGraph(Graph):
             name = self.tuple2name(*group_and_ind)
         return name
 
+    def raw_name_to_network_name(self, raw_name):
+        # TODO: only needed because I have some objects initialized with the old code
+        # if self._raw2network_names is not None:
+        #     if raw_name in self._raw2network_names:
+        #         return self._raw2network_names[raw_name]
+        # else:
+        #     self._raw2network_names = {}
 
-def get_tracklet_name_from_full_name(name):
-    """Assume name is like: bipartite_1_trackletGroup_1_neuron228"""
-    return name.split('_')[-1]
+        # node_names = list(self)
+        nodes = dict(self.nodes(data=True))
+        for name, node in nodes.items():
+            if raw_name == node['metadata']:
+                # self._raw2network_names[raw_name] = name
+                return name
+        else:
+            return None
+
+    def network_name_to_raw_name(self, network_name):
+        return dict(self.nodes(data=True))[network_name]['metadata']
+
+    def get_nodes_of_class(self, i_class):
+        return {n for n, d in self.nodes(data=True) if d["bipartite"] == i_class}
+
+    def draw(self):
+        top = self.get_nodes_of_class(0)
+        pos = nx.bipartite_layout(self, top)
+        nx.draw(self, pos=pos)
+
+    def __repr__(self):
+        return f"MatchesAsGraph object with {len(self.get_nodes_of_class(0))} class A nodes and " \
+               f"{len(self.get_nodes_of_class(1))} class B nodes, with {len(self.edges)} edges"
+
+
+# def get_tracklet_name_from_full_name(name):
+#     """Assume name is like: bipartite_1_trackletGroup_1_neuron228"""
+#     return name.split('_')[-1]

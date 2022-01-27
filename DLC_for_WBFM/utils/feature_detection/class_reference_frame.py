@@ -322,6 +322,7 @@ class ReferenceFrame:
             # self.check_data_desyncing()
             self.keypoints = []
         self._raw_data = None
+        self.alternate_2d_encoder = None
 
     def rebuild_keypoints(self):
         """

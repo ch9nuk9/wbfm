@@ -1,9 +1,8 @@
-from typing import Dict
 import cv2
 import numpy as np
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_feature_tree
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_icp_matches, calc_nearest_neighbor_matches
+from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
 
 
 def propagate_via_affine_model(which_neuron: int,
@@ -143,10 +142,6 @@ def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame
                                            min_matches=min_matches,
                                            allow_z_change=allow_z_change)
 
-    # Loop over locations of pushed v0 neurons
-    # out = calc_matches_using_2nn(all_propagated, f1.neuron_locs, distance_ratio=distance_ratio)
-    # all_matches, all_conf, all_candidate_matches = out
-
     xyz0 = np.array(all_propagated.points)
     xyz1 = f1.neuron_locs
 
@@ -154,6 +149,8 @@ def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame
     # TODO: Better max distance
     out = calc_nearest_neighbor_matches(xyz0, xyz1, max_dist=maximum_distance, n_neighbors=num_candidates)
     all_matches, all_conf = out
+    if len(all_matches) == 0:
+        return [], [], []
     all_candidate_matches = all_matches
     assert np.isscalar(all_conf[0]), "Check formatting (nested lists)"
     matches_with_conf = [(m[0], m[1], c) for m, c in zip(all_matches, all_conf)]

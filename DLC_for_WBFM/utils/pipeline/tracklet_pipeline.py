@@ -9,8 +9,8 @@ from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePairOptions
 from DLC_for_WBFM.utils.feature_detection.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_dfs
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile, \
-    pickle_load_binary
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_scalar_format
 
@@ -113,28 +113,28 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
     # Convert to easier format and save
     min_length = training_config.config['postprocessing_params']['min_length_to_save']
-    df_dlc_format = convert_training_dataframe_to_scalar_format(df_custom_format,
-                                                                min_length=min_length,
-                                                                scorer=None,
-                                                                segmentation_metadata=segmentation_metadata)
-    save_all_tracklets(df_custom_format, df_dlc_format, training_config)
+    df_multi_index_format = convert_training_dataframe_to_scalar_format(df_custom_format,
+                                                                        min_length=min_length,
+                                                                        scorer=None,
+                                                                        segmentation_metadata=segmentation_metadata)
+    save_all_tracklets(df_custom_format, df_multi_index_format, training_config)
 
 
 def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence,
                                                  verbose=0):
     # Also updates the matches of the object
     opt = dict(z_threshold=z_threshold, min_confidence=min_confidence)
-    logging.info(f"Postprocessing pairwise matches using confidence threshold {min_confidence} and z threshold: {z_threshold}")
+    logging.info(
+        f"Postprocessing pairwise matches using confidence threshold {min_confidence} and z threshold: {z_threshold}")
     all_matches_list = {k: pair.calc_final_matches(**opt)
                         for k, pair in tqdm(all_frame_pairs.items())}
     logging.info("Extracting locations of neurons")
     all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
     logging.info("Building tracklets")
-    df = build_tracklets_dfs(all_matches_list, all_zxy, verbose=verbose)
-    return df
+    return build_tracklets_dfs(all_matches_list, all_zxy, verbose=verbose)
 
 
-def save_all_tracklets(df, df_dlc_format, training_config):
+def save_all_tracklets(df, df_multi_index_format, training_config):
     logging.info("Saving dataframes; could take a while")
     with safe_cd(training_config.project_dir):
         # Custom format for pairs
@@ -143,15 +143,9 @@ def save_all_tracklets(df, df_dlc_format, training_config):
         with open(fname, 'wb') as f:
             pickle.dump(df, f)
 
+        # General format; ONLY this should be used going forward
         out_fname = training_config.config['df_3d_tracklets']
-        df_dlc_format.to_hdf(out_fname, 'df_with_missing')
-
-        # out_fname = Path(out_fname).with_suffix(".csv")
-        # df_dlc_format.to_csv(out_fname)
-
-        # Tracklets are generally too large to save in excel...
-        # out_fname = Path(out_fname).with_suffix(".xlxs")
-        # training_df.to_excel(out_fname)
+        df_multi_index_format.to_hdf(out_fname, 'df_with_missing')
 
 
 def _unpack_config_for_tracklets(training_config, segmentation_config):
@@ -188,11 +182,13 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     else:
         tracker_params['start_volume'] = project_config.config['dataset_params']['start_volume']
 
-    pairwise_matches_params = training_config.config['pairwise_matching_params'].copy()
-    pairwise_matches_params = FramePairOptions(**pairwise_matches_params)
+    pairwise_matches_params = project_config.get_frame_pair_options(training_config)
     tracker_params['preprocessing_settings'] = None
 
     video_fname = project_config.config['preprocessed_red']
+
+    metadata_fname = tracker_params['external_detections']
+    tracker_params['external_detections'] = training_config.resolve_relative_path(metadata_fname)
 
     return video_fname, tracker_params, pairwise_matches_params
 
@@ -211,3 +207,5 @@ def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> Non
         [p.prep_for_pickle() for p in all_frame_pairs.values()]
         with open(fname, 'wb') as f:
             pickle.dump(all_frame_pairs, f)
+    else:
+        logging.warning(f"all_frame_pairs is None; this step will need to be rerun")

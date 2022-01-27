@@ -3,7 +3,9 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.tests.global_vars_for_tests import project_path
 import pytest
 
@@ -64,7 +66,7 @@ def test_reasonable_z():
     max_z_delta = cfg.get_training_config().config['pairwise_matching_params']['z_threshold']
 
     df_delta = df.diff()[1:]
-    all_neurons = list(df.columns.levels[0])
+    all_neurons = get_names_from_df(df)
 
     for n in all_neurons:
         z_delta_series = df_delta[n]['z']

@@ -9,10 +9,12 @@ import pandas as pd
 import zarr
 from tqdm import tqdm
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.postprocessing.utils_metadata import region_props_all_volumes, _convert_nested_dict_to_dataframe
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_nearest_neighbor_matches
+from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets
 
 
 def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
@@ -31,17 +33,16 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
     # Match -> Reindex raw segmentation -> Get traces
-    final_neuron_names = list(dlc_tracks.columns.levels[0])
+    final_neuron_names = get_names_from_df(dlc_tracks)
     assert 'neuron0' not in final_neuron_names, "Neuron0 found; 0 is reserved for background... check original " \
                                                 "dataframe generation and indexing"
-
     coords = ['z', 'x', 'y']
 
-    def _get_dlc_zxy(t):
-        all_dlc_zxy = np.zeros((len(final_neuron_names), 3))
+    def _get_zxy_from_pandas(t):
+        all_zxy = np.zeros((len(final_neuron_names), 3))
         for i, name in enumerate(final_neuron_names):
-            all_dlc_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
-        return all_dlc_zxy
+            all_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
+        return all_zxy
 
     # Main loop: Match segmentations to tracks
     # Also: get connected red brightness and mask
@@ -52,8 +53,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     logging.info("Matching segmentation and tracked positions...")
     if DEBUG:
         frame_list = frame_list[:2]  # Shorten (to avoid break)
-    calculate_segmentation_and_dlc_matches(_get_dlc_zxy, all_matches, frame_list, max_dist,
-                                           project_data, z_to_xy_ratio, DEBUG=DEBUG)
+    match_segmentation_and_tracks(_get_zxy_from_pandas, all_matches, frame_list, max_dist,
+                                  project_data, z_to_xy_ratio, DEBUG=DEBUG)
 
     relative_fname = traces_cfg.config['all_matches']
     project_cfg.pickle_in_local_project(all_matches, relative_fname)
@@ -83,7 +84,7 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
     df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
 
     # TODO: make sure these are strings
-    final_neuron_names = list(df_red.columns.levels[0])
+    final_neuron_names = get_names_from_df(df_red)
 
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
 
@@ -92,29 +93,36 @@ def extract_traces_of_training_data_from_config(project_cfg: SubfolderConfigFile
                                                 training_cfg: SubfolderConfigFile,
                                                 name_mode='tracklet'):
     """Principally used for positions, but the rest could be useful for quality control"""
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_tracklets=True)
+    df = project_data.df_all_tracklets
+    which_frames = project_data.which_training_frames
+
+    df_train = build_subset_df_from_tracklets(df, which_frames)
+    df_train = df_train.dropna().reset_index(drop=True)
+
     # Note that the training config works with the same function as step 4c for getting the local masks
-    coords, reindexed_masks, frame_list, params_start_volume = \
-        _unpack_configs_for_extraction(project_cfg, training_cfg)
-    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
-
-    red_all_neurons, green_all_neurons = region_props_all_volumes(
-        reindexed_masks,
-        project_data.red_data,
-        project_data.green_data,
-        frame_list,
-        params_start_volume,
-        name_mode
-    )
-
-    # Save as single final dataframe
-    df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)
-    df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
-    df_green_subset = df_green.loc(axis=1)[:, 'intensity_image'].copy()
-    df_green_subset.rename(mapper={'intensity_image': 'intensity_image_green'}, axis=1, level=1, inplace=True)
-    df_combined = df_red.join(df_green_subset)
+    # coords, reindexed_masks, frame_list, params_start_volume = \
+    #     _unpack_configs_for_extraction(project_cfg, training_cfg)
+    # project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    #
+    # red_all_neurons, green_all_neurons = region_props_all_volumes(
+    #     reindexed_masks,
+    #     project_data.red_data,
+    #     project_data.green_data,
+    #     frame_list,
+    #     params_start_volume,
+    #     name_mode
+    # )
+    #
+    # # Save as single final dataframe
+    # df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)
+    # df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
+    # df_green_subset = df_green.loc(axis=1)[:, 'intensity_image'].copy()
+    # df_green_subset.rename(mapper={'intensity_image': 'intensity_image_green'}, axis=1, level=1, inplace=True)
+    # df_combined = df_red.join(df_green_subset)
 
     fname = os.path.join("2-training_data", "training_data_tracks.h5")
-    training_cfg.h5_in_local_project(df_combined, fname, also_save_csv=True)
+    training_cfg.h5_in_local_project(df_train, fname, also_save_csv=True)
 
 
 def make_mask2final_mapping(all_matches: dict):
@@ -224,17 +232,17 @@ def _save_traces_as_hdf_and_update_configs(final_neuron_names: list,
     # edit_config(traces_cfg.config['self_path'], traces_cfg)
 
 
-def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
-                                           all_matches: defaultdict,
-                                           frame_list: list,
-                                           max_dist: float,
-                                           project_data: ProjectData,
-                                           z_to_xy_ratio: float, DEBUG: bool = False) -> None:
+def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
+                                  all_matches: defaultdict,
+                                  frame_list: list,
+                                  max_dist: float,
+                                  project_data: ProjectData,
+                                  z_to_xy_ratio: float, DEBUG: bool = False) -> None:
     """
 
     Parameters
     ----------
-    _get_dlc_zxy
+    _get_zxy_from_pandas
     all_matches
     frame_list
     max_dist
@@ -248,11 +256,11 @@ def calculate_segmentation_and_dlc_matches(_get_dlc_zxy: Callable,
     for i_volume in tqdm(frame_list):
         # Get DLC point cloud
         # NOTE: This dataframe starts at 0, not start_volume
-        zxy0 = _get_dlc_zxy(i_volume)
+        zxy0 = _get_zxy_from_pandas(i_volume)
         # TODO: use physical units and align between z and xy
         # zxy0[:, 0] *= z_to_xy_ratio
         zxy1 = project_data.get_centroids_as_numpy(i_volume)
-        if len(zxy1) == 0:
+        if len(zxy1) == 0 or len(zxy0) == 0:
             continue
         # zxy1[:, 0] *= z_to_xy_ratio
         # Get matches

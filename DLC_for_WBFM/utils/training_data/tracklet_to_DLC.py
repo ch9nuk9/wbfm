@@ -6,9 +6,11 @@ import pandas as pd
 from tqdm import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet
+from DLC_for_WBFM.utils.feature_detection.utils_tracklets import add_empty_rows_to_correct_index
+from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet, name2int_neuron_and_tracklet
 
 
 def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,
@@ -87,14 +89,13 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
 
     def is_valid(df, ind):
         which_frames = df.at[ind, 'slice_ind']
-        is_too_short = len(which_frames) < min_length
+        is_too_short = np.isscalar(which_frames) or len(which_frames) < min_length
         if is_too_short:
             return False
         else:
             return True
 
     logging.info("Converting to pandas multi-index format")
-    logging.info("Involves reading the original metadata, so may take a while")
     for ind, row in tqdm(df.iterrows(), total=df.shape[0]):
         if not is_valid(df, ind):
             continue
@@ -141,6 +142,9 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
         raise ParameterTooStringentError(min_length, 'min_length')
     new_df = pd.concat(all_dfs, axis=1)
 
+    empty_ind = segmentation_metadata.volumes_with_no_neurons
+    new_df = add_empty_rows_to_correct_index(new_df, empty_ind)
+
     return new_df
 
 
@@ -161,24 +165,18 @@ def save_training_data_as_dlc_format(training_config: SubfolderConfigFile,
     """
     logging.info("Saving training data as DLC format")
 
-    df, min_length_to_save, segmentation_metadata = _unpack_config_training_data_conversion(
+    df_tracklets, df_clust, min_length_to_save, segmentation_metadata = _unpack_config_training_data_conversion(
         training_config, segmentation_config)
 
     # Get the frames chosen as training data, or recalculate
-    num_frames = len(df)
-    which_frames = list(get_or_recalculate_which_frames(DEBUG, df, num_frames, training_config))
+    num_frames = len(df_tracklets)
+    which_frames = list(get_or_recalculate_which_frames(DEBUG, df_clust, num_frames, training_config))
 
     # Build a sub-df with only the relevant neurons; all slices
-    # Todo: connect up to actually tracked z slices?
-    subset_opt = {'which_z': None,
-                  'max_z_dist': None,
-                  'verbose': 1}
-    subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
-    training_df = convert_training_dataframe_to_scalar_format(subset_df,
-                                                              min_length=min_length_to_save,
-                                                              scorer=None,
-                                                              segmentation_metadata=segmentation_metadata)
+    subset_df = build_subset_df_from_tracklets(df_tracklets, which_frames)
+    training_df = subset_df
 
+    # Save
     out_fname = training_config.resolve_relative_path("training_data_tracks.h5", prepend_subfolder=True)
     training_df.to_hdf(out_fname, 'df_with_missing')
 
@@ -193,12 +191,15 @@ def _unpack_config_training_data_conversion(training_config, segmentation_config
     min_length_to_save = training_config.config['postprocessing_params']['min_length_to_save']
     fname = os.path.join('raw', 'clust_df_dat.pickle')
     fname = training_config.resolve_relative_path(fname, prepend_subfolder=True)
-    df = pd.read_pickle(fname)
+    df_clust = pd.read_pickle(fname)
+
+    fname = training_config.resolve_relative_path_from_config('df_3d_tracklets')
+    df_tracklets: pd.DataFrame = pd.read_hdf(fname)
 
     seg_metadata_fname = segmentation_config.resolve_relative_path_from_config('output_metadata')
     segmentation_metadata = DetectedNeurons(seg_metadata_fname)
 
-    return df, min_length_to_save, segmentation_metadata
+    return df_tracklets, df_clust, min_length_to_save, segmentation_metadata
 
 
 def alt_save_all_tracklets_as_dlc_format(train_cfg: SubfolderConfigFile,
@@ -246,13 +247,40 @@ def fill_missing_indices_with_nan(df):
     return df
 
 
-def build_subset_df_from_tracklets(clust_df,
+def build_subset_df_from_tracklets(df_tracklets, which_frames, verbose=0):
+    """
+    Build a subset dataframe that only contains tracklets that have no nan frames for ALL of which_frames
+
+    Parameters
+    ----------
+    df_tracklets
+    which_frames
+    verbose
+
+    Returns
+    -------
+
+    """
+
+    df_time_subset = df_tracklets.loc(axis=1)[:, 'z'].loc[which_frames]
+    isnan_idx = df_time_subset.isna().sum() == 0
+    isnan_idx = isnan_idx.droplevel(1)
+    to_keep = [idx for idx in isnan_idx.index if isnan_idx[idx]]
+
+    df_subset = df_tracklets[to_keep]
+    df_subset = df_subset.reindex(columns=to_keep, level=0)  # Otherwise the dropped names remain
+    return df_subset
+
+
+def OLD_build_subset_df_from_tracklets(clust_df,
                                    which_frames,
                                    which_z=None,
                                    max_z_dist=1,
                                    verbose=0):
     """
     Build a dataframe that is a subset of a larger dataframe
+
+    clust_df is my custom dataframe format
 
     Only keep the tracklets that pass the time and z requirements:
         - Cover each frame in which_frames
@@ -284,6 +312,8 @@ def build_subset_df_from_tracklets(clust_df,
         Return: local indices within the test_frame to keep
             Note that this is per-tracklet
         """
+        if np.isscalar(test_frames):
+            return None
         test_frames_set = set(test_frames)
         local2global_ind = {}
         for f in which_frames:
@@ -296,9 +326,9 @@ def build_subset_df_from_tracklets(clust_df,
 
     def keep_subset(this_ind_dict, old_ind):
         new_ind = []
-        for i in this_ind_dict:
+        for _i in this_ind_dict:
             try:
-                new_ind.append(old_ind[i])
+                new_ind.append(old_ind[_i])
             except KeyError:
                 continue
         return new_ind
@@ -336,6 +366,7 @@ def build_subset_df_from_tracklets(clust_df,
     which_neurons_df = sub_df[to_keep]
     if verbose >= 1:
         print(f"Keeping {len(which_neurons_df)}/{len(clust_df)} tracklets as identifiable neurons")
+        logging.debug(f"Neurons that are kept: {which_neurons_dict.keys()}")
     if len(which_neurons_df) == 0:
         # Preserve dataframe format
         return which_neurons_df
@@ -350,6 +381,8 @@ def build_subset_df_from_tracklets(clust_df,
     ####################
     # Build the subset
     ####################
+    # out_df['clust_ind'] = out_df['clust_ind'].astype(int)
+
     # All 4 fields that were renamed
     f0 = lambda df: keep_subset(which_neurons_dict[df['clust_ind']], df['all_ind_local_old'])
     out_df['all_ind_local'] = out_df.apply(f0, axis=1)
@@ -388,7 +421,7 @@ def build_subset_df_from_3dDLC(dlc3d_dlc: pd.DataFrame,
 
     """
 
-    neuron_names = list(dlc3d_dlc.columns.levels[0])
+    neuron_names = get_names_from_df(dlc3d_dlc)
     names_to_keep = []
 
     for name in neuron_names:
@@ -598,7 +631,7 @@ def build_dlc_annotation_from_3dDLC(subset_df: pd.DataFrame,
                'scorer': scorer,
                'verbose': verbose - 1}
 
-    neuron_names = list(subset_df.columns.levels[0])  # This returns columns that no longer exist
+    neuron_names = get_names_from_df(subset_df)
     neuron_names = [n for n in neuron_names if n in subset_df]
 
     for name in tqdm(neuron_names):
@@ -692,3 +725,12 @@ def modify_config_files_for_training_data(project_config, segment_cfg, training_
         'num_training_frames']
     start_volume = training_cfg.config['training_data_3d']['which_frames'][0]
     project_config.config['dataset_params']['start_volume'] = start_volume
+
+
+def translate_training_names_to_raw_names(df_training_data):
+    """As of 1/24/2022, the columns should have the SAME names"""
+    return get_names_from_df(df_training_data)
+    # offset_names = list(df_training_data.columns.levels[0])
+    # ind = [name2int_neuron_and_tracklet(n) for n in offset_names]
+    # training_tracklet_names = [int2name_tracklet(i - 1) for i in ind]
+    # return training_tracklet_names

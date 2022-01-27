@@ -1,7 +1,7 @@
 import os.path as osp
 from pathlib import Path
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, get_project_of_substep
 
 
@@ -57,7 +57,7 @@ def check_tracking(project_path):
         all_exist = map(osp.exists, all_to_check)
 
         return all(all_exist)
-    except AssertionError:
+    except (AssertionError, TypeError):
         return False
 
 

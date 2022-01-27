@@ -6,12 +6,11 @@ The top level function for initializing a stack of DLC projects
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
-# main function
 from sacred.observers import TinyDbObserver
-from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
-from DLC_for_WBFM.utils.pipeline.dlc_pipeline import train_all_dlc_from_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.pipeline.dlc_pipeline import create_dlc_training_from_tracklets
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
@@ -23,13 +22,14 @@ ex.add_config(project_path=None, DEBUG=False)
 
 @ex.config
 def cfg(project_path, DEBUG):
-    # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    project_dir = cfg.project_dir
 
+    training_cfg = cfg.get_training_config()
     tracking_cfg = cfg.get_tracking_config()
 
     if not DEBUG:
-        using_monkeypatch
+        using_monkeypatch()
         # log_dir = cfg.get_log_dir()
         # ex.observers.append(TinyDbObserver(log_dir))
 
@@ -38,5 +38,11 @@ def cfg(project_path, DEBUG):
 def initialize_dlc_stack(_config, _run):
     sacred.commands.print_config(_run)
 
-    tracking_cfg = _config['tracking_cfg']
-    train_all_dlc_from_config(tracking_cfg)
+    tracking_config = _config['tracking_cfg']
+    training_cfg = _config['training_cfg']
+    project_config = _config['cfg']
+
+    options = {'scorer': project_config.config['experimenter'], 'task_name': project_config.config['experimenter'],
+               'DEBUG': _config['DEBUG']}
+
+    create_dlc_training_from_tracklets(project_config, training_cfg, tracking_config, **options)

@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tifffile
+
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 from scipy import ndimage as ndi
@@ -371,7 +373,7 @@ def filter_dataframe_using_likelihood(df: pd.DataFrame, threshold, coords=None):
     if coords is None:
         coords = ['z', 'x', 'y']
 
-    neuron_names = list(df_filtered.columns.levels[0])
+    neuron_names = get_names_from_df(df_filtered)
     for n in tqdm(neuron_names, leave=False):
         bad_points = df_filtered[n]['likelihood'] < threshold
         for x in coords:
@@ -398,8 +400,8 @@ def matches_between_tracks(df1, df2, user_inlier_mode=False,
     coords = ['z', 'x', 'y']
 
     # Find matches between neuron names
-    leifer_names = list(df1.columns.levels[0])
-    track_names = list(df2.columns.levels[0])
+    leifer_names = get_names_from_df(df1)
+    track_names = get_names_from_df(df2)
 
     zxy1 = [df1[name][coords].to_numpy() for name in leifer_names]
     zxy2 = [df2[name][coords].to_numpy() for name in track_names]
@@ -436,7 +438,7 @@ def remove_outliers_to_combine_tracks(all_dfs_renamed: List[pd.DataFrame]):
     """
     df1 = all_dfs_renamed[0]
 
-    final_neuron_names = list(df1.columns.levels[0])
+    final_neuron_names = get_names_from_df(df1)
     num_t = df1.shape[0]
     coords = ['z', 'x', 'y']
     outlier_model = LocalOutlierFactor(n_neighbors=int(len(all_dfs_renamed)/3))

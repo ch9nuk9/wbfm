@@ -12,7 +12,7 @@ from DLC_for_WBFM.utils.feature_detection.custom_errors import AnalysisOutOfOrde
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, build_subset_df_from_3dDLC, \
     build_dlc_annotation_from_tracklets, build_dlc_annotation_from_3dDLC
 from DLC_for_WBFM.utils.visualization.visualize_using_dlc import save_dlc_annotations
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
 from DLC_for_WBFM.utils.pipeline.paths_to_external_resources import get_pretrained_network_path
 
 ##
@@ -97,104 +97,104 @@ def imsave_all_frames(cap, output_path, which_frames):
     return all_img_names
 
 
-def OLD_training_data_from_tracklet_annotations(video_fname,
-                                            df_fname,
-                                            which_frames,
-                                            which_z,
-                                            dlc_config_fname,
-                                            max_z_dist_for_traces=2,
-                                            total_num_frames=500,
-                                            coord_names=None,
-                                            preprocessing_settings=None,
-                                            verbose=0):
-    """
-    Creates a set of training frames or volumes starting from a saved dataframe of tracklets
-        i.e. my custom dataframe format
-    Takes frames in the list which_frames, taking neurons that are present in each
-
-    Parameters
-    =================
-    video_fname: str
-        Path of the 2d avi video corresponding, from which frames will be taken
-    df_fname: str or pd.DataFrame
-        Path or object (DataFrame) with 3d annotations
-        Frame indices correspond to original btf
-    which_frames: list
-        List of indices that will be take from video_fname as training frames
-    which_z: int
-        Which z-slice corresponding to this video
-    dlc_config_fname: str
-        The location of the dlc config.yaml file
-        The pngs will be written in a subfolder of this parent
-    max_z_dist_for_traces: int
-        How many slices away a neuron centroid can be from which_z
-        i.e. dist <= which_z +- max_z_dist_for_traces
-    scorer: str
-        Name that will be written in the DLC dataframes
-    total_num_frames: int
-        Total number of frames in the video
-    coord_names: list of str
-        Which coordinates to save, in order. Options are:
-        ['x', 'y', 'z', 'likelihood']
-    preprocessing_settings: None or PreprocessingSettings object
-        If the training frames need to be preprocessed after being taken from the .avi video
-        Default is None
-    verbose: int
-        Amount to print
-
-    See also: training_data_3d_from_annotations
-    """
-
-    if coord_names is None:
-        coord_names = ['x', 'y', 'likelihood']
-
-    # Load the dataframe name, and produce DLC-style annotations
-    if type(df_fname) == str:
-        clust_df = pd.read_pickle(df_fname)
-    else:
-        assert type(df_fname) == pd.DataFrame, "Must pass dataframe or filename of dataframe"
-        clust_df = df_fname
-
-    # Build a sub-df with only the relevant neurons and slices
-    subset_opt = {'which_z': which_z,
-                  'max_z_dist': max_z_dist_for_traces,
-                  'verbose': 1}
-    subset_df = build_subset_df_from_tracklets(clust_df, which_frames, **subset_opt)
-    if len(subset_df) == 0:
-        print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
-        return None, None
-
-    # Save the individual png files
-    png_opt = {'dlc_config': dlc_config_fname,
-               'which_frames': which_frames}
-    out = build_png_training_data(**png_opt)
-    relative_imagenames, full_subfolder_name = out
-
-    # Cast the dataframe in DLC format
-    cfg = auxiliaryfunctions.read_config(dlc_config_fname)
-    options = {'min_length': 0,
-               'num_frames': total_num_frames,
-               'coord_names': coord_names,
-               'verbose': verbose,
-               'relative_imagenames': relative_imagenames,
-               'which_frame_subset': which_frames,
-               'scorer': cfg['scorer']}
-    new_dlc_df = build_dlc_annotation_from_tracklets(subset_df, **options)
-    if new_dlc_df is None:
-        print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
-        return None, None
-
-    # Save annotations using DLC-style names
-    data_dir = Path(dlc_config_fname).parent.joinpath('labeled-data')
-    img_subfolder_name = data_dir.joinpath(Path(video_fname).stem)
-    options = {'project_folder': str(img_subfolder_name)}
-    out = save_dlc_annotations(cfg['scorer'], df_fname, new_dlc_df, **options)
-    annotation_fname = out[1][1]
-
-    # Optional: plot the annotations on top of the frames
-    deeplabcut.check_labels(dlc_config_fname)
-
-    return new_dlc_df, annotation_fname
+# def OLD_training_data_from_tracklet_annotations(video_fname,
+#                                             df_fname,
+#                                             which_frames,
+#                                             which_z,
+#                                             dlc_config_fname,
+#                                             max_z_dist_for_traces=2,
+#                                             total_num_frames=500,
+#                                             coord_names=None,
+#                                             preprocessing_settings=None,
+#                                             verbose=0):
+#     """
+#     Creates a set of training frames or volumes starting from a saved dataframe of tracklets
+#         i.e. my custom dataframe format
+#     Takes frames in the list which_frames, taking neurons that are present in each
+#
+#     Parameters
+#     =================
+#     video_fname: str
+#         Path of the 2d avi video corresponding, from which frames will be taken
+#     df_fname: str or pd.DataFrame
+#         Path or object (DataFrame) with 3d annotations
+#         Frame indices correspond to original btf
+#     which_frames: list
+#         List of indices that will be take from video_fname as training frames
+#     which_z: int
+#         Which z-slice corresponding to this video
+#     dlc_config_fname: str
+#         The location of the dlc config.yaml file
+#         The pngs will be written in a subfolder of this parent
+#     max_z_dist_for_traces: int
+#         How many slices away a neuron centroid can be from which_z
+#         i.e. dist <= which_z +- max_z_dist_for_traces
+#     scorer: str
+#         Name that will be written in the DLC dataframes
+#     total_num_frames: int
+#         Total number of frames in the video
+#     coord_names: list of str
+#         Which coordinates to save, in order. Options are:
+#         ['x', 'y', 'z', 'likelihood']
+#     preprocessing_settings: None or PreprocessingSettings object
+#         If the training frames need to be preprocessed after being taken from the .avi video
+#         Default is None
+#     verbose: int
+#         Amount to print
+#
+#     See also: training_data_3d_from_annotations
+#     """
+#
+#     if coord_names is None:
+#         coord_names = ['x', 'y', 'likelihood']
+#
+#     # Load the dataframe name, and produce DLC-style annotations
+#     if type(df_fname) == str:
+#         clust_df = pd.read_pickle(df_fname)
+#     else:
+#         assert type(df_fname) == pd.DataFrame, "Must pass dataframe or filename of dataframe"
+#         clust_df = df_fname
+#
+#     # Build a sub-df with only the relevant neurons and slices
+#     subset_opt = {'which_z': which_z,
+#                   'max_z_dist': max_z_dist_for_traces,
+#                   'verbose': 1}
+#     subset_df = build_subset_df_from_tracklets(clust_df, which_frames, **subset_opt)
+#     if len(subset_df) == 0:
+#         print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
+#         return None, None
+#
+#     # Save the individual png files
+#     png_opt = {'dlc_config': dlc_config_fname,
+#                'which_frames': which_frames}
+#     out = build_png_training_data(**png_opt)
+#     relative_imagenames, full_subfolder_name = out
+#
+#     # Cast the dataframe in DLC format
+#     cfg = auxiliaryfunctions.read_config(dlc_config_fname)
+#     options = {'min_length': 0,
+#                'num_frames': total_num_frames,
+#                'coord_names': coord_names,
+#                'verbose': verbose,
+#                'relative_imagenames': relative_imagenames,
+#                'which_frame_subset': which_frames,
+#                'scorer': cfg['scorer']}
+#     new_dlc_df = build_dlc_annotation_from_tracklets(subset_df, **options)
+#     if new_dlc_df is None:
+#         print(f"Found no tracks long enough; aborting project: {dlc_config_fname}")
+#         return None, None
+#
+#     # Save annotations using DLC-style names
+#     data_dir = Path(dlc_config_fname).parent.joinpath('labeled-data')
+#     img_subfolder_name = data_dir.joinpath(Path(video_fname).stem)
+#     options = {'project_folder': str(img_subfolder_name)}
+#     out = save_dlc_annotations(cfg['scorer'], df_fname, new_dlc_df, **options)
+#     annotation_fname = out[1][1]
+#
+#     # Optional: plot the annotations on top of the frames
+#     deeplabcut.check_labels(dlc_config_fname)
+#
+#     return new_dlc_df, annotation_fname
 
 
 def training_data_from_3dDLC_annotations(video_fname,

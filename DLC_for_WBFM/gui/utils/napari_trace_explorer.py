@@ -1,15 +1,15 @@
 # Display more informative error messages
 # https://www.tutorialexample.com/fix-pyqt-gui-application-crashed-while-no-error-message-displayed-a-beginner-guide-pyqt-tutorial/
 import cgitb
+
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+
+cgitb.enable(format='text')
 import logging
-
 from PyQt5.QtWidgets import QApplication, QScrollArea
-
 logger = logging.getLogger('traceExplorerLogger')
 logger.setLevel(logging.INFO)
 import sys
-cgitb.enable(format='text')
-
 import napari
 import numpy as np
 import pandas as pd
@@ -38,7 +38,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         logger.info("Starting main UI setup")
         # Load dataframe and path to outputs
         self.viewer = viewer
-        neuron_names = list(self.dat.red_traces.columns.levels[0])
+        neuron_names = get_names_from_df(self.dat.red_traces)
         self.current_name = neuron_names[0]
 
         # BOX 1: Change neurons (dropdown)
@@ -193,10 +193,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
 
         self.splitSegmentationHint1 = QtWidgets.QLabel()
-        self.splitSegmentationHint1.setText("Split Automatically")
+        self.splitSegmentationHint1.setText("Select segmentation")
         self.formlayout5.addRow("Control-click:", self.splitSegmentationHint1)
         self.splitSegmentationHint2 = QtWidgets.QLabel()
-        self.splitSegmentationHint2.setText("Split using manual slice index")
+        self.splitSegmentationHint2.setText("Select segmentation and try to split")
         self.formlayout5.addRow("Alt-click:", self.splitSegmentationHint2)
 
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
@@ -390,13 +390,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def max_time(self):
         return len(self.dat.final_tracks) - 1
 
+    @property
+    def zoom_opt(self):
+        return dict(
+            zoom=None,
+            layer_is_full_size_and_single_neuron=False,
+            layer_name='final_track'
+        )
+
     def zoom_next(self, viewer=None):
         change_viewer_time_point(self.viewer, dt=1, a_max=self.max_time)
-        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+        zoom_using_viewer(self.viewer, **self.zoom_opt)
 
     def zoom_previous(self, viewer=None):
         change_viewer_time_point(self.viewer, dt=-1, a_max=self.max_time)
-        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+        zoom_using_viewer(self.viewer, **self.zoom_opt)
 
     def zoom_to_next_nan(self, viewer=None):
         y_on_plot = self.y_on_plot
@@ -405,7 +413,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             if np.isnan(y_on_plot[i]):
                 t_target = i
                 change_viewer_time_point(self.viewer, t_target=t_target - 1)
-                zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+                zoom_using_viewer(self.viewer, **self.zoom_opt)
                 break
         else:
             print("No nan point found; not moving")
@@ -416,7 +424,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         if conflict_neuron is not None:
             change_viewer_time_point(self.viewer, t_target=t)
-            zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+            zoom_using_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No conflict point found; not moving")
 
@@ -596,7 +604,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.dat.tracklet_annotator.indices_of_original_neurons is None:
             update_string = "No segmentations selected"
         else:
-            update_string = f"Selected segmentations is/are: " \
+            update_string = f"Selected segmentation(s): " \
                             f"{self.dat.tracklet_annotator.indices_of_original_neurons}"
         self.saveSegmentationStatusLabel.setText(update_string)
 
@@ -730,11 +738,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
+def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None):
+    # A parent QT application must be initialized first
+    if app is None:
+        started_new_app = True
+        app = QApplication([])
+    else:
+        started_new_app = False
 
     # Build object that has all the data
-    app = QApplication([])
-
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=True,
                                                                    to_load_segmentation_metadata=True)
@@ -742,7 +754,8 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True):
 
     # Note: don't use this in jupyter
     napari.run()
-    app.exec_()
+    if started_new_app:
+        app.exec_()
     logger.info("Quitting")
     sys.exit()
 

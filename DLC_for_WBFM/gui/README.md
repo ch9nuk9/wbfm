@@ -4,11 +4,13 @@
 
 If you do NOT have a working installation, read the next section.
 
-All GUIs are designed to be accessed from the "progress gui". 
-This can be accessed by running "progress_gui.py", for example:
+All GUIs are designed to be accessed from the "progress gui" or directly from the various "explorer" guis. 
+For example:
 
 ```commandline
-python progress_gui.py --project_path /path/to/your/project/project_config.yaml
+conda activate gui_only
+cd /path/to/this/README
+python trace_explorer.py --project_path /path/to/your/project/project_config.yaml
 ```
 
 This command will bring a small GUI up that displays the status of the target project, with buttons to open more complex GUIs.
@@ -17,16 +19,18 @@ Those will be described in the next major section.
 This command works with 4 assumptions:
 1. You are NOT on the cluster (this gui can only be run locally)
 2. You are in a terminal in this folder (/dlc_for_wbfm/DLC_for_WBFM/gui/)
-   1. Example command:
+   1. Example command to get to this folder:
    2. ```cd /dlc_for_wbfm/DLC_for_WBFM/gui/```
 3. You are in the proper conda environment
+   1. Example command:
+   2. ```conda activate gui_only```
 4. You have initialized a project at /path/to/your/project/project_config.yaml
 
 Instructions to satisfy these assumptions are in the next sections.
 
 ## Installation
 
-### Terminal setup
+### Preparation: Terminal setup
 
 If you are on linux or mac, a terminal is included. 
 On Windows I suggest anaconda prompt (this comes with an anaconda installation) or git bash
@@ -34,7 +38,7 @@ On Windows I suggest anaconda prompt (this comes with an anaconda installation) 
 Either way, you should begin by installing anaconda if you don't already have it:
 https://www.anaconda.com/products/individual
 
-#### Step 1
+### Step 1
 In the folder conda-environments, there is a specific environment for this purpose: "gui_only.yaml"
 
 If you are in a terminal, you can use this to create the proper conda environment. 
@@ -48,7 +52,7 @@ conda env create -f gui_only.yaml --name gui_only
 
 Note: this will take a while, ~5 minutes.
 
-#### Step 2
+### Step 2
 
 Activate the environment. This means that later package installations and commands you run can see all the packages you just installed!
 
@@ -56,26 +60,30 @@ Activate the environment. This means that later package installations and comman
 conda activate gui_only
 ```
 
-#### Step 3
+### Step 3
 After the overall packages are installed, the zimmer group private packages need to be installed:
 
 1. git clone dlc_for_wbfm and segmentation (from https://github.com/Zimmer-lab)
 2. cd to the main folder of each repository, and run ```pip install -e .```
    1. Note: you will run ```pip``` twice, and it is very fast
 
-### Project initialization
+## Project initialization
 
-See the main README file for instructions, or use a pre-generated project
+See the main [README](../../README.md) file for instructions, or use a pre-generated project
 
 ## More complex GUI: tracklet and segmentation correction
 
-First, open the progress gui as described above.
+Open the trace explorer gui:
 
-Then, the most complex gui can be accessed using the __tracesVis__ button.
+```commandline
+conda activate gui_only
+cd /path/to/this/README
+python trace_explorer.py --project_path /path/to/your/project/project_config.yaml
+```
 
 This opens a new Napari window with several layers, designed to be used to view and modify the tracking and segmentation.
 This may take some time, ~30 seconds.
-If it takes longer, quit it and try again.
+Sometimes it simply won't open; if it takes longer than a minute, quit it and try again.
 
 ### Overall explanation
 
@@ -85,9 +93,9 @@ When you open the GUI, you will see 4 areas:
 3. Right - Menus and buttons
 4. Bottom - Graph graph
 
-Abstractly, this GUI is designed to present information at a high level and a detailed level:
+Abstractly, each area of the GUI is designed to present information at either a high level or a detailed level:
 1. An overview of the entire worm body
-2. More detail about a specific neuron
+2. Detail about a specific neuron
 
 First I will explain the Napari layers:
 
@@ -199,8 +207,7 @@ Especially when looking at multiple layers, you should experiment with these to 
 Make sure you highlight the "Raw segmentation" layer when you want interactivity!
 
 
-
-
 ## Known issues
 
-See the GUI label on the main github repository 
+See the #gui label on the main github repository. 
+Please open an issue if you find a new bug or want something to be changed!

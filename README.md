@@ -1,3 +1,10 @@
+# Whole Brain Freely Moving Tracking and Trace extraction
+
+This repository contains python code for analyzing raw volumetric images in two channels: red (tracking) and green (activity).
+
+The segmentation portion of the algorithm is in a sibling repository, but all GUIs are in this one:
+https://github.com/Zimmer-lab/segmentation
+
 # Installation
 
 This project is designed to be installed with Anaconda, and requires one external local package to be installed.
@@ -10,10 +17,13 @@ https://www.anaconda.com/products/individual
 ### Get the code
 
 Download or clone two repositories, both on the Zimmer group GitHub:
-1. DLC_for_WBFM (this repo)
-2. Segmentation
+1. DLC_for_WBFM (this repo): https://github.com/Zimmer-lab/dlc_for_wbfm
+2. Segmentation: https://github.com/Zimmer-lab/segmentation
 
 ### Install the environments
+
+Note: if you are just using the GUI, then you can use a simplified environment.
+Detailed instructions can be found in the [README](DLC_for_WBFM/gui/README.md) file under the gui section
 
 For this project, two separate environments are currently needed.
 This is due to versioning interactions between opencv and tensorflow within deeplabcut and stardist. 
@@ -38,7 +48,7 @@ In total, you will install 4 things: 2 environments and 2 custom packages
 
 1. Red channel (tracking) in a single bigtiff file
 2. Green channel (signal) in a single bigtiff file
-3. 2 conda environments (see main README for installation instructions)
+3. 2 conda environments (see above for installation instructions)
 
 ## Full workflow with commands and approximate times
 

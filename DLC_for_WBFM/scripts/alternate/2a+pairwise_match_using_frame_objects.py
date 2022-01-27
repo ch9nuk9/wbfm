@@ -11,7 +11,7 @@ from sacred import Experiment
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.pipeline.tracklet_pipeline import match_all_adjacent_frames_using_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, update_path_to_segmentation_in_config
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, update_path_to_segmentation_in_config
 
 from sacred import SETTINGS
 SETTINGS.CAPTURE_MODE = 'sys'  # Capture stdout

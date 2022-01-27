@@ -16,7 +16,8 @@ from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 from segmentation.util.utils_postprocessing import split_neuron_interactive
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, pickle_load_binary, read_if_exists
+from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import get_sequential_filename
 from DLC_for_WBFM.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
@@ -187,7 +188,7 @@ class TrackletAndSegmentationAnnotator:
         if self.indices_of_original_neurons is None:
             self.indices_of_original_neurons = []
 
-        print(f"Output files: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
+        print(f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
     @property
     def combined_global2tracklet_dict(self):

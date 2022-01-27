@@ -12,6 +12,7 @@ import pandas as pd
 ##
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 
 
@@ -406,7 +407,7 @@ def convert_from_dict_to_lists(tmp_matches, tmp_conf, tmp_neurons):
 ##
 
 def build_tracklets_dfs(pairwise_matches_dict: dict,
-                        zxy_per_neuron_per_frame: list = None,
+                        zxy_per_neuron_per_frame: dict = None,
                         slice_offset: int = 0,
                         verbose=0) -> pd.DataFrame:
     """
@@ -535,7 +536,38 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
             clust_ind += 1
 
     final_df = pd.concat(all_dfs, ignore_index=True, axis=0)
+
+    # empty_ind = []
+    # for k, v in zxy_per_neuron_per_frame.items():
+    #     if v is None:
+    #         empty_ind.append(k)
+    #
+    # final_df = add_empty_rows_to_correct_index(final_df, empty_ind)
+
     return final_df
+
+
+def add_empty_rows_to_correct_index(final_df, empty_ind):
+    if len(empty_ind) == 0:
+        logging.info("No empty indices to correct")
+        return final_df
+    # Create empty rows at each index, then reset the index
+    # Note: if there sequential indices that are missed, then the new indices need to be BEFORE the current dataframe
+    # e.g.:
+    #  Current dataframe has 90, 91, 92
+    #  But, 91 and 92 are empty and need to be inserted back in
+    #  Therefore the new temporary indices for the empty rows should be 90.1, 90.2 (or something between 90 and 91)
+    #  But if 94 was then empty (but not 93), the new index should be 94.5
+    #
+    # BUT it also should be done sequentially, because an empty 94.5 only makese sense if the previous empty 91 and 92 are filled
+
+    logging.info(f"Correcting indices due to {len(empty_ind)} empty volumes")
+    df_index_corrected = final_df.copy()
+    for i in tqdm(empty_ind):
+        new_empty_row = pd.DataFrame(np.nan, columns=df_index_corrected.columns, index=[i + 0.5])
+        df_index_corrected = df_index_corrected.append(new_empty_row, ignore_index=False)
+        df_index_corrected = df_index_corrected.sort_index().reset_index(drop=True)
+    return df_index_corrected
 
 
 def fix_global2tracklet_full_dict(df_tracklets, global2tracklet) -> Dict[str, List[str]]:
@@ -550,7 +582,7 @@ def fix_matches_to_use_keys_not_int(df_tracklet, these_tracklet_ind):
         # logging.debug(f"First key: {these_tracklet_ind[0]}")
         these_tracklet_names = list(set(these_tracklet_ind))
     else:
-        raw_tracklet_names = list(df_tracklet.columns.levels[0])
+        raw_tracklet_names = get_names_from_df(df_tracklet)
         these_tracklet_names = []
         for i_or_name in these_tracklet_ind:
             if i_or_name in these_tracklet_names:
@@ -586,7 +618,7 @@ def get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_trac
 
 
 def get_next_tracklet_name(df_tracklets):
-    all_names = list(df_tracklets.columns.levels[0])
+    all_names = get_names_from_df(df_tracklets)
     # Really want to make sure we are after all other names,
     i_tracklet = int(1e6 + len(all_names) + 1)
     build_tracklet_name = lambda i: f'neuron{i}'

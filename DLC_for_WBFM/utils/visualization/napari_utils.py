@@ -1,6 +1,7 @@
 import numpy as np
 
-from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 
 def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
@@ -31,7 +32,7 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
 
     if neuron_name_dict is None:
         neuron_name_dict = {}
-    all_neurons = list(df.columns.levels[0])
+    all_neurons = get_names_from_df(df)
     t_vec = np.expand_dims(np.array(list(df.index), dtype=int), axis=1)
     # label_vec = np.ones(len(df.index), dtype=int)
     all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
@@ -57,7 +58,7 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
             elif 'label' in df[n]:
                 label_vec = [cast_int_or_nan(i) for i in df[n]['label']]
             else:
-                label_vec = [name2int_neuron(n) for _ in range(t_vec.shape[0])]
+                label_vec = [name2int_neuron_and_tracklet(n) for _ in range(t_vec.shape[0])]
 
         all_t_zxy = np.vstack([all_t_zxy, t_zxy])
         properties['label'].extend(label_vec)

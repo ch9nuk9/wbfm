@@ -8,13 +8,17 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import zarr
+
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, ModularProjectConfig, pickle_load_binary
+from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
+from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
+from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
-    get_or_recalculate_which_frames
+    get_or_recalculate_which_frames, _unpack_config_training_data_conversion
 
 
 def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
@@ -239,31 +243,32 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
                                             segment_cfg: SubfolderConfigFile,
                                             training_cfg: SubfolderConfigFile,
                                             keep_raw_segmentation_index=True,
+                                            add_one_to_raw_tracklet_index=True,
                                             DEBUG=False):
     """
     Using tracklets and full segmentation, produces a small video (zarr) with neurons colored by track
+
+    Note: the tracklet indices will NOT be the same as the original dataframe
+    ... but they will be the same as the segmentation
     """
+    if not add_one_to_raw_tracklet_index:
+        raise NotImplementedError("Currently, 1 must be added to the index")
+
     logging.info("Reindexing segmentation (only training volumes)")
 
     num_frames = cfg.config['dataset_params']['num_frames']
 
+    df_tracklets, df_clust, min_length_to_save, segmentation_metadata = _unpack_config_training_data_conversion(
+        training_cfg, segment_cfg)
+
     # Get ALL matches to the segmentation, then subset
     with safe_cd(cfg.project_dir):
-        # TODO: not hardcoded
-        fname = os.path.join('raw', 'clust_df_dat.pickle')
-        fname = training_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        df = pd.read_pickle(fname)
 
         # Get the frames chosen as training data, or recalculate
-        which_frames = get_or_recalculate_which_frames(DEBUG, df, num_frames, training_cfg)
-        # logging.log(f"Which frames to use for training data: {which_frames}")
+        which_frames = get_or_recalculate_which_frames(DEBUG, df_clust, num_frames, training_cfg)
 
-        # Build a sub-df with only the relevant neurons; all slices
-        # Todo: connect up to actually tracked z slices?
-        subset_opt = {'which_z': None,
-                      'max_z_dist': None,
-                      'verbose': 1}
-        subset_df = build_subset_df_from_tracklets(df, which_frames, **subset_opt)
+        # Build a sub-df with only the relevant neurons; all time slices
+        subset_df = build_subset_df_from_tracklets(df_tracklets, which_frames)
 
         # TODO: refactor using DetectedNeurons class
         fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
@@ -273,21 +278,44 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
         masks = zarr.open(fname)
 
     logging.info("Convert dataframe to matches per frame")
+    # NOTE: only works with updated tracklet dataframe
+    tracklet_names = get_names_from_df(subset_df)
+
     all_matches = {}
-    for i, i_frame in tqdm(enumerate(which_frames)):
+    for t in which_frames:
         matches = []
-        for i_row, neuron_df in subset_df.iterrows():
-            # i_tracklet = neuron_df['all_ind_local'][i].astype(int)
-            i_tracklet = int(neuron_df['all_ind_local'][i])
-            seg_ind = segmentation_metadata[i_frame].index[i_tracklet].astype(int)
+        for i, name in enumerate(tracklet_names):
+            neuron_df = subset_df[name]
+            raw_neuron_id = neuron_df['raw_neuron_id'].at[t]
             if keep_raw_segmentation_index:
                 # Do keep the (very large) index from the tracklet df
-                global_ind = neuron_df['clust_ind'] + 1
+                # BUT, this can't be 0 because it is the same as the segmentation index (background is 0)
+                global_ind = raw_neuron_id + 1
             else:
                 # These will NOT be the final names of the neurons if fdnc is used
-                global_ind = i_row + 1
-            matches.append([global_ind, seg_ind])
-        all_matches[i_frame] = np.array(matches)
+                global_ind = i + 1
+            matches.append([global_ind, int(raw_neuron_id)])
+        all_matches[t] = matches
+
+    # all_matches = {}
+    # for i, i_frame in tqdm(enumerate(which_frames)):
+    #     matches = []
+    #     for i_row, neuron_df in subset_df.iterrows():
+    #         # i_tracklet = neuron_df['all_ind_local'][i].astype(int)
+    #         i_tracklet = int(neuron_df['all_ind_local'][i])
+    #         seg_ind = segmentation_metadata[i_frame].index[i_tracklet].astype(int)
+    #         if keep_raw_segmentation_index:
+    #             # Do keep the (very large) index from the tracklet df
+    #             # BUT, this can't be 0 because it is the same as the segmentation index (background is 0)
+    #             if add_one_to_raw_tracklet_index:
+    #                 global_ind = neuron_df['clust_ind'] + 1
+    #             else:
+    #                 raise NotImplementedError("Currently, 1 must be added")
+    #         else:
+    #             # These will NOT be the final names of the neurons if fdnc is used
+    #             global_ind = i_row + 1
+    #         matches.append([global_ind, seg_ind])
+    #     all_matches[i_frame] = np.array(matches)
 
     # Reindex using look-up table
     all_lut = all_matches_to_lookup_tables(all_matches)

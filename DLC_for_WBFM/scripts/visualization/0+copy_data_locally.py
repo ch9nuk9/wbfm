@@ -11,7 +11,7 @@ from sacred import Experiment
 from sacred import SETTINGS
 
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import resolve_mounted_path_in_current_os
+from DLC_for_WBFM.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False

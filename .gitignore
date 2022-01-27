@@ -39,4 +39,4 @@ DLC_for_WBFM/new_project_defaults/snakemake/.snakemake/
 /DLC_for_WBFM/scripts/nn_training/wandb/*
 /DLC_for_WBFM/logs/*
 /DLC_for_WBFM/scratch/*
-/DLC_for_WBFM/notebooks/alternative_ideas/lightning_logs/*.*
+/DLC_for_WBFM/notebooks/alternative_ideas/lightning_logs/*

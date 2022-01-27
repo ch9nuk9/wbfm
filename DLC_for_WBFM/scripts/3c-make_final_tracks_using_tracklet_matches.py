@@ -12,9 +12,12 @@ from sacred import Experiment
 from sacred.observers import TinyDbObserver
 
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.pipeline.long_range_matching import global_track_matches_from_config
 from DLC_for_WBFM.utils.postprocessing.combine_tracklets_and_DLC_tracks import \
     match_dlc_and_tracklet_coverings_from_config, final_tracks_from_tracklet_matches_from_config
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+import cgitb
+cgitb.enable(format='text')
 
 # Initialize sacred experiment
 ex = Experiment()
@@ -27,8 +30,8 @@ def cfg(project_path, DEBUG):
     cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
-    tracking_cfg = cfg.get_tracking_config()
-    training_cfg = cfg.get_training_config()
+    # tracking_cfg = cfg.get_tracking_config()
+    # training_cfg = cfg.get_training_config()
 
     if not DEBUG:
         using_monkeypatch()
@@ -41,11 +44,12 @@ def combine_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    track_cfg = _config['tracking_cfg']
-    training_cfg = _config['training_cfg']
+    global_track_matches_from_config(_config['project_path'], DEBUG=DEBUG)
 
-    # TODO: do I need the imputed df option here?
-    final_tracks_from_tracklet_matches_from_config(track_cfg, training_cfg, _config['cfg'],
-                                                   use_imputed_df=_config['use_imputed_df'],
-                                                   start_from_manual_matches=_config['start_from_manual_matches'],
-                                                   DEBUG=DEBUG)
+    # # TODO: do I need the imputed df option here?
+    # track_cfg = _config['tracking_cfg']
+    # training_cfg = _config['training_cfg']
+    # final_tracks_from_tracklet_matches_from_config(track_cfg, training_cfg, _config['cfg'],
+    #                                                use_imputed_df=_config['use_imputed_df'],
+    #                                                start_from_manual_matches=_config['start_from_manual_matches'],
+    #                                                DEBUG=DEBUG)

@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import zarr
 
+from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
 from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
@@ -16,10 +17,10 @@ from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletA
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
-from scipy.spatial.distance import cdist
-from segmentation.util.utils_metadata import DetectedNeurons, get_metadata_dictionary
-from DLC_for_WBFM.utils.projects.utils_filepaths import ModularProjectConfig, read_if_exists, pickle_load_binary, \
-    SubfolderConfigFile, load_file_according_to_precedence
+from segmentation.util.utils_metadata import DetectedNeurons
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
+    load_file_according_to_precedence
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
 from backports.cached_property import cached_property
@@ -39,7 +40,6 @@ class ProjectData:
 
     df_training_tracklets: pd.DataFrame = None
     reindexed_masks_training: zarr.Array = None
-    reindexed_metadata_training: DetectedNeurons = None
 
     red_traces: pd.DataFrame = None
     green_traces: pd.DataFrame = None
@@ -160,16 +160,18 @@ class ProjectData:
         training_cfg = self.project_config.get_training_config()
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
 
-        tracklet_obj = DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata)
-
         obj = TrackletAndSegmentationAnnotator(
-            tracklet_obj,
+            self.tracklets_and_neurons_class,
             self.global2tracklet,
             segmentation_metadata=self.segmentation_metadata,
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg
         )
         return obj
+
+    @cached_property
+    def tracklets_and_neurons_class(self):
+        return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata)
 
     @cached_property
     def df_fdnc_tracks(self):
@@ -197,9 +199,12 @@ class ProjectData:
 
     @property
     def which_training_frames(self):
-        # TODO: change this to just load on init?
         train_cfg = self.project_config.get_training_config()
         return train_cfg.config['training_data_3d']['which_frames']
+
+    @property
+    def num_training_frames(self):
+        return len(self.which_training_frames)
 
     @staticmethod
     def unpack_config_file(project_path):
@@ -241,8 +246,6 @@ class ProjectData:
         # Metadata uses class from segmentation package, which does lazy loading itself
         seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         obj.segmentation_metadata = DetectedNeurons(seg_metadata_fname)
-        reindexed_metadata_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_metadata')
-        obj.reindexed_metadata_training = DetectedNeurons(reindexed_metadata_training_fname)
 
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
@@ -390,34 +393,9 @@ class ProjectData:
 
     def get_centroids_as_numpy_training(self, i_frame: int, is_relative_index=True) -> np.ndarray:
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
-        if is_relative_index:
-            i_frame = self.correct_relative_index(i_frame)
-        return self.reindexed_metadata_training.detect_neurons_from_file(i_frame)
+        assert is_relative_index, "Only relative supported"
 
-    def get_centroids_as_numpy_training_with_unmatched(self, i_rel: int):
-        i_abs = self.correct_relative_index(i_rel)
-        matched_pts = self.reindexed_metadata_training.detect_neurons_from_file(i_abs)
-        all_pts = self.segmentation_metadata.detect_neurons_from_file(i_abs)
-
-        # Any points that do not have a near-identical match in matched_pts are unmatched
-        # These will be appended
-        tol = 2.0
-        ind_unmatched = ~np.any(cdist(all_pts, matched_pts) < tol, axis=1)
-
-        pts_to_add = all_pts[ind_unmatched, :]
-        final_pts = np.vstack([matched_pts, pts_to_add])
-        return final_pts
-
-    # def calc_matched_point_clouds(self, pair):
-    #     match = self.raw_matches[pair]
-    #     pts0, pts1 = [], []
-    #     n0, n1 = self.get_centroids_as_numpy(pair[0]), self.get_centroids_as_numpy(pair[1])
-    #     for m in match.final_matches:
-    #         pts0.append(n0[m[0]])
-    #         pts1.append(n1[m[1]])
-    #
-    #     pts0, pts1 = np.array(pts0), np.array(pts1)
-    #     return pts0, pts1
+        return dataframe_to_numpy_zxy_single_frame(self.df_training_tracklets, t=i_frame)
 
     def get_distance_to_closest_neuron(self, i_frame, target_pt, nbr_obj=None):
         # TODO: refactor to segmentation class?
@@ -438,7 +416,7 @@ class ProjectData:
 
         return dist
 
-    def correct_relative_index(self, i):
+    def correct_relative_training_index(self, i):
         return self.which_training_frames[i]
 
     def napari_of_single_match(self, pair, which_matches='final_matches', this_match: FramePair = None,
@@ -523,21 +501,20 @@ class ProjectData:
         return f"=======================================\n\
 Project data for directory:\n\
 {self.project_dir} \n\
-=======================================\n\
-Found the following raw data files:\n\
+Found the following data files:\n\
+============Raw========================\n\
 red_data:                 {self.red_data is not None}\n\
 green_data:               {self.green_data is not None}\n\
+============Annotations================\n\
+behavior_annotations:     {self.behavior_annotations is not None}\n\
+============Training================\n\
+df_training_tracklets:    {self.df_training_tracklets is not None}\n\
 ============Segmentation===============\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
-segmentation:             {self.segmentation is not None}\n\
-============Tracklets==================\n\
-df_training_tracklets:    {self.df_training_tracklets is not None}\n\
-reindexed_masks_training: {self.reindexed_masks_training is not None}\n\
+colored_segmentation:     {self.segmentation is not None}\n\
 ============Traces=====================\n\
 red_traces:               {self.red_traces is not None}\n\
-green_traces:             {self.green_traces is not None}\n\
-final_tracks:             {self.final_tracks is not None}\n\
-behavior_annotations:     {self.behavior_annotations is not None}\n"
+green_traces:             {self.green_traces is not None}\n"
 
 
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:

@@ -35,7 +35,7 @@ class napari_track_correction(QtWidgets.QWidget):
             raise IndexError("Only 2 frames loaded!")
         return dict(
             zoom=None,
-            layer_is_single_neuron=False,
+            layer_is_full_size_and_single_neuron=False,
             layer_name='Raw IDs',
             ind_within_layer=ind_within_layer
         )

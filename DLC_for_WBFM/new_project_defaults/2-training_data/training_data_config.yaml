@@ -9,31 +9,31 @@ self_path: 2-training_data/training_data_config.yaml # for programmatic updating
 
 tracker_params: # OPTIMIZE
 #  num_frames: 100  # Uncomment this if you want a different number from the main project!
-  z_depth_neuron_encoding: 5.0
+  z_depth_neuron_encoding: 3.0
   external_detections: null # Will be synchronized with segmentation
 
 pairwise_matching_params:
-  add_affine_to_candidates: true
+  add_affine_to_candidates: false
   affine_num_candidates: 1
   add_gp_to_candidates: true
   gp_num_candidates: 1
-  add_fdnc_to_candidates: false
+  add_fdnc_to_candidates: true
   fdnc_options:
     topn: 1
-  min_confidence: 0.2
+  min_confidence: 0.1
   z_threshold: 3
-  matching_method: unanimous  # Or bipartite; more robust if more than 1 candidate per method
+  matching_method: bipartite  # Or unanimous
   preprocess_using_global_rotation: False
 
 postprocessing_params:
   min_length_to_save: 5
 
-df_training_3d_tracks: 2-training_data/training_tracklets.h5
+df_training_3d_tracks: 2-training_data/training_data_tracks.h5
 df_3d_tracklets: 2-training_data/all_tracklets.h5
 reindexed_masks: 2-training_data/reindexed_masks.zarr
 reindexed_metadata: 2-training_data/reindexed_metadata.pickle
 
 # Which frames have enough tracklets to be used for DLC later
 training_data_3d:
-  num_training_frames: 30 # CHANGE ME; trade-off between number of neurons and number of frames
+  num_training_frames: 10 # CHANGE ME; trade-off between number of neurons and number of frames
   which_frames: null # To be calculated

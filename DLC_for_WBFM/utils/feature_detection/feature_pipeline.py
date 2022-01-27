@@ -1,5 +1,4 @@
 import logging
-import random
 from collections import defaultdict
 from typing import Tuple, Dict
 import concurrent.futures
@@ -11,24 +10,24 @@ from DLC_for_WBFM.utils.feature_detection.class_frame_pair import FramePair, cal
     FramePairOptions
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame, \
     build_reference_frame_encoding
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError, NoNeuronsError
 from DLC_for_WBFM.utils.feature_detection.utils_candidate_matches import calc_neurons_using_k_cliques, \
     calc_all_bipartite_matches, calc_neuron_using_voronoi
 from DLC_for_WBFM.utils.feature_detection.utils_detection import detect_neurons_using_ICP
 from DLC_for_WBFM.utils.feature_detection.utils_features import build_features_and_match_2volumes, \
     match_centroids_using_tree
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import build_digraph_from_matches, unpack_node_name, \
-    calc_bipartite_matches
+from DLC_for_WBFM.utils.external.utils_networkx import build_digraph_from_matches, unpack_node_name
 from DLC_for_WBFM.utils.feature_detection.utils_reference_frames import add_all_good_components, \
     is_ordered_subset
 from DLC_for_WBFM.utils.feature_detection.utils_tracklets import consolidate_tracklets
 from DLC_for_WBFM.utils.preprocessing.utils_tif import PreprocessingSettings
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 
 from segmentation.util.utils_metadata import DetectedNeurons
 
 ##
 ## Full pipeline
 ##
+
 
 def track_neurons_two_volumes(dat0,
                               dat1,
@@ -249,45 +248,45 @@ def create_dict_from_matches(self):
     self.local2global = local2global
 
 
-def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
-    """
-    Registers a single frame to a set of references
-    """
-
-    # Build a map from this frame's indices to the global neuron frame
-    all_global_matches = []
-    all_conf = []
-    for ref_frame_ind, ref in reference_set.reference_frames.items():
-        # Get matches (coordinates are local to this reference frame)
-        # OPTMIZE: only attempt to check the subset of reference neurons
-        local_matches, conf, _, _ = calc_FramePair_from_Frames(this_frame, ref, None)
-        # Convert to global coordinates
-        global_matches = []
-        global_conf = []
-        l2g = reference_set.local2global
-        for m, c in zip(local_matches, conf):
-            # Check each match between the test frame and the current ref
-            ref_neuron_ind = m[1]
-            global_ind = l2g.get((ref_frame_ind, ref_neuron_ind), None)
-            # The matched neuron may not be part of the actual reference set
-            if global_ind is not None and c > min_conf:
-                global_matches.append([m[0], global_ind])
-                global_conf.append(c)
-        all_global_matches.append(global_matches)
-        all_conf.append(conf)
-
-    # Different approach: bipartite matching between reference set and each frame
-    edges_dict = defaultdict(int)
-    for frame_match, frame_conf in zip(all_global_matches, all_conf):
-        for neuron_matches, neuron_conf in zip(frame_match, frame_conf):
-            key = (neuron_matches[0], neuron_matches[1])
-            # COMBAK: add conf
-            edges_dict[key] += neuron_conf
-    edges = [[k[0], k[1], v] for k, v in edges_dict.items()]
-    all_bp_matches = calc_bipartite_matches(edges)
-
-    # TODO: fix last return value
-    return all_bp_matches, all_conf, edges
+# def match_to_reference_frames(this_frame, reference_set, min_conf=1.0):
+#     """
+#     Registers a single frame to a set of references
+#     """
+#
+#     # Build a map from this frame's indices to the global neuron frame
+#     all_global_matches = []
+#     all_conf = []
+#     for ref_frame_ind, ref in reference_set.reference_frames.items():
+#         # Get matches (coordinates are local to this reference frame)
+#         # OPTMIZE: only attempt to check the subset of reference neurons
+#         local_matches, conf, _, _ = calc_FramePair_from_Frames(this_frame, ref, None)
+#         # Convert to global coordinates
+#         global_matches = []
+#         global_conf = []
+#         l2g = reference_set.local2global
+#         for m, c in zip(local_matches, conf):
+#             # Check each match between the test frame and the current ref
+#             ref_neuron_ind = m[1]
+#             global_ind = l2g.get((ref_frame_ind, ref_neuron_ind), None)
+#             # The matched neuron may not be part of the actual reference set
+#             if global_ind is not None and c > min_conf:
+#                 global_matches.append([m[0], global_ind])
+#                 global_conf.append(c)
+#         all_global_matches.append(global_matches)
+#         all_conf.append(conf)
+#
+#     # Different approach: bipartite matching between reference set and each frame
+#     edges_dict = defaultdict(int)
+#     for frame_match, frame_conf in zip(all_global_matches, all_conf):
+#         for neuron_matches, neuron_conf in zip(frame_match, frame_conf):
+#             key = (neuron_matches[0], neuron_matches[1])
+#             # COMBAK: add conf
+#             edges_dict[key] += neuron_conf
+#     edges = [[k[0], k[1], v] for k, v in edges_dict.items()]
+#     all_bp_matches = calc_bipartite_matches(edges)
+#
+#     # TODO: fix last return value
+#     return all_bp_matches, all_conf, edges
 
 ##
 ## Full pipeline function
@@ -321,14 +320,16 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
     try:
         all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
         return all_frame_pairs, all_frame_dict
-    finally:
+    except (ValueError, NoNeuronsError, NoMatchesError) as e:
+        logging.warning("Error in frame pair matching; quitting gracefully and saving the frame pairs:")
+        print(e)
         return None, all_frame_dict
 
 
 def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume):
     all_frame_pairs = {}
     frame_range = range(start_volume + 1, end_volume)
-    logging.info(f"Calculating Frame pairs for frames:  {start_volume + 1}, {end_volume}")
+    logging.info(f"Calculating Frame pairs for frames:  {start_volume + 1} to {end_volume}")
     for i_frame in tqdm(frame_range):
         key = (i_frame - 1, i_frame)
         frame0, frame1 = all_frame_dict[key[0]], all_frame_dict[key[1]]
@@ -356,7 +357,7 @@ def calculate_frame_objects_full_video(external_detections, start_volume, end_vo
     # Build all frames initially, then match
     frame_range = range(start_volume, end_volume)
     all_frame_dict = dict()
-    logging.info(f"Calculating Frame objects for frames: {start_volume}, {end_volume}")
+    logging.info(f"Calculating Frame objects for frames: {start_volume} to {end_volume}")
     with tqdm(total=len(frame_range)) as pbar:
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
             futures = {executor.submit(_build_frame, i): i for i in frame_range}

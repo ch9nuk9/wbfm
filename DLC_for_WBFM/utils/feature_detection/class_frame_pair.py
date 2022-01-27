@@ -7,7 +7,6 @@ import cv2
 import numpy as np
 import pandas as pd
 from napari.utils.transforms import Affine
-from backports.cached_property import cached_property
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
 from DLC_for_WBFM.utils.feature_detection.class_reference_frame import ReferenceFrame
@@ -15,8 +14,10 @@ from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError, A
 from DLC_for_WBFM.utils.feature_detection.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.feature_detection.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.feature_detection.utils_gaussian_process import calc_matches_using_gaussian_process
-from DLC_for_WBFM.utils.feature_detection.utils_networkx import calc_bipartite_from_candidates, dist2conf
-from DLC_for_WBFM.utils.nn_utils.data_formatting import zimmer2leifer, flatten_nested_list
+from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candidates
+from DLC_for_WBFM.utils.pipeline.distance_functions import dist2conf
+from DLC_for_WBFM.utils.nn_utils.data_formatting import flatten_nested_list
+from DLC_for_WBFM.utils.pipeline.physical_units import PhysicalUnitConversion
 
 
 @dataclass
@@ -51,6 +52,9 @@ class FramePairOptions:
     z_threshold: float = None
     min_confidence: float = 0.001
     z_to_xy_ratio: float = 3.0
+
+    # Physical unit conversion; required for leifer network
+    physical_unit_conversion: PhysicalUnitConversion = None
 
     # New: rotation of the entire image as preprocessing
     preprocess_using_global_rotation: bool = False
@@ -102,7 +106,10 @@ class FramePair:
 
     @property
     def all_candidate_matches(self) -> list:
-        all_matches = self.feature_matches.copy()
+        if self.feature_matches is not None:
+            all_matches = self.feature_matches.copy()
+        else:
+            all_matches = []
         if self.options.add_affine_to_candidates:
             if self.affine_matches is not None:
                 all_matches.extend(self.affine_matches)
@@ -225,7 +232,8 @@ class FramePair:
 
     def calc_final_matches_using_bipartite_matching(self, min_confidence: float = None,
                                                     z_threshold=None) -> list:
-        assert len(self.all_candidate_matches) > 0, "No candidate matches!"
+        if len(self.all_candidate_matches) == 0:
+            return []
         z_threshold, min_confidence = self.use_defaults_if_none(min_confidence, z_threshold)
 
         try:
@@ -240,7 +248,8 @@ class FramePair:
 
     def calc_final_matches_using_unanimous_voting(self, min_confidence: float = None,
                                                   z_threshold=None) -> list:
-        assert len(self.all_candidate_matches) > 0, "No candidate matches!"
+        if len(self.all_candidate_matches) == 0:
+            return []
         z_threshold, min_confidence = self.use_defaults_if_none(min_confidence, z_threshold)
 
         candidates = self.all_candidate_matches
@@ -585,8 +594,8 @@ class FramePair:
         from fDNC.src.DNC_predict import predict_matches
         # New: n0 may be rigidly prealigned
         n0, n1 = self.pts0_preprocessed, self.pts1.copy()
-        template_pos = zimmer2leifer(np.array(n0))
-        test_pos = zimmer2leifer(np.array(n1))
+        template_pos = self.options.physical_unit_conversion.zimmer2leifer(np.array(n0))
+        test_pos = self.options.physical_unit_conversion.zimmer2leifer(np.array(n1))
 
         _, matches_with_conf = predict_matches(test_pos=test_pos, template_pos=template_pos, **prediction_options)
         if prediction_options['topn'] is not None:

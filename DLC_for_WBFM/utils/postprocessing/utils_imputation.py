@@ -9,7 +9,8 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.feature_detection.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filepaths import SubfolderConfigFile, read_if_exists
+from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
+from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists
 # Note: following must be present, even if pycharm cleans it
 # from sklearn.experimental import enable_iterative_imputer
 # from sklearn.impute import IterativeImputer
