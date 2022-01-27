@@ -7,10 +7,10 @@
 #SBATCH --output=log_single_step.out    # Standard output and error log
 #SBATCH --time=6:00:00
 #SBATCH --mem=8G
-#SBATCH --partition=gpu
+# #SBATCH --partition=gpu
 
 pwd; hostname; date
-module load cudnn/7.6.5
+#module load cudnn/7.6.5
 
 # Get all user flags
 while getopts t:n:s: flag
