@@ -10,19 +10,18 @@ Output:
     3d-numpy array
 
 """
-import numpy as np
-from natsort import natsorted
-import matplotlib.pyplot as plt
-import tifffile as tiff
 import os
 from collections import defaultdict
+
+import matplotlib.pyplot as plt
+import numpy as np
+import tifffile as tiff
+from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches
+from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import build_tracklets_from_matches
+from natsort import natsorted
 from scipy.optimize import curve_fit
-import pickle
 
 import segmentation.util.utils_model as sd
-from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches
-from DLC_for_WBFM.utils.feature_detection.utils_tracklets import build_tracklets_from_matches
-from tqdm import tqdm
 
 
 def calc_all_overlaps(array_3d,

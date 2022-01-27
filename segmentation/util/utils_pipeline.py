@@ -1,7 +1,7 @@
 import logging
 import threading
 import stardist.models
-from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
 
 import segmentation.util.utils_postprocessing as post
 import numpy as np
@@ -9,7 +9,7 @@ from tqdm import tqdm
 # preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
-from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
+from DLC_for_WBFM.utils.general.preprocessing.utils_tif import perform_preprocessing
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 # metadata
 from segmentation.util.utils_config_files import _unpack_config_file
