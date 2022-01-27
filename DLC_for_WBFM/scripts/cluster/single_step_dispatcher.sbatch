@@ -12,6 +12,7 @@
 pwd; hostname; date
 module load cudnn/7.6.5
 
+# Get all user flags
 while getopts t:n:s: flag
 do
     case "${flag}" in
@@ -22,10 +23,10 @@ do
     esac
 done
 
+# Unpack the flag into an actual command
 CMD_DIR="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
 
 declare -A CMD_DICT
-
 CMD_DICT["0b"]="0b-preprocess_working_copy_of_data.py"
 CMD_DICT["1"]="1-segment_video.py"
 CMD_DICT["2a"]="2a-pairwise_match_sequential_frames.py"
@@ -39,17 +40,16 @@ CMD_DICT["4b"]="4b-reindex_segmentation_full.py"
 CMD_DICT["4c"]="4c-extract_full_traces.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
+FULL_CMD="python $CMD with project_path=$project_path"
 
 echo "Running step $step_reference using full command:"
-echo $CMD
-
-LOG="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts/cluster/fdnc_tracking.log"
+echo $FULL_CMD
 
 if [ "$is_dry_run" ]; then
-  echo "Dry run with command: $CMD with project_path=$project_path" > $LOG
+  echo "Dry run with command: $FULL_CMD"
 else
   python $CMD with project_path="$project_path"
 fi
 
 date
-echo "Finished"
+echo "Finished successfully!"

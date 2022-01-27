@@ -23,6 +23,19 @@ Download or clone two repositories, both on the Zimmer group GitHub:
 
 ### Install the environments
 
+#### Pre-installed environments
+
+Note: there are pre-installed environments living on the cluster, at:
+/scratch/zimmer/.conda/envs/segmentation
+/scratch/zimmer/.conda/envs/wbfm
+
+They can be activated using:
+```commandline
+conda activate /scratch/zimmer/.conda/envs/wbfm
+```
+
+#### Installing new environments
+
 Note: if you are just using the GUI, then you can use a simplified environment.
 Detailed instructions can be found in the [README](DLC_for_WBFM/gui/README.md) file under the gui section
 
@@ -31,7 +44,7 @@ This is due to versioning interactions between opencv and tensorflow within deep
 Both environments can be found in the folder conda-environments/
 
 1. segmentation.yaml
-2. DLC-for-WBFM.yaml OR DLC-for-WBFM-cluster.yaml, depending on the target machine
+2. wbfm.yaml
 
 This installs the public packages, now we need to install our custom code.
 Do `conda activate segmentation` and install the local code in the following way:
@@ -53,7 +66,6 @@ In total, you will install 4 things: 2 environments and 2 custom packages
 
 ## Full workflow with commands and approximate times
 
-Currently, everything is designed to run on the command line.
 
 All examples assume that you are in the main folder:
 
@@ -61,28 +73,49 @@ DLC_for_WBFM/
 
 For simple reference, each command is in proper number order in DLC_for_WBFM/scripts
 
-### Initializing
+### Creating a project: easy
 
-Perparation: see above
+Working examples to create a project are available for 
+[linux](DLC_for_WBFM/scripts/examples/0-create_new_project-linux-EXAMPLE.sh)
+and [windows](DLC_for_WBFM/scripts/examples/0-create_new_project-windows-EXAMPLE.sh)
+
+Currently, everything is designed to run on the command line.
+However, if you have your data available locally, for the initial project creation you can use a gui:
+
+```commandline
+python gui/create_project_gui.py
+```
+
+### Creating a project: command-line details
 
 Command:
 ```bash
-RED_PATH="D:\More-stabilized-wbfm\test2020-10-22_16-15-20_test4-channel-0-pco_camera1\test2020-10-22_16-15-20_test4-channel-0-pco_camera1bigtiff.btf"
-GREEN_PATH="D:\More-stabilized-wbfm\test2020-10-22_16-15-20_test4-channel-1-pco_camera2\test2020-10-22_16-15-20_test4-channel-1-pco_camera2bigtiff.btf"
-COMMAND="scripts/create_new_project.py"
+RED_PATH="path/to/red/data"
+GREEN_PATH="path/to/green/data"
+PROJECT_DIR="path/to/new/project/location"
 
-python $COMMAND with project_dir=./scratch red_bigtiff_fname=$RED_PATH green_bigtiff_fname=$GREEN_PATH
+COMMAND="scripts/0a-create_new_project.py"
+
+python $COMMAND with project_dir=$PROJECT_DIR red_bigtiff_fname=$RED_PATH green_bigtiff_fname=$GREEN_PATH
 ```
 
 This is the most complicated step, and I recommend that you create a bash script.
 An example can be found at:
 
-/DLC_for_WBFM/scripts/0-create_new_project-windows-EXAMPLE.sh
-
 Speed: Fast
 
 Output: new project folder with project_config.yaml, and with 4 numbered subfolders
 
+## Running each step on the cluster (sbatch)
+
+Once the project is created, each step can be run via sbatch using:
+
+```commandline
+sbatch single_step_dispatcher.sbatch -s 1 -t /scratch/zimmer/Charles/dlc_stacks/worm10-gui_test/project_config.yaml
+```
+
+
+## More details on each step
 ### Segmentation
 
 Preparation:
@@ -98,13 +131,12 @@ Command:
 python scripts/1-segment_video.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
-Speed: Slowest step; 1 day - 1 week
+Speed: Slowest step; 3-12 hours
 
 Output, in 1-segmentation:
-1. masks_N.zarr
+1. masks.zarr
 ..* .zarr is the data type, similar to btf but faster
-..* N is the number of frames, as set in the project_config
-2. metadata_N.pickle
+2. metadata.pickle
 ..* This is the centroids and brightnesses of the identified neurons
 
 ### Training data
@@ -118,7 +150,7 @@ Command:
 python scripts/2a-pairwise_match_sequential_frames.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
-Speed: Fast, but depends on number of frames; 1-2 hours
+Speed: Fast, but depends on number of frames; 2-6 hours
 
 Output, in 2-training_data/raw:
 1. clust_dat_df.pickle
@@ -126,7 +158,8 @@ Output, in 2-training_data/raw:
 2. match_dat.pickle and frame_dat.pickle
 ..* These contain the matches between frames, and the frame objects themselves
 ..* This is mostly for debugging and visualizing, and is not used further
-   
+
+
 
 ### DeepLabCut
 

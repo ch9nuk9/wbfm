@@ -22,8 +22,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 
 ex = Experiment()
-ex.add_config(project_path=None,
-              DEBUG=False)
+ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
