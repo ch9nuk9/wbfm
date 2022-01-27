@@ -117,11 +117,15 @@ class NeuronComposedOfTracklets:
             return True, fraction_outliers
 
     def get_raw_tracklet_names(self):
-        this_neuron_name = self.neuron2tracklets.raw_name_to_network_name(self.name)
-        network_names = self.neuron2tracklets.get_all_matches(name=this_neuron_name)
+        network_names = self.get_network_tracklet_names()
         nodes = self.neuron2tracklets.nodes()
         tracklet_names = [nodes[n]['metadata'] for n in network_names]
         return tracklet_names
+
+    def get_network_tracklet_names(self):
+        this_neuron_name = self.neuron2tracklets.raw_name_to_network_name(self.name)
+        network_names = self.neuron2tracklets.get_all_matches(name=this_neuron_name)
+        return network_names
 
     def plot_classifier_boundary(self):
         """Assumes z and volume are the classifier coordinates"""
