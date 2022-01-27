@@ -87,9 +87,9 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         t_step = 10
     else:
         t_step = 1
-    final_matching = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step)
+    final_matching_with_conflict = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step)
     # Final step to remove time conflicts
-    worm_obj.reinitialize_all_neurons_from_final_matching(final_matching)
+    worm_obj.reinitialize_all_neurons_from_final_matching(final_matching_with_conflict)
     worm_obj.remove_conflicting_tracklets_from_all_neurons()
     worm_obj.update_time_covering_ind_for_all_neurons()
     no_conflict_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
