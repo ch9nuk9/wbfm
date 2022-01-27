@@ -91,7 +91,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     worm_obj.remove_conflicting_tracklets_from_all_neurons()
     worm_obj.update_time_covering_ind_for_all_neurons()
     no_conflict_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
-    final_matching_no_confict = MatchesWithConfidence.matches_from_bipartite_graph(no_conflict_neuron_graph)
+    final_matching_no_confict = b_matching_via_node_copying(no_conflict_neuron_graph)
 
     df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching_no_confict,
                                               num_neurons=worm_obj.num_neurons)
