@@ -19,6 +19,7 @@ https://www.anaconda.com/products/individual
 Download or clone two repositories, both on the Zimmer group GitHub:
 1. DLC_for_WBFM (this repo): https://github.com/Zimmer-lab/dlc_for_wbfm
 2. Segmentation: https://github.com/Zimmer-lab/segmentation
+3. fDNC (leifer paper): https://github.com/Charles-Fieseler-Vienna/fDNC_Neuron_ID
 
 ### Install the environments
 
