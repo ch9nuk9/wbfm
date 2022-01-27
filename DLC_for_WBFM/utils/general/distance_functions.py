@@ -63,9 +63,10 @@ def dist2conf(dist, gamma=1.0):
 
 
 def confidence_using_tracklet_lengths(length, percent_inliers,
-                                      gamma_length=5, gamma_inliers=0.3):
+                                      gamma_length=20, gamma_inliers=0.3):
     """Low confidence if there are few frames, even if all of them are inliers"""
-    return np.tanh(percent_inliers / gamma_inliers) * np.tanh(length / gamma_length)
+    return percent_inliers * np.tanh(length / gamma_length)
+    # return np.tanh(percent_inliers / gamma_inliers) * np.tanh(length / gamma_length)
 
 
 def calc_confidence_from_distance_array_and_matches(distance_matrix, matches, gamma=1.0):
