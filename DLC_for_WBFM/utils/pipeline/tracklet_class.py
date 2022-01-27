@@ -302,7 +302,7 @@ class TrackedWorm:
             new_neuron.add_tracklet(confidence, tracklet, metadata=name)
 
     def initialize_all_neuron_tracklet_classifiers(self):
-        for name, neuron in self.global_name_to_neuron.items():
+        for name, neuron in tqdm(self.global_name_to_neuron.items(), leave=False):
             list_of_tracklets = self.get_tracklets_for_neuron(name)
             neuron.initialize_tracklet_classifier(list_of_tracklets)
 
@@ -321,6 +321,22 @@ class TrackedWorm:
         for df2 in list_of_tracklets[1:]:
             df = df.combine_first(df2)
         return df
+
+    def plot_tracklets_for_neuron(self, neuron_name, with_names=True, plot_field='z'):
+        tracklet_list = self.get_tracklets_for_neuron(neuron_name)
+        neuron = self.global_name_to_neuron[neuron_name]
+        tracklet_names = neuron.get_raw_tracklet_names()
+
+        plt.figure(figsize=(25, 5))
+        for t, name in zip(tracklet_list, tracklet_names):
+            y = t[plot_field]
+            plt.plot(y)
+
+            if with_names:
+                x0 = t.first_valid_index()
+                y0 = t.at[x0, plot_field]
+                plt.annotate(name, (x0, y0))
+        plt.title(f"Tracklets for {neuron_name}")
 
     def compose_global_neuron_and_tracklet_graph(self) -> MatchesAsGraph:
         return nx.compose_all([neuron.neuron2tracklets for neuron in self.global_name_to_neuron.values()])

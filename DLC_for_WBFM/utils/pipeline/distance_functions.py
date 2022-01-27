@@ -41,15 +41,20 @@ def summarize_distances_quantile(all_dists):
     # return list(map(lambda x: np.nanquantile(x, 0.1), all_dists))
 
 
-def summarize_distances_outlier_percent(all_dists):
+def summarize_confidences_outlier_percent(all_dists, outlier_threshold=1.0):
     out = []
     for d in all_dists:
         if np.isscalar(d) and not np.isfinite(d):
             out.append(np.nan)
             continue
+        d = d[~np.isnan(d)]
         len_d = len(d)
-        percent_outliers = np.sum(d) / len_d
-        out.append(confidence_using_tracklet_lengths(len(d), percent_outliers))
+        if len_d == 0:
+            conf = np.nan
+        else:
+            percent_inliers = np.sum(d < outlier_threshold) / len_d
+            conf = confidence_using_tracklet_lengths(len_d, percent_inliers)
+        out.append(conf)
     return np.array(out)
 
 
