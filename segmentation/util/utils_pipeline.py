@@ -1,29 +1,27 @@
+import logging
 import threading
-from multiprocessing import Manager
-
 import stardist.models
-from DLC_for_WBFM.utils.preprocessing.bounding_boxes import bbox2ind
+from DLC_for_WBFM.utils.feature_detection.custom_errors import NoMatchesError
 
 import segmentation.util.utils_postprocessing as post
 import numpy as np
 from tqdm import tqdm
-import pickle
 # preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.projects.utils_filepaths import modular_project_config, synchronize_segment_config, config_file_with_project_context
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.preprocessing.utils_tif import perform_preprocessing
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 # metadata
-from segmentation.util.utils_metadata import get_metadata_dictionary
-from segmentation.util.utils_paths import get_output_fnames
+from segmentation.util.utils_config_files import _unpack_config_file
+from segmentation.util.utils_metadata import get_metadata_dictionary, calc_metadata_full_video
 import zarr
 from segmentation.util.utils_model import segment_with_stardist_2d, segment_with_stardist_3d
 from segmentation.util.utils_model import get_stardist_model
 import concurrent.futures
 
 
-def segment_video_using_config_3d(segment_cfg: config_file_with_project_context,
-                                  project_cfg: modular_project_config,
+def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
+                                  project_cfg: ModularProjectConfig,
                                   continue_from_frame: int =None,
                                   DEBUG: bool = False) -> None:
     """
@@ -70,47 +68,6 @@ def segment_video_using_config_3d(segment_cfg: config_file_with_project_context,
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
 
 
-def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat: zarr.Array,
-                             metadata_fname: str) -> None:
-    """
-    Calculates metadata once segmentation is finished
-
-    Parameters
-    ----------
-    frame_list
-    masks_zarr
-    video_dat
-    metadata_fname
-    """
-    metadata = dict()
-
-    # Loop again in order to calculate metadata and possibly postprocess
-    # with tifffile.TiffFile(video_path) as video_stream:
-    #     for i_rel, i_abs in tqdm(enumerate(frame_list), total=len(frame_list)):
-    #         masks = masks_zarr[i_rel, :, :, :]
-    #         # TODO: Use a disk-saved preprocessing artifact instead of recalculating
-    #         volume = _get_and_prepare_volume(i_abs, num_slices, preprocessing_settings, video_path=video_stream)
-    #
-    #         metadata[i_abs] = get_metadata_dictionary(masks, volume)
-
-    with tqdm(total=len(frame_list)) as pbar:
-        def parallel_func(i_both):
-            i_out, i_vol = i_both
-            masks = masks_zarr[i_out, :, :, :]
-            volume = video_dat[i_vol, ...]
-            metadata[i_vol] = get_metadata_dictionary(masks, volume)
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
-            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
-                pbar.update(1)
-
-    # saving metadata and settings
-    with open(metadata_fname, 'wb') as meta_save:
-        pickle.dump(metadata, meta_save)
-
-
 def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num_frames: int, verbose: int,
                            video_dat: zarr.Array,
                            opt: dict, continue_from_frame: int) -> None:
@@ -139,37 +96,12 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
-def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
-    # Initializing variables
-    start_volume = project_cfg.config['dataset_params']['start_volume']
-    num_frames = project_cfg.config['dataset_params']['num_frames']
-    if DEBUG:
-        num_frames = 1
-    frame_list = list(range(start_volume, start_volume + num_frames))
-    video_path = segment_cfg.config['video_path']
-    mask_fname, metadata_fname = get_output_fnames(video_path, segment_cfg.config['output_folder'], num_frames)
-    # Save settings
-    segment_cfg.config['output_masks'] = mask_fname
-    segment_cfg.config['output_metadata'] = metadata_fname
-    verbose = project_cfg.config['verbose']
-    stardist_model_name = segment_cfg.config['segmentation_params']['stardist_model_name']
-    zero_out_borders = segment_cfg.config['segmentation_params']['zero_out_borders']
-    # Preprocessing information
-    bbox_fname = segment_cfg.config.get('bbox_fname', None)
-    if bbox_fname is not None:
-        with open(bbox_fname, 'rb') as f:
-            all_bounding_boxes = pickle.load(f)
-    else:
-        all_bounding_boxes = None
-    return frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes
-
-
 ##
 ## 2d pipeline (stitch to get 3d)
 ##
 
-def segment_video_using_config_2d(segment_cfg: config_file_with_project_context,
-                                  project_cfg: modular_project_config,
+def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
+                                  project_cfg: ModularProjectConfig,
                                   continue_from_frame: int =None,
                                   DEBUG: bool = False) -> None:
     """
@@ -225,7 +157,7 @@ def initialize_stardist_model(stardist_model_name, verbose):
     return sd_model
 
 
-def _segment_full_video_2d(segment_cfg: config_file_with_project_context,
+def _segment_full_video_2d(segment_cfg: ConfigFileWithProjectContext,
                            frame_list: list, mask_fname: str, num_frames: int, verbose: int,
                            video_dat: zarr.Array,
                            opt: dict, continue_from_frame: int) -> None:
@@ -314,10 +246,16 @@ def _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mod
     sz = (num_frames, num_slices, x_sz, y_sz)
     chunks = (1, num_slices, x_sz, y_sz)
     print(f"Opening zarr at: {mask_fname}")
-    masks_zarr = zarr.open(mask_fname, mode=mode,
-                           shape=sz, chunks=chunks, dtype=np.uint16,
-                           fill_value=0,
-                           synchronizer=zarr.ThreadSynchronizer())
+    try:
+        masks_zarr = zarr.open(mask_fname, mode=mode,
+                               shape=sz, chunks=chunks, dtype=np.uint16,
+                               fill_value=0,
+                               synchronizer=zarr.ThreadSynchronizer())
+    except zarr.errors.ContainsArrayError as e:
+        print("???????????????????????????????????????????????????????")
+        print("Array exists; did you mean to pass continue_from_frame?")
+        print("???????????????????????????????????????????????????????")
+        raise e
     return masks_zarr
 
 
@@ -429,7 +367,11 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         print(f"After large area removal: {len(np.unique(masks)) - 1}")
 
     if not stitch_via_watershed:
-        stitched_masks, intermediates = post.bipartite_stitching(masks, verbose=verbose)
+        try:
+            stitched_masks, intermediates = post.bipartite_stitching(masks, verbose=verbose)
+        except NoMatchesError:
+            logging.warning("No between-plane matches found; skipping this volume")
+            return np.zeros_like(masks)
         if verbose >= 1:
             print(f"After stitching: {len(np.unique(stitched_masks)) - 1}")
         neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
@@ -534,39 +476,3 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
         final_masks = post.remove_border(final_masks, border_width_to_remove)
 
     return final_masks
-
-
-##
-## Also just for metadata calculation
-##
-
-def recalculate_metadata_from_config(_config, DEBUG=False):
-    """
-
-    Given a project that contains a segmentation, recalculate the metadata
-
-    Parameters
-    ----------
-    _config : dict, loaded from project yaml file
-
-    Returns
-    -------
-    Saves metadata.pickle to disk (within folder 1-segmentation)
-
-    See also:
-        segment_video_using_config_3d
-
-    """
-
-    frame_list, mask_fname, metadata_fname, num_frames, num_slices, stardist_model_name, verbose, video_path, _ = _unpack_config_file(
-        _config, DEBUG)
-
-    masks_zarr = zarr.open(_config['output']['masks'])
-    video_dat = zarr.open(video_path)
-
-    if DEBUG:
-        frame_list = frame_list[:2]
-
-    calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
-
-
