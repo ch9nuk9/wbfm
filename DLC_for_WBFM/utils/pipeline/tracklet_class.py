@@ -244,6 +244,7 @@ class DetectedTrackletsAndNeurons:
 class TrackedWorm:
 
     global_name_to_neuron: Dict[str, NeuronComposedOfTracklets] = None
+    global_name_to_neuron_backup: Dict[str, NeuronComposedOfTracklets] = None
     detections: DetectedTrackletsAndNeurons = None
 
     verbose: int = 0
@@ -307,6 +308,7 @@ class TrackedWorm:
             neuron.initialize_tracklet_classifier(list_of_tracklets)
 
     def reinitialize_all_neurons_from_final_matching(self, final_matching: MatchesWithConfidence):
+        self.backup_global_name_to_neuron()
         # TODO: don't just overwrite old neurons
         neuron2tracklet = final_matching.get_mapping_0_to_1()
         match2conf = final_matching.get_mapping_pair_to_conf()
@@ -317,6 +319,9 @@ class TrackedWorm:
                 tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
                 new_neuron.add_tracklet(conf, tracklet, metadata=tracklet_name, check_using_classifier=False)
             self.global_name_to_neuron[neuron_name] = new_neuron
+
+    def backup_global_name_to_neuron(self):
+        self.global_name_to_neuron_backup = self.global_name_to_neuron.copy()
 
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}

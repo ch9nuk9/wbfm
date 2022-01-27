@@ -86,7 +86,11 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     # worm_obj.remove_conflicting_tracklets_from_all_neurons()
     # worm_obj.update_time_covering_ind_for_all_neurons()
     # final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
-    final_matching = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets)
+    if DEBUG:
+        t_step = 10
+    else:
+        t_step = 1
+    final_matching = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step)
     df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching,
                                               num_neurons=worm_obj.num_neurons)
 
@@ -303,7 +307,7 @@ def combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_mat
     return df_new
 
 
-def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets):
+def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step=1):
     """
     As an alternative to b_matching_via_node_copying, do a separate bipartite matching problem on the small subgraphs of
     tracklets defined for each time point
@@ -317,7 +321,7 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
     bipartite_slice_matches = MatchesWithConfidence()
 
     neuron_nodes = global_tracklet_neuron_graph.get_nodes_of_class(0)
-    t_list = list(range(df_tracklets.shape[0]))
+    t_list = list(range(0, df_tracklets.shape[0], t_step))
 
     logging.info("Bipartite matching for each time slice subgraph")
     for t in tqdm(t_list):

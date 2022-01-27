@@ -52,6 +52,9 @@ class MatchesWithConfidence:
             self.confidence = []
         if self.int2name_funcs is None:
             self.int2name_funcs = [int2name_neuron, int2name_neuron]
+        if self.match_metadata is None:
+            self.match_metadata = {}
+
         try:
             # Should be two element list, but may be passed as a bool
             if len(self.indices_have_offset) == 1:
