@@ -19,7 +19,7 @@ from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import translate_training_names_to_raw_names
+from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import translate_training_names_to_raw_names
 
 
 @dataclass

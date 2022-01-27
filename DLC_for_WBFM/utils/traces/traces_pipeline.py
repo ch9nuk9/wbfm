@@ -14,7 +14,7 @@ from DLC_for_WBFM.utils.general.postprocessing.utils_metadata import region_prop
 from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets
+from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import build_subset_df_from_tracklets
 
 
 def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,

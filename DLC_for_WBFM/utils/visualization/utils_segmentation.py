@@ -15,7 +15,7 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import build_subset_df_from_tracklets, \
+from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames, _unpack_config_training_data_conversion
 
 

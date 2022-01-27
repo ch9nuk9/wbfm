@@ -5,6 +5,9 @@ import logging
 import os
 from datetime import date
 import cgitb
+
+from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import modify_config_files_for_training_data
+
 cgitb.enable(format='text')
 
 # Experiment tracking
@@ -14,8 +17,6 @@ from DLC_for_WBFM.utils.traces.traces_pipeline import extract_traces_of_training
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from sacred import Experiment
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format, \
-    modify_config_files_for_training_data
 from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 from segmentation.util.utils_metadata import recalculate_metadata_from_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig

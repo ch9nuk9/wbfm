@@ -12,12 +12,13 @@ from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import build_tracklets_d
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import convert_training_dataframe_to_scalar_format
 
 ###
 ### For use with produces tracklets (step 2 of traces)
 ###
 from tqdm.auto import tqdm
+
+from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import convert_training_dataframe_to_scalar_format
 
 
 def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,

@@ -2,19 +2,15 @@
 The top level function for producing dlc tracks in 3d
 """
 
-from pathlib import Path
-
 # Experiment tracking
 import sacred
+# Initialize sacred experiment
 from sacred import Experiment
 
-from DLC_for_WBFM.utils.traces.dlc_pipeline import make_all_dlc_labeled_videos
-# main function
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
-# Initialize sacred experiment
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import save_training_data_as_dlc_format
-from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+# main function
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import save_training_data_as_dlc_format
 
 ex = Experiment()
 # Add single variable so that the cfg() function works

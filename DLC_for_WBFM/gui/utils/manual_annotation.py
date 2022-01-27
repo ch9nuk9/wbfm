@@ -11,7 +11,7 @@ from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_ti
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.training_data.tracklet_to_DLC import get_or_recalculate_which_frames
+from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import get_or_recalculate_which_frames
 
 
 class manual_annotation_widget(QtWidgets.QWidget):
