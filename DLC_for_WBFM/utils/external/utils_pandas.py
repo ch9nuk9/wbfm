@@ -23,3 +23,19 @@ def get_names_from_df(df, level=0):
     names = list(set(df.columns.get_level_values(level)))
     names.sort()
     return names
+
+
+def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
+    all_indices = [t.dropna().index for t in tracklet_list]
+    overlapping_tracklet_ind = []
+    overlapping_tracklet_names = []
+    for i1, idx1 in enumerate(all_indices):
+        this_overlapping_ind = [i1]
+        for i2, idx2 in enumerate(all_indices[i1 + 1:]):
+            if len(idx1.intersection(idx2)) > 0:
+                this_overlapping_ind.append(i2 + i1 + 1)
+        if len(this_overlapping_ind) > 1:
+            overlapping_tracklet_ind.append(this_overlapping_ind)
+            these_names = [tracklet_network_names[n] for n in this_overlapping_ind]
+            overlapping_tracklet_names.append(these_names)
+    return overlapping_tracklet_names

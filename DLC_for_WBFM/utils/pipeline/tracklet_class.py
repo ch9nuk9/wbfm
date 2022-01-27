@@ -11,7 +11,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df
+from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
+    get_names_of_conflicting_dataframes
 from DLC_for_WBFM.utils.pipeline.matches_class import MatchesAsGraph
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
@@ -123,8 +124,7 @@ class NeuronComposedOfTracklets:
         return tracklet_names
 
     def get_network_tracklet_names(self):
-        this_neuron_name = self.neuron2tracklets.raw_name_to_network_name(self.name)
-        network_names = self.neuron2tracklets.get_all_matches(name=this_neuron_name)
+        network_names = self.neuron2tracklets.get_all_matches(name=self.name_in_graph)
         return network_names
 
     def plot_classifier_boundary(self):
@@ -322,6 +322,47 @@ class TrackedWorm:
             df = df.combine_first(df2)
         return df
 
+    def remove_conflicting_tracklets_from_all_neurons(self, verbose=0):
+        for name in self.global_name_to_neuron.keys():
+            self.remove_conflicting_tracklets_from_neuron(name, verbose=verbose-1)
+
+    def remove_conflicting_tracklets_from_neuron(self, neuron_name, verbose=0):
+
+        neuron = self.global_name_to_neuron[neuron_name]
+        overlapping_confidences, overlapping_tracklet_names = \
+            self.get_conflicting_tracklets_for_neuron(neuron_name)
+        # Then just take the highest confidence one, removing all others
+        # TODO: this currently allows some multi-conflict tracklets to be in both "to_keep" and "to_remove"
+        # As written, it just removes them anyway
+        names_to_remove = set()
+        names_to_keep = set()
+        for names, confidences in zip(overlapping_tracklet_names, overlapping_confidences):
+            i_sort = np.argsort(confidences)
+            for i_to_remove in i_sort[:-1]:
+                name_to_remove = names[i_to_remove]
+                names_to_remove.add(name_to_remove)
+
+        # edges_to_remove = list(zip(len(names_to_remove)*[neuron_network_name], names_to_remove))
+        # neuron.neuron2tracklets.remove_edges_from(edges_to_remove)
+        neuron.neuron2tracklets.remove_nodes_from(names_to_remove)
+
+        if verbose >= 1:
+            print(f"Removed {len(names_to_remove)} tracklets from {neuron.name}")
+            print(f"Current neuron status: {neuron}")
+
+    def get_conflicting_tracklets_for_neuron(self, neuron_name):
+        tracklet_list = self.get_tracklets_for_neuron(neuron_name)
+        neuron = self.global_name_to_neuron[neuron_name]
+        neuron_network_name = neuron.name_in_graph
+        tracklet_network_names = neuron.get_network_tracklet_names()
+        # Loop through tracklets, and find conflicting sets
+        overlapping_tracklet_names = get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names)
+        overlapping_confidences = []
+        for these_names in overlapping_tracklet_names:
+            overlapping_confidences.append(
+                [neuron.neuron2tracklets.get_edge_data(neuron_network_name, t)['weight'] for t in these_names])
+        return overlapping_confidences, overlapping_tracklet_names
+
     def plot_tracklets_for_neuron(self, neuron_name, with_names=True, plot_field='z'):
         tracklet_list = self.get_tracklets_for_neuron(neuron_name)
         neuron = self.global_name_to_neuron[neuron_name]
@@ -331,6 +372,7 @@ class TrackedWorm:
         for t, name in zip(tracklet_list, tracklet_names):
             y = t[plot_field]
             plt.plot(y)
+            plt.ylabel(plot_field)
 
             if with_names:
                 x0 = t.first_valid_index()
