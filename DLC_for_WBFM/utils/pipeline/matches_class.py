@@ -159,6 +159,21 @@ class MatchesWithConfidence:
         conf = dist2conf(np.array(all_dist), gamma=gamma)
         return MatchesWithConfidence(row_i, col_i, conf, gamma)
 
+    @staticmethod
+    def matches_from_bipartite_graph(graph: nx.Graph):
+        """Assumes neurons and tracklets, and places neuron in class 0 """
+        assert nx.is_bipartite(graph), "Graph must be bipartite!"
+        matches = MatchesWithConfidence()
+
+        for neuron, neuron_data in graph.nodes(data=True):
+            if neuron_data['bipartite'] == 1:
+                continue
+            for tracklet, tracklet_data in dict(graph[neuron]).items():
+                conf = graph.get_edge_data(neuron, tracklet)['weight']
+                new_match = [neuron_data['metadata'], tracklet_data['metadata'], conf]
+                matches.add_match(new_match)
+        return matches
+
     def __repr__(self):
         return f"MatchesWithConfidence class with {len(self.get_mapping_0_to_1())} class A and " \
                f"{len(self.get_mapping_1_to_0())} class B matched objects, with {len(self.indices0)} edges"

@@ -83,15 +83,19 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 
     # Build candidate graph, then postprocess it
     global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
-    # worm_obj.remove_conflicting_tracklets_from_all_neurons()
-    # worm_obj.update_time_covering_ind_for_all_neurons()
-    # final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
     if DEBUG:
         t_step = 10
     else:
         t_step = 1
     final_matching = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step)
-    df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching,
+    # Final step to remove time conflicts
+    worm_obj.reinitialize_all_neurons_from_final_matching(final_matching)
+    worm_obj.remove_conflicting_tracklets_from_all_neurons()
+    worm_obj.update_time_covering_ind_for_all_neurons()
+    no_conflict_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
+    final_matching_no_confict = MatchesWithConfidence.matches_from_bipartite_graph(no_conflict_neuron_graph)
+
+    df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching_no_confict,
                                               num_neurons=worm_obj.num_neurons)
 
     # SAVE
@@ -106,7 +110,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         track_config.update_on_disk()
 
         output_fname = track_config.config['global2tracklet_matches_fname']
-        global2tracklet = final_matching.get_mapping_0_to_1(unique=False)
+        global2tracklet = final_matching_no_confict.get_mapping_0_to_1(unique=False)
         track_config.pickle_in_local_project(global2tracklet, output_fname, make_sequential_filename=True)
 
         logging.info("Also saving raw intermediate products")
@@ -115,9 +119,9 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         fname = '3-tracking/worm_obj.pickle'
         track_config.pickle_in_local_project(worm_obj, fname)
         fname = '3-tracking/final_matching.pickle'
-        track_config.pickle_in_local_project(final_matching, fname)
+        track_config.pickle_in_local_project(final_matching_no_confict, fname)
 
-    return df_new, final_matching, global_tracklet_neuron_graph, worm_obj
+    return df_new, final_matching_no_confict, global_tracklet_neuron_graph, worm_obj
 
 
 def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj: TrackedWorm,
