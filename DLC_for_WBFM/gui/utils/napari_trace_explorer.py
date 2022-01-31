@@ -318,7 +318,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.viewer.add_points(point_layer_data, name="final_track", n_dimensional=True, symbol='cross', **points_opt,
                                visible=False)
         self.viewer.add_tracks(track_layer_data, name="track_of_point", visible=False)
-        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=10)
+        zoom_using_viewer(self.viewer,  **self.zoom_opt)
 
         layer_to_add_callback = self.viewer.layers['Raw segmentation']
         callbacks = [self.update_trace_or_tracklet_subplot,
@@ -520,7 +520,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def on_subplot_click(self, event):
         t = event.xdata
         change_viewer_time_point(self.viewer, t_target=t)
-        zoom_using_viewer(self.viewer, layer_name='final_track', zoom=None)
+        zoom_using_viewer(self.viewer, **self.zoom_opt)
 
     def change_trace_tracklet_mode(self):
         print(f"Changed mode to: {self.changeTraceTrackletDropdown.currentText()}")
