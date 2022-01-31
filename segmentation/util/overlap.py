@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tifffile as tiff
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches
-from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import build_tracklets_from_matches
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_from_matches
 from natsort import natsorted
 from scipy.optimize import curve_fit
 
