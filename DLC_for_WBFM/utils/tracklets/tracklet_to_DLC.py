@@ -8,7 +8,7 @@ from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.custom_errors import ParameterTooStringentError
-from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import add_empty_rows_to_correct_index
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import add_empty_rows_to_correct_index
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet
 

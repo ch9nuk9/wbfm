@@ -3,12 +3,10 @@ import os
 import os.path as osp
 import pickle
 from pathlib import Path
-import pandas as pd
 from segmentation.util.utils_metadata import DetectedNeurons
 
-from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePairOptions
 from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames
-from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import build_tracklets_dfs
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd

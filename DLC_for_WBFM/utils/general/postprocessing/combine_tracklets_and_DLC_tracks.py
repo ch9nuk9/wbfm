@@ -9,7 +9,7 @@ import pandas as pd
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.custom_errors import ShouldBeUnreachableError
-from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import fix_global2tracklet_full_dict, \
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, \
     get_time_overlap_of_candidate_tracklet, split_tracklet
 from DLC_for_WBFM.utils.general.distance_functions import calc_global_track_to_tracklet_distances
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData

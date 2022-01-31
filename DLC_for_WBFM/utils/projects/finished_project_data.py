@@ -10,7 +10,7 @@ import zarr
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
-from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import fix_global2tracklet_full_dict
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator

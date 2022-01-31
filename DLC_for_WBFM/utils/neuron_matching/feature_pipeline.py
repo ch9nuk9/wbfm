@@ -19,7 +19,7 @@ from DLC_for_WBFM.utils.neuron_matching.utils_features import build_features_and
 from DLC_for_WBFM.utils.external.utils_networkx import build_digraph_from_matches, unpack_node_name
 from DLC_for_WBFM.utils.neuron_matching.utils_reference_frames import add_all_good_components, \
     is_ordered_subset
-from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import consolidate_tracklets
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import consolidate_tracklets
 from DLC_for_WBFM.utils.general.preprocessing.utils_tif import PreprocessingSettings
 
 from segmentation.util.utils_metadata import DetectedNeurons

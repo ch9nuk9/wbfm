@@ -9,7 +9,7 @@ from copy import deepcopy
 import napari
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
