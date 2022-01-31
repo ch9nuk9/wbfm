@@ -2,11 +2,17 @@ import logging
 import os
 import os.path as osp
 import pickle
+from collections import defaultdict
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 from segmentation.util.utils_metadata import DetectedNeurons
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs
+from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs, split_multiple_tracklets
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -210,16 +216,67 @@ def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> Non
         logging.warning(f"all_frame_pairs is None; this step will need to be rerun")
 
 
-def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, min_length_to_keep):
+def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, min_length_to_keep, verbose=0,
+                                  DEBUG=False):
     """
     Split the tracklets based on a threshold on the percentage change in volume
 
     Usually, if the volume changes by a lot, it is because there is a segmentation error
     """
-
-
+    # Get the split points
     df_only_volume = df_all_tracklets.xs('volume', level=1, axis=1)
     df_percent_changes = df_only_volume.diff() / df_only_volume
 
     df_split_points = df_percent_changes.abs() > volume_percent_threshold
-    split_points_ind = df_split_points.to_numpy().nonzero()
+    t_split_points, i_tracklet_split_points = df_split_points.to_numpy().nonzero()
+
+    # Reformat the split points to be a dict per-tracklet
+    all_names = get_names_from_df(df_only_volume)
+    tracklet2split = defaultdict(list)
+    for t, i_tracklet in zip(t_split_points, i_tracklet_split_points):
+        tracklet_name = all_names[i_tracklet]
+        tracklet2split[tracklet_name].append(t)
+
+    # Get all the candidate tracklets, including the raw ones if no split detected
+    all_new_tracklets = []
+    all_names.sort()
+    i_next_name = name2int_neuron_and_tracklet(all_names[-1])
+    if verbose >= 1:
+        print(f"New tracklets starting at index: {i_next_name + 1}")
+    # convert_to_sparse = lambda x: pd.arrays.SparseArray(np.squeeze(x.values))
+    for name in tqdm(all_names, leave=False):
+        this_tracklet = df_all_tracklets[[name]]
+        # this_tracklet.loc[name] = this_tracklet.groupby(level=1, axis=1).apply(convert_to_sparse)
+        if name in tracklet2split:
+            split_points = tracklet2split[name]
+            these_candidates = split_multiple_tracklets(this_tracklet, split_points)
+            # Remove short ones, and rename
+            these_candidates = [c for c in these_candidates if c[name]['z'].count() > min_length_to_keep]
+            for i, c in enumerate(these_candidates):
+                if i == 0:
+                    # The first tracklet keeps the original name
+                    all_new_tracklets.append(c)
+                    continue
+                i_next_name += 1
+                all_new_tracklets.append(c.rename(mapper={name: int2name_tracklet(i_next_name)}, axis=1))
+
+        else:
+            all_new_tracklets.append(this_tracklet)
+        if DEBUG:
+            print(tracklet2split[name])
+            print(all_new_tracklets)
+            break
+
+    if verbose >= 1:
+        print(f"Split {len(all_names)} raw tracklets into {len(all_new_tracklets)} new tracklets")
+        print("Now concatenating...")
+
+    # Convert to sparse datatype
+    # all_converted_tracklets = [t.groupby(level=1, axis=1).apply(convert_to_sparse) for t in tqdm(all_new_tracklets, leave=False)]
+
+    # Remake original all-tracklet dataframe
+    # df = pd.concat(all_converted_tracklets)
+    df = pd.concat(all_new_tracklets, axis=1)
+    if verbose >= 1:
+        print("Finished")
+    return df, tracklet2split
