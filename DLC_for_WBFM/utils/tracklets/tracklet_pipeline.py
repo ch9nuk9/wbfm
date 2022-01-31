@@ -208,3 +208,18 @@ def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> Non
             pickle.dump(all_frame_pairs, f)
     else:
         logging.warning(f"all_frame_pairs is None; this step will need to be rerun")
+
+
+def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, min_length_to_keep):
+    """
+    Split the tracklets based on a threshold on the percentage change in volume
+
+    Usually, if the volume changes by a lot, it is because there is a segmentation error
+    """
+
+
+    df_only_volume = df_all_tracklets.xs('volume', level=1, axis=1)
+    df_percent_changes = df_only_volume.diff() / df_only_volume
+
+    df_split_points = df_percent_changes.abs() > volume_percent_threshold
+    split_points_ind = df_split_points.to_numpy().nonzero()

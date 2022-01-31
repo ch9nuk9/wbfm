@@ -629,19 +629,43 @@ def get_next_tracklet_name(df_tracklets):
     return new_name
 
 
-def split_tracklet(all_tracklets, i_split, old_name):
+def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1):
     left_name = old_name
     this_tracklet = all_tracklets[[left_name]]
     # Split
+    left_half, right_half = split_single_tracklet(i_split, this_tracklet)
+    right_name = get_next_tracklet_name(all_tracklets)
+    right_half.rename(columns={left_name: right_name}, level=0, inplace=True)
+    if verbose >= 1:
+        print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
+        print(
+            f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
+    all_tracklets = pd.concat([all_tracklets, right_half], axis=1)
+    all_tracklets[left_name] = left_half[left_name]
+    return all_tracklets, left_name, right_name
+
+
+def split_single_tracklet(i_split, this_tracklet: pd.DataFrame):
     left_half = this_tracklet.copy()
     right_half = this_tracklet.copy()
     left_half.iloc[i_split:] = np.nan
     right_half.iloc[:i_split] = np.nan
-    right_name = get_next_tracklet_name(all_tracklets)
-    right_half.rename(columns={left_name: right_name}, level=0, inplace=True)
-    print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
-    print(
-        f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
-    all_tracklets = pd.concat([all_tracklets, right_half], axis=1)
-    all_tracklets[left_name] = left_half[left_name]
-    return all_tracklets, left_name, right_name
+    return left_half, right_half
+
+
+def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
+    new_tracklets_list = []
+    split_list_copy = split_list.copy()
+    split_list_copy.insert(0, 0)
+    split_list_copy.append(-1)
+    for i in range(len(split_list_copy) - 1):
+        i_start = split_list_copy[i]
+        i_end = split_list_copy[i + 1]
+        new_tracklet = this_tracklet.copy()
+        if i_start > 0:
+            new_tracklet.iloc[:i_start] = np.nan
+        if i_end != -1:
+            new_tracklet.iloc[i_end:] = np.nan
+        new_tracklets_list.append(new_tracklet)
+
+    return new_tracklets_list

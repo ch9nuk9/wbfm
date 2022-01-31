@@ -10,7 +10,7 @@ import pandas as pd
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.custom_errors import ShouldBeUnreachableError
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, \
-    get_time_overlap_of_candidate_tracklet, split_tracklet
+    get_time_overlap_of_candidate_tracklet, split_tracklet_within_dataframe
 from DLC_for_WBFM.utils.general.distance_functions import calc_global_track_to_tracklet_distances
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from scipy.spatial.distance import squareform, pdist
@@ -144,7 +144,7 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
         else:
             # Then we split the tracklet, and follow which name we keep
             for i_split, mode in zip(split_points, split_modes):
-                df_tracklets, left_name, right_name = split_tracklet(df_tracklets, i_split, candidate_name)
+                df_tracklets, left_name, right_name = split_tracklet_within_dataframe(df_tracklets, i_split, candidate_name)
                 if mode == "keep_left":
                     # This is the same as the old name for now
                     candidate_name = left_name

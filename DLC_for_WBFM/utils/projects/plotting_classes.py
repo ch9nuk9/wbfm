@@ -10,7 +10,7 @@ import napari
 import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
-    split_tracklet
+    split_tracklet_within_dataframe
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
 from segmentation.util.utils_postprocessing import split_neuron_interactive
@@ -391,7 +391,7 @@ class TrackletAndSegmentationAnnotator:
             old_name = self.current_tracklet_name
             all_tracklets = self.df_tracklet_obj.df_tracklets_zxy
 
-            all_tracklets, left_name, right_name = split_tracklet(all_tracklets, i_split, old_name)
+            all_tracklets, left_name, right_name = split_tracklet_within_dataframe(all_tracklets, i_split, old_name)
 
             # Save
             # self.df_tracklet_obj.data = pd.concat([self.df_tracklet_obj.data, new_half], axis=1)
