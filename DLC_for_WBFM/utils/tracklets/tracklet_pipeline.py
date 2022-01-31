@@ -91,6 +91,7 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
     Parameters
     ----------
+    segmentation_config
     project_config
     training_config
     DEBUG
@@ -100,7 +101,7 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
 
     """
     # Load data
-    all_frame_dict, all_frame_pairs, z_threshold, min_confidence, segmentation_metadata = \
+    all_frame_dict, all_frame_pairs, z_threshold, min_confidence, segmentation_metadata, postprocessing_params = \
         _unpack_config_for_tracklets(training_config, segmentation_config)
 
     # Sanity check
@@ -117,11 +118,14 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
         _save_matches_and_frames(all_frame_dict, all_frame_pairs)
 
     # Convert to easier format and save
-    min_length = training_config.config['postprocessing_params']['min_length_to_save']
+    min_length = postprocessing_params['min_length_to_save']
     df_multi_index_format = convert_training_dataframe_to_scalar_format(df_custom_format,
                                                                         min_length=min_length,
                                                                         scorer=None,
                                                                         segmentation_metadata=segmentation_metadata)
+    if postprocessing_params.get('volume_percent_threshold', 0) > 0:
+        df_multi_index_format = convert_training_dataframe_to_scalar_format(**postprocessing_params)
+
     save_all_tracklets(df_custom_format, df_multi_index_format, training_config)
 
 
@@ -170,7 +174,9 @@ def _unpack_config_for_tracklets(training_config, segmentation_config):
     seg_metadata_fname = segmentation_config.resolve_relative_path_from_config('output_metadata')
     segmentation_metadata = DetectedNeurons(seg_metadata_fname)
 
-    return all_frame_dict, all_frame_pairs, z_threshold, min_confidence, segmentation_metadata
+    postprocessing_params = segmentation_config.config['postprocessing_params']
+
+    return all_frame_dict, all_frame_pairs, z_threshold, min_confidence, segmentation_metadata, postprocessing_params
 
 
 def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
