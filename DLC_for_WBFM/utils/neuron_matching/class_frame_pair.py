@@ -51,7 +51,7 @@ class FramePairOptions:
     matching_method: str = 'bipartite'
     z_threshold: float = None
     min_confidence: float = 0.001
-    z_to_xy_ratio: float = 3.0
+    z_to_xy_ratio: float = None  # Deprecated; will be removed after Ulises projects
 
     # Physical unit conversion; required for leifer network
     physical_unit_conversion: PhysicalUnitConversion = None
@@ -575,8 +575,8 @@ class FramePair:
         # Can start with any matched point clouds, but not more than ~100 matches otherwise it's way too slow
         # New: n0 may be rigidly prealigned
         n0, n1 = self.pts0_preprocessed, self.pts1.copy()
-        n0[:, 0] *= self.options.z_to_xy_ratio
-        n1[:, 0] *= self.options.z_to_xy_ratio
+        n0 = self.options.physical_unit_conversion.zimmer2physical_fluorescence(n0)
+        n1 = self.options.physical_unit_conversion.zimmer2physical_fluorescence(n1)
         # Actually match
         options = {'matches_with_conf': starting_matches, 'n_neighbors': n_neighbors}
         gp_matches, all_gps, gp_pushed = calc_matches_using_gaussian_process(n0, n1, **options)

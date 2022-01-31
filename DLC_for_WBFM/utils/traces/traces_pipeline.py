@@ -27,7 +27,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
 
     Get both red and green traces for each neuron
     """
-    dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, z_to_xy_ratio = _unpack_configs_for_traces(
+    dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume = _unpack_configs_for_traces(
         project_cfg, segment_cfg, track_cfg)
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
@@ -54,7 +54,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     if DEBUG:
         frame_list = frame_list[:2]  # Shorten (to avoid break)
     match_segmentation_and_tracks(_get_zxy_from_pandas, all_matches, frame_list, max_dist,
-                                  project_data, z_to_xy_ratio, DEBUG=DEBUG)
+                                  project_data, DEBUG=DEBUG)
 
     relative_fname = traces_cfg.config['all_matches']
     project_cfg.pickle_in_local_project(all_matches, relative_fname)
@@ -237,7 +237,7 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
                                   frame_list: list,
                                   max_dist: float,
                                   project_data: ProjectData,
-                                  z_to_xy_ratio: float, DEBUG: bool = False) -> None:
+                                  DEBUG: bool = False) -> None:
     """
 
     Parameters
@@ -247,7 +247,6 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
     frame_list
     max_dist
     project_data
-    z_to_xy_ratio
 
     Returns
     -------
@@ -258,11 +257,9 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
         # NOTE: This dataframe starts at 0, not start_volume
         zxy0 = _get_zxy_from_pandas(i_volume)
         # TODO: use physical units and align between z and xy
-        # zxy0[:, 0] *= z_to_xy_ratio
         zxy1 = project_data.get_centroids_as_numpy(i_volume)
         if len(zxy1) == 0 or len(zxy0) == 0:
             continue
-        # zxy1[:, 0] *= z_to_xy_ratio
         # Get matches
         matches, conf, = calc_nearest_neighbor_matches(zxy0, zxy1, max_dist=max_dist)
 
@@ -287,13 +284,12 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     params_start_volume = project_cfg.config['dataset_params']['start_volume']
     num_frames = project_cfg.config['dataset_params']['num_frames']
     dlc_fname = track_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
-    z_to_xy_ratio = project_cfg.config['dataset_params']['z_to_xy_ratio']
     green_fname = project_cfg.config['preprocessed_green']
     red_fname = project_cfg.config['preprocessed_red']
 
     dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
 
-    return dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume, z_to_xy_ratio
+    return dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume
 
 
 def _unpack_configs_for_extraction(project_cfg, traces_cfg):
