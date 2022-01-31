@@ -15,6 +15,7 @@ do_mini_max_projection : false
 mini_max_size: 3
 
 # Mirroring, usually between green and red channels
+# As of January 2022: this is modulated by the setting in the project_config.yaml file (both are neede)
 do_mirroring: false
 
 # Rigid alignment (slices to each other, within a volume)
