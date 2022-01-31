@@ -124,7 +124,10 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
                                                                         scorer=None,
                                                                         segmentation_metadata=segmentation_metadata)
     if postprocessing_params.get('volume_percent_threshold', 0) > 0:
-        df_multi_index_format = convert_training_dataframe_to_scalar_format(**postprocessing_params)
+        df_multi_index_format, split_times = filter_tracklets_using_volume(df_multi_index_format,
+                                                                           **postprocessing_params)
+        out_fname = '2-training_data/raw/volume_tracklet_split_points.pickle'
+        training_config.pickle_in_local_project(split_times, out_fname)
 
     save_all_tracklets(df_custom_format, df_multi_index_format, training_config)
 
