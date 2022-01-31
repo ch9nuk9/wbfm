@@ -23,10 +23,6 @@ ex.add_config(project_path=None, use_imputed_df=False, start_from_manual_matches
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
-    project_dir = cfg.project_dir
-
-    # tracking_cfg = cfg.get_tracking_config()
-    # training_cfg = cfg.get_training_config()
 
     if not DEBUG:
         using_monkeypatch()
@@ -40,11 +36,3 @@ def combine_tracks(_config, _run):
 
     DEBUG = _config['DEBUG']
     global_track_matches_from_config(_config['project_path'], DEBUG=DEBUG)
-
-    # # TODO: do I need the imputed df option here?
-    # track_cfg = _config['tracking_cfg']
-    # training_cfg = _config['training_cfg']
-    # final_tracks_from_tracklet_matches_from_config(track_cfg, training_cfg, _config['cfg'],
-    #                                                use_imputed_df=_config['use_imputed_df'],
-    #                                                start_from_manual_matches=_config['start_from_manual_matches'],
-    #                                                DEBUG=DEBUG)
