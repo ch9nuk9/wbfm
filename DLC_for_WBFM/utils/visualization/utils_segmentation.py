@@ -321,7 +321,7 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
     # Initialize new array
     new_sz = list(masks.shape)
     new_sz[0] = len(which_frames)
-    out_fname = os.path.join('2-tracklets', 'reindexed_masks.zarr')
+    out_fname = os.path.join('2-training_data', 'reindexed_masks.zarr')
     out_fname = cfg.resolve_relative_path(out_fname)
     new_masks = zarr.open_like(masks, path=out_fname, shape=new_sz)
 

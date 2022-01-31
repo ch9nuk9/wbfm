@@ -62,7 +62,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
 
     This function is designed to be used with an external .yaml config file
 
-    See new_project_defaults/2-tracklets/training_data_config.yaml
+    See new_project_defaults/2-training_data/training_data_config.yaml
     See also track_neurons_full_video()
     """
 
@@ -150,7 +150,7 @@ def save_all_tracklets(df, df_multi_index_format, training_config):
     logging.info("Saving dataframes; could take a while")
     with safe_cd(training_config.project_dir):
         # Custom format for pairs
-        subfolder = osp.join('2-tracklets', 'raw')
+        subfolder = osp.join('2-training_data', 'raw')
         fname = osp.join(subfolder, 'clust_df_dat.pickle')
         with open(fname, 'wb') as f:
             pickle.dump(df, f)
@@ -208,7 +208,7 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
 
 
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> None:
-    subfolder = osp.join('2-tracklets', 'raw')
+    subfolder = osp.join('2-training_data', 'raw')
     Path(subfolder).mkdir(exist_ok=True)
 
     fname = osp.join(subfolder, 'frame_dat.pickle')

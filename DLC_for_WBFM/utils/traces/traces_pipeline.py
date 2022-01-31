@@ -121,7 +121,7 @@ def extract_traces_of_training_data_from_config(project_cfg: SubfolderConfigFile
     # df_green_subset.rename(mapper={'intensity_image': 'intensity_image_green'}, axis=1, level=1, inplace=True)
     # df_combined = df_red.join(df_green_subset)
 
-    fname = os.path.join("2-tracklets", "training_data_tracks.h5")
+    fname = os.path.join("2-training_data", "training_data_tracks.h5")
     training_cfg.h5_in_local_project(df_train, fname, also_save_csv=True)
 
 
