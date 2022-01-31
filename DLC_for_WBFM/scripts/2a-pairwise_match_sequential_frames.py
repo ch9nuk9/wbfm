@@ -9,6 +9,7 @@ from datetime import date
 import sacred
 from sacred import Experiment
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import partial_track_video_using_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, update_path_to_segmentation_in_config
 
@@ -27,6 +28,7 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    check_all_needed_data_for_step(project_path, 2)
     project_dir = cfg.project_dir
 
     train_cfg = update_path_to_segmentation_in_config(cfg)

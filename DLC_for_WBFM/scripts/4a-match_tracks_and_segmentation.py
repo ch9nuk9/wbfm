@@ -9,6 +9,7 @@ from sacred import SETTINGS
 # main function
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 
 from DLC_for_WBFM.utils.traces.traces_pipeline import get_traces_from_3d_tracks_using_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
@@ -28,6 +29,7 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    check_all_needed_data_for_step(project_path, 4)
     project_dir = cfg.project_dir
 
     seg_cfg = cfg.get_segmentation_config()

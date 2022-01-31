@@ -16,6 +16,9 @@ from segmentation.util.utils_pipeline import segment_video_using_config_2d, segm
 
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, synchronize_segment_config
 import cgitb
+
+from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
+
 cgitb.enable(format='text')
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
@@ -28,6 +31,7 @@ ex.add_config(project_path=None, continue_from_frame=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    check_all_needed_data_for_step(project_path, 1)
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()

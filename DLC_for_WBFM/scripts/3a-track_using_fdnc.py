@@ -6,6 +6,9 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 import cgitb
+
+from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
+
 cgitb.enable(format='text')
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.nn_utils.fdnc_predict import track_using_fdnc_from_config
@@ -21,6 +24,7 @@ ex.add_config(project_path=None, out_fname=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    check_all_needed_data_for_step(project_path, 3)
     project_dir = cfg.project_dir
 
     tracks_cfg = cfg.get_tracking_config()
