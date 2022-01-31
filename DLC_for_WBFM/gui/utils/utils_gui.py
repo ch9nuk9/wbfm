@@ -1,3 +1,5 @@
+import logging
+
 import napari
 import numpy as np
 from PyQt5 import QtGui
@@ -77,14 +79,19 @@ def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_pas
         tzxy = get_zxy_from_single_neuron_layer(viewer.layers[layer_name], t)
     else:
         tzxy = get_zxy_from_multi_neuron_layer(viewer.layers[layer_name], t, ind_within_layer)
+    print(f"tzxy: {tzxy}, layer: {viewer.layers[layer_name]}")
     # TODO: better way to check for nesting
     if len(tzxy) == 1:
         tzxy = tzxy[0]
     if len(tzxy) == 1:
         tzxy = tzxy[0]
     # Data may be actually a null value (but t should be good)
-    is_positive = tzxy[2] > 0 and tzxy[3] > 0
-    is_finite = not all(np.isnan(tzxy))
+    try:
+        is_positive = tzxy[2] > 0 and tzxy[3] > 0
+        is_finite = not all(np.isnan(tzxy))
+    except IndexError:
+        logging.warning("Index error in zooming; skipping")
+        return
 
     # Center to the neuron in xy
     if zoom is not None:

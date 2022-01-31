@@ -66,7 +66,7 @@ class NeuronComposedOfTracklets:
         return self.tracklet_covering_ind[-1] + 1
 
     def add_tracklet(self, confidence, tracklet: pd.DataFrame, metadata=None,
-                     check_using_classifier=False):
+                     check_using_classifier=False, verbose=0):
         assert np.isfinite(confidence), f"A finite confidence value must be passed, not {confidence}"
         tracklet_name = tracklet.columns.get_level_values(0).drop_duplicates()[0]
         i_tracklet = name2int_neuron_and_tracklet(tracklet_name)
@@ -77,7 +77,8 @@ class NeuronComposedOfTracklets:
             else:
                 logging.warning("Classifier requested but not initialized")
         if not passed_classifier:
-            # logging.debug("Tracklet did not pass classifier check")
+            if verbose >= 1:
+                print(f"{tracklet_name} did not pass classifier check")
             return False
 
         is_match_added = self.neuron2tracklets.add_match_if_not_present([self.neuron_ind, i_tracklet, confidence],

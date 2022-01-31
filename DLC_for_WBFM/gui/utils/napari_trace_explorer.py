@@ -260,7 +260,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.viewer.layers['final_track'].data = point_layer_data
         self.viewer.layers['track_of_point'].data = track_layer_data
 
-        zoom_using_viewer(self.viewer, layer_name='final_track')
+        zoom_using_viewer(self.viewer, **self.zoom_opt)
 
     def update_neuron_in_tracklet_annotator(self):
         self.dat.tracklet_annotator.current_neuron = self.changeNeuronsDropdown.currentText()
@@ -394,6 +394,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def zoom_opt(self):
         return dict(
             zoom=None,
+            ind_within_layer=0,
             layer_is_full_size_and_single_neuron=False,
             layer_name='final_track'
         )

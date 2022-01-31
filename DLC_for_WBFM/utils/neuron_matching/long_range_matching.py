@@ -170,7 +170,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
 
         # Loop through candidates, and attempt to add
         all_summarized_conf = summarize_confidences_outlier_percent(dist, outlier_threshold=outlier_threshold)
-        i_sorted_by_confidence = np.argsort(-all_summarized_conf) # Reverse sort, but keep nans at the end
+        i_sorted_by_confidence = np.argsort(-all_summarized_conf)  # Reverse sort, but keep nans at the end
         # all_summarized_dist = summarize_distances_quantile(dist)
         # i_sorted_by_median_distance = np.argsort(all_summarized_dist)
         num_candidate_neurons = 0
@@ -178,6 +178,8 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
             # Check if this was used before
             candidate_name = all_tracklet_names[i_tracklet]
             if candidate_name in used_names:
+                if verbose >= 3:
+                    print(f"Already used: {candidate_name}")
                 continue
             # Check distance; break because they are sorted by distance
             this_confidence = all_summarized_conf[i_tracklet]
@@ -187,7 +189,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
             candidate_tracklet = df_tracklets[[candidate_name]]
             # conf = dist2conf(this_confidence)
             is_match_added = neuron.add_tracklet(this_confidence, candidate_tracklet, metadata=candidate_name,
-                                                 check_using_classifier=True)
+                                                 check_using_classifier=True, verbose=verbose-2)
 
         if verbose >= 2:
             print(f"{num_candidate_neurons} candidate tracklets")
