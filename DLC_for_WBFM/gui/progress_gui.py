@@ -20,7 +20,7 @@ from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectCon
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training, \
+from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training_raw, \
     check_traces
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_full_data
 from DLC_for_WBFM.utils.projects.finished_project_data import napari_of_training_data, ProjectData
@@ -264,7 +264,7 @@ class UiMainWindow(object):
             self.segmentationProgress.setValue(100)
         else:
             self.segmentationProgress.setValue(0)
-        training_status = check_training(self.project_file)
+        training_status = check_training_raw(self.project_file)
         # print(f"training: {training_status}")
         if training_status:
             self.trainingProgress.setValue(100)
