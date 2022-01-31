@@ -2,6 +2,7 @@ import logging
 import os.path as osp
 from pathlib import Path
 
+from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_project_of_substep
 
@@ -14,6 +15,27 @@ def _check_and_print(all_to_check, description, verbose):
         else:
             logging.warning(f"Did not find some necessary files: {all_to_check}")
     return all_exist
+
+
+def check_all_needed_data_for_step(project_path, step_index: int,
+                                   raise_error=True,
+                                   verbose=0):
+    if step_index > 0:
+        flag = check_preprocessed_data(project_path, verbose)
+        if not flag and raise_error:
+            raise AnalysisOutOfOrderError('Preprocessing')
+    if step_index > 1:
+        flag = check_segmentation(project_path, verbose)
+        if not flag and raise_error:
+            raise AnalysisOutOfOrderError('Segmentation')
+    if step_index > 2:
+        flag = check_training_final(project_path, verbose)
+        if not flag and raise_error:
+            raise AnalysisOutOfOrderError('Training data')
+    if step_index > 3:
+        flag = check_traces(project_path, verbose)
+        if not flag and raise_error:
+            raise AnalysisOutOfOrderError('Traces')
 
 
 def check_preprocessed_data(project_path, verbose=0):
