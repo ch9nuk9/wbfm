@@ -77,7 +77,7 @@ class NeuronComposedOfTracklets:
             else:
                 logging.warning("Classifier requested but not initialized")
         if not passed_classifier:
-            if verbose >= 1:
+            if verbose >= 2:
                 print(f"{tracklet_name} did not pass classifier check")
             return False
 
@@ -396,18 +396,23 @@ class TrackedWorm:
         tracklet_list = self.get_tracklets_for_neuron(neuron_name)
         neuron = self.global_name_to_neuron[neuron_name]
         tracklet_names = neuron.get_raw_tracklet_names()
+        num_lines = len(tracklet_names)
 
         plt.figure(figsize=(25, 5))
-        for t, name in zip(tracklet_list, tracklet_names):
+        for i, (t, name) in enumerate(zip(tracklet_list, tracklet_names)):
             y = t[plot_field]
             if diff_percentage:
                 y = y.diff() / y
                 # err
-            plt.plot(y)
+            line = plt.plot(y)
             plt.ylabel(plot_field)
 
             if with_names or with_confidence:
                 x0 = y.first_valid_index()
+                if i % 2 == 0:
+                    y_text = (i / num_lines) * np.min(y)
+                else:
+                    y_text = (i / num_lines) * np.min(y) + np.max(y)
                 y0 = y.at[x0]
                 if with_names:
                     annotation_str = name
@@ -416,8 +421,11 @@ class TrackedWorm:
                 if with_confidence:
                     edge = (neuron.name_in_graph, neuron.neuron2tracklets.raw_name_to_network_name(name))
                     conf = neuron.neuron2tracklets.get_edge_data(*edge)['weight']
-                    annotation_str = f"{annotation_str} conf={conf}"
-                plt.annotate(annotation_str, (x0, y0))
+                    annotation_str = f"{annotation_str} conf={conf:.2f}"
+                plt.annotate(annotation_str, (x0, y0), xytext=(x0-1, y_text),
+                             arrowprops=dict(facecolor=line[0].get_color()))
+                ylim = plt.gca().get_ylim()
+                plt.ylim([0, 2*np.max(y)])
         plt.title(f"Tracklets for {neuron_name}")
 
     def compose_global_neuron_and_tracklet_graph(self) -> MatchesAsGraph:

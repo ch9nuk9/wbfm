@@ -158,8 +158,11 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         used_names.update(neuron.get_raw_tracklet_names())
 
     # Add new tracklets
+    all_conf_output = {}
     for i, (name, neuron) in enumerate(tqdm(worm_obj.global_name_to_neuron.items())):
 
+        if verbose >= 2:
+            print(f"Checking global track {name}")
         # New: use the track as produced by the global tracking
         # TODO: confirm that the worm_obj has the same neuron names as leifer
         this_global_track = df_global_tracks[name][coords][:-1].replace(0.0, np.nan).to_numpy(float)
@@ -171,6 +174,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         # Loop through candidates, and attempt to add
         all_summarized_conf = summarize_confidences_outlier_percent(dist, outlier_threshold=outlier_threshold)
         i_sorted_by_confidence = np.argsort(-all_summarized_conf)  # Reverse sort, but keep nans at the end
+        all_conf_output[name] = all_summarized_conf
         # all_summarized_dist = summarize_distances_quantile(dist)
         # i_sorted_by_median_distance = np.argsort(all_summarized_dist)
         num_candidate_neurons = 0
@@ -195,8 +199,10 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
             print(f"{num_candidate_neurons} candidate tracklets")
             print(f"Tracklets added to make neuron: {neuron}")
 
-        if DEBUG and i > 2:
+        if DEBUG and i > 1:
             break
+
+    return all_conf_output
 
 
 def extend_tracks_using_similar_postures(all_frames, frame_pair_options, reference_posture,
