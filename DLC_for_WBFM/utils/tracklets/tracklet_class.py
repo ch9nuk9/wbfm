@@ -1,3 +1,4 @@
+import copy
 import logging
 from dataclasses import dataclass
 from typing import Dict, List
@@ -321,7 +322,7 @@ class TrackedWorm:
             self.global_name_to_neuron[neuron_name] = new_neuron
 
     def backup_global_name_to_neuron(self):
-        self.global_name_to_neuron_backup = self.global_name_to_neuron.copy()
+        self.global_name_to_neuron_backup = copy.deepcopy(self.global_name_to_neuron)
 
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
@@ -389,7 +390,8 @@ class TrackedWorm:
                 [neuron.neuron2tracklets.get_edge_data(neuron_network_name, t)['weight'] for t in these_names])
         return overlapping_confidences, overlapping_tracklet_names
 
-    def plot_tracklets_for_neuron(self, neuron_name, with_names=True, with_confidence=True, plot_field='z'):
+    def plot_tracklets_for_neuron(self, neuron_name, with_names=True, with_confidence=True, plot_field='z',
+                                  diff_percentage=False):
         tracklet_list = self.get_tracklets_for_neuron(neuron_name)
         neuron = self.global_name_to_neuron[neuron_name]
         tracklet_names = neuron.get_raw_tracklet_names()
@@ -397,12 +399,15 @@ class TrackedWorm:
         plt.figure(figsize=(25, 5))
         for t, name in zip(tracklet_list, tracklet_names):
             y = t[plot_field]
+            if diff_percentage:
+                y = y.diff() / y
+                # err
             plt.plot(y)
             plt.ylabel(plot_field)
 
             if with_names or with_confidence:
-                x0 = t.first_valid_index()
-                y0 = t.at[x0, plot_field]
+                x0 = y.first_valid_index()
+                y0 = y.at[x0]
                 if with_names:
                     annotation_str = name
                 else:
