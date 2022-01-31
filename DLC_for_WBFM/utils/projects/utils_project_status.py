@@ -33,6 +33,10 @@ def check_all_needed_data_for_step(project_path, step_index: int,
         if not flag and raise_error:
             raise AnalysisOutOfOrderError('Training data')
     if step_index > 3:
+        flag = check_tracking(project_path, verbose)
+        if not flag and raise_error:
+            raise AnalysisOutOfOrderError('Tracking')
+    if step_index > 3:
         flag = check_traces(project_path, verbose)
         if not flag and raise_error:
             raise AnalysisOutOfOrderError('Traces')
