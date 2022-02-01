@@ -495,7 +495,7 @@ class ProjectData:
             options['visible'] = False
             viewer.add_points(**options)
 
-        logging.info("Finished adding layers to napari")
+        logging.info(f"Finished adding layers {which_layers}")
 
     def __repr__(self):
         return f"=======================================\n\
