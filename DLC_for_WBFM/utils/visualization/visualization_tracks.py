@@ -74,7 +74,8 @@ def visualize_tracks(neurons0, neurons1, matches=None, trivial_matches=False, to
 def build_pair_of_point_clouds(neurons0, neurons1):
     n0, pc_n0, tree_neurons0 = build_neuron_tree(neurons0, to_mirror=False)
     n1, pc_n1, tree_neurons1 = build_neuron_tree(neurons1, to_mirror=False)
-    pc_n0.paint_uniform_color([0.5, 0.5, 0.5])
+    # pc_n0.paint_uniform_color([0.5, 0.5, 0.5])
+    pc_n0.paint_uniform_color([1, 0, 0])
     pc_n1.paint_uniform_color([0, 0, 0])
     return n0, n1, pc_n0, pc_n1
 

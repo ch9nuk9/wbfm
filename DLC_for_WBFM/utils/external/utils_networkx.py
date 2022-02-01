@@ -160,9 +160,9 @@ def calc_bipartite_from_candidates(all_candidate_matches, min_confidence_after_s
     return matches, conf, matches
 
 
-def calc_bipartite_from_distance(xyz0: np.ndarray, xyz1: np.ndarray,
-                                 max_dist: float = None,
-                                 gamma: float = 1.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def calc_bipartite_from_positions(xyz0: np.ndarray, xyz1: np.ndarray,
+                                  max_dist: float = None,
+                                  gamma: float = 1.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Uses scipy implementation of linear_sum_assignment to calculate best matches
 
