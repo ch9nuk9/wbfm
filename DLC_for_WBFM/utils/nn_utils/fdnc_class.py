@@ -66,3 +66,11 @@ class fDNCTracker:
     def predict_matches_from_time(self, project_data, t):
         pts = self.get_pts(project_data, t)
         return self.predict_matches_from_points(pts)
+
+    def visualize_matches_open3d(self, pts, matches=None):
+        if matches is None:
+            matches = self.predict_matches_from_points(pts)
+        from DLC_for_WBFM.utils.visualization.visualization_tracks import visualize_tracks
+        visualize_tracks(self.template, pts, matches=matches)
+
+        return matches
