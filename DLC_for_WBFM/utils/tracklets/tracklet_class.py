@@ -38,6 +38,7 @@ class NeuronComposedOfTracklets:
     scaler: sklearn.preprocessing._data.StandardScaler = None
     classifier_rejection_threshold: float = 0.0
     fields_to_classify: list = None
+    training_data: np.ndarray = None
 
     verbose: int = 0
 
@@ -95,18 +96,29 @@ class NeuronComposedOfTracklets:
 
         return is_match_added
 
-    def initialize_tracklet_classifier(self, list_of_tracklets, min_pts=10):
-        """This object doesn't see the raw tracklet data, so it must be sent in the call"""
+    def initialize_tracklet_classifier(self, list_of_tracklets,
+                                       augment_to_minimum_points=200, augmentation_factor=0.2):
+        """
+        This object doesn't see the raw tracklet data, so it must be sent in the call
+
+        Note that I don't want this classifier to be too harsh, especially if there is only a small amount of initial
+        training data (i.e. a short tracklet)
+        """
 
         x = [tracklet[self.fields_to_classify].dropna().to_numpy() for tracklet in list_of_tracklets]
         if len(x) > 1:
             x = np.vstack(x)
         else:
             x = x[0]
-        assert x.shape[0] >= min_pts, "Neuron needs more points to build a classifier"
+        x0 = x.copy()
+        while x.shape[0] < augment_to_minimum_points:
+            x_augmented = x0 * (1 + augmentation_factor*np.random.randn(x0.shape[0], x0.shape[1]))
+            x = np.vstack(x, x_augmented.copy())
+        # assert x.shape[0] >= augment_to_minimum_points, "Neuron needs more points to build a classifier"
 
         self.scaler = StandardScaler()
         x = self.scaler.fit_transform(x)
+        self.training_data = x
         self.classifier = OneClassSVM(nu=0.05, gamma=0.05, kernel='rbf').fit(x)
 
     def check_new_tracklet_using_classifier(self, candidate_tracklet: pd.DataFrame):
