@@ -112,7 +112,12 @@ def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer):
     # e.g. text labels, with all neurons in a time point in a row (thus t is no longer a direct index)
     # Or, if nans have been dropped from an otherwise full-size layer
     ind = layer.data[:, 0] == t
-    return layer.data[ind, :][ind_within_layer, :]
+    if len(np.where(ind)[0]) == 0:
+        fake_dat = np.zeros_like(layer.data[0, :])
+        fake_dat[0] = t
+        return fake_dat
+    else:
+        return layer.data[ind, :][ind_within_layer, :]
 
 
 def change_viewer_time_point(viewer: napari.Viewer,

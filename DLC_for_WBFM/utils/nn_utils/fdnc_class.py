@@ -48,6 +48,10 @@ class fDNCTracker:
 
         self.template = template
 
+    def initialize_leifer_template(self):
+        template, template_label = load_fdnc_template()
+        self.template = template[:, :3]
+
     def get_pts(self, project_data, i):
         these_pts = project_data.get_centroids_as_numpy(i)
         if len(these_pts) == 0:
