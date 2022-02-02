@@ -14,7 +14,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet, name2int_neuron_and_tracklet
 
 
 def create_new_track(i0, i1,
@@ -620,14 +620,12 @@ def get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_trac
 
 def get_next_tracklet_name(df_tracklets):
     all_names = get_names_from_df(df_tracklets)
-    # Really want to make sure we are after all other names,
-    i_tracklet = int(1e6 + len(all_names) + 1)
-    # build_tracklet_name = lambda i: f'neuron{i}'
-    build_tracklet_name = int2name_tracklet
-    new_name = build_tracklet_name(i_tracklet)
-    while new_name in all_names:
-        i_tracklet += 1
-        new_name = build_tracklet_name(i_tracklet)
+    all_names.sort()
+    max_int = name2int_neuron_and_tracklet(all_names[-1])
+    # Really want to make sure we are after all other names
+    i_tracklet = max_int + 1
+    new_name = int2name_tracklet(i_tracklet)
+    assert new_name not in all_names, "Failed to generate new tracklet name"
     return new_name
 
 
