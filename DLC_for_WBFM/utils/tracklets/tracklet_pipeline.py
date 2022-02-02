@@ -177,7 +177,7 @@ def _unpack_config_for_tracklets(training_config, segmentation_config):
     seg_metadata_fname = segmentation_config.resolve_relative_path_from_config('output_metadata')
     segmentation_metadata = DetectedNeurons(seg_metadata_fname)
 
-    postprocessing_params = segmentation_config.config['postprocessing_params']
+    postprocessing_params = training_config.config['postprocessing_params']
 
     return all_frame_dict, all_frame_pairs, z_threshold, min_confidence, segmentation_metadata, postprocessing_params
 
