@@ -12,7 +12,7 @@ import skimage
 from scipy.optimize import curve_fit
 
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candidates
-from DLC_for_WBFM.utils.neuron_matching.utils_tracklets import build_tracklets_dfs
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from scipy.signal import find_peaks
 
 

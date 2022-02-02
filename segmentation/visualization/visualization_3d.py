@@ -1,5 +1,5 @@
 import open3d as o3d
-from DLC_for_WBFM.utils.feature_detection.visualization_tracks import visualize_clusters_from_dataframe
+from DLC_for_WBFM.utils.visualization.visualization_tracks import visualize_clusters_from_dataframe
 import numpy as np
 import segmentation.util.overlap as ol
 
