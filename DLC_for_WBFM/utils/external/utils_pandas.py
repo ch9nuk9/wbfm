@@ -25,6 +25,12 @@ def get_names_from_df(df, level=0):
     return names
 
 
+def get_names_of_columns_that_exist_at_t(df, t):
+    """Note: MUST assign the output of dropna, otherwise the columns won't update"""
+    out = df.iloc[[t]].dropna(axis=1)
+    return get_names_from_df(out)
+
+
 def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
     all_indices = [t.dropna().index for t in tracklet_list]
     overlapping_tracklet_ind = []
