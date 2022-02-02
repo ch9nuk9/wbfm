@@ -334,7 +334,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         layer_to_add_callback = self.viewer.layers['Raw segmentation']
         callbacks = [self.update_trace_or_tracklet_subplot,
                      self.update_segmentation_status_label,
-                     self.tracklet_updated_psuedo_event]
+                     self.tracklet_updated_psuedo_event,
+                     self.set_segmentation_layer_invisible]
         self.dat.tracklet_annotator.connect_tracklet_clicking_callback(
             layer_to_add_callback,
             self.viewer,
@@ -630,6 +631,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             update_string = f"Selected segmentation(s): " \
                             f"{self.dat.tracklet_annotator.indices_of_original_neurons}"
         self.saveSegmentationStatusLabel.setText(update_string)
+
+    def set_segmentation_layer_invisible(self):
+        layer = self.viewer.layers['Raw segmentation']
+        layer.visible = False
 
     def finish_subplot_update(self, title):
         self.static_ax.set_title(title)

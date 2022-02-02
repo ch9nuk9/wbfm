@@ -476,19 +476,20 @@ class TrackletAndSegmentationAnnotator:
                 self.current_tracklet_name = tracklet_name
                 if self.current_neuron is not None:
                     [callback() for callback in self.refresh_callbacks]
-
-                df_single_track = self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]
-                if self.verbose >= 1:
-                    print(f"Adding tracklet of length {df_single_track['z'].count()}")
-                if self.to_add_layer_to_viewer:
-                    all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
-                    viewer.add_tracks(track_of_point, name=tracklet_name)
-
-                if self.verbose >= 2:
-                    print(df_single_track.dropna(inplace=False))
+                self.add_tracklet_to_viewer(viewer, tracklet_name)
             else:
                 if self.verbose >= 1:
                     print(f"WARNING: Tracklet too far away; not adding anything")
+
+    def add_tracklet_to_viewer(self, viewer, tracklet_name):
+        df_single_track = self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]
+        if self.verbose >= 1:
+            print(f"Adding tracklet of length {df_single_track['z'].count()}")
+        if self.to_add_layer_to_viewer:
+            all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
+            viewer.add_tracks(track_of_point, name=tracklet_name, tail_width=10)
+        if self.verbose >= 2:
+            print(df_single_track.dropna(inplace=False))
 
     def split_current_neuron_and_add_napari_layer(self, viewer, split_method):
         seg_index = self.indices_of_original_neurons
