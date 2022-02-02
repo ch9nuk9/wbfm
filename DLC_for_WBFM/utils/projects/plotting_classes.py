@@ -206,6 +206,16 @@ class TrackletAndSegmentationAnnotator:
         df_single_track = self.df_tracklet_obj.df_tracklets_zxy[self.current_tracklet_name]
         return df_single_track
 
+    def set_current_tracklet(self, tracklet_name):
+        self.current_tracklet_name = tracklet_name
+
+    def clear_current_tracklet(self):
+        if self.current_tracklet_name is not None:
+            print(f"Cleared tracklet {self.current_tracklet_name}")
+            self.current_tracklet_name = None
+        else:
+            print("No current tracklet; this button did nothing")
+
     def calculate_tracklets_for_neuron(self, neuron_name=None) -> List[pd.DataFrame]:
         # Note: does NOT save this neuron as self.current_neuron
         if neuron_name is None:
@@ -419,13 +429,6 @@ class TrackletAndSegmentationAnnotator:
             self.tracklet_split_names[left_name].append(right_name)
             self.tracklet_split_times[left_name].append((i_split - 1, i_split))
 
-    def clear_current_tracklet(self):
-        if self.current_tracklet_name is not None:
-            print(f"Cleared tracklet {self.current_tracklet_name}")
-            self.current_tracklet_name = None
-        else:
-            print("No current tracklet; this button did nothing")
-
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer: napari.Viewer, refresh_callbacks,
                                            max_dist=10.0):
         self.refresh_callbacks = refresh_callbacks
@@ -487,21 +490,21 @@ class TrackletAndSegmentationAnnotator:
                 print(f"Neuron is part of tracklet {tracklet_name} with distance {dist}")
 
             if dist < max_dist:
-                self.current_tracklet_name = tracklet_name
+                self.set_current_tracklet(tracklet_name)
+                self.add_current_tracklet_to_viewer(viewer)
                 if self.current_neuron is not None:
                     [callback() for callback in self.refresh_callbacks]
-                self.add_current_tracklet_to_viewer(viewer, tracklet_name)
             else:
                 if self.verbose >= 1:
                     print(f"WARNING: Tracklet too far away; not adding anything")
 
-    def add_current_tracklet_to_viewer(self, viewer, tracklet_name):
+    def add_current_tracklet_to_viewer(self, viewer):
         df_single_track = self.current_tracklet
         if self.verbose >= 1:
             print(f"Adding tracklet of length {df_single_track['z'].count()}")
         if self.to_add_layer_to_viewer:
             all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
-            viewer.add_tracks(track_of_point, name=tracklet_name, tail_width=10)
+            viewer.add_tracks(track_of_point, name=self.current_tracklet_name, tail_width=10)
         if self.verbose >= 2:
             print(df_single_track.dropna(inplace=False))
 

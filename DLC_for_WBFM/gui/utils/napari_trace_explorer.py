@@ -30,6 +30,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     tracklet_lines = None
     zoom_opt = None
 
+    _disable_callbacks = False
+
     def __init__(self, project_data: ProjectData, app: QApplication):
         check_all_needed_data_for_step(project_data.project_config.self_path, step_index=5, raise_error=True)
 
@@ -163,6 +165,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet attached to neuron")
         self.vbox4.addWidget(self.trackletHint1)
+
+        self.recentTrackletSelector = QtWidgets.QComboBox()
+        self.vbox4.addWidget(self.recentTrackletSelector)
+        self.recentTrackletSelector.currentIndexChanged.connect(self.change_tracklets_using_dropdown)
+
         self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (g)")
         self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
         self.vbox4.addWidget(self.zoom4Button)
@@ -196,7 +203,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.vbox4.addWidget(self.saveTrackletsStatusLabel)
 
         self.list_of_tracklet_correction_widgets = [
+            self.recentTrackletSelector,
             self.zoom4Button,
+            self.zoom5Button,
             self.splitTrackletButton1,
             self.splitTrackletButton2,
             self.clearTrackletButton,
@@ -268,10 +277,29 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         ]
 
     def change_neurons(self):
-        self.update_dataframe_using_points()
-        self.update_track_layers()
-        self.update_trace_or_tracklet_subplot()
-        self.update_neuron_in_tracklet_annotator()
+        if not self._disable_callbacks:
+            self.update_dataframe_using_points()
+            self.update_neuron_in_tracklet_annotator()
+            self.update_track_layers()
+            self.update_trace_or_tracklet_subplot()
+
+    def change_tracklets_using_dropdown(self):
+        if not self._disable_callbacks:
+            self.dat.tracklet_annotator.set_current_tracklet(self.recentTrackletSelector.currentText())
+            self.dat.tracklet_annotator.add_current_tracklet_to_viewer(self.viewer)
+            self.tracklet_updated_psuedo_event()
+
+    def add_to_recent_tracklet_dropdown(self):
+        last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
+        if last_tracklet is None:
+            return
+        self._disable_callbacks = True
+        self.recentTrackletSelector.insertItem(0, last_tracklet)
+
+        num_to_remember = 8
+        if self.recentTrackletSelector.count() > num_to_remember:
+            self.recentTrackletSelector.removeItem(num_to_remember)
+        self._disable_callbacks = False
 
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -455,7 +483,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
-            self.update_trace_or_tracklet_subplot()
             self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
@@ -463,14 +490,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def split_current_tracklet_keep_left(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.dat.tracklet_annotator.split_current_tracklet(self.t, False)
-            self.update_trace_or_tracklet_subplot()
             self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def clear_current_tracklet(self):
         self.dat.tracklet_annotator.clear_current_tracklet()
-        self.update_trace_or_tracklet_subplot()
+        self.tracklet_updated_psuedo_event()
 
     def save_annotations_to_disk(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
@@ -539,7 +565,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Designed for traces, but reuse and force z coordinate
         self.update_stored_time_series('z')
         self.tracklet_lines = []
-        self.update_stored_tracklets()
+        self.update_stored_tracklets_for_plotting()
         for y in self.y_tracklets:
             this_line = self.static_ax.plot(self.tspan[:-1], y['z'])[0]
             self.tracklet_lines.append(this_line)
@@ -611,7 +637,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # if len(self.tracklet_lines) > 0:
         #     [t.remove() for t in self.tracklet_lines]
         # self.tracklet_lines = []
-        self.update_stored_tracklets()
+        self.update_stored_tracklets_for_plotting()
         self.static_ax.clear()
         for y in self.y_tracklets:
             self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
@@ -626,6 +652,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def tracklet_updated_psuedo_event(self):
         self.update_tracklet_status_label()
         self.update_zoom_options_for_current_tracklet()
+        self.add_to_recent_tracklet_dropdown()
+        self.update_trace_or_tracklet_subplot()
 
     def update_tracklet_status_label(self):
         if self.dat.tracklet_annotator.current_neuron is None:
@@ -713,13 +741,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.y_trace_mode = y
         self.tspan = t
 
-    def update_stored_tracklets(self):
+    def update_stored_tracklets_for_plotting(self):
         name = self.current_name
         tracklets = self.dat.calculate_tracklets(name)
         print(f"Found {len(tracklets)} tracklets for {name}")
         self.y_tracklets = tracklets
-
-        self.tracklet_updated_psuedo_event()
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsDropdown.currentText()
