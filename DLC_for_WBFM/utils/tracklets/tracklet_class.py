@@ -113,7 +113,7 @@ class NeuronComposedOfTracklets:
         x0 = x.copy()
         while x.shape[0] < augment_to_minimum_points:
             x_augmented = x0 * (1 + augmentation_factor*np.random.randn(x0.shape[0], x0.shape[1]))
-            x = np.vstack(x, x_augmented.copy())
+            x = np.vstack([x, x_augmented.copy()])
         # assert x.shape[0] >= augment_to_minimum_points, "Neuron needs more points to build a classifier"
 
         self.scaler = StandardScaler()
