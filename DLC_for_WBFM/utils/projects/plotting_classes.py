@@ -199,6 +199,13 @@ class TrackletAndSegmentationAnnotator:
             logging.warning("Currently active tracklet not included in combined dict")
         return tmp
 
+    @property
+    def current_tracklet(self):
+        if self.current_tracklet_name:
+            return None
+        df_single_track = self.df_tracklet_obj.df_tracklets_zxy[self.current_tracklet_name]
+        return df_single_track
+
     def calculate_tracklets_for_neuron(self, neuron_name=None) -> List[pd.DataFrame]:
         # Note: does NOT save this neuron as self.current_neuron
         if neuron_name is None:
@@ -267,6 +274,13 @@ class TrackletAndSegmentationAnnotator:
             return int(next_conflict_time), neuron_conflict
         else:
             return None, None
+
+    def end_time_of_current_tracklet(self):
+        tracklet = self.current_tracklet
+        if tracklet is None:
+            return None
+        else:
+            return int(tracklet.last_valid_index())
 
     def tracklet_has_time_overlap(self, tracklet_name=None):
         if tracklet_name is None:
@@ -482,7 +496,7 @@ class TrackletAndSegmentationAnnotator:
                     print(f"WARNING: Tracklet too far away; not adding anything")
 
     def add_tracklet_to_viewer(self, viewer, tracklet_name):
-        df_single_track = self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]
+        df_single_track = self.current_tracklet
         if self.verbose >= 1:
             print(f"Adding tracklet of length {df_single_track['z'].count()}")
         if self.to_add_layer_to_viewer:

@@ -135,21 +135,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox3b = QtWidgets.QGroupBox("General shortcuts", self.verticalLayoutWidget)
         self.vbox3b = QtWidgets.QVBoxLayout(self.groupBox3b)
 
-        self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
+        self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (r)")
         self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
         self.vbox3b.addWidget(self.refreshButton)
 
-        self.printTrackletsButton = QtWidgets.QPushButton("Print tracklets attached to current neuron (V)")
+        self.printTrackletsButton = QtWidgets.QPushButton("Print tracklets attached to current neuron (v)")
         self.printTrackletsButton.pressed.connect(self.print_tracklets)
         self.vbox3b.addWidget(self.printTrackletsButton)
 
-        self.zoom1Button = QtWidgets.QPushButton("Zoom next (D)")
+        self.zoom1Button = QtWidgets.QPushButton("Zoom next (d)")
         self.zoom1Button.pressed.connect(self.zoom_next)
         self.vbox3b.addWidget(self.zoom1Button)
-        self.zoom2Button = QtWidgets.QPushButton("Zoom previous (A)")
+        self.zoom2Button = QtWidgets.QPushButton("Zoom previous (a)")
         self.zoom2Button.pressed.connect(self.zoom_previous)
         self.vbox3b.addWidget(self.zoom2Button)
-        self.zoom3Button = QtWidgets.QPushButton("Zoom to next time with nan (F)")
+        self.zoom3Button = QtWidgets.QPushButton("Zoom to next time with nan (f)")
         self.zoom3Button.pressed.connect(self.zoom_to_next_nan)
         self.vbox3b.addWidget(self.zoom3Button)
 
@@ -160,28 +160,32 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet attached to neuron")
         self.vbox4.addWidget(self.trackletHint1)
-        self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (G)")
+        self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (g)")
         self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
         self.vbox4.addWidget(self.zoom4Button)
-        self.splitTrackletButton1 = QtWidgets.QPushButton("Split current tracklet (keep left) (Q)")
+        self.zoom5Button = QtWidgets.QPushButton("Zoom to end of current tracklet (h)")
+        self.zoom5Button.pressed.connect(self.zoom_to_end_of_tracklet)
+        self.vbox4.addWidget(self.zoom5Button)
+
+        self.splitTrackletButton1 = QtWidgets.QPushButton("Split current tracklet (keep left) (q)")
         self.splitTrackletButton1.pressed.connect(self.split_current_tracklet_keep_left)
         self.vbox4.addWidget(self.splitTrackletButton1)
-        self.splitTrackletButton2 = QtWidgets.QPushButton("Split current tracklet (keep right) (E)")
+        self.splitTrackletButton2 = QtWidgets.QPushButton("Split current tracklet (keep right) (e)")
         self.splitTrackletButton2.pressed.connect(self.split_current_tracklet_keep_right)
         self.vbox4.addWidget(self.splitTrackletButton2)
-        self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (W)")
+        self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (w)")
         self.clearTrackletButton.pressed.connect(self.clear_current_tracklet)
         self.vbox4.addWidget(self.clearTrackletButton)
-        self.removeTrackletButton1 = QtWidgets.QPushButton("Remove tracklets with time conflicts (Z)")
+        self.removeTrackletButton1 = QtWidgets.QPushButton("Remove tracklets with time conflicts (z)")
         self.removeTrackletButton1.pressed.connect(self.remove_time_conflicts)
         self.vbox4.addWidget(self.removeTrackletButton1)
-        self.removeTrackletButton2 = QtWidgets.QPushButton("Remove current tracklet from all neurons (X)")
+        self.removeTrackletButton2 = QtWidgets.QPushButton("Remove current tracklet from all neurons (x)")
         self.removeTrackletButton2.pressed.connect(self.remove_tracklet_from_all_matches)
         self.vbox4.addWidget(self.removeTrackletButton2)
-        self.appendTrackletButton = QtWidgets.QPushButton("Save current tracklet to neuron (IF conflict-free) (C)")
+        self.appendTrackletButton = QtWidgets.QPushButton("Save current tracklet to neuron (IF conflict-free) (c)")
         self.appendTrackletButton.pressed.connect(self.append_current_tracklet_to_dict)
         self.vbox4.addWidget(self.appendTrackletButton)
-        self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk (S)")
+        self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk (s)")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
 
@@ -366,6 +370,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def zoom_to_next_nan(viewer):
             self.zoom_to_next_conflict()
 
+        @viewer.bind_key('h', overwrite=True)
+        def zoom_to_tracklet_end(viewer):
+            self.zoom_to_end_of_tracklet()
+
         @viewer.bind_key('e', overwrite=True)
         def split_current_tracklet(viewer):
             self.split_current_tracklet_keep_right()
@@ -431,6 +439,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             zoom_using_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No conflict point found; not moving")
+
+    def zoom_to_end_of_tracklet(self, viewer=None):
+        t = self.dat.tracklet_annotator.end_time_of_current_tracklet()
+
+        if t is not None:
+            change_viewer_time_point(self.viewer, t_target=t)
+            zoom_using_viewer(self.viewer, **self.zoom_opt)
+        else:
+            print("No tracklet selected; not zooming")
 
     def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
