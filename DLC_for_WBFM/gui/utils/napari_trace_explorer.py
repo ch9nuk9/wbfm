@@ -3,6 +3,7 @@
 import cgitb
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 
 cgitb.enable(format='text')
 import logging
@@ -27,6 +28,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     tracklet_lines = []
 
     def __init__(self, project_data: ProjectData):
+        check_all_needed_data_for_step(project_data.project_config.self_path, step_index=5, raise_error=True)
+
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
