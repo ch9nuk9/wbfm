@@ -108,14 +108,25 @@ def get_zxy_from_single_neuron_layer(layer, t, ind_within_layer=None):
     return layer.data[t]
 
 
-def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer):
+def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer=None):
     # e.g. text labels, with all neurons in a time point in a row (thus t is no longer a direct index)
     # Or, if nans have been dropped from an otherwise full-size layer
-    ind = layer.data[:, 0] == t
+    # Note: if ind_within_layer is None, it has no effect
+    dat = layer.data
+    if dat.shape[1] == 5:
+        # Tracks layer; neuron index is now first column
+        dat = dat[:, 1:]
+    elif dat.shape[1] == 4:
+        # Points layer
+        pass
+    else:
+        raise ValueError(f"Unrecognized layer shape {dat.shape}")
+    ind = dat[:, 0] == t
+
     if len(np.where(ind)[0]) == 0:
         fake_dat = np.zeros_like(layer.data[0, :])
         fake_dat[0] = t
-        logging.warning("Data didn't work: {}")
+        # logging.warning(f"Time {t} not found in layer: {layer.data[:, 0]}")
         return fake_dat
     else:
         return layer.data[ind, :][ind_within_layer, :]
