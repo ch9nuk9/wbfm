@@ -379,11 +379,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.print_tracklets()
 
         @viewer.bind_key('z', overwrite=True)
-        def print_tracklet_status(viewer):
+        def remove_conflict(viewer):
             self.remove_time_conflicts()
 
         @viewer.bind_key('x', overwrite=True)
-        def print_tracklet_status(viewer):
+        def remove_tracklet(viewer):
             self.remove_tracklet_from_all_matches()
 
     @property
@@ -433,6 +433,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             self.update_trace_or_tracklet_subplot()
+            self.update_tracklet_status_label()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
@@ -440,6 +441,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.dat.tracklet_annotator.split_current_tracklet(self.t, False)
             self.update_trace_or_tracklet_subplot()
+            self.update_tracklet_status_label()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
@@ -465,9 +467,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def remove_time_conflicts(self):
         self.dat.tracklet_annotator.remove_tracklets_with_time_conflicts()
+        self.update_tracklet_status_label()
 
     def remove_tracklet_from_all_matches(self):
         self.dat.tracklet_annotator.remove_tracklet_from_all_matches()
+        self.update_tracklet_status_label()
 
     @property
     def y_on_plot(self):
@@ -598,7 +602,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.dat.tracklet_annotator.current_neuron is None:
             update_string = "STATUS: No tracklet selected"
         else:
-            update_string = f"STATUS: Selected tracklet is {self.dat.tracklet_annotator.current_tracklet_name}"
+            if self.dat.tracklet_annotator.is_current_tracklet_confict_free:
+                update_string = f"Selected: {self.dat.tracklet_annotator.current_tracklet_name}"
+            else:
+                update_string = f"Selected: {self.dat.tracklet_annotator.current_tracklet_name} " \
+                                f"(HAS CONFLICTS; cannot be saved)"
         self.saveTrackletsStatusLabel.setText(update_string)
 
     def update_segmentation_status_label(self):
