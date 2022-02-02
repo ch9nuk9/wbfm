@@ -1,7 +1,9 @@
 # Display more informative error messages
 # https://www.tutorialexample.com/fix-pyqt-gui-application-crashed-while-no-error-message-displayed-a-beginner-guide-pyqt-tutorial/
 import cgitb
+import signal
 
+from DLC_for_WBFM.gui.utils.utils_matplotlib import PlotQWidget
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 
@@ -28,13 +30,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     tracklet_lines = None
     zoom_opt = None
 
-    def __init__(self, project_data: ProjectData):
+    def __init__(self, project_data: ProjectData, app: QApplication):
         check_all_needed_data_for_step(project_data.project_config.self_path, step_index=5, raise_error=True)
 
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.dat = project_data
+        self.main_window = app
 
         self.tracklet_lines = []
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
@@ -508,12 +511,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return y_on_plot
 
     def init_universal_subplot(self):
-        self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
-        self.static_ax = self.mpl_widget.figure.subplots()
+        self.mpl_widget = PlotQWidget(self.viewer.window._qt_window.centralWidget())
+        self.static_ax = self.mpl_widget.canvas.fig.subplots()
+        # self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
+        # self.static_ax = self.mpl_widget.figure.subplots()
         # Connect clicking to a time change
         # https://matplotlib.org/stable/users/event_handling.html
         on_click = lambda event: self.on_subplot_click(event)
-        cid = self.mpl_widget.mpl_connect('button_press_event', on_click)
+        cid = self.mpl_widget.canvas.mpl_connect('button_press_event', on_click)
         self.connect_time_line_callback()
 
     def init_subplot_post_clear(self):
@@ -795,7 +800,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=True,
                                                                    to_load_segmentation_metadata=True)
-    ui, viewer = napari_trace_explorer(project_data, to_print_fps=to_print_fps)
+    ui, viewer = napari_trace_explorer(project_data, app=app, to_print_fps=to_print_fps)
 
     # Note: don't use this in jupyter
     napari.run()
@@ -806,13 +811,17 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
 
 
 def napari_trace_explorer(project_data: ProjectData,
+                          app: QApplication = None,
                           viewer: napari.Viewer = None,
                           to_print_fps: bool = False):
     """Current function for building the explorer (1/11/2022)"""
     print("Starting GUI setup")
+    # Make sure ctrl-c works
+    # https://python.tutorialink.com/what-is-the-correct-way-to-make-my-pyqt-application-quit-when-killed-from-the-console-ctrl-c/
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     # Build Napari and add data layers
-    ui = NapariTraceExplorer(project_data)
+    ui = NapariTraceExplorer(project_data, app)
     if viewer is None:
         logger.info("Creating a new Napari window")
         viewer = napari.Viewer(ndisplay=3)
