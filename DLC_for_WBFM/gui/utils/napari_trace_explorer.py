@@ -25,7 +25,8 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 class NapariTraceExplorer(QtWidgets.QWidget):
 
     subplot_is_initialized = False
-    tracklet_lines = []
+    tracklet_lines = None
+    zoom_opt = None
 
     def __init__(self, project_data: ProjectData):
         check_all_needed_data_for_step(project_data.project_config.self_path, step_index=5, raise_error=True)
@@ -34,6 +35,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.dat = project_data
+
+        self.tracklet_lines = []
+        self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
+                         'layer_name': 'final_track'}
         logger.info("Finished initializing Trace Explorer object")
 
     def setupUi(self, viewer: napari.Viewer):
@@ -85,6 +90,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.groupBox1)
         self.verticalLayout.addWidget(self.groupBox2)
         self.verticalLayout.addWidget(self.groupBox3)
+        self.verticalLayout.addWidget(self.groupBox3b)
         self.verticalLayout.addWidget(self.groupBox4)
         self.verticalLayout.addWidget(self.groupBox5)
 
@@ -394,15 +400,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     @property
     def max_time(self):
         return len(self.dat.final_tracks) - 1
-
-    @property
-    def zoom_opt(self):
-        return dict(
-            zoom=None,
-            ind_within_layer=0,
-            layer_is_full_size_and_single_neuron=False,
-            layer_name='final_track'
-        )
 
     def zoom_next(self, viewer=None):
         change_viewer_time_point(self.viewer, dt=1, a_max=self.max_time)
