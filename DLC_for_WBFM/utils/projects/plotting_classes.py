@@ -207,11 +207,9 @@ class TrackletAndSegmentationAnnotator:
             raise ValueError("Must pass neuron name explicitly or have one saved in the object")
         # Returns a list of pd.DataFrames with columns x, y, z, and likelihood, which can be plotted in a loop
         these_names = self.global2tracklet[neuron_name].copy()
-        # all_tracklet_names = lexigraphically_sort(list(self.df_tracklet_obj.data.columns.levels[0]))
-        # all_tracklet_names = list(self.df_tracklet_obj.data.columns.levels[0])
 
-        # these_names = [all_tracklet_names[i] for i in tracklet_ind]
         these_names.extend(self.manual_global2tracklet_names[neuron_name])
+        [these_names.remove(name) for name in self.manual_global2tracklet_removals[neuron_name]]
         if self.current_tracklet_name is not None:
             these_names.append(self.current_tracklet_name)
 
