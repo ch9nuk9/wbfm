@@ -334,7 +334,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         layer_to_add_callback = self.viewer.layers['Raw segmentation']
         callbacks = [self.update_trace_or_tracklet_subplot,
                      self.update_segmentation_status_label,
-                     self.update_tracklet_status_label]
+                     self.tracklet_updated_psuedo_event]
         self.dat.tracklet_annotator.connect_tracklet_clicking_callback(
             layer_to_add_callback,
             self.viewer,
@@ -435,7 +435,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             self.update_trace_or_tracklet_subplot()
-            self.update_tracklet_status_label()
+            self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
@@ -443,7 +443,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.dat.tracklet_annotator.split_current_tracklet(self.t, False)
             self.update_trace_or_tracklet_subplot()
-            self.update_tracklet_status_label()
+            self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
@@ -462,18 +462,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.dat.tracklet_annotator.save_current_tracklet_to_neuron()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
-        self.update_tracklet_status_label()
+        self.tracklet_updated_psuedo_event()
 
     def print_tracklets(self):
         self.dat.tracklet_annotator.print_current_status()
 
     def remove_time_conflicts(self):
         self.dat.tracklet_annotator.remove_tracklets_with_time_conflicts()
-        self.update_tracklet_status_label()
+        self.tracklet_updated_psuedo_event()
 
     def remove_tracklet_from_all_matches(self):
         self.dat.tracklet_annotator.remove_tracklet_from_all_matches()
-        self.update_tracklet_status_label()
+        self.tracklet_updated_psuedo_event()
 
     @property
     def y_on_plot(self):
@@ -600,6 +600,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.init_subplot_post_clear()
         self.finish_subplot_update(title)
 
+    def tracklet_updated_psuedo_event(self):
+        self.update_tracklet_status_label()
+        self.update_zoom_options_for_current_tracklet()
+
     def update_tracklet_status_label(self):
         if self.dat.tracklet_annotator.current_neuron is None:
             update_string = "STATUS: No tracklet selected"
@@ -610,6 +614,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 update_string = f"Selected: {self.dat.tracklet_annotator.current_tracklet_name} " \
                                 f"(HAS CONFLICTS; cannot be saved)"
         self.saveTrackletsStatusLabel.setText(update_string)
+
+    def update_zoom_options_for_current_tracklet(self):
+        if self.dat.tracklet_annotator.current_tracklet_name is not None:
+            # Note that this will break if the layer is deleted
+            self.zoom_opt['layer_name'] = self.dat.tracklet_annotator.current_tracklet_name
+        else:
+            # Set back to default
+            self.zoom_opt['layer_name'] = 'final_track'
 
     def update_segmentation_status_label(self):
         if self.dat.tracklet_annotator.indices_of_original_neurons is None:
@@ -680,7 +692,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         print(f"Found {len(tracklets)} tracklets for {name}")
         self.y_tracklets = tracklets
 
-        self.update_tracklet_status_label()
+        self.tracklet_updated_psuedo_event()
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsDropdown.currentText()

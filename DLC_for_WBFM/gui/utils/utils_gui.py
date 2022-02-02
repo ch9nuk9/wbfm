@@ -115,6 +115,7 @@ def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer):
     if len(np.where(ind)[0]) == 0:
         fake_dat = np.zeros_like(layer.data[0, :])
         fake_dat[0] = t
+        logging.warning("Data didn't work: {}")
         return fake_dat
     else:
         return layer.data[ind, :][ind_within_layer, :]
