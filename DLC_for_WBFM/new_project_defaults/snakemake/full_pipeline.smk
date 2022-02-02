@@ -72,18 +72,6 @@ rule reindex_segmentation_tracklets:
     shell:
         "python {input.code_path}/2c-reindex_segmentation_training_masks.py with project_path={input.cfg}"
 
-
-rule save_training_tracklets:
-    input:
-        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}", code=config['code_path']),
-        files=expand("{dir}/{input}", input=config['input_2d'], dir=config['project_dir'])
-    output:
-        expand("{dir}/{output}", output=config['output_2d'], dir=config['project_dir'])
-    threads: 2
-    shell:
-        "python {input.code_path}/2d-save_training_tracklets_as_dlc.py with project_path={input.cfg}"
-
 #
 # Tracking
 #
