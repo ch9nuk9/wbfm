@@ -225,7 +225,7 @@ def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> Non
         logging.warning(f"all_frame_pairs is None; this step will need to be rerun")
 
 
-def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, min_length_to_keep, verbose=0,
+def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, min_length_to_save, verbose=0,
                                   DEBUG=False):
     """
     Split the tracklets based on a threshold on the percentage change in volume
@@ -260,7 +260,7 @@ def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, mi
             split_points = tracklet2split[name]
             these_candidates = split_multiple_tracklets(this_tracklet, split_points)
             # Remove short ones, and rename
-            these_candidates = [c for c in these_candidates if c[name]['z'].count() > min_length_to_keep]
+            these_candidates = [c for c in these_candidates if c[name]['z'].count() >= min_length_to_save]
             for i, c in enumerate(these_candidates):
                 if i == 0:
                     # The first tracklet keeps the original name
