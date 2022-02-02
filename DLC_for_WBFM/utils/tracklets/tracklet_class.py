@@ -13,7 +13,7 @@ from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
-    get_names_of_conflicting_dataframes
+    get_names_of_conflicting_dataframes, get_names_of_columns_that_exist_at_t
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
@@ -294,12 +294,10 @@ class TrackedWorm:
         return new_neuron
 
     def initialize_neurons_at_time(self, t=0):
-        for i, name in enumerate(self.detections.all_tracklet_names):
+        names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
+        for i, name in enumerate(names):
             # this tracklet should still have a multi-level index
             tracklet = self.detections.df_tracklets_zxy[[name]]
-            # Assume tracklets are ordered, such that the first tracklet which starts at t>0 mean all the rest do
-            if np.isnan(tracklet[name]['z'].iloc[t]):
-                break
             confidence = 1.0
             new_neuron = self.initialize_new_neuron(initialization_frame=t)
             new_neuron.add_tracklet(confidence, tracklet, metadata=name)
