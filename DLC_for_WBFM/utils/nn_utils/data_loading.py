@@ -35,16 +35,16 @@ def get_bbox_data(i_tracklet, df, project_data, t_local=None, target_sz=np.array
     # Expand to get the neighborhood
     sz = project_data.red_data.shape
 
-    z0 = np.clip(bbox[0] - 3, a_min=0, a_max=sz[1])
-    z1 = np.clip(bbox[3] + 3, a_min=0, a_max=sz[1])
+    z0 = np.clip(bbox[0] - int(target_sz[0]/4), a_min=0, a_max=sz[1])
+    z1 = np.clip(bbox[3] + int(target_sz[0]/4), a_min=0, a_max=sz[1])
     if z1 - z0 > target_sz[0]:
         z1 = z0 + target_sz[0]
-    x0 = np.clip(bbox[1] - 30, a_min=0, a_max=sz[2])
-    x1 = np.clip(bbox[4] + 30, a_min=0, a_max=sz[2])
+    x0 = np.clip(bbox[1] - int(target_sz[1]/2), a_min=0, a_max=sz[2])
+    x1 = np.clip(bbox[4] + int(target_sz[1]/2), a_min=0, a_max=sz[2])
     if x1 - x0 > target_sz[1]:
         x1 = x0 + target_sz[1]
-    y0 = np.clip(bbox[2] - 30, a_min=0, a_max=sz[3])
-    y1 = np.clip(bbox[5] + 30, a_min=0, a_max=sz[3])
+    y0 = np.clip(bbox[2] - int(target_sz[2]/2), a_min=0, a_max=sz[3])
+    y1 = np.clip(bbox[5] + int(target_sz[2]/2), a_min=0, a_max=sz[3])
     if y1 - y0 > target_sz[2]:
         y1 = y0 + target_sz[2]
 
