@@ -75,6 +75,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # More complex boxes:
 
         self._setup_trace_filtering_buttons()  # Box 3
+        self._setup_zoom_shortcut_buttons()
         self._setup_tracklet_correction_shortcut_buttons()  # Box 4
         self._setup_segmentation_correction_buttons()  # Box 5
 
@@ -119,31 +120,37 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTrackingOutlierSpinBox.setRange(0, 1)
         self.changeTrackingOutlierSpinBox.setSingleStep(0.1)
         self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
-        self.formlayout3.addRow("Outlier threshold:", self.changeTrackingOutlierSpinBox)
+        # self.formlayout3.addRow("Outlier threshold:", self.changeTrackingOutlierSpinBox)
+
+    def _setup_zoom_shortcut_buttons(self):
+        self.groupBox3b = QtWidgets.QGroupBox("General shortcuts", self.verticalLayoutWidget)
+        self.vbox3b = QtWidgets.QVBoxLayout(self.groupBox3b)
+
+        self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
+        self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
+        self.vbox3b.addWidget(self.refreshButton)
+
+        self.printTrackletsButton = QtWidgets.QPushButton("Print tracklets attached to current neuron (V)")
+        self.printTrackletsButton.pressed.connect(self.print_tracklets)
+        self.vbox3b.addWidget(self.printTrackletsButton)
+
+        self.zoom1Button = QtWidgets.QPushButton("Zoom next (D)")
+        self.zoom1Button.pressed.connect(self.zoom_next)
+        self.vbox3b.addWidget(self.zoom1Button)
+        self.zoom2Button = QtWidgets.QPushButton("Zoom previous (A)")
+        self.zoom2Button.pressed.connect(self.zoom_previous)
+        self.vbox3b.addWidget(self.zoom2Button)
+        self.zoom3Button = QtWidgets.QPushButton("Zoom to next time with nan (F)")
+        self.zoom3Button.pressed.connect(self.zoom_to_next_nan)
+        self.vbox3b.addWidget(self.zoom3Button)
 
     def _setup_tracklet_correction_shortcut_buttons(self):
-        # BOX 4: general shortcuts
+        # BOX 4: tracklet shortcuts
         self.groupBox4 = QtWidgets.QGroupBox("Tracklet Correction", self.verticalLayoutWidget)
         self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox4)
 
         self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet attached to neuron")
         self.vbox4.addWidget(self.trackletHint1)
-
-        self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (R)")
-        self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
-        self.vbox4.addWidget(self.refreshButton)
-        self.printTrackletsButton = QtWidgets.QPushButton("Print tracklets attached to current neuron (V)")
-        self.printTrackletsButton.pressed.connect(self.print_tracklets)
-        self.vbox4.addWidget(self.printTrackletsButton)
-        self.zoom1Button = QtWidgets.QPushButton("Zoom next (D)")
-        self.zoom1Button.pressed.connect(self.zoom_next)
-        self.vbox4.addWidget(self.zoom1Button)
-        self.zoom2Button = QtWidgets.QPushButton("Zoom previous (A)")
-        self.zoom2Button.pressed.connect(self.zoom_previous)
-        self.vbox4.addWidget(self.zoom2Button)
-        self.zoom3Button = QtWidgets.QPushButton("Zoom to next time with nan (F)")
-        self.zoom3Button.pressed.connect(self.zoom_to_next_nan)
-        self.vbox4.addWidget(self.zoom3Button)
         self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (G)")
         self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
         self.vbox4.addWidget(self.zoom4Button)
@@ -173,11 +180,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.vbox4.addWidget(self.saveTrackletsStatusLabel)
 
         self.list_of_tracklet_correction_widgets = [
-            self.refreshButton,
-            self.printTrackletsButton,
-            self.zoom1Button,
-            self.zoom2Button,
-            self.zoom3Button,
             self.zoom4Button,
             self.splitTrackletButton1,
             self.splitTrackletButton2,
