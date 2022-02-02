@@ -201,7 +201,7 @@ class TrackletAndSegmentationAnnotator:
 
     @property
     def current_tracklet(self):
-        if self.current_tracklet_name:
+        if self.current_tracklet_name is None:
             return None
         df_single_track = self.df_tracklet_obj.df_tracklets_zxy[self.current_tracklet_name]
         return df_single_track
@@ -490,12 +490,12 @@ class TrackletAndSegmentationAnnotator:
                 self.current_tracklet_name = tracklet_name
                 if self.current_neuron is not None:
                     [callback() for callback in self.refresh_callbacks]
-                self.add_tracklet_to_viewer(viewer, tracklet_name)
+                self.add_current_tracklet_to_viewer(viewer, tracklet_name)
             else:
                 if self.verbose >= 1:
                     print(f"WARNING: Tracklet too far away; not adding anything")
 
-    def add_tracklet_to_viewer(self, viewer, tracklet_name):
+    def add_current_tracklet_to_viewer(self, viewer, tracklet_name):
         df_single_track = self.current_tracklet
         if self.verbose >= 1:
             print(f"Adding tracklet of length {df_single_track['z'].count()}")
