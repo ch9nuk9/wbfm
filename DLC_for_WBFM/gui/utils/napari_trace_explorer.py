@@ -177,6 +177,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom5Button.pressed.connect(self.zoom_to_end_of_tracklet)
         self.vbox4.addWidget(self.zoom5Button)
 
+        self.toggleSegButton = QtWidgets.QPushButton("Toggle Raw segmentation layer (s)")
+        self.toggleSegButton.pressed.connect(self.toggle_raw_segmentation_layer)
         self.splitTrackletButton1 = QtWidgets.QPushButton("Split current tracklet (keep left) (q)")
         self.splitTrackletButton1.pressed.connect(self.split_current_tracklet_keep_left)
         self.vbox4.addWidget(self.splitTrackletButton1)
@@ -195,7 +197,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.appendTrackletButton = QtWidgets.QPushButton("Save current tracklet to neuron (IF conflict-free) (c)")
         self.appendTrackletButton.pressed.connect(self.append_current_tracklet_to_dict)
         self.vbox4.addWidget(self.appendTrackletButton)
-        self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk (s)")
+        self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
 
@@ -206,6 +208,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.recentTrackletSelector,
             self.zoom4Button,
             self.zoom5Button,
+            self.toggleSegButton,
             self.splitTrackletButton1,
             self.splitTrackletButton2,
             self.clearTrackletButton,
@@ -275,6 +278,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.splitSegmentationSaveButton1,
             self.splitSegmentationSaveButton2,
         ]
+
+    @property
+    def seg_layer(self):
+        return self.viewer.layers['Raw segmentation']
 
     def change_neurons(self):
         if not self._disable_callbacks:
@@ -423,8 +430,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.clear_current_tracklet()
 
         @viewer.bind_key('s', overwrite=True)
-        def refresh_subplot(viewer):
-            self.save_annotations_to_disk()
+        def toggle_seg(viewer):
+            # self.save_annotations_to_disk()
+            self.toggle_raw_segmentation_layer()
 
         @viewer.bind_key('c', overwrite=True)
         def refresh_subplot(viewer):
@@ -511,6 +519,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
+
+    def toggle_raw_segmentation_layer(self):
+        if self.viewer.selection.active == self.seg_layer:
+            self.viewer.selection.clear()
+            self.seg_layer.visible = 0
+        else:
+            self.viewer.selection.clear()
+            self.viewer.selection.add(self.seg_layer)
+            self.seg_layer.visible = 1
 
     def append_current_tracklet_to_dict(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
