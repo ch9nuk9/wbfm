@@ -320,12 +320,16 @@ class TrackletAndSegmentationAnnotator:
 
     def get_types_of_conflicts(self):
         types_of_conflicts = []
-        if self.get_neuron_name_of_conflicting_match():
-            types_of_conflicts.append("Identity")
-        if self.get_dict_of_tracklet_time_conflicts():
-            types_of_conflicts.append("Time")
-        if len(types_of_conflicts) == 0:
-            types_of_conflicts.append("No conflicts")
+        conflicting_match = self.get_neuron_name_of_conflicting_match()
+        if conflicting_match and conflicting_match == self.current_neuron:
+            types_of_conflicts.append("Already added")
+        else:
+            if conflicting_match:
+                types_of_conflicts.append("Identity")
+            if self.get_dict_of_tracklet_time_conflicts():
+                types_of_conflicts.append("Time")
+            if len(types_of_conflicts) == 0:
+                types_of_conflicts.append("No conflicts")
         return types_of_conflicts
 
     def print_tracklet_conflicts(self):
@@ -344,12 +348,12 @@ class TrackletAndSegmentationAnnotator:
         if tracklet_name in previously_added:
             print(f"Tracklet {tracklet_name} already in {neuron_name}; nothing added")
         else:
-            previously_added.append(tracklet_name)
+            self.manual_global2tracklet_names[neuron_name].append(tracklet_name)
             print(f"Successfully added tracklet {tracklet_name} to {neuron_name}")
 
         if tracklet_name in previously_removed:
             print(f"Tracklet was in the to-remove list, but was removed")
-            previously_removed.remove(tracklet_name)
+            self.manual_global2tracklet_removals[neuron_name].remove(tracklet_name)
 
     def remove_tracklet_from_neuron(self, tracklet_name, neuron_name):
         previously_added = self.manual_global2tracklet_names[neuron_name]
@@ -357,12 +361,12 @@ class TrackletAndSegmentationAnnotator:
         if tracklet_name in previously_removed:
             print(f"Tracklet {tracklet_name} already removed from {neuron_name}; nothing removed")
         else:
-            previously_removed.append(tracklet_name)
-            print(f"Successfully added tracklet {tracklet_name} to removal list of {neuron_name}")
+            self.manual_global2tracklet_removals[neuron_name].append(tracklet_name)
+            print(f"Successfully added {tracklet_name} to removal list of {neuron_name}")
 
         if tracklet_name in previously_added:
-            print(f"Tracklet was in the manually to-add list, but was removed")
-            previously_added.remove(tracklet_name)
+            print(f"{tracklet_name} was in the manually to-add list, but was removed")
+            self.manual_global2tracklet_names[neuron_name].remove(tracklet_name)
 
     def remove_tracklet_from_all_matches(self):
         tracklet_name = self.current_tracklet_name
@@ -370,7 +374,7 @@ class TrackletAndSegmentationAnnotator:
         if other_match is not None:
             with self.saving_lock:
                 self.remove_tracklet_from_neuron(tracklet_name, other_match)
-            assert not self.is_tracklet_already_matched(tracklet_name), f"Removal of {tracklet_name} from {other_match} failed"
+            # assert not self.is_tracklet_already_matched(tracklet_name), f"Removal of {tracklet_name} from {other_match} failed"
         else:
             print("Already unmatched")
 
@@ -382,7 +386,7 @@ class TrackletAndSegmentationAnnotator:
                 for conflicting_tracklet_name in all_overlap_dict.keys():
                     self.remove_tracklet_from_neuron(conflicting_tracklet_name, self.current_neuron)
                     # self.manual_global2tracklet_removals[self.current_neuron].append(conflicting_tracklet_name)
-            assert not self.tracklet_has_time_overlap(tracklet_name), f"Clean up of {tracklet_name} failed"
+            # assert not self.tracklet_has_time_overlap(tracklet_name), f"Clean up of {tracklet_name} failed"
         else:
             print("Already not conflicting")
 
