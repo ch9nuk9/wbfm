@@ -75,11 +75,18 @@ def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_pas
                       layer_is_full_size_and_single_neuron=True, ind_within_layer=None) -> None:
     # Get current point
     t = viewer.dims.current_step[0]
-    if layer_is_full_size_and_single_neuron:
-        tzxy = get_zxy_from_single_neuron_layer(viewer.layers[layer_name], t)
+    if layer_name in viewer.layers:
+        layer = viewer.layers[layer_name]
+
+        if layer_is_full_size_and_single_neuron:
+            tzxy = get_zxy_from_single_neuron_layer(layer, t)
+        else:
+            tzxy = get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer)
+        print(f"tzxy: {tzxy}, layer: {layer}")
     else:
-        tzxy = get_zxy_from_multi_neuron_layer(viewer.layers[layer_name], t, ind_within_layer)
-    print(f"tzxy: {tzxy}, layer: {viewer.layers[layer_name]}")
+        print(f"Layer {layer_name} not found; no zooming")
+        return
+
     # TODO: better way to check for nesting
     if len(tzxy) == 1:
         tzxy = tzxy[0]
