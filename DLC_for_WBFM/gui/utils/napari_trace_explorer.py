@@ -562,7 +562,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def add_layer_of_current_tracklet(self):
         layer_name = self.dat.tracklet_annotator.current_tracklet_name
         if layer_name is not None and layer_name not in self.viewer.layers:
-            self.dat.tracklet_annotator.add_current_tracklet_to_viewer()
+            self.dat.tracklet_annotator.add_current_tracklet_to_viewer(self.viewer)
 
     def print_tracklets(self):
         self.dat.tracklet_annotator.print_current_status()
