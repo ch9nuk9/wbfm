@@ -7,6 +7,7 @@ import napari
 import numpy as np
 import pandas as pd
 import zarr
+from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
@@ -493,6 +494,18 @@ class ProjectData:
             options['name'] = 'Intermediate global IDs'
             options['text']['color'] = 'green'
             options['visible'] = False
+            viewer.add_points(**options)
+
+        if 'Point Cloud' in which_layers:
+            def make_time_vector(zxy, i):
+                out = np.array([i]*zxy.shape[0])
+                out = np.expand_dims(out, axis=-1)
+                return out
+            pts_data = [self.get_centroids_as_numpy(i) for i in tqdm(range(self.num_frames), leave=False)]
+            pts_data = [np.hstack([make_time_vector(zxy, i), zxy]) for i, zxy in enumerate(pts_data) if len(zxy) > 0]
+            pts_data = np.vstack(pts_data)
+
+            options = dict(data=pts_data, name="Point Cloud", size=1, blending='opaque')
             viewer.add_points(**options)
 
         logging.info(f"Finished adding layers {which_layers}")
