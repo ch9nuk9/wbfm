@@ -318,7 +318,15 @@ class TrackletAndSegmentationAnnotator:
             self.print_tracklet_conflicts()
             return False
 
-    # def explanation_of_conflict(self):
+    def get_types_of_conflicts(self):
+        types_of_conflicts = []
+        if self.get_neuron_name_of_conflicting_match():
+            types_of_conflicts.append("Identity")
+        if self.get_dict_of_tracklet_time_conflicts():
+            types_of_conflicts.append("Time")
+        if len(types_of_conflicts) == 0:
+            types_of_conflicts.append("No conflicts")
+        return types_of_conflicts
 
     def print_tracklet_conflicts(self):
         name = self.get_neuron_name_of_conflicting_match()

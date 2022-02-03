@@ -718,8 +718,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             if self.dat.tracklet_annotator.is_current_tracklet_confict_free:
                 update_string = f"Selected: {self.dat.tracklet_annotator.current_tracklet_name}"
             else:
+                types_of_conflicts = self.dat.tracklet_annotator.get_types_of_conflicts()
                 update_string = f"Selected: {self.dat.tracklet_annotator.current_tracklet_name} " \
-                                f"(HAS CONFLICTS; cannot be saved)"
+                                f"(CANNOT BE SAVED; has conflicts of type {types_of_conflicts})"
         self.saveTrackletsStatusLabel.setText(update_string)
 
     def update_zoom_options_for_current_tracklet(self):
