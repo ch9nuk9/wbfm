@@ -318,6 +318,8 @@ class TrackletAndSegmentationAnnotator:
             self.print_tracklet_conflicts()
             return False
 
+    # def explanation_of_conflict(self):
+
     def print_tracklet_conflicts(self):
         name = self.get_neuron_name_of_conflicting_match()
         if name is not None:
@@ -379,13 +381,16 @@ class TrackletAndSegmentationAnnotator:
     def save_current_tracklet_to_current_neuron(self):
         if self.current_tracklet_name is None:
             print("No neuron selected")
-            return
+            return None
         if self.is_current_tracklet_confict_free:
             with self.saving_lock:
                 self.add_tracklet_to_neuron(self.current_tracklet_name, self.current_neuron)
+                tracklet_name = self.current_tracklet_name
                 self.current_tracklet_name = None
+            return tracklet_name
         else:
             print("Current tracklet has conflicts, please resolve before saving as a match")
+            return None
 
     def print_current_status(self, neuron_name=None):
         if neuron_name is None:

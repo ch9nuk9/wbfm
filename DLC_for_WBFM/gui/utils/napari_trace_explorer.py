@@ -548,19 +548,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def save_current_tracklet_to_neuron(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.remove_layer_of_current_tracklet()
-            self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
+            tracklet_name = self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
+            if tracklet_name:
+                self.remove_layer_of_current_tracklet(tracklet_name)
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
         self.tracklet_updated_psuedo_event()
 
-    def remove_layer_of_current_tracklet(self):
-        layer_name = self.dat.tracklet_annotator.current_tracklet_name
+    def remove_layer_of_current_tracklet(self, layer_name=None):
+        if layer_name is None:
+            layer_name = self.dat.tracklet_annotator.current_tracklet_name
         if layer_name is not None and layer_name in self.viewer.layers:
             self.viewer.layers.remove(layer_name)
 
-    def add_layer_of_current_tracklet(self):
-        layer_name = self.dat.tracklet_annotator.current_tracklet_name
+    def add_layer_of_current_tracklet(self, layer_name=None):
+        if layer_name is None:
+            layer_name = self.dat.tracklet_annotator.current_tracklet_name
         if layer_name is not None and layer_name not in self.viewer.layers:
             self.dat.tracklet_annotator.add_current_tracklet_to_viewer(self.viewer)
 
