@@ -292,6 +292,13 @@ class TrackletAndSegmentationAnnotator:
         else:
             return int(tracklet.last_valid_index())
 
+    def start_time_of_current_tracklet(self):
+        tracklet = self.current_tracklet
+        if tracklet is None:
+            return None
+        else:
+            return int(tracklet.first_valid_index())
+
     def tracklet_has_time_overlap(self, tracklet_name=None):
         if tracklet_name is None:
             tracklet_name = self.current_tracklet_name

@@ -173,8 +173,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (g)")
         self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
         self.vbox4.addWidget(self.zoom4Button)
-        self.zoom5Button = QtWidgets.QPushButton("Zoom to end of current tracklet (h)")
-        self.zoom5Button.pressed.connect(self.zoom_to_end_of_tracklet)
+        self.zoom5Button = QtWidgets.QPushButton("Zoom to end of current tracklet (j)")
+        self.zoom5Button.pressed.connect(self.zoom_to_end_of_current_tracklet)
         self.vbox4.addWidget(self.zoom5Button)
 
         self.toggleSegButton = QtWidgets.QPushButton("Toggle Raw segmentation layer (s)")
@@ -413,9 +413,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def zoom_to_next_nan(viewer):
             self.zoom_to_next_conflict()
 
+        @viewer.bind_key('j', overwrite=True)
+        def zoom_to_tracklet_end(viewer):
+            self.zoom_to_end_of_current_tracklet()
+
         @viewer.bind_key('h', overwrite=True)
         def zoom_to_tracklet_end(viewer):
-            self.zoom_to_end_of_tracklet()
+            self.zoom_to_start_of_current_tracklet()
 
         @viewer.bind_key('e', overwrite=True)
         def split_current_tracklet(viewer):
@@ -487,14 +491,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             print("No conflict point found; not moving")
 
-    def zoom_to_end_of_tracklet(self, viewer=None):
+    def zoom_to_end_of_current_tracklet(self, viewer=None):
         t = self.dat.tracklet_annotator.end_time_of_current_tracklet()
-
         if t is not None:
             change_viewer_time_point(self.viewer, t_target=t)
             zoom_using_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No tracklet selected; not zooming")
+
+    def zoom_to_start_of_current_tracklet(self, viewer=None):
+        t = self.dat.tracklet_annotator.start_time_of_current_tracklet()
+        if t is not None:
+            change_viewer_time_point(self.viewer, t_target=t)
+            zoom_using_viewer(self.viewer, **self.zoom_opt)
+        else:
+            print("No tracklet selected; not zooming")
+        pass
 
     def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
@@ -515,6 +527,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def clear_current_tracklet(self):
+        self.remove_layer_of_current_tracklet()
         self.dat.tracklet_annotator.clear_current_tracklet()
         self.tracklet_updated_psuedo_event()
 
