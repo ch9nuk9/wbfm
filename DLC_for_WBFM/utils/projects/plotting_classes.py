@@ -457,7 +457,7 @@ class TrackletAndSegmentationAnnotator:
             self.tracklet_split_times[left_name].append((i_split - 1, i_split))
 
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer: napari.Viewer, refresh_callbacks,
-                                           max_dist=10.0):
+                                           max_dist=1.0):
         self.refresh_callbacks = refresh_callbacks
 
         @layer_to_add_callback.mouse_drag_callbacks.append
