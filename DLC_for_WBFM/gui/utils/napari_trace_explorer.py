@@ -195,7 +195,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.removeTrackletButton2.pressed.connect(self.remove_tracklet_from_all_matches)
         self.vbox4.addWidget(self.removeTrackletButton2)
         self.appendTrackletButton = QtWidgets.QPushButton("Save current tracklet to neuron (IF conflict-free) (c)")
-        self.appendTrackletButton.pressed.connect(self.append_current_tracklet_to_dict)
+        self.appendTrackletButton.pressed.connect(self.save_current_tracklet_to_neuron)
         self.vbox4.addWidget(self.appendTrackletButton)
         self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
@@ -436,7 +436,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.bind_key('c', overwrite=True)
         def refresh_subplot(viewer):
-            self.append_current_tracklet_to_dict()
+            self.save_current_tracklet_to_neuron()
 
         @viewer.bind_key('v', overwrite=True)
         def print_tracklet_status(viewer):
@@ -499,6 +499,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
+            self.remove_layer_of_current_tracklet()
+            self.add_layer_of_current_tracklet()
             self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
@@ -506,6 +508,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def split_current_tracklet_keep_left(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.dat.tracklet_annotator.split_current_tracklet(self.t, False)
+            self.remove_layer_of_current_tracklet()
+            self.add_layer_of_current_tracklet()
             self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
@@ -529,12 +533,23 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.viewer.layers.selection.add(self.seg_layer)
             self.seg_layer.visible = 1
 
-    def append_current_tracklet_to_dict(self):
+    def save_current_tracklet_to_neuron(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
+            self.remove_layer_of_current_tracklet()
             self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
         self.tracklet_updated_psuedo_event()
+
+    def remove_layer_of_current_tracklet(self):
+        layer_name = self.dat.tracklet_annotator.current_tracklet_name
+        if layer_name is not None and layer_name in self.viewer.layers:
+            self.viewer.layers.remove(layer_name)
+
+    def add_layer_of_current_tracklet(self):
+        layer_name = self.dat.tracklet_annotator.current_tracklet_name
+        if layer_name is not None and layer_name not in self.viewer.layers:
+            self.dat.tracklet_annotator.add_current_tracklet_to_viewer()
 
     def print_tracklets(self):
         self.dat.tracklet_annotator.print_current_status()
