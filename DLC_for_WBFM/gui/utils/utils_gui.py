@@ -129,7 +129,10 @@ def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer=None):
         # logging.warning(f"Time {t} not found in layer: {layer.data[:, 0]}")
         return fake_dat
     else:
-        return layer.data[ind, :][ind_within_layer, :]
+        if ind_within_layer is not None:
+            return layer.data[ind, :][ind_within_layer, :]
+        else:
+            return layer.data[ind, :]
 
 
 def change_viewer_time_point(viewer: napari.Viewer,
