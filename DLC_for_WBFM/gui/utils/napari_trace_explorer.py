@@ -531,7 +531,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def append_current_tracklet_to_dict(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.dat.tracklet_annotator.save_current_tracklet_to_neuron()
+            self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
         self.tracklet_updated_psuedo_event()
