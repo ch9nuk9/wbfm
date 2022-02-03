@@ -148,10 +148,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.printTrackletsButton.pressed.connect(self.print_tracklets)
         self.vbox3b.addWidget(self.printTrackletsButton)
 
-        self.zoom1Button = QtWidgets.QPushButton("Zoom next (d)")
+        self.zoom1Button = QtWidgets.QPushButton("Next time point (d)")
         self.zoom1Button.pressed.connect(self.zoom_next)
         self.vbox3b.addWidget(self.zoom1Button)
-        self.zoom2Button = QtWidgets.QPushButton("Zoom previous (a)")
+        self.zoom2Button = QtWidgets.QPushButton("Previous time point (a)")
         self.zoom2Button.pressed.connect(self.zoom_previous)
         self.vbox3b.addWidget(self.zoom2Button)
         self.zoom3Button = QtWidgets.QPushButton("Zoom to next time with nan (f)")
@@ -293,6 +293,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
         if last_tracklet is None:
             return
+        current_items = [self.recentTrackletSelector.itemText(i) for i in range(self.recentTrackletSelector.count())]
+
+        if last_tracklet in current_items:
+            return
+
         self._disable_callbacks = True
         self.recentTrackletSelector.insertItem(0, last_tracklet)
 
