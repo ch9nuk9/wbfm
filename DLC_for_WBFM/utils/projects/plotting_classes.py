@@ -544,7 +544,8 @@ class TrackletAndSegmentationAnnotator:
             print(f"Adding tracklet of length {df_single_track['z'].count()}")
         if self.to_add_layer_to_viewer:
             all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
-            viewer.add_tracks(track_of_point, name=self.current_tracklet_name, tail_width=10, head_length=3)
+            viewer.add_tracks(track_of_point, name=self.current_tracklet_name,
+                              tail_width=10, head_length=1, tail_length=4)
         if self.verbose >= 2:
             print(df_single_track.dropna(inplace=False))
 
