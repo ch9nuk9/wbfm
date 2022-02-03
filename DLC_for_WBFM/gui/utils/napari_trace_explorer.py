@@ -130,10 +130,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
 
         # TODO: spin box must be integers
-        self.changeTrackingOutlierSpinBox = QtWidgets.QSpinBox()
-        self.changeTrackingOutlierSpinBox.setRange(0, 1)
-        self.changeTrackingOutlierSpinBox.setSingleStep(0.1)
-        self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
+        # self.changeTrackingOutlierSpinBox = QtWidgets.QSpinBox()
+        # self.changeTrackingOutlierSpinBox.setRange(0, 1)
+        # self.changeTrackingOutlierSpinBox.setSingleStep(0.1)
+        # self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Outlier threshold:", self.changeTrackingOutlierSpinBox)
 
     def _setup_zoom_shortcut_buttons(self):
@@ -153,7 +153,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.vbox3b.addWidget(self.zoom1Button)
         # self.zoom2Button = QtWidgets.QPushButton("Previous time point (a)")
         # self.zoom2Button.pressed.connect(self.zoom_previous)
-        self.vbox3b.addWidget(self.zoom2Button)
+        # self.vbox3b.addWidget(self.zoom2Button)
         self.zoom3Button = QtWidgets.QPushButton("Zoom to next time with nan (f)")
         self.zoom3Button.pressed.connect(self.zoom_to_next_nan)
         self.vbox3b.addWidget(self.zoom3Button)
@@ -521,12 +521,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def toggle_raw_segmentation_layer(self):
-        if self.viewer.selection.active == self.seg_layer:
-            self.viewer.selection.clear()
+        if self.viewer.layers.selection.active == self.seg_layer:
+            self.viewer.layers.selection.clear()
             self.seg_layer.visible = 0
         else:
-            self.viewer.selection.clear()
-            self.viewer.selection.add(self.seg_layer)
+            self.viewer.layers.selection.clear()
+            self.viewer.layers.selection.add(self.seg_layer)
             self.seg_layer.visible = 1
 
     def append_current_tracklet_to_dict(self):
@@ -751,12 +751,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         channel = self.changeChannelDropdown.currentText()
         if calc_mode is None:
             calc_mode = self.changeTraceCalculationDropdown.currentText()
-        remove_outliers_activity = self.changeTraceOutlierCheckBox.checkState()
-        remove_outliers_tracking = self.changeTrackingOutlierCheckBox.checkState()
-        if remove_outliers_tracking:
-            min_confidence = self.changeTrackingOutlierSpinBox.value()
-        else:
-            min_confidence = None
+        remove_outliers_activity = False
+        min_confidence = None
+        # remove_outliers_activity = self.changeTraceOutlierCheckBox.checkState()
+        # remove_outliers_tracking = self.changeTrackingOutlierCheckBox.checkState()
+        # if remove_outliers_tracking:
+        #     min_confidence = self.changeTrackingOutlierSpinBox.value()
+        # else:
+        #     min_confidence = None
         filter_mode = self.changeTraceFilteringDropdown.currentText()
 
         t, y = self.dat.calculate_traces(channel, calc_mode, name,
