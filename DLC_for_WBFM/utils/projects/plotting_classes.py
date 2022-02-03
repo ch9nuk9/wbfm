@@ -194,7 +194,7 @@ class TrackletAndSegmentationAnnotator:
         tmp = deepcopy(self.global2tracklet)
         for k in tmp.keys():
             tmp[k].extend(self.manual_global2tracklet_names[k].copy())
-            [tmp[k].remove(neuron) for neuron in self.manual_global2tracklet_removals[k]]
+            [tmp[k].remove(neuron) for neuron in self.manual_global2tracklet_removals[k] if neuron in tmp[k]]
         if self.current_tracklet_name is not None:
             logging.warning("Currently active tracklet not included in combined dict")
         return tmp
