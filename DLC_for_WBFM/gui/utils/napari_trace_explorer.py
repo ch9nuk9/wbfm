@@ -457,7 +457,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def zoom_to_next_nan(self, viewer=None):
         y_on_plot = self.y_on_plot
         t = self.t
-        for i in range(t, len(y_on_plot)):
+        if np.isnan(y_on_plot[t]):
+            print("Already on nan point; not moving")
+            return
+        for i in range(t+1, len(y_on_plot)):
             if np.isnan(y_on_plot[i]):
                 t_target = i
                 change_viewer_time_point(self.viewer, t_target=t_target - 1)
