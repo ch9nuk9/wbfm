@@ -21,7 +21,7 @@ pairwise_matching_params:
   fdnc_options:
     topn: 1
   min_confidence: 0.1
-  z_threshold: 3
+  z_threshold: 2.5
   matching_method: bipartite  # Or unanimous
   preprocess_using_global_rotation: False
 
@@ -36,5 +36,5 @@ reindexed_metadata: 2-tracklets/reindexed_metadata.pickle
 
 # Which frames have enough tracklets to be used for DLC later
 training_data_3d:
-  num_training_frames: 10 # CHANGE ME; trade-off between number of neurons and number of frames
+  num_training_frames: 5 # CHANGE ME; trade-off between number of neurons and number of frames
   which_frames: null # To be calculated

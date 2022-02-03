@@ -22,17 +22,17 @@ preprocessed_green: null
 dataset_params:
   # In time
   start_volume: 0 # CHANGE ME
-  num_frames: 1 # CHANGE ME
-  fps: 5.0
+  num_frames: 3300 # CHANGE ME
+  fps: 6.9
   # In z
-  num_slices: 33 # CHANGE ME; after removal of flyback (see preprocessing)
+  num_slices: 23 # CHANGE ME; after removal of flyback (see preprocessing)
   # As of January 2022
   red_and_green_mirrored: False
 
 physical_units:
   zimmer_fluroscence_um_per_pixel_xy: 0.325
   zimmer_behavior_um_per_pixel_xy: 2.4
-  zimmer_um_per_pixel_z: 1.0  # in um; CHANGE ME
+  zimmer_um_per_pixel_z: 1.5  # in um; CHANGE ME
 
 ###################
 # Project status and steps
