@@ -124,7 +124,6 @@ class NeuronComposedOfTracklets:
             x_augmented = x0 * (1 + augmentation_factor*np.random.randn(x0.shape[0], x0.shape[1]))
             x = np.vstack([x, x_augmented.copy()])
 
-        print(x.shape)
         self.scaler = StandardScaler()
         x = self.scaler.fit_transform(x)
         self.training_data = x
@@ -419,7 +418,7 @@ class TrackedWorm:
     def update_time_covering_ind_for_neuron(self, neuron_name):
         neuron = self.global_name_to_neuron[neuron_name]
         df = self.get_full_track_for_neuron(neuron_name)
-        if df:
+        if df is not None:
             neuron.tracklet_covering_ind = list(df.dropna().index)
         else:
             neuron.tracklet_covering_ind = [neuron.initialization_frame]

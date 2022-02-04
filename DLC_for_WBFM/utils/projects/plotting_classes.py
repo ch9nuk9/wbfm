@@ -108,10 +108,8 @@ class TracePlotter:
 @dataclass
 class TrackletAndSegmentationAnnotator:
 
-    # df_tracklets: pd.DataFrame
     df_tracklet_obj: DetectedTrackletsAndNeurons
     global2tracklet: Dict[str, List[str]]
-    # df_final_tracks: pd.DataFrame
     segmentation_metadata: DetectedNeurons
 
     # Annotation
