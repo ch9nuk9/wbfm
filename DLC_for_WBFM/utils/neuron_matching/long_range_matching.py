@@ -95,8 +95,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
                                     check_using_classifier=False, verbose=verbose - 2)
 
     worm_obj.initialize_all_neuron_tracklet_classifiers()
-    if verbose >= 1:
-        print(f"Initialized worm object: {worm_obj}")
+    logging.info(f"Initialized worm object: {worm_obj}")
 
     # TODO: properly import parameters
     logging.info("Adding all tracklet candidates to neurons")

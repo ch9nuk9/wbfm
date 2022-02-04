@@ -181,26 +181,6 @@ class DetectedTrackletsAndNeurons:
     df_tracklets_zxy: pd.DataFrame
     segmentation_metadata: DetectedNeurons
 
-    # local_neuron_to_tracklet: MatchesAsGraph = None
-    # df_tracklet_matches: pd.DataFrame = None  # Custom dataframe format containing raw neuron indices
-    #
-    # def __post_init__(self):
-    #     if self.df_tracklet_matches is not None:
-    #         local_neuron_to_tracklet = MatchesAsGraph(offset_convention=[True, False],
-    #                                                   naming_convention=['neuron', 'tracklet'],
-    #                                                   name_prefixes=['frame', 'trackletGroup'])
-    #
-    #         for i, row in tqdm(self.df_tracklet_matches.iterrows(), total=len(self.df_tracklet_matches)):
-    #             i_tracklet = int(row['clust_ind'])
-    #             for i_local_frame, (i_local_neuron, i_global_frame) in enumerate(
-    #                     zip(row['all_ind_local'], row['slice_ind'])):
-    #                 try:
-    #                     conf = row['all_prob'][i_local_frame]
-    #                 except IndexError:
-    #                     conf = np.nan
-    #                 local_neuron_to_tracklet.add_match_if_not_present([i_local_neuron, i_tracklet, conf],
-    #                                                                   group_ind0=i_global_frame)
-
     @property
     def all_tracklet_names(self):
         return self.df_tracklets_zxy.columns.get_level_values(0).drop_duplicates()
@@ -243,11 +223,6 @@ class DetectedTrackletsAndNeurons:
 
         return dist, ind_global_coords, tracklet_name
 
-    # def OLD_get_tracklet_from_segmentation_index(self, i_time, seg_ind):
-    #
-    #     target_pt = self.segmentation_metadata.mask_index_to_zxy(i_time, seg_ind)
-    #     return self.get_closest_tracklet_to_point(i_time, target_pt)
-
     def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
         # NOTE: just uses a different column from get_tracklet_from_neuron_and_time()
         names = find_top_level_name_by_single_column_entry(self.df_tracklets_zxy, i_time, seg_ind,
@@ -259,10 +234,6 @@ class DetectedTrackletsAndNeurons:
             return None
         else:
             return None
-
-    # def get_neuron_index_within_tracklet(self, i_tracklet, t_local):
-    #     this_tracklet = self.df_tracklet_matches.loc[i_tracklet]
-    #     return this_tracklet['all_ind_local'][t_local]
 
     def get_tracklet_from_neuron_and_time(self, i_local_neuron, i_time):
         # NOTE: just uses a different column from get_tracklet_from_segmentation_index()
@@ -380,8 +351,9 @@ class TrackedWorm:
             neuron.initialize_tracklet_classifier(list_of_tracklets)
 
     def reinitialize_all_neurons_from_final_matching(self, final_matching: MatchesWithConfidence):
+        """Note: if there are originally neurons with no tracklet matches, then they should remain as they are"""
         self.backup_global_name_to_neuron()
-        # TODO: don't just overwrite old neurons
+        logging.info(f"Before reinitialization: {self}")
         neuron2tracklet = final_matching.get_mapping_0_to_1()
         match2conf = final_matching.get_mapping_pair_to_conf()
         for neuron_name, tracklet_list in tqdm(neuron2tracklet.items()):
@@ -391,6 +363,7 @@ class TrackedWorm:
                 tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
                 new_neuron.add_tracklet(conf, tracklet, metadata=tracklet_name, check_using_classifier=False)
             self.global_name_to_neuron[neuron_name] = new_neuron
+        logging.info(f"After reinitialization: {self}")
 
     def backup_global_name_to_neuron(self):
         self.global_name_to_neuron_backup = copy.deepcopy(self.global_name_to_neuron)

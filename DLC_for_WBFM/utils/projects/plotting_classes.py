@@ -631,3 +631,13 @@ class TrackletAndSegmentationAnnotator:
 
         layer.show_selected_label = True
         layer.selected_label = ind[0]
+
+    def attach_current_segmentation_to_current_tracklet(self):
+        if len(self.indices_of_original_neurons) != 1:
+            logging.warning("Can't attch multiple segmentations at once")
+            return
+
+        with self.saving_lock:
+            name = self.current_tracklet_name
+            all_tracklets = self.df_tracklet_obj.df_tracklets_zxy
+
