@@ -131,14 +131,7 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
         # Combine all
         coords = np.hstack([zxy, confidence, this_local_ind, this_seg_id, this_brightness, this_volume])
 
-        column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
-                        'brightness_red', 'volume']
-        if scorer is not None:
-            index = pd.MultiIndex.from_product([[scorer], [bodypart], column_names],
-                                               names=['scorer', 'bodyparts', 'coords'])
-        else:
-            index = pd.MultiIndex.from_product([[bodypart], column_names],
-                                               names=['bodyparts', 'coords'])
+        index = get_tracklet_dataframe_multiindex(bodypart, scorer)
         frame = pd.DataFrame(coords, columns=index, index=which_frames)
         all_dfs.append(frame)
     if len(all_dfs) == 0:
@@ -149,6 +142,23 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
     new_df = add_empty_rows_to_correct_index(new_df, empty_ind)
 
     return new_df
+
+
+def get_tracklet_dataframe_multiindex(bodypart, scorer=None):
+    column_names = tracklet_dataframe_column_names()
+    if scorer is not None:
+        index = pd.MultiIndex.from_product([[scorer], [bodypart], column_names],
+                                           names=['scorer', 'bodyparts', 'coords'])
+    else:
+        index = pd.MultiIndex.from_product([[bodypart], column_names],
+                                           names=['bodyparts', 'coords'])
+    return index
+
+
+def tracklet_dataframe_column_names():
+    column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
+                    'brightness_red', 'volume']
+    return column_names
 
 
 def save_training_data_as_dlc_format(training_config: SubfolderConfigFile,
