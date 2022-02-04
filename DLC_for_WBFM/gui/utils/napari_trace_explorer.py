@@ -368,6 +368,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def clear_current_segmentations(self):
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
+        self.seg_layer.show_selected_label = False
         self.update_segmentation_status_label()
 
     def initialize_track_layers(self):
