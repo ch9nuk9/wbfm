@@ -140,10 +140,14 @@ class NeuronComposedOfTracklets:
             return True, fraction_outliers
 
     def get_raw_tracklet_names(self):
+        """Proper null value is []"""
         network_names = self.get_network_tracklet_names()
         nodes = self.neuron2tracklets.nodes()
-        tracklet_names = [nodes[n]['metadata'] for n in network_names]
-        return tracklet_names
+        try:
+            tracklet_names = [nodes[n]['metadata'] for n in network_names]
+            return tracklet_names
+        except TypeError:
+            return []
 
     def get_network_tracklet_names(self):
         network_names = self.neuron2tracklets.get_all_matches(name=self.name_in_graph)
@@ -384,6 +388,7 @@ class TrackedWorm:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
 
     def get_tracklets_for_neuron(self, neuron_name) -> List[pd.DataFrame]:
+        """Proper null value is []"""
         neuron = self.global_name_to_neuron[neuron_name]
         tracklet_names = neuron.get_raw_tracklet_names()
         list_of_tracklets = [self.detections.df_tracklets_zxy[n] for n in tracklet_names]
