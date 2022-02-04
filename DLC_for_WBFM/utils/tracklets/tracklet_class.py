@@ -342,7 +342,7 @@ class TrackedWorm:
             else:
                 # Ensure 2d and right shape
                 zxy = neuron_zxy[[i_neuron_ind]]
-                logging.debug(zxy)
+                print(zxy)
                 new_neuron.initialization_point = zxy
 
         # names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
