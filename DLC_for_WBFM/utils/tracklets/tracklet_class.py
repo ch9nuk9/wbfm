@@ -124,6 +124,7 @@ class NeuronComposedOfTracklets:
             x_augmented = x0 * (1 + augmentation_factor*np.random.randn(x0.shape[0], x0.shape[1]))
             x = np.vstack([x, x_augmented.copy()])
 
+        print(x.shape)
         self.scaler = StandardScaler()
         x = self.scaler.fit_transform(x)
         self.training_data = x
@@ -336,13 +337,16 @@ class TrackedWorm:
             # Add a tracklet, if any
             _, name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
             if name:
+                if self.verbose >= 1:
+                    print(f"Initializing neuron with tracklet {name}")
                 tracklet = self.detections.df_tracklets_zxy[[name]]
                 confidence = 1.0
                 new_neuron.add_tracklet(confidence, tracklet, metadata=name)
             else:
                 # Ensure 2d and right shape
                 zxy = neuron_zxy[[i_neuron_ind]]
-                print(zxy)
+                if self.verbose >= 1:
+                    print(f"Initializing neuron with single point {zxy}")
                 new_neuron.initialization_point = zxy
 
         # names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
