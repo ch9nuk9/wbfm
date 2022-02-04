@@ -239,8 +239,15 @@ class DetectedTrackletsAndNeurons:
         return self.get_closest_tracklet_to_point(i_time, target_pt)
 
     def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
-        return find_top_level_name_by_single_column_entry(self.df_tracklets_zxy, i_time, seg_ind,
+        names = find_top_level_name_by_single_column_entry(self.df_tracklets_zxy, i_time, seg_ind,
                                                           subcolumn_to_check='raw_neuron_id')
+        if len(names) == 1:
+            return names[0]
+        elif len(names) > 1:
+            logging.warning("Multiple matches found; taking none")
+            return None
+        else:
+            return None
 
     def get_neuron_index_within_tracklet(self, i_tracklet, t_local):
         this_tracklet = self.df_tracklet_matches.loc[i_tracklet]

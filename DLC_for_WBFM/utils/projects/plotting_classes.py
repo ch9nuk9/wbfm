@@ -524,23 +524,29 @@ class TrackletAndSegmentationAnnotator:
                 return
 
             # Split tracklet, not segmentation
-            dist, ind, tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
+            tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
                 i_time=time_index,
                 seg_ind=seg_index
             )
+            # dist, ind, tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
+            #     i_time=time_index,
+            #     seg_ind=seg_index
+            # )
 
-            dist = dist[0][0]
+            # dist = dist[0][0]
             if self.verbose >= 1:
-                print(f"Neuron is part of tracklet {tracklet_name} with distance {dist}")
+                print(f"Neuron is part of tracklet {tracklet_name}")
 
-            if dist < max_dist:
+            # if dist < max_dist:
+            if tracklet_name:
                 self.set_current_tracklet(tracklet_name)
                 self.add_current_tracklet_to_viewer(viewer)
                 if self.current_neuron is not None:
                     [callback() for callback in self.refresh_callbacks]
             else:
+                # TODO: select the segmentation and prompt for adding to a tracklet
                 if self.verbose >= 1:
-                    print(f"WARNING: Tracklet too far away; not adding anything")
+                    print(f"WARNING: Tracklet not found; not adding anything")
 
     def add_current_tracklet_to_viewer(self, viewer):
         df_single_track = self.current_tracklet
