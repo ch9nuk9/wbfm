@@ -15,6 +15,7 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
     get_names_of_conflicting_dataframes, get_names_of_columns_that_exist_at_t, \
     find_top_level_name_by_single_column_entry
+from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
@@ -29,6 +30,7 @@ class NeuronComposedOfTracklets:
 
     name: str = None
     initialization_frame: int = None
+    initialization_point: np.ndarray = None  # Only needed if initialized without a tracklet
     # initialization_neuron_name: str
 
     neuron2tracklets: MatchesAsGraph = None
@@ -97,7 +99,7 @@ class NeuronComposedOfTracklets:
 
         return is_match_added
 
-    def initialize_tracklet_classifier(self, list_of_tracklets,
+    def initialize_tracklet_classifier(self, list_of_tracklets: list,
                                        augment_to_minimum_points=200, augmentation_factor=0.2):
         """
         This object doesn't see the raw tracklet data, so it must be sent in the call
@@ -105,17 +107,22 @@ class NeuronComposedOfTracklets:
         Note that I don't want this classifier to be too harsh, especially if there is only a small amount of initial
         training data (i.e. a short tracklet)
         """
-
-        x = [tracklet[self.fields_to_classify].dropna().to_numpy() for tracklet in list_of_tracklets]
-        if len(x) > 1:
-            x = np.vstack(x)
+        if len(list_of_tracklets) > 0:
+            x = [tracklet[self.fields_to_classify].dropna().to_numpy() for tracklet in list_of_tracklets]
+            if len(x) > 1:
+                x = np.vstack(x)
+            else:
+                x = x[0]
         else:
-            x = x[0]
+            x = self.initialization_point
+
+        if x is None:
+            raise AnalysisOutOfOrderError("self.add_tracklet")
+
         x0 = x.copy()
         while x.shape[0] < augment_to_minimum_points:
             x_augmented = x0 * (1 + augmentation_factor*np.random.randn(x0.shape[0], x0.shape[1]))
             x = np.vstack([x, x_augmented.copy()])
-        # assert x.shape[0] >= augment_to_minimum_points, "Neuron needs more points to build a classifier"
 
         self.scaler = StandardScaler()
         x = self.scaler.fit_transform(x)
@@ -263,6 +270,12 @@ class DetectedTrackletsAndNeurons:
         except IndexError:
             return None, None
 
+    def get_number_of_neurons_at_time(self, t: int):
+        return len(self.get_neurons_at_time(t))
+
+    def get_neurons_at_time(self, t: int):
+        return self.segmentation_metadata.detect_neurons_from_file(t)
+
     def __repr__(self):
         return f"DetectedTrackletsAndNeurons object with {len(self.all_tracklet_names)} tracklets"
 
@@ -307,13 +320,32 @@ class TrackedWorm:
         return new_neuron
 
     def initialize_neurons_at_time(self, t=0):
-        names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
-        for i, name in enumerate(names):
-            # this tracklet should still have a multi-level index
-            tracklet = self.detections.df_tracklets_zxy[[name]]
-            confidence = 1.0
+        """
+        Each segmented neuron is initialized, even if there is not a tracklet at that particular volume
+
+        Name corresponds to the list index of the raw neuron (at that time point),
+        Note: this is offset by at least one from the segmentation ID label
+        """
+        neuron_zxy = self.detections.get_neurons_at_time(t)
+        for i_neuron_ind, zxy in enumerate(neuron_zxy):
             new_neuron = self.initialize_new_neuron(initialization_frame=t)
-            new_neuron.add_tracklet(confidence, tracklet, metadata=name)
+            # Add a tracklet, if any
+            _, name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
+            if name:
+                tracklet = self.detections.df_tracklets_zxy[[name]]
+                confidence = 1.0
+                new_neuron.add_tracklet(confidence, tracklet, metadata=name)
+            else:
+                new_neuron.initialization_point = zxy
+
+        # names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
+        # for i, name in enumerate(names):
+        #     # this tracklet should still have a multi-level index
+        #     new_neuron = self.initialize_new_neuron(initialization_frame=t)
+        #
+        #     tracklet = self.detections.df_tracklets_zxy[[name]]
+        #     confidence = 1.0
+        #     new_neuron.add_tracklet(confidence, tracklet, metadata=name)
 
     def initialize_neurons_from_training_data(self, df_training_data):
         training_tracklet_names = translate_training_names_to_raw_names(df_training_data)
