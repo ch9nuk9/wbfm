@@ -31,6 +31,15 @@ def get_names_of_columns_that_exist_at_t(df, t):
     return get_names_from_df(out)
 
 
+def find_top_level_name_by_single_column_entry(df, t, value, subcolumn_to_check='raw_neuron_id'):
+    """Assumes a multi-index format, with subcolumn_to_check existing at level 1"""
+    df_at_time = df.iloc[[t]].dropna(axis=1)
+    df_mask = df_at_time.loc(axis=1)[:, subcolumn_to_check] == value
+    df_match = df_mask[df_mask].dropna(axis=1)
+    name = get_names_from_df(df_match)
+
+    return name
+
 def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
     all_indices = [t.dropna().index for t in tracklet_list]
     overlapping_tracklet_ind = []

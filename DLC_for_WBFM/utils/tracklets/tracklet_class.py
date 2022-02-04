@@ -13,7 +13,8 @@ from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
-    get_names_of_conflicting_dataframes, get_names_of_columns_that_exist_at_t
+    get_names_of_conflicting_dataframes, get_names_of_columns_that_exist_at_t, \
+    find_top_level_name_by_single_column_entry
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
@@ -231,11 +232,15 @@ class DetectedTrackletsAndNeurons:
 
         return dist, ind_global_coords, tracklet_name
 
-    def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
+    def OLD_get_tracklet_from_segmentation_index(self, i_time, seg_ind):
 
         # TODO: Directly use the neuron id - tracklet id matching dataframe
         target_pt = self.segmentation_metadata.mask_index_to_zxy(i_time, seg_ind)
         return self.get_closest_tracklet_to_point(i_time, target_pt)
+
+    def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
+        return find_top_level_name_by_single_column_entry(self.df_tracklets_zxy, i_time, seg_ind,
+                                                          subcolumn_to_check='raw_neuron_id')
 
     def get_neuron_index_within_tracklet(self, i_tracklet, t_local):
         this_tracklet = self.df_tracklet_matches.loc[i_tracklet]
