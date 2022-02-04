@@ -770,7 +770,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         y = self.y_on_plot
         print(f"Updating time line for t={t}")
         ymin, ymax = np.min(y), np.max(y)
-        self.tracking_is_nan = np.isnan(y[t])
+        if t <= len(y):
+            self.tracking_is_nan = np.isnan(y[t])
+        else:
+            self.tracking_is_nan = True
         # print(f"Current point: {y[t]}")
         if self.tracking_is_nan:
             line_color = 'r'
