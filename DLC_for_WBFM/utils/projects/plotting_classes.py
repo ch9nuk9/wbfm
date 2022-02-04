@@ -558,7 +558,6 @@ class TrackletAndSegmentationAnnotator:
                 # TODO: select the segmentation and prompt for adding to a tracklet
                 self.clear_currently_selected_segmentations()
                 self.append_segmentation_to_list(time_index, seg_index)
-                self.highlight_selected_neuron(viewer)
                 if self.verbose >= 1:
                     print(f"Tracklet not found; adding segmentation only")
                 self.segmentation_updated_callbacks()
@@ -623,6 +622,7 @@ class TrackletAndSegmentationAnnotator:
     def clear_currently_selected_segmentations(self):
         self.time_of_candidate = None
         self.indices_of_original_neurons = []
+        self.segmentation_updated_callbacks()
 
     def append_segmentation_to_list(self, time_index, seg_index):
         if self.time_of_candidate is None:
@@ -635,15 +635,18 @@ class TrackletAndSegmentationAnnotator:
             else:
                 logging.warning("Attempt to add segmentations of different time points; not supported")
 
-    def highlight_selected_neuron(self, viewer):
+    def toggle_highlight_selected_neuron(self, viewer):
         layer = viewer.layers['Raw segmentation']
         ind = self.indices_of_original_neurons
         if len(ind) > 1:
             logging.warning("Selection not implemented if more than one neuron is selected")
             return
+        elif len(ind) == 1:
+            layer.show_selected_label = True
+            layer.selected_label = ind[0]
+        else:
+            layer.show_selected_label = False
 
-        layer.show_selected_label = True
-        layer.selected_label = ind[0]
 
     def attach_current_segmentation_to_current_tracklet(self):
         if len(self.indices_of_original_neurons) != 1:
