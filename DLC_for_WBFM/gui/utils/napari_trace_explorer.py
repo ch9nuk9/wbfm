@@ -380,14 +380,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         zoom_using_viewer(self.viewer,  **self.zoom_opt)
 
         layer_to_add_callback = self.viewer.layers['Raw segmentation']
-        callbacks = [self.update_trace_or_tracklet_subplot,
-                     self.update_segmentation_status_label,
-                     self.tracklet_updated_psuedo_event,
-                     self.set_segmentation_layer_invisible]
+        added_segmentation_callbacks = [
+            self.update_segmentation_status_label,
+        ]
+        added_tracklet_callbacks = [
+            self.update_trace_or_tracklet_subplot,
+            self.tracklet_updated_psuedo_event,
+            self.set_segmentation_layer_invisible
+        ]
         self.dat.tracklet_annotator.connect_tracklet_clicking_callback(
             layer_to_add_callback,
             self.viewer,
-            refresh_callbacks=callbacks
+            added_segmentation_callbacks=added_segmentation_callbacks,
+            added_tracklet_callbacks=added_tracklet_callbacks
         )
         self.update_neuron_in_tracklet_annotator()
 

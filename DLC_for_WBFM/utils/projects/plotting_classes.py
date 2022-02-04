@@ -142,7 +142,8 @@ class TrackletAndSegmentationAnnotator:
     segmentation_options: dict = None
 
     # Visualization options
-    refresh_callbacks: List[callable] = None
+    added_segmentation_callbacks: List[callable] = None
+    added_tracklet_callbacks: List[callable] = None
     to_add_layer_to_viewer: bool = True
     verbose: int = 1
 
@@ -473,9 +474,12 @@ class TrackletAndSegmentationAnnotator:
             self.tracklet_split_names[left_name].append(right_name)
             self.tracklet_split_times[left_name].append((i_split - 1, i_split))
 
-    def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer: napari.Viewer, refresh_callbacks,
+    def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer: napari.Viewer,
+                                           added_segmentation_callbacks,
+                                           added_tracklet_callbacks,
                                            max_dist=1.0):
-        self.refresh_callbacks = refresh_callbacks
+        self.added_segmentation_callbacks = added_segmentation_callbacks
+        self.added_tracklet_callbacks = added_tracklet_callbacks
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
@@ -521,7 +525,7 @@ class TrackletAndSegmentationAnnotator:
 
             if segment_mode_not_tracklet_mode:
                 # Calls these later in the other mode
-                [callback() for callback in self.refresh_callbacks]
+                [callback() for callback in self.added_segmentation_callbacks]
                 return
 
             # Split tracklet, not segmentation
@@ -543,7 +547,7 @@ class TrackletAndSegmentationAnnotator:
                 self.set_current_tracklet(tracklet_name)
                 self.add_current_tracklet_to_viewer(viewer)
                 if self.current_neuron is not None:
-                    [callback() for callback in self.refresh_callbacks]
+                    [callback() for callback in self.added_tracklet_callbacks]
             else:
                 # TODO: select the segmentation and prompt for adding to a tracklet
                 self.clear_currently_selected_segmentations()
@@ -551,6 +555,8 @@ class TrackletAndSegmentationAnnotator:
                 self.highlight_selected_neuron(viewer)
                 if self.verbose >= 1:
                     print(f"Tracklet not found; adding segmentation only")
+                if self.current_neuron is not None:
+                    [callback() for callback in self.added_segmentation_callbacks]
 
     def add_current_tracklet_to_viewer(self, viewer):
         df_single_track = self.current_tracklet
