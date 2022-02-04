@@ -23,7 +23,7 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
     segmentation_metadata = project_data.segmentation_metadata
     all_frames = project_data.raw_frames
     all_matches = project_data.raw_matches
-    raw_clust = project_data.raw_clust
+    # raw_clust = project_data.raw_clust
 
     frame_pair_options = all_matches[(0, 1)].options
 
@@ -39,7 +39,7 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
     # Get all tracklets that start at t=0
     all_tracklet_names = df_tracklets.columns.get_level_values(0).drop_duplicates()
 
-    worm_obj = initialize_worm_object(df_tracklets, raw_clust, segmentation_metadata)
+    worm_obj = initialize_worm_object(df_tracklets, segmentation_metadata)
 
     all_long_range_matches = extend_tracks_using_similar_postures(all_frames, frame_pair_options,
                                                                   reference_posture, verbose, worm_obj)
@@ -301,7 +301,7 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
     return all_long_range_matches
 
 
-def initialize_worm_object(df_tracklets, raw_clust, segmentation_metadata):
+def initialize_worm_object(df_tracklets, segmentation_metadata):
     detections = DetectedTrackletsAndNeurons(df_tracklets,
                                              segmentation_metadata)
     worm_obj = TrackedWorm(detections=detections, verbose=1)
