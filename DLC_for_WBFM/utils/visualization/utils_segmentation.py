@@ -284,7 +284,7 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
         matches = []
         for i, name in enumerate(tracklet_names):
             neuron_df = subset_df[name]
-            raw_neuron_id = neuron_df['raw_neuron_id'].at[t]
+            raw_neuron_id = neuron_df['raw_neuron_ind_in_list'].at[t]
             if keep_raw_segmentation_index:
                 # Do keep the (very large) index from the tracklet df
                 # BUT, this can't be 0 because it is the same as the segmentation index (background is 0)

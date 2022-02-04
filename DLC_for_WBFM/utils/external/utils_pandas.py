@@ -31,7 +31,7 @@ def get_names_of_columns_that_exist_at_t(df, t):
     return get_names_from_df(out)
 
 
-def find_top_level_name_by_single_column_entry(df, t, value, subcolumn_to_check='raw_neuron_id'):
+def find_top_level_name_by_single_column_entry(df, t, value, subcolumn_to_check='raw_neuron_ind_in_list'):
     """Assumes a multi-index format, with subcolumn_to_check existing at level 1"""
     df_at_time = df.iloc[[t]].dropna(axis=1)
     df_mask = df_at_time.loc(axis=1)[:, subcolumn_to_check] == value
