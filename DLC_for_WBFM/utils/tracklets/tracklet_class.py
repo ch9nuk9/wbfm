@@ -332,22 +332,27 @@ class TrackedWorm:
         Note: this is offset by at least one from the segmentation ID label
         """
         neuron_zxy = self.detections.get_neurons_at_time(t)
+        neuron_volumes = self.detections.segmentation_metadata.get_all_volumes(t)
         for i_neuron_ind in range(len(neuron_zxy)):
             new_neuron = self.initialize_new_neuron(initialization_frame=t)
             # Add a tracklet, if any
             _, name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
             if name:
-                if self.verbose >= 1:
-                    print(f"Initializing neuron with tracklet {name}")
+                # if self.verbose >= 1:
+                #     print(f"Initializing neuron with tracklet {name}")
                 tracklet = self.detections.df_tracklets_zxy[[name]]
                 confidence = 1.0
                 new_neuron.add_tracklet(confidence, tracklet, metadata=name)
             else:
                 # Ensure 2d and right shape
-                zxy = neuron_zxy[[i_neuron_ind]]
-                if self.verbose >= 1:
-                    print(f"Initializing neuron with single point {zxy}")
-                new_neuron.initialization_point = zxy
+                # Assume fields are z and volume
+                assert new_neuron.fields_to_classify == ['z', 'volume'], "Update fields!"
+                zxy = neuron_zxy[i_neuron_ind]
+                v = int(neuron_volumes.iat[i_neuron_ind])
+                z_vol = np.array([[zxy[0], v]])
+                # if self.verbose >= 1:
+                #     print(f"Initializing neuron with z and volume: {z_vol}")
+                new_neuron.initialization_point = z_vol
 
         # names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
         # for i, name in enumerate(names):
