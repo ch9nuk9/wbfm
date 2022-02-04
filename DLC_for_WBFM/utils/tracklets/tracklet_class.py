@@ -170,25 +170,25 @@ class DetectedTrackletsAndNeurons:
     df_tracklets_zxy: pd.DataFrame
     segmentation_metadata: DetectedNeurons
 
-    local_neuron_to_tracklet: MatchesAsGraph = None
-    df_tracklet_matches: pd.DataFrame = None  # Custom dataframe format containing raw neuron indices
-
-    def __post_init__(self):
-        if self.df_tracklet_matches is not None:
-            local_neuron_to_tracklet = MatchesAsGraph(offset_convention=[True, False],
-                                                      naming_convention=['neuron', 'tracklet'],
-                                                      name_prefixes=['frame', 'trackletGroup'])
-
-            for i, row in tqdm(self.df_tracklet_matches.iterrows(), total=len(self.df_tracklet_matches)):
-                i_tracklet = int(row['clust_ind'])
-                for i_local_frame, (i_local_neuron, i_global_frame) in enumerate(
-                        zip(row['all_ind_local'], row['slice_ind'])):
-                    try:
-                        conf = row['all_prob'][i_local_frame]
-                    except IndexError:
-                        conf = np.nan
-                    local_neuron_to_tracklet.add_match_if_not_present([i_local_neuron, i_tracklet, conf],
-                                                                      group_ind0=i_global_frame)
+    # local_neuron_to_tracklet: MatchesAsGraph = None
+    # df_tracklet_matches: pd.DataFrame = None  # Custom dataframe format containing raw neuron indices
+    #
+    # def __post_init__(self):
+    #     if self.df_tracklet_matches is not None:
+    #         local_neuron_to_tracklet = MatchesAsGraph(offset_convention=[True, False],
+    #                                                   naming_convention=['neuron', 'tracklet'],
+    #                                                   name_prefixes=['frame', 'trackletGroup'])
+    #
+    #         for i, row in tqdm(self.df_tracklet_matches.iterrows(), total=len(self.df_tracklet_matches)):
+    #             i_tracklet = int(row['clust_ind'])
+    #             for i_local_frame, (i_local_neuron, i_global_frame) in enumerate(
+    #                     zip(row['all_ind_local'], row['slice_ind'])):
+    #                 try:
+    #                     conf = row['all_prob'][i_local_frame]
+    #                 except IndexError:
+    #                     conf = np.nan
+    #                 local_neuron_to_tracklet.add_match_if_not_present([i_local_neuron, i_tracklet, conf],
+    #                                                                   group_ind0=i_global_frame)
 
     @property
     def all_tracklet_names(self):
@@ -249,9 +249,9 @@ class DetectedTrackletsAndNeurons:
         else:
             return None
 
-    def get_neuron_index_within_tracklet(self, i_tracklet, t_local):
-        this_tracklet = self.df_tracklet_matches.loc[i_tracklet]
-        return this_tracklet['all_ind_local'][t_local]
+    # def get_neuron_index_within_tracklet(self, i_tracklet, t_local):
+    #     this_tracklet = self.df_tracklet_matches.loc[i_tracklet]
+    #     return this_tracklet['all_ind_local'][t_local]
 
     def get_tracklet_from_neuron_and_time(self, i_local_neuron, i_time):
         df = self.df_tracklets_zxy

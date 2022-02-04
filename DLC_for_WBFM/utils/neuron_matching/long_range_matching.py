@@ -303,8 +303,7 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
 
 def initialize_worm_object(df_tracklets, raw_clust, segmentation_metadata):
     detections = DetectedTrackletsAndNeurons(df_tracklets,
-                                             segmentation_metadata,
-                                             df_tracklet_matches=raw_clust)
+                                             segmentation_metadata)
     worm_obj = TrackedWorm(detections=detections, verbose=1)
     worm_obj.initialize_neurons_at_time(t=0)
     return worm_obj
