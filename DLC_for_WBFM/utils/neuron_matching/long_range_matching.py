@@ -81,7 +81,8 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     if use_multiple_templates:
         worm_obj.initialize_neurons_from_training_data(df_training_data)
     else:
-        worm_obj.initialize_neurons_at_time(t=0)
+        # TODO: properly import parameters
+        worm_obj.initialize_neurons_at_time(t=10)
 
     if previous_matches is not None:
         logging.info(f"Found {len(previous_matches)} previously matched neurons")
