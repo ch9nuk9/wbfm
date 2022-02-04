@@ -232,17 +232,15 @@ class DetectedTrackletsAndNeurons:
 
         return dist, ind_global_coords, tracklet_name
 
-    def OLD_get_tracklet_from_segmentation_index(self, i_time, seg_ind):
-
-        # TODO: Directly use the neuron id - tracklet id matching dataframe
-        target_pt = self.segmentation_metadata.mask_index_to_zxy(i_time, seg_ind)
-        return self.get_closest_tracklet_to_point(i_time, target_pt)
+    # def OLD_get_tracklet_from_segmentation_index(self, i_time, seg_ind):
+    #
+    #     target_pt = self.segmentation_metadata.mask_index_to_zxy(i_time, seg_ind)
+    #     return self.get_closest_tracklet_to_point(i_time, target_pt)
 
     def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
-        # NOTE: off by one
-        raw_neuron_id = seg_ind - 1
-        names = find_top_level_name_by_single_column_entry(self.df_tracklets_zxy, i_time, raw_neuron_id,
-                                                          subcolumn_to_check='raw_neuron_id')
+        # NOTE: just uses a different column from get_tracklet_from_neuron_and_time()
+        names = find_top_level_name_by_single_column_entry(self.df_tracklets_zxy, i_time, seg_ind,
+                                                           subcolumn_to_check='raw_segmentation_id')
         if len(names) == 1:
             return names[0]
         elif len(names) > 1:
@@ -256,8 +254,9 @@ class DetectedTrackletsAndNeurons:
     #     return this_tracklet['all_ind_local'][t_local]
 
     def get_tracklet_from_neuron_and_time(self, i_local_neuron, i_time):
+        # NOTE: just uses a different column from get_tracklet_from_segmentation_index()
         df = self.df_tracklets_zxy
-        mask = df.loc[i_time, (slice(None), 'raw_neuron_id')] == i_local_neuron
+        mask = df.loc[i_time, (slice(None), 'raw_neuron_ind_in_list')] == i_local_neuron
         try:
             ind = np.where(mask)[0][0]
             return ind, self.all_tracklet_names[ind]
