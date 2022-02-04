@@ -10,36 +10,36 @@ from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches
 ##
 
 # Getting keypoints
-def separate_keypoints_and_tracklets(clust_df, start_ind, window_length,
-                                     min_tracklet_overlap=3,
-                                     min_required_keypoints=10):
-    """
-    For a given window, separates tracklets into two categories:
-        Keypoints, which are tracked in the entire window
-        Tracklets, which have at least 'min_tracklet_overlap' frames in the window
-    """
-
-    is_keypoint = []
-    is_tracklet = []
-    this_window = set(range(start_ind, start_ind + window_length))
-    for i, row in enumerate(clust_df['slice_ind']):
-        overlap_ind = np.array([i in this_window for i in row])
-        num_overlap = np.count_nonzero(overlap_ind)
-        if num_overlap < min_tracklet_overlap:
-            continue
-        elif num_overlap == window_length:
-            is_keypoint.append(i)
-        elif num_overlap <= (window_length - min_tracklet_overlap):
-            # If it is nearly the entire window, then it can't match with anything
-            is_tracklet.append(i)
-
-    kp_df = clust_df.iloc[is_keypoint]
-    tracklet_df = clust_df.iloc[is_tracklet]
-
-    if len(kp_df) < min_required_keypoints:
-        print(f"Warning, few keypoints ({len(kp_df)}) detected")
-
-    return kp_df, tracklet_df
+# def separate_keypoints_and_tracklets(clust_df, start_ind, window_length,
+#                                      min_tracklet_overlap=3,
+#                                      min_required_keypoints=10):
+#     """
+#     For a given window, separates tracklets into two categories:
+#         Keypoints, which are tracked in the entire window
+#         Tracklets, which have at least 'min_tracklet_overlap' frames in the window
+#     """
+#
+#     is_keypoint = []
+#     is_tracklet = []
+#     this_window = set(range(start_ind, start_ind + window_length))
+#     for i, row in enumerate(clust_df['slice_ind']):
+#         overlap_ind = np.array([i in this_window for i in row])
+#         num_overlap = np.count_nonzero(overlap_ind)
+#         if num_overlap < min_tracklet_overlap:
+#             continue
+#         elif num_overlap == window_length:
+#             is_keypoint.append(i)
+#         elif num_overlap <= (window_length - min_tracklet_overlap):
+#             # If it is nearly the entire window, then it can't match with anything
+#             is_tracklet.append(i)
+#
+#     kp_df = clust_df.iloc[is_keypoint]
+#     tracklet_df = clust_df.iloc[is_tracklet]
+#
+#     if len(kp_df) < min_required_keypoints:
+#         print(f"Warning, few keypoints ({len(kp_df)}) detected")
+#
+#     return kp_df, tracklet_df
 
 
 ##
