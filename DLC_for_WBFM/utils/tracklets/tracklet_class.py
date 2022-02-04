@@ -340,7 +340,7 @@ class TrackedWorm:
                 confidence = 1.0
                 new_neuron.add_tracklet(confidence, tracklet, metadata=name)
             else:
-                new_neuron.initialization_point = zxy
+                new_neuron.initialization_point = np.atleast_2d(zxy)
 
         # names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
         # for i, name in enumerate(names):
