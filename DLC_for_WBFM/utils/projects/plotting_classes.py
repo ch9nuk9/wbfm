@@ -9,6 +9,8 @@ from copy import deepcopy
 import napari
 import numpy as np
 import pandas as pd
+
+from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import tracklet_dataframe_column_names
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_dataframe
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
@@ -634,10 +636,17 @@ class TrackletAndSegmentationAnnotator:
 
     def attach_current_segmentation_to_current_tracklet(self):
         if len(self.indices_of_original_neurons) != 1:
-            logging.warning("Can't attch multiple segmentations at once")
+            logging.warning("Can't attach multiple segmentations at once")
             return
 
+        name = self.current_tracklet_name
+        # Get known data, then rebuild the other metadata from this
+        t = self.time_of_candidate
+        mask_ind = self.indices_of_original_neurons[0]
+        row_data = self.segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=1.0)
+
+        # TODO: check that this doesn't produce a gap in the tracklet
         with self.saving_lock:
-            name = self.current_tracklet_name
-            all_tracklets = self.df_tracklet_obj.df_tracklets_zxy
+            self.df_tracklet_obj.df_tracklets_zxy.loc[t, name] = row_data
+
 
