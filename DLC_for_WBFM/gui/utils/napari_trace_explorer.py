@@ -175,6 +175,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
         self.vbox4.addWidget(self.zoom4Button)
         self.zoom5Button = QtWidgets.QPushButton("Zoom to end of current tracklet (j)")
+        self.zoom5Button.setToolTip("Alternative: zoom to beginning (h)")
         self.zoom5Button.pressed.connect(self.zoom_to_end_of_current_tracklet)
         self.vbox4.addWidget(self.zoom5Button)
 
@@ -201,6 +202,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
         self.vbox4.addWidget(self.saveTrackletsButton)
+
+        self.saveSegmentationToTrackletButton = QtWidgets.QPushButton("Append current segmentation to current tracklet")
+        self.saveSegmentationToTrackletButton.pressed.connect(self.save_segmentation_to_tracklet)
+        self.vbox4.addWidget(self.saveSegmentationToTrackletButton)
 
         self.saveTrackletsStatusLabel = QtWidgets.QLabel("STATUS: No tracklet loaded")
         self.vbox4.addWidget(self.saveTrackletsStatusLabel)
@@ -247,11 +252,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationManualButton = QtWidgets.QPushButton("Manually split")
         self.splitSegmentationManualButton.pressed.connect(self.split_segmentation_manual)
         self.formlayout5.addRow("Produce candidate mask: ", self.splitSegmentationManualButton)
-
         self.splitSegmentationAutomaticButton = QtWidgets.QPushButton("Automatically split")
         self.splitSegmentationAutomaticButton.pressed.connect(self.split_segmentation_automatic)
         self.formlayout5.addRow("Produce candidate mask: ", self.splitSegmentationAutomaticButton)
-
         self.mergeSegmentationButton = QtWidgets.QPushButton("Merge selected")
         self.mergeSegmentationButton.pressed.connect(self.merge_segmentation)
         self.formlayout5.addRow("Produce candidate mask: ", self.mergeSegmentationButton)
@@ -259,7 +262,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationSaveButton1 = QtWidgets.QPushButton("Save to RAM")
         self.splitSegmentationSaveButton1.pressed.connect(self.modify_segmentation_using_manual_correction)
         self.formlayout5.addRow("Save candidate mask: ", self.splitSegmentationSaveButton1)
-
         self.splitSegmentationSaveButton2 = QtWidgets.QPushButton("Save to disk")
         self.splitSegmentationSaveButton2.pressed.connect(self.modify_segmentation_on_disk)
         self.formlayout5.addRow("Finalize all masks:", self.splitSegmentationSaveButton2)
@@ -561,6 +563,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
         self.tracklet_updated_psuedo_event()
+
+    def save_segmentation_to_tracklet(self):
+        flag = self.dat.tracklet_annotator.attach_current_segmentation_to_current_tracklet()
 
     def remove_layer_of_current_tracklet(self, layer_name=None):
         if layer_name is None:
