@@ -118,18 +118,21 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
         # Use original segmentation object to get data about the raw mask and brightness
         this_local_ind = row['all_ind_local']
         # NOTE: these local indices start at 0, which are direct list indices, not the dataframe indices
-        this_brightness, this_volume = [], []
+        this_brightness, this_volume, this_seg_id = [], [], []
         for i_local, i_frame in zip(this_local_ind, which_frames):
             this_brightness.append(segmentation_metadata.get_all_brightnesses(i_frame).iloc[i_local])
             this_volume.append(segmentation_metadata.get_all_volumes(i_frame).iloc[i_local])
+            this_seg_id.append(segmentation_metadata.seg_array_to_mask_index(i_frame, i_local))
         this_brightness = np.expand_dims(np.array(this_brightness), -1)
         this_volume = np.expand_dims(np.array(this_volume, dtype=int), -1)
         this_local_ind = np.expand_dims(np.array(this_local_ind, dtype=int), -1)
+        this_seg_id = np.expand_dims(np.array(this_seg_id, dtype=int), -1)
 
         # Combine all
-        coords = np.hstack([zxy, confidence, this_local_ind, this_brightness, this_volume])
+        coords = np.hstack([zxy, confidence, this_local_ind, this_seg_id, this_brightness, this_volume])
 
-        column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_id', 'brightness_red', 'volume']
+        column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
+                        'brightness_red', 'volume']
         if scorer is not None:
             index = pd.MultiIndex.from_product([[scorer], [bodypart], column_names],
                                                names=['scorer', 'bodyparts', 'coords'])
