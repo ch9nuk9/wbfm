@@ -210,7 +210,7 @@ def alt_save_all_tracklets_as_dlc_format(train_cfg: SubfolderConfigFile,
     """
     Takes my tracklet format and saves ALL as DLC format (i.e. many short tracklets)
 
-    Note: uses hardcoded relative path, so it only needs to be executed in the right folder
+    Note: uses hardcoded relative path for raw data, so it only needs to be executed in the right folder
 
     Parameters
     ----------
@@ -235,10 +235,6 @@ def alt_save_all_tracklets_as_dlc_format(train_cfg: SubfolderConfigFile,
     out_fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
     # out_fname = train_cfg.resolve_relative_path("all_tracklets.h5", prepend_subfolder=True)
     df.to_hdf(out_fname, 'df_with_missing')
-
-    # Can easily be an absurd number of columns
-    # out_fname = Path(out_fname).with_suffix(".csv")
-    # training_df.to_csv(out_fname)
 
 
 def fill_missing_indices_with_nan(df):

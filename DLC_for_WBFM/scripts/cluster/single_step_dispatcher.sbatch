@@ -51,4 +51,4 @@ else
 fi
 
 date
-echo "Finished successfully!"
+echo "Finished; check logs to determine success"
