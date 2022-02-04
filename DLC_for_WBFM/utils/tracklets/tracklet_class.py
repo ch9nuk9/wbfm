@@ -331,7 +331,7 @@ class TrackedWorm:
         Note: this is offset by at least one from the segmentation ID label
         """
         neuron_zxy = self.detections.get_neurons_at_time(t)
-        for i_neuron_ind, zxy in enumerate(neuron_zxy):
+        for i_neuron_ind in range(len(neuron_zxy)):
             new_neuron = self.initialize_new_neuron(initialization_frame=t)
             # Add a tracklet, if any
             _, name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
@@ -340,7 +340,10 @@ class TrackedWorm:
                 confidence = 1.0
                 new_neuron.add_tracklet(confidence, tracklet, metadata=name)
             else:
-                new_neuron.initialization_point = np.atleast_2d(zxy)
+                # Ensure 2d and right shape
+                zxy = neuron_zxy[[i_neuron_ind]]
+                logging.debug(zxy)
+                new_neuron.initialization_point = zxy
 
         # names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
         # for i, name in enumerate(names):
