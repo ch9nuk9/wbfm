@@ -19,6 +19,7 @@ def _check_and_print(all_to_check, description, verbose):
 
 def check_all_needed_data_for_step(project_path, step_index: int,
                                    raise_error=True,
+                                   training_data_required=True,
                                    verbose=0):
     if step_index > 0:
         flag = check_preprocessed_data(project_path, verbose)
@@ -29,7 +30,10 @@ def check_all_needed_data_for_step(project_path, step_index: int,
         if not flag and raise_error:
             raise AnalysisOutOfOrderError('Segmentation')
     if step_index > 2:
-        flag = check_training_final(project_path, verbose)
+        if training_data_required:
+            flag = check_training_final(project_path, verbose)
+        else:
+            flag = check_training_only_tracklets(project_path, verbose)
         if not flag and raise_error:
             raise AnalysisOutOfOrderError('Training data')
     if step_index > 3:
@@ -84,6 +88,20 @@ def check_training_raw(project_path, verbose=0):
             all_to_check = map(lambda file: osp.join(training_folder, 'raw', file), file_names)
             all_exist = _check_and_print(all_to_check, 'raw training data', verbose)
             return all_exist
+    except (AssertionError, TypeError):
+        return False
+
+
+def check_training_only_tracklets(project_path, verbose=0):
+    cfg = ModularProjectConfig(project_path)
+    cfg_training = cfg.get_training_config()
+
+    try:
+        all_to_check = [
+            cfg_training.resolve_relative_path_from_config('df_3d_tracklets'),
+        ]
+        all_exist = _check_and_print(all_to_check, 'final training data', verbose)
+        return all_exist
     except (AssertionError, TypeError):
         return False
 
