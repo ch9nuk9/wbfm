@@ -5,8 +5,8 @@
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=make_traces.out    # Standard output and error log
-#SBATCH --time=4:00:00
-#SBATCH --mem=16G
+#SBATCH --time=1:00:00
+#SBATCH --mem=8G
 
 pwd; hostname; date
 
