@@ -23,6 +23,7 @@ from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import translate_training_names_to_raw_names
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_next_name_tracklet_or_neuron
 
 
 @dataclass
@@ -251,6 +252,38 @@ class DetectedTrackletsAndNeurons:
     def get_neurons_at_time(self, t: int):
         return self.segmentation_metadata.detect_neurons_from_file(t)
 
+    def update_tracklet_metadata_using_segmentation_metadata(self, t: int,
+                                                             tracklet_name: str = None,
+                                                             mask_ind: int = None,
+                                                             likelihood: float = 1.0):
+        """
+        Allows generation of metadata for a single tracklet
+
+        Either the tracklet name or the mask index must be specified
+        """
+        segmentation_metadata = self.segmentation_metadata
+        if mask_ind is None and tracklet_name is not None:
+            mask_ind = int(self.df_tracklets_zxy.loc[t, (tracklet_name, 'raw_segmentation_id')])
+        if tracklet_name is None and mask_ind is not None:
+            tracklet_name = self.get_tracklet_from_segmentation_index(t, mask_ind)
+        # TODO: check that this doesn't produce a gap in the tracklet
+        row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
+        self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
+
+    def generate_empty_tracklet_with_correct_format(self):
+        new_name = get_next_name_tracklet_or_neuron(self.df_tracklets_zxy)
+        current_names = get_names_from_df(self.df_tracklets_zxy)
+        name_tmp = current_names[0]
+        new_tracklet = self.df_tracklets_zxy[[name_tmp]].copy().rename({name_tmp: new_name}, axis=1)
+        new_tracklet[:] = np.nan
+
+        return new_tracklet, new_name
+
+    def initialize_new_empty_tracklet(self):
+        new_tracklet, new_name = self.generate_empty_tracklet_with_correct_format()
+        self.df_tracklets_zxy = pd.concat([self.df_tracklets_zxy, new_tracklet], axis=1)
+        return new_name
+
     def __repr__(self):
         return f"DetectedTrackletsAndNeurons object with {len(self.all_tracklet_names)} tracklets"
 
@@ -305,24 +338,37 @@ class TrackedWorm:
         neuron_volumes = self.detections.segmentation_metadata.get_all_volumes(t)
         for i_neuron_ind in range(len(neuron_zxy)):
             new_neuron = self.initialize_new_neuron(initialization_frame=t)
-            # Add a tracklet, if any
+            # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
             _, name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
-            if name:
-                # if self.verbose >= 1:
-                #     print(f"Initializing neuron with tracklet {name}")
-                tracklet = self.detections.df_tracklets_zxy[[name]]
-                confidence = 1.0
-                new_neuron.add_tracklet(confidence, tracklet, metadata=name)
-            else:
+
+            if not name:
+                # Make a new tracklet, and give it data
+                name = self.detections.initialize_new_empty_tracklet()
+                mask_ind = self.detections.segmentation_metadata.seg_array_to_mask_index(t, i_neuron_ind)
+                self.detections.update_tracklet_metadata_using_segmentation_metadata(
+                    t=t, tracklet_name=name, mask_ind=mask_ind, likelihood=1.0)
+
+            tracklet = self.detections.df_tracklets_zxy[[name]]
+            confidence = 1.0
+            new_neuron.add_tracklet(confidence, tracklet, metadata=name)
+
+            # if name:
+            #     tracklet = self.detections.df_tracklets_zxy[[name]]
+            #     confidence = 1.0
+            #     new_neuron.add_tracklet(confidence, tracklet, metadata=name)
+            # else:
+
+                # self.detections.df_tracklets_zxy
+
                 # Ensure 2d and right shape
                 # Assume fields are z and volume
-                assert new_neuron.fields_to_classify == ['z', 'volume'], "Update fields!"
-                zxy = neuron_zxy[i_neuron_ind]
-                v = int(neuron_volumes.iat[i_neuron_ind])
-                z_vol = np.array([[zxy[0], v]])
-                # if self.verbose >= 1:
-                #     print(f"Initializing neuron with z and volume: {z_vol}")
-                new_neuron.initialization_point = z_vol
+                # assert new_neuron.fields_to_classify == ['z', 'volume'], "Update fields!"
+                # zxy = neuron_zxy[i_neuron_ind]
+                # v = int(neuron_volumes.iat[i_neuron_ind])
+                # z_vol = np.array([[zxy[0], v]])
+                # # if self.verbose >= 1:
+                # #     print(f"Initializing neuron with z and volume: {z_vol}")
+                # new_neuron.initialization_point = z_vol
 
         # names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
         # for i, name in enumerate(names):
@@ -487,23 +533,3 @@ class TrackedWorm:
             return short_message
         else:
             return f"{short_message}"
-
-
-def generate_tracklet_metadata_using_segmentation_metadata(segmentation_metadata: DetectedNeurons,
-                                                           df_tracklet_obj: DetectedTrackletsAndNeurons,
-                                                           t: int,
-                                                           tracklet_name: str = None,
-                                                           mask_ind: int = None,
-                                                           likelihood: float = 1.0):
-    """
-    Allows generation of metadata for a single tracklet
-
-    Either the tracklet name or the mask index must be specified
-    """
-    if mask_ind is None and tracklet_name is not None:
-        mask_ind = int(df_tracklet_obj.df_tracklets_zxy.loc[t, (tracklet_name, 'raw_segmentation_id')])
-    if tracklet_name is None and mask_ind is not None:
-        tracklet_name = df_tracklet_obj.get_tracklet_from_segmentation_index(t, mask_ind)
-    # TODO: check that this doesn't produce a gap in the tracklet
-    row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
-    df_tracklet_obj.df_tracklets_zxy.loc[t, tracklet_name] = row_data

@@ -40,6 +40,7 @@ def find_top_level_name_by_single_column_entry(df, t, value, subcolumn_to_check=
 
     return name
 
+
 def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
     all_indices = [t.dropna().index for t in tracklet_list]
     overlapping_tracklet_ind = []

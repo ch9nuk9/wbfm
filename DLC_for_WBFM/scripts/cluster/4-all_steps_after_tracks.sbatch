@@ -32,3 +32,5 @@ else
   CMD="${CODE_PATH}/4c-extract_full_traces.py"
   python $CMD $SUFFIX
 fi
+
+echo "Finished!"

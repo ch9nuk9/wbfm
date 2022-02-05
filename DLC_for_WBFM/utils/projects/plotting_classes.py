@@ -671,8 +671,9 @@ class TrackletAndSegmentationAnnotator:
         df_tracklet_obj = self.df_tracklet_obj
 
         with self.saving_lock:
-            generate_tracklet_metadata_using_segmentation_metadata(segmentation_metadata, df_tracklet_obj, t, name,
-                                                                   mask_ind, likelihood=1.0)
+            self.df_tracklet_obj.update_tracklet_metadata_using_segmentation_metadata(
+                t, name, mask_ind=mask_ind, likelihood=1.0
+            )
 
         self.clear_currently_selected_segmentations(do_callbacks=False)
         self.segmentation_updated_callbacks()

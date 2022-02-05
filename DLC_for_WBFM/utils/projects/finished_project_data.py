@@ -384,10 +384,9 @@ class ProjectData:
 
         print("Updating affected tracklets, but NOT writing to disk")
         for m in affected_masks:
-            generate_tracklet_metadata_using_segmentation_metadata(self.segmentation_metadata,
-                                                                   self.tracklets_and_neurons_class,
-                                                                   t, tracklet_name=None, mask_ind=m, likelihood=1.0)
-
+            self.tracklets_and_neurons_class.update_tracklet_metadata_using_segmentation_metadata(
+                t, tracklet_name=None, mask_ind=m, likelihood=1.0
+            )
         logging.debug("Segmentation and tracklet metadata modified successfully")
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):

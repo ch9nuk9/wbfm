@@ -14,7 +14,8 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet, name2int_neuron_and_tracklet
+from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet, name2int_neuron_and_tracklet, \
+    int2name_using_mode
 
 
 def create_new_track(i0, i1,
@@ -618,13 +619,13 @@ def get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_trac
         return overlap_dict
 
 
-def get_next_tracklet_name(df_tracklets):
-    all_names = get_names_from_df(df_tracklets)
+def get_next_name_tracklet_or_neuron(df, name_mode='tracklet'):
+    all_names = get_names_from_df(df)
     all_names.sort()
     max_int = name2int_neuron_and_tracklet(all_names[-1])
     # Really want to make sure we are after all other names
     i_tracklet = max_int + 1
-    new_name = int2name_tracklet(i_tracklet)
+    new_name = int2name_using_mode(i_tracklet, name_mode)
     assert new_name not in all_names, "Failed to generate new tracklet name"
     return new_name
 
@@ -634,7 +635,7 @@ def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1)
     this_tracklet = all_tracklets[[left_name]]
     # Split
     left_half, right_half = split_single_tracklet(i_split, this_tracklet)
-    right_name = get_next_tracklet_name(all_tracklets)
+    right_name = get_next_name_tracklet_or_neuron(all_tracklets)
     right_half.rename(columns={left_name: right_name}, level=0, inplace=True)
     if verbose >= 1:
         print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")

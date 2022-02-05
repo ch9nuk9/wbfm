@@ -25,6 +25,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     """
     Connect the 3d traces to previously segmented masks
 
+    NOTE: This assumes that the global tracks may be non-trivially different
+
     Get both red and green traces for each neuron
     """
     final_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume = _unpack_configs_for_traces(
@@ -34,6 +36,8 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
 
     # Match -> Reindex raw segmentation -> Get traces
     final_neuron_names = get_names_from_df(final_tracks)
+    for name in final_neuron_names:
+        assert 'tracklet' not in name, f"Improper name found: {name}"
     assert 'neuron0' not in final_neuron_names, "Neuron0 found; 0 is reserved for background... check original " \
                                                 "dataframe generation and indexing"
     coords = ['z', 'x', 'y']
