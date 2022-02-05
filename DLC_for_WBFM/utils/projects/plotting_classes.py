@@ -522,16 +522,13 @@ class TrackletAndSegmentationAnnotator:
                 segment_mode_not_tracklet_mode = True
             elif 'alt' in click_modifiers:
                 # Shortcut for clearing all neurons, adding this one, and attempting to split
-                self.clear_currently_selected_segmentations()
-                self.append_segmentation_to_list(time_index, seg_index)
-                self.split_current_neuron_and_add_napari_layer(viewer, split_method = "Gaussian")
+                self.set_selected_segmentation(time_index, seg_index)
+                self.split_current_neuron_and_add_napari_layer(viewer, split_method="Gaussian")
                 segment_mode_not_tracklet_mode = True
             else:
                 segment_mode_not_tracklet_mode = False
 
             if segment_mode_not_tracklet_mode:
-                # Calls these later in the other mode
-                self.segmentation_updated_callbacks()
                 return
 
             # Split tracklet, not segmentation
@@ -555,12 +552,9 @@ class TrackletAndSegmentationAnnotator:
                 if self.current_neuron is not None:
                     self.tracklet_updated_callbacks()
             else:
-                # TODO: select the segmentation and prompt for adding to a tracklet
-                self.clear_currently_selected_segmentations()
-                self.append_segmentation_to_list(time_index, seg_index)
+                self.set_selected_segmentation(time_index, seg_index)
                 if self.verbose >= 1:
                     print(f"Tracklet not found; adding segmentation only")
-                self.segmentation_updated_callbacks()
 
     def add_current_tracklet_to_viewer(self, viewer):
         df_single_track = self.current_tracklet
@@ -603,6 +597,9 @@ class TrackletAndSegmentationAnnotator:
         if len(self.indices_of_original_neurons) <= 1:
             print(f"Too few neurons selected ({len(self.indices_of_original_neurons)}), aborting")
             return
+        elif len(self.indices_of_original_neurons) > 2:
+            print(f"Merging than 2 neurons not supported, aborting")
+            return
 
         time_index = self.time_of_candidate
         new_full_mask = viewer.layers['Raw segmentation'].data[time_index].copy()
@@ -619,21 +616,32 @@ class TrackletAndSegmentationAnnotator:
         # Save for later combining with original mask
         self.candidate_mask = new_full_mask
 
-    def clear_currently_selected_segmentations(self):
+        # Update the saved indices to just be the new one
+        self.set_selected_segmentation(self.time_of_candidate, target_index)
+
+    def clear_currently_selected_segmentations(self, do_callbacks=True):
         self.time_of_candidate = None
         self.indices_of_original_neurons = []
-        self.segmentation_updated_callbacks()
+        if do_callbacks:
+            self.segmentation_updated_callbacks()
 
     def append_segmentation_to_list(self, time_index, seg_index):
         if self.time_of_candidate is None:
             self.time_of_candidate = time_index
             self.indices_of_original_neurons = [seg_index]
+            self.segmentation_updated_callbacks()
         else:
             if self.time_of_candidate == time_index:
                 self.indices_of_original_neurons.append(seg_index)
+                self.segmentation_updated_callbacks()
                 print(f"Added neuron to list; current neurons: {self.indices_of_original_neurons}")
             else:
                 logging.warning("Attempt to add segmentations of different time points; not supported")
+
+    def set_selected_segmentation(self, time_index, seg_index):
+        """Like append_segmentation_to_list, but forces a single neuron. Also properly accounts for callbacks"""
+        self.clear_currently_selected_segmentations(do_callbacks=False)
+        self.append_segmentation_to_list(time_index, seg_index)
 
     def toggle_highlight_selected_neuron(self, viewer):
         layer = viewer.layers['Raw segmentation']
@@ -646,7 +654,6 @@ class TrackletAndSegmentationAnnotator:
             layer.selected_label = ind[0]
         else:
             layer.show_selected_label = False
-
 
     def attach_current_segmentation_to_current_tracklet(self):
         if len(self.indices_of_original_neurons) != 1:
@@ -666,7 +673,7 @@ class TrackletAndSegmentationAnnotator:
         with self.saving_lock:
             self.df_tracklet_obj.df_tracklets_zxy.loc[t, name] = row_data
 
-        self.clear_currently_selected_segmentations()
+        self.clear_currently_selected_segmentations(do_callbacks=False)
         self.segmentation_updated_callbacks()
         self.tracklet_updated_callbacks()
 
