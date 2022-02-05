@@ -9,7 +9,7 @@ from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_da
 
 cgitb.enable(format='text')
 import logging
-from PyQt5.QtWidgets import QApplication, QScrollArea
+from PyQt5.QtWidgets import QApplication
 logger = logging.getLogger('traceExplorerLogger')
 logger.setLevel(logging.INFO)
 import sys
@@ -17,8 +17,6 @@ import napari
 import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets
-from matplotlib.backends.backend_qt5agg import FigureCanvas
-from matplotlib.figure import Figure
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point, build_tracks_from_dataframe
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -29,6 +27,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     subplot_is_initialized = False
     tracklet_lines = None
     zoom_opt = None
+    subplot_xlim = None
 
     _disable_callbacks = False
 
@@ -43,6 +42,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.main_window = app
 
         self.tracklet_lines = []
+        self.subplot_xlim = []
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
                          'layer_name': 'final_track'}
         logger.info("Finished initializing Trace Explorer object")
@@ -605,8 +605,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return y_on_plot
 
     def init_universal_subplot(self):
+        # Note: this causes a hang when the main window is closed, even though I'm trying to set the parent
+        # ... workaround: ctrl-c necessary after closing
         self.mpl_widget = PlotQWidget(self.viewer.window._qt_window.centralWidget())
         self.static_ax = self.mpl_widget.canvas.fig.subplots()
+        self.subplot_xlim = [0, self.dat.num_frames]
         # self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         # self.static_ax = self.mpl_widget.figure.subplots()
         # Connect clicking to a time change
@@ -623,6 +626,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             self.static_ax.set_ylabel("z")
         self.color_using_behavior()
+        self.ax.set_xlim(self.subplot_xlim)
         self.subplot_is_initialized = True
 
     def initialize_trace_subplot(self):
