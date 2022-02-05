@@ -5,7 +5,6 @@
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=log_single_step-%j.out    # Standard output and error log
-#SBATCH --error=log_single_step-%j.err
 #SBATCH --time=6:00:00
 #SBATCH --mem=8G
 # #SBATCH --partition=gpu
