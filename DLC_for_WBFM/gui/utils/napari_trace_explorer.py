@@ -221,7 +221,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.removeTrackletButton1,
             self.removeTrackletButton2,
             self.appendTrackletButton,
-            self.saveTrackletsButton
+            self.saveTrackletsButton,
+            self.saveSegmentationToTrackletButton
         ]
 
     def _setup_segmentation_correction_buttons(self):
