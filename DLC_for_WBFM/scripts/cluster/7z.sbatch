@@ -21,7 +21,7 @@ do
     esac
 done
 
-7z a -t7z $output path_to_zip
+7z a -t7z $output $path_to_zip
 
 date
 echo "Finished; check logs to determine success"
