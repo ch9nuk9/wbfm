@@ -935,6 +935,7 @@ def napari_trace_explorer(project_data: ProjectData,
     ui.setupUi(viewer)
     viewer.window.add_dock_widget(ui)
     ui.show()
+    change_viewer_time_point(viewer, t_target=0)
 
     print("Finished GUI setup. If nothing is showing, trying quitting and running again")
     if to_print_fps:
