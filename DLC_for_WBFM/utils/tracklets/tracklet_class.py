@@ -487,3 +487,13 @@ class TrackedWorm:
             return short_message
         else:
             return f"{short_message}"
+
+
+def generate_tracklet_metadata_using_segmentation_metadata(segmentation_metadata: DetectedNeurons,
+                                                           df_tracklet_obj: DetectedTrackletsAndNeurons,
+                                                           tracklet_name, t, mask_ind=None, likelihood=1.0):
+    # TODO: check that this doesn't produce a gap in the tracklet
+    if mask_ind is None:
+        mask_ind = int(df_tracklet_obj.df_tracklets_zxy.loc[t, (tracklet_name, 'raw_segmentation_id')])
+    row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
+    df_tracklet_obj.df_tracklets_zxy.loc[t, tracklet_name] = row_data

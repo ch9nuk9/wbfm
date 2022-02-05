@@ -10,10 +10,10 @@ import napari
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import tracklet_dataframe_column_names
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_dataframe
-from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
+from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons, \
+    generate_tracklet_metadata_using_segmentation_metadata
 from segmentation.util.utils_metadata import DetectedNeurons
 from segmentation.util.utils_postprocessing import split_neuron_interactive
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
@@ -667,11 +667,12 @@ class TrackletAndSegmentationAnnotator:
         # Get known data, then rebuild the other metadata from this
         t = self.time_of_candidate
         mask_ind = self.indices_of_original_neurons[0]
-        row_data = self.segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=1.0)
+        segmentation_metadata = self.segmentation_metadata
+        df_tracklet_obj = self.df_tracklet_obj
 
-        # TODO: check that this doesn't produce a gap in the tracklet
         with self.saving_lock:
-            self.df_tracklet_obj.df_tracklets_zxy.loc[t, name] = row_data
+            generate_tracklet_metadata_using_segmentation_metadata(segmentation_metadata, df_tracklet_obj,
+                                                                   name, t, mask_ind, likelihood=1.0)
 
         self.clear_currently_selected_segmentations(do_callbacks=False)
         self.segmentation_updated_callbacks()
