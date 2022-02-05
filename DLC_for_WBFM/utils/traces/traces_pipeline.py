@@ -27,13 +27,13 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
 
     Get both red and green traces for each neuron
     """
-    dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume = _unpack_configs_for_traces(
+    final_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume = _unpack_configs_for_traces(
         project_cfg, segment_cfg, track_cfg)
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
     # Match -> Reindex raw segmentation -> Get traces
-    final_neuron_names = get_names_from_df(dlc_tracks)
+    final_neuron_names = get_names_from_df(final_tracks)
     assert 'neuron0' not in final_neuron_names, "Neuron0 found; 0 is reserved for background... check original " \
                                                 "dataframe generation and indexing"
     coords = ['z', 'x', 'y']
@@ -41,7 +41,7 @@ def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
     def _get_zxy_from_pandas(t):
         all_zxy = np.zeros((len(final_neuron_names), 3))
         for i, name in enumerate(final_neuron_names):
-            all_zxy[i, :] = np.asarray(dlc_tracks[name][coords].loc[t])
+            all_zxy[i, :] = np.asarray(final_tracks[name][coords].loc[t])
         return all_zxy
 
     # Main loop: Match segmentations to tracks
@@ -253,7 +253,7 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
     None
     """
     for i_volume in tqdm(frame_list):
-        # Get DLC point cloud
+        # Get tracking point cloud
         # NOTE: This dataframe starts at 0, not start_volume
         zxy0 = _get_zxy_from_pandas(i_volume)
         # TODO: use physical units and align between z and xy
@@ -283,13 +283,13 @@ def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
     max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
     params_start_volume = project_cfg.config['dataset_params']['start_volume']
     num_frames = project_cfg.config['dataset_params']['num_frames']
-    dlc_fname = track_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
+    final_tracks_fname = track_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
     green_fname = project_cfg.config['preprocessed_green']
     red_fname = project_cfg.config['preprocessed_red']
 
-    dlc_tracks: pd.DataFrame = pd.read_hdf(dlc_fname)
+    final_tracks: pd.DataFrame = pd.read_hdf(final_tracks_fname)
 
-    return dlc_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume
+    return final_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume
 
 
 def _unpack_configs_for_extraction(project_cfg, traces_cfg):
