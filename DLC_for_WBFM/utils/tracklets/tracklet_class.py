@@ -182,6 +182,10 @@ class DetectedTrackletsAndNeurons:
     df_tracklets_zxy: pd.DataFrame
     segmentation_metadata: DetectedNeurons
 
+    # If things are modified, this flag should be set
+    dataframe_is_synced_to_disk: bool = True
+    dataframe_output_filename: str = None
+
     @property
     def all_tracklet_names(self):
         return self.df_tracklets_zxy.columns.get_level_values(0).drop_duplicates()
@@ -269,6 +273,7 @@ class DetectedTrackletsAndNeurons:
         # TODO: check that this doesn't produce a gap in the tracklet
         row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
         self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
+        self.dataframe_is_synced_to_disk = False
 
     def generate_empty_tracklet_with_correct_format(self):
         new_name = get_next_name_tracklet_or_neuron(self.df_tracklets_zxy)
@@ -282,7 +287,14 @@ class DetectedTrackletsAndNeurons:
     def initialize_new_empty_tracklet(self):
         new_tracklet, new_name = self.generate_empty_tracklet_with_correct_format()
         self.df_tracklets_zxy = pd.concat([self.df_tracklets_zxy, new_tracklet], axis=1)
+        self.dataframe_is_synced_to_disk = False
         return new_name
+
+    def synchronize_dataframe_to_disk(self):
+        if self.dataframe_output_filename is not None:
+            self.dataframe_is_synced_to_disk = True
+        else:
+            logging.warning("Dataframe syncing attempted, but no filename saved")
 
     def __repr__(self):
         return f"DetectedTrackletsAndNeurons object with {len(self.all_tracklet_names)} tracklets"

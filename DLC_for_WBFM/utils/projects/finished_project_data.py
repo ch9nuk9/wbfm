@@ -13,8 +13,7 @@ from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_sing
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
-from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons, \
-    generate_tracklet_metadata_using_segmentation_metadata
+from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
@@ -58,6 +57,11 @@ class ProjectData:
     precedence_df_tracklets: list = None
     precedence_tracks: list = None
 
+    # Will be set as loaded
+    final_tracks_fname: str = None
+    global2tracklet_fname: str = None
+    df_all_tracklets_fname: str = None
+
     # Classes for more functionality
     trace_plotter: TracePlotter = None
 
@@ -92,8 +96,9 @@ class ProjectData:
                                fdnc=tracking_cfg.resolve_relative_path(fname, prepend_subfolder=False))
 
         fname_precedence = self.precedence_tracks
-        final_tracks = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                         this_reader=read_if_exists)
+        final_tracks, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                                this_reader=read_if_exists)
+        self.final_tracks_fname = fname
         return final_tracks
 
     @cached_property
@@ -106,8 +111,9 @@ class ProjectData:
             automatic=tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname'))
 
         fname_precedence = self.precedence_global2tracklet
-        global2tracklet = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                            this_reader=pickle_load_binary)
+        global2tracklet, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                                   this_reader=pickle_load_binary)
+        self.global2tracklet_fname = fname
         if global2tracklet is not None:
             global2tracklet = fix_global2tracklet_full_dict(self.df_all_tracklets, global2tracklet)
         return global2tracklet
@@ -151,8 +157,9 @@ class ProjectData:
             wiggle=track_cfg.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname'),
             automatic=train_cfg.resolve_relative_path_from_config('df_3d_tracklets'))
         fname_precedence = self.precedence_df_tracklets
-        df_all_tracklets = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                             this_reader=read_if_exists)
+        df_all_tracklets, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                                    this_reader=read_if_exists)
+        self.df_all_tracklets_fname = fname
 
         return df_all_tracklets
 
@@ -173,7 +180,9 @@ class ProjectData:
 
     @cached_property
     def tracklets_and_neurons_class(self):
-        return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata)
+        _ = self.df_all_tracklets  # Make sure it is loaded
+        return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata,
+                                           dataframe_output_filename=self.df_all_tracklets_fname)
 
     @cached_property
     def df_fdnc_tracks(self):

@@ -111,7 +111,8 @@ def load_file_according_to_precedence(fname_precedence: list,
     else:
         logging.info(f"Found no files of possibilities: {possible_fnames}")
         data = None
-    return data
+        fname = None
+    return data, fname
 
 
 def get_most_recently_modified(possible_fnames: Dict[str, str]) -> str:
