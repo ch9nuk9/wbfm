@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+import pandas as pd
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import calc_FramePair_from_Frames
@@ -46,7 +47,7 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
 
     global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
     final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
-    df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching)
+    df_new = combine_tracklets_using_matching(df_tracklets, final_matching)
 
     # SAVE
     if to_save:
@@ -108,7 +109,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     if DEBUG:
         t_step = 10
     else:
-        t_step = 2
+        t_step = 1
     final_matching_with_conflict = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step)
     # Final step to remove time conflicts
     worm_obj.reinitialize_all_neurons_from_final_matching(final_matching_with_conflict)
@@ -118,8 +119,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     # Final bipartite matching to prevent multiple tracklets assigned to the same neuron
     final_matching_no_confict = b_matching_via_node_copying(no_conflict_neuron_graph)
 
-    df_new = combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching_no_confict,
-                                              num_neurons=worm_obj.num_neurons)
+    df_new = combine_tracklets_using_matching(df_tracklets, final_matching_no_confict)
 
     # SAVE
     if to_save:
@@ -309,16 +309,9 @@ def initialize_worm_object(df_tracklets, segmentation_metadata):
     return worm_obj
 
 
-def combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_matching, num_neurons):
+def combine_tracklets_using_matching(df_tracklets, final_matching):
     # Finally, make the full dataframe
-    # Initialize using the index and column structure of the tracklets
-    tmp_names = all_tracklet_names[:num_neurons]
-    df_new = df_tracklets.loc[:, tmp_names].copy()
-    neuron_names = list(set(final_matching.indices0))
-    neuron_names.sort()
-    name_mapper = {t: n for t, n in zip(tmp_names, neuron_names)}
-    df_new.rename(columns=name_mapper, inplace=True)
-    df_new[:] = np.nan
+    df_new = empty_dataframe_like(df_tracklets, final_matching)
 
     max_t = len(df_tracklets)
     id_vector = np.zeros(max_t)
@@ -343,7 +336,21 @@ def combine_tracklets_using_matching(all_tracklet_names, df_tracklets, final_mat
     return df_new
 
 
-def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step=1):
+def empty_dataframe_like(df_tracklets, final_matching) -> pd.DataFrame:
+    # Initialize using the index and column structure of the tracklets
+    all_tracklet_names = get_names_from_df(df_tracklets)
+    num_neurons = len(final_matching.names0)
+    tmp_names = all_tracklet_names[:num_neurons]
+    df_new = df_tracklets.loc[:, tmp_names].copy()
+    neuron_names = list(set(final_matching.indices0))
+    neuron_names.sort()
+    name_mapper = {t: n for t, n in zip(tmp_names, neuron_names)}
+    df_new.rename(columns=name_mapper, inplace=True)
+    df_new[:] = np.nan
+    return df_new
+
+
+def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step=1) -> MatchesWithConfidence:
     """
     As an alternative to b_matching_via_node_copying, do a separate bipartite matching problem on the small subgraphs of
     tracklets defined for each time point
