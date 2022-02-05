@@ -12,8 +12,7 @@ import pandas as pd
 
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_dataframe
-from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons, \
-    generate_tracklet_metadata_using_segmentation_metadata
+from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
 from segmentation.util.utils_postprocessing import split_neuron_interactive
 from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
