@@ -1,7 +1,7 @@
 import copy
 import logging
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import networkx as nx
 import numpy as np
@@ -491,9 +491,19 @@ class TrackedWorm:
 
 def generate_tracklet_metadata_using_segmentation_metadata(segmentation_metadata: DetectedNeurons,
                                                            df_tracklet_obj: DetectedTrackletsAndNeurons,
-                                                           tracklet_name, t, mask_ind=None, likelihood=1.0):
-    # TODO: check that this doesn't produce a gap in the tracklet
-    if mask_ind is None:
+                                                           t: int,
+                                                           tracklet_name: str = None,
+                                                           mask_ind: int = None,
+                                                           likelihood: float = 1.0):
+    """
+    Allows generation of metadata for a single tracklet
+
+    Either the tracklet name or the mask index must be specified
+    """
+    if mask_ind is None and tracklet_name is not None:
         mask_ind = int(df_tracklet_obj.df_tracklets_zxy.loc[t, (tracklet_name, 'raw_segmentation_id')])
+    if tracklet_name is None and mask_ind is not None:
+        tracklet_name = df_tracklet_obj.get_tracklet_from_segmentation_index(t, mask_ind)
+    # TODO: check that this doesn't produce a gap in the tracklet
     row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
     df_tracklet_obj.df_tracklets_zxy.loc[t, tracklet_name] = row_data

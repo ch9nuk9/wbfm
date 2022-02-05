@@ -13,7 +13,8 @@ from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_sing
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
-from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
+from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons, \
+    generate_tracklet_metadata_using_segmentation_metadata
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
@@ -367,19 +368,27 @@ class ProjectData:
             matches = obj.modify_confidences_using_image_features(**opt)
             obj.final_matches = matches
 
-    def modify_segmentation_using_manual_correction(self):
+    def modify_segmentation_using_manual_correction(self, t=None, new_mask=None):
         # TODO: save the list of split neurons in separate pickle
-        new_mask = self.tracklet_annotator.candidate_mask
-        t = self.tracklet_annotator.time_of_candidate
+        if new_mask is None or t is None:
+            new_mask = self.tracklet_annotator.candidate_mask
+            t = self.tracklet_annotator.time_of_candidate
+        affected_masks = np.unique(np.extract(self.raw_segmentation[t, ...] - new_mask))
 
-        print(f"Updating raw segmentation at t = {t}...")
+        print(f"Updating raw segmentation at t = {t}; affected masks={affected_masks}")
         self.raw_segmentation[t, ...] = new_mask
 
         print("Updating metadata, but NOT writing to disk...")
         red_volume = self.red_data[t, ...]
         self.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
 
-        logging.debug("Metadata modified successfully")
+        print("Updating affected tracklets, but NOT writing to disk")
+        for m in affected_masks:
+            generate_tracklet_metadata_using_segmentation_metadata(self.segmentation_metadata,
+                                                                   self.tracklets_and_neurons_class,
+                                                                   t, tracklet_name=None, mask_ind=m, likelihood=1.0)
+
+        logging.debug("Segmentation and tracklet metadata modified successfully")
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:
