@@ -290,14 +290,16 @@ class DetectedTrackletsAndNeurons:
         self.dataframe_is_synced_to_disk = False
         return new_name
 
-    def synchronize_dataframe_to_disk(self):
-        if self.dataframe_output_filename is not None:
-            logging.info(f"Saving at: {self.dataframe_output_filename}")
-            self.df_tracklets_zxy.to_hdf(self.dataframe_output_filename, key="df_with_missing")
-            self.dataframe_is_synced_to_disk = True
-
+    def synchronize_dataframe_to_disk(self, force_write=False):
+        if self.dataframe_is_synced_to_disk and not force_write:
+            logging.info("DataFrame is already synchronized")
         else:
-            logging.warning("Dataframe syncing attempted, but no filename saved")
+            if self.dataframe_output_filename is not None:
+                logging.info(f"Saving at: {self.dataframe_output_filename}")
+                self.df_tracklets_zxy.to_hdf(self.dataframe_output_filename, key="df_with_missing")
+                self.dataframe_is_synced_to_disk = True
+            else:
+                logging.warning("Dataframe syncing attempted, but no filename saved")
 
     def __repr__(self):
         return f"DetectedTrackletsAndNeurons object with {len(self.all_tracklet_names)} tracklets"
@@ -366,6 +368,8 @@ class TrackedWorm:
             tracklet = self.detections.df_tracklets_zxy[[name]]
             confidence = 1.0
             new_neuron.add_tracklet(confidence, tracklet, metadata=name)
+
+        self.detections.synchronize_dataframe_to_disk()
 
             # if name:
             #     tracklet = self.detections.df_tracklets_zxy[[name]]
