@@ -626,7 +626,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             self.static_ax.set_ylabel("z")
         self.color_using_behavior()
-        self.ax.set_xlim(self.subplot_xlim)
+        self.static_ax.set_xlim(self.subplot_xlim)
         self.subplot_is_initialized = True
 
     def initialize_trace_subplot(self):
