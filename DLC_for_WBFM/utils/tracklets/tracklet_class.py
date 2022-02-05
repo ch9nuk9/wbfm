@@ -292,7 +292,10 @@ class DetectedTrackletsAndNeurons:
 
     def synchronize_dataframe_to_disk(self):
         if self.dataframe_output_filename is not None:
+            logging.info(f"Saving at: {self.dataframe_output_filename}")
+            self.df_tracklets_zxy.to_hdf(self.dataframe_output_filename, key="df_with_missing")
             self.dataframe_is_synced_to_disk = True
+
         else:
             logging.warning("Dataframe syncing attempted, but no filename saved")
 
