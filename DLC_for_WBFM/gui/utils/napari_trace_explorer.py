@@ -355,7 +355,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def modify_segmentation_using_manual_correction(self):
         self.dat.modify_segmentation_using_manual_correction()
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
-        self.update_segmentation_status_label()
 
     def modify_segmentation_on_disk(self):
         self.dat.segmentation_metadata.overwrite_original_detection_file()
@@ -381,13 +380,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.viewer.add_tracks(track_layer_data, name="track_of_point", visible=False)
         zoom_using_viewer(self.viewer,  **self.zoom_opt)
 
-        layer_to_add_callback = self.viewer.layers['Raw segmentation']
+        layer_to_add_callback = self.seg_layer
         added_segmentation_callbacks = [
             self.update_segmentation_status_label,
             self.toggle_highlight_selected_neuron
         ]
         added_tracklet_callbacks = [
-            self.update_trace_or_tracklet_subplot,
             self.tracklet_updated_psuedo_event,
             self.set_segmentation_layer_invisible
         ]
@@ -759,8 +757,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.tracklet_annotator.toggle_highlight_selected_neuron(self.viewer)
 
     def set_segmentation_layer_invisible(self):
-        layer = self.viewer.layers['Raw segmentation']
-        layer.visible = False
+        self.seg_layer.visible = False
 
     def finish_subplot_update(self, title):
         self.static_ax.set_title(title)
