@@ -339,7 +339,7 @@ def combine_tracklets_using_matching(df_tracklets, final_matching):
 def empty_dataframe_like(df_tracklets, final_matching) -> pd.DataFrame:
     # Initialize using the index and column structure of the tracklets
     all_tracklet_names = get_names_from_df(df_tracklets)
-    num_neurons = len(final_matching.names0)
+    num_neurons = len(final_matching.indices0)
     tmp_names = all_tracklet_names[:num_neurons]
     df_new = df_tracklets.loc[:, tmp_names].copy()
     neuron_names = list(set(final_matching.indices0))
