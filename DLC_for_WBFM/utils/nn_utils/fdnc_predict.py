@@ -298,7 +298,8 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     physical_unit_conversion = project_cfg.get_physical_unit_conversion_class()
     if use_zimmer_template:
         # TODO: use a hand-curated segmentation or read from config
-        custom_template = project_data.get_centroids_as_numpy(0)
+        i_template = 10
+        custom_template = project_data.get_centroids_as_numpy(i_template)
         custom_template = physical_unit_conversion.zimmer2leifer(custom_template)
     else:
         custom_template = None
