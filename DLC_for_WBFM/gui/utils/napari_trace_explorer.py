@@ -172,7 +172,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.recentTrackletSelector.currentIndexChanged.connect(self.change_tracklets_using_dropdown)
         self.recentTrackletSelector.setToolTip("Jump to recent tracklets")
 
-
         self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (g)")
         self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
         self.zoom4Button.setToolTip("Note: does nothing if there is no tracklet selected")
@@ -743,8 +742,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveTrackletsStatusLabel.setText(update_string)
 
     def update_zoom_options_for_current_tracklet(self):
-        if self.dat.tracklet_annotator.current_tracklet_name is not None:
-            # Note that this will break if the layer is deleted
+        tracklet_name = self.dat.tracklet_annotator.current_tracklet_name
+        if tracklet_name and tracklet_name in self.viewer.layers:
+            # Note that this should be called again if the layer is deleted
             self.zoom_opt['layer_name'] = self.dat.tracklet_annotator.current_tracklet_name
         else:
             # Set back to default
