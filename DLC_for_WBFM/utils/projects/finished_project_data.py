@@ -382,7 +382,8 @@ class ProjectData:
         if new_mask is None or t is None:
             new_mask = self.tracklet_annotator.candidate_mask
             t = self.tracklet_annotator.time_of_candidate
-        affected_masks = np.unique(np.extract(self.raw_segmentation[t, ...] - new_mask))
+        this_seg = self.raw_segmentation[t, ...]
+        affected_masks = np.unique(np.extract(this_seg, this_seg - new_mask))
 
         print(f"Updating raw segmentation at t = {t}; affected masks={affected_masks}")
         self.raw_segmentation[t, ...] = new_mask
