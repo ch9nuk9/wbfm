@@ -477,10 +477,15 @@ class ProjectData:
 
         return v
 
-    def add_layers_to_viewer(self, viewer, which_layers='all', to_remove_flyback=True):
+    def add_layers_to_viewer(self, viewer, which_layers='all',
+                             to_remove_flyback=False, check_if_layers_exist=False):
         if which_layers == 'all':
             which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation',
                             'Neuron ID', 'Intermediate global ID']
+        if check_if_layers_exist:
+            new_layers = set(which_layers) - set(viewer.layers)
+            which_layers = list(new_layers)
+
         logging.info(f"Finished loading data, adding following layers: {which_layers}")
         if to_remove_flyback:
             clipping_list = [{'position': [2, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]

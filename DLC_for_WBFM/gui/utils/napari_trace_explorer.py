@@ -89,7 +89,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # More complex boxes:
 
         self._setup_trace_filtering_buttons()  # Box 3
-        self._setup_zoom_shortcut_buttons()
+        self._setup_general_shortcut_buttons()
         self._setup_tracklet_correction_shortcut_buttons()  # Box 4
         self._setup_segmentation_correction_buttons()  # Box 5
 
@@ -137,13 +137,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Outlier threshold:", self.changeTrackingOutlierSpinBox)
 
-    def _setup_zoom_shortcut_buttons(self):
+    def _setup_general_shortcut_buttons(self):
         self.groupBox3b = QtWidgets.QGroupBox("General shortcuts", self.verticalLayoutWidget)
         self.vbox3b = QtWidgets.QVBoxLayout(self.groupBox3b)
 
         # self.refreshButton = QtWidgets.QPushButton("Refresh Subplot (r)")
         # self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
         # self.vbox3b.addWidget(self.refreshButton)
+
+        self.refreshDefaultLayersButton = QtWidgets.QPushButton("Refresh Default Layers")
+        self.refreshDefaultLayersButton.pressed.connect(self.refresh_default_napari_layers)
+        self.vbox3b.addWidget(self.refreshDefaultLayersButton)
 
         self.printTrackletsButton = QtWidgets.QPushButton("Print tracklets attached to current neuron (v)")
         self.printTrackletsButton.pressed.connect(self.print_tracklets)
@@ -290,6 +294,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     @property
     def seg_layer(self):
         return self.viewer.layers['Raw segmentation']
+
+    def refresh_default_napari_layers(self):
+        self.dat.add_layers_to_viewer(self.viewer, which_layers='all', check_if_layers_exist=True)
 
     def change_neurons(self):
         if not self._disable_callbacks:
