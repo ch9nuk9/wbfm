@@ -9,6 +9,7 @@ from copy import deepcopy
 import napari
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_dataframe
@@ -583,6 +584,7 @@ class TrackletAndSegmentationAnnotator:
                                                  verbose=3,
                                                  method=split_method,
                                                  **self.segmentation_options)
+        plt.show()
         split_succeeded = new_full_mask is not None
         if split_succeeded:
             # Add as a new candidate layer
