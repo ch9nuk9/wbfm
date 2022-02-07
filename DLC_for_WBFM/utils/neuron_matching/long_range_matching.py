@@ -138,11 +138,11 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         logging.info("Also saving raw intermediate products")
         fname = '3-tracking/global_tracklet_neuron_graph.pickle'
         track_config.pickle_in_local_project(global_tracklet_neuron_graph, fname)
-        fname = '3-tracking/worm_obj.pickle'
-        track_config.pickle_in_local_project(worm_obj, fname)
         fname = '3-tracking/final_matching.pickle'
         track_config.pickle_in_local_project(final_matching_no_confict, fname)
-
+        # Sometimes this object is too big
+        fname = '3-tracking/worm_obj.pickle'
+        track_config.pickle_in_local_project(worm_obj, fname)
     return df_new, final_matching_no_confict, global_tracklet_neuron_graph, worm_obj
 
 
@@ -311,13 +311,15 @@ def initialize_worm_object(df_tracklets, segmentation_metadata):
 
 def combine_tracklets_using_matching(df_tracklets, final_matching):
     # Finally, make the full dataframe
-    df_new = empty_dataframe_like(df_tracklets, final_matching)
+    neuron2tracklet_dict = final_matching.get_mapping_0_to_1(unique=False)
+    neuron_names = list(neuron2tracklet_dict.keys())
+    df_new = empty_dataframe_like(df_tracklets, neuron_names)
 
     max_t = len(df_tracklets)
     id_vector = np.zeros(max_t)
     # Actually join
-    logging.info("Combining tracklets into full dataframe")
-    for neuron_name, tracklet_list in tqdm(final_matching.get_mapping_0_to_1(unique=False).items()):
+    logging.info(f"Combining tracklets into full dataframe with {len(neuron_names)} neurons")
+    for neuron_name, tracklet_list in tqdm(neuron2tracklet_dict.items()):
         for tracklet_name in tracklet_list:
             this_tracklet = df_tracklets[tracklet_name]
             # Preprocess the tracklet dataframe to have an additional column: the id of the tracklet
@@ -336,14 +338,14 @@ def combine_tracklets_using_matching(df_tracklets, final_matching):
     return df_new
 
 
-def empty_dataframe_like(df_tracklets, final_matching) -> pd.DataFrame:
+def empty_dataframe_like(df_tracklets, neuron_names) -> pd.DataFrame:
     # Initialize using the index and column structure of the tracklets
     all_tracklet_names = get_names_from_df(df_tracklets)
-    num_neurons = len(final_matching.names0)
-    tmp_names = all_tracklet_names[:num_neurons]
-    df_new = df_tracklets.loc[:, tmp_names].copy()
-    neuron_names = list(set(final_matching.indices0))
+    num_neurons = len(neuron_names)
     neuron_names.sort()
+    tmp_names = all_tracklet_names[:num_neurons]
+
+    df_new = df_tracklets.loc[:, tmp_names].copy()
     name_mapper = {t: n for t, n in zip(tmp_names, neuron_names)}
     df_new.rename(columns=name_mapper, inplace=True)
     df_new[:] = np.nan
