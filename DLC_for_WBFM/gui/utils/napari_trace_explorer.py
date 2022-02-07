@@ -616,7 +616,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def init_universal_subplot(self):
         # Note: this causes a hang when the main window is closed, even though I'm trying to set the parent
         # ... workaround: ctrl-c necessary after closing
-        self.mpl_widget = PlotQWidget(self.viewer.window._qt_window.centralWidget())
+        # self.mpl_widget = PlotQWidget(self.viewer.window._qt_window.centralWidget())
+        self.mpl_widget = PlotQWidget()
         self.static_ax = self.mpl_widget.canvas.fig.subplots()
         self.subplot_xlim = [0, self.dat.num_frames]
         # self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
