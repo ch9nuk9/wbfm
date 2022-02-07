@@ -4,7 +4,7 @@
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
-#SBATCH --output=make_traces.out    # Standard output and error log
+#SBATCH --output=make_traces-%j.out    # Standard output and error log
 #SBATCH --time=1:00:00
 #SBATCH --mem=8G
 

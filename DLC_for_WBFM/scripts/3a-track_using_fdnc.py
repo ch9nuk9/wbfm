@@ -24,10 +24,14 @@ ex.add_config(project_path=None, out_fname=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
-    check_all_needed_data_for_step(project_path, 3)
     project_dir = cfg.project_dir
 
     tracks_cfg = cfg.get_tracking_config()
+
+    if tracks_cfg.config['leifer_params']['use_multiple_templates']:
+        check_all_needed_data_for_step(project_path, 3)
+    else:
+        check_all_needed_data_for_step(project_path, 2)
 
     if not DEBUG:
         using_monkeypatch()
