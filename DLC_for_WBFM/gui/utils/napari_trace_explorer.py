@@ -122,13 +122,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Trace filtering:", self.changeTraceFilteringDropdown)
         # Change trace outlier removal (dropdown)
-        self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox()
-        self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
-        self.formlayout3.addRow("Remove outliers (activity)?", self.changeTraceOutlierCheckBox)
+        # self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox()
+        # self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
+        # self.formlayout3.addRow("Remove outliers (activity)?", self.changeTraceOutlierCheckBox)
 
-        self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
-        self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
-        self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
+        # self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
+        # self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
+        # self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
 
         # TODO: spin box must be integers
         # self.changeTrackingOutlierSpinBox = QtWidgets.QSpinBox()
@@ -145,7 +145,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.refreshButton.pressed.connect(self.update_trace_or_tracklet_subplot)
         # self.vbox3b.addWidget(self.refreshButton)
 
-        self.refreshDefaultLayersButton = QtWidgets.QPushButton("Refresh Default Layers")
+        self.refreshDefaultLayersButton = QtWidgets.QPushButton("Refresh Default Napari Layers")
         self.refreshDefaultLayersButton.pressed.connect(self.refresh_default_napari_layers)
         self.vbox3b.addWidget(self.refreshDefaultLayersButton)
 
@@ -174,7 +174,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.recentTrackletSelector = QtWidgets.QComboBox()
         self.vbox4.addWidget(self.recentTrackletSelector)
         self.recentTrackletSelector.currentIndexChanged.connect(self.change_tracklets_using_dropdown)
-        self.recentTrackletSelector.setToolTip("Jump to recent tracklets")
+        self.recentTrackletSelector.setToolTip("Select from history of recent tracklets")
 
         self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (g)")
         self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
