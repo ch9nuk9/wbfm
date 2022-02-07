@@ -483,7 +483,7 @@ class ProjectData:
             which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation',
                             'Neuron ID', 'Intermediate global ID']
         if check_if_layers_exist:
-            new_layers = set(which_layers) - set(viewer.layers)
+            new_layers = set(which_layers) - set([layer.name for layer in viewer.layers])
             which_layers = list(new_layers)
 
         logging.info(f"Finished loading data, adding following layers: {which_layers}")
