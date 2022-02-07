@@ -146,7 +146,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         track_config.pickle_in_local_project(final_matching_no_confict, fname)
         # Sometimes this object is too big
         fname = str(dir_name.joinpath('worm_obj.pickle'))
-        track_config.pickle_in_local_project(worm_obj, fname)
+        track_config.pickle_in_local_project(worm_obj, fname, protocol=4)
     return df_new, final_matching_no_confict, global_tracklet_neuron_graph, worm_obj
 
 

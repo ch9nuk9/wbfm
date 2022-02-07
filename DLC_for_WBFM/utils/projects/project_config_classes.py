@@ -50,7 +50,13 @@ class ConfigFileWithProjectContext:
         return json.dumps(vars(self))
 
     def pickle_in_local_project(self, data, relative_path: str,
-                            allow_overwrite=True, make_sequential_filename=False):
+                                allow_overwrite=True, make_sequential_filename=False,
+                                **kwargs):
+        """
+        For objects larger than 4GB and python<3.8, protocol=4 must be specified directly
+
+        https://stackoverflow.com/questions/29704139/pickle-in-python3-doesnt-work-for-large-data-saving
+        """
         abs_path = self.resolve_relative_path(relative_path)
         if not abs_path.endswith('.pickle'):
             abs_path += ".pickle"
@@ -59,7 +65,7 @@ class ConfigFileWithProjectContext:
         logging.info(f"Saving at: {relative_path}")
         check_exists(abs_path, allow_overwrite)
         with open(abs_path, 'wb') as f:
-            pickle.dump(data, f)
+            pickle.dump(data, f, **kwargs)
 
     def h5_in_local_project(self, data: pd.DataFrame, relative_path: str,
                             allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):
