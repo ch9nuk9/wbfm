@@ -42,7 +42,7 @@ class NeuronComposedOfTracklets:
     scaler: sklearn.preprocessing._data.StandardScaler = None
     classifier_rejection_threshold: float = 0.0
     fields_to_classify: list = None
-    training_data: np.ndarray = None
+    # training_data: np.ndarray = None
 
     verbose: int = 0
 
@@ -127,7 +127,7 @@ class NeuronComposedOfTracklets:
 
         self.scaler = StandardScaler()
         x = self.scaler.fit_transform(x)
-        self.training_data = x
+        # self.training_data = x
         self.classifier = OneClassSVM(nu=0.05, gamma=0.05, kernel='rbf').fit(x)
 
     def check_new_tracklet_using_classifier(self, candidate_tracklet: pd.DataFrame):
