@@ -170,12 +170,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.recentTrackletSelector = QtWidgets.QComboBox()
         self.vbox4.addWidget(self.recentTrackletSelector)
         self.recentTrackletSelector.currentIndexChanged.connect(self.change_tracklets_using_dropdown)
+        self.recentTrackletSelector.setToolTip("Jump to recent tracklets")
+
 
         self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (g)")
         self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
+        self.zoom4Button.setToolTip("Note: does nothing if there is no tracklet selected")
         self.vbox4.addWidget(self.zoom4Button)
         self.zoom5Button = QtWidgets.QPushButton("Zoom to end of current tracklet (j)")
-        self.zoom5Button.setToolTip("Alternative: zoom to beginning (h)")
+        self.zoom5Button.setToolTip("Alternative: zoom to beginning of current tracklet (h)")
         self.zoom5Button.pressed.connect(self.zoom_to_end_of_current_tracklet)
         self.vbox4.addWidget(self.zoom5Button)
 
@@ -198,9 +201,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.vbox4.addWidget(self.removeTrackletButton2)
         self.appendTrackletButton = QtWidgets.QPushButton("Save current tracklet to neuron (IF conflict-free) (c)")
         self.appendTrackletButton.pressed.connect(self.save_current_tracklet_to_neuron)
+        self.appendTrackletButton.setToolTip("Note: check console for more details of the conflict")
         self.vbox4.addWidget(self.appendTrackletButton)
         self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk")
         self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
+        self.saveTrackletsButton.setToolTip("Note: Can take up to a minute")
         self.vbox4.addWidget(self.saveTrackletsButton)
 
         self.saveSegmentationToTrackletButton = QtWidgets.QPushButton("Append current segmentation to current tracklet")
