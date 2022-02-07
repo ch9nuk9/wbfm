@@ -480,9 +480,10 @@ class ProjectData:
     def add_layers_to_viewer(self, viewer, which_layers='all',
                              to_remove_flyback=False, check_if_layers_exist=False):
         if which_layers == 'all':
-            which_layers = ['red', 'green', 'Raw segmentation', 'Colored segmentation',
-                            'Neuron ID', 'Intermediate global ID']
+            which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
+                            'Neuron IDs', 'Intermediate global IDs']
         if check_if_layers_exist:
+            # NOTE: only works if the layer names are the same as these convinience names
             new_layers = set(which_layers) - set([layer.name for layer in viewer.layers])
             which_layers = list(new_layers)
 
@@ -492,11 +493,11 @@ class ProjectData:
         else:
             clipping_list = []
 
-        if 'red' in which_layers:
+        if 'Red data' in which_layers:
             viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red',
                              contrast_limits=[0, 110],
                              experimental_clipping_planes=clipping_list)
-        if 'green' in which_layers:
+        if 'Green data' in which_layers:
             viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
@@ -505,12 +506,12 @@ class ProjectData:
             viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4, visible=False)
 
         # Add a text overlay
-        if 'Neuron ID' in which_layers:
+        if 'Neuron IDs' in which_layers:
             df = self.red_traces
             options = napari_labels_from_traces_dataframe(df)
             viewer.add_points(**options)
 
-        if 'Intermediate global ID' in which_layers and self.intermediate_global_tracks is not None:
+        if 'Intermediate global IDs' in which_layers and self.intermediate_global_tracks is not None:
             df = self.intermediate_global_tracks
             options = napari_labels_from_traces_dataframe(df)
             options['name'] = 'Intermediate global IDs'
