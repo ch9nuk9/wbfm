@@ -113,7 +113,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.formlayout3 = QtWidgets.QFormLayout(self.groupBox3)
 
         self.changeTraceCalculationDropdown = QtWidgets.QComboBox()
-        self.changeTraceCalculationDropdown.addItems(['integration', 'z', 'volume', 'likelihood'])
+        self.changeTraceCalculationDropdown.addItems(['integration', 'z', 'volume'])
+        # , 'likelihood' ... Too short
         self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Trace calculation (y axis):", self.changeTraceCalculationDropdown)
         # Change trace filtering (checkbox)
