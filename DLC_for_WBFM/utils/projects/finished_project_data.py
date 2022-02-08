@@ -383,7 +383,7 @@ class ProjectData:
             new_mask = self.tracklet_annotator.candidate_mask
             t = self.tracklet_annotator.time_of_candidate
         this_seg = self.raw_segmentation[t, ...]
-        affected_masks = np.unique(np.extract(this_seg, this_seg - new_mask))
+        affected_masks = np.unique(this_seg[(this_seg - new_mask) != 0])
 
         print(f"Updating raw segmentation at t = {t}; affected masks={affected_masks}")
         self.raw_segmentation[t, ...] = new_mask
