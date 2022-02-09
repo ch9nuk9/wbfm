@@ -569,6 +569,7 @@ class TrackletAndSegmentationAnnotator:
             print(df_single_track.dropna(inplace=False))
 
     def split_current_neuron_and_add_napari_layer(self, viewer, split_method):
+        # Note: keeps both indices saved in the object
         seg_index = self.indices_of_original_neurons
         if len(seg_index) > 1:
             print("Multiple neurons selected, splitting is ambiguous... returning")
