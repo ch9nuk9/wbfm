@@ -588,7 +588,7 @@ class TrackletAndSegmentationAnnotator:
         split_succeeded = new_full_mask is not None
         if split_succeeded:
             # Add as a new candidate layer
-            layer_name = f"Candidate_split_at_t{time_index}"
+            layer_name = f"Candidate_mask"
             viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0)
 
             # Save for later combining with original mask
@@ -612,7 +612,7 @@ class TrackletAndSegmentationAnnotator:
             new_full_mask[new_full_mask == i] = target_index
 
         # Add as a new candidate layer
-        layer_name = f"Candidate_split_at_t{time_index}"
+        layer_name = f"Candidate_mask"
         viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0)
 
         # Save for later combining with original mask
@@ -624,6 +624,7 @@ class TrackletAndSegmentationAnnotator:
     def clear_currently_selected_segmentations(self, do_callbacks=True):
         self.time_of_candidate = None
         self.indices_of_original_neurons = []
+        self.invalidate_saved_mask()
         if do_callbacks:
             self.segmentation_updated_callbacks()
 
@@ -631,14 +632,20 @@ class TrackletAndSegmentationAnnotator:
         if self.time_of_candidate is None:
             self.time_of_candidate = time_index
             self.indices_of_original_neurons = [seg_index]
+            self.invalidate_saved_mask()
             self.segmentation_updated_callbacks()
         else:
             if self.time_of_candidate == time_index:
                 self.indices_of_original_neurons.append(seg_index)
+                self.invalidate_saved_mask()
                 self.segmentation_updated_callbacks()
                 print(f"Added neuron to list; current neurons: {self.indices_of_original_neurons}")
             else:
                 logging.warning("Attempt to add segmentations of different time points; not supported")
+
+    def invalidate_saved_mask(self):
+        # Make sure the metadata and so on is synced to the saved mask
+        self.candidate_mask = None
 
     def set_selected_segmentation(self, time_index, seg_index):
         """Like append_segmentation_to_list, but forces a single neuron. Also properly accounts for callbacks"""
