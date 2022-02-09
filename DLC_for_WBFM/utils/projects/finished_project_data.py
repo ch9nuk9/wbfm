@@ -382,8 +382,13 @@ class ProjectData:
         if new_mask is None or t is None:
             new_mask = self.tracklet_annotator.candidate_mask
             t = self.tracklet_annotator.time_of_candidate
-        this_seg = self.raw_segmentation[t, ...]
-        affected_masks = np.unique(this_seg[(this_seg - new_mask) != 0])
+        if new_mask is None:
+            logging.warning("Modification attempted, but no valid candidate mask exists; aborting")
+            logging.warning("NOTE: if you produce a mask but then click different neurons, it invalidates the mask!")
+            return
+        affected_masks = self.tracklet_annotator.indices_of_original_neurons
+        # this_seg = self.raw_segmentation[t, ...]
+        # affected_masks = np.unique(this_seg[(this_seg - new_mask) != 0])
 
         print(f"Updating raw segmentation at t = {t}; affected masks={affected_masks}")
         self.raw_segmentation[t, ...] = new_mask
