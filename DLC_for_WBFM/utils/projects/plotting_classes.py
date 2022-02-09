@@ -643,7 +643,7 @@ class TrackletAndSegmentationAnnotator:
             else:
                 logging.warning("Attempt to add segmentations of different time points; not supported")
 
-    def invalidate_saved_mask(self):
+    def invalidate_candidate_mask(self):
         # Make sure the metadata and so on is synced to the saved mask
         self.candidate_mask = None
 

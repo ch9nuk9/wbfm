@@ -348,7 +348,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_interactivity(self):
         to_be_interactive = self.changeInteractivityCheckbox.isChecked()
-
         self.dat.tracklet_annotator.is_currently_interactive = to_be_interactive
 
         if to_be_interactive:
@@ -368,6 +367,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Uses candidate mask layer
         self.dat.modify_segmentation_using_manual_correction()
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
+        self.remove_layer_of_candidate_segmentation()
 
     def modify_segmentation_on_disk(self):
         # Uses segmentation as modified previously by candidate mask layer
@@ -375,17 +375,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def split_segmentation_manual(self):
         # Produces candidate mask layer
+        self.remove_layer_of_candidate_segmentation()
         self.dat.tracklet_annotator.split_current_neuron_and_add_napari_layer(self.viewer, split_method="Manual")
 
     def split_segmentation_automatic(self):
         # Produces candidate mask layer
+        self.remove_layer_of_candidate_segmentation()
         self.dat.tracklet_annotator.split_current_neuron_and_add_napari_layer(self.viewer, split_method="Gaussian")
 
     def merge_segmentation(self):
         # Produces candidate mask layer
+        self.remove_layer_of_candidate_segmentation()
         self.dat.tracklet_annotator.merge_current_neurons(self.viewer)
 
     def clear_current_segmentations(self):
+        self.remove_layer_of_candidate_segmentation()
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
 
     def initialize_track_layers(self):
@@ -593,6 +597,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             layer_name = self.dat.tracklet_annotator.current_tracklet_name
         if layer_name is not None and layer_name not in self.viewer.layers:
             self.dat.tracklet_annotator.add_current_tracklet_to_viewer(self.viewer)
+
+    def remove_layer_of_candidate_segmentation(self, layer_name='Candidate_mask'):
+        if layer_name is not None and layer_name in self.viewer.layers:
+            self.viewer.layers.remove(layer_name)
 
     def print_tracklets(self):
         self.dat.tracklet_annotator.print_current_status()
