@@ -15,7 +15,7 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
     get_names_of_conflicting_dataframes, get_names_of_columns_that_exist_at_t, \
     find_top_level_name_by_single_column_entry
-from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
+from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError, DataSynchronizationError
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
@@ -264,12 +264,16 @@ class DetectedTrackletsAndNeurons:
         Allows generation of metadata for a single tracklet
 
         Either the tracklet name or the mask index must be specified
+        If only one is specified, it must give a valid unique value for the other upon database search
         """
         segmentation_metadata = self.segmentation_metadata
         if mask_ind is None and tracklet_name is not None:
             mask_ind = int(self.df_tracklets_zxy.loc[t, (tracklet_name, 'raw_segmentation_id')])
         if tracklet_name is None and mask_ind is not None:
             tracklet_name = self.get_tracklet_from_segmentation_index(t, mask_ind)
+        if tracklet_name is None or mask_ind is None:
+            logging.warning(f"An inputs was None, which will cause problems: {mask_ind}, {tracklet_name} (t={t})")
+            raise DataSynchronizationError('tracklet_name', 'mask_ind')
         # TODO: check that this doesn't produce a gap in the tracklet
         row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
         self.df_tracklets_zxy.loc[t, tracklet_name] = row_data

@@ -666,22 +666,21 @@ class TrackletAndSegmentationAnnotator:
 
     def attach_current_segmentation_to_current_tracklet(self):
         if len(self.indices_of_original_neurons) != 1:
-            logging.warning("Can't attach multiple segmentations at once")
-            return False
-
-        name = self.current_tracklet_name
-        if name is None:
-            logging.warning("No tracklet selected; can't attach segmentation")
+            logging.warning(f"Selected segmentation must be unique; "
+                            f"found {len(self.indices_of_original_neurons)} segmentations")
             return False
         # Get known data, then rebuild the other metadata from this
         t = self.time_of_candidate
         mask_ind = self.indices_of_original_neurons[0]
-        segmentation_metadata = self.segmentation_metadata
-        df_tracklet_obj = self.df_tracklet_obj
+
+        tracklet_name = self.current_tracklet_name
+        if tracklet_name is None:
+            logging.warning("No tracklet selected; can't attach segmentation to it")
+            return False
 
         with self.saving_lock:
             self.df_tracklet_obj.update_tracklet_metadata_using_segmentation_metadata(
-                t, name, mask_ind=mask_ind, likelihood=1.0
+                t, tracklet_name, mask_ind=mask_ind, likelihood=1.0
             )
 
         self.clear_currently_selected_segmentations(do_callbacks=False)
