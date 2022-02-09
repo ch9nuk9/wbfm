@@ -82,7 +82,7 @@ def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_pas
             tzxy = get_zxy_from_single_neuron_layer(layer, t)
         else:
             tzxy = get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer)
-        print(f"tzxy: {tzxy}, layer: {layer}")
+        print(f"Centering screen using: tzxy={tzxy} from layer {layer}")
     else:
         print(f"Layer {layer_name} not found; no zooming")
         return
