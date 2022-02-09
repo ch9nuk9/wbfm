@@ -365,19 +365,24 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             widget.setEnabled(to_be_interactive)
 
     def modify_segmentation_using_manual_correction(self):
+        # Uses candidate mask layer
         self.dat.modify_segmentation_using_manual_correction()
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
 
     def modify_segmentation_on_disk(self):
+        # Uses segmentation as modified previously by candidate mask layer
         self.dat.segmentation_metadata.overwrite_original_detection_file()
 
     def split_segmentation_manual(self):
+        # Produces candidate mask layer
         self.dat.tracklet_annotator.split_current_neuron_and_add_napari_layer(self.viewer, split_method="Manual")
 
     def split_segmentation_automatic(self):
+        # Produces candidate mask layer
         self.dat.tracklet_annotator.split_current_neuron_and_add_napari_layer(self.viewer, split_method="Gaussian")
 
     def merge_segmentation(self):
+        # Produces candidate mask layer
         self.dat.tracklet_annotator.merge_current_neurons(self.viewer)
 
     def clear_current_segmentations(self):
