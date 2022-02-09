@@ -259,7 +259,8 @@ class DetectedTrackletsAndNeurons:
     def update_tracklet_metadata_using_segmentation_metadata(self, t: int,
                                                              tracklet_name: str = None,
                                                              mask_ind: int = None,
-                                                             likelihood: float = 1.0):
+                                                             likelihood: float = 1.0,
+                                                             verbose=0):
         """
         Allows generation of metadata for a single tracklet
 
@@ -274,10 +275,18 @@ class DetectedTrackletsAndNeurons:
         if tracklet_name is None or mask_ind is None:
             logging.warning(f"An inputs was None, which will cause problems: {mask_ind}, {tracklet_name} (t={t})")
             raise DataSynchronizationError('tracklet_name', 'mask_ind')
-        # TODO: check that this doesn't produce a gap in the tracklet
+
+        # TODO: check that this doesn't produce a time gap in the tracklet
         row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
-        self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
-        self.dataframe_is_synced_to_disk = False
+        if row_data is None:
+            if verbose >= 1:
+                print(f"{tracklet_name} previously on segmentation {mask_ind} no longer exists, and was removed")
+            self.df_tracklets_zxy.loc[t, tracklet_name] = np.nan
+        else:
+            if verbose >= 1:
+                print(f"{tracklet_name} on segmentation {mask_ind} updated")
+            self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
+            self.dataframe_is_synced_to_disk = False
 
     def generate_empty_tracklet_with_correct_format(self):
         new_name = get_next_name_tracklet_or_neuron(self.df_tracklets_zxy)

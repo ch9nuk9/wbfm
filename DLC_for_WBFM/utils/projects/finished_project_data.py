@@ -384,7 +384,7 @@ class ProjectData:
             t = self.tracklet_annotator.time_of_candidate
         if new_mask is None:
             logging.warning("Modification attempted, but no valid candidate mask exists; aborting")
-            logging.warning("NOTE: if you produce a mask but then click different neurons, it invalidates the mask!")
+            logging.warning("HINT: if you produce a mask but then click different neurons, it invalidates the mask!")
             return
         affected_masks = self.tracklet_annotator.indices_of_original_neurons
         # this_seg = self.raw_segmentation[t, ...]
@@ -399,9 +399,15 @@ class ProjectData:
 
         print("Updating affected tracklets, but NOT writing to disk")
         for m in affected_masks:
-            self.tracklets_and_neurons_class.update_tracklet_metadata_using_segmentation_metadata(
-                t, tracklet_name=None, mask_ind=m, likelihood=1.0
-            )
+            # Explicitly check to see if there actually was a tracklet before the segmentation was changed
+            # Note that this metadata refers to the old masks, even if the mask is deleted above
+            tracklet_name = self.tracklets_and_neurons_class.get_tracklet_from_segmentation_index(t, m)
+            if tracklet_name is not None:
+                self.tracklets_and_neurons_class.update_tracklet_metadata_using_segmentation_metadata(
+                    t, tracklet_name=tracklet_name, mask_ind=m, likelihood=1.0, verbose=1
+                )
+            else:
+                print(f"No tracklet corresponding to segmentation {m}; not updated")
         logging.debug("Segmentation and tracklet metadata modified successfully")
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):

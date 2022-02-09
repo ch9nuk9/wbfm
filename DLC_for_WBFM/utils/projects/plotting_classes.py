@@ -618,13 +618,13 @@ class TrackletAndSegmentationAnnotator:
         # Save for later combining with original mask
         self.candidate_mask = new_full_mask
 
-        # Update the saved indices to just be the new one
-        self.set_selected_segmentation(self.time_of_candidate, target_index)
+        # Keep the saved indices as both
+        # self.set_selected_segmentation(self.time_of_candidate, target_index)
 
     def clear_currently_selected_segmentations(self, do_callbacks=True):
         self.time_of_candidate = None
         self.indices_of_original_neurons = []
-        self.invalidate_saved_mask()
+        self.invalidate_candidate_mask()
         if do_callbacks:
             self.segmentation_updated_callbacks()
 
@@ -632,12 +632,12 @@ class TrackletAndSegmentationAnnotator:
         if self.time_of_candidate is None:
             self.time_of_candidate = time_index
             self.indices_of_original_neurons = [seg_index]
-            self.invalidate_saved_mask()
+            self.invalidate_candidate_mask()
             self.segmentation_updated_callbacks()
         else:
             if self.time_of_candidate == time_index:
                 self.indices_of_original_neurons.append(seg_index)
-                self.invalidate_saved_mask()
+                self.invalidate_candidate_mask()
                 self.segmentation_updated_callbacks()
                 print(f"Added neuron to list; current neurons: {self.indices_of_original_neurons}")
             else:
