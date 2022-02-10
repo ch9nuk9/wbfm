@@ -538,8 +538,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             self.remove_layer_of_current_tracklet()
+            self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             self.add_layer_of_current_tracklet()
             self.tracklet_updated_psuedo_event()
         else:
@@ -547,8 +547,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def split_current_tracklet_keep_left(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.dat.tracklet_annotator.split_current_tracklet(self.t + 1, False)
             self.remove_layer_of_current_tracklet()
+            self.dat.tracklet_annotator.split_current_tracklet(self.t + 1, False)
             self.add_layer_of_current_tracklet()
             self.tracklet_updated_psuedo_event()
         else:
