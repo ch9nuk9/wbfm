@@ -461,11 +461,11 @@ class TrackletAndSegmentationAnnotator:
             old_name = self.current_tracklet_name
             all_tracklets = self.df_tracklet_obj.df_tracklets_zxy
 
-            all_tracklets, left_name, right_name = split_tracklet_within_dataframe(all_tracklets, i_split, old_name)
+            successfully_split, all_tracklets, left_name, right_name = split_tracklet_within_dataframe(all_tracklets, i_split, old_name)
 
-            # Save
-            # self.df_tracklet_obj.data = pd.concat([self.df_tracklet_obj.data, new_half], axis=1)
-            # self.df_tracklet_obj.data[old_name] = old_half[old_name]
+            if not successfully_split:
+                logging.warning("Did not successfully split; check logs")
+                return
 
             self.df_tracklet_obj.df_tracklets_zxy = all_tracklets
             if set_new_half_to_current:

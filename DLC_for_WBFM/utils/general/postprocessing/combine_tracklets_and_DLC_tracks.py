@@ -144,7 +144,9 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
         else:
             # Then we split the tracklet, and follow which name we keep
             for i_split, mode in zip(split_points, split_modes):
-                df_tracklets, left_name, right_name = split_tracklet_within_dataframe(df_tracklets, i_split, candidate_name)
+                successfully_split, df_tracklets, left_name, right_name = split_tracklet_within_dataframe(df_tracklets, i_split, candidate_name)
+                if not successfully_split:
+                    continue
                 if mode == "keep_left":
                     # This is the same as the old name for now
                     candidate_name = left_name
