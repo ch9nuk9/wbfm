@@ -18,7 +18,8 @@ import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets
 
-from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, build_tracks_from_dataframe
+from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
+    build_tracks_from_dataframe, zoom_using_viewer
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
@@ -404,6 +405,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         layer_to_add_callback = self.seg_layer
         added_segmentation_callbacks = [
             self.update_segmentation_status_label,
+            self.zoom_to_selected_neuron,
             self.toggle_highlight_selected_neuron
         ]
         added_tracklet_callbacks = [
@@ -740,7 +742,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
         # We are displaying z here
-        title = f"Tracklets for neuron {self.changeNeuronsDropdown.currentText()}"
+        title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
 
         self.init_subplot_post_clear()
         self.finish_subplot_update(title)
@@ -782,6 +784,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def toggle_highlight_selected_neuron(self):
         self.dat.tracklet_annotator.toggle_highlight_selected_neuron(self.viewer)
+
+    def center_on_selected_neuron(self):
+        position = self.dat.tracklet_annotator.last_clicked_position
+        # Only center if the last click was at the same time as the viewer
+        if position is not None and position[0] == self.viewer.dims.current_step:
+            zoom_using_viewer(position, self.viewer, zoom=None)
 
     def set_segmentation_layer_invisible(self):
         self.seg_layer.visible = False

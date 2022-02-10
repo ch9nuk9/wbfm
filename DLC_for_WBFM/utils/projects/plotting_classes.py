@@ -147,6 +147,8 @@ class TrackletAndSegmentationAnnotator:
     to_add_layer_to_viewer: bool = True
     verbose: int = 1
 
+    last_clicked_position: list = None
+
     is_currently_interactive: bool = True
 
     def __post_init__(self):
@@ -494,6 +496,8 @@ class TrackletAndSegmentationAnnotator:
             if not self.is_currently_interactive:
                 logging.warning("Click received, but interactivity is turned off")
                 return
+
+            self.last_clicked_position = event.position
 
             # Get information about clicked-on neuron
             seg_index = layer.get_value(
