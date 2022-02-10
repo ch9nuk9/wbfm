@@ -373,6 +373,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def modify_segmentation_on_disk(self):
         # Uses segmentation as modified previously by candidate mask layer
         self.dat.segmentation_metadata.overwrite_original_detection_file()
+        logging.info("Successfully saved to disk!")
 
     def split_segmentation_manual(self):
         # Produces candidate mask layer
