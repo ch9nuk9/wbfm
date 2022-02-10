@@ -387,6 +387,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def merge_segmentation(self):
         # Produces candidate mask layer
         self.remove_layer_of_candidate_segmentation()
+        self.seg_layer.visible = False
         self.dat.tracklet_annotator.merge_current_neurons(self.viewer)
 
     def clear_current_segmentations(self):
