@@ -11,6 +11,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
+from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict
 from sklearn.neighbors import NearestNeighbors
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
@@ -64,6 +65,7 @@ class ProjectData:
 
     # Classes for more functionality
     trace_plotter: TracePlotter = None
+    physical_unit_conversion: PhysicalUnitConversion = None
 
     def __post_init__(self):
         track_cfg = self.project_config.get_tracking_config()
@@ -257,6 +259,8 @@ class ProjectData:
         # Metadata uses class from segmentation package, which does lazy loading itself
         seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         obj.segmentation_metadata = DetectedNeurons(seg_metadata_fname)
+
+        obj.physical_unit_conversion = cfg.get_physical_unit_conversion_class()
 
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
@@ -505,18 +509,24 @@ class ProjectData:
         else:
             clipping_list = []
 
+        z_to_xy_scaling = self.physical_unit_conversion.z_to_xy_ratio
+
         if 'Red data' in which_layers:
             viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red',
                              contrast_limits=[0, 200],
+                             scale=(1.0, z_to_xy_scaling, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Green data' in which_layers:
             viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
                              contrast_limits=[0, 200],
+                             scale=(1.0, z_to_xy_scaling, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
-            viewer.add_labels(self.raw_segmentation, name="Raw segmentation", opacity=0.8, visible=False)
+            viewer.add_labels(self.raw_segmentation, name="Raw segmentation",
+                              scale=(1.0, z_to_xy_scaling, 1.0, 1.0), opacity=0.8, visible=False)
         if 'Colored segmentation' in which_layers and self.segmentation is not None:
-            viewer.add_labels(self.segmentation, name="Colored segmentation", opacity=0.4, visible=False)
+            viewer.add_labels(self.segmentation, name="Colored segmentation",
+                              scale=(1.0, z_to_xy_scaling, 1.0, 1.0), opacity=0.4, visible=False)
 
         # Add a text overlay
         if 'Neuron IDs' in which_layers:
