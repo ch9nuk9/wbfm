@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,9 +10,11 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
                          DEBUG=False):
     """
     Shades current plot using a 3-code behavioral annotation:
+        -1 - Invalid data (no shade)
         0 - FWD (no shade)
         1 - REV (gray)
         2 - Turn (red)
+        3 - Quiescent (no shade)
     """
 
     if cmap is None:
@@ -39,7 +42,7 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
             # block_start = block_end + 1
             continue
         try:
-            color = cmap[val]
+            color = cmap.get(val, None)
         except TypeError:
             logging.warning(f"Ignored behavior of value: {val}")
             # Just ignore
