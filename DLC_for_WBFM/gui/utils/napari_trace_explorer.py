@@ -405,7 +405,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         layer_to_add_callback = self.seg_layer
         added_segmentation_callbacks = [
             self.update_segmentation_status_label,
-            self.center_on_selected_neuron,
             self.toggle_highlight_selected_neuron
         ]
         added_tracklet_callbacks = [
@@ -921,7 +920,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         neuron_name = self.current_name
         df_single_track = self.dat.final_tracks[neuron_name]
         likelihood_threshold = self.dat.likelihood_thresh
-        all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track, likelihood_threshold)
+        z_to_xy_ratio = self.dat.physical_unit_conversion.z_to_xy_ratio
+        all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track,
+                                                                                  likelihood_threshold,
+                                                                                  z_to_xy_ratio)
 
         self.bad_points = to_remove
         return all_tracks_array, track_of_point

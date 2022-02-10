@@ -158,7 +158,7 @@ def change_viewer_time_point(viewer: napari.Viewer,
     viewer.dims.current_step = tzxy
 
 
-def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None):
+def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy_ratio=1.0):
     # Just visualize one neuron for now
     # 5 columns:
     # track_id, t, z, y, x
@@ -185,6 +185,8 @@ def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None):
 
     all_tracks_list.append(np.hstack([t_array, zxy_array]))
     all_tracks_array = np.vstack(all_tracks_list)
+
+    all_tracks_array[:, 0] *= z_to_xy_ratio
 
     track_of_point = np.hstack([np.ones((all_tracks_array.shape[0], 1)), all_tracks_array])
 

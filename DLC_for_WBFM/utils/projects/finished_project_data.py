@@ -176,7 +176,8 @@ class ProjectData:
             self.global2tracklet,
             segmentation_metadata=self.segmentation_metadata,
             tracking_cfg=tracking_cfg,
-            training_cfg=training_cfg
+            training_cfg=training_cfg,
+            z_to_xy_ratio=self.physical_unit_conversion.z_to_xy_ratio
         )
         return obj
 
@@ -509,40 +510,42 @@ class ProjectData:
         else:
             clipping_list = []
 
-        z_to_xy_scaling = self.physical_unit_conversion.z_to_xy_ratio
+        z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
 
         if 'Red data' in which_layers:
             viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red',
                              contrast_limits=[0, 200],
-                             scale=(1.0, z_to_xy_scaling, 1.0, 1.0),
+                             scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Green data' in which_layers:
             viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
                              contrast_limits=[0, 200],
-                             scale=(1.0, z_to_xy_scaling, 1.0, 1.0),
+                             scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
             viewer.add_labels(self.raw_segmentation, name="Raw segmentation",
-                              scale=(1.0, z_to_xy_scaling, 1.0, 1.0), opacity=0.8, visible=False)
+                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=False)
         if 'Colored segmentation' in which_layers and self.segmentation is not None:
             viewer.add_labels(self.segmentation, name="Colored segmentation",
-                              scale=(1.0, z_to_xy_scaling, 1.0, 1.0), opacity=0.4, visible=False)
+                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=False)
 
         # Add a text overlay
         if 'Neuron IDs' in which_layers:
             df = self.red_traces
-            options = napari_labels_from_traces_dataframe(df)
+            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
             viewer.add_points(**options)
 
         if 'Intermediate global IDs' in which_layers and self.intermediate_global_tracks is not None:
             df = self.intermediate_global_tracks
-            options = napari_labels_from_traces_dataframe(df)
+            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
             options['name'] = 'Intermediate global IDs'
             options['text']['color'] = 'green'
             options['visible'] = False
             viewer.add_points(**options)
 
         if 'Point Cloud' in which_layers:
+            # Note: performance is horrible here
+            raise NotImplementedError
             def make_time_vector(zxy, i):
                 out = np.array([i]*zxy.shape[0])
                 out = np.expand_dims(out, axis=-1)

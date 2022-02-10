@@ -148,6 +148,7 @@ class TrackletAndSegmentationAnnotator:
     verbose: int = 1
 
     last_clicked_position: list = None
+    z_to_xy_ratio: float = 1.0
 
     is_currently_interactive: bool = True
 
@@ -566,7 +567,8 @@ class TrackletAndSegmentationAnnotator:
         if self.verbose >= 1:
             print(f"Adding tracklet of length {df_single_track['z'].count()}")
         if self.to_add_layer_to_viewer:
-            all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track)
+            all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track,
+                                                                                      z_to_xy_ratio=self.z_to_xy_ratio)
             viewer.add_tracks(track_of_point, name=self.current_tracklet_name,
                               tail_width=10, head_length=1, tail_length=4)
         if self.verbose >= 2:

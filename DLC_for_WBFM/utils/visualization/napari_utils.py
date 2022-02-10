@@ -4,7 +4,8 @@ from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 
-def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
+def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
+                                        z_to_xy_ratio=1.0, DEBUG=False):
     """
     Expects dataframe with positions, with column names either:
         legacy format: ['z_dlc', 'x_dlc', 'y_dlc']
@@ -44,6 +45,7 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, DEBUG=False):
         except KeyError:
             coords = ['z', 'x', 'y']
             zxy = np.array(df[n][coords])
+        zxy[:, 0] *= z_to_xy_ratio
         # zxy = df[n][zxy_names].to_numpy(dtype=int)
         t_zxy = np.hstack([t_vec, zxy])
         if n in neuron_name_dict:

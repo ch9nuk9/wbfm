@@ -12,6 +12,10 @@ class PhysicalUnitConversion:
 
     leifer_um_per_unit: float = 84
 
+    @property
+    def z_to_xy_ratio(self):
+        return self.zimmer_um_per_pixel_z / self.zimmer_fluroscence_um_per_pixel_xy
+
     def zimmer2physical_fluorescence(self, vol0_zxy: np.ndarray) -> np.ndarray:
         # xy, then z
         xy_in_um = vol0_zxy[:, [1, 2]] * self.zimmer_fluroscence_um_per_pixel_xy
