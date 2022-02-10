@@ -597,7 +597,7 @@ class TrackletAndSegmentationAnnotator:
             # Add as a new candidate layer
             layer_name = f"Candidate_mask"
             viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0,
-                              scale=(1.0, self.z_to_xy_ratio, 1.0, 1.0))
+                              scale=(self.z_to_xy_ratio, 1.0, 1.0))
 
             # Save for later combining with original mask
             self.candidate_mask = new_full_mask
@@ -622,7 +622,7 @@ class TrackletAndSegmentationAnnotator:
         # Add as a new candidate layer
         layer_name = f"Candidate_mask"
         viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0,
-                          scale=(1.0, self.z_to_xy_ratio, 1.0, 1.0))
+                          scale=(self.z_to_xy_ratio, 1.0, 1.0))
 
         # Save for later combining with original mask
         self.candidate_mask = new_full_mask
