@@ -720,7 +720,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         time_options = self.calculate_time_line()
         self.time_line.set_data(time_options[:2])
-        self.time_line.color = time_options[-1]
+        self.time_line.set_color(time_options[-1])
         self.finish_subplot_update(title)
 
     def update_tracklet_subplot(self):
@@ -800,7 +800,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def update_time_line(event):
             time_options = self.calculate_time_line()
             self.time_line.set_data(time_options[:2])
-            self.time_line.color = time_options[-1]
+            self.time_line.set_color(time_options[-1])
+            # self.time_line.color = time_options[-1]
             self.mpl_widget.draw()
 
     @property
@@ -810,17 +811,16 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def calculate_time_line(self):
         t = self.t
         y = self.y_on_plot
-        # print(f"Updating time line for t={t}")
         ymin, ymax = np.min(y), np.max(y)
         if t <= len(y):
             self.tracking_is_nan = np.isnan(y[t])
         else:
             self.tracking_is_nan = True
-        # print(f"Current point: {y[t]}")
         if self.tracking_is_nan:
             line_color = 'r'
         else:
             line_color = 'k'
+        # print(f"Updating time line for t={t}, y[t] = {y[t]}, color={line_color}")
         return [t, t], [ymin, ymax], line_color
 
     def update_stored_time_series(self, calc_mode=None):
