@@ -644,7 +644,7 @@ def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1)
         print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
         print(
             f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
-    all_tracklets = pd.concat([all_tracklets, right_half], axis=1)
+    all_tracklets = pd.concat([all_tracklets, right_half], axis=1, copy=False)
     all_tracklets[left_name] = left_half[left_name]
     return True, all_tracklets, left_name, right_name
 
