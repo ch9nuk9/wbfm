@@ -71,8 +71,8 @@ def array2qt(img):
     return QtGui.QPixmap.fromImage(new_img)
 
 
-def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_past', zoom=None,
-                      layer_is_full_size_and_single_neuron=True, ind_within_layer=None) -> None:
+def zoom_using_layer_in_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_past', zoom=None,
+                               layer_is_full_size_and_single_neuron=True, ind_within_layer=None) -> None:
     # Get current point
     t = viewer.dims.current_step[0]
     if layer_name in viewer.layers:
@@ -93,22 +93,25 @@ def zoom_using_viewer(viewer: napari.Viewer, layer_name='pts_with_future_and_pas
     if len(tzxy) == 1:
         tzxy = tzxy[0]
     # Data may be actually a null value (but t should be good)
+    tzxy[0] = t
+    zoom_using_viewer(tzxy, viewer, zoom)
+
+
+def zoom_using_viewer(tzxy, viewer, zoom):
     try:
         is_positive = tzxy[2] > 0 and tzxy[3] > 0
         is_finite = not all(np.isnan(tzxy))
+        # Center to the neuron in xy
+        if zoom is not None:
+            viewer.camera.zoom = zoom
+        if is_positive and is_finite:
+            viewer.camera.center = tzxy[1:]
+        # Center around the neuron in z
+        if is_positive and is_finite:
+            viewer.dims.current_step = (tzxy[0], tzxy[1], 0, 0)
     except IndexError:
         logging.warning("Index error in zooming; skipping")
         return
-
-    # Center to the neuron in xy
-    if zoom is not None:
-        viewer.camera.zoom = zoom
-    if is_positive and is_finite:
-        viewer.camera.center = tzxy[1:]
-
-    # Center around the neuron in z
-    if is_positive and is_finite:
-        viewer.dims.current_step = (t, tzxy[1], 0, 0)
 
 
 def get_zxy_from_single_neuron_layer(layer, t, ind_within_layer=None):

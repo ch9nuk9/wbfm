@@ -7,7 +7,7 @@ import pandas as pd
 import zarr
 from PyQt5 import QtWidgets
 
-from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point
+from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -55,7 +55,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
         self.viewer.layers['pts_with_future_and_past'].data = point_layer_data
         self.viewer.layers['track_of_point'].data = track_layer_data
 
-        zoom_using_viewer(self.viewer)
+        zoom_using_layer_in_viewer(self.viewer)
 
     def initialize_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
@@ -66,7 +66,7 @@ class manual_annotation_widget(QtWidgets.QWidget):
 
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
 
-        zoom_using_viewer(self.viewer, **self.zoom_opt)
+        zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
     def initialize_shortcuts(self):
         viewer = self.viewer
@@ -74,12 +74,12 @@ class manual_annotation_widget(QtWidgets.QWidget):
         @viewer.bind_key('.', overwrite=True)
         def zoom_next(viewer):
             change_viewer_time_point(viewer, dt=1, a_max=len(self.df) - 1)
-            zoom_using_viewer(viewer, zoom=None)
+            zoom_using_layer_in_viewer(viewer, zoom=None)
 
         @viewer.bind_key(',', overwrite=True)
         def zoom_previous(viewer):
             change_viewer_time_point(viewer, dt=-1, a_max=len(self.df) - 1)
-            zoom_using_viewer(viewer, zoom=None)
+            zoom_using_layer_in_viewer(viewer, zoom=None)
 
         # @viewer.bind_key('.', overwrite=True)
         # def zoom_next(dummy):

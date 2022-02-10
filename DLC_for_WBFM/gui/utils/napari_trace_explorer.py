@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets
 
-from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_viewer, change_viewer_time_point, build_tracks_from_dataframe
+from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, build_tracks_from_dataframe
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
@@ -334,7 +334,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.viewer.layers['final_track'].data = point_layer_data
         self.viewer.layers['track_of_point'].data = track_layer_data
 
-        zoom_using_viewer(self.viewer, **self.zoom_opt)
+        zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
     def update_neuron_in_tracklet_annotator(self):
         self.dat.tracklet_annotator.current_neuron = self.changeNeuronsDropdown.currentText()
@@ -399,7 +399,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.viewer.add_points(point_layer_data, name="final_track", n_dimensional=True, symbol='cross', **points_opt,
                                visible=False)
         self.viewer.add_tracks(track_layer_data, name="track_of_point", visible=False)
-        zoom_using_viewer(self.viewer,  **self.zoom_opt)
+        zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
         layer_to_add_callback = self.seg_layer
         added_segmentation_callbacks = [
@@ -488,11 +488,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def zoom_next(self, viewer=None):
         change_viewer_time_point(self.viewer, dt=1, a_max=self.max_time)
-        zoom_using_viewer(self.viewer, **self.zoom_opt)
+        zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
     def zoom_previous(self, viewer=None):
         change_viewer_time_point(self.viewer, dt=-1, a_max=self.max_time)
-        zoom_using_viewer(self.viewer, **self.zoom_opt)
+        zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
     def zoom_to_next_nan(self, viewer=None):
         y_on_plot = self.y_on_plot
@@ -504,7 +504,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             if np.isnan(y_on_plot[i]):
                 t_target = i
                 change_viewer_time_point(self.viewer, t_target=t_target - 1)
-                zoom_using_viewer(self.viewer, **self.zoom_opt)
+                zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
                 break
         else:
             print("No nan point found; not moving")
@@ -515,7 +515,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         if conflict_neuron is not None:
             change_viewer_time_point(self.viewer, t_target=t)
-            zoom_using_viewer(self.viewer, **self.zoom_opt)
+            zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No conflict point found; not moving")
 
@@ -523,7 +523,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         t = self.dat.tracklet_annotator.end_time_of_current_tracklet()
         if t is not None:
             change_viewer_time_point(self.viewer, t_target=t)
-            zoom_using_viewer(self.viewer, **self.zoom_opt)
+            zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No tracklet selected; not zooming")
 
@@ -531,7 +531,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         t = self.dat.tracklet_annotator.start_time_of_current_tracklet()
         if t is not None:
             change_viewer_time_point(self.viewer, t_target=t)
-            zoom_using_viewer(self.viewer, **self.zoom_opt)
+            zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No tracklet selected; not zooming")
         pass
@@ -672,7 +672,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def on_subplot_click(self, event):
         t = event.xdata
         change_viewer_time_point(self.viewer, t_target=t)
-        zoom_using_viewer(self.viewer, **self.zoom_opt)
+        zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
     def change_trace_tracklet_mode(self):
         print(f"Changed mode to: {self.changeTraceTrackletDropdown.currentText()}")
