@@ -9,6 +9,7 @@ from copy import deepcopy
 import napari
 import numpy as np
 import pandas as pd
+import zarr
 from matplotlib import pyplot as plt
 
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
@@ -139,6 +140,9 @@ class TrackletAndSegmentationAnnotator:
     time_of_candidate: int = None
     indices_of_original_neurons: List[int] = None
 
+    buffer_masks: zarr.Array = None
+    t_buffer_masks: List[int] = None
+
     segmentation_options: dict = None
 
     # Visualization options
@@ -157,6 +161,8 @@ class TrackletAndSegmentationAnnotator:
             self.manual_global2tracklet_names = defaultdict(list)
         if self.manual_global2tracklet_removals is None:
             self.manual_global2tracklet_removals = defaultdict(list)
+        if self.t_buffer_masks is None:
+            self.t_buffer_masks = []
 
         match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
         self.output_match_fname = get_sequential_filename(match_fname)
@@ -631,6 +637,19 @@ class TrackletAndSegmentationAnnotator:
 
         # Keep the saved indices as both
         # self.set_selected_segmentation(self.time_of_candidate, target_index)
+
+    def modify_buffer_segmentation(self, t, new_mask):
+        self.buffer_masks[t, ...] = new_mask
+        self.t_buffer_masks.append(t)
+
+    def update_segmentation_layer_using_buffer(self, layer, t=None):
+        if t is None:
+            # Default to most recent buffer change
+            t = self.t_buffer_masks[-1]
+        elif t not in self.t_buffer_masks:
+            logging.warning(f"Tried to update segmentation layer at t={t}, but no buffer mask found")
+            return
+        layer.data[t] = self.buffer_masks[t]
 
     def clear_currently_selected_segmentations(self, do_callbacks=True):
         self.time_of_candidate = None

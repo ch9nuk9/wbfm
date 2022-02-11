@@ -362,6 +362,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def modify_segmentation_using_manual_correction(self):
         # Uses candidate mask layer
         self.dat.modify_segmentation_using_manual_correction()
+        self.dat.tracklet_annotator.update_segmentation_layer_using_buffer(self.seg_layer)
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
         self.remove_layer_of_candidate_segmentation()
 
@@ -369,6 +370,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe
         self.dat.segmentation_metadata.overwrite_original_detection_file()
         self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
+        self.dat.modify_segmentation_on_disk_using_buffer()
         logging.info("Successfully saved to disk!")
 
     def split_segmentation_manual(self):

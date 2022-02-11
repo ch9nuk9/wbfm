@@ -177,7 +177,8 @@ class ProjectData:
             segmentation_metadata=self.segmentation_metadata,
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg,
-            z_to_xy_ratio=self.physical_unit_conversion.z_to_xy_ratio
+            z_to_xy_ratio=self.physical_unit_conversion.z_to_xy_ratio,
+            modified_masks=zarr.zeros_like(self.segmentation)
         )
         return obj
 
@@ -272,7 +273,7 @@ class ProjectData:
         behavior_fname = cfg.resolve_relative_path(behavior_fname)
 
         zarr_reader_readonly = lambda fname: zarr.open(fname, mode='r')
-        zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
+        # zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
         # Note: when running on the cluster the raw data isn't (for now) accessible
@@ -295,7 +296,7 @@ class ProjectData:
                 # reindexed_metadata_training = ex.submit(read_if_exists,
                 #                                         reindexed_metadata_training_fname, pickle_load_binary).result()
                 # final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
-                raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
+                raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readonly).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_readonly).result()
                 # seg_metadata: dict = ex.submit(pickle_load_binary, seg_metadata_fname).result()
                 behavior_annotations = ex.submit(read_if_exists, behavior_fname, excel_reader).result()
@@ -391,7 +392,8 @@ class ProjectData:
         # affected_masks = np.unique(this_seg[(this_seg - new_mask) != 0])
 
         print(f"Updating raw segmentation at t = {t}; affected masks={affected_masks}")
-        self.raw_segmentation[t, ...] = new_mask
+        self.tracklet_annotator.modify_buffer_segmentation(t, new_mask)
+        # self.raw_segmentation[t, ...] = new_mask
 
         print("Updating metadata, but NOT writing to disk...")
         red_volume = self.red_data[t, ...]
@@ -409,6 +411,10 @@ class ProjectData:
             else:
                 print(f"No tracklet corresponding to segmentation {m}; not updated")
         logging.debug("Segmentation and tracklet metadata modified successfully")
+
+    def modify_segmentation_on_disk_using_buffer(self):
+        for t in self.tracklet_annotator.t_buffer_masks:
+            self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:
