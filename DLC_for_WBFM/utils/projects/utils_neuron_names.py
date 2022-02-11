@@ -25,3 +25,7 @@ def int2name_using_mode(i_neuron: int, mode: str):
         return int2name_tracklet(i_neuron)
     else:
         raise NotImplementedError
+
+
+def int2name_dummy(i):
+    return f"zzz_{i:03d}"
