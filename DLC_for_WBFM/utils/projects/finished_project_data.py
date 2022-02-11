@@ -273,7 +273,7 @@ class ProjectData:
         behavior_fname = cfg.resolve_relative_path(behavior_fname)
 
         zarr_reader_readonly = lambda fname: zarr.open(fname, mode='r')
-        # zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
+        zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
         # Note: when running on the cluster the raw data isn't (for now) accessible
@@ -296,7 +296,8 @@ class ProjectData:
                 # reindexed_metadata_training = ex.submit(read_if_exists,
                 #                                         reindexed_metadata_training_fname, pickle_load_binary).result()
                 # final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
-                raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readonly).result()
+                # TODO: don't open this as read-write by default
+                raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_readonly).result()
                 # seg_metadata: dict = ex.submit(pickle_load_binary, seg_metadata_fname).result()
                 behavior_annotations = ex.submit(read_if_exists, behavior_fname, excel_reader).result()
@@ -524,7 +525,7 @@ class ProjectData:
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
-            viewer.add_labels(self.raw_segmentation, name="Raw segmentation",
+            viewer.add_labels(zarr.array(self.raw_segmentation), name="Raw segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=False)
         if 'Colored segmentation' in which_layers and self.segmentation is not None:
             viewer.add_labels(self.segmentation, name="Colored segmentation",
