@@ -260,13 +260,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.clearSelectedSegmentationsButton.pressed.connect(self.clear_current_segmentations)
         self.formlayout5.addRow("Remove selected segmentations: ", self.clearSelectedSegmentationsButton)
 
-        self.splitSegmentationManualButton = QtWidgets.QPushButton("Manually split")
+        self.splitSegmentationManualButton = QtWidgets.QPushButton("Try to manually split")
         self.splitSegmentationManualButton.pressed.connect(self.split_segmentation_manual)
         self.formlayout5.addRow("Produce candidate mask: ", self.splitSegmentationManualButton)
-        self.splitSegmentationAutomaticButton = QtWidgets.QPushButton("Automatically split")
+        self.splitSegmentationAutomaticButton = QtWidgets.QPushButton("Try to automatically split")
         self.splitSegmentationAutomaticButton.pressed.connect(self.split_segmentation_automatic)
         self.formlayout5.addRow("Produce candidate mask: ", self.splitSegmentationAutomaticButton)
-        self.mergeSegmentationButton = QtWidgets.QPushButton("Merge selected")
+        self.mergeSegmentationButton = QtWidgets.QPushButton("Try to merge selected")
         self.mergeSegmentationButton.pressed.connect(self.merge_segmentation)
         self.formlayout5.addRow("Produce candidate mask: ", self.mergeSegmentationButton)
 
@@ -379,17 +379,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Produces candidate mask layer
         self.remove_layer_of_candidate_segmentation()
         self.dat.tracklet_annotator.split_current_neuron_and_add_napari_layer(self.viewer, split_method="Manual")
+        self.set_segmentation_layer_invisible()
 
     def split_segmentation_automatic(self):
         # Produces candidate mask layer
         self.remove_layer_of_candidate_segmentation()
         self.dat.tracklet_annotator.split_current_neuron_and_add_napari_layer(self.viewer, split_method="Gaussian")
+        self.set_segmentation_layer_invisible()
 
     def merge_segmentation(self):
         # Produces candidate mask layer
         self.remove_layer_of_candidate_segmentation()
-        self.seg_layer.visible = False
         self.dat.tracklet_annotator.merge_current_neurons(self.viewer)
+        self.set_segmentation_layer_invisible()
 
     def clear_current_segmentations(self):
         self.remove_layer_of_candidate_segmentation()
