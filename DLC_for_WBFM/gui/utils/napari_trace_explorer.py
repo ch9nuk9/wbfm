@@ -208,7 +208,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.appendTrackletButton.pressed.connect(self.save_current_tracklet_to_neuron)
         self.appendTrackletButton.setToolTip("Note: check console for more details of the conflict")
         self.vbox4.addWidget(self.appendTrackletButton)
-        self.vbox4.addWidget(self.saveTrackletsButton)
 
         self.saveSegmentationToTrackletButton = QtWidgets.QPushButton("Append current segmentation to current tracklet")
         self.saveSegmentationToTrackletButton.pressed.connect(self.save_segmentation_to_tracklet)
