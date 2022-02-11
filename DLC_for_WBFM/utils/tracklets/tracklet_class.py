@@ -285,7 +285,7 @@ class DetectedTrackletsAndNeurons:
             self.df_tracklets_zxy.loc[t, tracklet_name] = np.nan
         else:
             if verbose >= 1:
-                print(f"{tracklet_name} on segmentation {mask_ind} updated")
+                print(f"{tracklet_name} on segmentation {mask_ind} at t={t} updated")
             self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
             self.dataframe_is_synced_to_disk = False
 

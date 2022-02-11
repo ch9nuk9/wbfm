@@ -199,10 +199,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (w)")
         self.clearTrackletButton.pressed.connect(self.clear_current_tracklet)
         self.vbox4.addWidget(self.clearTrackletButton)
-        self.removeTrackletButton1 = QtWidgets.QPushButton("Remove tracklets with time conflicts (z)")
+        self.removeTrackletButton1 = QtWidgets.QPushButton("Remove tracklets with time conflicts")
         self.removeTrackletButton1.pressed.connect(self.remove_time_conflicts)
         self.vbox4.addWidget(self.removeTrackletButton1)
-        self.removeTrackletButton2 = QtWidgets.QPushButton("Remove current tracklet from all neurons (x)")
+        self.removeTrackletButton2 = QtWidgets.QPushButton("Remove current tracklet from all neurons")
         self.removeTrackletButton2.pressed.connect(self.remove_tracklet_from_all_matches)
         self.vbox4.addWidget(self.removeTrackletButton2)
         self.appendTrackletButton = QtWidgets.QPushButton("Save current tracklet to neuron (IF conflict-free) (c)")
@@ -210,7 +210,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.appendTrackletButton.setToolTip("Note: check console for more details of the conflict")
         self.vbox4.addWidget(self.appendTrackletButton)
 
-        self.saveSegmentationToTrackletButton = QtWidgets.QPushButton("Append current segmentation to current tracklet")
+        self.saveSegmentationToTrackletButton = QtWidgets.QPushButton("Save current segmentation "
+                                                                      "to current tracklet (x)")
         self.saveSegmentationToTrackletButton.pressed.connect(self.save_segmentation_to_tracklet)
         self.vbox4.addWidget(self.saveSegmentationToTrackletButton)
 
@@ -479,13 +480,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def print_tracklet_status(viewer):
             self.print_tracklets()
 
-        @viewer.bind_key('z', overwrite=True)
-        def remove_conflict(viewer):
-            self.remove_time_conflicts()
+        # @viewer.bind_key('z', overwrite=True)
+        # def remove_conflict(viewer):
+        #     pass
+            # self.remove_time_conflicts()
 
         @viewer.bind_key('x', overwrite=True)
         def remove_tracklet(viewer):
-            self.remove_tracklet_from_all_matches()
+            self.save_segmentation_to_tracklet()
+            # self.remove_tracklet_from_all_matches()
 
     @property
     def max_time(self):
@@ -494,10 +497,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def zoom_next(self, viewer=None):
         change_viewer_time_point(self.viewer, dt=1, a_max=self.max_time)
         zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
+        self.time_changed_callbacks()
 
     def zoom_previous(self, viewer=None):
         change_viewer_time_point(self.viewer, dt=-1, a_max=self.max_time)
         zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
+        self.time_changed_callbacks()
 
     def zoom_to_next_nan(self, viewer=None):
         y_on_plot = self.y_on_plot
@@ -513,6 +518,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 break
         else:
             print("No nan point found; not moving")
+        self.time_changed_callbacks()
 
     def zoom_to_next_conflict(self, viewer=None):
 
@@ -523,6 +529,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No conflict point found; not moving")
+        self.time_changed_callbacks()
 
     def zoom_to_end_of_current_tracklet(self, viewer=None):
         t = self.dat.tracklet_annotator.end_time_of_current_tracklet()
@@ -531,6 +538,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No tracklet selected; not zooming")
+        self.time_changed_callbacks()
 
     def zoom_to_start_of_current_tracklet(self, viewer=None):
         t = self.dat.tracklet_annotator.start_time_of_current_tracklet()
@@ -539,7 +547,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
         else:
             print("No tracklet selected; not zooming")
-        pass
+        self.time_changed_callbacks()
 
     def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
@@ -567,11 +575,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def toggle_raw_segmentation_layer(self):
         if self.viewer.layers.selection.active == self.seg_layer:
             self.viewer.layers.selection.clear()
-            self.seg_layer.visible = 0
+            self.seg_layer.visible = False
         else:
             self.viewer.layers.selection.clear()
             self.viewer.layers.selection.add(self.seg_layer)
-            self.seg_layer.visible = 1
+            self.seg_layer.visible = True
 
     def save_current_tracklet_to_neuron(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
@@ -796,6 +804,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def set_segmentation_layer_visible(self):
         self.seg_layer.visible = True
+
+    def set_segmentation_layer_do_not_show_selected_label(self):
+        self.seg_layer.show_selected_label = False
+
+    def time_changed_callbacks(self):
+        self.set_segmentation_layer_do_not_show_selected_label()
 
     def finish_subplot_update(self, title):
         self.static_ax.set_title(title)
