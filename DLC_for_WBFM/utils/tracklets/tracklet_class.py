@@ -280,7 +280,8 @@ class DetectedTrackletsAndNeurons:
         row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
         if row_data is None:
             if verbose >= 1:
-                print(f"{tracklet_name} previously on segmentation {mask_ind} no longer exists, and was removed")
+                print(f"{tracklet_name} previously on segmentation {mask_ind} no longer exists, "
+                      f"and was removed at that time point")
             self.df_tracklets_zxy.loc[t, tracklet_name] = np.nan
         else:
             if verbose >= 1:

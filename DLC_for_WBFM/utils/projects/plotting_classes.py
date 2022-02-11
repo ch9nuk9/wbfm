@@ -425,7 +425,7 @@ class TrackletAndSegmentationAnnotator:
     def save_manual_matches_to_disk_dispatch(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches
         logging.warning("Saving tracklet dataframe, DO NOT QUIT")
-        print("Note: the GUI will still respond, but you can't split or save any tracklets")
+        print("Note: the GUI might still respond, but you can't split or save any tracklets")
         # self.saving_lock.acquire(blocking=True)
         logging.warning("Acquired saving lock; currently saving")
         t = threading.Thread(target=self.save_manual_matches_to_disk)
@@ -444,10 +444,8 @@ class TrackletAndSegmentationAnnotator:
             self.tracking_cfg.pickle_in_local_project(self.tracklet_split_names, self.tracklet_split_names_fname)
             self.tracking_cfg.pickle_in_local_project(self.tracklet_split_times, self.tracklet_split_times_fname)
 
-            print("Saving successful! You may now quit")
             self.tracking_cfg.update_on_disk()
-        # finally:
-        #     self.saving_lock.release()
+        print("Saving successful! You may now quit")
 
     def split_current_tracklet(self, i_split, set_new_half_to_current=True):
         # The current time is included in the "new half" of the tracklet

@@ -208,9 +208,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.appendTrackletButton.pressed.connect(self.save_current_tracklet_to_neuron)
         self.appendTrackletButton.setToolTip("Note: check console for more details of the conflict")
         self.vbox4.addWidget(self.appendTrackletButton)
-        self.saveTrackletsButton = QtWidgets.QPushButton("Save manual annotations to disk")
-        self.saveTrackletsButton.pressed.connect(self.save_annotations_to_disk)
-        self.saveTrackletsButton.setToolTip("Note: Can take up to a minute")
         self.vbox4.addWidget(self.saveTrackletsButton)
 
         self.saveSegmentationToTrackletButton = QtWidgets.QPushButton("Append current segmentation to current tracklet")
@@ -231,7 +228,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.removeTrackletButton1,
             self.removeTrackletButton2,
             self.appendTrackletButton,
-            self.saveTrackletsButton,
             self.saveSegmentationToTrackletButton
         ]
 
@@ -273,9 +269,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationSaveButton1 = QtWidgets.QPushButton("Save to RAM")
         self.splitSegmentationSaveButton1.pressed.connect(self.modify_segmentation_using_manual_correction)
         self.formlayout5.addRow("Save candidate mask: ", self.splitSegmentationSaveButton1)
-        self.splitSegmentationSaveButton2 = QtWidgets.QPushButton("Save to disk")
-        self.splitSegmentationSaveButton2.pressed.connect(self.modify_segmentation_on_disk)
-        self.formlayout5.addRow("Finalize all masks:", self.splitSegmentationSaveButton2)
+        self.mainSaveButton = QtWidgets.QPushButton("SAVE TO DISK")
+        self.mainSaveButton.pressed.connect(self.modify_segmentation_and_tracklets_on_disk)
+        self.formlayout5.addRow("***Masks and Tracklets***", self.mainSaveButton)
 
         self.saveSegmentationStatusLabel = QtWidgets.QLabel("No segmentation loaded")
         self.formlayout5.addRow("STATUS: ", self.saveSegmentationStatusLabel)
@@ -290,7 +286,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.splitSegmentationAutomaticButton,
             self.mergeSegmentationButton,
             self.splitSegmentationSaveButton1,
-            self.splitSegmentationSaveButton2,
+            self.mainSaveButton,
         ]
 
     @property
@@ -370,9 +366,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
         self.remove_layer_of_candidate_segmentation()
 
-    def modify_segmentation_on_disk(self):
-        # Uses segmentation as modified previously by candidate mask layer
+    def modify_segmentation_and_tracklets_on_disk(self):
+        # Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe
         self.dat.segmentation_metadata.overwrite_original_detection_file()
+        self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
         logging.info("Successfully saved to disk!")
 
     def split_segmentation_manual(self):
@@ -563,12 +560,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.remove_layer_of_current_tracklet()
         self.dat.tracklet_annotator.clear_current_tracklet()
         self.tracklet_updated_psuedo_event()
-
-    def save_annotations_to_disk(self):
-        if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
-        else:
-            print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def toggle_raw_segmentation_layer(self):
         if self.viewer.layers.selection.active == self.seg_layer:
