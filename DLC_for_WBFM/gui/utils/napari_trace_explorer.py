@@ -1,6 +1,7 @@
 # Display more informative error messages
 # https://www.tutorialexample.com/fix-pyqt-gui-application-crashed-while-no-error-message-displayed-a-beginner-guide-pyqt-tutorial/
 import cgitb
+import os
 import signal
 
 from DLC_for_WBFM.gui.utils.utils_matplotlib import PlotQWidget
@@ -932,6 +933,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
 def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None):
     # A parent QT application must be initialized first
+    os.environ["NAPARI_ASYNC"] = "1"
     if app is None:
         started_new_app = True
         app = QApplication([])
