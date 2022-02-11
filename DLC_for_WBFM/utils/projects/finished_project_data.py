@@ -525,6 +525,7 @@ class ProjectData:
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
+            # TODO: Add threading here? This takes ~ 15 seconds on a good workstation
             viewer.add_labels(zarr.array(self.raw_segmentation), name="Raw segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=False)
         if 'Colored segmentation' in which_layers and self.segmentation is not None:
