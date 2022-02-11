@@ -612,12 +612,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     @property
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            # y_list = self.dat.tracklet_annotator.calculate_tracklets_for_neuron()
             y_list = self.y_tracklets
+            if self.y_tracklet_current is not None:
+                y_list.append(self.y_tracklet_current)
             tmp_df = y_list[0].copy()
             for df in y_list[1:]:
                 tmp_df = tmp_df.combine_first(df)
-            # y_on_plot = np.sum(y_list, axis=1)
             y_on_plot = tmp_df['z']
         else:
             y_on_plot = self.y_trace_mode
@@ -733,6 +733,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.static_ax.clear()
         for y in self.y_tracklets:
             self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
+        if self.y_tracklet_current is not None:
+            self.tracklet_lines.append(self.y_tracklet_current['z'].plot(ax=self.static_ax,
+                                                                         color='k', lw=3))
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
         # We are displaying z here
@@ -803,7 +806,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             time_options = self.calculate_time_line()
             self.time_line.set_data(time_options[:2])
             self.time_line.set_color(time_options[-1])
-            # self.time_line.color = time_options[-1]
             self.mpl_widget.draw()
 
     @property
@@ -850,9 +852,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_stored_tracklets_for_plotting(self):
         name = self.current_name
-        tracklets = self.dat.calculate_tracklets(name)
+        tracklets, tracklet_current = self.dat.calculate_tracklets(name)
         print(f"Found {len(tracklets)} tracklets for {name}")
+        if tracklet_current is not None:
+            print("Additionally found 1 currently selected tracklet")
         self.y_tracklets = tracklets
+        self.y_tracklet_current = tracklet_current
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsDropdown.currentText()

@@ -221,7 +221,7 @@ class TrackletAndSegmentationAnnotator:
         else:
             print("No current tracklet; this button did nothing")
 
-    def calculate_tracklets_for_neuron(self, neuron_name=None) -> List[pd.DataFrame]:
+    def calculate_tracklets_for_neuron(self, neuron_name=None) -> Tuple[List[pd.DataFrame], pd.DataFrame]:
         # Note: does NOT save this neuron as self.current_neuron
         if neuron_name is None:
             neuron_name = self.current_neuron
@@ -232,14 +232,18 @@ class TrackletAndSegmentationAnnotator:
 
         these_names.extend(self.manual_global2tracklet_names[neuron_name])
         [these_names.remove(name) for name in self.manual_global2tracklet_removals[neuron_name]]
-        if self.current_tracklet_name is not None:
-            these_names.append(self.current_tracklet_name)
+        # if self.current_tracklet_name is not None:
+        #     these_names.append(self.current_tracklet_name)
 
         if self.verbose >= 1:
             self.print_current_status(neuron_name)
         these_tracklets = [self.df_tracklet_obj.df_tracklets_zxy[name] for name in these_names]
+        if self.current_tracklet_name is not None:
+            current_tracklet = self.df_tracklet_obj.df_tracklets_zxy[self.current_tracklet_name]
+        else:
+            current_tracklet = None
 
-        return these_tracklets
+        return these_tracklets, current_tracklet
 
     def get_neuron_name_of_conflicting_match(self, tracklet_name=None):
         # The tracklet shouldn't be in the manually annotated match, because it can't be added if there are conflicts

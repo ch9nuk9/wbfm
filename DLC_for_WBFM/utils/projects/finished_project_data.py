@@ -358,13 +358,8 @@ class ProjectData:
         return self.trace_plotter.tspan, y
 
     def calculate_tracklets(self, neuron_name):
-        # if self.tracklet_annotator is None:
-        #     self.tracklet_annotator = TrackletAnnotator(
-        #         self.df_all_tracklets,
-        #         self.global2tracklet
-        #     )
-        y = self.tracklet_annotator.calculate_tracklets_for_neuron(neuron_name)
-        return y
+        y, y_current = self.tracklet_annotator.calculate_tracklets_for_neuron(neuron_name)
+        return y, y_current
 
     def modify_confidences_of_frame_pair(self, pair, gamma, mode):
         frame_match = self.raw_matches[pair]
