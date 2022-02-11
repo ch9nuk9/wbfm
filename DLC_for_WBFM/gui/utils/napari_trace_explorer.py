@@ -366,6 +366,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.tracklet_annotator.update_segmentation_layer_using_buffer(self.seg_layer)
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
         self.remove_layer_of_candidate_segmentation()
+        self.set_segmentation_layer_visible()
 
     def modify_segmentation_and_tracklets_on_disk(self):
         # Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe
@@ -792,6 +793,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def set_segmentation_layer_invisible(self):
         self.seg_layer.visible = False
+
+    def set_segmentation_layer_visible(self):
+        self.seg_layer.visible = True
 
     def finish_subplot_update(self, title):
         self.static_ax.set_title(title)
