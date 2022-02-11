@@ -633,7 +633,9 @@ def get_next_name_tracklet_or_neuron(df, name_mode='tracklet'):
 def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1):
     left_name = old_name
     this_tracklet = all_tracklets[[left_name]]
-    if i_split not in this_tracklet.dropna(axis=0).index:
+    idx = this_tracklet.index[this_tracklet[left_name]['z'].notnull()]
+    # if i_split not in this_tracklet.dropna(axis=0).index:
+    if i_split not in idx:
         logging.warning(f"Tried to split {old_name} at {i_split}, but it doesn't exist at that time")
         return False, all_tracklets, left_name, None
     # Split
@@ -644,7 +646,12 @@ def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1)
         print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
         print(
             f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
-    all_tracklets = pd.concat([all_tracklets, right_half], axis=1, copy=False)
+        # Performance tests
+    # all_tracklets = pd.concat([all_tracklets, right_half], axis=1, copy=False, sort=False)
+    all_tracklets = all_tracklets.join(right_half, sort=False)
+    # all_tracklets = all_tracklets.merge(right_half, sort=False, left_index=True, right_index=True)
+    # all_tracklets.assign(**right_half.to_dict())
+    # all_tracklets.append(right_half)
     all_tracklets[left_name] = left_half[left_name]
     return True, all_tracklets, left_name, right_name
 
