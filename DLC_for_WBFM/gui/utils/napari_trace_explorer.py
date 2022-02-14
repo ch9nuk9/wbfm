@@ -43,6 +43,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat = project_data
         self.main_window = app
 
+        # https://stackoverflow.com/questions/12781407/how-do-i-resize-the-contents-of-a-qscrollarea-as-more-widgets-are-placed-inside
+        # scroll = QtWidgets.QScrollArea()
+        # scroll.setWidgetResizable(True)  # CRITICAL
+        #
+        # inner = QtWidgets.QFrame()
+        # inner_layout = QtWidgets.QVBoxLayout()
+        # inner.setLayout(inner_layout)
+        # scroll.setWidget(inner)  # CRITICAL
+        #
+        # inner_layout.addWidget(scroll)
+        #
+        # self.verticalLayoutWidget = inner
+        # self.verticalLayout = inner_layout
+        # self.scroll = scroll
+
+
         self.tracklet_lines = []
         self.subplot_xlim = []
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
