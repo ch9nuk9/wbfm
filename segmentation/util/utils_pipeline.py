@@ -1,7 +1,9 @@
 import logging
+import os
 import threading
 import stardist.models
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
+from numcodecs import blosc
 
 import segmentation.util.utils_postprocessing as post
 import numpy as np
@@ -100,6 +102,7 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
 ## 2d pipeline (stitch to get 3d)
 ##
 
+
 def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
                                   project_cfg: ModularProjectConfig,
                                   continue_from_frame: int =None,
@@ -124,6 +127,11 @@ def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
     if verbose > 1:
         print("Postprocessing settings: ")
         print(opt_postprocessing)
+    # Force BLOSC (compression within zarr) to not be multi-threaded
+    # On large jobs (not remote, not dask) I get this error: https://github.com/pangeo-data/pangeo/issues/196
+    os.environ["BLOSC_NTHREADS"] = "1"
+    # See also: https://zarr.readthedocs.io/en/stable/tutorial.html#tutorial-tips-blosc
+    blosc.use_threads = False
     masks_zarr = _do_first_volume2d(frame_list, mask_fname, num_frames,
                                     sd_model, verbose, video_dat, zero_out_borders,
                                     all_bounding_boxes,

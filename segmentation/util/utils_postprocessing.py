@@ -502,7 +502,8 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
 def _plot_just_data(x_data, y_data):
     fig = plt.figure()
     plt.plot(x_data, y_data, label='Data')
-    plt.title('Brightness across z')
+    plt.ylim([np.min(y_data), np.max(y_data)])
+    plt.title('Candidate split (line stays to the left neuron)')
     plt.ylabel('Brightness (sum of pixels in each segmented plane)')
     plt.xlabel('Z slice (starts at top of current neuron not volume)')
     plt.legend(loc='upper right')
