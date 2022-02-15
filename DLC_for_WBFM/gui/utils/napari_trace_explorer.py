@@ -58,7 +58,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.current_name = neuron_names[0]
 
         # BOX 1: Change neurons (dropdown)
-        self.groupBox1 = QtWidgets.QGroupBox("Neuron selection", self.verticalLayoutWidget)
+        self.groupBox1 = QtWidgets.QGroupBox("Selection", self.verticalLayoutWidget)
         self.vbox1 = QtWidgets.QVBoxLayout(self.groupBox1)
         self.changeNeuronsDropdown = QtWidgets.QComboBox()
         self.changeNeuronsDropdown.addItems(neuron_names)
@@ -69,36 +69,35 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # BOX 2: overall mode options
         # Change traces (dropdown)
-        self.groupBox2 = QtWidgets.QGroupBox("Channel and Mode selection", self.verticalLayoutWidget)
-        self.vbox2 = QtWidgets.QVBoxLayout(self.groupBox2)
+        # self.groupBox2 = QtWidgets.QGroupBox("Channel and Mode selection", self.verticalLayoutWidget)
+        # self.vbox2 = QtWidgets.QVBoxLayout(self.groupBox2)
 
         self.changeChannelDropdown = QtWidgets.QComboBox()
         self.changeChannelDropdown.addItems(['green', 'red', 'ratio'])
         self.changeChannelDropdown.currentIndexChanged.connect(self.update_trace_subplot)
-        self.vbox2.addWidget(self.changeChannelDropdown)
+        self.vbox1.addWidget(self.changeChannelDropdown)
 
         # Change traces vs tracklet mode
         self.changeTraceTrackletDropdown = QtWidgets.QComboBox()
         self.changeTraceTrackletDropdown.addItems(['traces', 'tracklets'])
         self.changeTraceTrackletDropdown.currentIndexChanged.connect(self.change_trace_tracklet_mode)
-        self.vbox2.addWidget(self.changeTraceTrackletDropdown)
+        self.vbox1.addWidget(self.changeTraceTrackletDropdown)
 
         self.changeInteractivityCheckbox = QtWidgets.QCheckBox("Turn on interactivity? "
                                                                "NOTE: only Raw_segmentation layer is interactive")
         self.changeInteractivityCheckbox.stateChanged.connect(self.update_interactivity)
-        self.vbox2.addWidget(self.changeInteractivityCheckbox)
+        self.vbox1.addWidget(self.changeInteractivityCheckbox)
 
         # More complex boxes:
-
         self._setup_trace_filtering_buttons()  # Box 3
-        self._setup_general_shortcut_buttons()
+        # self._setup_general_shortcut_buttons()
         self._setup_tracklet_correction_shortcut_buttons()  # Box 4
         self._setup_segmentation_correction_buttons()  # Box 5
 
         self.verticalLayout.addWidget(self.groupBox1)
-        self.verticalLayout.addWidget(self.groupBox2)
+        # self.verticalLayout.addWidget(self.groupBox2)
         self.verticalLayout.addWidget(self.groupBox3)
-        self.verticalLayout.addWidget(self.groupBox3b)
+        # self.verticalLayout.addWidget(self.groupBox3b)
         self.verticalLayout.addWidget(self.groupBox4)
         self.verticalLayout.addWidget(self.groupBox5)
 
@@ -171,20 +170,20 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox4 = QtWidgets.QGroupBox("Tracklet Correction", self.verticalLayoutWidget)
         self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox4)
 
-        self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet attached to neuron")
-        self.vbox4.addWidget(self.trackletHint1)
+        # self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet attached to neuron")
+        # self.vbox4.addWidget(self.trackletHint1)
 
         self.recentTrackletSelector = QtWidgets.QComboBox()
         self.vbox4.addWidget(self.recentTrackletSelector)
         self.recentTrackletSelector.currentIndexChanged.connect(self.change_tracklets_using_dropdown)
         self.recentTrackletSelector.setToolTip("Select from history of recent tracklets")
 
-        self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (g)")
-        self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
-        self.zoom4Button.setToolTip("Note: does nothing if there is no tracklet selected")
-        self.vbox4.addWidget(self.zoom4Button)
-        self.zoom5Button = QtWidgets.QPushButton("Zoom to end of current tracklet (j)")
-        self.zoom5Button.setToolTip("Alternative: zoom to beginning of current tracklet (h)")
+        # self.zoom4Button = QtWidgets.QPushButton("Zoom to next time with tracklet conflict (g)")
+        # self.zoom4Button.pressed.connect(self.zoom_to_next_conflict)
+        # self.zoom4Button.setToolTip("Note: does nothing if there is no tracklet selected")
+        # self.vbox4.addWidget(self.zoom4Button)
+        self.zoom5Button = QtWidgets.QPushButton("Jump to end of current tracklet (j)")
+        self.zoom5Button.setToolTip("Alternative: jump to beginning of current tracklet (h)")
         self.zoom5Button.pressed.connect(self.zoom_to_end_of_current_tracklet)
         self.vbox4.addWidget(self.zoom5Button)
 
@@ -196,10 +195,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitTrackletButton2 = QtWidgets.QPushButton("Split current tracklet (keep right) (e)")
         self.splitTrackletButton2.pressed.connect(self.split_current_tracklet_keep_right)
         self.vbox4.addWidget(self.splitTrackletButton2)
-        self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (w)")
-        self.clearTrackletButton.pressed.connect(self.clear_current_tracklet)
-        self.vbox4.addWidget(self.clearTrackletButton)
-        self.removeTrackletButton1 = QtWidgets.QPushButton("Remove tracklets with time conflicts")
+        # self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (w)")
+        # self.clearTrackletButton.pressed.connect(self.clear_current_tracklet)
+        # self.vbox4.addWidget(self.clearTrackletButton)
+        self.removeTrackletButton1 = QtWidgets.QPushButton("Remove OTHER tracklets with time conflicts")
         self.removeTrackletButton1.pressed.connect(self.remove_time_conflicts)
         self.vbox4.addWidget(self.removeTrackletButton1)
         self.removeTrackletButton2 = QtWidgets.QPushButton("Remove current tracklet from all neurons")
@@ -220,12 +219,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.list_of_tracklet_correction_widgets = [
             self.recentTrackletSelector,
-            self.zoom4Button,
             self.zoom5Button,
             self.toggleSegButton,
             self.splitTrackletButton1,
             self.splitTrackletButton2,
-            self.clearTrackletButton,
             self.removeTrackletButton1,
             self.removeTrackletButton2,
             self.appendTrackletButton,
@@ -236,12 +233,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
         self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
 
-        self.splitSegmentationHint1 = QtWidgets.QLabel()
-        self.splitSegmentationHint1.setText("Select segmentation")
-        self.formlayout5.addRow("Control-click:", self.splitSegmentationHint1)
-        self.splitSegmentationHint2 = QtWidgets.QLabel()
-        self.splitSegmentationHint2.setText("Select segmentation and try to split")
-        self.formlayout5.addRow("Alt-click:", self.splitSegmentationHint2)
+        # self.splitSegmentationHint1 = QtWidgets.QLabel()
+        # self.splitSegmentationHint1.setText("Select segmentation")
+        # self.formlayout5.addRow("Control-click:", self.splitSegmentationHint1)
+        # self.splitSegmentationHint2 = QtWidgets.QLabel()
+        # self.splitSegmentationHint2.setText("Select segmentation and try to split")
+        # self.formlayout5.addRow("Alt-click:", self.splitSegmentationHint2)
 
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
         self.splitSegmentationManualSliceButton.setRange(1, 20)  # TODO: look at actual z depth of neuron
