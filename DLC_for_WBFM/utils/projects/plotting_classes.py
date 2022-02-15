@@ -463,7 +463,7 @@ class TrackletAndSegmentationAnnotator:
         # And finally, the newer half is set as the current tracklet
         if self.current_tracklet_name is None:
             print("No current tracklet!")
-            return
+            return False
 
         with self.saving_lock:
             # Left half stays as old name
@@ -474,7 +474,7 @@ class TrackletAndSegmentationAnnotator:
 
             if not successfully_split:
                 logging.warning("Did not successfully split; check logs")
-                return
+                return False
 
             self.df_tracklet_obj.df_tracklets_zxy = all_tracklets
             if set_new_half_to_current:
@@ -485,6 +485,8 @@ class TrackletAndSegmentationAnnotator:
             # Save a record of the split
             self.tracklet_split_names[left_name].append(right_name)
             self.tracklet_split_times[left_name].append((i_split - 1, i_split))
+
+        return True
 
     def segmentation_updated_callbacks(self):
         [callback() for callback in self.segmentation_callbacks]
