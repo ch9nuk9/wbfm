@@ -252,7 +252,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.clearSelectedSegmentationsButton = QtWidgets.QPushButton("Clear")
         self.clearSelectedSegmentationsButton.pressed.connect(self.clear_current_segmentations)
-        self.formlayout5.addRow("Remove selected segmentations: ", self.clearSelectedSegmentationsButton)
+        self.formlayout5.addRow("Remove selected segmentations (r): ", self.clearSelectedSegmentationsButton)
 
         self.splitSegmentationManualButton = QtWidgets.QPushButton("Try to manually split")
         self.splitSegmentationManualButton.pressed.connect(self.split_segmentation_manual)
@@ -426,7 +426,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.bind_key('r', overwrite=True)
         def refresh_subplot(viewer):
-            self.update_trace_or_tracklet_subplot()
+            # self.update_trace_or_tracklet_subplot()
+            self.clear_current_segmentations()
 
         @viewer.bind_key('d', overwrite=True)
         def zoom_next(viewer):
