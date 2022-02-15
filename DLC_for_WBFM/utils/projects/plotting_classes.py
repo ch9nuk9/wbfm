@@ -578,7 +578,8 @@ class TrackletAndSegmentationAnnotator:
             all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track,
                                                                                       z_to_xy_ratio=self.z_to_xy_ratio)
             viewer.add_tracks(track_of_point, name=self.current_tracklet_name,
-                              tail_width=10, head_length=1, tail_length=4)
+                              tail_width=10, head_length=0, tail_length=4,
+                              colormap='hsv', blend='opaque', opacity=1.0)
         if self.verbose >= 2:
             print(df_single_track.dropna(inplace=False))
 
