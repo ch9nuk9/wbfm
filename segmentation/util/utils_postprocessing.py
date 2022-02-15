@@ -600,7 +600,7 @@ def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_poi
             if peak >= len(y_data):
                 logging.warning(f"Peak {peak} was off the plot!")
                 continue
-            plt.scatter(peaks_of_gaussians, y_data[peak], c='red')
+            plt.scatter(peak, y_data[peak], c='red')
     return g1, g2, y_data, fig
 
 
