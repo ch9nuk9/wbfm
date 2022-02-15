@@ -250,9 +250,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationKeepOriginalIndexButton.currentIndexChanged.connect(self.update_segmentation_options)
         self.formlayout5.addRow("Which side keeps original index: ", self.splitSegmentationKeepOriginalIndexButton)
 
-        self.clearSelectedSegmentationsButton = QtWidgets.QPushButton("Clear")
+        self.clearSelectedSegmentationsButton = QtWidgets.QPushButton("Clear (r)")
         self.clearSelectedSegmentationsButton.pressed.connect(self.clear_current_segmentations)
-        self.formlayout5.addRow("Remove selected segmentations (r): ", self.clearSelectedSegmentationsButton)
+        self.formlayout5.addRow("Remove selected segmentations: ", self.clearSelectedSegmentationsButton)
 
         self.splitSegmentationManualButton = QtWidgets.QPushButton("Try to manually split")
         self.splitSegmentationManualButton.pressed.connect(self.split_segmentation_manual)
