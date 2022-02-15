@@ -3,6 +3,8 @@ import logging
 import os
 from dataclasses import dataclass
 from typing import Tuple, List
+
+import dask.array as da
 import napari
 import numpy as np
 import pandas as pd
@@ -513,14 +515,19 @@ class ProjectData:
             clipping_list = []
 
         z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
+        raw_chunk = self.red_data.chunks
+        dask_chunk = raw_chunk.copy()
+        dask_chunk[0] = 20
 
         if 'Red data' in which_layers:
-            viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red',
+            red_dask = da.from_zarr(self.red_data, chunk=dask_chunk)
+            viewer.add_image(red_dask, name="Red data", opacity=0.5, colormap='red',
                              contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Green data' in which_layers:
-            viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
+            green_dask = da.from_zarr(self.green_data, chunk=dask_chunk)
+            viewer.add_image(green_dask, name="Green data", opacity=0.5, colormap='green', visible=False,
                              contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
