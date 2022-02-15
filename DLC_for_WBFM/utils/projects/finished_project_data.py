@@ -516,7 +516,7 @@ class ProjectData:
 
         z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
         raw_chunk = self.red_data.chunks
-        dask_chunk = raw_chunk.copy()
+        dask_chunk = list(raw_chunk).copy()
         dask_chunk[0] = 20
 
         if 'Red data' in which_layers:
