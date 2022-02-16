@@ -852,7 +852,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         t = self.t
         y = self.y_on_plot
         ymin, ymax = np.min(y), np.max(y)
-        if t <= len(y):
+        if t < len(y):
             self.tracking_is_nan = np.isnan(y[t])
         else:
             self.tracking_is_nan = True
