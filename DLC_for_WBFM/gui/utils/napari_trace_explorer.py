@@ -205,10 +205,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.toggleSegButton = QtWidgets.QPushButton("Toggle Raw segmentation layer (s)")
         self.toggleSegButton.pressed.connect(self.toggle_raw_segmentation_layer)
-        self.splitTrackletButton1 = QtWidgets.QPushButton("Split current tracklet (keep left) (q)")
+        self.splitTrackletButton1 = QtWidgets.QPushButton("Split current tracklet (keep past) (q)")
         self.splitTrackletButton1.pressed.connect(self.split_current_tracklet_keep_left)
         self.vbox4.addWidget(self.splitTrackletButton1)
-        self.splitTrackletButton2 = QtWidgets.QPushButton("Split current tracklet (keep right) (e)")
+        self.splitTrackletButton2 = QtWidgets.QPushButton("Split current tracklet (keep future) (e)")
         self.splitTrackletButton2.pressed.connect(self.split_current_tracklet_keep_right)
         self.vbox4.addWidget(self.splitTrackletButton2)
         # self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (w)")
