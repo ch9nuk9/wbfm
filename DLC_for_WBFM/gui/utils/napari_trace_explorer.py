@@ -503,6 +503,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def remove_tracklet(viewer):
             self.save_segmentation_to_tracklet()
             # self.remove_tracklet_from_all_matches()
+            
+        # Undocumented shortcuts just for my use
+        @viewer.bind_key('l', overwrite=True)
+        def refresh_napari(viewer):
+            self.refresh_default_napari_layers()
 
     @property
     def max_time(self):
