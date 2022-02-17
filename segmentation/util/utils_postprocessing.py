@@ -477,7 +477,9 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
     peaks_of_gaussians, peak_explanation = sanity_checks_on_peaks(brightnesses, peaks_of_gaussians, verbose, y_data,
                                                                   min_separation)
     heights_of_gaussians = [round(coeff[1]), round(coeff[4])]
-    peaks_of_gaussians = sanity_checks_on_heights(heights_of_gaussians, peaks_of_gaussians, min_height, verbose)
+    peaks_of_gaussians, height_explanation = sanity_checks_on_heights(heights_of_gaussians, peaks_of_gaussians, min_height, verbose)
+
+    explanation.extend([peak_explanation, height_explanation])
 
     if num_gaussians == 2:
         split_point = calc_split_point_from_gaussians(peaks_of_gaussians, y_data)
