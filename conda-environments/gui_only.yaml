@@ -17,6 +17,7 @@ dependencies:
     - tables
     - sklearn
     - openpyxl
+    - matplotlib
     - zarr
     - open3d
     - ruamel.yaml
