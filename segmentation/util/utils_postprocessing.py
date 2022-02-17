@@ -878,6 +878,7 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
         # Check for success
         if x_split_local_coord is None:
             logging.warning("Could not split using Gaussian method")
+            print(explanation)
         elif verbose >= 1:
             print(f"Split point is {x_split_local_coord} using gaussian method")
             print(explanation)
@@ -910,10 +911,12 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
         # Check for success
         if x_split_local_coord is None:
             logging.warning("Could not split using Gaussian method")
-        elif verbose >= 1:
-            x_split_local_coord += 0.5
-            print(f"Split point is {x_split_local_coord} using dot-product gaussian method")
             print(explanation)
+        else:
+            if verbose >= 1:
+                x_split_local_coord += 0.5
+                print(f"Split point is {x_split_local_coord} using dot-product gaussian method")
+                print(explanation)
 
             new_full_mask = update_neuron_within_full_mask(full_mask, individual_plane_masks,
                                                            planes_where_neuron_exists,
