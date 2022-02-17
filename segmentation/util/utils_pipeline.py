@@ -1,7 +1,6 @@
 import logging
 import os
 import threading
-import stardist.models
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
 from numcodecs import blosc
 
@@ -17,8 +16,6 @@ from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from segmentation.util.utils_config_files import _unpack_config_file
 from segmentation.util.utils_metadata import get_metadata_dictionary, calc_metadata_full_video
 import zarr
-from segmentation.util.utils_model import segment_with_stardist_2d, segment_with_stardist_3d
-from segmentation.util.utils_model import get_stardist_model
 import concurrent.futures
 
 
@@ -157,6 +154,7 @@ def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
 
 
 def initialize_stardist_model(stardist_model_name, verbose):
+    from segmentation.util.utils_model import get_stardist_model
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
     # Not fully working for multithreaded scenario
     # Discussion about finalizing: https://stackoverflow.com/questions/40850089/is-keras-thread-safe/43393252#43393252
@@ -193,7 +191,7 @@ def _segment_full_video_2d(segment_cfg: ConfigFileWithProjectContext,
 
 
 def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int,
-                       sd_model: stardist.models.StarDist3D, verbose: int, video_dat: zarr.Array,
+                       sd_model, verbose: int, video_dat: zarr.Array,
                        zero_out_borders: bool,
                        all_bounding_boxes: list = None,
                        continue_from_frame: int = None, opt_postprocessing: dict = None) -> zarr.Array:
@@ -208,6 +206,7 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int,
     i_volume = frame_list[i]
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
 
+    from segmentation.util.utils_model import segment_with_stardist_2d
     final_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     _, num_slices, x_sz, y_sz = video_dat.shape
     masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
@@ -229,7 +228,7 @@ def get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat):
 
 
 def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int,
-                       sd_model: stardist.models.StarDist3D, verbose: int, video_dat: zarr.Array,
+                       sd_model, verbose: int, video_dat: zarr.Array,
                        continue_from_frame: int = None) -> zarr.Array:
     # Do first loop to initialize the zarr data
     if continue_from_frame is None:
@@ -241,6 +240,7 @@ def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int,
         mode = 'r+'
     i_volume = frame_list[i]
     volume = video_dat[i_volume, ...]
+    from segmentation.util.utils_model import segment_with_stardist_3d
     final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     _, num_slices, x_sz, y_sz = video_dat.shape
     masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
@@ -271,6 +271,7 @@ def segment_and_save3d(i, i_volume, masks_zarr,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
     volume = video_dat[i_volume, ...]
     # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
+    from segmentation.util.utils_model import segment_with_stardist_3d
     if keras_lock is None:
         final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     else:
@@ -286,6 +287,7 @@ def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
                        all_bounding_boxes,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
+    from segmentation.util.utils_model import segment_with_stardist_2d
     if keras_lock is None:
         segmented_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     else:
