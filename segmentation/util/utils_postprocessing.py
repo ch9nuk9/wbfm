@@ -385,6 +385,7 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
                                       min_height=5,
                                       plots=0, verbose=0,
                                       to_save_plot=0,
+                                      force_split=False,
                                       return_all=False) -> Tuple[Union[int, None], List[str]]:
     """
     New function that mostly removes parameters in favor of an AICC calculation to determine if it is one or
@@ -416,8 +417,12 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
     list_of_models = calculate_multi_gaussian_fits(brightnesses, background=14)
     if verbose >= 3:
         print(list_of_models)
-    i_best = get_best_model_using_aicc(list_of_models)
+    if force_split:
+        i_best = 1
+    else:
+        i_best = get_best_model_using_aicc(list_of_models)
     model = list_of_models[i_best]
+
     if i_best == 0:
         split_point = None
         explanation = ["Single gaussian (aicc)"]
@@ -864,8 +869,6 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
     """
     A user will decide that "i_target" definitely needs to be split, so this will try all possible methods to do so
 
-    TODO: the metadata must be recalculated
-
     Parameters
     ----------
     min_separation
@@ -901,6 +904,7 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
         # Method 1: Gaussian fitting
         x_split_local_coord, explanation = calc_split_point_via_brightnesses(brightness_per_plane,
                                                                              min_separation=min_separation,
+                                                                             force_split=True,
                                                                              **opt)
         # Check for success
         if x_split_local_coord is None:
@@ -932,6 +936,7 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
         # Fit gaussians
         x_split_local_coord, explanation = calc_split_point_via_brightnesses(all_dots,
                                                                              min_separation=min_separation,
+                                                                             force_split=True,
                                                                              **opt)
 
         # Check for success
