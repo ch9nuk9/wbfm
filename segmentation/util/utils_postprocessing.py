@@ -15,6 +15,9 @@ from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candi
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from scipy.signal import find_peaks
 
+from segmentation.util.util_curve_fitting import calculate_multi_gaussian_fits, get_best_model_using_aicc, \
+    calc_split_point_from_gaussians, plot_gaussians
+
 
 def remove_large_areas(arr, threshold=1000, verbose=0):
     """
@@ -384,6 +387,52 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
                                       to_save_plot=0,
                                       return_all=False) -> Tuple[int, List[str]]:
     """
+    New function that mostly removes parameters in favor of an AICC calculation to determine if it is one or
+    two gaussians
+
+    NOTE: mostly removes the hard threshold I had before; AICC is more stable
+
+    Parameters
+    ----------
+    brightnesses
+    min_separation
+    num_gaussians
+    min_height
+    plots
+    verbose
+    to_save_plot
+    return_all
+
+    Returns
+    -------
+
+    """
+
+    list_of_models = calculate_multi_gaussian_fits(brightnesses, min_separation, background=14)
+    i_best = get_best_model_using_aicc(list_of_models)
+    model = list_of_models[i_best]
+    if plots:
+        plot_gaussians(model)
+    if i_best == 0:
+        split_point = None
+        explanation = ["Single gaussian (aicc)"]
+    elif i_best == 1:
+        split_point = calc_split_point_from_gaussians(model)
+        explanation = ["Two gaussians (aicc)"]
+    else:
+        # Future: allow 3 gaussians
+        raise NotImplementedError
+
+    return split_point, explanation
+
+
+def OLD_calc_split_point_via_brightnesses(brightnesses, min_separation,
+                                      num_gaussians=2,
+                                      min_height=5,
+                                      plots=0, verbose=0,
+                                      to_save_plot=0,
+                                      return_all=False) -> Tuple[int, List[str]]:
+    """
     calculates the means of 2 gaussians underlying the neuron brightness distributions.
     It tries to match exactly 2 gaussians onto the brightness distribution of a tentative neuron.
 
@@ -578,21 +627,6 @@ def sanity_checks_on_heights(heights_of_gaussians, peaks_of_gaussians, min_heigh
         return None, explanation
     else:
         return peaks_of_gaussians, explanation
-
-
-def calc_split_point_from_gaussians(peaks_of_gaussians, y_data):
-    if peaks_of_gaussians is None:
-        return None
-    # Plan a: find the peak between the gaussian blobs
-    inter_peak_brightnesses = np.array(y_data[peaks_of_gaussians[0] + 1:peaks_of_gaussians[1]])
-    split_point, _ = find_peaks(-inter_peak_brightnesses)
-    if len(split_point) > 0:
-        split_point = int(split_point[0])
-        split_point += peaks_of_gaussians[0] + 2
-    else:
-        # Plan b: Just take the average
-        split_point = int(np.mean(peaks_of_gaussians)) + 1
-    return split_point
 
 
 def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_point, num_gaussians):
