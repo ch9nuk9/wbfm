@@ -26,6 +26,7 @@ dependencies:
   - scikit-learn
   - scikit-image
   - networkx
+  - lmfit
   - pip:
     - sacred
     - napari[all]

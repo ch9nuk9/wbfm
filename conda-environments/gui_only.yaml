@@ -13,6 +13,7 @@ dependencies:
   - pip
   - opencv
   - scikit-image
+  - lmfit
   - pip:
     - tables
     - sklearn

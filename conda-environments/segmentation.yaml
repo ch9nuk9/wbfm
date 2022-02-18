@@ -8,6 +8,9 @@
 # install: conda env create -f segmentation.yaml
 
 name: segmentation
+channels:
+  - conda-forge
+  - defaults
 dependencies:
   - python=3.7
   - pip
@@ -20,6 +23,7 @@ dependencies:
   - scikit-image
   - lxml
   - tqdm
+  - lmfit
   - natsort
   - pip:
     - tifffile
