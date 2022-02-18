@@ -308,9 +308,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return self.viewer.layers['Raw segmentation']
 
     def refresh_default_napari_layers(self):
+        print("Undocumented shortcut!")
         self.dat.add_layers_to_viewer(self.viewer, which_layers='all', check_if_layers_exist=True)
 
     def refresh_segmentation_metadata(self):
+        print("Undocumented shortcut!")
         t = self.t
         print(f"Updating segmentation metadata at t={t}")
         red_volume = self.viewer.layers['Red data'].data[t, ...]
@@ -513,7 +515,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # self.remove_tracklet_from_all_matches()
             
         # Undocumented shortcuts just for my use
-        @viewer.bind_key('Shift-l', overwrite=True)
+        @viewer.bind_key('Shift-p', overwrite=True)
         def refresh_napari(viewer):
             self.refresh_default_napari_layers()
 
