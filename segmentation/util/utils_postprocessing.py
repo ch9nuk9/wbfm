@@ -411,8 +411,6 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
     list_of_models = calculate_multi_gaussian_fits(brightnesses, min_separation, background=14)
     i_best = get_best_model_using_aicc(list_of_models)
     model = list_of_models[i_best]
-    if plots:
-        plot_gaussians(model)
     if i_best == 0:
         split_point = None
         explanation = ["Single gaussian (aicc)"]
@@ -422,6 +420,8 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
     else:
         # Future: allow 3 gaussians
         raise NotImplementedError
+    if plots:
+        plot_gaussians(model, split_point)
 
     return split_point, explanation
 

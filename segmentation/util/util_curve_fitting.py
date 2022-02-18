@@ -21,9 +21,11 @@ def get_best_model_using_aicc(list_of_models):
     return np.argmin(all_aicc)
 
 
-def plot_gaussians(result):
+def plot_gaussians(result, split_point):
     y = result.data
     x, y = np.arange(len(y)), np.array(y)
+    peak1 = result.values['g1_center']
+    peak2 = result.values['g2_center']
 
     fig, axes = plt.subplots(1, 2, figsize=(12.8, 4.8))
     axes[0].plot(x, y)
@@ -34,9 +36,19 @@ def plot_gaussians(result):
     comps = result.eval_components(x=x)
     axes[1].plot(x, y)
     axes[1].plot(x, comps['g1_'], '--', label='Gaussian component 1')
+    axes[1].plot(peak1, y[int(peak1)], 'ro', label='Peak of gaussian 1')
     if 'g2_' in comps:
         axes[1].plot(x, comps['g2_'], '--', label='Gaussian component 2')
+        axes[1].set_title("Best fit is two gaussians")
+        axes[1].plot(peak2, y[int(peak2)], 'ro', label='Peak of gaussian 2')
+    else:
+        axes[1].set_title("Best fit is one gaussian")
+
+    if split_point:
+        axes[1].plot([split_point, split_point], [0, np.max(y)], 'k', label='Split line')
     axes[1].legend()
+
+    plt.show()
 
 
 def calculate_multi_gaussian_fits(y, min_separation, background):
@@ -98,17 +110,30 @@ def calc_split_point_from_gaussians(result):
 
     peak1 = result.values['g1_center']
     peak2 = result.values['g2_center']
+    if peak1 > peak2:
+        peak1, peak2 = peak2, peak1
     # print(peak1, peak2)
     peaks_of_gaussians = [int(np.floor(peak1)), int(np.ceil(peak2))]
 
     ind = peaks_of_gaussians[0] + np.array(range(0, peaks_of_gaussians[1] + 1))
+    ind = np.clip(ind, 0, len(diff)-1)
     inter_peak_diff = np.array(diff[ind])
 
     try:
-        split_point = find_peaks(-inter_peak_diff)[0][0]
+        split_point = find_peaks(-inter_peak_diff)[0][0] + ind[0]
     except IndexError:
         logging.warning("Could not split")
         split_point = None
+
+    # Then give the middle point to the smallest neuron
+    len1, len2 = len(y[:split_point + 1]), len(y[(split_point+1):])
+    if len1 < len2:
+        split_point += 1
+    if len1 > len2:
+        split_point -= 1
+    else:
+        # If tie, just leave it on the left
+        pass
 
     return split_point
 
