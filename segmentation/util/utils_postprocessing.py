@@ -2,7 +2,7 @@
 Postprocessing functions for segmentation pipeline
 """
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 from collections import defaultdict
@@ -16,7 +16,7 @@ from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from scipy.signal import find_peaks
 
 from segmentation.util.util_curve_fitting import calculate_multi_gaussian_fits, get_best_model_using_aicc, \
-    calc_split_point_from_gaussians, plot_gaussians
+    calc_split_point_from_gaussians, plot_gaussians, _plot_just_data
 
 
 def remove_large_areas(arr, threshold=1000, verbose=0):
@@ -385,7 +385,7 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
                                       min_height=5,
                                       plots=0, verbose=0,
                                       to_save_plot=0,
-                                      return_all=False) -> Tuple[int, List[str]]:
+                                      return_all=False) -> Tuple[Union[int, None], List[str]]:
     """
     New function that mostly removes parameters in favor of an AICC calculation to determine if it is one or
     two gaussians
@@ -408,7 +408,14 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
 
     """
 
-    list_of_models = calculate_multi_gaussian_fits(brightnesses, min_separation, background=14)
+    if len(brightnesses) < 8:
+        if plots:
+            _plot_just_data(list(range(len(brightnesses))), brightnesses)
+        return None, ["Too short"]
+
+    list_of_models = calculate_multi_gaussian_fits(brightnesses, background=14)
+    if verbose >= 3:
+        print(list_of_models)
     i_best = get_best_model_using_aicc(list_of_models)
     model = list_of_models[i_best]
     if i_best == 0:
@@ -555,19 +562,6 @@ def OLD_calc_split_point_via_brightnesses(brightnesses, min_separation,
         #     return split_point, None, g1, None
 
     return split_point, explanation
-
-
-def _plot_just_data(x_data, y_data):
-    fig = plt.figure()
-    plt.plot(x_data, y_data, label='Data')
-    plt.ylim([np.min(y_data), np.max(y_data)])
-    plt.title('Candidate split (line stays to the left neuron)')
-    plt.ylabel('Brightness (sum of pixels in each segmented plane)')
-    plt.xlabel('Z slice (starts at top of current neuron not volume)')
-    plt.legend(loc='upper right')
-    plt.xticks(x_data)
-    plt.grid(True, axis='x')
-    return fig
 
 
 def get_initial_gaussian_peaks(min_separation, num_gaussians, y_data, background_val=15):
@@ -899,7 +893,7 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
     assert len(brightness_per_plane) > 0, f"Neuron {i_target} not found!"
 
     if verbose > 2:
-        opt = {'to_save_plot': True, 'plots': True}
+        opt = {'to_save_plot': False, 'plots': True}
     else:
         opt = {'to_save_plot': False, 'plots': False}
 
@@ -907,7 +901,6 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
         # Method 1: Gaussian fitting
         x_split_local_coord, explanation = calc_split_point_via_brightnesses(brightness_per_plane,
                                                                              min_separation=min_separation,
-                                                                             min_height=1,
                                                                              **opt)
         # Check for success
         if x_split_local_coord is None:
@@ -939,7 +932,6 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
         # Fit gaussians
         x_split_local_coord, explanation = calc_split_point_via_brightnesses(all_dots,
                                                                              min_separation=min_separation,
-                                                                             min_height=0,
                                                                              **opt)
 
         # Check for success
