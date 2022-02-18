@@ -190,7 +190,7 @@ def stitch_via_watershed(seg_dat, red_dat, sigma=1, verbose=0):
     return labels
 
 
-def create_matches_list(slice_1, slice_2, verbose=0):
+def create_matches_list(slice_1, slice_2, min_overlap=5, verbose=0):
     """
     Creates a list of lists with all matches between slice_1 and slice_2. A match is counted, when a neuron mask on
     slice 1 overlaps with another neuron mask on slice_2 by at least 1 pixel!
@@ -233,8 +233,8 @@ def create_matches_list(slice_1, slice_2, verbose=0):
             overlap_slice = slice_2 == overlap_neuron
             overlap_slice = this_mask_binary[overlap_slice]
             overlap_area = np.count_nonzero(overlap_slice)
-
-            bip_inter.append([int(this_neuron), int(overlap_neuron), int(overlap_area)])
+            if overlap_area > min_overlap:
+                bip_inter.append([int(this_neuron), int(overlap_neuron), int(overlap_area)])
 
         bip_list.extend(bip_inter)
 
