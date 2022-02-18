@@ -710,6 +710,8 @@ class TrackletAndSegmentationAnnotator:
         if tracklet_name is None:
             logging.warning("No tracklet selected; can't attach segmentation to it")
             return False
+        else:
+            logging.info(f"Attaching segmentation{mask_ind} to {tracklet_name} at t={t}")
 
         with self.saving_lock:
             self.df_tracklet_obj.update_tracklet_metadata_using_segmentation_metadata(

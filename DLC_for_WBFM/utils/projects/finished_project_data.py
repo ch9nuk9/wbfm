@@ -398,7 +398,7 @@ class ProjectData:
         self.tracklet_annotator.modify_buffer_segmentation(t, new_mask)
         # self.raw_segmentation[t, ...] = new_mask
 
-        print("Updating metadata, but NOT writing to disk...")
+        print(f"Updating metadata at t, but NOT writing to disk...")
         red_volume = self.red_data[t, ...]
         self.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
 
@@ -411,6 +411,7 @@ class ProjectData:
                 self.tracklets_and_neurons_class.update_tracklet_metadata_using_segmentation_metadata(
                     t, tracklet_name=tracklet_name, mask_ind=m, likelihood=1.0, verbose=1
                 )
+                print(f"Updating {tracklet_name} corresponding to segmentation {m}")
             else:
                 print(f"No tracklet corresponding to segmentation {m}; not updated")
         logging.debug("Segmentation and tracklet metadata modified successfully")

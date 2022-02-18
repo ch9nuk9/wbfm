@@ -310,6 +310,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def refresh_default_napari_layers(self):
         self.dat.add_layers_to_viewer(self.viewer, which_layers='all', check_if_layers_exist=True)
 
+    def refresh_segmentation_metadata(self):
+        t = self.t
+        print(f"Updating segmentation metadata at t={t}")
+        red_volume = self.viewer.layers['Red data'].data[t, ...]
+        new_mask = self.seg_layer.data[t, ...]
+        self.dat.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
+        print(f"Finished updating metadata")
+
     def change_neurons(self):
         if not self._disable_callbacks:
             self.update_dataframe_using_points()
@@ -505,9 +513,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # self.remove_tracklet_from_all_matches()
             
         # Undocumented shortcuts just for my use
-        @viewer.bind_key('l', overwrite=True)
+        @viewer.bind_key('Shift-l', overwrite=True)
         def refresh_napari(viewer):
             self.refresh_default_napari_layers()
+
+        @viewer.bind_key('Shift-u', overwrite=True)
+        def refresh_napari(viewer):
+            self.refresh_segmentation_metadata()
 
     @property
     def max_time(self):
