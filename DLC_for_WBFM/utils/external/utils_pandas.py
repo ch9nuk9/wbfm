@@ -55,3 +55,22 @@ def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
             these_names = [tracklet_network_names[n] for n in this_overlapping_ind]
             overlapping_tracklet_names.append(these_names)
     return overlapping_tracklet_names
+
+
+def empty_dataframe_like(df_tracklets, neuron_names) -> pd.DataFrame:
+    # Initialize using the index and column structure of the tracklets
+    all_tracklet_names = get_names_from_df(df_tracklets)
+    num_neurons = len(neuron_names)
+    neuron_names.sort()
+    tmp_names = all_tracklet_names[:num_neurons]
+
+    df_new = df_tracklets.loc[:, tmp_names].copy()
+    name_mapper = {t: n for t, n in zip(tmp_names, neuron_names)}
+    df_new.rename(columns=name_mapper, inplace=True)
+    df_new[:] = np.nan
+    return df_new
+
+
+def check_if_fully_sparse(df):
+    # No good way: https://github.com/pandas-dev/pandas/issues/26706
+    return df.dtypes.apply(pd.api.types.is_sparse).all()

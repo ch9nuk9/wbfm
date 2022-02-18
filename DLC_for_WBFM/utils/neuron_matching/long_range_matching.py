@@ -3,9 +3,8 @@ import os
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, empty_dataframe_like
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import calc_FramePair_from_Frames
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons, TrackedWorm
@@ -339,20 +338,6 @@ def combine_tracklets_using_matching(df_tracklets, final_matching):
                 id_vector[nonzero_ind] = tracklet_id
                 df_new[neuron_name, 'raw_tracklet_id'] = id_vector
 
-    return df_new
-
-
-def empty_dataframe_like(df_tracklets, neuron_names) -> pd.DataFrame:
-    # Initialize using the index and column structure of the tracklets
-    all_tracklet_names = get_names_from_df(df_tracklets)
-    num_neurons = len(neuron_names)
-    neuron_names.sort()
-    tmp_names = all_tracklet_names[:num_neurons]
-
-    df_new = df_tracklets.loc[:, tmp_names].copy()
-    name_mapper = {t: n for t, n in zip(tmp_names, neuron_names)}
-    df_new.rename(columns=name_mapper, inplace=True)
-    df_new[:] = np.nan
     return df_new
 
 
