@@ -7,7 +7,13 @@ from scipy.signal import find_peaks
 
 
 def aicc_correction(p, n):
-    return 2 * p * (p + 1) / (n - p - 1)
+    numer = (n - p - 1)
+    if numer > 0:
+        return 2 * p * (p + 1) / numer
+    elif numer == 0:
+        return np.inf
+    else:
+        raise ValueError
 
 
 def aicc_from_fit(result):

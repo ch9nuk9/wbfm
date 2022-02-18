@@ -409,7 +409,7 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
 
     """
 
-    if len(brightnesses) < 8:
+    if len(brightnesses) < 7:
         if plots:
             _plot_just_data(list(range(len(brightnesses))), brightnesses)
         return None, ["Too short"]
