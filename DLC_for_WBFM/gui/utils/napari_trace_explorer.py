@@ -455,13 +455,25 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # self.update_trace_or_tracklet_subplot()
             self.clear_current_segmentations()
 
+        @viewer.bind_key('Shift-t', overwrite=True)
+        def remove_tracklets(viewer):
+            self.remove_all_tracklet_layers()
+
         @viewer.bind_key('d', overwrite=True)
         def zoom_next(viewer):
             self.zoom_next()
 
+        @viewer.bind_key('Shift-d', overwrite=True)
+        def zoom_previous(viewer):
+            self.zoom_next(dt=5)
+
         @viewer.bind_key('a', overwrite=True)
         def zoom_previous(viewer):
             self.zoom_previous()
+
+        @viewer.bind_key('Shift-a', overwrite=True)
+        def zoom_previous(viewer):
+            self.zoom_previous(dt=5)
 
         @viewer.bind_key('f', overwrite=True)
         def zoom_to_next_nan(viewer):
@@ -527,13 +539,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def max_time(self):
         return len(self.dat.final_tracks) - 1
 
-    def zoom_next(self, viewer=None):
-        change_viewer_time_point(self.viewer, dt=1, a_max=self.max_time)
+    def zoom_next(self, viewer=None, dt=1):
+        change_viewer_time_point(self.viewer, dt=dt, a_max=self.max_time)
         zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
         self.time_changed_callbacks()
 
-    def zoom_previous(self, viewer=None):
-        change_viewer_time_point(self.viewer, dt=-1, a_max=self.max_time)
+    def zoom_previous(self, viewer=None, dt=1):
+        change_viewer_time_point(self.viewer, dt=-dt, a_max=self.max_time)
         zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
         self.time_changed_callbacks()
 
@@ -633,6 +645,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             layer_name = self.dat.tracklet_annotator.current_tracklet_name
         if layer_name is not None and layer_name in self.viewer.layers:
             self.viewer.layers.remove(layer_name)
+
+    def remove_all_tracklet_layers(self):
+        for layer_name in self.viewer.layers:
+            if 'tracklet_' in layer_name:
+                self.viewer.layers.remove(layer_name)
 
     def add_layer_of_current_tracklet(self, layer_name=None):
         if layer_name is None:
