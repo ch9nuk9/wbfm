@@ -334,6 +334,7 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
                                to_remove_dim_slices=False,
                                stitch_via_watershed=False,
                                min_separation=0,
+                               already_stitched=False,
                                verbose=0,
                                DEBUG=False):
     """
@@ -377,11 +378,14 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         print(f"After large area removal: {len(np.unique(masks)) - 1}")
 
     if not stitch_via_watershed:
-        try:
-            stitched_masks, intermediates = post.bipartite_stitching(masks, verbose=verbose)
-        except NoMatchesError:
-            logging.warning("No between-plane matches found; skipping this volume")
-            return np.zeros_like(masks)
+        if not already_stitched:
+            try:
+                stitched_masks, intermediates = post.bipartite_stitching(masks, verbose=verbose)
+            except NoMatchesError:
+                logging.warning("No between-plane matches found; skipping this volume")
+                return np.zeros_like(masks)
+        else:
+            stitched_masks = masks.copy()
         if verbose >= 1:
             print(f"After stitching: {len(np.unique(stitched_masks)) - 1}")
         neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
@@ -415,7 +419,7 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
             print("Stitching using watershed")
         final_masks = post.stitch_via_watershed(masks, img_volume)
 
-    if to_remove_border is True:
+    if to_remove_border:
         final_masks = post.remove_border(final_masks, border_width_to_remove)
 
     if verbose >= 1:

@@ -112,7 +112,6 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
 
     # Initialize output matrix
     all_matches = {}  # Indexed by which pair of z slices
-    # all_centroids = {}  # Indexed by single slice
 
     for i_slice in range(num_slices):
 
@@ -129,20 +128,6 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
             bp_matches = calc_bipartite_from_candidates(this_slice_candidates)[0]
             all_matches[match_key] = bp_matches
 
-        # get centroid coordinates for all found neurons/masks
-        # these_centroids = []
-        # for this_neuron in range(int(np.amax(this_slice)) + 1):
-        #     this_x, this_y = np.where(this_slice == this_neuron)
-        #
-        #     if len(this_x) == 0:
-        #         # negative location values for unusable neurons
-        #         these_centroids.append([-15, -15, -15])
-        #     else:
-        #         these_centroids.append([i_slice, round(np.mean(this_x)), round(np.mean(this_y))])
-        #
-        # all_centroids[i_slice] = these_centroids
-
-    # clust_df = build_tracklets_from_matches(all_centroids, all_matches)
     clust_df = build_tracklets_dfs(all_matches)
 
     # renaming all found neurons in array; in a sorted manner
@@ -410,6 +395,7 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
     """
 
     if len(brightnesses) < 7:
+        # Note: a length of 7 will have an infinite aicc penalty and will never be split, but a user can force it
         if plots:
             _plot_just_data(list(range(len(brightnesses))), brightnesses)
         return None, ["Too short"]
