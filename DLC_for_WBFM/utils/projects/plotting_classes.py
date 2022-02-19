@@ -514,20 +514,14 @@ class TrackletAndSegmentationAnnotator:
                 logging.warning("Click received, but interactivity is turned off")
                 return
 
-            self.last_clicked_position = event.position
+            self.click_callback(event, layer, viewer)
 
-            # Get information about clicked-on neuron
-            seg_index = layer.get_value(
-                position=event.position,
-                view_direction=event.view_direction,
-                dims_displayed=event.dims_displayed,
-                world=True
-            )
-            time_index = int(event.position[0])
-            if seg_index is None or seg_index == 0:
-                print("Event triggered on background; returning")
-                return
-
+    def click_callback(self, event, layer, viewer):
+        self.last_clicked_position = event.position
+        invalid_target, seg_index, time_index = self._unpack_click_event(event, layer)
+        if invalid_target:
+            print("Event triggered on background; returning")
+        else:
             if self.verbose >= 1:
                 print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
                       f"and position {event.position[1:]}")
@@ -550,33 +544,36 @@ class TrackletAndSegmentationAnnotator:
             else:
                 segment_mode_not_tracklet_mode = False
 
-            if segment_mode_not_tracklet_mode:
-                return
-
-            # Split tracklet, not segmentation
-            tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
-                i_time=time_index,
-                seg_ind=seg_index
-            )
-            # dist, ind, tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
-            #     i_time=time_index,
-            #     seg_ind=seg_index
-            # )
-
-            # dist = dist[0][0]
-            if self.verbose >= 1:
-                print(f"Neuron is part of tracklet {tracklet_name}")
-
-            # if dist < max_dist:
-            if tracklet_name:
-                self.set_current_tracklet(tracklet_name)
-                self.add_current_tracklet_to_viewer(viewer)
-                if self.current_neuron is not None:
-                    self.tracklet_updated_callbacks()
-            else:
-                self.set_selected_segmentation(time_index, seg_index)
+            if not segment_mode_not_tracklet_mode:
+                # Split tracklet, not segmentation
+                tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
+                    i_time=time_index,
+                    seg_ind=seg_index
+                )
                 if self.verbose >= 1:
-                    print(f"Tracklet not found; adding segmentation only")
+                    print(f"Neuron is part of tracklet {tracklet_name}")
+
+                if tracklet_name:
+                    self.set_current_tracklet(tracklet_name)
+                    self.add_current_tracklet_to_viewer(viewer)
+                    if self.current_neuron is not None:
+                        self.tracklet_updated_callbacks()
+                else:
+                    self.set_selected_segmentation(time_index, seg_index)
+                    if self.verbose >= 1:
+                        print(f"Tracklet not found; adding segmentation only")
+
+    def _unpack_click_event(self, event, layer):
+        # Get information about clicked-on neuron
+        seg_index = layer.get_value(
+            position=event.position,
+            view_direction=event.view_direction,
+            dims_displayed=event.dims_displayed,
+            world=True
+        )
+        time_index = int(event.position[0])
+        invalid_target = seg_index is None or seg_index == 0
+        return invalid_target, seg_index, time_index
 
     def add_current_tracklet_to_viewer(self, viewer):
         df_single_track = self.current_tracklet
