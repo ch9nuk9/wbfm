@@ -677,6 +677,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_on_plot = [line.get_ydata() for line in self.static_ax.lines]
+            if len(y_on_plot) == 0:
+                # Empty neuron!
+                return []
             proper_len = len(y_on_plot[0])  # Have to remove the time line!
             y_on_plot = [y for y in y_on_plot if len(y) == proper_len]
             y_on_plot = np.nansum(np.vstack(y_on_plot), axis=0)  # nansum because we might have overlap
