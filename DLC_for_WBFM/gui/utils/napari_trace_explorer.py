@@ -326,9 +326,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.update_dataframe_using_points()
             self.update_neuron_in_tracklet_annotator()
             self.update_track_layers()
-            self.current_subplot_xlim = None
-            self.update_trace_or_tracklet_subplot()
-            self.static_ax.set_xlim(self.main_subplot_xlim)
+            self.update_trace_or_tracklet_subplot(preserve_xlims=False)
 
     def change_tracklets_using_dropdown(self):
         if not self._disable_callbacks:
@@ -678,13 +676,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     @property
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            y_list = self.y_tracklets
-            if self.y_tracklet_current is not None:
-                y_list.append(self.y_tracklet_current)
-            tmp_df = y_list[0].copy()
-            for df in y_list[1:]:
-                tmp_df = tmp_df.combine_first(df)
-            y_on_plot = tmp_df['z']
+            y_on_plot = [line.get_ydata() for line in self.static_ax.lines]
+            proper_len = len(y_on_plot[0])  # Have to remove the time line!
+            y_on_plot = [y for y in y_on_plot if len(y) == proper_len]
+            y_on_plot = np.nansum(np.vstack(y_on_plot), axis=0)  # nansum because we might have overlap
+            y_on_plot[y_on_plot == 0] = np.nan  # nansum replaces nan with 0, but we want
+
+            # y_list = self.y_tracklets
+            # if self.y_tracklet_current is not None:
+            #     y_list.append(self.y_tracklet_current)
+            # tmp_df = y_list[0].copy()
+            # for df in y_list[1:]:
+            #     tmp_df = tmp_df.combine_first(df)
+            # y_on_plot = tmp_df['z']
         else:
             y_on_plot = self.y_trace_mode
         return y_on_plot
@@ -712,8 +716,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             self.static_ax.set_ylabel("z")
         self.color_using_behavior()
-        if self.current_subplot_xlim:
+        if self.current_subplot_xlim is not None:
             self.static_ax.set_xlim(self.current_subplot_xlim)
+            # print("Preserving xlimits")
+        else:
+            self.static_ax.set_xlim(self.main_subplot_xlim)
+            # print("Resetting xlimits")
         self.subplot_is_initialized = True
 
     def initialize_trace_subplot(self):
@@ -765,9 +773,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Finally, add the traces to napari
             self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
 
-    def update_trace_or_tracklet_subplot(self):
+    def update_trace_or_tracklet_subplot(self, preserve_xlims=True):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.update_tracklet_subplot()
+            self.update_tracklet_subplot(preserve_xlims)
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
             self.update_trace_subplot()
         else:
@@ -786,7 +794,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.time_line.set_color(time_options[-1])
         self.finish_subplot_update(title)
 
-    def update_tracklet_subplot(self):
+    def update_tracklet_subplot(self, preserve_xlims=True):
         # For now, actually reinitializes the axes
         if not self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             print("Currently on traces setting, so this option didn't do anything")
@@ -797,7 +805,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         #     [t.remove() for t in self.tracklet_lines]
         # self.tracklet_lines = []
         self.update_stored_tracklets_for_plotting()
-        self.current_subplot_xlim = self.static_ax.get_xlim()
+        if preserve_xlims:
+            self.current_subplot_xlim = self.static_ax.get_xlim()
+        else:
+            self.current_subplot_xlim = None
         self.static_ax.clear()
         for y in self.y_tracklets:
             self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
@@ -892,7 +903,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def calculate_time_line(self):
         t = self.t
         y = self.y_on_plot
-        ymin, ymax = np.min(y), np.max(y)
+        ymin, ymax = np.nanmin(y), np.nanmax(y)
         if t < len(y):
             self.tracking_is_nan = np.isnan(y[t])
         else:
@@ -901,7 +912,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             line_color = 'r'
         else:
             line_color = 'k'
-        # print(f"Updating time line for t={t}, y[t] = {y[t]}, color={line_color}")
+        print(f"Updating time line for t={t}, y[t] = {y[t]}, color={line_color}")
         return [t, t], [ymin, ymax], line_color
 
     def update_stored_time_series(self, calc_mode=None):
