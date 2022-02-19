@@ -29,7 +29,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     subplot_is_initialized = False
     tracklet_lines = None
     zoom_opt = None
-    subplot_xlim = None
+    main_subplot_xlim = None
 
     _disable_callbacks = False
 
@@ -60,7 +60,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
 
         self.tracklet_lines = []
-        self.subplot_xlim = []
+        self.main_subplot_xlim = []
+        self.current_subplot_xlim = None
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
                          'layer_name': 'final_track'}
         logger.info("Finished initializing Trace Explorer object")
@@ -325,8 +326,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.update_dataframe_using_points()
             self.update_neuron_in_tracklet_annotator()
             self.update_track_layers()
+            self.current_subplot_xlim = None
             self.update_trace_or_tracklet_subplot()
-            self.static_ax.set_xlim(self.subplot_xlim)
+            self.static_ax.set_xlim(self.main_subplot_xlim)
 
     def change_tracklets_using_dropdown(self):
         if not self._disable_callbacks:
@@ -693,7 +695,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.mpl_widget = PlotQWidget(self.viewer.window._qt_window.centralWidget())
         self.mpl_widget = PlotQWidget()
         self.static_ax = self.mpl_widget.canvas.fig.subplots()
-        self.subplot_xlim = [0, self.dat.num_frames]
+        self.main_subplot_xlim = [0, self.dat.num_frames]
         # self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         # self.static_ax = self.mpl_widget.figure.subplots()
         # Connect clicking to a time change
@@ -710,6 +712,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             self.static_ax.set_ylabel("z")
         self.color_using_behavior()
+        if self.current_subplot_xlim:
+            self.static_ax.set_xlim(self.current_subplot_xlim)
         self.subplot_is_initialized = True
 
     def initialize_trace_subplot(self):
@@ -793,6 +797,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         #     [t.remove() for t in self.tracklet_lines]
         # self.tracklet_lines = []
         self.update_stored_tracklets_for_plotting()
+        self.current_subplot_xlim = self.static_ax.get_xlim()
         self.static_ax.clear()
         for y in self.y_tracklets:
             self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
