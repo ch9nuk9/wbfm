@@ -132,7 +132,7 @@ def calc_split_point_from_gaussians(result):
         split_point = find_peaks(-inter_peak_diff)[0][0] + ind[0]
     except IndexError:
         logging.warning("Could not find peak")
-        plt.plot(inter_peak_diff)
+        # plt.plot(inter_peak_diff)
         split_point = None
 
     # Then give the middle point to the smallest neuron
