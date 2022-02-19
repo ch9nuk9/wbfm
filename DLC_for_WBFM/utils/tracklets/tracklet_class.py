@@ -7,6 +7,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import sklearn
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import OneClassSVM
@@ -273,7 +274,7 @@ class DetectedTrackletsAndNeurons:
         if tracklet_name is None and mask_ind is not None:
             tracklet_name = self.get_tracklet_from_segmentation_index(t, mask_ind)
         if tracklet_name is None or mask_ind is None:
-            logging.warning(f"An inputs was None, which will cause problems: {mask_ind}, {tracklet_name} (t={t})")
+            logging.warning(f"An input was None, which will cause problems: {mask_ind}, {tracklet_name} (t={t})")
             raise DataSynchronizationError('tracklet_name', 'mask_ind')
 
         # TODO: check that this doesn't produce a time gap in the tracklet
@@ -282,11 +283,13 @@ class DetectedTrackletsAndNeurons:
             if verbose >= 1:
                 print(f"{tracklet_name} previously on segmentation {mask_ind} no longer exists, "
                       f"and was removed at that time point")
-            self.df_tracklets_zxy.loc[t, tracklet_name] = np.nan
+            self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, np.nan)
+            # self.df_tracklets_zxy.loc[t, tracklet_name] = np.nan
         else:
             if verbose >= 1:
                 print(f"{tracklet_name} on segmentation {mask_ind} at t={t} updated")
-            self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
+            self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, row_data)
+            # self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
             self.dataframe_is_synced_to_disk = False
 
     def generate_empty_tracklet_with_correct_format(self):

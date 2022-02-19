@@ -51,6 +51,7 @@ class ConfigFileWithProjectContext:
 
     def pickle_in_local_project(self, data, relative_path: str,
                                 allow_overwrite=True, make_sequential_filename=False,
+                                custom_writer=None,
                                 **kwargs):
         """
         For objects larger than 4GB and python<3.8, protocol=4 must be specified directly
@@ -64,8 +65,12 @@ class ConfigFileWithProjectContext:
             abs_path = get_sequential_filename(abs_path)
         logging.info(f"Saving at: {relative_path}")
         check_exists(abs_path, allow_overwrite)
-        with open(abs_path, 'wb') as f:
-            pickle.dump(data, f, **kwargs)
+        if custom_writer:
+            # Useful for pickling dataframes
+            custom_writer(data, abs_path, **kwargs)
+        else:
+            with open(abs_path, 'wb') as f:
+                pickle.dump(data, f, **kwargs)
 
     def h5_in_local_project(self, data: pd.DataFrame, relative_path: str,
                             allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):

@@ -655,17 +655,45 @@ def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1)
     return True, all_tracklets, left_name, right_name
 
 
+def split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name, verbose=1):
+    left_name = old_name
+    this_tracklet = all_tracklets[[left_name]]
+    idx = this_tracklet.index[this_tracklet[left_name]['z'].notnull()]
+    if i_split not in idx:
+        logging.warning(f"Tried to split {old_name} at {i_split}, but it doesn't exist at that time")
+        return False, all_tracklets, left_name, None
+    # Split
+    left_half, right_half = split_single_sparse_tracklet(i_split, this_tracklet)
+    right_name = get_next_name_tracklet_or_neuron(all_tracklets)
+    right_half.rename(columns={left_name: right_name}, level=0, inplace=True)
+    if verbose >= 1:
+        print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
+        print(
+            f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
+    # TODO: use custom class with dummy names
+    all_tracklets = all_tracklets.join(right_half, sort=False)
+    all_tracklets[left_name] = left_half[left_name]
+    return True, all_tracklets, left_name, right_name
+
+
 def split_single_tracklet(i_split, this_tracklet: pd.DataFrame):
-    was_sparse = check_if_fully_sparse(this_tracklet)
-    if was_sparse:
-        this_tracklet = this_tracklet.sparse.to_dense()
     left_half = this_tracklet.copy()
     right_half = this_tracklet.copy()
     left_half.iloc[i_split:] = np.nan
     right_half.iloc[:i_split] = np.nan
-    if was_sparse:
-        left_half = left_half.astype(pd.SparseDtype("float", np.nan))
-        right_half = right_half.astype(pd.SparseDtype("float", np.nan))
+    return left_half, right_half
+
+
+def split_single_sparse_tracklet(i_split, this_tracklet: pd.DataFrame):
+    this_tracklet = this_tracklet.sparse.to_dense()
+
+    left_half = this_tracklet.copy()
+    right_half = this_tracklet.copy()
+    left_half.iloc[i_split:] = np.nan
+    right_half.iloc[:i_split] = np.nan
+
+    left_half = left_half.astype(pd.SparseDtype("float", np.nan))
+    right_half = right_half.astype(pd.SparseDtype("float", np.nan))
     return left_half, right_half
 
 

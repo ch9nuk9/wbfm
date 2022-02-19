@@ -13,7 +13,7 @@ import zarr
 from matplotlib import pyplot as plt
 
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
-    split_tracklet_within_dataframe
+    split_tracklet_within_dataframe, split_tracklet_within_sparse_dataframe
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
 from segmentation.util.utils_postprocessing import split_neuron_interactive
@@ -447,7 +447,10 @@ class TrackletAndSegmentationAnnotator:
             match_fname = self.tracking_cfg.unresolve_absolute_path(self.output_match_fname)
             self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
 
-            self.tracking_cfg.h5_in_local_project(self.df_tracklet_obj.df_tracklets_zxy, self.output_df_fname)
+            # Note: sparse matrices can only be pickled
+            # self.tracking_cfg.h5_in_local_project(self.df_tracklet_obj.df_tracklets_zxy, self.output_df_fname)
+            self.tracking_cfg.pickle_in_local_project(self.df_tracklet_obj.df_tracklets_zxy, self.output_df_fname,
+                                                      custom_writer=pd.to_pickle)
             df_fname = self.tracking_cfg.unresolve_absolute_path(self.output_df_fname)
             self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
 
@@ -470,7 +473,10 @@ class TrackletAndSegmentationAnnotator:
             old_name = self.current_tracklet_name
             all_tracklets = self.df_tracklet_obj.df_tracklets_zxy
 
-            successfully_split, all_tracklets, left_name, right_name = split_tracklet_within_dataframe(all_tracklets, i_split, old_name)
+            # successfully_split, all_tracklets, left_name, right_name = \
+            #     split_tracklet_within_dataframe(all_tracklets, i_split, old_name)
+            successfully_split, all_tracklets, left_name, right_name = \
+                split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name)
 
             if not successfully_split:
                 logging.warning("Did not successfully split; check logs")
