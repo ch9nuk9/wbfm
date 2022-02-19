@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import pandas as pd
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, empty_dataframe_like
@@ -97,17 +98,20 @@ def insert_value_in_sparse_df(df, index, columns, val):
         Modified DataFrame
 
     """
-
     # Save the original sparse format for reuse later
     spdtypes = df.dtypes[columns]
 
     # Convert concerned Series to dense format
-    df[columns] = df[columns].sparse.to_dense()
+    tmp_cols = df[[columns]].copy().sparse.to_dense()
+    # df[columns] = df[columns].sparse.to_dense()
 
     # Do a normal insertion with .loc[]
-    df.loc[index, columns] = val
+    tmp_cols.loc[index, columns] = val
 
     # Back to the original sparse format
-    df[columns] = df[columns].astype(spdtypes)
+    # NOTE: multiindex assignment must be done per-column, otherwise it reverts to dense
+    tmp_cols = tmp_cols.astype(pd.SparseDtype("float", np.nan))
+    for c in tmp_cols.columns:
+        df[c] = tmp_cols[c]
 
     return df
