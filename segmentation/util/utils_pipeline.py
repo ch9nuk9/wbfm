@@ -330,7 +330,7 @@ def save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volu
     metadata[i_volume] = meta_df
 
 
-def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, to_remove_border=True,
+def perform_post_processing_2d(mask_array: np.ndarray, img_volume, border_width_to_remove, to_remove_border=True,
                                upper_length_threshold=12, lower_length_threshold=3,
                                to_remove_dim_slices=False,
                                stitch_via_watershed=False,
@@ -448,8 +448,8 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
 
     # Get data: needs both segmentation and raw video
     check_all_needed_data_for_step(project_cfg.self_path, 2)
-    masks_zarr = zarr.open(mask_fname)
-    video_dat = zarr.open(video_path)
+    masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
+    video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
 
     opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
     opt = {'opt_postprocessing': opt_postprocessing,
@@ -459,20 +459,21 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
         # Note that this does NOT have a separate 'do first volume' function
         continue_from_frame = 0
 
-    # for i_out, i_vol in enumerate(tqdm(frame_list[continue_from_frame:])):
-    #     _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr, **opt)
+    for i_out, i_vol in enumerate(tqdm(frame_list[continue_from_frame:])):
+        _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr, **opt)
 
+    #... GENUINELY NO IDEA WHY THREADS DON'T WORK HERE
     # Actually split
-    with tqdm(total=num_frames - continue_from_frame) as pbar:
-        def parallel_func(i_both):
-            i_out, i_vol = i_both
-            _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr, **opt)
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
-                pbar.update(1)
+    # with tqdm(total=num_frames - continue_from_frame) as pbar:
+    #     def parallel_func(i_both):
+    #         i_out, i_vol = i_both
+    #         _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr, **opt)
+    #
+    #     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+    #         futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
+    #         for future in concurrent.futures.as_completed(futures):
+    #             future.result()
+    #             pbar.update(1)
 
     # Update metadata
     segment_cfg.update_on_disk()
