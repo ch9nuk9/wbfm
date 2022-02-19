@@ -509,11 +509,9 @@ class TrackletAndSegmentationAnnotator:
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
-
             if not self.is_currently_interactive:
                 logging.warning("Click received, but interactivity is turned off")
                 return
-
             self.click_callback(event, layer, viewer)
 
     def click_callback(self, event, layer, viewer):

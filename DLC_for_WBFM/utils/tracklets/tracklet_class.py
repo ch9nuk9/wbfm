@@ -1,5 +1,6 @@
 import copy
 import logging
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Union
 
@@ -187,6 +188,24 @@ class DetectedTrackletsAndNeurons:
     dataframe_is_synced_to_disk: bool = True
     dataframe_output_filename: str = None
 
+    # Pre-construct this for MUCH faster clicking callbacks
+    segmentation_id_to_tracklet_name_database: dict = None
+
+    def __post_init__(self):
+        d = defaultdict(list)
+        subcolumn_to_check = 'raw_segmentation_id'
+        names = get_names_from_df(self.df_tracklets_zxy)
+
+        logging.info("Prebuilding clickback dictionary (segmentation to tracklet), will take ~ 1 minute")
+        for n in tqdm(names):
+            col = self.df_tracklets_zxy[n][subcolumn_to_check].dropna(axis=0)
+            idx = col.index
+
+            for t, value in zip(idx, col):
+                d[(t, int(value))].append(n)
+
+        self.segmentation_id_to_tracklet_name_database = d
+
     @property
     def all_tracklet_names(self):
         return self.df_tracklets_zxy.columns.get_level_values(0).drop_duplicates()
@@ -230,9 +249,11 @@ class DetectedTrackletsAndNeurons:
         return dist, ind_global_coords, tracklet_name
 
     def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
+        names = self.segmentation_id_to_tracklet_name_database[(i_time, seg_ind)]
+
         # NOTE: just uses a different column from get_tracklet_from_neuron_and_time()
-        names = find_top_level_name_by_single_column_entry(self.df_tracklets_zxy, i_time, seg_ind,
-                                                           subcolumn_to_check='raw_segmentation_id')
+        # names = find_top_level_name_by_single_column_entry(self.df_tracklets_zxy, i_time, seg_ind,
+        #                                                    subcolumn_to_check='raw_segmentation_id')
         if len(names) == 1:
             return names[0]
         elif len(names) > 1:
