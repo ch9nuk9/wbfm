@@ -452,18 +452,21 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
     video_dat = zarr.open(video_path)
 
     opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
-    opt = {'masks_zarr': masks_zarr, 'opt_postprocessing': opt_postprocessing,
+    opt = {'opt_postprocessing': opt_postprocessing,
            'verbose': verbose,
            'all_bounding_boxes': all_bounding_boxes}
     if continue_from_frame is None:
         # Note that this does NOT have a separate 'do first volume' function
         continue_from_frame = 0
 
+    # for i_out, i_vol in enumerate(tqdm(frame_list[continue_from_frame:])):
+    #     _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr, **opt)
+
     # Actually split
     with tqdm(total=num_frames - continue_from_frame) as pbar:
         def parallel_func(i_both):
             i_out, i_vol = i_both
-            _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, **opt)
+            _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr, **opt)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
             futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
@@ -484,8 +487,8 @@ def _only_postprocess2d(i, i_volume, masks_zarr, opt_postprocessing,
                        all_bounding_boxes,
                        verbose, video_dat):
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
-    # Read mask directly from previously segmented volume
-    segmented_masks = masks_zarr[i_volume, :, :, :]
+    # Read mask directly from previously segmented volume, but copy it
+    segmented_masks = np.array(masks_zarr[i_volume, :, :, :])
     final_masks = perform_post_processing_2d(segmented_masks,
                                              volume,
                                              **opt_postprocessing,
