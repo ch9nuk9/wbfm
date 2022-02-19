@@ -57,15 +57,15 @@ def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
     return overlapping_tracklet_names
 
 
-def empty_dataframe_like(df_tracklets, neuron_names) -> pd.DataFrame:
+def empty_dataframe_like(df_tracklets, new_names) -> pd.DataFrame:
     # Initialize using the index and column structure of the tracklets
     all_tracklet_names = get_names_from_df(df_tracklets)
-    num_neurons = len(neuron_names)
-    neuron_names.sort()
+    num_neurons = len(new_names)
+    new_names.sort()
     tmp_names = all_tracklet_names[:num_neurons]
 
     df_new = df_tracklets.loc[:, tmp_names].copy()
-    name_mapper = {t: n for t, n in zip(tmp_names, neuron_names)}
+    name_mapper = {t: n for t, n in zip(tmp_names, new_names)}
     df_new.rename(columns=name_mapper, inplace=True)
     df_new[:] = np.nan
     return df_new

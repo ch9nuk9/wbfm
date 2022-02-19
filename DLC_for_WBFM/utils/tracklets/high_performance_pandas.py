@@ -24,7 +24,7 @@ class PaddedDataFrame(pd.DataFrame):
         # Must be correct type
 
         i_start = self.num_dummy_columns
-        new_names = [int2name_dummy(i_start +i) for i in range(num_to_add)]
+        new_names = [int2name_dummy(i_start + i) for i in range(num_to_add)]
         self.remaining_dummy_names.extend(new_names)
 
         print(self.shape)

@@ -663,6 +663,9 @@ def split_single_tracklet(i_split, this_tracklet: pd.DataFrame):
     right_half = this_tracklet.copy()
     left_half.iloc[i_split:] = np.nan
     right_half.iloc[:i_split] = np.nan
+    if was_sparse:
+        left_half = left_half.astype(pd.SparseDtype("float", np.nan))
+        right_half = right_half.astype(pd.SparseDtype("float", np.nan))
     return left_half, right_half
 
 
