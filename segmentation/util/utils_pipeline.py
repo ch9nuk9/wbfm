@@ -1,7 +1,8 @@
 import logging
 import os
 import threading
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
+from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 from numcodecs import blosc
 
 import segmentation.util.utils_postprocessing as post
@@ -102,7 +103,7 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
 
 def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
                                   project_cfg: ModularProjectConfig,
-                                  continue_from_frame: int =None,
+                                  continue_from_frame: int = None,
                                   DEBUG: bool = False) -> None:
     """
     Full pipeline based on only a config file
@@ -432,6 +433,64 @@ def perform_post_processing_2d(mask_array, img_volume, border_width_to_remove, t
         shelve_full_workspace(fname, list(dir()), locals())
 
     return final_masks
+
+
+def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
+                                   project_cfg: ModularProjectConfig,
+                                   continue_from_frame: int = None, DEBUG=False) -> None:
+    """
+    Similar to segment_full_video_2d, but this assumes a previously segmented video
+
+    """
+
+    frame_list, mask_fname, metadata_fname, num_frames, _, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
+        segment_cfg, project_cfg, DEBUG)
+
+    # Get data: needs both segmentation and raw video
+    check_all_needed_data_for_step(project_cfg.self_path, 2)
+    masks_zarr = zarr.open(mask_fname)
+    video_dat = zarr.open(video_path)
+
+    opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
+    opt = {'masks_zarr': masks_zarr, 'opt_postprocessing': opt_postprocessing,
+           'verbose': verbose, 'zero_out_borders': zero_out_borders,
+           'all_bounding_boxes': all_bounding_boxes}
+    if continue_from_frame is None:
+        # Note that this does NOT have a separate 'do first volume' function
+        continue_from_frame = 0
+
+    # Actually split
+    with tqdm(total=num_frames - continue_from_frame) as pbar:
+        def parallel_func(i_both):
+            i_out, i_vol = i_both
+            _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr, **opt)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+                pbar.update(1)
+
+    # Update metadata
+    segment_cfg.update_on_disk()
+    if verbose >= 1:
+        print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
+
+    # Same 2d and 3d
+    calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
+
+
+def _only_postprocess2d(i, i_volume, masks_zarr, opt_postprocessing,
+                       all_bounding_boxes,
+                       verbose, video_dat):
+    volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
+    # Read mask directly from previously segmented volume
+    segmented_masks = masks_zarr[i_volume, :, :, :]
+    final_masks = perform_post_processing_2d(segmented_masks,
+                                             volume,
+                                             **opt_postprocessing,
+                                             verbose=verbose - 1)
+    save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr)
 
 
 def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remove, to_remove_border=True,
