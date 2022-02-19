@@ -552,6 +552,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def zoom_to_next_nan(self, viewer=None):
         y_on_plot = self.y_on_plot
+        if len(y_on_plot) == 0:
+            return
         t = self.t
         if np.isnan(y_on_plot[t]):
             print("Already on nan point; not moving")
@@ -677,8 +679,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_on_plot = [line.get_ydata() for line in self.static_ax.lines]
-            if len(y_on_plot) == 0:
+            if len(y_on_plot) == 0 or (len(y_on_plot) == 1 and len(y_on_plot[0])==2):
                 # Empty neuron!
+                print("No data found")
                 return []
             proper_len = len(y_on_plot[0])  # Have to remove the time line!
             y_on_plot = [y for y in y_on_plot if len(y) == proper_len]
@@ -906,6 +909,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def calculate_time_line(self):
         t = self.t
         y = self.y_on_plot
+        if len(y) == 0:
+            return [t, t], [0, 30], 'r'
         ymin, ymax = np.nanmin(y), np.nanmax(y)
         if t < len(y):
             self.tracking_is_nan = np.isnan(y[t])

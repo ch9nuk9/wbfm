@@ -117,8 +117,8 @@ def load_file_according_to_precedence(fname_precedence: list,
 
         if fname is not None and Path(fname).exists():
             data = this_reader(fname)
-            logging.info(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
-            logging.info(f"Read data from: {fname}")
+            print(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
+            print(f"Read data from: {fname}")
             if key != most_recent_modified_key:
                 logging.warning(f"Not using most recently modified file (mode {most_recent_modified_key})")
             else:
