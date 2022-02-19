@@ -311,6 +311,7 @@ class DetectedTrackletsAndNeurons:
                 print(f"{tracklet_name} on segmentation {mask_ind} at t={t} updated")
             self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, row_data)
             # self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
+            self.segmentation_id_to_tracklet_name_database[(t, mask_ind)] = tracklet_name
             self.dataframe_is_synced_to_disk = False
 
     def generate_empty_tracklet_with_correct_format(self):
