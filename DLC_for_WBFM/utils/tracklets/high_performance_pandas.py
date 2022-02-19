@@ -73,3 +73,41 @@ def split_tracklet_within_padded_dataframe(all_tracklets, i_split, old_name, ver
     all_tracklets[left_name] = left_half[left_name]
     all_tracklets.rename(columns={dummy_name: right_name}, level=0, inplace=True)
     return True, all_tracklets, left_name, right_name
+
+
+def insert_value_in_sparse_df(df, index, columns, val):
+    """ Insert data in a DataFrame with SparseDtype format
+
+    from: https://stackoverflow.com/questions/49032856/assign-values-to-sparsearray-in-pandas
+
+    Only applicable for pandas version > 0.25
+
+    Args
+    ----
+    df : DataFrame with series formatted with pd.SparseDtype
+    index: str, or list, or slice object
+        Same as one would use as first argument of .loc[]
+    columns: str, list, or slice
+        Same one would normally use as second argument of .loc[]
+    val: insert values
+
+    Returns
+    -------
+    df: DataFrame
+        Modified DataFrame
+
+    """
+
+    # Save the original sparse format for reuse later
+    spdtypes = df.dtypes[columns]
+
+    # Convert concerned Series to dense format
+    df[columns] = df[columns].sparse.to_dense()
+
+    # Do a normal insertion with .loc[]
+    df.loc[index, columns] = val
+
+    # Back to the original sparse format
+    df[columns] = df[columns].astype(spdtypes)
+
+    return df
