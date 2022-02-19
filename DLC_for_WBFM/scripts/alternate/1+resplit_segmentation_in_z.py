@@ -27,6 +27,8 @@ def cfg(project_path, DEBUG):
 
     segment_cfg = cfg.get_segmentation_config()
 
+    segment_cfg.config['postprocessing_params']['already_stitched'] = True
+
     if not DEBUG:
         using_monkeypatch()
     #     log_dir = cfg.get_log_dir()
