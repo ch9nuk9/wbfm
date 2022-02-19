@@ -912,7 +912,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             line_color = 'r'
         else:
             line_color = 'k'
-        print(f"Updating time line for t={t}, y[t] = {y[t]}, color={line_color}")
+        # print(f"Updating time line for t={t}, y[t] = {y[t]}, color={line_color}")
         return [t, t], [ymin, ymax], line_color
 
     def update_stored_time_series(self, calc_mode=None):
