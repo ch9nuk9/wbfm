@@ -24,7 +24,7 @@ from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
-    load_file_according_to_precedence
+    load_file_according_to_precedence, pandas_read_any_filetype
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
 from backports.cached_property import cached_property
@@ -163,7 +163,7 @@ class ProjectData:
             automatic=train_cfg.resolve_relative_path_from_config('df_3d_tracklets'))
         fname_precedence = self.precedence_df_tracklets
         df_all_tracklets, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                    this_reader=read_if_exists)
+                                                                    this_reader=pandas_read_any_filetype)
         self.df_all_tracklets_fname = fname
 
         if self.force_tracklets_to_be_sparse:

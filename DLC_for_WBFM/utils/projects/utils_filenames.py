@@ -74,6 +74,22 @@ def read_if_exists(filename, reader=pd.read_hdf):
         return None
 
 
+def pandas_read_any_filetype(filename):
+    if filename is None:
+        return None
+    elif os.path.exists(filename):
+        if filename.endswith('.h5'):
+            return pd.read_hdf(filename)
+        elif filename.endswith('.pickle'):
+            return pd.read_pickle(filename)
+        else:
+            raise NotImplementedError
+    else:
+        logging.warning(f"Did not find file {filename}")
+        return None
+
+
+
 def pickle_load_binary(fname):
     with open(fname, 'rb') as f:
         dat = pickle.load(f)
