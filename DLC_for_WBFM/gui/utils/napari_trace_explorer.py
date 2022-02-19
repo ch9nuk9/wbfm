@@ -326,6 +326,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.update_neuron_in_tracklet_annotator()
             self.update_track_layers()
             self.update_trace_or_tracklet_subplot()
+            self.static_ax.set_xlim(self.subplot_xlim)
 
     def change_tracklets_using_dropdown(self):
         if not self._disable_callbacks:
@@ -709,7 +710,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             self.static_ax.set_ylabel("z")
         self.color_using_behavior()
-        self.static_ax.set_xlim(self.subplot_xlim)
         self.subplot_is_initialized = True
 
     def initialize_trace_subplot(self):
