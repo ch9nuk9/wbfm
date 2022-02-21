@@ -231,6 +231,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveSegmentationToTrackletButton.pressed.connect(self.save_segmentation_to_tracklet)
         self.vbox4.addWidget(self.saveSegmentationToTrackletButton)
 
+        self.deleteSegmentationFromTrackletButton = QtWidgets.QPushButton("Delete current time point "
+                                                                          "from current tracklet")
+        self.deleteSegmentationFromTrackletButton.pressed.connect(self.delete_segmentation_from_tracklet)
+        self.vbox4.addWidget(self.deleteSegmentationFromTrackletButton)
+
+
+
         self.saveTrackletsStatusLabel = QtWidgets.QLabel("STATUS: No tracklet loaded")
         self.vbox4.addWidget(self.saveTrackletsStatusLabel)
 
@@ -642,6 +649,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def save_segmentation_to_tracklet(self):
         flag = self.dat.tracklet_annotator.attach_current_segmentation_to_current_tracklet()
+
+    def delete_segmentation_from_tracklet(self):
+        flag = self.dat.tracklet_annotator.delete_current_segmentation_from_tracklet()
 
     def remove_layer_of_current_tracklet(self, layer_name=None):
         if layer_name is None:
