@@ -192,19 +192,22 @@ class DetectedTrackletsAndNeurons:
     segmentation_id_to_tracklet_name_database: dict = None
 
     def __post_init__(self):
-        d = defaultdict(list)
+        self.segmentation_id_to_tracklet_name_database = defaultdict(list)
         subcolumn_to_check = 'raw_segmentation_id'
         names = get_names_from_df(self.df_tracklets_zxy)
 
         logging.info("Prebuilding clickback dictionary (segmentation to tracklet), will take ~ 1 minute")
         for n in tqdm(names):
-            col = self.df_tracklets_zxy[n][subcolumn_to_check].dropna(axis=0)
-            idx = col.index
+            self.update_callback_dictionary_for_single_tracklet(n, subcolumn_to_check)
 
-            for t, value in zip(idx, col):
-                d[(t, int(value))].append(n)
+        # self.segmentation_id_to_tracklet_name_database = d
 
-        self.segmentation_id_to_tracklet_name_database = d
+    def update_callback_dictionary_for_single_tracklet(self, n, subcolumn_to_check='raw_segmentation_id'):
+        col = self.df_tracklets_zxy[n][subcolumn_to_check].dropna(axis=0)
+        idx = col.index
+        for t, value in zip(idx, col):
+            self.segmentation_id_to_tracklet_name_database[(t, int(value))].append(n)
+
 
     @property
     def all_tracklet_names(self):
