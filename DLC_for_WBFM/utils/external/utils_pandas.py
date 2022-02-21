@@ -77,10 +77,10 @@ def check_if_fully_sparse(df):
 
 
 def to_sparse_multiindex(df, new_columns=None):
-    # Must be done in a loop, per column
+    # Must be done in a loop, per column (note: column index will generally be a tuple)
     if new_columns is None:
         new_columns = df
-    new_columns = new_columns.astype(pd.SparseDtype("float", np.nan))
+    new_columns = new_columns.astype(pd.SparseDtype("float", np.nan))  # This works, but then direct assignment doesn't
     for c in new_columns.columns:
         df[c] = new_columns[c]
 
