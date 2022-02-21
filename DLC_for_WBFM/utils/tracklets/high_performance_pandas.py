@@ -100,8 +100,14 @@ def insert_value_in_sparse_df(df, index, columns, val):
     # Save the original sparse format for reuse later
     spdtypes = df.dtypes[columns]
 
-    # Convert concerned Series to dense format
-    tmp_cols = df[[columns]].copy().sparse.to_dense()
+    # Convert concerned Series to dense format, but MAKE SURE it is actually sparse!
+    tmp_cols = df[[columns]].copy()
+    try:
+        tmp_cols = tmp_cols.sparse.to_dense()
+    except AttributeError:
+        # Then it should already be dense
+        # tmp_cols = to_sparse_multiindex(tmp_cols)
+        pass
     # df[columns] = df[columns].sparse.to_dense()
 
     # Do a normal insertion with .loc[]
