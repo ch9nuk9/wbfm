@@ -698,20 +698,9 @@ class TrackletAndSegmentationAnnotator:
             layer.show_selected_label = False
 
     def attach_current_segmentation_to_current_tracklet(self):
-        if len(self.indices_of_original_neurons) != 1:
-            logging.warning(f"Selected segmentation must be unique; "
-                            f"found {len(self.indices_of_original_neurons)} segmentations")
-            return False
-        # Get known data, then rebuild the other metadata from this
-        t = self.time_of_candidate
-        mask_ind = self.indices_of_original_neurons[0]
-
-        tracklet_name = self.current_tracklet_name
-        if tracklet_name is None:
-            logging.warning("No tracklet selected; can't attach segmentation to it")
-            return False
-        else:
-            logging.info(f"Attaching segmentation{mask_ind} to {tracklet_name} at t={t}")
+        t, tracklet_name, mask_ind, flag = self.check_validity_of_tracklet_and_segmentation()
+        if not flag:
+            return flag
 
         with self.saving_lock:
             self.df_tracklet_obj.update_tracklet_metadata_using_segmentation_metadata(
@@ -723,3 +712,34 @@ class TrackletAndSegmentationAnnotator:
         self.tracklet_updated_callbacks()
 
         return True
+
+    def delete_current_segmentation_from_tracklet(self):
+        t, tracklet_name, _, flag = self.check_validity_of_tracklet_and_segmentation()
+        if not flag:
+            return flag
+
+        with self.saving_lock:
+            self.df_tracklet_obj.delete_data_from_tracklet_at_time(t, tracklet_name)
+
+        self.clear_currently_selected_segmentations(do_callbacks=False)
+        self.segmentation_updated_callbacks()
+        self.tracklet_updated_callbacks()
+
+        return True
+
+    def check_validity_of_tracklet_and_segmentation(self):
+        flag = True
+        if len(self.indices_of_original_neurons) != 1:
+            logging.warning(f"Selected segmentation must be unique; "
+                            f"found {len(self.indices_of_original_neurons)} segmentations")
+            flag = False
+        # Get known data, then rebuild the other metadata from this
+        t = self.time_of_candidate
+        mask_ind = self.indices_of_original_neurons[0]
+        tracklet_name = self.current_tracklet_name
+        if tracklet_name is None:
+            logging.warning("No tracklet selected, can't modify using segmentation")
+            flag = False
+        else:
+            logging.info(f"Modifying {tracklet_name} using segmentation {mask_ind} at t={t}")
+        return t, tracklet_name, mask_ind, flag

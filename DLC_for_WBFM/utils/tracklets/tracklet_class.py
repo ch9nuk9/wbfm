@@ -290,13 +290,7 @@ class DetectedTrackletsAndNeurons:
         If only one is specified, it must give a valid unique value for the other upon database search
         """
         segmentation_metadata = self.segmentation_metadata
-        if mask_ind is None and tracklet_name is not None:
-            mask_ind = int(self.df_tracklets_zxy.loc[t, (tracklet_name, 'raw_segmentation_id')])
-        if tracklet_name is None and mask_ind is not None:
-            tracklet_name = self.get_tracklet_from_segmentation_index(t, mask_ind)
-        if tracklet_name is None or mask_ind is None:
-            logging.warning(f"An input was None, which will cause problems: {mask_ind}, {tracklet_name} (t={t})")
-            raise DataSynchronizationError('tracklet_name', 'mask_ind')
+        mask_ind, tracklet_name = self.get_mask_or_tracklet_from_other(mask_ind, t, tracklet_name)
 
         # TODO: check that this doesn't produce a time gap in the tracklet
         row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
@@ -304,7 +298,7 @@ class DetectedTrackletsAndNeurons:
             if verbose >= 1:
                 print(f"{tracklet_name} previously on segmentation {mask_ind} no longer exists, "
                       f"and was removed at that time point")
-            self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, np.nan)
+            self.delete_data_from_tracklet_at_time(t, tracklet_name)
             # self.df_tracklets_zxy.loc[t, tracklet_name] = np.nan
         else:
             if verbose >= 1:
@@ -313,6 +307,19 @@ class DetectedTrackletsAndNeurons:
             # self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
             self.segmentation_id_to_tracklet_name_database[(t, mask_ind)] = tracklet_name
             self.dataframe_is_synced_to_disk = False
+
+    def delete_data_from_tracklet_at_time(self, t, tracklet_name):
+        self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, np.nan)
+
+    def get_mask_or_tracklet_from_other(self, mask_ind, t, tracklet_name):
+        if mask_ind is None and tracklet_name is not None:
+            mask_ind = int(self.df_tracklets_zxy.loc[t, (tracklet_name, 'raw_segmentation_id')])
+        if tracklet_name is None and mask_ind is not None:
+            tracklet_name = self.get_tracklet_from_segmentation_index(t, mask_ind)
+        if tracklet_name is None or mask_ind is None:
+            logging.warning(f"An input was None, which will cause problems: {mask_ind}, {tracklet_name} (t={t})")
+            raise DataSynchronizationError('tracklet_name', 'mask_ind')
+        return mask_ind, tracklet_name
 
     def generate_empty_tracklet_with_correct_format(self):
         new_name = get_next_name_tracklet_or_neuron(self.df_tracklets_zxy)
