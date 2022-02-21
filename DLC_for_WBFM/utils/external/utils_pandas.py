@@ -76,11 +76,13 @@ def check_if_fully_sparse(df):
     return df.dtypes.apply(pd.api.types.is_sparse).all()
 
 
-def to_sparse_multiindex(df, tmp_cols):
+def to_sparse_multiindex(df, new_columns=None):
     # Must be done in a loop, per column
-    tmp_cols = tmp_cols.astype(pd.SparseDtype("float", np.nan))
-    for c in tmp_cols.columns:
-        df[c] = tmp_cols[c]
+    if new_columns is None:
+        new_columns = df
+    new_columns = new_columns.astype(pd.SparseDtype("float", np.nan))
+    for c in new_columns.columns:
+        df[c] = new_columns[c]
 
     return df
 
