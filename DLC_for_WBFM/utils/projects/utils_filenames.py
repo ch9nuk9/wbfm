@@ -166,6 +166,7 @@ def get_sequential_filename(fname: str, verbose=1) -> str:
 
         new_base_fname = str(base_fname) + f"-{i}"
         candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
+        # TODO: should work even if i > 9 (i.e. is 2 digits long)
         while Path(candidate_fname).exists():
             i += 1
             new_base_fname = new_base_fname[:-2] + f"-{i}"
@@ -185,3 +186,11 @@ def get_absname(project_path, fname):
     return str(fname)
 
 
+def add_name_suffix(path: str):
+    fpath = Path(path)
+    base_fname, suffix_fname = fpath.stem, fpath.suffix
+    new_base_fname = str(base_fname) + f"-{i}"
+    candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
+
+    # Check for existence?
+    return candidate_fname
