@@ -744,9 +744,12 @@ class TrackletAndSegmentationAnnotator:
             logging.warning(f"Selected segmentation must be unique; "
                             f"found {len(self.indices_of_original_neurons)} segmentations")
             flag = False
+            mask_ind = None
+        else:
+            mask_ind = self.indices_of_original_neurons[0]
+
         # Get known data, then rebuild the other metadata from this
         t = self.time_of_candidate
-        mask_ind = self.indices_of_original_neurons[0]
         tracklet_name = self.current_tracklet_name
         if tracklet_name is None:
             logging.warning("No tracklet selected, can't modify using segmentation")
