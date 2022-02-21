@@ -1,9 +1,8 @@
 import logging
 
-import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, empty_dataframe_like
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, empty_dataframe_like, to_sparse_multiindex
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_using_mode, name2int_neuron_and_tracklet, \
     int2name_dummy
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_tracklet
@@ -110,8 +109,6 @@ def insert_value_in_sparse_df(df, index, columns, val):
 
     # Back to the original sparse format
     # NOTE: multiindex assignment must be done per-column, otherwise it reverts to dense
-    tmp_cols = tmp_cols.astype(pd.SparseDtype("float", np.nan))
-    for c in tmp_cols.columns:
-        df[c] = tmp_cols[c]
+    df = to_sparse_multiindex(df, tmp_cols)
 
     return df

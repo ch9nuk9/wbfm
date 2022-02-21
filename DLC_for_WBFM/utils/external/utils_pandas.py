@@ -74,3 +74,12 @@ def empty_dataframe_like(df_tracklets, new_names) -> pd.DataFrame:
 def check_if_fully_sparse(df):
     # No good way: https://github.com/pandas-dev/pandas/issues/26706
     return df.dtypes.apply(pd.api.types.is_sparse).all()
+
+
+def to_sparse_multiindex(df, tmp_cols):
+    # Must be done in a loop, per column
+    tmp_cols = tmp_cols.astype(pd.SparseDtype("float", np.nan))
+    for c in tmp_cols.columns:
+        df[c] = tmp_cols[c]
+
+    return df

@@ -12,7 +12,7 @@ import pandas as pd
 ##
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, check_if_fully_sparse
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, check_if_fully_sparse, to_sparse_multiindex
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet, name2int_neuron_and_tracklet, \
     int2name_using_mode
@@ -692,8 +692,8 @@ def split_single_sparse_tracklet(i_split, this_tracklet: pd.DataFrame):
     left_half.iloc[i_split:] = np.nan
     right_half.iloc[:i_split] = np.nan
 
-    left_half = left_half.astype(pd.SparseDtype("float", np.nan))
-    right_half = right_half.astype(pd.SparseDtype("float", np.nan))
+    left_half = to_sparse_multiindex(left_half)
+    right_half = to_sparse_multiindex(right_half)
     return left_half, right_half
 
 
