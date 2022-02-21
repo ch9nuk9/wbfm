@@ -308,11 +308,12 @@ class DetectedTrackletsAndNeurons:
                 print(f"{tracklet_name} on segmentation {mask_ind} at t={t} updated")
             self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, row_data)
             # self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
-            self.segmentation_id_to_tracklet_name_database[(t, mask_ind)] = tracklet_name
+            self.update_callback_dictionary_for_single_tracklet(tracklet_name)
             self.dataframe_is_synced_to_disk = False
 
     def delete_data_from_tracklet_at_time(self, t, tracklet_name):
         self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, np.nan)
+        self.update_callback_dictionary_for_single_tracklet(tracklet_name)
 
     def get_mask_or_tracklet_from_other(self, mask_ind, t, tracklet_name):
         if mask_ind is None and tracklet_name is not None:
