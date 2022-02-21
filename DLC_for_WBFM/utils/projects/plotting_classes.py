@@ -714,9 +714,16 @@ class TrackletAndSegmentationAnnotator:
         return True
 
     def delete_current_segmentation_from_tracklet(self):
-        t, tracklet_name, _, flag = self.check_validity_of_tracklet_and_segmentation()
+        t, tracklet_name, mask_ind, flag = self.check_validity_of_tracklet_and_segmentation()
         if not flag:
             return flag
+
+        # Check that the segmentation is actually attached to this neuron
+        old_mask_ind = self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]['raw_segmentation_id']
+        if not np.isnan(old_mask_ind) or old_mask_ind != mask_ind:
+            logging.warning(f"Deletion of segmentation {mask_ind} from {tracklet_name} attempted,"
+                            f"but current mask is instead {old_mask_ind}; aborting")
+            return False
 
         with self.saving_lock:
             self.df_tracklet_obj.delete_data_from_tracklet_at_time(t, tracklet_name)
