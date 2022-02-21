@@ -7,7 +7,7 @@ import zarr
 
 from DLC_for_WBFM.utils.general.preprocessing.utils_tif import preprocess_all_frames_using_config, PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd, edit_config
+from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd
 
 
 def write_data_subset_from_config(cfg: dict,

@@ -6,7 +6,8 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from shutil import copytree
-import re
+
+from DLC_for_WBFM.utils.projects.utils_filenames import get_sequential_filename
 from ruamel.yaml import YAML
 
 
@@ -41,63 +42,6 @@ def get_project_name(_config: dict) -> str:
     task = _config['task_name']
     project_name = f"{exp}-{task}-" + project_name
     return project_name
-
-
-def get_sequential_filename(fname: str, verbose=1) -> str:
-    """
-    Check if the file or dir exists, and if so, append an integer
-
-    Also check if this function has been used before, and remove the suffix
-    """
-    i = 1
-    fpath = Path(fname)
-    if fpath.exists():
-        if verbose >= 1:
-            print(f"Original fname {fpath} exists, so will be suffixed")
-        base_fname, suffix_fname = fpath.stem, fpath.suffix
-        # Check for previous application of this function
-        regex = r"-\d+$"
-        matches = list(re.finditer(regex, base_fname))
-        if len(matches) > 0:
-            base_fname = base_fname[:matches[0].start()]
-            if verbose >= 1:
-                print(f"Removed suffix {matches[0].group()}, so the basename is taken as: {base_fname}")
-
-        new_base_fname = str(base_fname) + f"-{i}"
-        candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
-        while Path(candidate_fname).exists():
-            i += 1
-            new_base_fname = new_base_fname[:-2] + f"-{i}"
-            candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
-            if verbose >= 2:
-                print(f"Trying {candidate_fname}...")
-        # new_fname = fpath.with_name(candidate_fname)
-    else:
-        candidate_fname = fname
-    return str(candidate_fname)
-
-
-def get_absname(project_path, fname):
-    # Builds the absolute filepath using a project config filepath
-    project_dir = Path(project_path).parent
-    fname = Path(project_dir).joinpath(fname)
-    return str(fname)
-
-
-@contextmanager
-def safe_cd(newdir: typing.Union[str, pathlib.Path]) -> None:
-    """
-    Safe change directory that switches back
-
-    @param newdir:
-    """
-    # https://stackoverflow.com/questions/431684/equivalent-of-shell-cd-command-to-change-the-working-directory/24176022#24176022
-    prevdir = os.getcwd()
-    os.chdir(os.path.expanduser(newdir))
-    try:
-        yield
-    finally:
-        os.chdir(prevdir)
 
 
 #####################
@@ -144,3 +88,19 @@ def get_subfolder(project_path, subfolder):
 
 def get_project_of_substep(subfolder_path):
     return Path(Path(subfolder_path).parent).parent
+
+
+@contextmanager
+def safe_cd(newdir: typing.Union[str, pathlib.Path]) -> None:
+    """
+    Safe change directory that switches back
+
+    @param newdir:
+    """
+    # https://stackoverflow.com/questions/431684/equivalent-of-shell-cd-command-to-change-the-working-directory/24176022#24176022
+    prevdir = os.getcwd()
+    os.chdir(os.path.expanduser(newdir))
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)

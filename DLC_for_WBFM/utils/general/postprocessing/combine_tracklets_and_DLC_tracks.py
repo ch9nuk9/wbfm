@@ -17,8 +17,8 @@ from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
-from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_sequential_filename
+from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, get_sequential_filename
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 
 
 def calc_covering_from_distances(all_dist: list,

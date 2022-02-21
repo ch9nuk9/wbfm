@@ -4,7 +4,7 @@ from pathlib import Path
 
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd, get_project_of_substep
+from DLC_for_WBFM.utils.projects.utils_project import get_project_of_substep, safe_cd
 
 
 def _check_and_print(all_to_check, description, verbose):

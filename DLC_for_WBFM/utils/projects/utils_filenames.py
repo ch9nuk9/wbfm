@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle
+import re
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Dict
 
@@ -89,7 +90,6 @@ def pandas_read_any_filetype(filename):
         return None
 
 
-
 def pickle_load_binary(fname):
     with open(fname, 'rb') as f:
         dat = pickle.load(f)
@@ -142,3 +142,46 @@ def get_most_recently_modified(possible_fnames: Dict[str, str]) -> str:
     most_recent_modified = np.argmax(all_mtimes)
     most_recent_modified_key = all_keys[most_recent_modified]
     return most_recent_modified_key
+
+
+def get_sequential_filename(fname: str, verbose=1) -> str:
+    """
+    Check if the file or dir exists, and if so, append an integer
+
+    Also check if this function has been used before, and remove the suffix
+    """
+    i = 1
+    fpath = Path(fname)
+    if fpath.exists():
+        if verbose >= 1:
+            print(f"Original fname {fpath} exists, so will be suffixed")
+        base_fname, suffix_fname = fpath.stem, fpath.suffix
+        # Check for previous application of this function
+        regex = r"-\d+$"
+        matches = list(re.finditer(regex, base_fname))
+        if len(matches) > 0:
+            base_fname = base_fname[:matches[0].start()]
+            if verbose >= 1:
+                print(f"Removed suffix {matches[0].group()}, so the basename is taken as: {base_fname}")
+
+        new_base_fname = str(base_fname) + f"-{i}"
+        candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
+        while Path(candidate_fname).exists():
+            i += 1
+            new_base_fname = new_base_fname[:-2] + f"-{i}"
+            candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
+            if verbose >= 2:
+                print(f"Trying {candidate_fname}...")
+        # new_fname = fpath.with_name(candidate_fname)
+    else:
+        candidate_fname = fname
+    return str(candidate_fname)
+
+
+def get_absname(project_path, fname):
+    # Builds the absolute filepath using a project config filepath
+    project_dir = Path(project_path).parent
+    fname = Path(project_dir).joinpath(fname)
+    return str(fname)
+
+
