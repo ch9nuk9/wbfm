@@ -724,8 +724,8 @@ class TrackletAndSegmentationAnnotator:
 
         # Check that the segmentation is actually attached to this neuron
         old_mask_ind = cast_int_or_nan(self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]['raw_segmentation_id'][t])
-        if not np.isnan(old_mask_ind) or old_mask_ind != mask_ind:
-            logging.warning(f"Deletion of segmentation {mask_ind} from {tracklet_name} attempted,"
+        if np.isnan(old_mask_ind) or old_mask_ind != mask_ind:
+            logging.warning(f"Deletion of segmentation {mask_ind} from {tracklet_name} attempted, "
                             f"but current mask is instead {old_mask_ind}; aborting")
             return False
 
