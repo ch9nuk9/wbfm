@@ -1,6 +1,6 @@
 import numpy as np
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, cast_int_or_nan
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 
@@ -76,10 +76,3 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
                'properties': properties, 'name': 'Neuron IDs', 'blending': 'additive'}
 
     return options
-
-
-def cast_int_or_nan(i):
-    if np.isnan(i):
-        return i
-    else:
-        return int(i)

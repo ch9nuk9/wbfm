@@ -83,3 +83,10 @@ def to_sparse_multiindex(df, tmp_cols):
         df[c] = tmp_cols[c]
 
     return df
+
+
+def cast_int_or_nan(i):
+    if np.isnan(i):
+        return i
+    else:
+        return int(i)

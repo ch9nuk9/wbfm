@@ -10,6 +10,7 @@ import napari
 import numpy as np
 import pandas as pd
 import zarr
+from DLC_for_WBFM.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
 
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
@@ -722,7 +723,7 @@ class TrackletAndSegmentationAnnotator:
             return flag
 
         # Check that the segmentation is actually attached to this neuron
-        old_mask_ind = self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]['raw_segmentation_id']
+        old_mask_ind = cast_int_or_nan(self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]['raw_segmentation_id'][t])
         if not np.isnan(old_mask_ind) or old_mask_ind != mask_ind:
             logging.warning(f"Deletion of segmentation {mask_ind} from {tracklet_name} attempted,"
                             f"but current mask is instead {old_mask_ind}; aborting")
