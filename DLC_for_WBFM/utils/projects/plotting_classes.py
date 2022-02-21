@@ -492,7 +492,8 @@ class TrackletAndSegmentationAnnotator:
             self.tracklet_split_names[left_name].append(right_name)
             self.tracklet_split_times[left_name].append((i_split - 1, i_split))
 
-            # Update the callback dictionary; the left one is still the old name
+            # Update the callback dictionary
+            self.df_tracklet_obj.update_callback_dictionary_for_single_tracklet(left_name)
             self.df_tracklet_obj.update_callback_dictionary_for_single_tracklet(right_name)
 
         return True
