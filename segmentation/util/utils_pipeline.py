@@ -337,6 +337,7 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume, border_width_
                                stitch_via_watershed=False,
                                min_separation=0,
                                already_stitched=False,
+                               split_using_centroids_not_brightness=False,
                                verbose=0,
                                DEBUG=False):
     """
@@ -400,10 +401,12 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume, border_width_
             post.split_long_neurons(stitched_masks,
                                     neuron_lengths,
                                     brightnesses,
+                                    neuron_centroids,
                                     current_global_neuron,
                                     upper_length_threshold,
                                     neuron_planes,
                                     min_separation,
+                                    split_using_centroids_not_brightness,
                                     verbose=verbose - 1)
         if verbose >= 1:
             print(f"After splitting: {len(np.unique(split_masks)) - 1}")
@@ -520,7 +523,7 @@ def _only_postprocess2d(i, i_volume, masks_zarr, opt_postprocessing,
 
 
 def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remove, to_remove_border=True,
-                               upper_length_threshold=12, lower_length_threshold=3, verbose=0):
+                               upper_length_threshold=12, lower_length_threshold=3, split_using_centroids_not_brightness=False, verbose=0):
     """
     Performs post-processing of segmented masks. Includes: splitting long masks, removing large areas,
     removing short masks as well as removing artefacts close to the border
@@ -552,15 +555,17 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
     neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
-    brightnesses, neuron_planes, calc_brightness = post.calc_brightness(img_volume, stitched_masks, neuron_lengths, verbose=verbose - 1)
+    brightnesses, neuron_planes, neuron_centroids = post.calc_brightness(img_volume, stitched_masks, neuron_lengths, verbose=verbose - 1)
     # split too long neurons
     split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
         post.split_long_neurons(stitched_masks,
                                 neuron_lengths,
                                 brightnesses,
+                                neuron_centroids,
                                 len(neuron_lengths),
                                 upper_length_threshold,
                                 neuron_planes,
+                                split_using_centroids_not_brightness,
                                 verbose=verbose - 1)
 
     # remove short neurons

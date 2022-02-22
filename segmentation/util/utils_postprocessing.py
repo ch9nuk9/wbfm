@@ -696,10 +696,12 @@ def _plot_gaussians(coeff, gauss1, peaks_of_gaussians, x_data, y_data, split_poi
 def split_long_neurons(mask_array,
                        neuron_lengths: dict,
                        neuron_brightnesses: dict,
+                       neuron_centroids: dict,
                        global_current_neuron,
                        maximum_length,
                        neuron_z_planes: dict,
                        min_separation: int,
+                       split_using_centroids_not_brightness: bool,
                        verbose=0):
     """
     Splits neuron, which are too long (to our understanding) into 2 parts. The split-point is the midpoint between
@@ -768,10 +770,14 @@ def split_long_neurons(mask_array,
                 num_gaussians = 3
 
             try:
-                x_split_local_coord, _ = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id],
-                                                                           min_separation,
-                                                                           num_gaussians=num_gaussians,
-                                                                           verbose=verbose - 1)
+                if split_using_centroids_not_brightness:
+                    grads = calc_centroid_difference(neuron_centroids[neuron_id])
+                    x_split_local_coord = get_split_point_from_centroids(grads, threshold=4)
+                else:
+                    x_split_local_coord, _ = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id],
+                                                                               min_separation,
+                                                                               num_gaussians=num_gaussians,
+                                                                               verbose=verbose - 1)
             except (ValueError, TypeError) as err:
                 if verbose >= 1:
                     print(f'Error while splitting neuron {neuron_id}: Could not fit 2 Gaussians! Will continue.')
@@ -1045,14 +1051,18 @@ def get_centroid_diff_for_single_neuron(seg, red, i):
         if b > 0:
             props = regionprops(this_mask[z, ...])
             xy.append(props[0].centroid)
-    xy = np.array(xy)
+    sum_of_grads = calc_centroid_difference(xy)
 
+    return sum_of_grads
+
+
+def calc_centroid_difference(xy):
+    xy = np.array(xy)
     grad_x = np.diff(xy[:, 0])
     grad_x -= np.mean(grad_x)
     grad_y = np.diff(xy[:, 1])
     grad_y -= np.mean(grad_y)
     sum_of_grads = grad_x ** 2 + grad_y ** 2
-
     return sum_of_grads
 
 
