@@ -10,6 +10,7 @@
 channels:
   - conda-forge
   - defaults
+  - pytorch-lts
 dependencies:
   - python=3.7
   - pip
@@ -18,11 +19,11 @@ dependencies:
   - tqdm
   - zarr
   - scipy=1.2.1
-  - pytorch=1.10.0
+  - pytorch
   - tifffile
   - opencv=3.4.2
   - matplotlib
-  - torchvision=0.11.1
+  - torchvision
   - scikit-learn=0.24.2
   - scikit-image=0.18.3
   - networkx
