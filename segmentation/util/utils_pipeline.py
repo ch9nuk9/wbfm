@@ -450,8 +450,6 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
     frame_list, mask_fname, metadata_fname, num_frames, _, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
         segment_cfg, project_cfg, DEBUG)
 
-    verbose = 5
-
     # Get data: needs both segmentation and raw video
     check_all_needed_data_for_step(project_cfg.self_path, 2)
     masks_old = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
