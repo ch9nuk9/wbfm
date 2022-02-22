@@ -203,11 +203,11 @@ class DetectedTrackletsAndNeurons:
         # self.segmentation_id_to_tracklet_name_database = d
 
     def update_callback_dictionary_for_single_tracklet(self, n, subcolumn_to_check='raw_segmentation_id'):
+        # Note: doesn't remove matches that may be out of date; those will have to removed by updating another tracklet
         col = self.df_tracklets_zxy[n][subcolumn_to_check].dropna(axis=0)
         idx = col.index
         for t, value in zip(idx, col):
             self.segmentation_id_to_tracklet_name_database[(t, int(value))].append(n)
-
 
     @property
     def all_tracklet_names(self):
@@ -312,8 +312,12 @@ class DetectedTrackletsAndNeurons:
             self.dataframe_is_synced_to_disk = False
 
     def delete_data_from_tracklet_at_time(self, t, tracklet_name):
+        old_ind = int(self.df_tracklets_zxy.loc[t, (tracklet_name, 'raw_segmentation_id')])
+        if tracklet_name in self.segmentation_id_to_tracklet_name_database[(t, old_ind)]:
+            self.segmentation_id_to_tracklet_name_database[(t, old_ind)].pop(tracklet_name)
+
         self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, np.nan)
-        self.update_callback_dictionary_for_single_tracklet(tracklet_name)
+        # self.update_callback_dictionary_for_single_tracklet(tracklet_name)
 
     def get_mask_or_tracklet_from_other(self, mask_ind, t, tracklet_name):
         if mask_ind is None and tracklet_name is not None:
