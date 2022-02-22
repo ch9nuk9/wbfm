@@ -405,18 +405,24 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
         print(list_of_models)
     if force_split:
         i_best = 1
+        all_aicc=[]
     else:
-        i_best = get_best_model_using_aicc(list_of_models)
+        i_best, all_aicc = get_best_model_using_aicc(list_of_models)
     model = list_of_models[i_best]
 
     if i_best == 0:
         split_point = None
-        explanation = ["Single gaussian (aicc)"]
+        explanation = [f"Single gaussian (aicc): {all_aicc}"]
     elif i_best == 1:
         split_point = calc_split_point_from_gaussians(model)
-        explanation = ["Two gaussians (aicc)"]
+        explanation = [f"Two gaussians (aicc): {all_aicc}"]
+    elif i_best == 2:
+        # TODO: will be 2 split points
+        split_point1 = calc_split_point_from_gaussians(model)
+        split_point2 = calc_split_point_from_gaussians(model, prefix1='g2_', prefix2='g3_')
+        split_point = [split_point1, split_point2]
+        explanation = [f"Three gaussians (aicc): {all_aicc}"]
     else:
-        # Future: allow 3 gaussians
         raise NotImplementedError
     if plots:
         plot_gaussians(model, split_point)
@@ -869,17 +875,9 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
     """
 
     # Calculate the brightness per plane (used in all methods)
-    brightness_per_plane = []
-    planes_where_neuron_exists = []
-    individual_plane_masks = []
-    for i, plane in enumerate(full_mask):
-        if i_target in plane:
-            plane_mask = plane == i_target
-            plane_red = red_volume[i]
-            brightness_per_plane.append(np.sum(plane_red[plane_mask]))
-            planes_where_neuron_exists.append(i)
-            individual_plane_masks.append(plane_mask)
-    assert len(brightness_per_plane) > 0, f"Neuron {i_target} not found!"
+    brightness_per_plane, individual_plane_masks, planes_where_neuron_exists = get_brightness_per_plane(full_mask,
+                                                                                                        i_target,
+                                                                                                        red_volume)
 
     if verbose > 2:
         opt = {'to_save_plot': False, 'plots': True}
@@ -954,6 +952,21 @@ def split_neuron_interactive(full_mask, red_volume, i_target,
     # Method 3: centroid discontinuity?
 
     return None
+
+
+def get_brightness_per_plane(full_mask, i_target, red_volume):
+    brightness_per_plane = []
+    planes_where_neuron_exists = []
+    individual_plane_masks = []
+    for i, plane in enumerate(full_mask):
+        if i_target in plane:
+            plane_mask = plane == i_target
+            plane_red = red_volume[i]
+            brightness_per_plane.append(np.sum(plane_red[plane_mask]))
+            planes_where_neuron_exists.append(i)
+            individual_plane_masks.append(plane_mask)
+    assert len(brightness_per_plane) > 0, f"Neuron {i_target} not found!"
+    return brightness_per_plane, individual_plane_masks, planes_where_neuron_exists
 
 
 def update_neuron_within_full_mask(full_mask, individual_plane_masks, planes_where_neuron_exists,
