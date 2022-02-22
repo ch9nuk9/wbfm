@@ -186,10 +186,10 @@ def get_absname(project_path, fname):
     return str(fname)
 
 
-def add_name_suffix(path: str):
+def add_name_suffix(path: str, suffix='1'):
     fpath = Path(path)
     base_fname, suffix_fname = fpath.stem, fpath.suffix
-    new_base_fname = str(base_fname) + f"-{i}"
+    new_base_fname = str(base_fname) + f"-{suffix}"
     candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
 
     # Check for existence?
