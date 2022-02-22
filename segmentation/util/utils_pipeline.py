@@ -337,7 +337,7 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume, border_width_
                                stitch_via_watershed=False,
                                min_separation=0,
                                already_stitched=False,
-                               split_using_centroids_not_brightness=False,
+                               also_split_using_centroids=False,
                                verbose=0,
                                DEBUG=False):
     """
@@ -406,7 +406,7 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume, border_width_
                                     upper_length_threshold,
                                     neuron_planes,
                                     min_separation,
-                                    split_using_centroids_not_brightness,
+                                    also_split_using_centroids,
                                     verbose=verbose - 1)
         if verbose >= 1:
             print(f"After splitting: {len(np.unique(split_masks)) - 1}")

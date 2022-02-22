@@ -701,7 +701,7 @@ def split_long_neurons(mask_array,
                        maximum_length,
                        neuron_z_planes: dict,
                        min_separation: int,
-                       split_using_centroids_not_brightness: bool,
+                       also_split_using_centroids: bool,
                        verbose=0):
     """
     Splits neuron, which are too long (to our understanding) into 2 parts. The split-point is the midpoint between
@@ -770,14 +770,14 @@ def split_long_neurons(mask_array,
                 num_gaussians = 3
 
             try:
-                if split_using_centroids_not_brightness:
+                x_split_local_coord, _ = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id],
+                                                                           min_separation,
+                                                                           num_gaussians=num_gaussians,
+                                                                           verbose=verbose - 1)
+                if also_split_using_centroids and x_split_local_coord is None:
                     grads = calc_centroid_difference(neuron_centroids[neuron_id])
                     x_split_local_coord = get_split_point_from_centroids(grads, threshold=4)
-                else:
-                    x_split_local_coord, _ = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id],
-                                                                               min_separation,
-                                                                               num_gaussians=num_gaussians,
-                                                                               verbose=verbose - 1)
+
             except (ValueError, TypeError) as err:
                 if verbose >= 1:
                     print(f'Error while splitting neuron {neuron_id}: Could not fit 2 Gaussians! Will continue.')

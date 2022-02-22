@@ -69,7 +69,7 @@ def calculate_multi_gaussian_fits(y, background):
     # pars = c.make_params()
 
     # sigma_opt = dict(value=2.0, min=1, max=3)
-    sigma_opt = dict(value=len(y) / 4.0, min=1, max=len(y) / 3.0)
+    sigma_opt = dict(value=len(y) / 4.0, min=0.5, max=len(y) / 3.0)
     center_opt = dict(min=0, max=len(y))
 
     # 1, then 2 gaussians
