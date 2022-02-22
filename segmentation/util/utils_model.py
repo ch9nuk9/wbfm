@@ -45,6 +45,8 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
     # create aliases for each model_name
     if model_name == 'versatile':
         model = StarDist2D.from_pretrained('2D_versatile_fluo')
+    elif model_name == 'demo_3d':
+        model = StarDist3D.from_pretrained('3D_demo')
     elif model_name == 'lukas':
         model = StarDist2D(None, name='stardistNiklas', basedir=folder)
     elif model_name == 'charlie':
