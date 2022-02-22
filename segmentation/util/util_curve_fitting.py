@@ -10,10 +10,8 @@ def aicc_correction(p, n):
     numer = (n - p - 1)
     if numer > 0:
         return 2 * p * (p + 1) / numer
-    elif numer == 0:
+    elif numer <= 0:
         return np.inf
-    else:
-        raise ValueError
 
 
 def aicc_from_fit(result):
@@ -24,13 +22,14 @@ def aicc_from_fit(result):
 
 def get_best_model_using_aicc(list_of_models):
     all_aicc = [aicc_from_fit(model) for model in list_of_models]
-    return np.argmin(all_aicc)
+    return np.argmin(all_aicc), all_aicc
 
 
-def plot_gaussians(result, split_point):
+def plot_gaussians(result, split_point, prefixes=None):
+    if prefixes is None:
+        prefixes = ['g1_', 'g2_', 'g3_']
     y = result.data
     x, y = np.arange(len(y)), np.array(y)
-    peak1 = result.values['g1_center']
 
     fig, axes = plt.subplots(1, 2, figsize=(12.8, 4.8))
     axes[0].plot(x, y)
@@ -40,15 +39,12 @@ def plot_gaussians(result, split_point):
 
     comps = result.eval_components(x=x)
     axes[1].plot(x, y)
-    axes[1].plot(x, comps['g1_'], '--', label='Gaussian component 1')
-    axes[1].plot(peak1, y[int(peak1)], 'ro', label='Peak of gaussian 1')
-    if 'g2_' in comps:
-        axes[1].plot(x, comps['g2_'], '--', label='Gaussian component 2')
-        axes[1].set_title("Best fit is two gaussians (line stays with left neuron)")
-        peak2 = result.values['g2_center']
-        axes[1].plot(peak2, y[int(peak2)], 'ro', label='Peak of gaussian 2')
-    else:
-        axes[1].set_title("Best fit is one gaussian")
+    for i, prefix in enumerate(prefixes):
+        if prefix in comps:
+            axes[1].plot(x, comps[prefix], '--', label=f'Gaussian component {i+1}')
+            peak1 = result.values[f'{prefix}center']
+            axes[1].plot(peak1, y[int(peak1)], 'ro', label=f'Peak of gaussian {i+1}')
+            axes[1].set_title(f"Best fit is {i+1} gaussian(s)")
 
     plt.ylabel('Brightness (sum of pixels in each segmented plane)')
     plt.xlabel('Z slice (starts at top of current neuron not volume)')
@@ -66,59 +62,70 @@ def calculate_multi_gaussian_fits(y, background):
     Note: min_separation is just used to initialize the gaussian widths, and is not a threshold
     """
     x, y = np.arange(len(y)), np.array(y)
-
+    background = np.min(y)
     y -= background
 
-    # 2 gaussians
+    # c = ConstantModel(value=14.0)
+    # pars = c.make_params()
+
+    # sigma_opt = dict(value=2.0, min=1, max=3)
+    sigma_opt = dict(value=len(y) / 4.0, min=1, max=len(y) / 3.0)
+    center_opt = dict(min=0, max=len(y))
+
+    # 1, then 2 gaussians
     gauss1 = GaussianModel(prefix='g1_')
+    # pars.update(gauss1.make_params())
     pars = gauss1.make_params()
 
-    pars['g1_center'].set(value=len(y) / 4.0, min=0, max=len(y))
-    pars['g1_sigma'].set(value=2.0, min=1, max=3)
-    pars['g1_amplitude'].set(value=np.mean(y), min=0)
+    pars['g1_center'].set(value=len(y) / 4.0, **center_opt)
+    pars['g1_sigma'].set(**sigma_opt)
+    pars['g1_amplitude'].set(value=np.max(y), min=0)
+
+    # pars['g1_amplitude'].vary = False
+
+    mod = gauss1 #+ c
+    out = mod.fit(y, pars, x=x)
+    results_1gauss = out
 
     gauss2 = GaussianModel(prefix='g2_')
     pars.update(gauss2.make_params())
 
-    pars['g2_center'].set(value=3 * len(y) / 4.0, min=0, max=len(y))
-    pars['g2_sigma'].set(value=2.0, min=1, max=3)
+    pars['g2_center'].set(value=3 * len(y) / 4.0, **center_opt)
+    pars['g2_sigma'].set(**sigma_opt)
     pars['g2_amplitude'].set(value=np.mean(y), min=0)
 
-    mod = gauss1 + gauss2
-
+    mod = gauss1 + gauss2 #+ c
     out = mod.fit(y, pars, x=x)
-
-    plt.show()
-
     results_2gauss = out
 
-    # 1 gaussian
-    gauss1 = GaussianModel(prefix='g1_')
-    pars = gauss1.make_params()
-    pars['g1_center'].set(value=len(y) / 2.0, min=0, max=len(y))
-    pars['g1_sigma'].set(value=2.0, min=1, max=3)
-    pars['g1_amplitude'].set(value=np.mean(y), min=0)
+    # If long enough, 3 gaussians
+    if len(y) > 9:
+        gauss3 = GaussianModel(prefix='g3_')
+        pars.update(gauss3.make_params())
+        pars['g3_center'].set(value=len(y) / 2.0, **center_opt)
+        pars['g3_sigma'].set(**sigma_opt)
+        pars['g3_amplitude'].set(value=np.mean(y), min=0)
 
-    mod = gauss1
+        mod = gauss1 + gauss2 + gauss3 #+ c
+        out = mod.fit(y, pars, x=x)
+        results_3gauss = out
 
-    out = mod.fit(y, pars, x=x)
-
-    results_1gauss = out
-
-    return [results_1gauss, results_2gauss]
+        return [results_1gauss, results_2gauss, results_3gauss]
+    else:
+        return [results_1gauss, results_2gauss]
 
 
-def calc_split_point_from_gaussians(result):
+def calc_split_point_from_gaussians(result, prefix1='g1_', prefix2='g2_'):
     """Must be determined elsewhere if two are really there"""
     y = result.data
     x = np.arange(len(y))
 
-    g1 = result.eval_components(x=np.array(x))['g1_']
-    g2 = result.eval_components(x=np.array(x))['g2_']
+    g1 = result.eval_components(x=np.array(x))[prefix1]
+    g2 = result.eval_components(x=np.array(x))[prefix2]
     diff = np.array(np.abs(g1 - g2))
 
-    peak1 = result.values['g1_center']
-    peak2 = result.values['g2_center']
+    peak1 = result.values[f'{prefix1}center']
+    peak2 = result.values[f'{prefix2}center']
     if peak1 > peak2:
         peak1, peak2 = peak2, peak1
     # print(peak1, peak2)
