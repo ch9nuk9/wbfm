@@ -18,13 +18,13 @@ dependencies:
   - tqdm
   - zarr
   - scipy=1.2.1
-  - pytorch
+  - pytorch=1.10.0
   - tifffile
-  - opencv
+  - opencv=3.4.2
   - matplotlib
-  - torchvision
-  - scikit-learn
-  - scikit-image
+  - torchvision=0.11.1
+  - scikit-learn=0.24.2
+  - scikit-image=0.18.3
   - networkx
   - lmfit
   - pip:
