@@ -1068,6 +1068,10 @@ def calc_centroid_difference(xy):
 
 def get_split_point_from_centroids(sum_of_grads, threshold=4):
     if np.max(sum_of_grads) > threshold:
-        return np.argmax(sum_of_grads)
+        ind = np.argmax(sum_of_grads)
+        if ind == 0 or ind == len(sum_of_grads):
+            return None
+        else:
+            return ind
     else:
         return None
