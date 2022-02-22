@@ -15,8 +15,7 @@ from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
-    get_names_of_conflicting_dataframes, get_names_of_columns_that_exist_at_t, \
-    find_top_level_name_by_single_column_entry
+    get_names_of_conflicting_dataframes
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError, DataSynchronizationError
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
