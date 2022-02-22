@@ -2,6 +2,7 @@ import logging
 import os
 import threading
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 from numcodecs import blosc
 
@@ -392,7 +393,7 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume, border_width_
         neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
         # calculate brightnesses and their global Z-plane
-        brightnesses, neuron_planes = post.calc_brightness(img_volume, stitched_masks, neuron_lengths)
+        brightnesses, neuron_planes, neuron_centroids = post.calc_brightness(img_volume, stitched_masks, neuron_lengths)
         # split too long neurons
         current_global_neuron = len(neuron_lengths)
         split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
@@ -446,28 +447,42 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
     frame_list, mask_fname, metadata_fname, num_frames, _, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
         segment_cfg, project_cfg, DEBUG)
 
+    verbose = 5
+
     # Get data: needs both segmentation and raw video
     check_all_needed_data_for_step(project_cfg.self_path, 2)
     masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
+    masks_old = np.array(masks_zarr[:num_frames, ...])  # TEST
+
+    # Do not overwrite old file
+    new_fname = str(add_name_suffix(mask_fname, '1'))
+    masks_zarr = zarr.open_like(masks_zarr, path=new_fname)
+
     video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
 
     opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
     opt = {'opt_postprocessing': opt_postprocessing,
            'verbose': verbose,
            'all_bounding_boxes': all_bounding_boxes}
+    read_lock = threading.Lock()
+    write_lock = threading.Lock()
+    opt['read_lock'] = read_lock
+    opt['write_lock'] = write_lock
     if continue_from_frame is None:
         # Note that this does NOT have a separate 'do first volume' function
         continue_from_frame = 0
 
     for i_out, i_vol in enumerate(tqdm(frame_list[continue_from_frame:])):
-        _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr, **opt)
+        _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat,
+                            masks_old=masks_old, masks_zarr=masks_zarr, **opt)
 
     #... GENUINELY NO IDEA WHY THREADS DON'T WORK HERE
     # Actually split
     # with tqdm(total=num_frames - continue_from_frame) as pbar:
     #     def parallel_func(i_both):
     #         i_out, i_vol = i_both
-    #         _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr, **opt)
+    #         _only_postprocess2d(i_out + continue_from_frame, i_vol, video_dat=video_dat, masks_zarr=masks_zarr,
+    #                             masks_old=masks_old, **opt)
     #
     #     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
     #         futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
@@ -485,16 +500,23 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
 
 
 def _only_postprocess2d(i, i_volume, masks_zarr, opt_postprocessing,
-                       all_bounding_boxes,
+                       all_bounding_boxes, read_lock, write_lock, masks_old,
                        verbose, video_dat):
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
     # Read mask directly from previously segmented volume, but copy it
-    segmented_masks = np.array(masks_zarr[i_volume, :, :, :])
+    with read_lock:
+        segmented_masks = np.array(masks_old[i_volume, :, :, :])
+        # segmented_masks = np.array(masks_zarr[i, :, :, :])
+    if verbose >= 1:
+        print(f"Analyzing {i}, {i_volume}")
+        if verbose >= 3:
+            print(f"Mean values: {np.mean(segmented_masks)}, {np.mean(volume)}")
     final_masks = perform_post_processing_2d(segmented_masks,
                                              volume,
                                              **opt_postprocessing,
                                              verbose=verbose - 1)
-    save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr)
+    with read_lock:
+        save_volume_using_bbox(all_bounding_boxes, final_masks, i_volume, i_volume, masks_zarr)
 
 
 def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remove, to_remove_border=True,
@@ -530,7 +552,7 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
     neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
-    brightnesses, neuron_planes = post.calc_brightness(img_volume, stitched_masks, neuron_lengths, verbose=verbose - 1)
+    brightnesses, neuron_planes, calc_brightness = post.calc_brightness(img_volume, stitched_masks, neuron_lengths, verbose=verbose - 1)
     # split too long neurons
     split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
         post.split_long_neurons(stitched_masks,

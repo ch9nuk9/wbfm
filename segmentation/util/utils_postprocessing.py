@@ -14,6 +14,7 @@ from scipy.optimize import curve_fit
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from scipy.signal import find_peaks
+from skimage.measure import regionprops
 
 from segmentation.util.util_curve_fitting import calculate_multi_gaussian_fits, get_best_model_using_aicc, \
     calc_split_point_from_gaussians, plot_gaussians, _plot_just_data
@@ -295,7 +296,7 @@ def get_neuron_lengths_dict(arr):
     return lengths
 
 
-def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
+def OLD_calc_brightness(original_array, stitched_masks, neuron_lengths=None, verbose=0):
     """
     Calculates the average brightness of each mask per plane in an array given the original image
     and the mask lengths.
@@ -332,7 +333,12 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
     brightness_planes = defaultdict(list)
 
     # loop over the actual data and calculate average brightness per neuron per slice/mask
-    for neuron in neuron_lengths.keys():
+    if neuron_lengths is None:
+        neuron_lengths = list(np.unique(stitched_masks)[1:])
+    else:
+        neuron_lengths = neuron_lengths.keys()
+
+    for neuron in neuron_lengths:
         current_list = list()
         planes_list = list()
 
@@ -363,6 +369,50 @@ def calc_brightness(original_array, stitched_masks, neuron_lengths, verbose=0):
         print(f'Done with  calculating brightnesses')
 
     return brightness_dict, brightness_planes
+
+
+def calc_brightness(original_array, stitched_masks, verbose=0):
+    """
+    Calculates the average brightness of each mask per plane in an array given the original image
+    and the mask lengths.
+
+    Parameters
+    ----------
+    original_array : 3D numpy array
+        original image array
+    stitched_masks : 3D numpy array
+        array with stitched (=unique and consecutive values per neuron) neuron masks
+    verbose : int
+        flag for print statements. Increasing by 1, increases depth by 1
+
+    Returns
+    -------
+    brightness_dict : dict
+        contains a list of average brightness values per plane for each neuron
+        {neuron #: [average brightnesses per plane]}
+    brightness_planes : dict
+        contains the global Z plane index for each neuron
+        {neuron #: [global Z planes]}
+
+    """
+    brightness_dict = defaultdict(list)
+    centroid_dict = defaultdict(list)
+    brightness_planes = defaultdict(list)
+
+    for z in range(stitched_masks.shape[0]):
+        props = regionprops(np.array(stitched_masks[z, ...]), intensity_image=np.array(original_array[z, ...]))
+        for p in props:
+            label = p.label
+            centroid_dict[label].append(p.centroid)
+            img = p.intensity_image  # Includes a bounding box with 0s
+            img = img[img > 0]
+            brightness_dict[label].append(int(np.nanmean(img)))
+            # brightness_dict[label].append(int(p.intensity_mean))  # Works in later skimage
+            brightness_planes[label].append(z)
+    if verbose >= 1:
+        print(f'Done with  calculating brightnesses')
+
+    return brightness_dict, brightness_planes, centroid_dict
 
 
 def calc_split_point_via_brightnesses(brightnesses, min_separation,
@@ -983,3 +1033,31 @@ def update_neuron_within_full_mask(full_mask, individual_plane_masks, planes_whe
             this_plane[individual_plane_masks[i_local]] = new_neuron_id
             new_full_mask[i_z] = this_plane
     return new_full_mask
+
+
+def get_centroid_diff_for_single_neuron(seg, red, i):
+    this_neuron = np.where(seg == i, red, 0)
+    this_mask = np.where(seg == i, seg, 0)
+
+    xy = []
+    for z in range(seg.shape[0]):
+        b = np.mean(this_neuron[z, ...])
+        if b > 0:
+            props = regionprops(this_mask[z, ...])
+            xy.append(props[0].centroid)
+    xy = np.array(xy)
+
+    grad_x = np.diff(xy[:, 0])
+    grad_x -= np.mean(grad_x)
+    grad_y = np.diff(xy[:, 1])
+    grad_y -= np.mean(grad_y)
+    sum_of_grads = grad_x ** 2 + grad_y ** 2
+
+    return sum_of_grads
+
+
+def get_split_point_from_centroids(sum_of_grads, threshold=4):
+    if np.max(sum_of_grads) > threshold:
+        return np.argmax(sum_of_grads)
+    else:
+        return None
