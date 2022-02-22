@@ -454,12 +454,12 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
 
     # Get data: needs both segmentation and raw video
     check_all_needed_data_for_step(project_cfg.self_path, 2)
-    masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
-    masks_old = np.array(masks_zarr[:num_frames, ...])  # TEST
+    masks_old = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
+    # masks_old = np.array(masks_zarr[:num_frames, ...])  # TEST
 
     # Do not overwrite old file
     new_fname = str(add_name_suffix(mask_fname, '1'))
-    masks_zarr = zarr.open_like(masks_zarr, path=new_fname)
+    masks_zarr = zarr.open_like(masks_old, path=new_fname)
 
     video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
 
