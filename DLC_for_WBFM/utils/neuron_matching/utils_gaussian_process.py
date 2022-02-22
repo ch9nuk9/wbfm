@@ -2,7 +2,7 @@ import numpy as np
 from sklearn import preprocessing
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, DotProduct
+from sklearn.gaussian_process.kernels import RBF, DotProduct, ConstantKernel
 from sklearn.utils._testing import ignore_warnings
 
 from DLC_for_WBFM.utils.neuron_matching.utils_features import build_neuron_tree
@@ -86,3 +86,24 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     matches_with_conf = [(m[0], m[1], c) for m, c in zip(matches, conf)]
 
     return matches_with_conf, (gpx, gpy), np.array(xyz0)
+
+
+def upsample_using_gaussian_process(y_raw, num_pts=50):
+    """Designed to be used with brightness across z"""
+
+    kernel = ConstantKernel(constant_value=1.0, constant_value_bounds=(0.0, 10.0)) * \
+             RBF(length_scale=2.0, length_scale_bounds=(0.0, 10.0))
+
+    scaler = preprocessing.StandardScaler()
+    y = scaler.fit_transform(np.array(y_raw).reshape(-1, 1))
+    max_z = y.shape[0]
+    x = np.arange(max_z).reshape(-1, 1)
+
+    gp = GaussianProcessRegressor(kernel=kernel)
+    gp.fit(x, y)
+
+    x2 = np.linspace(0, max_z - 1, num=num_pts).reshape(-1, 1)
+    y2 = gp.predict(x2)
+    y2_rescaled = np.squeeze(scaler.inverse_transform(y2))
+
+    return y2_rescaled, gp, scaler
