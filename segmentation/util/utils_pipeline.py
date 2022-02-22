@@ -394,7 +394,7 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume, border_width_
         neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
         # calculate brightnesses and their global Z-plane
-        brightnesses, neuron_planes, neuron_centroids = post.calc_brightness(img_volume, stitched_masks, neuron_lengths)
+        brightnesses, neuron_planes, neuron_centroids = post.calc_brightness(img_volume, stitched_masks)
         # split too long neurons
         current_global_neuron = len(neuron_lengths)
         split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
@@ -555,7 +555,7 @@ def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remov
     neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
 
     # calculate brightnesses and their global Z-plane
-    brightnesses, neuron_planes, neuron_centroids = post.calc_brightness(img_volume, stitched_masks, neuron_lengths, verbose=verbose - 1)
+    brightnesses, neuron_planes, neuron_centroids = post.calc_brightness(img_volume, stitched_masks, verbose=verbose - 1)
     # split too long neurons
     split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
         post.split_long_neurons(stitched_masks,
