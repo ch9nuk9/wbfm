@@ -192,7 +192,7 @@ class DetectedTrackletsAndNeurons:
     segmentation_id_to_tracklet_name_database: dict = None
 
     def __post_init__(self):
-        self.segmentation_id_to_tracklet_name_database = defaultdict(list)
+        self.segmentation_id_to_tracklet_name_database = defaultdict(set)
         subcolumn_to_check = 'raw_segmentation_id'
         names = get_names_from_df(self.df_tracklets_zxy)
 
@@ -207,7 +207,7 @@ class DetectedTrackletsAndNeurons:
         col = self.df_tracklets_zxy[n][subcolumn_to_check].dropna(axis=0)
         idx = col.index
         for t, value in zip(idx, col):
-            self.segmentation_id_to_tracklet_name_database[(t, int(value))].append(n)
+            self.segmentation_id_to_tracklet_name_database[(t, int(value))].add(n)
 
     @property
     def all_tracklet_names(self):
@@ -252,7 +252,7 @@ class DetectedTrackletsAndNeurons:
         return dist, ind_global_coords, tracklet_name
 
     def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
-        names = self.segmentation_id_to_tracklet_name_database[(i_time, seg_ind)]
+        names = list(self.segmentation_id_to_tracklet_name_database[(i_time, seg_ind)])
 
         # NOTE: just uses a different column from get_tracklet_from_neuron_and_time()
         # names = find_top_level_name_by_single_column_entry(self.df_tracklets_zxy, i_time, seg_ind,
@@ -260,7 +260,7 @@ class DetectedTrackletsAndNeurons:
         if len(names) == 1:
             return names[0]
         elif len(names) > 1:
-            logging.warning("Multiple matches found; taking none")
+            logging.warning(f"Multiple matches found ({names}); taking none")
             return None
         else:
             return None
@@ -314,7 +314,7 @@ class DetectedTrackletsAndNeurons:
     def delete_data_from_tracklet_at_time(self, t, tracklet_name):
         old_ind = int(self.df_tracklets_zxy.loc[t, (tracklet_name, 'raw_segmentation_id')])
         if tracklet_name in self.segmentation_id_to_tracklet_name_database[(t, old_ind)]:
-            self.segmentation_id_to_tracklet_name_database[(t, old_ind)].pop(tracklet_name)
+            self.segmentation_id_to_tracklet_name_database[(t, old_ind)].remove(tracklet_name)
 
         self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, np.nan)
         # self.update_callback_dictionary_for_single_tracklet(tracklet_name)
