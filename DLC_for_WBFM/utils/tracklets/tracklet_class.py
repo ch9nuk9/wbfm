@@ -463,6 +463,21 @@ class TrackedWorm:
             new_neuron = self.initialize_new_neuron(initialization_frame=initialization_frame)
             new_neuron.add_tracklet(confidence, tracklet, metadata=name)
 
+    def add_previous_matches(self, previous_matches):
+        df_tracklets = self.detections.df_tracklets_zxy
+        verbose = self.verbose
+        if previous_matches is not None:
+            logging.info(f"Found {len(previous_matches)} previously matched neurons")
+            for neuron_name, match_names in previous_matches.items():
+                neuron = self.global_name_to_neuron[neuron_name]
+                for name in match_names:
+                    previously_matched_tracklet = df_tracklets[[name]]
+                    conf = 1.0  # Assume it was good
+                    neuron.add_tracklet(conf, previously_matched_tracklet, metadata=name,
+                                        check_using_classifier=False, verbose=verbose - 2)
+        else:
+            logging.info("No previous matches found")
+
     def initialize_all_neuron_tracklet_classifiers(self):
         for name, neuron in tqdm(self.global_name_to_neuron.items(), leave=False):
             list_of_tracklets = self.get_tracklets_for_neuron(name)

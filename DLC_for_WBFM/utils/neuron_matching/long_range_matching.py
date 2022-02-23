@@ -72,11 +72,12 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     df_training_data = project_data.df_training_tracklets
     previous_matches = project_data.global2tracklet
 
-    all_tracklet_names = get_names_from_df(df_tracklets)
+    # all_tracklet_names = get_names_from_df(df_tracklets)
 
     # d_max = track_config.config['final_3d_postprocessing']['max_dist']
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
     use_multiple_templates = track_config.config['leifer_params']['use_multiple_templates']
+    only_use_previous_matches = track_config.config['final_3d_postprocessing'].get('only_use_previous_matches', False)
 
     # Add initial tracklets to neurons, then add matches (if any found before)
     worm_obj = TrackedWorm(detections=tracklets_and_neurons_class, verbose=verbose)
@@ -86,67 +87,63 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         # TODO: properly import parameters
         worm_obj.initialize_neurons_at_time(t=10)
 
-    if previous_matches is not None:
-        logging.info(f"Found {len(previous_matches)} previously matched neurons")
-        for neuron_name, match_names in previous_matches.items():
-            neuron = worm_obj.global_name_to_neuron[neuron_name]
-            for name in match_names:
-                previously_matched_tracklet = df_tracklets[[name]]
-                conf = 1.0  # Assume it was good
-                neuron.add_tracklet(conf, previously_matched_tracklet, metadata=name,
-                                    check_using_classifier=False, verbose=verbose - 2)
+    worm_obj.add_previous_matches(previous_matches)
+    if not only_use_previous_matches:
+        worm_obj.initialize_all_neuron_tracklet_classifiers()
+        logging.info(f"Initialized worm object: {worm_obj}")
 
-    worm_obj.initialize_all_neuron_tracklet_classifiers()
-    logging.info(f"Initialized worm object: {worm_obj}")
-
-    # TODO: properly import parameters
-    logging.info("Adding all tracklet candidates to neurons")
-    extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj,
-                                        min_overlap=min_overlap, min_confidence=0.2,
-                                        outlier_threshold=1.0, verbose=verbose, DEBUG=DEBUG)
-
-    # Build candidate graph, then postprocess it
-    global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
-    if DEBUG:
-        t_step = 10
+        # TODO: properly import parameters
+        logging.info("Adding all tracklet candidates to neurons")
+        extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj,
+                                            min_overlap=min_overlap, min_confidence=0.2,
+                                            outlier_threshold=1.0, verbose=verbose, DEBUG=DEBUG)
+        # Build candidate graph, then postprocess it
+        global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
+        if DEBUG:
+            t_step = 10
+        else:
+            t_step = 1
+        final_matching_with_conflict = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step)
+        # Final step to remove time conflicts
+        worm_obj.reinitialize_all_neurons_from_final_matching(final_matching_with_conflict)
+        worm_obj.remove_conflicting_tracklets_from_all_neurons()
+        worm_obj.update_time_covering_ind_for_all_neurons()
     else:
-        t_step = 1
-    final_matching_with_conflict = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step)
-    # Final step to remove time conflicts
-    worm_obj.reinitialize_all_neurons_from_final_matching(final_matching_with_conflict)
-    worm_obj.remove_conflicting_tracklets_from_all_neurons()
-    worm_obj.update_time_covering_ind_for_all_neurons()
-    no_conflict_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
-    # Final bipartite matching to prevent multiple tracklets assigned to the same neuron
-    final_matching_no_confict = b_matching_via_node_copying(no_conflict_neuron_graph)
+        global_tracklet_neuron_graph = None
 
+    no_conflict_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
+    # Final bipartite matching to prevent the same tracklet assigned to multiple neurons
+    final_matching_no_confict = b_matching_via_node_copying(no_conflict_neuron_graph)
     df_new = combine_tracklets_using_matching(df_tracklets, final_matching_no_confict)
 
     # SAVE
     if to_save:
+        _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_tracklet_neuron_graph, track_config,
+                                         worm_obj)
+    return df_new, final_matching_no_confict, global_tracklet_neuron_graph, worm_obj
 
-        output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
-        track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
 
-        updates = {'final_3d_tracks_df': str(output_df_fname)}
-        track_config.config.update(updates)
-        track_config.update_on_disk()
-
-        output_fname = track_config.config['global2tracklet_matches_fname']
-        global2tracklet = final_matching_no_confict.get_mapping_0_to_1(unique=False)
-        track_config.pickle_in_local_project(global2tracklet, output_fname, make_sequential_filename=True)
-
-        logging.info("Also saving raw intermediate products")
-        dir_name = Path(os.path.join('3-tracking', 'raw'))
-        dir_name.mkdir(exist_ok=True)
+def _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_tracklet_neuron_graph, track_config,
+                                     worm_obj):
+    output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
+    track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
+    updates = {'final_3d_tracks_df': str(output_df_fname)}
+    track_config.config.update(updates)
+    track_config.update_on_disk()
+    output_fname = track_config.config['global2tracklet_matches_fname']
+    global2tracklet = final_matching_no_confict.get_mapping_0_to_1(unique=False)
+    track_config.pickle_in_local_project(global2tracklet, output_fname, make_sequential_filename=True)
+    logging.info("Also saving raw intermediate products")
+    dir_name = Path(os.path.join('3-tracking', 'raw'))
+    dir_name.mkdir(exist_ok=True)
+    if global_tracklet_neuron_graph is not None:
         fname = str(dir_name.joinpath('global_tracklet_neuron_graph.pickle'))
         track_config.pickle_in_local_project(global_tracklet_neuron_graph, fname)
-        fname = str(dir_name.joinpath('final_matching.pickle'))
-        track_config.pickle_in_local_project(final_matching_no_confict, fname)
-        # Sometimes this object is too big
-        fname = str(dir_name.joinpath('worm_obj.pickle'))
-        track_config.pickle_in_local_project(worm_obj, fname, protocol=4)
-    return df_new, final_matching_no_confict, global_tracklet_neuron_graph, worm_obj
+    fname = str(dir_name.joinpath('final_matching.pickle'))
+    track_config.pickle_in_local_project(final_matching_no_confict, fname)
+    # Sometimes this object is too big
+    fname = str(dir_name.joinpath('worm_obj.pickle'))
+    track_config.pickle_in_local_project(worm_obj, fname, protocol=4)
 
 
 def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj: TrackedWorm,
