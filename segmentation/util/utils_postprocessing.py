@@ -777,6 +777,9 @@ def split_long_neurons(mask_array,
                 if also_split_using_centroids and x_split_local_coord is None:
                     grads = calc_centroid_difference(neuron_centroids[neuron_id])
                     x_split_local_coord = get_split_point_from_centroids(grads, threshold=4)
+                    if not (1 <= x_split_local_coord <= len(grads)-1):
+                        # Would make too short of a neuron
+                        x_split_local_coord = None
 
             except (ValueError, TypeError) as err:
                 if verbose >= 1:
@@ -813,15 +816,15 @@ def split_neuron_and_update_dicts(global_current_neuron, mask_array, neuron_brig
     # Convert the length to the z indices of the full mask, not local to the neurons
     x_split_global_coord = x_split_local_coord + neuron_z_planes[neuron_id][0]
     # update mask array with new mask IDs
-    for plane in mask_array[x_split_global_coord:]:
+    for plane in mask_array[x_split_global_coord+1:]:
         if neuron_id in plane:
             inter_plane = plane == neuron_id
             plane[inter_plane] = global_current_neuron
     # update brightnesses and brightness-planes dicts
     neuron_brightnesses[global_current_neuron] = neuron_brightnesses[neuron_id][x_split_local_coord + 1:]
-    neuron_brightnesses[neuron_id] = neuron_brightnesses[neuron_id][:x_split_local_coord]
+    neuron_brightnesses[neuron_id] = neuron_brightnesses[neuron_id][:x_split_local_coord + 1]
     neuron_z_planes[global_current_neuron] = neuron_z_planes[neuron_id][x_split_local_coord + 1:]
-    neuron_z_planes[neuron_id] = neuron_z_planes[neuron_id][:x_split_local_coord]
+    neuron_z_planes[neuron_id] = neuron_z_planes[neuron_id][:x_split_local_coord + 1]
     return global_current_neuron
 
 
@@ -1069,9 +1072,6 @@ def calc_centroid_difference(xy):
 def get_split_point_from_centroids(sum_of_grads, threshold=4):
     if np.max(sum_of_grads) > threshold:
         ind = np.argmax(sum_of_grads)
-        if ind == 0 or ind == len(sum_of_grads):
-            return None
-        else:
-            return ind
+        return ind
     else:
         return None
