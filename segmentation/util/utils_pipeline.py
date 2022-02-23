@@ -458,8 +458,13 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
     # Do not overwrite old file
     new_fname = str(add_name_suffix(mask_fname, '1'))
     masks_zarr = zarr.open_like(masks_old, path=new_fname)
-
     video_dat = zarr.open(video_path, mode='r')
+
+    if DEBUG:
+        print(video_dat)
+        print(f"Opened video at {video_path}")
+        print(masks_zarr)
+        print(f"Found segmentation at {mask_fname} with shape {masks_old.shape}")
 
     opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
     opt = {'opt_postprocessing': opt_postprocessing,

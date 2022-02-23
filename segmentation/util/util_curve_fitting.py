@@ -56,7 +56,7 @@ def plot_gaussians(result, split_point, prefixes=None):
     plt.show()
 
 
-def calculate_multi_gaussian_fits(y, background):
+def calculate_multi_gaussian_fits(y, background, allow_3_gaussians=False):
     """Calculates a 1 and 2 gaussian fit, with the goal of using aicc to pick the best option
 
     Note: min_separation is just used to initialize the gaussian widths, and is not a threshold
@@ -99,7 +99,7 @@ def calculate_multi_gaussian_fits(y, background):
     results_2gauss = out
 
     # If long enough, 3 gaussians
-    if len(y) > 9:
+    if allow_3_gaussians and len(y) > 9:
         gauss3 = GaussianModel(prefix='g3_')
         pars.update(gauss3.make_params())
         pars['g3_center'].set(value=len(y) / 2.0, **center_opt)

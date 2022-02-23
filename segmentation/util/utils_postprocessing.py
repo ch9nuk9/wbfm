@@ -470,7 +470,10 @@ def calc_split_point_via_brightnesses(brightnesses, min_separation,
         # TODO: will be 2 split points
         split_point1 = calc_split_point_from_gaussians(model)
         split_point2 = calc_split_point_from_gaussians(model, prefix1='g2_', prefix2='g3_')
-        split_point = [split_point1, split_point2]
+        if split_point2 is not None:
+            split_point = [split_point1, split_point2]
+        else:
+            split_point = split_point1
         explanation = [f"Three gaussians (aicc): {all_aicc}"]
     else:
         raise NotImplementedError
@@ -770,10 +773,10 @@ def split_long_neurons(mask_array,
                 num_gaussians = 3
 
             try:
-                x_split_local_coord, _ = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id],
-                                                                           min_separation,
-                                                                           num_gaussians=num_gaussians,
-                                                                           verbose=verbose - 1)
+                x_split_local_coord, explanation = calc_split_point_via_brightnesses(neuron_brightnesses[neuron_id],
+                                                                                     min_separation,
+                                                                                     num_gaussians=num_gaussians,
+                                                                                     verbose=verbose - 1)
                 if also_split_using_centroids and x_split_local_coord is None:
                     grads = calc_centroid_difference(neuron_centroids[neuron_id])
                     x_split_local_coord = get_split_point_from_centroids(grads, threshold=4)
@@ -792,6 +795,7 @@ def split_long_neurons(mask_array,
                 if np.isscalar(x_split_local_coord):
                     x_split_local_coord = [x_split_local_coord]
                 for i in x_split_local_coord:
+                    # print(x_split_local_coord, explanation)
                     global_current_neuron = split_neuron_and_update_dicts(global_current_neuron, mask_array,
                                                                           neuron_brightnesses, neuron_id,
                                                                           neuron_lengths,
@@ -810,7 +814,13 @@ def split_neuron_and_update_dicts(global_current_neuron, mask_array, neuron_brig
                                   neuron_z_planes, new_neuron_lengths, x_split_local_coord):
     # create new entry
     global_current_neuron += 1
+    # try:
     new_neuron_lengths[global_current_neuron] = neuron_lengths[neuron_id] - x_split_local_coord - 1
+    # except TypeError as err:
+    #     print(neuron_lengths[neuron_id])
+    #     print(x_split_local_coord)
+    #     print(neuron_id)
+    #     raise err
     # update neuron lengths and brightnesses entries; 0-x_split = neuron 1
     new_neuron_lengths[neuron_id] = x_split_local_coord + 1
     # Convert the length to the z indices of the full mask, not local to the neurons
