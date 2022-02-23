@@ -1047,6 +1047,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
     # Build object that has all the data
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=True,
+                                                                   to_load_interactivity=True,
                                                                    to_load_segmentation_metadata=True)
     ui, viewer = napari_trace_explorer(project_data, app=app, to_print_fps=to_print_fps)
 

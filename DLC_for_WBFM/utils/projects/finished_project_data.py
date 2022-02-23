@@ -210,8 +210,10 @@ class ProjectData:
 
     def _load_tracklet_related_properties(self):
         _ = self.df_all_tracklets
-        _ = self.tracklet_annotator
         _ = self.raw_clust
+
+    def _load_interactive_properties(self):
+        _ = self.tracklet_annotator
 
     def _load_frame_related_properties(self):
         _ = self.raw_frames
@@ -253,6 +255,7 @@ class ProjectData:
                                 traces_cfg: SubfolderConfigFile,
                                 project_dir,
                                 to_load_tracklets=False,
+                                to_load_interactivity=False,
                                 to_load_frames=False,
                                 to_load_segmentation_metadata=False):
         # Initialize object in order to use cached properties
@@ -295,6 +298,8 @@ class ProjectData:
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
                     ex.submit(obj._load_tracklet_related_properties)
+                if to_load_interactivity:
+                    ex.submit(obj._load_interactive_properties)
                 if to_load_frames:
                     ex.submit(obj._load_frame_related_properties)
                 if to_load_segmentation_metadata:
