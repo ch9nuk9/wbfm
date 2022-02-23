@@ -38,6 +38,7 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
             folder = Path(r'P:/neurobiology/zimmer/wbfm/TrainedStardist')
         else:
             folder = Path('/scratch/zimmer/wbfm/TrainedStardist')
+            folder_local = Path('/home/charles/Current_work/repos/segmentation/segmentation/notebooks/models')
 
     # available models' aliases
     sd_options = ['versatile', 'lukas', 'charlie', 'charlie_3d', 'charlie_3d_party']
@@ -53,6 +54,8 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
         model = StarDist2D(None, name='stardistCharlie', basedir=folder)
     elif model_name == 'charlie_3d':
         model = StarDist3D(None, name='Charlie100-3d', basedir=folder)
+    elif model_name == 'lukas_3d_zarr':
+        model = StarDist3D(None, name='Lukas3d_zarr', basedir=folder_local)
     elif model_name == 'charlie_3d_party':
         model = StarDist3D(None, name='Charlie100-3d-party', basedir=folder)
     else:
