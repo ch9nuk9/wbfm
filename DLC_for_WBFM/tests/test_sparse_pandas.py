@@ -33,6 +33,21 @@ class TestSparsePandas(unittest.TestCase):
         print(left2.sparse)  # No error
         print(right2.sparse)  # No error
 
+    def test_multi_split(self):
+        left = self.df.copy()
+        for i in [10, 5, 2]:
+            left, right = split_single_sparse_tracklet(i, left)
+            self.assertTrue(check_if_fully_sparse(left))
+        print(left.sparse)  # No error
+        print(right.sparse)  # No error
+
+        right = self.df.copy()
+        for i in [10, 5, 2]:
+            left, right = split_single_sparse_tracklet(i, right)
+            self.assertTrue(check_if_fully_sparse(right))
+        print(left.sparse)  # No error
+        print(right.sparse)  # No error
+
     def test_add(self):
         df = insert_value_in_sparse_df(self.df, index=0, columns=self.cols[0], val=10)
 
