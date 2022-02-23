@@ -263,8 +263,8 @@ class DetectedTrackletsAndNeurons:
         if len(names) == 1:
             return names[0]
         elif len(names) > 1:
-            logging.warning(f"Multiple matches found ({names}); taking none")
-            return None
+            logging.warning(f"Multiple matches found ({names}); taking first one")
+            return names[0]
         else:
             return None
 
