@@ -172,10 +172,11 @@ class ProjectData:
         if self.force_tracklets_to_be_sparse:
             if not check_if_fully_sparse(df_all_tracklets):
                 logger.warning("Casting tracklets as sparse, may take a minute")
-                df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
-                # df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
+                # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
+                df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
             else:
                 logger.info("Found sparse matrix")
+        logging.info("Finished loading tracklets")
 
         return df_all_tracklets
 
