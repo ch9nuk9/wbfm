@@ -7,6 +7,7 @@ import numpy as np
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, empty_dataframe_like
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import calc_FramePair_from_Frames
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
+from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons, TrackedWorm
 from DLC_for_WBFM.utils.general.distance_functions import calc_global_track_to_tracklet_distances, \
     summarize_confidences_outlier_percent
@@ -118,8 +119,9 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 
     # SAVE
     if to_save:
-        _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_tracklet_neuron_graph, track_config,
-                                         worm_obj)
+        with safe_cd(project_data.project_dir):
+            _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_tracklet_neuron_graph,
+                                             track_config, worm_obj)
     return df_new, final_matching_no_confict, global_tracklet_neuron_graph, worm_obj
 
 
