@@ -164,6 +164,9 @@ class TrackletAndSegmentationAnnotator:
         if self.t_buffer_masks is None:
             self.t_buffer_masks = []
 
+        if not self.df_tracklet_obj.interactive_mode:
+            self.df_tracklet_obj.setup_interactivity()
+
         match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
         self.output_match_fname = get_sequential_filename(match_fname)
         df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')

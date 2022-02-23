@@ -13,7 +13,8 @@ import pandas as pd
 import zarr
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, check_if_fully_sparse
+from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, check_if_fully_sparse, \
+    to_sparse_multiindex
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict
@@ -66,7 +67,7 @@ class ProjectData:
     final_tracks_fname: str = None
     global2tracklet_fname: str = None
     df_all_tracklets_fname: str = None
-    force_tracklets_to_be_sparse: bool = True
+    force_tracklets_to_be_sparse: bool = True  # TODO: pass as arg
 
     # Classes for more functionality
     trace_plotter: TracePlotter = None
@@ -171,7 +172,8 @@ class ProjectData:
         if self.force_tracklets_to_be_sparse:
             if not check_if_fully_sparse(df_all_tracklets):
                 logger.warning("Casting tracklets as sparse, may take a minute")
-                df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
+                df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
+                # df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
             else:
                 logger.info("Found sparse matrix")
 

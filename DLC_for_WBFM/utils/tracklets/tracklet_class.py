@@ -189,17 +189,21 @@ class DetectedTrackletsAndNeurons:
 
     # Pre-construct this for MUCH faster clicking callbacks
     segmentation_id_to_tracklet_name_database: dict = None
+    interactive_mode: bool = False
 
     def __post_init__(self):
         self.segmentation_id_to_tracklet_name_database = defaultdict(set)
+        if self.interactive_mode:
+            self.setup_interactivity()
+
+    def setup_interactivity(self):
         subcolumn_to_check = 'raw_segmentation_id'
         names = get_names_from_df(self.df_tracklets_zxy)
-
         logging.info("Prebuilding clickback dictionary (segmentation to tracklet), will take ~ 1 minute")
         for n in tqdm(names):
             self.update_callback_dictionary_for_single_tracklet(n, subcolumn_to_check)
 
-        # self.segmentation_id_to_tracklet_name_database = d
+        self.interactive_mode = True
 
     def update_callback_dictionary_for_single_tracklet(self, n, subcolumn_to_check='raw_segmentation_id'):
         # Note: doesn't remove matches that may be out of date; those will have to removed by updating another tracklet
