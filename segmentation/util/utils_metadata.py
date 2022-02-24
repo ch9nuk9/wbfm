@@ -192,7 +192,7 @@ class DetectedNeurons:
         #                     'brightness_red', 'volume']
         ind_in_list = self.mask_index_to_seg_array(t, mask_ind)
         if ind_in_list is None:
-            return None
+            return None, column_names
         zxy = self.mask_index_to_zxy(t, mask_ind)
         red = float(self.get_all_brightnesses(t).iat[ind_in_list])
         vol = int(self.get_all_volumes(t).iat[ind_in_list])
