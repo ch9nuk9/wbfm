@@ -14,14 +14,14 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
         0 - FWD (no shade)
         1 - REV (gray)
         2 - Turn (red)
-        3 - Quiescent (no shade)
+        3 - Quiescent (light blue)
     """
 
     if cmap is None:
         cmap = {0: None,
                 1: 'darkgray',
                 2: 'red',
-                3: 'blue'}
+                3: 'lightblue'}
     if ax is None:
         ax = plt.gca()
     bh = np.array(bh)
@@ -54,6 +54,6 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
         if DEBUG:
             print(color, val, block_start, block_end)
         if color is not None:
-            ax.axvspan(block_start, block_end, alpha=0.5, color=color)
+            ax.axvspan(block_start, block_end, alpha=0.3, color=color)
 
         block_start = block_end + 1

@@ -117,7 +117,7 @@ def make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_na
         ax.plot(t, y, label=neuron_name)
         # For removing the lines from the legends:
         # https://stackoverflow.com/questions/25123127/how-do-you-just-show-the-text-label-in-plot-legend-e-g-remove-a-labels-line
-        leg = ax.legend(loc='upper left', handlelength=0, handletextpad=0, fancybox=True)
+        leg = ax.legend(loc='upper left', handlelength=0, handletextpad=0, fancybox=True, framealpha=1.0)
         for item in leg.legendHandles:
             item.set_visible(False)
         # ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
