@@ -105,6 +105,15 @@ def remap_tracklets_to_new_segmentation(project_data: ProjectData,
 
     track_cfg.update_on_disk()
 
+    segmentation_cfg = project_data.project_config.get_segmentation_config()
+    fname = segmentation_cfg.unresolve_absolute_path(path_to_new_segmentation)
+    segmentation_cfg.config['output_masks'] = fname
+
+    fname = segmentation_cfg.unresolve_absolute_path(path_to_new_metadata)
+    segmentation_cfg.config['output_metadata'] = fname
+
+    segmentation_cfg.update_on_disk()
+
     return new_df, all_old2new_idx, all_old2new_labels
 
 
