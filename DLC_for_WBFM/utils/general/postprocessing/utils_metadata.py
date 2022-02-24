@@ -101,7 +101,7 @@ def regionprops_one_volume_one_channel(mask, data, props_to_save, name_mode):
     neurons_one_volume = {}
     props = measure.regionprops(mask, intensity_image=data)
 
-    for this_neuron in props:
+    for this_neuron in tqdm(props, leave=False):
         seg_index = this_neuron['label']
         # final_index = mask2final_name[seg_index]
         key_base = (int2name_using_mode(seg_index, name_mode),)
