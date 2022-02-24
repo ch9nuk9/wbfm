@@ -210,7 +210,7 @@ class DetectedTrackletsAndNeurons:
         col = self.df_tracklets_zxy[n][subcolumn_to_check].dropna(axis=0)
         idx = col.index
         for t, value in zip(idx, col):
-            self.segmentation_id_to_tracklet_name_database[(t, int(value))] = set(n)
+            self.segmentation_id_to_tracklet_name_database[(t, int(value))] = {n}
 
     @property
     def all_tracklet_names(self):
