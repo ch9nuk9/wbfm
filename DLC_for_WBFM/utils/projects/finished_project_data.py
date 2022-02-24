@@ -287,8 +287,11 @@ class ProjectData:
         # obj.final_tracks = read_if_exists(final_tracks_fname)
 
         # TODO: do not hardcode
-        behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
+        behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
         behavior_fname = cfg.resolve_relative_path(behavior_fname)
+        if not os.path.exists(behavior_fname):
+            behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
+            behavior_fname = cfg.resolve_relative_path(behavior_fname)
 
         zarr_reader_readonly = lambda fname: zarr.open(fname, mode='r')
         zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
