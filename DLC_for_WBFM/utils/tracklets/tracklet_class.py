@@ -299,7 +299,7 @@ class DetectedTrackletsAndNeurons:
         mask_ind, tracklet_name = self.get_mask_or_tracklet_from_other(mask_ind, t, tracklet_name)
 
         # TODO: check that this doesn't produce a time gap in the tracklet
-        row_data = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
+        row_data, _ = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
         if row_data is None:
             if verbose >= 1:
                 print(f"{tracklet_name} previously on segmentation {mask_ind} no longer exists, "
