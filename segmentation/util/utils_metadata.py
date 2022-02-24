@@ -186,6 +186,8 @@ class DetectedNeurons:
 
     def get_all_metadata_for_single_time(self, mask_ind, t, likelihood=1.0):
         # Correct null value is None
+        column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
+                        'brightness_red', 'volume']
         # Note: column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
         #                     'brightness_red', 'volume']
         ind_in_list = self.mask_index_to_seg_array(t, mask_ind)
@@ -195,7 +197,7 @@ class DetectedNeurons:
         red = float(self.get_all_brightnesses(t).iat[ind_in_list])
         vol = int(self.get_all_volumes(t).iat[ind_in_list])
         row_data = [zxy[0], zxy[1], zxy[2], likelihood, ind_in_list, mask_ind, red, vol]
-        return row_data
+        return row_data, column_names
 
     def overwrite_original_detection_file(self):
         backup_fname = Path(self.detection_fname).with_name("backup_metadata.pickle")
