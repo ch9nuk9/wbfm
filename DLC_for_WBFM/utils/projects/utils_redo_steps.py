@@ -1,16 +1,27 @@
 import logging
+import os
+from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import zarr
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_positions
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from skimage.measure import regionprops
 from tqdm.auto import tqdm
+from segmentation.util.utils_metadata import DetectedNeurons
 
 
-def remap_tracklets_to_new_segmentation(project_data: ProjectData, path_to_new_segmentation,
+def remap_tracklets_to_new_segmentation(project_data: ProjectData,
+                                        path_to_new_segmentation,
+                                        path_to_new_metadata,
                                         DEBUG=False):
+
+    # Assume the metadata is in the same folder
+    new_meta = DetectedNeurons(path_to_new_metadata)
+    print(new_meta)
 
     old_seg = project_data.raw_segmentation
     new_seg = zarr.open(path_to_new_segmentation)
@@ -20,11 +31,11 @@ def remap_tracklets_to_new_segmentation(project_data: ProjectData, path_to_new_s
     try:
         logging.info("Converting dataframe to dense form, may take a while")
         if DEBUG:
-            old_df = old_df[:5].sparse.to_dense()
+            new_df = old_df[:5].sparse.to_dense()
         else:
-            old_df = old_df.sparse.to_dense()
+            new_df = old_df.sparse.to_dense()
     except AttributeError:
-        pass
+        new_df = old_df.copy()
     names = get_names_from_df(old_df)
 
     if DEBUG:
@@ -48,24 +59,69 @@ def remap_tracklets_to_new_segmentation(project_data: ProjectData, path_to_new_s
         all_old2new_idx[t] = dict(old2new_idx)
         all_old2new_labels[t] = old2new_labels
 
-    logging.info("Updating tracklet dataframe using mapping")
+    logging.info("Updating tracklet-segmentation indices using mapping")
     col_name1 = 'raw_segmentation_id'
     col_name2 = 'raw_neuron_ind_in_list'
     for n in tqdm(names):
         tracklet = old_df[n].dropna(axis=0)
-        old_col1 = tracklet[col_name1]
-        old_col2 = tracklet[col_name2]
-        ind = old_col1.index
-        new_col1 = []
-        new_col2 = []
+        ind, new_col1, new_col2 = get_new_column_values_using_mapping(all_old2new_idx, all_old2new_labels, col_name1,
+                                                                      col_name2, num_frames, tracklet)
+
+        new_df.loc[ind, (n, col_name1)] = new_col1
+        new_df.loc[ind, (n, col_name2)] = new_col2
+
+    # Note; this loop could be combined with above if needed
+    logging.info("Updating metadata using new indices")
+    cols_to_replace = ['z', 'x', 'y', 'brightness_red', 'volume']
+    for n in tqdm(names):
+        new_columns = defaultdict(list)
+        tracklet = new_df[n].dropna(axis=0)
+        ind = tracklet.index
+        ind = ind[ind < num_frames]
+
         for t in ind:
-            new_col1.append(all_old2new_labels[t][int(old_col1[t])])
-            new_col2.append(all_old2new_idx[t][int(old_col2[t])])
+            mask_ind = tracklet.at[t, 'raw_segmentation_id']
+            row_data, column_names = new_meta.get_all_metadata_for_single_time(mask_ind, t, None)
 
-        old_df.loc[ind, (n, col_name1)] = new_col1
-        old_df.loc[ind, (n, col_name2)] = new_col2
+            # Only need certain columns
+            for val, col_name in zip(row_data, column_names):
+                if col_name in cols_to_replace:
+                    new_columns[col_name].append(val)
+        # Update all columns at once
+        for col_name in cols_to_replace:
+            new_df.loc[ind, (n, col_name)] = new_columns[col_name]
 
-    return old_df, all_old2new_idx, all_old2new_labels
+    # Save
+    logging.info("Saving")
+    track_cfg = project_data.project_config.get_tracking_config()
+    df_to_save = new_df.astype(pd.SparseDtype("float", np.nan))
+
+    output_df_fname = os.path.join('3-tracking', 'postprocessing', 'df_resegmented.pickle')
+    track_cfg.pickle_in_local_project(df_to_save, output_df_fname, custom_writer=pd.to_pickle)
+
+    # logging.warning("Overwriting name of manual correction tracklets, assuming that was the most recent")
+    df_fname = track_cfg.unresolve_absolute_path(output_df_fname)
+    track_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
+
+    track_cfg.update_on_disk()
+
+    return new_df, all_old2new_idx, all_old2new_labels
+
+
+def get_new_column_values_using_mapping(all_old2new_idx, all_old2new_labels, col_name1, col_name2, num_frames,
+                                        tracklet):
+    old_col1 = tracklet[col_name1]
+    old_col2 = tracklet[col_name2]
+    ind = old_col1.index
+    ind = ind[ind < num_frames]
+    new_col1 = []
+    new_col2 = []
+    for t in ind:
+        if t >= num_frames:
+            break
+        new_col1.append(all_old2new_labels[t][int(old_col1[t])])
+        new_col2.append(all_old2new_idx[t][int(old_col2[t])])
+    return ind, new_col1, new_col2
 
 
 def _get_props(this_seg, this_img=None):
