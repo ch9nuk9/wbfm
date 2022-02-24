@@ -20,7 +20,8 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
     if cmap is None:
         cmap = {0: None,
                 1: 'darkgray',
-                2: 'red'}
+                2: 'red',
+                3: 'blue'}
     if ax is None:
         ax = plt.gca()
     bh = np.array(bh)
