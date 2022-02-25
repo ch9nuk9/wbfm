@@ -5,6 +5,7 @@ from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 from numcodecs import blosc
+import tensorflow as tf
 
 import segmentation.util.utils_postprocessing as post
 import numpy as np
@@ -81,16 +82,28 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
     opt['keras_lock'] = keras_lock
     opt['read_lock'] = read_lock
 
-    with tqdm(total=num_frames - continue_from_frame) as pbar:
-        def parallel_func(i_both):
-            i_out, i_vol = i_both
-            segment_and_save3d(i_out + continue_from_frame, i_vol, video_dat=video_dat, **opt)
+    is_cuda_gpu_available = tf.test.is_gpu_available(cuda_only=True)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
-                pbar.update(1)
+    def parallel_func(i_both):
+        i_out, i_vol = i_both
+        segment_and_save3d(i_out + continue_from_frame, i_vol, video_dat=video_dat, **opt)
+
+    if is_cuda_gpu_available:
+        logging.info("Found cuda! Running single process")
+
+        for i_both in enumerate(tqdm(frame_list[continue_from_frame:])):
+            parallel_func(i_both)
+    else:
+        max_workers = 16
+        logging.info("Did not find cuda, running in multi-threaded mode")
+
+        with tqdm(total=num_frames - continue_from_frame) as pbar:
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list[continue_from_frame:])}
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+                    pbar.update(1)
 
     if _config.config.get('self_path', None) is not None:
         edit_config(_config.config['self_path'], _config.config)

@@ -42,7 +42,7 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
             folder_local = Path('/home/charles/Current_work/repos/segmentation/segmentation/notebooks/models')
 
     # available models' aliases
-    sd_options = ['versatile', 'lukas', 'lukas_3d_zarr', 'lukas_3d_zarr_25',
+    sd_options = ['versatile', 'lukas', 'lukas3d_zarr', 'lukas3d_zarr_25',
                   'charlie', 'charlie_3d', 'charlie_3d_party']
 
     # create aliases for each model_name
