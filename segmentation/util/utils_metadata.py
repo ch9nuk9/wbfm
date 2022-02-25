@@ -248,6 +248,9 @@ class DetectedNeurons:
         seg_index = self.mask_index_to_seg_array(i_time, mask_index)
         return np.array(self.segmentation_metadata[i_time].iloc[seg_index]['centroids'])
 
+    def __repr__(self):
+        return f"DetectedNeurons object with {self.num_frames} frames"
+
 
 def recalculate_metadata_from_config(segment_cfg, project_cfg, name_mode, DEBUG=False):
     """
