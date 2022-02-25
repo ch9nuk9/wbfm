@@ -48,6 +48,8 @@ def segment2d(_config, _run):
 
     # For windows workstation
     os.environ['NUMEXPR_MAX_THREADS'] = '56'
+    # Tensorflow has memory flushing problems
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     segment_cfg = _config['segment_cfg']
     project_cfg = _config['cfg']
