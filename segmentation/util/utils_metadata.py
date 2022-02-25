@@ -321,7 +321,7 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
             volume = video_dat[i_vol, ...]
             metadata[i_vol] = get_metadata_dictionary(masks, volume, name_mode=name_mode)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
             for future in concurrent.futures.as_completed(futures):
                 future.result()
