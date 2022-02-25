@@ -17,15 +17,15 @@ from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectCon
 from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import build_subset_df_from_tracklets
 
 
-def get_traces_from_3d_tracks_using_config(segment_cfg: SubfolderConfigFile,
-                                           track_cfg: SubfolderConfigFile,
-                                           traces_cfg: SubfolderConfigFile,
-                                           project_cfg: ModularProjectConfig,
-                                           DEBUG: bool = False) -> None:
+def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
+                                               track_cfg: SubfolderConfigFile,
+                                               traces_cfg: SubfolderConfigFile,
+                                               project_cfg: ModularProjectConfig,
+                                               DEBUG: bool = False) -> None:
     """
     Connect the 3d traces to previously segmented masks
 
-    NOTE: This assumes that the global tracks may be non-trivially different
+    NOTE: This assumes that the global tracks may be non-trivially different, e.g. from a different tracking algorithm
 
     Get both red and green traces for each neuron
     """
@@ -87,7 +87,6 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
     df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)
     df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
 
-    # TODO: make sure these are strings
     final_neuron_names = get_names_from_df(df_red)
 
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)

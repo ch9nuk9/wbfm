@@ -6,18 +6,20 @@ The top level function for getting final traces from 3d tracks and neuron masks
 import logging
 
 import sacred
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_project
+from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
 from sacred import Experiment
 from sacred import SETTINGS
 # main function
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 
-from DLC_for_WBFM.utils.traces.traces_pipeline import get_traces_from_3d_tracks_using_config, \
+from DLC_for_WBFM.utils.traces.traces_pipeline import match_segmentation_and_tracks_using_config, \
     extract_traces_using_config
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_project
 import cgitb
 cgitb.enable(format='text')
 
@@ -35,7 +37,12 @@ def cfg(project_path, DEBUG):
     cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
 
+    seg_cfg = cfg.get_segmentation_config()
+    tracking_cfg = cfg.get_tracking_config()
     traces_cfg = cfg.get_traces_config()
+
+    use_training = tracking_cfg.config['leifer_params']['use_multiple_templates']
+    check_all_needed_data_for_step(project_path, 4, training_data_required=use_training)
 
     if not DEBUG:
         using_monkeypatch()
@@ -48,12 +55,24 @@ def make_full_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
-    trace_cfg = _config['traces_cfg']
+    seg_cfg = _config['seg_cfg']
+    track_cfg = _config['tracking_cfg']
+    traces_cfg = _config['traces_cfg']
     project_cfg = _config['cfg']
 
     with safe_cd(_config['project_dir']):
+        # Overwrites matching pickle object; nothing needs to be reloaded
+        match_segmentation_and_tracks_using_config(seg_cfg,
+                                                   track_cfg,
+                                                   traces_cfg,
+                                                   project_cfg,
+                                                   DEBUG=DEBUG)
+
+        # Creates segmentations indexed to tracking
+        reindex_segmentation_using_config(traces_cfg, seg_cfg, project_cfg)
+
         # Reads masks from disk, and writes traces
-        extract_traces_using_config(project_cfg, trace_cfg, name_mode='neuron', DEBUG=DEBUG)
+        extract_traces_using_config(project_cfg, traces_cfg, name_mode='neuron', DEBUG=DEBUG)
 
         # By default make some visualizations
         # Note: reloads the project data
