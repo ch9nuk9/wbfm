@@ -14,7 +14,6 @@ from tqdm.auto import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
 
-
 def remap_tracklets_to_new_segmentation(project_data: ProjectData,
                                         path_to_new_segmentation,
                                         path_to_new_metadata,
@@ -74,14 +73,16 @@ def remap_tracklets_to_new_segmentation(project_data: ProjectData,
         for col_name in cols_to_replace:
             new_df.loc[ind, (n, col_name)] = new_columns[col_name]
 
-    _save_new_tracklets_and_update_config_file(new_df, path_to_new_metadata, path_to_new_segmentation, project_data)
+    _save_new_tracklets_and_update_config_file(new_df, path_to_new_metadata, path_to_new_segmentation, project_data,
+                                               DEBUG)
 
     return new_df, all_old2new_idx, all_old2new_labels
 
 
-def _save_new_tracklets_and_update_config_file(new_df, path_to_new_metadata, path_to_new_segmentation, project_data):
+def _save_new_tracklets_and_update_config_file(new_df, path_to_new_metadata, path_to_new_segmentation, project_data,
+                                               DEBUG=False):
     # Save
-    logging.info("Saving")
+    logging.info(f"Saving with debug mode: {DEBUG}")
     track_cfg = project_data.project_config.get_tracking_config()
     df_to_save = new_df.astype(pd.SparseDtype("float", np.nan))
     output_df_fname = os.path.join('3-tracking', 'postprocessing', 'df_resegmented.pickle')
@@ -89,13 +90,15 @@ def _save_new_tracklets_and_update_config_file(new_df, path_to_new_metadata, pat
     # logging.warning("Overwriting name of manual correction tracklets, assuming that was the most recent")
     df_fname = track_cfg.unresolve_absolute_path(output_df_fname)
     track_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
-    track_cfg.update_on_disk()
+    if not DEBUG:
+        track_cfg.update_on_disk()
     segmentation_cfg = project_data.project_config.get_segmentation_config()
     fname = segmentation_cfg.unresolve_absolute_path(path_to_new_segmentation)
     segmentation_cfg.config['output_masks'] = fname
     fname = segmentation_cfg.unresolve_absolute_path(path_to_new_metadata)
     segmentation_cfg.config['output_metadata'] = fname
-    segmentation_cfg.update_on_disk()
+    if not DEBUG:
+        segmentation_cfg.update_on_disk()
 
 
 def match_two_segmentations(new_seg, num_frames, old_seg, red):
