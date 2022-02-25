@@ -133,8 +133,8 @@ def get_new_column_values_using_mapping(all_old2new_idx, all_old2new_labels, col
     for t in ind:
         if t >= num_frames:
             break
-        new_col1.append(all_old2new_labels[t][int(old_col1[t])])
-        new_col2.append(all_old2new_idx[t][int(old_col2[t])])
+        new_col1.append(all_old2new_labels[t].get(int(old_col1[t]), np.nan))
+        new_col2.append(all_old2new_idx[t].get(int(old_col2[t]), np.nan))
     return ind, new_col1, new_col2
 
 
