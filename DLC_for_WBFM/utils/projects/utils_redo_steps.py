@@ -19,10 +19,8 @@ def remap_tracklets_to_new_segmentation(project_data: ProjectData,
                                         path_to_new_metadata,
                                         DEBUG=False):
 
-    # Assume the metadata is in the same folder
     new_meta = DetectedNeurons(path_to_new_metadata)
     print(new_meta)
-
     old_seg = project_data.raw_segmentation
     new_seg = zarr.open(path_to_new_segmentation)
     red = project_data.red_data
@@ -41,23 +39,7 @@ def remap_tracklets_to_new_segmentation(project_data: ProjectData,
     if DEBUG:
         num_frames = 5
 
-    logging.info("Create mapping from old to new segmentation")
-    all_old2new_idx = {}
-    all_old2new_labels = {}
-    for t in tqdm(range(num_frames)):
-        this_img = red[t]
-
-        new_centroids, new_labels = _get_props(new_seg[t], this_img)
-        old_centroids, old_labels = _get_props(old_seg[t], this_img)
-
-        new_c_array = np.array(list(new_centroids.values()))
-        old_c_array = np.array(list(old_centroids.values()))
-
-        old2new_idx, conf, _ = calc_bipartite_from_positions(old_c_array, new_c_array)
-        old2new_labels = {old_labels[i1]: new_labels[i2] for i1, i2 in old2new_idx}
-
-        all_old2new_idx[t] = dict(old2new_idx)
-        all_old2new_labels[t] = old2new_labels
+    all_old2new_idx, all_old2new_labels = match_two_segmentations(new_seg, num_frames, old_seg, red)
 
     logging.info("Updating tracklet-segmentation indices using mapping")
     col_name1 = 'raw_segmentation_id'
@@ -91,30 +73,53 @@ def remap_tracklets_to_new_segmentation(project_data: ProjectData,
         for col_name in cols_to_replace:
             new_df.loc[ind, (n, col_name)] = new_columns[col_name]
 
+    _save_new_tracklets_and_update_config_file(new_df, path_to_new_metadata, path_to_new_segmentation, project_data,
+                                               DEBUG)
+
+    return new_df, all_old2new_idx, all_old2new_labels
+
+
+def _save_new_tracklets_and_update_config_file(new_df, path_to_new_metadata, path_to_new_segmentation, project_data,
+                                               DEBUG=False):
     # Save
-    logging.info("Saving")
+    logging.info(f"Saving with debug mode: {DEBUG}")
     track_cfg = project_data.project_config.get_tracking_config()
     df_to_save = new_df.astype(pd.SparseDtype("float", np.nan))
-
     output_df_fname = os.path.join('3-tracking', 'postprocessing', 'df_resegmented.pickle')
     track_cfg.pickle_in_local_project(df_to_save, output_df_fname, custom_writer=pd.to_pickle)
-
     # logging.warning("Overwriting name of manual correction tracklets, assuming that was the most recent")
     df_fname = track_cfg.unresolve_absolute_path(output_df_fname)
     track_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
-
-    track_cfg.update_on_disk()
-
+    if not DEBUG:
+        track_cfg.update_on_disk()
     segmentation_cfg = project_data.project_config.get_segmentation_config()
     fname = segmentation_cfg.unresolve_absolute_path(path_to_new_segmentation)
     segmentation_cfg.config['output_masks'] = fname
-
     fname = segmentation_cfg.unresolve_absolute_path(path_to_new_metadata)
     segmentation_cfg.config['output_metadata'] = fname
+    if not DEBUG:
+        segmentation_cfg.update_on_disk()
 
-    segmentation_cfg.update_on_disk()
 
-    return new_df, all_old2new_idx, all_old2new_labels
+def match_two_segmentations(new_seg, num_frames, old_seg, red):
+    logging.info("Create mapping from old to new segmentation")
+    all_old2new_idx = {}
+    all_old2new_labels = {}
+    for t in tqdm(range(num_frames)):
+        this_img = red[t]
+
+        new_centroids, new_labels = _get_props(new_seg[t], this_img)
+        old_centroids, old_labels = _get_props(old_seg[t], this_img)
+
+        new_c_array = np.array(list(new_centroids.values()))
+        old_c_array = np.array(list(old_centroids.values()))
+
+        old2new_idx, conf, _ = calc_bipartite_from_positions(old_c_array, new_c_array)
+        old2new_labels = {old_labels[i1]: new_labels[i2] for i1, i2 in old2new_idx}
+
+        all_old2new_idx[t] = dict(old2new_idx)
+        all_old2new_labels[t] = old2new_labels
+    return all_old2new_idx, all_old2new_labels
 
 
 def get_new_column_values_using_mapping(all_old2new_idx, all_old2new_labels, col_name1, col_name2, num_frames,
@@ -128,8 +133,8 @@ def get_new_column_values_using_mapping(all_old2new_idx, all_old2new_labels, col
     for t in ind:
         if t >= num_frames:
             break
-        new_col1.append(all_old2new_labels[t][int(old_col1[t])])
-        new_col2.append(all_old2new_idx[t][int(old_col2[t])])
+        new_col1.append(all_old2new_labels[t].get(int(old_col1[t]), np.nan))
+        new_col2.append(all_old2new_idx[t].get(int(old_col2[t]), np.nan))
     return ind, new_col1, new_col2
 
 
@@ -141,3 +146,15 @@ def _get_props(this_seg, this_img=None):
         centroids[i] = p.weighted_centroid
         labels[i] = p.label
     return centroids, labels
+
+
+def remap_tracklets_to_new_segmentation_using_config(project_path: str,
+                                                     path_to_new_segmentation,
+                                                     path_to_new_metadata,
+                                                     DEBUG=False):
+    project_data = ProjectData.load_final_project_data_from_config(project_path)
+
+    remap_tracklets_to_new_segmentation(project_data,
+                                        path_to_new_segmentation,
+                                        path_to_new_metadata,
+                                        DEBUG)
