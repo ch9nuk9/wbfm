@@ -286,6 +286,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.mergeSegmentationButton = QtWidgets.QPushButton("Try to merge selected")
         self.mergeSegmentationButton.pressed.connect(self.merge_segmentation)
         self.formlayout5.addRow("Produce candidate mask: ", self.mergeSegmentationButton)
+        self.candidateMaskButton = QtWidgets.QPushButton("Make copy of segmentation")
+        self.candidateMaskButton.pressed.connect(self.add_candidate_mask_layer)
+        self.formlayout5.addRow("Produce candidate mask: ", self.candidateMaskButton)
 
         self.splitSegmentationSaveButton1 = QtWidgets.QPushButton("Save to RAM")
         self.splitSegmentationSaveButton1.pressed.connect(self.modify_segmentation_using_manual_correction)
@@ -305,6 +308,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.clearSelectedSegmentationsButton,
             self.splitSegmentationManualButton,
             self.splitSegmentationAutomaticButton,
+            self.candidateMaskButton,
             self.mergeSegmentationButton,
             self.splitSegmentationSaveButton1,
             self.mainSaveButton,
@@ -422,6 +426,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Produces candidate mask layer
         self.remove_layer_of_candidate_segmentation()
         self.dat.tracklet_annotator.merge_current_neurons(self.viewer)
+        self.set_segmentation_layer_invisible()
+
+    def add_candidate_mask_layer(self):
+        # Produces simply copy of segmentation as candidate mask layer
+        self.remove_layer_of_candidate_segmentation()
+        self.dat.tracklet_annotator.add_candidate_mask_layer(self.viewer, new_full_mask=None)
         self.set_segmentation_layer_invisible()
 
     def clear_current_segmentations(self):

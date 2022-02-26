@@ -45,6 +45,8 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
         except KeyError:
             coords = ['z', 'x', 'y']
             zxy = np.array(df[n][coords])
+        # if round_in_z:
+        #     zxy[:, 0] = np.round(zxy[:, 0])
         zxy[:, 0] *= z_to_xy_ratio
         # zxy = df[n][zxy_names].to_numpy(dtype=int)
         t_zxy = np.hstack([t_vec, zxy])

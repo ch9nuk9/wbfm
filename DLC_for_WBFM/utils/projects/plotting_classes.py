@@ -613,13 +613,7 @@ class TrackletAndSegmentationAnnotator:
         plt.show()
         split_succeeded = new_full_mask is not None
         if split_succeeded:
-            # Add as a new candidate layer
-            layer_name = f"Candidate_mask"
-            viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0,
-                              scale=(self.z_to_xy_ratio, 1.0, 1.0))
-
-            # Save for later combining with original mask
-            self.candidate_mask = new_full_mask
+            self.add_candidate_mask_layer(viewer, new_full_mask)
 
     def merge_current_neurons(self, viewer):
         # NOTE: will keep the index of the first selected neuron
@@ -638,16 +632,22 @@ class TrackletAndSegmentationAnnotator:
         for i in indices_to_overwrite:
             new_full_mask[new_full_mask == i] = target_index
 
+        self.add_candidate_mask_layer(viewer, new_full_mask)
+
+        # Keep the saved indices as both
+        # self.set_selected_segmentation(self.time_of_candidate, target_index)
+
+    def add_candidate_mask_layer(self, viewer, new_full_mask=None):
+        if new_full_mask is None:
+            # Add copy of current point
+            t = viewer.dims.current_step[0]
+            new_full_mask = viewer.layers['Raw segmentation'].data[t].copy()
         # Add as a new candidate layer
         layer_name = f"Candidate_mask"
         viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0,
                           scale=(self.z_to_xy_ratio, 1.0, 1.0))
-
         # Save for later combining with original mask
         self.candidate_mask = new_full_mask
-
-        # Keep the saved indices as both
-        # self.set_selected_segmentation(self.time_of_candidate, target_index)
 
     def modify_buffer_segmentation(self, t, new_mask):
         self.buffer_masks[t, ...] = new_mask
