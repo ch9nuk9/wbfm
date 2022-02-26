@@ -231,12 +231,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveSegmentationToTrackletButton.pressed.connect(self.save_segmentation_to_tracklet)
         self.vbox4.addWidget(self.saveSegmentationToTrackletButton)
 
-        self.deleteSegmentationFromTrackletButton = QtWidgets.QPushButton("Delete current time point "
+        self.deleteSegmentationFromTrackletButton = QtWidgets.QPushButton("Delete current segmentation "
                                                                           "from current tracklet")
         self.deleteSegmentationFromTrackletButton.pressed.connect(self.delete_segmentation_from_tracklet)
         self.vbox4.addWidget(self.deleteSegmentationFromTrackletButton)
-
-
 
         self.saveTrackletsStatusLabel = QtWidgets.QLabel("STATUS: No tracklet loaded")
         self.vbox4.addWidget(self.saveTrackletsStatusLabel)
@@ -250,7 +248,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.removeTrackletButton1,
             self.removeTrackletButton2,
             self.appendTrackletButton,
-            self.saveSegmentationToTrackletButton
+            self.saveSegmentationToTrackletButton,
+            self.deleteSegmentationFromTrackletButton
         ]
 
     def _setup_segmentation_correction_buttons(self):
