@@ -24,6 +24,7 @@ def make_grid_plot_from_project(project_data: ProjectData,
                                 channel_mode: str,
                                 calculation_mode: str,
                                 neuron_names_to_plot: list = None,
+                                filter_mode: str = 'no_filtering',
                                 color_using_behavior=True,
                                 to_save=True):
     if channel_mode == 'all':
@@ -42,7 +43,7 @@ def make_grid_plot_from_project(project_data: ProjectData,
     neuron_names.sort()
 
     # Build functions to make a single subplot
-    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode}
+    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode}
     get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
 
@@ -50,7 +51,10 @@ def make_grid_plot_from_project(project_data: ProjectData,
 
     # Save final figure
     if to_save:
-        fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
+        if neuron_names_to_plot is None:
+            fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
+        else:
+            fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
         traces_cfg = project_data.project_config.get_traces_config()
         out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
