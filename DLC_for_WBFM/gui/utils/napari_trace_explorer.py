@@ -659,9 +659,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.viewer.layers.remove(layer_name)
 
     def remove_all_tracklet_layers(self):
-        for layer_name in self.viewer.layers:
-            if 'tracklet_' in layer_name:
-                self.viewer.layers.remove(layer_name)
+        for layer in self.viewer.layers:
+            if 'tracklet_' in layer.name:
+                self.viewer.layers.remove(layer)
 
     def add_layer_of_current_tracklet(self, layer_name=None):
         if layer_name is None:
