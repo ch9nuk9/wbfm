@@ -48,7 +48,10 @@ def segment2d(_config, _run):
 
     # For windows workstation
     os.environ['NUMEXPR_MAX_THREADS'] = '56'
-    # Tensorflow has memory flushing problems
+    # Set environment variables to (try to) deal with rare blosc decompression errors
+    os.environ["BLOSC_NOLOCK"] = "1"
+    os.environ["BLOSC_NTHREADS"] = "1"
+    # Tensorflow has memory flushing problems, so disallow gpu
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     segment_cfg = _config['segment_cfg']
