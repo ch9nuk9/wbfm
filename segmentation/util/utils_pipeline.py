@@ -47,7 +47,7 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
     # Open the file
     if not video_path.endswith('.zarr'):
         raise ValueError("Non-zarr usage has been deprecated")
-    video_dat = zarr.open(video_path)
+    video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
