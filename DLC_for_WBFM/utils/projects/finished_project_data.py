@@ -531,12 +531,12 @@ class ProjectData:
             which_layers = list(new_layers)
 
         logger.info(f"Finished loading data, adding following layers: {which_layers}")
+        z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
         if to_remove_flyback:
-            clipping_list = [{'position': [2, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
+            clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
         else:
             clipping_list = []
 
-        z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
         raw_chunk = self.red_data.chunks
         dask_chunk = list(raw_chunk).copy()
         dask_chunk[0] = 20
