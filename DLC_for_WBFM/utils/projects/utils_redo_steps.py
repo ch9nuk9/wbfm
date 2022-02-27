@@ -13,11 +13,21 @@ from skimage.measure import regionprops
 from tqdm.auto import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
+from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
+
 
 def remap_tracklets_to_new_segmentation(project_data: ProjectData,
+                                        new_segmentation_suffix,
                                         path_to_new_segmentation,
                                         path_to_new_metadata,
                                         DEBUG=False):
+
+    if path_to_new_segmentation is None and new_segmentation_suffix is not None:
+        seg_cfg = project_data.project_config.get_segmentation_config()
+        old_seg_name = seg_cfg.config['output_masks']
+        old_meta_name = seg_cfg.config['output_metadata']
+        path_to_new_segmentation = add_name_suffix(old_seg_name, new_segmentation_suffix)
+        path_to_new_metadata = add_name_suffix(old_meta_name, new_segmentation_suffix)
 
     new_meta = DetectedNeurons(path_to_new_metadata)
     print(new_meta)
@@ -149,12 +159,14 @@ def _get_props(this_seg, this_img=None):
 
 
 def remap_tracklets_to_new_segmentation_using_config(project_path: str,
-                                                     path_to_new_segmentation,
-                                                     path_to_new_metadata,
+                                                     new_segmentation_suffix=None,
+                                                     path_to_new_segmentation=None,
+                                                     path_to_new_metadata=None,
                                                      DEBUG=False):
     project_data = ProjectData.load_final_project_data_from_config(project_path)
 
     remap_tracklets_to_new_segmentation(project_data,
+                                        new_segmentation_suffix,
                                         path_to_new_segmentation,
                                         path_to_new_metadata,
                                         DEBUG)

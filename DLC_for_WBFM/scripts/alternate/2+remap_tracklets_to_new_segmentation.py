@@ -11,7 +11,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 ex = Experiment()
-ex.add_config(project_path=None, path_to_new_segmentation=None, path_to_new_metadata=None, DEBUG=False)
+ex.add_config(project_path=None, new_segmentation_suffix=None, path_to_new_segmentation=None, path_to_new_metadata=None, DEBUG=False)
 
 
 @ex.config
@@ -30,7 +30,9 @@ def main(_config, _run):
     project_path = _config['project_path']
     path_to_new_segmentation = _config['path_to_new_segmentation']
     path_to_new_metadata = _config['path_to_new_metadata']
+    new_segmentation_suffix = _config['new_segmentation_suffix']
     DEBUG = _config['DEBUG']
 
-    remap_tracklets_to_new_segmentation_using_config(project_path, path_to_new_segmentation, path_to_new_metadata,
+    remap_tracklets_to_new_segmentation_using_config(project_path, new_segmentation_suffix,
+                                                     path_to_new_segmentation, path_to_new_metadata,
                                                      DEBUG)
