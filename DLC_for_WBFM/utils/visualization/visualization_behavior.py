@@ -19,7 +19,7 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
 
     if cmap is None:
         cmap = {0: None,
-                1: 'darkgray',
+                1: 'lightgray',
                 2: 'red',
                 3: 'lightblue'}
     if ax is None:
@@ -54,6 +54,6 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
         if DEBUG:
             print(color, val, block_start, block_end)
         if color is not None:
-            ax.axvspan(block_start, block_end, alpha=0.3, color=color)
+            ax.axvspan(block_start, block_end, alpha=0.9, color=color)
 
         block_start = block_end + 1
