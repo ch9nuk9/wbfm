@@ -1,12 +1,18 @@
+import logging
 import os
 import pickle
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
+from pytorch_lightning import LightningDataModule
 from skimage.measure import regionprops
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split, DataLoader
+from tqdm.auto import tqdm
+
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
 def get_bbox_data(i_tracklet, df, project_data, t_local=None, target_sz=np.array([8, 64, 64])):
@@ -167,3 +173,128 @@ class NeuronTripletDataset(Dataset):
 
         # expect: labels[0] == labels[1]
         return data[0], data[1], new_labels[1], data[2], new_labels[2]
+
+#
+# Use image-space input data (i.e. ORB or VGG features)
+#
+
+
+class NeuronImageFeaturesDataset(Dataset):
+    def __init__(self, all_feature_spaces, transform=None):
+        self.transform = transform
+        self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
+
+        labels = []
+        for i, x in enumerate(all_feature_spaces):
+            labels.extend([i] * len(x))
+        self.num_classes = len(all_feature_spaces)
+
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        features = torch.unsqueeze(self.stacked_feature_spaces[idx, :], 0)
+        # features = self.transform(features)
+        label = self.labels[idx]
+        return features, label
+
+
+def build_per_neuron_feature_spaces(project_data: ProjectData, num_neurons=None, num_frames=None):
+
+    # Load ground truth
+    tracking_cfg = project_data.project_config.get_tracking_config()
+    fname = "manual_annotation/manual_tracking.csv"
+    fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+    df_manual_tracking = pd.read_csv(fname)
+
+    neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
+    if num_neurons is None:
+        neurons = neurons_that_are_finished
+    else:
+        neurons = neurons_that_are_finished[:num_neurons]
+
+    all_frames = project_data.raw_frames
+    df = project_data.final_tracks
+
+    if num_frames is None:
+        num_frames = project_data.num_frames - 1
+
+    # Get stored feature spaces from Frame objects
+    all_feature_spaces = []
+    for neuron in tqdm(neurons):
+        this_neuron = df[neuron]
+        this_feature_space = []
+
+        for t in range(num_frames):
+            ind_within_frame = this_neuron['raw_neuron_ind_in_list'][t]
+            if np.isnan(ind_within_frame):
+                continue
+            else:
+                ind_within_frame = int(ind_within_frame)
+            frame = all_frames[t]
+
+            if ind_within_frame >= frame.all_features.shape[0]:
+                logging.warning("Neuron not found within frame; these objects may need to be regenerated")
+                continue
+            this_feature_space.append(frame.all_features[ind_within_frame, :])
+        this_feature_space = np.vstack(this_feature_space)
+        all_feature_spaces.append(this_feature_space)
+
+    return all_feature_spaces
+
+
+def get_test_train_split(project_data: ProjectData, num_neurons=None, num_frames=None,
+                         batch_size=32, train_fraction=0.8):
+
+    all_feature_spaces = build_per_neuron_feature_spaces(project_data, num_neurons, num_frames)
+    alldata = NeuronImageFeaturesDataset(all_feature_spaces)
+
+    train_fraction = int(len(alldata) * train_fraction)
+    splits = [train_fraction, len(alldata) - train_fraction]
+    trainset, testset = random_split(alldata, splits)
+
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=2)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=False, num_workers=2)
+
+    return trainloader, testloader
+
+
+class NeuronImageFeaturesDataModule(LightningDataModule):
+    def __init__(self, batch_size=64, project_data: ProjectData=None, num_neurons=None, num_frames=None,
+                 train_fraction=0.8, val_fraction=0.1):
+        super().__init__()
+        self.batch_size = batch_size
+        self.project_data = project_data
+        self.num_neurons = num_neurons
+        self.num_frames = num_frames
+        self.train_fraction = train_fraction
+        self.val_fraction = val_fraction
+
+    def setup(self, stage: Optional[str] = None):
+        # transform and split
+        all_feature_spaces = build_per_neuron_feature_spaces(self.project_data,
+                                                             self.num_neurons, self.num_frames)
+        alldata = NeuronImageFeaturesDataset(all_feature_spaces)
+
+        train_fraction = int(len(alldata) * self.train_fraction)
+        val_fraction = int(len(alldata) * self.val_fraction)
+        splits = [train_fraction, val_fraction, len(alldata) - train_fraction - val_fraction]
+        trainset, valset, testset = random_split(alldata, splits)
+
+        # assign to use in dataloaders
+        self.train_dataset = trainset
+        self.val_dataset = valset
+        self.test_dataset = testset
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.batch_size)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_dataset, batch_size=self.batch_size)
+
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size)
