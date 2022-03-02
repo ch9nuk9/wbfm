@@ -34,10 +34,11 @@ class NeuronEmbeddingModel(LightningModule):
         # forward + backward + optimize
         outputs = self(X)
         loss = self.criterion(outputs, y)
+        self.log("loss", loss, prog_bar=True)
+
         # loss.backward()
         # self.optimizer.step()
-        if batch_idx % 1000 == 999:
-            self.log("loss", loss, prog_bar=True)
+        # if batch_idx % 1000 == 999:
         return loss
 
     def configure_optimizers(self):

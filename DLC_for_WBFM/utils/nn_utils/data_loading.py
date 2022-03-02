@@ -185,9 +185,15 @@ class NeuronImageFeaturesDataset(Dataset):
         self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
 
         labels = []
+        class_lens = []
+        class_idx_starts = []
         for i, x in enumerate(all_feature_spaces):
+            class_lens.append(len(x))
+            class_idx_starts.append(len(labels))
             labels.extend([i] * len(x))
         self.num_classes = len(all_feature_spaces)
+        self.class_lens = np.array(class_lens)
+        self.class_idx_starts = np.array(class_idx_starts)
 
         self.labels = labels
 
@@ -198,6 +204,93 @@ class NeuronImageFeaturesDataset(Dataset):
         features = torch.unsqueeze(self.stacked_feature_spaces[idx, :], 0)
         # features = self.transform(features)
         label = self.labels[idx]
+        return features, label
+
+
+class PairedNeuronImageFeaturesDataset(Dataset):
+    def __init__(self, all_feature_spaces, transform=None):
+        self.transform = transform
+        self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
+
+        labels = []
+        class_lens = []
+        class_idx_starts = []
+        for i, x in enumerate(all_feature_spaces):
+            class_lens.append(len(x))
+            class_idx_starts.append(len(labels))
+            labels.extend([i] * len(x))
+        self.num_classes = len(all_feature_spaces)
+        self.class_lens = np.array(class_lens)
+        self.class_idx_starts = np.array(class_idx_starts)
+
+        self.labels = labels
+
+    def get_idx_of_same_class(self, data_idx):
+        class_idx = np.argmax(self.class_idx_starts > data_idx) - 1
+        this_start = self.class_idx_starts[class_idx]
+        this_len = self.class_lens[class_idx]
+        possible_idx = list(range(this_start, this_start + this_len))
+        possible_idx.remove(data_idx)  # Sample without replacement
+        i_match = np.random.randint(low=0, high=len(possible_idx))
+        return possible_idx[i_match]
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        idx2 = self.get_idx_of_same_class(idx)
+        features = self.stacked_feature_spaces[[idx, idx2], :]
+        # features = torch.unsqueeze(self.stacked_feature_spaces[idx, :], 0)
+
+        label = self.labels[idx]
+        return features, label
+
+
+class FullVolumeNeuronImageFeaturesDataset(Dataset):
+    def __init__(self, all_feature_spaces, transform=None):
+        self.transform = transform
+        self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
+
+        labels = []
+        class_lens = []
+        class_idx_starts = []
+        for i, x in enumerate(all_feature_spaces):
+            class_lens.append(len(x))
+            class_idx_starts.append(len(labels))
+            labels.extend([i] * len(x))
+        self.num_classes = len(all_feature_spaces)
+        self.class_lens = np.array(class_lens)
+        self.class_idx_starts = np.array(class_idx_starts)
+
+        self.len_longest_class = np.max(self.class_lens)
+
+        self.labels = np.array(labels)
+
+    def __len__(self):
+        return self.len_longest_class
+
+    def get_indices_within_class(self, idx):
+        if np.any(idx > self.class_lens):
+            subset_starts = [start + idx for start, this_len in zip(self.class_idx_starts, self.class_lens) if idx < this_len]
+            return np.array(subset_starts)
+        else:
+            return self.class_idx_starts + idx
+
+    def __getitem__(self, idx):
+
+        all_idx = self.get_indices_within_class(idx)
+
+        features = self.stacked_feature_spaces[all_idx, :]
+        label = self.labels[all_idx]
+
+        if features.shape[0] < self.num_classes:
+            num_missing = self.num_classes - features.shape[0]
+            padding = (0, 0, 0, num_missing)
+            features = torch.nn.functional.pad(features, padding)
+
+            label = np.hstack([label, [-1] * num_missing])
+        # features = torch.unsqueeze(self.stacked_feature_spaces[idx, :], 0)
+
         return features, label
 
 
@@ -265,7 +358,7 @@ def get_test_train_split(project_data: ProjectData, num_neurons=None, num_frames
 
 class NeuronImageFeaturesDataModule(LightningDataModule):
     def __init__(self, batch_size=64, project_data: ProjectData=None, num_neurons=None, num_frames=None,
-                 train_fraction=0.8, val_fraction=0.1):
+                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=NeuronImageFeaturesDataset):
         super().__init__()
         self.batch_size = batch_size
         self.project_data = project_data
@@ -273,12 +366,13 @@ class NeuronImageFeaturesDataModule(LightningDataModule):
         self.num_frames = num_frames
         self.train_fraction = train_fraction
         self.val_fraction = val_fraction
+        self.base_dataset_class = base_dataset_class
 
     def setup(self, stage: Optional[str] = None):
         # transform and split
         all_feature_spaces = build_per_neuron_feature_spaces(self.project_data,
                                                              self.num_neurons, self.num_frames)
-        alldata = NeuronImageFeaturesDataset(all_feature_spaces)
+        alldata = self.base_dataset_class(all_feature_spaces)
 
         train_fraction = int(len(alldata) * self.train_fraction)
         val_fraction = int(len(alldata) * self.val_fraction)
@@ -289,6 +383,8 @@ class NeuronImageFeaturesDataModule(LightningDataModule):
         self.train_dataset = trainset
         self.val_dataset = valset
         self.test_dataset = testset
+
+        self.alldata = alldata
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size)
