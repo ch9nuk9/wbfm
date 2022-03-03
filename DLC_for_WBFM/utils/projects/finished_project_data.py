@@ -13,8 +13,7 @@ import pandas as pd
 import zarr
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, check_if_fully_sparse, \
-    to_sparse_multiindex
+from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, check_if_fully_sparse
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict
@@ -521,7 +520,8 @@ class ProjectData:
         return v
 
     def add_layers_to_viewer(self, viewer, which_layers='all',
-                             to_remove_flyback=False, check_if_layers_exist=False):
+                             to_remove_flyback=False, check_if_layers_exist=False,
+                             dask_for_segmentation=True):
         if which_layers == 'all':
             which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
                             'Neuron IDs', 'Intermediate global IDs']
@@ -554,8 +554,11 @@ class ProjectData:
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
-            # TODO: Add threading here? This takes ~ 15 seconds on a good workstation
-            viewer.add_labels(zarr.array(self.raw_segmentation), name="Raw segmentation",
+            if dask_for_segmentation:
+                seg_array = da.from_zarr(self.raw_segmentation, chunk=dask_chunk)
+            else:
+                seg_array = zarr.array(self.raw_segmentation)
+            viewer.add_labels(seg_array, name="Raw segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=False,
                               rendering='translucent')
         if 'Colored segmentation' in which_layers and self.segmentation is not None:

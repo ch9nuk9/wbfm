@@ -320,7 +320,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def refresh_default_napari_layers(self):
         print("Undocumented shortcut!")
-        self.dat.add_layers_to_viewer(self.viewer, which_layers='all', check_if_layers_exist=True)
+        self.dat.add_layers_to_viewer(self.viewer, which_layers='all', check_if_layers_exist=True,
+                                      dask_for_segmentation=False)
 
     def refresh_segmentation_metadata(self):
         print("Undocumented shortcut!")
@@ -1083,7 +1084,7 @@ def napari_trace_explorer(project_data: ProjectData,
     if viewer is None:
         logger.info("Creating a new Napari window")
         viewer = napari.Viewer(ndisplay=3)
-    ui.dat.add_layers_to_viewer(viewer)
+    ui.dat.add_layers_to_viewer(viewer, dask_for_segmentation=False)
 
     # Actually dock my additional gui elements
     ui.setupUi(viewer)
