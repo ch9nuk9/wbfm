@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import torch
 from pytorch_lightning import LightningModule
 from torch import nn, optim
@@ -52,3 +54,14 @@ class NeuronEmbeddingModel(LightningModule):
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         return x
+
+
+# @dataclass
+# def WormWithClassifier():
+#     model: NeuronEmbeddingModel
+#     all_frames: list = None
+#
+#     t_template: int = None
+#
+#     def setup(self):
+#         pass
