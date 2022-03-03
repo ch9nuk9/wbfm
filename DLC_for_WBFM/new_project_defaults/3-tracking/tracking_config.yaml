@@ -9,14 +9,17 @@ final_3d_tracks:
   max_dist: 5.0 # CHANGE ME
   max_dist_to_segmentation: 1.0 # CHANGE ME
   use_filtered: False # See postprocessing/3b+filter_dlc_predictions
+  template_time_point: 10
 
 final_3d_postprocessing:
   max_dist: 5.0
   min_overlap_dlc_and_tracklet: 5
-  min_dlc_confidence: null
+  outlier_threshold: 1.0
+  min_confidence: 0.0
   keep_only_tracklets_in_final_tracks: true
   allowed_tracklet_endpoint_wiggle: 3
   only_use_previous_matches: false
+  bipartite_matching_t_step: 1  # Increase for speed, but may miss short tracklets
   output_df_fname: 3-tracking/postprocessing/combined_3d_tracks.h5
 
 precedence_tracks:

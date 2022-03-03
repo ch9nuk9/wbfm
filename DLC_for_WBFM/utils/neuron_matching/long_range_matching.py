@@ -76,34 +76,35 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     # all_tracklet_names = get_names_from_df(df_tracklets)
 
     # d_max = track_config.config['final_3d_postprocessing']['max_dist']
-    min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
+    t_template = track_config.config['final_3d_tracks'].get('template_time_point', 1)
     use_multiple_templates = track_config.config['leifer_params']['use_multiple_templates']
+
+    min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
     only_use_previous_matches = track_config.config['final_3d_postprocessing'].get('only_use_previous_matches', False)
+    t_step = track_config.config['final_3d_postprocessing'].get('bipartite_matching_t_step', 1)
+    outlier_threshold = track_config.config['final_3d_postprocessing'].get('outlier_threshold', 1.0)
+    min_confidence = track_config.config['final_3d_postprocessing'].get('min_confidence', 0.0)
+    if DEBUG:
+        t_step = 10
 
     # Add initial tracklets to neurons, then add matches (if any found before)
     worm_obj = TrackedWorm(detections=tracklets_and_neurons_class, verbose=verbose)
     if use_multiple_templates:
         worm_obj.initialize_neurons_from_training_data(df_training_data)
     else:
-        # TODO: properly import parameters
-        worm_obj.initialize_neurons_at_time(t=10)
+        worm_obj.initialize_neurons_at_time(t=t_template)
 
     worm_obj.add_previous_matches(previous_matches)
     if not only_use_previous_matches:
         worm_obj.initialize_all_neuron_tracklet_classifiers()
         logging.info(f"Initialized worm object: {worm_obj}")
 
-        # TODO: properly import parameters
         logging.info("Adding all tracklet candidates to neurons")
         extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj,
-                                            min_overlap=min_overlap, min_confidence=0.2,
-                                            outlier_threshold=1.0, verbose=verbose, DEBUG=DEBUG)
+                                            min_overlap=min_overlap, min_confidence=min_confidence,
+                                            outlier_threshold=outlier_threshold, verbose=verbose, DEBUG=DEBUG)
         # Build candidate graph, then postprocess it
         global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
-        if DEBUG:
-            t_step = 10
-        else:
-            t_step = 1
         final_matching_with_conflict = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_step)
         # Final step to remove time conflicts
         worm_obj.reinitialize_all_neurons_from_final_matching(final_matching_with_conflict)
