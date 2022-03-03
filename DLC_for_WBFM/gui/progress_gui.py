@@ -14,16 +14,17 @@ from pathlib import Path
 
 import napari
 import zarr
-from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer_from_config, napari_trace_explorer
+from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer
 from PyQt5 import QtCore, QtWidgets
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, check_training_raw, \
+from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, \
     check_traces, check_training_final
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_full_data
 from DLC_for_WBFM.utils.projects.finished_project_data import napari_of_training_data, ProjectData
+from backports.cached_property import cached_property
 
 
 class UiMainWindow(object):
@@ -254,6 +255,12 @@ class UiMainWindow(object):
         else:
             print(f"Project {value} is not a valid project")
 
+    @cached_property
+    def project_data(self):
+        return ProjectData.load_final_project_data_from_config(self.project_file,
+                                                               to_load_tracklets=True,
+                                                               to_load_segmentation_metadata=True)
+
     def check_valid_project(self, value):
         # TODO
         return os.path.exists(value)
@@ -310,14 +317,19 @@ class UiMainWindow(object):
 
     def napari_for_masks(self):
         """Open napari window for segmentation before tracking"""
-        self.viewer = napari.view_labels(self.segment_zarr, ndisplay=3)
-        self.viewer.add_image(self.preprocessed_red)
+        self.viewer = napari.Viewer(ndisplay=3)
+        which_layers = ['Red data', 'Green data', 'Raw segmentation']
+        self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
         self.viewer.show()
 
     def napari_for_masks_tracking(self):
         """Open napari window for segmentation colored by tracking"""
-        self.viewer = napari_of_full_data(self.project_dir)[0]
-        self.viewer.add_image(self.preprocessed_red)
+        self.viewer = napari.Viewer(ndisplay=3)
+        which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Intermediate global IDs']
+        self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
+        self.viewer.show()
+        # self.viewer = napari_of_full_data(self.project_dir)[0]
+        # self.viewer.add_image(self.preprocessed_red)
 
     def napari_for_masks_training(self):
         """Open napari window for segmentation for just the training data"""
@@ -325,9 +337,10 @@ class UiMainWindow(object):
 
     def open_traces_gui(self):
         # Build object that has all the data
-        project_data = ProjectData.load_final_project_data_from_config(self.project_file,
-                                                                       to_load_tracklets=True,
-                                                                       to_load_segmentation_metadata=True)
+        project_data = self.project_data
+        # project_data = ProjectData.load_final_project_data_from_config(self.project_file,
+        #                                                                to_load_tracklets=True,
+        #                                                                to_load_segmentation_metadata=True)
         ui, viewer = napari_trace_explorer(project_data, to_print_fps=True)
         self.viewer = viewer
         self.viewer.show()
