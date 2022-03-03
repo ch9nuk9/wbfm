@@ -2,8 +2,6 @@
 The top level function for producing dlc tracks in 3d
 """
 
-from pathlib import Path
-
 # Experiment tracking
 import sacred
 from DLC_for_WBFM.utils.nn_utils.fdnc_predict import get_putative_names_from_config

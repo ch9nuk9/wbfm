@@ -290,7 +290,7 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
                 # BUT, this can't be 0 because it is the same as the segmentation index (background is 0)
                 global_ind = raw_neuron_id + 1
             else:
-                # These will NOT be the final names of the neurons if fdnc is used
+                # These will NOT be the final names of the neurons if utils_fdnc is used
                 global_ind = i + 1
             matches.append([global_ind, int(raw_neuron_id)])
         all_matches[t] = matches
@@ -310,7 +310,7 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
     #             else:
     #                 raise NotImplementedError("Currently, 1 must be added")
     #         else:
-    #             # These will NOT be the final names of the neurons if fdnc is used
+    #             # These will NOT be the final names of the neurons if utils_fdnc is used
     #             global_ind = i_row + 1
     #         matches.append([global_ind, seg_ind])
     #     all_matches[i_frame] = np.array(matches)

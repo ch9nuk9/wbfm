@@ -2,7 +2,6 @@
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
-from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 import cgitb

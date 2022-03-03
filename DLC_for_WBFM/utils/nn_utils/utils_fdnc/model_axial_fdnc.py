@@ -1,4 +1,4 @@
-# A version of the leifer fdnc model using axial transformers instead of basic ones
+# A version of the leifer utils_fdnc model using axial transformers instead of basic ones
 import torch
 import torch.nn as nn
 import torch.nn.utils
