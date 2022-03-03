@@ -36,9 +36,9 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
     if folder is None:
         if os.name == 'nt':
             # folder = Path(r'P:/neurobiology/zimmer/wbfm/TrainedStardist')
-            folder = Path(r'Z:/zimmer/wbfm/TrainedStardist')
+            folder = Path(r'Z:/neurobiology/zimmer/wbfm/TrainedStardist')
         else:
-            folder = Path('/scratch/zimmer/wbfm/TrainedStardist')
+            folder = Path('/scratch/neurobiology/zimmer/wbfm/TrainedStardist')
             folder_local = Path('/home/charles/Current_work/repos/segmentation/segmentation/notebooks/models')
 
     # available models' aliases
