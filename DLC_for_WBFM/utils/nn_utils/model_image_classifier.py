@@ -16,6 +16,8 @@ class NeuronEmbeddingModel(LightningModule):
         self.fc4 = nn.Linear(120, num_classes)
 
         self.criterion = nn.CrossEntropyLoss()
+        # self.criterion = nn.NLLLoss()
+        # self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = torch.flatten(x, 1) # flatten all dimensions except batch
@@ -49,7 +51,7 @@ class NeuronEmbeddingModel(LightningModule):
 
     def embed(self, x):
         # Everything but the last layer
-        x = torch.flatten(x, 1) # flatten all dimensions except batch
+        x = torch.flatten(x, 1)  # flatten all dimensions except batch
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))

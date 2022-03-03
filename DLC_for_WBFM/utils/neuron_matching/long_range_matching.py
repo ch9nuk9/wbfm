@@ -95,7 +95,6 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         worm_obj.initialize_neurons_from_training_data(df_training_data)
     else:
         worm_obj.initialize_neurons_at_time(t=t_template)
-
     worm_obj.add_previous_matches(previous_matches)
 
     if not only_use_previous_matches:
