@@ -22,7 +22,7 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 
-default_package_path = "/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID"
+default_package_path = "/scratch/neurobiology/zimmer/Charles/github_repos/fDNC_Neuron_ID"
 
 
 def load_fdnc_options_and_template(custom_template=None, path_to_folder=None):
