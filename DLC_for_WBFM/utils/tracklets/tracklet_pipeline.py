@@ -156,8 +156,12 @@ def save_all_tracklets(df, df_multi_index_format, training_config):
             pickle.dump(df, f)
 
         # General format; ONLY this should be used going forward
+        # Update to save as sparse from the beginning
         out_fname = training_config.config['df_3d_tracklets']
-        df_multi_index_format.to_hdf(out_fname, 'df_with_missing')
+        # df_multi_index_format.to_hdf(out_fname, 'df_with_missing')
+        logging.info("Converting dataframe to sparse format")
+        df_multi_index_format = df_multi_index_format.astype(pd.SparseDtype("float", np.nan))
+        training_config.pickle_in_local_project(df_multi_index_format, out_fname, custom_writer=pd.to_pickle)
 
 
 def _unpack_config_for_tracklets(training_config, segmentation_config):
