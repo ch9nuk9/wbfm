@@ -414,7 +414,8 @@ class TrackedWorm:
         """
         neuron_zxy = self.detections.get_neurons_at_time(t)
         neuron_volumes = self.detections.segmentation_metadata.get_all_volumes(t)
-        for i_neuron_ind in range(len(neuron_zxy)):
+        new_tracklets = []
+        for i_neuron_ind in tqdm(range(len(neuron_zxy)), leave=False):
             new_neuron = self.initialize_new_neuron(initialization_frame=t)
             # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
             _, name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
@@ -424,12 +425,14 @@ class TrackedWorm:
                 name = self.detections.initialize_new_empty_tracklet()
                 mask_ind = self.detections.segmentation_metadata.seg_array_to_mask_index(t, i_neuron_ind)
                 self.detections.update_tracklet_metadata_using_segmentation_metadata(
-                    t=t, tracklet_name=name, mask_ind=mask_ind, likelihood=1.0)
+                    t=t, tracklet_name=name, mask_ind=mask_ind, likelihood=1.0, verbose=self.verbose-1)
+                new_tracklets.append(name)
 
             tracklet = self.detections.df_tracklets_zxy[[name]]
             confidence = 1.0
             new_neuron.add_tracklet(confidence, tracklet, metadata=name)
 
+        logging.info(f"Added new tracklets: {new_tracklets}")
         self.detections.synchronize_dataframe_to_disk()
 
             # if name:
