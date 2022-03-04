@@ -99,5 +99,5 @@ def track_using_embedding_from_config(project_cfg, DEBUG):
     # Save
     out_fname = '3-tracking/postprocessing/df_tracks_embedding.h5'
     tracking_cfg.h5_in_local_project(df, out_fname, also_save_csv=True)
-    tracking_cfg.config['final_3d_tracks_df'] = out_fname
+    tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
     tracking_cfg.update_on_disk()

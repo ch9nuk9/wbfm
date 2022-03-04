@@ -11,7 +11,6 @@ from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_da
 
 cgitb.enable(format='text')
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.nn_utils.fdnc_predict import track_using_fdnc_from_config
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
@@ -43,6 +42,3 @@ def main(_config, _run):
 
     with safe_cd(project_dir):
         track_using_embedding_from_config(project_cfg, _config['DEBUG'])
-
-        # Necessary postprocessing step
-        # combine_all_dlc_and_tracklet_coverings_from_config(tracks_cfg, training_cfg, project_dir, DEBUG=_config['DEBUG'])
