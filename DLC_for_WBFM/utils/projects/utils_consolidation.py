@@ -14,7 +14,7 @@ def consolidate_tracklets_using_manual_annotation(project_data: ProjectData):
     print(f"Original number of unique tracklets: {len(unmatched_tracklet_names)}")
 
     track_cfg = project_data.project_config.get_tracking_config()
-    fname = track_cfg.resolve_relative_path("/manual_annotation/manual_tracking.csv", prepend_subfolder=True)
+    fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
     df_manual_tracking = pd.read_csv(fname)
     neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
     print(f"Found {len(neurons_that_are_finished)}/{df_manual_tracking.shape[0]} annotated neurons")
