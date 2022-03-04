@@ -5,9 +5,12 @@ from typing import Dict
 import numpy as np
 import torch
 from scipy.optimize import linear_sum_assignment
+from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
+from DLC_for_WBFM.utils.nn_utils.fdnc_predict import template_matches_to_dataframe
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 PATH_TO_MODEL = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/classifier_36_neurons.ckpt"
 if not os.path.exists(PATH_TO_MODEL):
@@ -61,7 +64,6 @@ class WormWithNeuronClassifier:
             conf_matrix = torch.nan_to_num(torch.softmax(1.0 / distances, dim=0), nan=1.0)
 
             matches = linear_sum_assignment(conf_matrix, maximize=True)
-            # err
             matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
             matches = np.array(matches)
             conf = np.array([np.tanh(conf_matrix[i0, i1]) for i0, i1 in matches])
@@ -69,5 +71,33 @@ class WormWithNeuronClassifier:
 
         return matches_with_conf
 
-    # def __repr__(self):
-    #     return f"Worm Tracker based on network: {self.path_to_model}"
+    def __repr__(self):
+        return f"Worm Tracker based on network: {self.path_to_model}"
+
+
+def track_using_embedding_from_config(project_cfg, DEBUG):
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg,
+                                                                   to_load_tracklets=True, to_load_frames=True)
+
+    tracking_cfg = project_data.project_config.get_tracking_config()
+    t_template = tracking_cfg.config['final_3d_tracks']['template_time_point']
+
+    num_frames = project_data.num_frames
+    if DEBUG:
+        num_frames = 3
+    all_frames = project_data.raw_frames
+    tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template])
+
+    all_matches = []
+    for t in tqdm(range(num_frames)):
+        matches_with_conf = tracker.match_target_frame(all_frames[t])
+
+        all_matches.append(matches_with_conf)
+
+    df = template_matches_to_dataframe(project_data, all_matches)
+
+    # Save
+    out_fname = '3-tracking/postprocessing/df_tracks_embedding.h5'
+    tracking_cfg.h5_in_local_project(df, out_fname, also_save_csv=True)
+    tracking_cfg.config['final_3d_tracks_df'] = out_fname
+    tracking_cfg.update_on_disk()
