@@ -96,7 +96,7 @@ def template_matches_to_dataframe(project_data: ProjectData,
                                   all_matches: list):
     """Correct null value within all_matches is []"""
     num_frames = len(all_matches)
-    coords = ['z', 'x', 'y', 'likelihood']
+    coords = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list']
     sz = (num_frames, len(coords))
     neuron_arrays = defaultdict(lambda: np.zeros(sz))
 
@@ -109,6 +109,7 @@ def template_matches_to_dataframe(project_data: ProjectData,
 
             neuron_arrays[this_template_idx][i_frame, :3] = this_unscaled_pt
             neuron_arrays[this_template_idx][i_frame, 3] = m[2]  # Match confidence
+            neuron_arrays[this_template_idx][i_frame, 4] = m[1]  # Match index
 
     # Convert to pandas multiindexing formatting
     new_dict = {}
