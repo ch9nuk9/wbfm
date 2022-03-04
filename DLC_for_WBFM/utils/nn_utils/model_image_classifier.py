@@ -8,16 +8,19 @@ from torch.nn import functional as F
 
 class NeuronEmbeddingModel(LightningModule):
 
-    def __init__(self, feature_dim=840, num_classes=10):
+    def __init__(self, feature_dim=840, num_classes=10, criterion=None, lr=1e-3):
         super().__init__()
         self.fc1 = nn.Linear(feature_dim, 512)
         self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, 120)
         self.fc4 = nn.Linear(120, num_classes)
 
-        self.criterion = nn.CrossEntropyLoss()
-        # self.criterion = nn.NLLLoss()
-        # self.softmax = nn.Softmax(dim=1)
+        if criterion is None:
+            self.criterion = nn.CrossEntropyLoss()
+        else:
+            self.criterion = criterion
+
+        self.lr = lr
 
     def forward(self, x):
         x = torch.flatten(x, 1) # flatten all dimensions except batch
@@ -46,7 +49,7 @@ class NeuronEmbeddingModel(LightningModule):
         return loss
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = optim.Adam(self.parameters(), lr=self.lr)
         return optimizer
 
     def embed(self, x):
@@ -56,3 +59,9 @@ class NeuronEmbeddingModel(LightningModule):
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         return x
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self(x)
+        loss = self.criterion(y_hat, y)
+        self.log("val_loss", loss)
