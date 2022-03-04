@@ -10,7 +10,8 @@ import pandas as pd
 from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
-from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames
+from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames, \
+    calculate_frame_objects_full_video
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs, split_multiple_tracklets
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
@@ -80,6 +81,30 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
                                                                pairwise_matches_params=pairwise_matches_params)
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+
+
+def build_frame_objects_using_config(project_config: ModularProjectConfig,
+                                     training_config: SubfolderConfigFile,
+                                     DEBUG: bool = False) -> None:
+    """
+    Produce (or rebuild) the Frame objects associated with a project, without matching them or otherwise producing
+    tracklets
+
+    This function is designed to be used with an external .yaml config file
+
+    See new_project_defaults/2-training_data/training_data_config.yaml
+    See also partial_track_video_using_config()
+    """
+    logging.info(f"Producing per-volume ReferenceFrame objects")
+    video_fname, tracker_params, _ = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
+
+    dtype = 'uint8'
+
+    # Build frames, then match them
+    tracker_params['end_volume'] = tracker_params['start_volume'] + tracker_params['num_frames']
+    all_frame_dict = calculate_frame_objects_full_video(video_fname=video_fname, **tracker_params)
+    with safe_cd(project_config.project_dir):
+        _save_matches_and_frames(all_frame_dict, None)
 
 
 def postprocess_and_build_matches_from_config(project_config: ModularProjectConfig,
