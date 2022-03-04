@@ -50,7 +50,7 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidenc
             lut = all_lut[i]
             new_masks[i, ...] = lut[seg_masks[i, ...]]
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             # executor.map(parallel_func, range(len(all_lut)))
             future_results = {executor.submit(parallel_func, i): i for i in all_lut_keys}
             for future in concurrent.futures.as_completed(future_results):

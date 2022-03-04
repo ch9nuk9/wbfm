@@ -61,7 +61,7 @@ def region_props_all_volumes(reindexed_masks, red_video, green_video,
         green_all_neurons[i_volume] = green_one_vol
 
     with tqdm(total=len(frame_list)) as pbar:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = {executor.submit(_parallel_func, i): i for i in frame_list}
             for future in concurrent.futures.as_completed(futures):
                 _ = future.result()
