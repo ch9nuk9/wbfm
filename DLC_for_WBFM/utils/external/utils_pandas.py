@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -95,15 +97,39 @@ def cast_int_or_nan(i):
         return int(i)
 
 
-def get_name_mapping_for_track_dataframes(df_new, df_old, t_template=10, column_to_test='raw_neuron_ind_in_list'):
+def get_name_mapping_for_track_dataframes(df_old, df_new,
+                                          t_templates=10, column_to_test='raw_neuron_ind_in_list',
+                                          names_old=None):
+    """Checks for matches in all templates, and takes the most common match"""
     names_new = get_names_from_df(df_new)
-    names_old = get_names_from_df(df_old)
+    if np.isscalar(t_templates):
+        t_templates = [t_templates]
+    if names_old is None:
+        names_old = get_names_from_df(df_old)
+    # dfold2dfnew_dict = defaultdict(int)
+    out_dict = {}
     dfold2dfnew_dict = {}
+    for old in names_old:
+        dfold2dfnew_dict[old] = defaultdict(int)
 
-    for old in tqdm(names_old):
-        old_ind = df_old.loc[t_template, (old, column_to_test)]
-        for new in names_new:
-            new_ind = df_new.loc[t_template, (new, column_to_test)]
-            if old_ind == new_ind:
-                dfold2dfnew_dict[old] = new
-    return dfold2dfnew_dict
+    # Count matches on all templates
+    for t in t_templates:
+        for old in tqdm(names_old, leave=False):
+            old_ind = df_old.loc[t, (old, column_to_test)]
+            for new in names_new:
+                new_ind = df_new.loc[t, (new, column_to_test)]
+                if old_ind == new_ind:
+                    dfold2dfnew_dict[old][new] += 1
+                    # dfold2dfnew_dict[old] = new
+                    break
+        else:
+            print(f"Did not find new neuron for ground truth {old}")
+
+    # Take max
+    for old, new_matches in dfold2dfnew_dict.items():
+        if new_matches:
+            i_best_match = np.argmax(list(new_matches.values()))
+            name_best_match = list(new_matches.keys())[i_best_match]
+            out_dict[old] = name_best_match
+
+    return out_dict, dfold2dfnew_dict
