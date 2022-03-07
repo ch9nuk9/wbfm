@@ -519,9 +519,12 @@ class ProjectData:
 
         return v
 
-    def add_layers_to_viewer(self, viewer, which_layers='all',
+    def add_layers_to_viewer(self, viewer=None, which_layers='all',
                              to_remove_flyback=False, check_if_layers_exist=False,
                              dask_for_segmentation=True):
+        if viewer is None:
+            import napari
+            viewer = napari.Viewer()
         if which_layers == 'all':
             which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
                             'Neuron IDs', 'Intermediate global IDs']
@@ -571,6 +574,17 @@ class ProjectData:
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
             viewer.add_points(**options)
 
+        if 'GT IDs' in which_layers:
+            # Not added by default!
+            df = self.red_traces
+            neurons_that_are_finished, _ = self.get_ground_truth_annotations()
+            neuron_name_dict = {name: f"GT_{name.split('_')[1]}" for name in neurons_that_are_finished}
+            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
+                                                          neuron_name_dict=neuron_name_dict)
+            options['name'] = 'GT IDs'
+            options['text']['color'] = 'red'
+            viewer.add_points(**options)
+
         if 'Intermediate global IDs' in which_layers and self.intermediate_global_tracks is not None:
             df = self.intermediate_global_tracks
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
@@ -594,6 +608,16 @@ class ProjectData:
             viewer.add_points(**options)
 
         logger.info(f"Finished adding layers {which_layers}")
+
+        return viewer
+
+    def get_ground_truth_annotations(self):
+        # TODO: do not hardcode
+        track_cfg = self.project_config.get_tracking_config()
+        fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
+        df_manual_tracking = pd.read_csv(fname)
+        neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
+        return neurons_that_are_finished, df_manual_tracking
 
     def __repr__(self):
         return f"=======================================\n\
