@@ -18,7 +18,7 @@ from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, pred
 from tqdm.auto import tqdm
 import torch
 
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 
@@ -90,38 +90,6 @@ def track_using_fdnc(project_data: ProjectData,
         except NoNeuronsError:
             all_matches.append([])
     return all_matches
-
-
-def template_matches_to_dataframe(project_data: ProjectData,
-                                  all_matches: list):
-    """Correct null value within all_matches is []"""
-    num_frames = len(all_matches)
-    coords = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list']
-    sz = (num_frames, len(coords))
-    neuron_arrays = defaultdict(lambda: np.zeros(sz))
-
-    for i_frame, these_matches in enumerate(tqdm(all_matches, leave=False)):
-        pts = project_data.get_centroids_as_numpy(i_frame)
-        # For each match, save location
-        for m in these_matches:
-            this_unscaled_pt = pts[m[1]]
-            this_template_idx = m[0]
-
-            neuron_arrays[this_template_idx][i_frame, :3] = this_unscaled_pt
-            neuron_arrays[this_template_idx][i_frame, 3] = m[2]  # Match confidence
-            neuron_arrays[this_template_idx][i_frame, 4] = m[1]  # Match index
-
-    # Convert to pandas multiindexing formatting
-    new_dict = {}
-    for i_template, data in neuron_arrays.items():
-        for i_col, coord_name in enumerate(coords):
-            # NOTE: these neuron names are final for all subsequent steps
-            k = (int2name_neuron(i_template + 1), coord_name)
-            new_dict[k] = data[:, i_col]
-
-    df = pd.DataFrame(new_dict)
-
-    return df
 
 
 def generate_templates_from_training_data(project_data: ProjectData, physical_unit_conversion: PhysicalUnitConversion):
