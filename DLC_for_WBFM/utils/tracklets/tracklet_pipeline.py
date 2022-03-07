@@ -13,7 +13,8 @@ from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames, \
     calculate_frame_objects_full_video
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
+from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet, \
+    int2name_neuron
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import delete_tracklets_using_ground_truth
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs, split_multiple_tracklets, \
     get_next_name_generator
@@ -341,18 +342,44 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig, DE
     df_to_concat = df_gt.loc[:, neurons_that_are_finished]
     neuron_names = get_names_from_df(df_to_concat)
     name_gen = get_next_name_generator(df_tracklets_no_conflict)
-    name_mapping = {name: new_name for name, new_name in zip(neuron_names, name_gen)}
-    df_to_concat = df_to_concat.rename(mapper=name_mapping, axis=1)
+    gtneuron2tracklets = {name: new_name for name, new_name in zip(neuron_names, name_gen)}
+    df_to_concat = df_to_concat.rename(mapper=gtneuron2tracklets, axis=1)
 
-    # Final, large concat (takes >10 seconds)
+    logging.info("Final pandas concat, may take a while...")
     df_including_tracks = pd.concat([df_tracklets_no_conflict, df_to_concat], axis=1)
 
-    # Save
+    # Keep the names as they are in the ground truth track, but others may be changed
+    logging.info("Updating the dictionary that matches the neurons and tracklets")
+    global2tracklet_tmp = {v: k for v, k in gtneuron2tracklets.items()}
+
+    tracking_cfg = project_cfg.get_tracking_config()
+    fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
+    old_global2tracklet = pickle_load_binary(fname)
+
+    offset = 0
+    for i, old_matches in enumerate(old_global2tracklet.values()):
+        new_neuron_name = int2name_neuron(i + offset)
+        while new_neuron_name in global2tracklet_tmp:
+            offset += 1
+            new_neuron_name = int2name_neuron(i + offset)
+        global2tracklet_tmp[new_neuron_name] = old_matches
+
+    # Remove any tracklets from this dict that were dropped in the above steps
+    remaining_tracklets = set(get_names_from_df(df_including_tracks))
+    global2tracklet_new = {}
+    for k, v in tqdm(global2tracklet_tmp.items()):
+        global2tracklet_new[k] = list(set(v).intersection(remaining_tracklets))
+
+    # Save and update configs
     training_cfg = project_cfg.get_training_config()
     out_fname = os.path.join('2-training_data', 'all_tracklets_with_ground_truth.pickle')
     training_cfg.pickle_in_local_project(df_including_tracks, relative_path=out_fname, custom_writer=pd.to_pickle)
 
+    global2tracklet_matches_fname = os.path.join('3-tracking', 'global2tracklet_with_ground_truth.pickle')
+    tracking_cfg.pickle_in_local_project(global2tracklet_new, global2tracklet_matches_fname)
+
+    tracking_cfg.config['global2tracklet_matches_fname'] = global2tracklet_matches_fname
     training_cfg.config['df_3d_tracklets'] = out_fname
     training_cfg.update_on_disk()
 
-    return df_including_tracks
+    return df_including_tracks, global2tracklet_new
