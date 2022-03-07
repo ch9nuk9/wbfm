@@ -8,16 +8,15 @@ from scipy.optimize import linear_sum_assignment
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.nn_utils.fdnc_predict import template_matches_to_dataframe
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
 PATH_TO_MODEL = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/classifier_36_neurons.ckpt"
 if not os.path.exists(PATH_TO_MODEL):
     raise FileNotFoundError(PATH_TO_MODEL)
 
 # TODO: also save hyperparameters (doesn't work in jupyter notebooks)
-hparams = dict(num_classes=36)
+HPARAMS = dict(num_classes=36)
 
 
 @dataclass
@@ -27,6 +26,7 @@ class WormWithNeuronClassifier:
 
     model: NeuronEmbeddingModel = None
     path_to_model: str = None
+    hparams: dict = None
 
     embedding_template: torch.tensor = None
     labels_template: list = None
@@ -34,9 +34,11 @@ class WormWithNeuronClassifier:
     def __post_init__(self):
         if self.path_to_model is None:
             self.path_to_model = PATH_TO_MODEL
+        if self.hparams is None:
+            self.hparams = HPARAMS
 
         self.model = NeuronEmbeddingModel.load_from_checkpoint(checkpoint_path=self.path_to_model,
-                                                               **hparams)
+                                                               **self.hparams)
         # self.model
 
         self.initialize_template()
