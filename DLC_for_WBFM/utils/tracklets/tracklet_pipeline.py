@@ -12,8 +12,11 @@ from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames, \
     calculate_frame_objects_full_video
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs, split_multiple_tracklets
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import delete_tracklets_using_ground_truth
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs, split_multiple_tracklets, \
+    get_next_name_generator
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -148,7 +151,9 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
                                                                         min_length=min_length,
                                                                         scorer=None,
                                                                         segmentation_metadata=segmentation_metadata)
-    if postprocessing_params.get('volume_percent_threshold', 0) > 0:
+    volume_threshold = postprocessing_params.get('volume_percent_threshold', 0)
+    if volume_threshold > 0:
+        logging.info(f"Postprocessing using volume threshold: {volume_threshold}")
         df_multi_index_format, split_times = filter_tracklets_using_volume(df_multi_index_format,
                                                                            **postprocessing_params)
         out_fname = '2-training_data/raw/volume_tracklet_split_points.pickle'
@@ -318,3 +323,36 @@ def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, mi
     if verbose >= 1:
         print("Finished")
     return df, tracklet2split
+
+
+def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig, DEBUG):
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_tracklets=True)
+
+    # Unpack
+    df_tracklets = project_data.df_all_tracklets
+    df_gt = project_data.final_tracks
+    neurons_that_are_finished, _ = project_data.get_ground_truth_annotations()
+
+    # Delete conflicting tracklets, then concat
+    df_tracklets_no_conflict = delete_tracklets_using_ground_truth(df_gt, df_tracklets,
+                                                                   gt_names=neurons_that_are_finished,
+                                                                   DEBUG=DEBUG)
+
+    df_to_concat = df_gt.loc[:, neurons_that_are_finished]
+    neuron_names = get_names_from_df(df_to_concat)
+    name_gen = get_next_name_generator(df_tracklets_no_conflict)
+    name_mapping = {name: new_name for name, new_name in zip(neuron_names, name_gen)}
+    df_to_concat = df_to_concat.rename(mapper=name_mapping, axis=1)
+
+    # Final, large concat (takes >10 seconds)
+    df_including_tracks = pd.concat([df_tracklets_no_conflict, df_to_concat], axis=1)
+
+    # Save
+    training_cfg = project_cfg.get_training_config()
+    out_fname = os.path.join('2-training_data', 'all_tracklets_with_ground_truth.pickle')
+    training_cfg.pickle_in_local_project(df_including_tracks, relative_path=out_fname, custom_writer=pd.to_pickle)
+
+    training_cfg.config['df_3d_tracklets'] = out_fname
+    training_cfg.update_on_disk()
+
+    return df_including_tracks

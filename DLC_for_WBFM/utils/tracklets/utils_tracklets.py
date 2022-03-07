@@ -629,6 +629,17 @@ def get_next_name_tracklet_or_neuron(df, name_mode='tracklet'):
     return new_name
 
 
+def get_next_name_generator(df, name_mode='tracklet'):
+    """See get_next_name_tracklet_or_neuron; this is just a generator version for doing many"""
+    all_names = get_names_from_df(df)
+    max_int = name2int_neuron_and_tracklet(all_names[-1])
+    # Really want to make sure we are after all other names
+    i_tracklet = max_int + 1
+    for i in range(10000):
+        new_name = int2name_using_mode(i_tracklet + i, name_mode)
+        yield new_name
+
+
 def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1):
     left_name = old_name
     this_tracklet = all_tracklets[[left_name]]

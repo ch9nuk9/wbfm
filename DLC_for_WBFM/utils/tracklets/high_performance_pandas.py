@@ -124,13 +124,16 @@ def insert_value_in_sparse_df(df, index, columns, val):
 
 
 def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
-                                        col='raw_neuron_ind_in_list', DEBUG=False):
+                                        col_to_check='raw_neuron_ind_in_list', DEBUG=False):
     """Loops through both ground truth and tracklets, and deletes any tracklets that conflict with the gt"""
     if gt_names is None:
         # Assume all are correct
-        gt_names = get_names_from_df(df_gt)
+        # gt_names = get_names_from_df(df_gt)
+        df_gt_just_cols = df_tracker.loc[:, (slice(None), col_to_check)]
+    else:
+        df_gt_just_cols = df_tracker.loc[:, (gt_names, col_to_check)]
     # Need to speed up, so unpack
-    df_just_cols = df_tracker.loc[:, (slice(None), 'raw_neuron_ind_in_list')]
+    df_just_cols = df_tracker.loc[:, (slice(None), col_to_check)]
     ind_to_delete = defaultdict(list)
 
     t_list = list(range(df_gt.shape[0]))
@@ -139,7 +142,7 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
 
     # Get indices (row) to delete (longest step)
     for t in tqdm(t_list):
-        gt_at_this_time = set(df_gt.loc[t, (slice(None), col)])
+        gt_at_this_time = set(df_gt_just_cols.loc[t, :])
         tracks_at_this_time = df_just_cols.loc[t, :]
 
         for index, val in tracks_at_this_time.iteritems():
