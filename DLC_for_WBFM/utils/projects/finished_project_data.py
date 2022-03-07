@@ -580,7 +580,7 @@ class ProjectData:
 
         if 'GT IDs' in which_layers:
             # Not added by default!
-            df = self.red_traces
+            df = self.final_tracks
             neurons_that_are_finished, _ = self.get_ground_truth_annotations()
             neuron_name_dict = {name: f"GT_{name.split('_')[1]}" for name in neurons_that_are_finished}
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
