@@ -413,7 +413,6 @@ class TrackedWorm:
         Note: this is offset by at least one from the segmentation ID label
         """
         neuron_zxy = self.detections.get_neurons_at_time(t)
-        neuron_volumes = self.detections.segmentation_metadata.get_all_volumes(t)
         new_tracklets = []
         for i_neuron_ind in tqdm(range(len(neuron_zxy)), leave=False):
             new_neuron = self.initialize_new_neuron(initialization_frame=t)
@@ -435,32 +434,14 @@ class TrackedWorm:
         logging.info(f"Added new tracklets: {new_tracklets}")
         self.detections.synchronize_dataframe_to_disk()
 
-            # if name:
-            #     tracklet = self.detections.df_tracklets_zxy[[name]]
-            #     confidence = 1.0
-            #     new_neuron.add_tracklet(confidence, tracklet, metadata=name)
-            # else:
+    def initialize_neurons_using_previous_matches(self, previous_matches):
+        for name, matches in tqdm(previous_matches.items(), leave=False):
+            new_neuron = self.initialize_new_neuron(name=name)
 
-                # self.detections.df_tracklets_zxy
-
-                # Ensure 2d and right shape
-                # Assume fields are z and volume
-                # assert new_neuron.fields_to_classify == ['z', 'volume'], "Update fields!"
-                # zxy = neuron_zxy[i_neuron_ind]
-                # v = int(neuron_volumes.iat[i_neuron_ind])
-                # z_vol = np.array([[zxy[0], v]])
-                # # if self.verbose >= 1:
-                # #     print(f"Initializing neuron with z and volume: {z_vol}")
-                # new_neuron.initialization_point = z_vol
-
-        # names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
-        # for i, name in enumerate(names):
-        #     # this tracklet should still have a multi-level index
-        #     new_neuron = self.initialize_new_neuron(initialization_frame=t)
-        #
-        #     tracklet = self.detections.df_tracklets_zxy[[name]]
-        #     confidence = 1.0
-        #     new_neuron.add_tracklet(confidence, tracklet, metadata=name)
+            confidence = 1.0
+            for tracklet_name in matches:
+                tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
+                new_neuron.add_tracklet(confidence, tracklet, metadata=tracklet_name)
 
     def initialize_neurons_from_training_data(self, df_training_data):
         training_tracklet_names = translate_training_names_to_raw_names(df_training_data)
