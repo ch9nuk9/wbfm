@@ -2,6 +2,7 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 
 
@@ -133,3 +134,18 @@ def get_name_mapping_for_track_dataframes(df_old, df_new,
             out_dict[old] = name_best_match
 
     return out_dict, dfold2dfnew_dict
+
+
+def plot_pandas_interactive(df):
+    from ipywidgets import interact
+
+    names = get_names_from_df(df)
+    subcolumns = get_names_from_df(df, level=1)
+
+    def f(name, subcol):
+        this_col = df.loc[slice(None), (name, subcol)]
+        this_col.plot()
+        plt.title(f"Number of non-nan values: {this_col.notnull()}")
+        plt.show()
+
+    return interact(f, name=names, subcol=subcolumns)

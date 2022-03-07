@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -122,21 +123,59 @@ def insert_value_in_sparse_df(df, index, columns, val):
     return df
 
 
-def delete_tracklets_using_ground_truth(df_gt, df_tracker, col='raw_neuron_ind_in_list'):
+def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
+                                        col='raw_neuron_ind_in_list', DEBUG=False):
     """Loops through both ground truth and tracklets, and deletes any tracklets that conflict with the gt"""
-    gt_names = get_names_from_df(df_gt)
-    tracklet_names = get_names_from_df(df_tracker)
+    if gt_names is None:
+        # Assume all are correct
+        gt_names = get_names_from_df(df_gt)
+    # Need to speed up, so unpack
+    df_just_cols = df_tracker.loc[:, (slice(None), 'raw_neuron_ind_in_list')]
+    ind_to_delete = defaultdict(list)
 
-    for gt_name in tqdm(gt_names):
-        gt_col = df_gt[gt_name, col]
+    t_list = list(range(df_gt.shape[0]))
+    if DEBUG:
+        t_list = t_list[:5]
 
-        for tracklet_name in tqdm(tracklet_names, leave=False):
-            overlap = df_tracker[tracklet_name, col] == gt_col
-            if any(overlap):
-                t = np.where(overlap)[0]
-                df_tracker = insert_value_in_sparse_df(df_tracker, t, tracklet_name, np.nan)
+    # Get indices (row) to delete (longest step)
+    for t in tqdm(t_list):
+        gt_at_this_time = set(df_gt.loc[t, (slice(None), col)])
+        tracks_at_this_time = df_just_cols.loc[t, :]
 
-    return df_tracker
+        for index, val in tracks_at_this_time.iteritems():
+            if val in gt_at_this_time:
+                ind_to_delete[index[0]].append(t)
+
+    # Get corresponding column indices
+    tracklet_name_to_array_index = defaultdict(list)
+    for i, c in enumerate(df_tracker.columns):
+        tracklet_name_to_array_index[c[0]].append(i)
+
+    # Actually delete from the array
+    values_as_array = df_tracker.values
+    for name, t_list in ind_to_delete.items():
+        cols = tracklet_name_to_array_index[name]
+        values_as_array[t_list[0]:t_list[-1]+1, cols[0]:cols[-1]+1] = np.nan
+
+    # Recast as pandas
+    df_out = pd.DataFrame(values_as_array, columns=df_tracker.columns)
+    df_out.dropna(axis=1, how='all', inplace=True)
+
+    return df_out
+
+    # tracklet_cols = df_tracker.loc(axis=1)[:, col]
+    #
+    # for gt_name in tqdm(gt_names):
+    #     gt_col = set(df_gt[gt_name, col].astype(int))
+    #
+    #     for tracklet_name, tracklet_col in tqdm(zip(tracklet_names, df_just_cols), leave=False):
+    #         overlap = tracklet_col == gt_col
+    #         if any(overlap):
+    #             t = np.where(overlap)[0]
+    #             if not dry_run:
+    #                 df_tracker = insert_value_in_sparse_df(df_tracker, t, tracklet_name, np.nan)
+
+    # return df_tracker
 
 
 def dataframe_equal_including_nan(df, df2):
