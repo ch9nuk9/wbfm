@@ -1,6 +1,8 @@
 import logging
 
+import numpy as np
 import pandas as pd
+from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, empty_dataframe_like, to_sparse_multiindex
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_using_mode, name2int_neuron_and_tracklet, \
@@ -118,3 +120,25 @@ def insert_value_in_sparse_df(df, index, columns, val):
     df = to_sparse_multiindex(df, tmp_cols)
 
     return df
+
+
+def delete_tracklets_using_ground_truth(df_gt, df_tracker, col='raw_neuron_ind_in_list'):
+    """Loops through both ground truth and tracklets, and deletes any tracklets that conflict with the gt"""
+    gt_names = get_names_from_df(df_gt)
+    tracklet_names = get_names_from_df(df_tracker)
+
+    for gt_name in tqdm(gt_names):
+        gt_col = df_gt[gt_name, col]
+
+        for tracklet_name in tqdm(tracklet_names, leave=False):
+            overlap = df_tracker[tracklet_name, col] == gt_col
+            if any(overlap):
+                t = np.where(overlap)[0]
+                df_tracker = insert_value_in_sparse_df(df_tracker, t, tracklet_name, np.nan)
+
+    return df_tracker
+
+
+def dataframe_equal_including_nan(df, df2):
+    # From: https://stackoverflow.com/questions/19322506/pandas-dataframes-with-nans-equality-comparison
+    return (df == df2) | ((df != df) & (df2 != df2))
