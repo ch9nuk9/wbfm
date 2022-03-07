@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from tqdm.auto import tqdm
 
 
 def dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy=False) -> pd.DataFrame:
@@ -92,3 +93,17 @@ def cast_int_or_nan(i):
         return i
     else:
         return int(i)
+
+
+def get_name_mapping_for_track_dataframes(df_new, df_old, t_template=10, column_to_test='raw_neuron_ind_in_list'):
+    names_new = get_names_from_df(df_new)
+    names_old = get_names_from_df(df_old)
+    dfold2dfnew_dict = {}
+
+    for old in tqdm(names_old):
+        old_ind = df_old.loc[t_template, (old, column_to_test)]
+        for new in names_new:
+            new_ind = df_new.loc[t_template, (new, column_to_test)]
+            if old_ind == new_ind:
+                dfold2dfnew_dict[old] = new
+    return dfold2dfnew_dict
