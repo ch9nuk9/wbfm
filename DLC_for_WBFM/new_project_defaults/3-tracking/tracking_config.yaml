@@ -19,6 +19,7 @@ final_3d_postprocessing:
   keep_only_tracklets_in_final_tracks: true
   allowed_tracklet_endpoint_wiggle: 3
   only_use_previous_matches: false
+  use_previous_matches: true
   bipartite_matching_t_step: 1  # Increase for speed, but may miss short tracklets
   output_df_fname: 3-tracking/postprocessing/combined_3d_tracks.h5
 
