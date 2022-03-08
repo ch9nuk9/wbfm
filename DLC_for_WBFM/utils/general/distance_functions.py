@@ -1,9 +1,10 @@
 import numpy as np
+from tqdm.auto import tqdm
 
 
 def calc_global_track_to_tracklet_distances(this_global_track: np.ndarray, list_tracklets_zxy: list,
                                             min_overlap: int = 0, outlier_threshold=None):
-    """For one DLC neuron, calculate distances between that track and all tracklets"""
+    """For one globally tracked neuron, calculate distances between that track and all tracklets"""
 
     all_dist = []
     for this_tracklet in list_tracklets_zxy:
@@ -13,6 +14,35 @@ def calc_global_track_to_tracklet_distances(this_global_track: np.ndarray, list_
 
         all_dist.append(vec_of_dists)
     return all_dist
+
+
+def calc_global_track_to_tracklet_distances_subarray(this_global_track: np.ndarray,
+                                                     list_tracklets_zxy_subarray: list, list_tracklets_zxy_ind: list,
+                                                     min_overlap: int = 0, outlier_threshold=None):
+    """For one globally tracked neuron, calculate distances between that track and all tracklets"""
+
+    all_dist = []
+    for i, (this_tracklet, tracklet_ind) in enumerate(zip(list_tracklets_zxy_subarray, list_tracklets_zxy_ind)):
+        vec_of_dists, has_overlap = calc_dist_if_overlap(this_tracklet, min_overlap,
+                                                         this_global_track[tracklet_ind[0]:tracklet_ind[1], :])
+        if has_overlap and outlier_threshold is not None:
+            vec_of_dists = vec_of_dists > outlier_threshold
+
+        all_dist.append(vec_of_dists)
+    return all_dist
+
+
+def precalculate_lists_from_dataframe(all_tracklet_names, coords, df_tracklets, min_overlap):
+    list_tracklets_zxy_small = []
+    list_tracklets_zxy_ind = []
+    for name in tqdm(all_tracklet_names):
+        # Note: can't just dropna because there may be gaps in the tracklet
+        tmp = df_tracklets[name][coords]
+        idx0, idx1 = tmp.first_valid_index(), tmp.last_valid_index()
+        if idx0 and idx1 - idx0 > min_overlap:
+            list_tracklets_zxy_ind.append([idx0, idx1 + 1])
+            list_tracklets_zxy_small.append(tmp.to_numpy()[idx0:idx1 + 1, :])
+    return list_tracklets_zxy_small, list_tracklets_zxy_ind
 
 
 def calc_dist_if_overlap(this_tracklet: np.ndarray, min_overlap: int, this_global_track: np.ndarray):
