@@ -193,11 +193,12 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         used_names = set()
     coords = ['z', 'x', 'y']
     all_tracklet_names = get_names_from_df(df_tracklets)
-    # list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
-    list_tracklets_zxy_small, list_tracklets_zxy_ind = precalculate_lists_from_dataframe(
-        all_tracklet_names, coords, df_tracklets, min_overlap)
+    list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
+    # TODO: this should be faster, but causes a crash
+    # list_tracklets_zxy_small, list_tracklets_zxy_ind = precalculate_lists_from_dataframe(
+    #     all_tracklet_names, coords, df_tracklets, min_overlap)
 
-    if df_global_tracks.shape[0] == list_tracklets_zxy_small[0].shape[0] - 1:
+    if df_global_tracks.shape[0] - 1 == list_tracklets_zxy[0].shape[0]:
         to_shorten = True
     else:
         to_shorten = False
@@ -220,12 +221,12 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
             this_global_track = df_global_tracks[name][coords]
         this_global_track = this_global_track.replace(0.0, np.nan).to_numpy(float)
 
-        dist = calc_global_track_to_tracklet_distances_subarray(this_global_track,
-                                                                list_tracklets_zxy_small, list_tracklets_zxy_ind,
-                                                                min_overlap=min_overlap)
-        # dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy,
-        #                                                min_overlap=min_overlap)
-        #                                                # outlier_threshold=outlier_threshold)
+        # dist = calc_global_track_to_tracklet_distances_subarray(this_global_track,
+        #                                                         list_tracklets_zxy_small, list_tracklets_zxy_ind,
+        #                                                         min_overlap=min_overlap)
+        dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy,
+                                                       min_overlap=min_overlap)
+                                                       # outlier_threshold=outlier_threshold)
 
         # Loop through candidates, and attempt to add
         all_summarized_conf = summarize_confidences_outlier_percent(dist, outlier_threshold=outlier_threshold)
