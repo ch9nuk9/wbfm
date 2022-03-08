@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -78,14 +79,15 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
     only_use_previous_matches = track_config.config['final_3d_postprocessing'].get('only_use_previous_matches', False)
+    use_previous_matches = track_config.config['final_3d_postprocessing'].get('use_previous_matches', True)
     t_step = track_config.config['final_3d_postprocessing'].get('bipartite_matching_t_step', 1)
     outlier_threshold = track_config.config['final_3d_postprocessing'].get('outlier_threshold', 1.0)
     min_confidence = track_config.config['final_3d_postprocessing'].get('min_confidence', 0.0)
     if DEBUG:
         t_step = 10
     num_frames = project_data.num_frames
-    t_list = list(range(0, num_frames, t_step))
-    t_list.insert(0, t_template)  # Make sure the template is included
+    # t_list = list(range(0, num_frames, t_step))
+    # t_list.insert(0, t_template)  # Make sure the template is included
 
     # Add initial tracklets to neurons, then add matches (if any found before)
     logging.info("Initializing worm class")
@@ -97,7 +99,8 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
             worm_obj.initialize_neurons_from_training_data(df_training_data)
         else:
             worm_obj.initialize_neurons_at_time(t=t_template)
-        worm_obj.add_previous_matches(previous_matches)
+        if use_previous_matches:
+            worm_obj.add_previous_matches(previous_matches)
 
     # Note: need to load this after the worm object is initialized, because the df may be modified
     df_tracklets = worm_obj.detections.df_tracklets_zxy
@@ -112,8 +115,9 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
                                             outlier_threshold=outlier_threshold, verbose=verbose, DEBUG=DEBUG)
         # Build candidate graph, then postprocess it
         global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
+        logging.info("Bipartite matching for each time slice subgraph")
         final_matching_with_conflict = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph,
-                                                                             df_tracklets, t_list)
+                                                                             df_tracklets)
         # Final step to remove time conflicts
         worm_obj.reinitialize_all_neurons_from_final_matching(final_matching_with_conflict)
         worm_obj.remove_conflicting_tracklets_from_all_neurons()
@@ -190,6 +194,11 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     all_tracklet_names = get_names_from_df(df_tracklets)
     list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
 
+    if df_global_tracks.shape[0] == list_tracklets_zxy[0].shape[0] - 1:
+        to_shorten = True
+    else:
+        to_shorten = False
+
     # Reserve any tracklets the neurons were initialized with (i.e. the training data)
     for _, neuron in worm_obj.global_name_to_neuron.items():
         used_names.update(neuron.get_raw_tracklet_names())
@@ -202,7 +211,11 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
             print(f"Checking global track {name}")
         # New: use the track as produced by the global tracking
         # TODO: confirm that the worm_obj has the same neuron names as leifer
-        this_global_track = df_global_tracks[name][coords][:-1].replace(0.0, np.nan).to_numpy(float)
+        if to_shorten:
+            this_global_track = df_global_tracks[name][coords][:-1]
+        else:
+            this_global_track = df_global_tracks[name][coords]
+        this_global_track = this_global_track.replace(0.0, np.nan).to_numpy(float)
 
         dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy,
                                                        min_overlap=min_overlap)
@@ -349,25 +362,32 @@ def combine_tracklets_using_matching(df_tracklets, final_matching):
     return df_new
 
 
-def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets, t_list) -> MatchesWithConfidence:
+def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_tracklets) -> MatchesWithConfidence:
     """
     As an alternative to b_matching_via_node_copying, do a separate bipartite matching problem on the small subgraphs of
     tracklets defined for each time point
 
     Note that this nearly but not completely enforces time-uniqueness
+    Specifically, if there is a hierarchy within 3 tracklets and two neurons, such that at one time tracklet_001
+    outcompetes other matches, but after tracklet_001 ends tracklet_002 becomes the best match, AND tracklet_001 and
+    tracklet_002 overlap in time
 
     Returns
     -------
 
     """
     bipartite_slice_matches = MatchesWithConfidence()
-
     neuron_nodes = global_tracklet_neuron_graph.get_nodes_of_class(0)
 
-    logging.info("Bipartite matching for each time slice subgraph")
-    for t in tqdm(t_list):
-        df_at_time = df_tracklets.loc[[t], :]
-        names_at_time = get_names_from_df(df_at_time.dropna(axis=1))
+    print("Precalculating that tracklets exist at each time point")
+    time2names_mapping = defaultdict(list)
+    names = get_names_from_df(df_tracklets)
+    for name in tqdm(names):
+        ind = df_tracklets.loc[:, (name, 'z')].dropna(axis=0).index
+        for t in ind:
+            time2names_mapping[int(t)].append(name)
+
+    for t, names_at_time in tqdm(time2names_mapping.items()):
         names_at_time.sort()
 
         # Convert raw tracklet names to node names
