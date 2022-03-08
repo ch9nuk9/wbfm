@@ -9,6 +9,11 @@ from sklearn import manifold
 import matplotlib.cm as cm
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_name_mapping_for_track_dataframes
+from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
+from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import WormWithNeuronClassifier
+from DLC_for_WBFM.utils.projects.finished_project_data import template_matches_to_dataframe
+
 
 def test_trained_classifier(dataloader, model, loss_fn=None, device=None):
     if loss_fn is None:
@@ -81,6 +86,62 @@ def test_trained_embedding_matcher(dataloader, model,
     correct = sum(correct_per_class.values()) / sum(total_per_class.values())
     print(f"Test Error: \n Accuracy: {(100 *correct):>0.1f}%\n")
 
+    return correct_per_class, total_per_class
+
+
+def test_open_set_tracking(project_data, model_fname, neurons_that_are_finished,
+                           model_type=NeuronEmbeddingModel,
+                           model_hparams=None):
+    # Build and use tracker class
+    if model_hparams is None:
+        model_hparams = {}
+    tracking_cfg = project_data.project_config.get_tracking_config()
+    t_template = tracking_cfg.config['final_3d_tracks'].get('template_time_point', 1001)
+
+    num_frames = project_data.num_frames
+    all_frames = project_data.raw_frames
+    tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template],
+                                       path_to_model=model_fname, hparams=model_hparams,
+                                       model_type=model_type)
+
+    all_matches = []
+    for t in tqdm(range(num_frames)):
+        matches_with_conf = tracker.match_target_frame(all_frames[t])
+
+        all_matches.append(matches_with_conf)
+    df_tracker = template_matches_to_dataframe(project_data, all_matches)
+    df_gt = project_data.final_tracks
+
+    return test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_finished)
+
+
+def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_finished):
+    # NOTE: the neuron names as used in the tracker may not match the names as used in the database
+    df_new = df_tracker
+    correct_per_class = defaultdict(int)
+    total_per_class = defaultdict(int)
+    # Use multiple templates, in case the gt has an error on that frame
+    templates = [10, 100, 1000, 1010, 1100, 1500, 1800, 2000]
+    dfold2dfnew_dict, out = get_name_mapping_for_track_dataframes(df_gt, df_new,
+                                                                  t_templates=templates,
+                                                                  names_old=neurons_that_are_finished)
+    # Only the neurons in this list are actually correct in the gt dataframe
+    for i, gt_neuron_name in enumerate(neurons_that_are_finished):
+        gt_neuron_ind = list(df_gt.loc[:, (gt_neuron_name, 'raw_neuron_ind_in_list')])
+        new_neuron_name = dfold2dfnew_dict.get(gt_neuron_name, None)
+        if new_neuron_name is None:
+            print(f"Did not find old name {gt_neuron_name} in the new tracker")
+            continue
+        new_neuron_ind = list(df_new.loc[:, (new_neuron_name, 'raw_neuron_ind_in_list')])
+
+        for gt, new in zip(gt_neuron_ind, new_neuron_ind):
+            if np.isnan(gt):
+                continue
+            if gt == new:
+                correct_per_class[gt_neuron_name] += 1
+            total_per_class[gt_neuron_name] += 1
+    mean_acc = np.mean([cor / tot for cor, tot in zip(correct_per_class.values(), total_per_class.values())])
+    print(f"Mean accuracy: {mean_acc}")
     return correct_per_class, total_per_class
 
 

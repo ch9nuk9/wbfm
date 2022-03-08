@@ -24,6 +24,7 @@ class WormWithNeuronClassifier:
     """Tracks neurons using a feature-space embedding and pre-calculated Frame objects"""
     template_frame: ReferenceFrame
 
+    model_type: callable = NeuronEmbeddingModel
     model: NeuronEmbeddingModel = None
     path_to_model: str = None
     hparams: dict = None
@@ -37,8 +38,7 @@ class WormWithNeuronClassifier:
         if self.hparams is None:
             self.hparams = HPARAMS
 
-        self.model = NeuronEmbeddingModel.load_from_checkpoint(checkpoint_path=self.path_to_model,
-                                                               **self.hparams)
+        self.model = self.model_type.load_from_checkpoint(checkpoint_path=self.path_to_model, **self.hparams)
         # self.model
 
         self.initialize_template()
