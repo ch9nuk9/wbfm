@@ -12,6 +12,7 @@ import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_of_columns_that_exist_at_t
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
@@ -184,6 +185,7 @@ class NeuronImageFeaturesDataset(Dataset):
         self.transform = transform
         self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
 
+        # Note: this works even if the classes have very different lengths, but the training may need to be adjusted
         labels = []
         class_lens = []
         class_idx_starts = []
@@ -244,6 +246,67 @@ class PairedNeuronImageFeaturesDataset(Dataset):
 
         label = self.labels[idx]
         return features, label
+
+
+class TripletNeuronImageFeaturesDataset(Dataset):
+    def __init__(self, all_feature_spaces, transform=None):
+        self.transform = transform
+        self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
+
+        labels = []
+        class_lens = []
+        class_idx_starts = []
+        for i, x in enumerate(all_feature_spaces):
+            class_lens.append(len(x))
+            class_idx_starts.append(len(labels))
+            labels.extend([i] * len(x))
+        self.num_classes = len(all_feature_spaces)
+        self.class_lens = np.array(class_lens)
+        self.class_idx_starts = np.array(class_idx_starts)
+
+        self.labels = labels
+
+    def get_random_idx_of_same_class_from_data_idx(self, data_idx):
+        class_idx = np.argmax(self.class_idx_starts > data_idx) - 1
+        return self.get_random_idx_of_class(class_idx, data_idx)
+
+    def get_random_idx_of_class(self, class_idx, data_idx=None):
+        this_start = self.class_idx_starts[class_idx]
+        this_len = self.class_lens[class_idx]
+        possible_idx = list(range(this_start, this_start + this_len))
+        if data_idx is not None:
+            possible_idx.remove(data_idx)  # Sample without replacement
+        i_match = np.random.randint(low=0, high=len(possible_idx))
+        return possible_idx[i_match]
+
+    def get_triplet_idx(self, data_idx):
+        idx_positive = self.get_random_idx_of_same_class_from_data_idx(data_idx)
+        class_random_idx = self.get_random_class_exclusive(idx_positive)
+        idx_negative = self.get_random_idx_of_class(class_random_idx)
+
+        return idx_positive, idx_negative
+
+    def get_random_class_exclusive(self, idx_positive):
+        idx_random_class = np.random.randint(0, self.num_classes - 1)
+        # Disallow the same idx as the positive class
+        if idx_random_class >= idx_positive:
+            idx_random_class += 1
+        return idx_random_class
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        # Anchor, positive, negative
+        # print(f"Getting {idx}")
+        idx_positive, idx_negative = self.get_triplet_idx(idx)
+        # print(f"Found {idx_positive}, {idx_negative}")
+        features = self.stacked_feature_spaces[[idx, idx_positive, idx_negative], :]
+
+        label_positive = self.labels[idx]
+        label_negative = self.labels[idx_negative]
+        labels = [label_positive, label_positive, label_negative]
+        return features, labels
 
 
 class FullVolumeNeuronImageFeaturesDataset(Dataset):
@@ -314,6 +377,12 @@ def build_per_neuron_feature_spaces(project_data: ProjectData, num_neurons=None,
     if num_frames is None:
         num_frames = project_data.num_frames - 1
 
+    all_feature_spaces = feature_spaces_from_dataframe(all_frames, df, neurons, num_frames)
+
+    return all_feature_spaces
+
+
+def feature_spaces_from_dataframe(all_frames, df, neurons, num_frames):
     # Get stored feature spaces from Frame objects
     all_feature_spaces = []
     for neuron in tqdm(neurons):
@@ -334,6 +403,21 @@ def build_per_neuron_feature_spaces(project_data: ProjectData, num_neurons=None,
             this_feature_space.append(frame.all_features[ind_within_frame, :])
         this_feature_space = np.vstack(this_feature_space)
         all_feature_spaces.append(this_feature_space)
+    return all_feature_spaces
+
+
+def build_per_tracklet_feature_spaces(project_data: ProjectData,
+                                      t_template=0, num_frames=None):
+
+    # Load ground truth
+    all_frames = project_data.raw_frames
+    # df = project_data.final_tracks
+    df_tracklets = project_data.df_all_tracklets
+    these_tracklets = get_names_of_columns_that_exist_at_t(df_tracklets, t_template)
+    if num_frames is None:
+        num_frames = project_data.num_frames - 1
+
+    all_feature_spaces = feature_spaces_from_dataframe(all_frames, df_tracklets, these_tracklets, num_frames)
 
     return all_feature_spaces
 
@@ -372,6 +456,46 @@ class NeuronImageFeaturesDataModule(LightningDataModule):
         # transform and split
         all_feature_spaces = build_per_neuron_feature_spaces(self.project_data,
                                                              self.num_neurons, self.num_frames)
+        alldata = self.base_dataset_class(all_feature_spaces)
+
+        train_fraction = int(len(alldata) * self.train_fraction)
+        val_fraction = int(len(alldata) * self.val_fraction)
+        splits = [train_fraction, val_fraction, len(alldata) - train_fraction - val_fraction]
+        trainset, valset, testset = random_split(alldata, splits)
+
+        # assign to use in dataloaders
+        self.train_dataset = trainset
+        self.val_dataset = valset
+        self.test_dataset = testset
+
+        self.alldata = alldata
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.batch_size)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_dataset, batch_size=self.batch_size)
+
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size)
+
+
+class TrackletImageFeaturesDataModule(LightningDataModule):
+    def __init__(self, batch_size=256, project_data: ProjectData=None, t_template=0, num_frames=None,
+                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=TripletNeuronImageFeaturesDataset):
+        super().__init__()
+        self.batch_size = batch_size
+        self.project_data = project_data
+        self.t_template = t_template
+        self.num_frames = num_frames
+        self.train_fraction = train_fraction
+        self.val_fraction = val_fraction
+        self.base_dataset_class = base_dataset_class
+
+    def setup(self, stage: Optional[str] = None):
+        # transform and split
+        all_feature_spaces = build_per_tracklet_feature_spaces(self.project_data, num_frames=self.num_frames,
+                                                               t_template=self.t_template)
         alldata = self.base_dataset_class(all_feature_spaces)
 
         train_fraction = int(len(alldata) * self.train_fraction)
