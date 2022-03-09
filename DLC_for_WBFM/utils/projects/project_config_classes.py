@@ -73,6 +73,8 @@ class ConfigFileWithProjectContext:
             with open(abs_path, 'wb') as f:
                 pickle.dump(data, f, **kwargs)
 
+        return abs_path
+
     def h5_in_local_project(self, data: pd.DataFrame, relative_path: str,
                             allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):
         abs_path = self.resolve_relative_path(relative_path)
@@ -87,6 +89,8 @@ class ConfigFileWithProjectContext:
         if also_save_csv:
             csv_fname = Path(abs_path).with_suffix('.csv')
             data.to_csv(csv_fname)
+
+        return abs_path
 
     def __repr__(self):
         pp = pprint.PrettyPrinter(indent=2)

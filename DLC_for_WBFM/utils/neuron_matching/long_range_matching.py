@@ -145,14 +145,19 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 
 def _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_tracklet_neuron_graph, track_config,
                                      worm_obj):
+    # Save both main products
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
-    track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
-    updates = {'final_3d_tracks_df': str(output_df_fname)}
-    track_config.config.update(updates)
-    track_config.update_on_disk()
+    output_df_fname = track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True,
+                                                       make_sequential_filename=True)
     output_fname = track_config.config['global2tracklet_matches_fname']
     global2tracklet = final_matching_no_confict.get_mapping_0_to_1(unique=False)
-    track_config.pickle_in_local_project(global2tracklet, output_fname, make_sequential_filename=True)
+    output_fname = track_config.pickle_in_local_project(global2tracklet, output_fname,
+                                                        make_sequential_filename=True)
+    # Update config file
+    updates = {'final_3d_tracks_df': str(output_df_fname), 'global2tracklet_matches_fname': str(output_fname)}
+    track_config.config.update(updates)
+    track_config.update_on_disk()
+
     logging.info("Also saving raw intermediate products")
     dir_name = Path(os.path.join('3-tracking', 'raw'))
     dir_name.mkdir(exist_ok=True)
@@ -161,7 +166,7 @@ def _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_t
         track_config.pickle_in_local_project(global_tracklet_neuron_graph, fname)
     fname = str(dir_name.joinpath('final_matching.pickle'))
     track_config.pickle_in_local_project(final_matching_no_confict, fname)
-    # Sometimes this object is too big
+    # Sometimes this object is too big, so change the protocol
     fname = str(dir_name.joinpath('worm_obj.pickle'))
     track_config.pickle_in_local_project(worm_obj, fname, protocol=4)
 
