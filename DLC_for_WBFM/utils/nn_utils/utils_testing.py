@@ -142,7 +142,7 @@ def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_fi
             total_per_class[gt_neuron_name] += 1
     mean_acc = np.mean([cor / tot for cor, tot in zip(correct_per_class.values(), total_per_class.values())])
     print(f"Mean accuracy: {mean_acc}")
-    return correct_per_class, total_per_class
+    return correct_per_class, total_per_class, dfold2dfnew_dict
 
 
 def build_template_from_loader(volume_module, model):
