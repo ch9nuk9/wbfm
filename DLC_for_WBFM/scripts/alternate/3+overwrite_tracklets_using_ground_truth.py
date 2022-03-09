@@ -28,10 +28,6 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
-    project_dir = cfg.project_dir
-
-    tracking_cfg = cfg.get_tracking_config()
-    training_cfg = cfg.get_training_config()
 
     if not DEBUG:
         using_monkeypatch()

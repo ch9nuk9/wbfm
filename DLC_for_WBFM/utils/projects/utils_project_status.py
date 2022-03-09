@@ -11,16 +11,17 @@ def _check_and_print(all_to_check, description, verbose):
     all_exist = all(map(osp.exists, all_to_check))
     if verbose >= 1:
         if all_exist:
-            print(f"Found all files ({description})")
+            if verbose >= 2:
+                print(f"Found all files ({description})")
         else:
-            logging.warning(f"Did not find some necessary files: {all_to_check}")
+            print(f"Did not find some necessary files: {all_to_check}")
     return all_exist
 
 
 def check_all_needed_data_for_step(project_path, step_index: int,
                                    raise_error=True,
                                    training_data_required=True,
-                                   verbose=0):
+                                   verbose=1):
     if step_index > 0:
         flag = check_preprocessed_data(project_path, verbose)
         if not flag and raise_error:
@@ -100,7 +101,7 @@ def check_training_only_tracklets(project_path, verbose=0):
         all_to_check = [
             cfg_training.resolve_relative_path_from_config('df_3d_tracklets'),
         ]
-        all_exist = _check_and_print(all_to_check, 'final training data', verbose)
+        all_exist = _check_and_print(all_to_check, 'all tracklets', verbose)
         return all_exist
     except (AssertionError, TypeError):
         return False
