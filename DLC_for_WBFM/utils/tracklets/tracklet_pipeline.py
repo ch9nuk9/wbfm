@@ -330,7 +330,12 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig, DE
     project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_tracklets=True)
 
     # Unpack
-    df_tracklets = project_data.df_all_tracklets
+    # df_tracklets = project_data.df_all_tracklets
+    # Get the tracklets directly from step 2
+    training_cfg = project_cfg.get_training_config()
+    fname = training_cfg.resolve_relative_path_from_config('df_3d_tracklets')
+    df_tracklets = pd.read_pickle(fname)
+
     df_gt = project_data.final_tracks
     neurons_that_are_finished, _ = project_data.get_ground_truth_annotations()
 
