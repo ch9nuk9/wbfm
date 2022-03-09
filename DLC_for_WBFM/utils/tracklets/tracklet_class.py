@@ -2,7 +2,7 @@ import copy
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Union
+from typing import Dict, List
 
 import networkx as nx
 import numpy as np
@@ -15,7 +15,7 @@ from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
-    get_names_of_conflicting_dataframes, get_names_of_columns_that_exist_at_t
+    get_names_of_conflicting_dataframes
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError, DataSynchronizationError
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
@@ -413,12 +413,15 @@ class TrackedWorm:
         Note: this is offset by at least one from the segmentation ID label
         """
         # Instead of getting the neurons from the segmentation directly, get them from the global track dataframe
-        neuron_names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
+        neurons_in_global_df = get_names_from_df(self.detections.df_tracklets_zxy)
+        neuron_zxy = self.detections.get_neurons_at_time(t)
+        num_neurons = neuron_zxy.shape[0]
+        if len(neurons_in_global_df) != num_neurons:
+            raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
 
-        # neuron_zxy = self.detections.get_neurons_at_time(t)
         new_tracklets = []
-        for i_neuron_ind, neuron_name in enumerate(tqdm(neuron_names, leave=False)):
-            new_neuron = self.initialize_new_neuron(initialization_frame=t, name=neuron_name)
+        for i_neuron_ind in tqdm(range(num_neurons), total=num_neurons, leave=False):
+            new_neuron = self.initialize_new_neuron(initialization_frame=t)
             # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
             _, name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
 
