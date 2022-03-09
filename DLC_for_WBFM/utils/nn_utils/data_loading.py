@@ -357,7 +357,7 @@ class FullVolumeNeuronImageFeaturesDataset(Dataset):
         return features, label
 
 
-def build_per_neuron_feature_spaces(project_data: ProjectData, num_neurons=None, num_frames=None):
+def build_ground_truth_neuron_feature_spaces(project_data: ProjectData, num_neurons=None, num_frames=None):
 
     # Load ground truth
     tracking_cfg = project_data.project_config.get_tracking_config()
@@ -406,18 +406,16 @@ def feature_spaces_from_dataframe(all_frames, df, neurons, num_frames):
     return all_feature_spaces
 
 
-def build_per_tracklet_feature_spaces(project_data: ProjectData,
-                                      t_template=0, num_frames=None):
+def build_per_tracklet_feature_spaces(project_data: ProjectData, t_template=0, num_frames=None):
 
     # Load ground truth
     all_frames = project_data.raw_frames
-    # df = project_data.final_tracks
     df_tracklets = project_data.df_all_tracklets
-    these_tracklets = get_names_of_columns_that_exist_at_t(df_tracklets, t_template)
+    these_names = get_names_of_columns_that_exist_at_t(df_tracklets, t_template)
     if num_frames is None:
         num_frames = project_data.num_frames - 1
 
-    all_feature_spaces = feature_spaces_from_dataframe(all_frames, df_tracklets, these_tracklets, num_frames)
+    all_feature_spaces = feature_spaces_from_dataframe(all_frames, df_tracklets, these_names, num_frames)
 
     return all_feature_spaces
 
@@ -425,7 +423,7 @@ def build_per_tracklet_feature_spaces(project_data: ProjectData,
 def get_test_train_split(project_data: ProjectData, num_neurons=None, num_frames=None,
                          batch_size=32, train_fraction=0.8):
 
-    all_feature_spaces = build_per_neuron_feature_spaces(project_data, num_neurons, num_frames)
+    all_feature_spaces = build_ground_truth_neuron_feature_spaces(project_data, num_neurons, num_frames)
     alldata = NeuronImageFeaturesDataset(all_feature_spaces)
 
     train_fraction = int(len(alldata) * train_fraction)
@@ -441,7 +439,7 @@ def get_test_train_split(project_data: ProjectData, num_neurons=None, num_frames
 
 
 class NeuronImageFeaturesDataModule(LightningDataModule):
-    def __init__(self, batch_size=64, project_data: ProjectData=None, num_neurons=None, num_frames=None,
+    def __init__(self, batch_size=64, project_data: ProjectData = None, num_neurons=None, num_frames=None,
                  train_fraction=0.8, val_fraction=0.1, base_dataset_class=NeuronImageFeaturesDataset):
         super().__init__()
         self.batch_size = batch_size
@@ -454,8 +452,8 @@ class NeuronImageFeaturesDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         # transform and split
-        all_feature_spaces = build_per_neuron_feature_spaces(self.project_data,
-                                                             self.num_neurons, self.num_frames)
+        all_feature_spaces = build_ground_truth_neuron_feature_spaces(self.project_data,
+                                                                      self.num_neurons, self.num_frames)
         alldata = self.base_dataset_class(all_feature_spaces)
 
         train_fraction = int(len(alldata) * self.train_fraction)

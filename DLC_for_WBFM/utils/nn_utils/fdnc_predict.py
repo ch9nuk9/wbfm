@@ -143,7 +143,7 @@ def combine_multiple_template_matches(matches_per_template, min_conf=0.1):
     final_matches = []
     num_frames = len(matches_per_template[0])
     num_templates = len(matches_per_template)
-    for i_frame in range(num_frames):
+    for i_frame in tqdm(range(num_frames), leave=False):
         candidate_matches = []
         for i_template in range(num_templates):
             candidate_matches.extend(matches_per_template[i_template][i_frame])

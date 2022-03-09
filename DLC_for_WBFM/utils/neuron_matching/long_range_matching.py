@@ -10,8 +10,7 @@ from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import calc_FramePair_f
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons, TrackedWorm
-from DLC_for_WBFM.utils.general.distance_functions import calc_global_track_to_tracklet_distances, \
-    summarize_confidences_outlier_percent, precalculate_lists_from_dataframe, \
+from DLC_for_WBFM.utils.general.distance_functions import summarize_confidences_outlier_percent, precalculate_lists_from_dataframe, \
     calc_global_track_to_tracklet_distances_subarray
 from DLC_for_WBFM.utils.postures.centerline_pca import WormFullVideoPosture, WormReferencePosture
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData

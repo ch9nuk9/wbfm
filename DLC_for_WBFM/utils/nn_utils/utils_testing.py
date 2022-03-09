@@ -103,11 +103,9 @@ def test_open_set_tracking(project_data, model_fname, neurons_that_are_finished,
     tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template],
                                        path_to_model=model_fname, hparams=model_hparams,
                                        model_type=model_type)
-
     all_matches = []
     for t in tqdm(range(num_frames)):
         matches_with_conf = tracker.match_target_frame(all_frames[t])
-
         all_matches.append(matches_with_conf)
     df_tracker = template_matches_to_dataframe(project_data, all_matches)
     df_gt = project_data.final_tracks

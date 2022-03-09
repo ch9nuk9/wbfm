@@ -5,13 +5,14 @@ import numpy as np
 from networkx.algorithms.community import k_clique_communities
 
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, \
-    unpack_node_name, is_one_neuron_per_frame
-
+    unpack_node_name, is_one_neuron_per_frame, calc_bipartite_from_positions
 
 ##
 ## Convinience function
 ##
 from scipy.sparse import coo_matrix
+
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 
 
 def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):
@@ -199,3 +200,45 @@ def matches_to_sparse_matrix(matches_with_conf, shape=None):
     if shape is None:
         shape = (max(row)+1, max(col)+1)
     return coo_matrix((data, (row, col)), shape=shape, dtype=float)
+
+
+def rename_columns_using_matching(df0, df1, column='raw_neuron_ind_in_list'):
+    """Aligns the names of df0 with the names of df1 based on bipartite matching on column"""
+
+    names0 = get_names_from_df(df0)
+    names1 = get_names_from_df(df1)
+
+    df0_ind = df0.loc(axis=1)[:, column].to_numpy()
+    df1_ind = df1.loc(axis=1)[:, column].to_numpy()
+
+    matches, conf, _ = calc_bipartite_from_positions(df1_ind.T, df0_ind.T)
+
+    # Start with default
+    name_mapping = {n: 'unmatched_neuron' for n in names1}
+    for m in matches:
+        name_mapping[names1[m[0]]] = names0[m[1]]
+
+    # Note: drops columns with not match!
+    df1_renamed = df1.rename(columns=name_mapping, inplace=False)
+    if len(names1) > len(names0):
+        df1_renamed.drop(columns='unmatched_neuron', inplace=True)
+
+    return df1_renamed
+
+
+def combine_dataframes_using_max_of_column(df0, df1, column='likelihood'):
+    names0 = get_names_from_df(df0)
+    names1 = get_names_from_df(df1)
+    shared_names = list(set(names0).intersection(names1))
+
+    df0_like = df0.loc(axis=1)[shared_names, column].to_numpy()
+    df1_like = df1.loc(axis=1)[shared_names, column].to_numpy()
+    comparison = df1_like > df0_like
+
+    new_df = df0.copy()
+    for i_col, name in enumerate(shared_names):
+        ind_mask = comparison[:, i_col]
+
+        new_df.loc[ind_mask, name] = df1.loc[ind_mask, name].values
+
+    return new_df

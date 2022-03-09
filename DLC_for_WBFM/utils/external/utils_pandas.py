@@ -123,8 +123,8 @@ def get_name_mapping_for_track_dataframes(df_old, df_new,
                     dfold2dfnew_dict[old][new] += 1
                     # dfold2dfnew_dict[old] = new
                     break
-        else:
-            print(f"Did not find new neuron for ground truth {old}")
+            else:
+                print(f"Did not find new neuron for ground truth {old}")
 
     # Take max
     for old, new_matches in dfold2dfnew_dict.items():
