@@ -154,7 +154,10 @@ def _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_t
     output_fname = track_config.pickle_in_local_project(global2tracklet, output_fname,
                                                         make_sequential_filename=True)
     # Update config file
-    updates = {'final_3d_tracks_df': str(output_df_fname), 'global2tracklet_matches_fname': str(output_fname)}
+    output_df_fname = track_config.unresolve_absolute_path(output_df_fname)
+    output_fname = track_config.unresolve_absolute_path(output_fname)
+    updates = {'final_3d_tracks_df': str(output_df_fname),
+               'global2tracklet_matches_fname': str(output_fname)}
     track_config.config.update(updates)
     track_config.update_on_disk()
 
