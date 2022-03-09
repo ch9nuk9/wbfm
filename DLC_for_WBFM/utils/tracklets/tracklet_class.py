@@ -133,7 +133,12 @@ class NeuronComposedOfTracklets:
 
     def check_new_tracklet_using_classifier(self, candidate_tracklet: pd.DataFrame):
         y = candidate_tracklet[self.fields_to_classify]
-        y = self.scaler.transform(y.values)
+        try:
+            y = self.scaler.transform(y.values)
+        except ValueError:
+            # Empty tracklet
+            logging.warning(f"Attempted to invalid tracklet: {candidate_tracklet}")
+            return False, 1.0
         predictions = self.classifier.predict(y)  # -1 means outlier
         fraction_outliers = np.mean(predictions)
         if fraction_outliers < self.classifier_rejection_threshold:
