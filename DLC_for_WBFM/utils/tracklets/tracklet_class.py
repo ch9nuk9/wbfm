@@ -15,7 +15,7 @@ from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
-    get_names_of_conflicting_dataframes
+    get_names_of_conflicting_dataframes, get_names_of_columns_that_exist_at_t
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError, DataSynchronizationError
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
@@ -412,10 +412,13 @@ class TrackedWorm:
         Name corresponds to the list index of the raw neuron (at that time point),
         Note: this is offset by at least one from the segmentation ID label
         """
-        neuron_zxy = self.detections.get_neurons_at_time(t)
+        # Instead of getting the neurons from the segmentation directly, get them from the global track dataframe
+        neuron_names = get_names_of_columns_that_exist_at_t(self.detections.df_tracklets_zxy, t)
+
+        # neuron_zxy = self.detections.get_neurons_at_time(t)
         new_tracklets = []
-        for i_neuron_ind in tqdm(range(len(neuron_zxy)), leave=False):
-            new_neuron = self.initialize_new_neuron(initialization_frame=t)
+        for i_neuron_ind, neuron_name in enumerate(tqdm(neuron_names, leave=False)):
+            new_neuron = self.initialize_new_neuron(initialization_frame=t, name=neuron_name)
             # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
             _, name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
 

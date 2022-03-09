@@ -86,12 +86,15 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     min_confidence = track_config.config['final_3d_postprocessing'].get('min_confidence', 0.0)
     if DEBUG:
         t_step = 10
-    num_frames = project_data.num_frames
+    # num_frames = project_data.num_frames
     # t_list = list(range(0, num_frames, t_step))
     # t_list.insert(0, t_template)  # Make sure the template is included
 
     # Add initial tracklets to neurons, then add matches (if any found before)
-    logging.info("Initializing worm class")
+    logging.info(f"Initializing worm class with settings: "
+                 f"only_use_previous_matches={only_use_previous_matches}"
+                 f"use_previous_matches={use_previous_matches}"
+                 f"use_multiple_templates={use_multiple_templates}")
     worm_obj = TrackedWorm(detections=tracklets_and_neurons_class, verbose=verbose)
     if only_use_previous_matches:
         worm_obj.initialize_neurons_using_previous_matches(previous_matches)
@@ -102,6 +105,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
             worm_obj.initialize_neurons_at_time(t=t_template)
         if use_previous_matches:
             worm_obj.add_previous_matches(previous_matches)
+        # TODO: make sure no neurons are initialized that are not in the global tracker dataframe
 
     # Note: need to load this after the worm object is initialized, because the df may be modified
     df_tracklets = worm_obj.detections.df_tracklets_zxy
@@ -193,6 +197,8 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         used_names = set()
     coords = ['z', 'x', 'y']
     all_tracklet_names = get_names_from_df(df_tracklets)
+    if DEBUG:
+        all_tracklet_names = all_tracklet_names[:10]
     list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
     # TODO: this should be faster, but causes a crash
     # list_tracklets_zxy_small, list_tracklets_zxy_ind = precalculate_lists_from_dataframe(
@@ -386,7 +392,7 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
     bipartite_slice_matches = MatchesWithConfidence()
     neuron_nodes = global_tracklet_neuron_graph.get_nodes_of_class(0)
 
-    print("Precalculating that tracklets exist at each time point")
+    print("Precalculating tracklets exist at each time point")
     time2names_mapping = defaultdict(list)
     names = get_names_from_df(df_tracklets)
     for name in tqdm(names):
