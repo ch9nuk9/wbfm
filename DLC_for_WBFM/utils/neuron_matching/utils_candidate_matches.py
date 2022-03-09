@@ -2,7 +2,9 @@ from collections import defaultdict
 
 import networkx as nx
 import numpy as np
+import pandas as pd
 from networkx.algorithms.community import k_clique_communities
+from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, \
     unpack_node_name, is_one_neuron_per_frame, calc_bipartite_from_positions
@@ -218,7 +220,7 @@ def rename_columns_using_matching(df0, df1, column='raw_neuron_ind_in_list'):
     for m in matches:
         name_mapping[names1[m[0]]] = names0[m[1]]
 
-    # Note: drops columns with not match!
+    # Note: drops columns with no match!
     df1_renamed = df1.rename(columns=name_mapping, inplace=False)
     if len(names1) > len(names0):
         df1_renamed.drop(columns='unmatched_neuron', inplace=True)
@@ -240,5 +242,34 @@ def combine_dataframes_using_max_of_column(df0, df1, column='likelihood'):
         ind_mask = comparison[:, i_col]
 
         new_df.loc[ind_mask, name] = df1.loc[ind_mask, name].values
+
+    return new_df
+
+
+def combine_dataframes_using_mode(all_dfs, column='raw_neuron_ind_in_list'):
+    names = get_names_from_df(all_dfs[0])
+
+    new_df = all_dfs[0].copy()
+
+    for neuron_name in tqdm(names):
+
+        dfs_containing_this_neuron = [df for df in all_dfs if neuron_name in df]
+        df_tmp_names = [f'df_{i}' for i in range(len(dfs_containing_this_neuron))]
+
+        # Get argmode
+        df_ids = pd.DataFrame(
+            {n: df.loc[:, (neuron_name, column)].values for n, df in zip(df_tmp_names, dfs_containing_this_neuron)})
+        column_id_mode = df_ids.mode(axis=1)[0]
+        df_id_mode = pd.DataFrame({n: column_id_mode.values for n in df_tmp_names})
+
+        df_argmode = df_id_mode == df_ids
+
+        # Update this neuron with the voted-on index
+        new_df_one_neuron = new_df[neuron_name]
+        for df, tmp_name in zip(dfs_containing_this_neuron[1:], df_tmp_names[1:]):
+            col_mask = df_argmode[tmp_name]
+
+            new_df_one_neuron.loc[col_mask] = df.loc[col_mask, neuron_name].values
+        new_df[neuron_name] = new_df_one_neuron
 
     return new_df
