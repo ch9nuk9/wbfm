@@ -405,7 +405,7 @@ class TrackedWorm:
 
         return new_neuron
 
-    def initialize_neurons_at_time(self, t=0):
+    def initialize_neurons_at_time(self, t=0, num_expected_neurons=None):
         """
         Each segmented neuron is initialized, even if there is not a tracklet at that particular volume
 
@@ -413,10 +413,12 @@ class TrackedWorm:
         Note: this is offset by at least one from the segmentation ID label
         """
         # Instead of getting the neurons from the segmentation directly, get them from the global track dataframe
-        neurons_in_global_df = get_names_from_df(self.detections.df_tracklets_zxy)
+        # neurons_in_global_df = get_names_from_df(self.detections.df_tracklets_zxy)
         neuron_zxy = self.detections.get_neurons_at_time(t)
         num_neurons = neuron_zxy.shape[0]
-        if len(neurons_in_global_df) != num_neurons:
+        if num_expected_neurons and num_expected_neurons != num_neurons:
+            print(f"{num_neurons} is not equal to the expected number of neurons at the template t={t} "
+                  f"({num_expected_neurons})")
             raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
 
         new_tracklets = []

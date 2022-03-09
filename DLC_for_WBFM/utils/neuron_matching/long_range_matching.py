@@ -71,6 +71,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 
     tracklets_and_neurons_class = project_data.tracklets_and_neurons_class
     df_global_tracks = project_data.intermediate_global_tracks
+    num_neurons = len(get_names_from_df(df_global_tracks))
     df_training_data = project_data.df_training_tracklets
     previous_matches = project_data.global2tracklet
 
@@ -91,9 +92,9 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     # t_list.insert(0, t_template)  # Make sure the template is included
 
     # Add initial tracklets to neurons, then add matches (if any found before)
-    logging.info(f"Initializing worm class with settings: "
-                 f"only_use_previous_matches={only_use_previous_matches}"
-                 f"use_previous_matches={use_previous_matches}"
+    logging.info(f"Initializing worm class with settings: \n"
+                 f"only_use_previous_matches={only_use_previous_matches}\n"
+                 f"use_previous_matches={use_previous_matches}\n"
                  f"use_multiple_templates={use_multiple_templates}")
     worm_obj = TrackedWorm(detections=tracklets_and_neurons_class, verbose=verbose)
     if only_use_previous_matches:
@@ -102,7 +103,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         if use_multiple_templates:
             worm_obj.initialize_neurons_from_training_data(df_training_data)
         else:
-            worm_obj.initialize_neurons_at_time(t=t_template)
+            worm_obj.initialize_neurons_at_time(t=t_template, num_expected_neurons=num_neurons)
         if use_previous_matches:
             worm_obj.add_previous_matches(previous_matches)
         # TODO: make sure no neurons are initialized that are not in the global tracker dataframe
