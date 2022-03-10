@@ -326,25 +326,35 @@ def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, mi
     return df, tracklet2split
 
 
-def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig, DEBUG):
+def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
+                                           keep_new_tracklet_matches=False,
+                                           update_only_finished_neurons=False, DEBUG=False):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_tracklets=True)
 
     # Unpack
     # df_tracklets = project_data.df_all_tracklets
     # Get the tracklets directly from step 2
     training_cfg = project_cfg.get_training_config()
+    tracking_cfg = project_cfg.get_tracking_config()
     fname = training_cfg.resolve_relative_path_from_config('df_3d_tracklets')
     df_tracklets = pd.read_pickle(fname)
 
     df_gt = project_data.final_tracks
-    neurons_that_are_finished, _ = project_data.get_ground_truth_annotations()
+    if update_only_finished_neurons:
+        neurons_that_are_finished, _ = project_data.get_ground_truth_annotations()
+    else:
+        logging.info("Assuming partially tracked neurons are correct")
+        neurons_that_are_finished = None
 
     # Delete conflicting tracklets, then concat
     df_tracklets_no_conflict = delete_tracklets_using_ground_truth(df_gt, df_tracklets,
                                                                    gt_names=neurons_that_are_finished,
                                                                    DEBUG=DEBUG)
 
-    df_to_concat = df_gt.loc[:, neurons_that_are_finished]
+    if neurons_that_are_finished is not None:
+        df_to_concat = df_gt.loc[:, neurons_that_are_finished]
+    else:
+        df_to_concat = df_gt
     neuron_names = get_names_from_df(df_to_concat)
     name_gen = get_next_name_generator(df_tracklets_no_conflict)
     gtneuron2tracklets = {name: new_name for name, new_name in zip(neuron_names, name_gen)}
@@ -355,25 +365,25 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig, DE
 
     # Keep the names as they are in the ground truth track, but others may be changed
     logging.info("Updating the dictionary that matches the neurons and tracklets")
-    global2tracklet_tmp = {v: k for v, k in gtneuron2tracklets.items()}
+    # Start with a copy of the gt tracks
+    global2tracklet_tmp = {v: [k] for v, k in gtneuron2tracklets.items()}
 
-    tracking_cfg = project_cfg.get_tracking_config()
-    fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
-    old_global2tracklet = pickle_load_binary(fname)
+    if keep_new_tracklet_matches:
+        raise NotImplementedError
+        # TODO: need to have a way to match these new neuron names to the old ones
+        # tracking_cfg = project_cfg.get_tracking_config()
+        # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
+        # old_global2tracklet = pickle_load_binary(fname)
+        #
+        # offset = 1
+        # for i, old_matches in enumerate(old_global2tracklet.values()):
+        #     new_neuron_name = int2name_neuron(i + offset)
+        #     while new_neuron_name in global2tracklet_tmp:
+        #         offset += 1
+        #         new_neuron_name = int2name_neuron(i + offset)
+        #     global2tracklet_tmp[new_neuron_name] = old_matches
 
-    offset = 0
-    for i, old_matches in enumerate(old_global2tracklet.values()):
-        new_neuron_name = int2name_neuron(i + offset)
-        while new_neuron_name in global2tracklet_tmp:
-            offset += 1
-            new_neuron_name = int2name_neuron(i + offset)
-        global2tracklet_tmp[new_neuron_name] = old_matches
-
-    # Remove any tracklets from this dict that were dropped in the above steps
-    remaining_tracklets = set(get_names_from_df(df_including_tracks))
-    global2tracklet_new = {}
-    for k, v in tqdm(global2tracklet_tmp.items()):
-        global2tracklet_new[k] = list(set(v).intersection(remaining_tracklets))
+    global2tracklet_new = remove_tracklets_without_database_match(df_including_tracks, global2tracklet_tmp)
 
     # Save and update configs
     training_cfg = project_cfg.get_training_config()
@@ -388,3 +398,17 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig, DE
     training_cfg.update_on_disk()
 
     return df_including_tracks, global2tracklet_new
+
+
+def remove_tracklets_without_database_match(df_tracks, global2tracklet):
+    # Remove any tracklets from this dict that were dropped in the above steps
+    remaining_tracklets = set(get_names_from_df(df_tracks))
+    global2tracklet_new = {}
+    for k, v in tqdm(global2tracklet.items()):
+        previous_tracklets = set(v)
+        current_tracklets = previous_tracklets.intersection(remaining_tracklets)
+        removed_tracklets = previous_tracklets - current_tracklets
+        if len(removed_tracklets) > 0:
+            logging.warning(f"Removed {len(removed_tracklets)} missing tracklets from {k}: {removed_tracklets}")
+        global2tracklet_new[k] = list(current_tracklets)
+    return global2tracklet_new

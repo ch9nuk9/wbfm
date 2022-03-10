@@ -128,10 +128,9 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
     """Loops through both ground truth and tracklets, and deletes any tracklets that conflict with the gt"""
     if gt_names is None:
         # Assume all are correct
-        # gt_names = get_names_from_df(df_gt)
-        df_gt_just_cols = df_tracker.loc[:, (slice(None), col_to_check)]
+        df_gt_just_cols = df_gt.loc[:, (slice(None), col_to_check)]
     else:
-        df_gt_just_cols = df_tracker.loc[:, (gt_names, col_to_check)]
+        df_gt_just_cols = df_gt.loc[:, (gt_names, col_to_check)]
     # Need to speed up, so unpack
     df_just_cols = df_tracker.loc[:, (slice(None), col_to_check)]
     ind_to_delete = defaultdict(list)
@@ -149,7 +148,7 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
             if val in gt_at_this_time:
                 ind_to_delete[index[0]].append(t)
 
-    # Get corresponding column indices
+    # Get corresponding column indices (full zxy, not just index column)
     tracklet_name_to_array_index = defaultdict(list)
     for i, c in enumerate(df_tracker.columns):
         tracklet_name_to_array_index[c[0]].append(i)
