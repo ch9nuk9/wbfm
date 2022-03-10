@@ -6,7 +6,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, to_sparse_multiindex, get_names_from_df, \
-    get_contiguous_blocks_from_column
+    get_contiguous_blocks_from_column, check_if_heterogenous_columns
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet, get_next_name_generator
 
 
@@ -24,8 +24,14 @@ class PaddedDataFrame(pd.DataFrame):
 
     @staticmethod
     def construct_from_basic_dataframe(df, name_mode, initial_empty_cols=100):
+        out = check_if_heterogenous_columns(df)
+        if out is not None:
+            logging.warning("Padded dataframe will not work as expected when the dataframe has heterogeous columns")
+            raise NotImplementedError
         # Note: this does more copying than necessary... could be optimized
-        df_pad = PaddedDataFrame(df)
+        df_pad = PaddedDataFrame(data=df.values, columns=df.columns, index=df.index,
+                                 dtype=pd.SparseDtype(float, np.nan))
+        # df_pad = PaddedDataFrame(df.astype(pd.SparseDtype(float, np.nan)))
         df_pad = df_pad.setup(name_mode=name_mode, initial_empty_cols=initial_empty_cols)
         return df_pad
 
@@ -109,7 +115,7 @@ class PaddedDataFrame(pd.DataFrame):
         # self.rename(columns={dummy_name: right_name}, level=0, inplace=True)
         return True, self, left_name, right_name
 
-    def split_all_non_contiguous_tracklets(self):
+    def split_all_non_contiguous_tracklets(self, verbose=0):
         all_names = get_names_from_df(self)
         name_mapping = defaultdict(set)
 
@@ -122,14 +128,17 @@ class PaddedDataFrame(pd.DataFrame):
             block_starts, block_ends = get_contiguous_blocks_from_column(tracklet)
             name_mapping[name].add(name)
             # First delete any isolated ones
+            num_deleted = 0
             for i, (i_start, i_end) in enumerate(zip(block_starts, block_ends)):
                 if i_end - i_start == 1:
                     # Then it was a length-1 tracklet, so just delete it
-                    # print(f"Deleting length-1 tracklet from {name}")
+                    if verbose >= 2:
+                        print(f"Deleting length-1 tracklet from {name}")
                     insert_value_in_sparse_df(df_working_copy, i_start, name, np.nan)
-                elif i > 0:
-                    # Don't split if it's the first one
-                    flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name, verbose=0)
+                    num_deleted += 1
+                elif i > num_deleted:
+                    # Don't split if it's the first non-deleted one
+                    flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name, verbose=verbose-1)
                     name_mapping[name].add(right_name)
 
         return df_working_copy, name_mapping
