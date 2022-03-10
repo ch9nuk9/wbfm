@@ -149,3 +149,21 @@ def plot_pandas_interactive(df):
         plt.show()
 
     return interact(f, name=names, subcol=subcolumns)
+
+
+def get_contiguous_blocks_from_column(tracklet):
+    try:
+        change_ind = np.where(tracklet.isnull().diff().values)[0]
+    except AttributeError:
+        change_ind = np.where(tracklet.isnull().sparse.to_dense().diff().values)[0]
+    block_starts = []
+    block_ends = []
+
+    for i in change_ind:
+        if np.isnan(tracklet[i]):
+            if i > 0:
+                # Diff always has a value here, but it can only be a start, not an end
+                block_ends.append(i)
+        else:
+            block_starts.append(i)
+    return block_starts, block_ends
