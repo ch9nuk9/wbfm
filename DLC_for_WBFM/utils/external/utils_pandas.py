@@ -182,7 +182,7 @@ def get_contiguous_blocks_from_column(tracklet):
     return block_starts, block_ends
 
 
-def check_if_heterogenous_columns(df, verbose=1):
+def check_if_heterogenous_columns(df, verbose=1, raise_error=False):
     names = get_names_from_df(df)
     expected_size = df[names[0]].shape[1]
     for name in names:
@@ -190,6 +190,8 @@ def check_if_heterogenous_columns(df, verbose=1):
             logging.warning(f"Expected {expected_size} columns, but found {df[name].shape[1]}")
             if verbose >= 1:
                 print(df[name].columns)
+            if raise_error:
+                raise NotImplementedError
             return name, df[name]
     else:
         print("No heterogenous columns detected")

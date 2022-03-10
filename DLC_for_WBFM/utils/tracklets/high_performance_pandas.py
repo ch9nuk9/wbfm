@@ -7,7 +7,8 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, to_sparse_multiindex, get_names_from_df, \
     get_contiguous_blocks_from_column, check_if_heterogenous_columns
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet, get_next_name_generator
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet, get_next_name_generator, \
+    split_multiple_tracklets
 
 
 class PaddedDataFrame(pd.DataFrame):
@@ -91,6 +92,7 @@ class PaddedDataFrame(pd.DataFrame):
             return self
 
     def get_next_empty_column_name(self):
+        self.add_new_empty_column_if_none_left()
         return self.remaining_empty_column_names.pop(0)
 
     def split_tracklet(self, i_split, old_name, verbose=1):
@@ -108,12 +110,17 @@ class PaddedDataFrame(pd.DataFrame):
             print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
             print(
                 f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
-        # new_name = self.get_next_empty_column_name()
         self[right_name] = right_half[right_name]
         self[left_name] = left_half[left_name]
-        # Do not rename; assume it was correct
-        # self.rename(columns={dummy_name: right_name}, level=0, inplace=True)
         return True, self, left_name, right_name
+
+    def split_tracklet_multiple_times(self, split_list, old_name, verbose=1):
+        old_tracklet = self[[old_name]]
+        new_tracklets = split_multiple_tracklets(old_tracklet, split_list)
+        for tracklet in new_tracklets:
+            new_name = self.get_next_empty_column_name()
+            # They all have the old name
+            self[new_name] = tracklet[old_name]
 
     def split_all_non_contiguous_tracklets(self, verbose=0):
         all_names = get_names_from_df(self)
@@ -129,19 +136,23 @@ class PaddedDataFrame(pd.DataFrame):
             name_mapping[original_name].add(original_name)
             # First delete any isolated ones
             num_deleted = 0
-            name_of_current_block = original_name
+            # name_of_current_block = original_name
+            split_list = []
             for i, (i_start, i_end) in enumerate(zip(block_starts, block_ends)):
                 if i_end - i_start == 1:
                     # Then it was a length-1 tracklet, so just delete it
                     if verbose >= 2:
-                        print(f"Deleting length-1 tracklet from {name_of_current_block}")
-                    insert_value_in_sparse_df(df_working_copy, i_start, name_of_current_block, np.nan)
+                        print(f"Deleting length-1 tracklet from {original_name}")
+                    insert_value_in_sparse_df(df_working_copy, i_start, original_name, np.nan)
                     num_deleted += 1
                 elif i > num_deleted:
                     # Don't split if it's the first non-deleted one
-                    flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name_of_current_block, verbose=verbose-1)
-                    name_mapping[original_name].add(right_name)
-                    name_of_current_block = right_name
+                    split_list.append(i_start)
+                    # flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name_of_current_block, verbose=verbose-1)
+                    # name_mapping[original_name].add(right_name)
+                    # name_of_current_block = right_name
+            if len(split_list) >= 1:
+                df_working_copy.split_tracklet_multiple_times(split_list, original_name)
 
         return df_working_copy, name_mapping
 

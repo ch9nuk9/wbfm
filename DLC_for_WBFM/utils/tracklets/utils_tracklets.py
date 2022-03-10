@@ -690,7 +690,6 @@ def split_single_tracklet(i_split, this_tracklet: pd.DataFrame):
 
 
 def split_single_sparse_tracklet(i_split, this_tracklet: pd.DataFrame):
-    # Should be sparse, but there may be some weird corruption
     if hasattr(this_tracklet, 'sparse'):
         this_tracklet = this_tracklet.sparse.to_dense()
     else:
@@ -708,6 +707,9 @@ def split_single_sparse_tracklet(i_split, this_tracklet: pd.DataFrame):
 
 
 def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
+    if hasattr(this_tracklet, 'sparse'):
+        this_tracklet = this_tracklet.sparse.to_dense()
+
     new_tracklets_list = []
     split_list_copy = split_list.copy()
     split_list_copy.insert(0, 0)

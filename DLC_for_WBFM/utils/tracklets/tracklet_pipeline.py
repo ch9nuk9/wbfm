@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from segmentation.util.utils_metadata import DetectedNeurons
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, check_if_heterogenous_columns
 from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames, \
     calculate_frame_objects_full_video
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -337,8 +337,19 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     tracking_cfg = project_cfg.get_tracking_config()
     fname = training_cfg.resolve_relative_path_from_config('df_3d_tracklets')
     df_tracklets = pd.read_pickle(fname)
+    try:
+        df_tracklets.drop(level=1, columns='raw_tracklet_id', inplace=True)
+    except KeyError:
+        pass
+    check_if_heterogenous_columns(df_tracklets, raise_error=True)
 
     df_gt = project_data.final_tracks
+    try:
+        df_gt.drop(level=1, columns='raw_tracklet_id', inplace=True)
+    except KeyError:
+        pass
+    check_if_heterogenous_columns(df_gt, raise_error=True)
+
     if update_only_finished_neurons:
         neurons_that_are_finished, _ = project_data.get_ground_truth_annotations()
     else:
