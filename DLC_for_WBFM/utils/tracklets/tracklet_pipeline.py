@@ -377,14 +377,13 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_including_tracks, name_mode='tracklet')
     df_split, name_mapping = df_padded.split_all_non_contiguous_tracklets(verbose=3)
 
-    # Keep the names as they are in the ground truth track, but others may be changed
+    # Keep the names as they are in the ground truth track
     logging.info("Updating the dictionary that matches the neurons and tracklets")
     # Start with a copy of the gt tracks
-    # global2tracklet_tmp = {v: [k] for v, k in gtneuron2tracklets.items()}
     global2tracklet_tmp = {}
     for neuron_name, single_match in gtneuron2tracklets.items():
         if single_match in name_mapping:
-            global2tracklet_tmp[neuron_name] = name_mapping[single_match]
+            global2tracklet_tmp[neuron_name] = list(name_mapping[single_match])
         else:
             global2tracklet_tmp[neuron_name] = [single_match]
 

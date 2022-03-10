@@ -152,6 +152,8 @@ class PaddedDataFrame(pd.DataFrame):
                     # name_mapping[original_name].add(right_name)
                     # name_of_current_block = right_name
             if len(split_list) >= 1:
+                df_working_copy.add_new_empty_column_if_none_left(min_empty_cols=len(split_list),
+                                                                  num_to_add=2*len(split_list))
                 df_working_copy.split_tracklet_multiple_times(split_list, original_name)
 
         return df_working_copy, name_mapping
