@@ -22,6 +22,13 @@ class PaddedDataFrame(pd.DataFrame):
         new_df = self.add_new_empty_column_if_none_left(num_to_add=initial_empty_cols)
         return new_df
 
+    @staticmethod
+    def construct_from_basic_dataframe(df, name_mode, initial_empty_cols=100):
+        # Note: this does more copying than necessary... could be optimized
+        df_pad = PaddedDataFrame(df)
+        df_pad = df_pad.setup(name_mode=name_mode, initial_empty_cols=initial_empty_cols)
+        return df_pad
+
     @property
     def num_empty_columns(self):
         return len(self.remaining_empty_column_names)
@@ -32,6 +39,14 @@ class PaddedDataFrame(pd.DataFrame):
             val = self.__getattr__(attr)
             df_padded.__setattr__(attr, val)
         return df_padded
+
+    def drop_empty_columns(self):
+        self.drop(columns=self.remaining_empty_column_names, inplace=True)
+        self.remaining_empty_column_names = []
+
+    def return_normal_dataframe(self):
+        self.drop_empty_columns()
+        return pd.DataFrame(self)
 
     @property
     def _constructor(self):
@@ -48,16 +63,19 @@ class PaddedDataFrame(pd.DataFrame):
 
     def copy_and_add_empty_columns(self, num_to_add):
         print(f"Adding {num_to_add} empty columns")
-        # Add correctly sorted column names
-        new_names = [name for _, name in zip(range(num_to_add), self.new_name_generator)]
-        self.remaining_empty_column_names.extend(new_names)
-
-        # Note: can't add more than double number of columns
-        new_cols = empty_dataframe_like(self, new_names)
+        new_cols = self.generate_new_columns(num_to_add)
 
         # Yikes, two copies... but this should be very rare
         # In theory, the _constructor_expanddim constructor should work here, but it doesn't seem to be
         return self.new_like_self(self.join(new_cols, sort=False))
+
+    def generate_new_columns(self, num_to_add):
+        # Add correctly sorted column names
+        new_names = [name for _, name in zip(range(num_to_add), self.new_name_generator)]
+        self.remaining_empty_column_names.extend(new_names)
+        # Note: can't add more than double number of columns
+        new_cols = empty_dataframe_like(self, new_names)
+        return new_cols
 
     def add_new_empty_column_if_none_left(self, min_empty_cols=1, num_to_add=500):
         if self.num_empty_columns < min_empty_cols:
@@ -114,7 +132,7 @@ class PaddedDataFrame(pd.DataFrame):
                     flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name, verbose=0)
                     name_mapping[name].add(right_name)
 
-        return df_working_copy
+        return df_working_copy, name_mapping
 
 
 def insert_value_in_sparse_df(df, index, columns, val):
@@ -139,9 +157,6 @@ def insert_value_in_sparse_df(df, index, columns, val):
         Modified DataFrame
 
     """
-    # Save the original sparse format for reuse later
-    spdtypes = df.dtypes[columns]
-
     # Convert concerned Series to dense format, but MAKE SURE it is actually sparse!
     tmp_cols = df[[columns]].copy()
     try:
@@ -150,7 +165,6 @@ def insert_value_in_sparse_df(df, index, columns, val):
         # Then it should already be dense
         # tmp_cols = to_sparse_multiindex(tmp_cols)
         pass
-    # df[columns] = df[columns].sparse.to_dense()
 
     # Do a normal insertion with .loc[]
     tmp_cols.loc[index, columns] = val
@@ -165,6 +179,9 @@ def insert_value_in_sparse_df(df, index, columns, val):
 def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
                                         col_to_check='raw_neuron_ind_in_list', DEBUG=False):
     """Loops through both ground truth and tracklets, and deletes any tracklets that conflict with the gt"""
+    # Remove extra column added in steps after the tracklets
+    df_gt = df_gt.drop(level=1, columns='raw_tracklet_id')
+
     if gt_names is None:
         # Assume all are correct
         df_gt_just_cols = df_gt.loc[:, (slice(None), col_to_check)]
