@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 
 import numpy as np
@@ -61,18 +62,30 @@ def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
     return overlapping_tracklet_names
 
 
-def empty_dataframe_like(df_tracklets, new_names) -> pd.DataFrame:
+def empty_dataframe_like(df_tracklets, new_names, dtype=pd.SparseDtype(float, np.nan)):
+    # New: force all to be the same columns
     # Initialize using the index and column structure of the tracklets
-    all_tracklet_names = get_names_from_df(df_tracklets)
-    num_neurons = len(new_names)
-    new_names.sort()
-    tmp_names = all_tracklet_names[:num_neurons]
+    cols = pd.MultiIndex.from_product([new_names, df_tracklets.columns.levels[1]])
+    vals = np.zeros((df_tracklets.shape[0], len(cols)))
+    vals[:] = np.nan
 
-    df_new = df_tracklets.loc[:, tmp_names].copy()
-    name_mapper = {t: n for t, n in zip(tmp_names, new_names)}
-    df_new.rename(columns=name_mapper, inplace=True)
-    df_new[:] = np.nan
+    df_new = pd.DataFrame(data=vals, index=df_tracklets.index, columns=cols, dtype=dtype)
+
     return df_new
+
+
+# def empty_dataframe_like(df_tracklets, new_names) -> pd.DataFrame:
+#     # Initialize using the index and column structure of the tracklets
+#     all_tracklet_names = get_names_from_df(df_tracklets)
+#     num_neurons = len(new_names)
+#     new_names.sort()
+#     tmp_names = all_tracklet_names[:num_neurons]
+#
+#     df_new = df_tracklets.loc[:, tmp_names].copy()
+#     name_mapper = {t: n for t, n in zip(tmp_names, new_names)}
+#     df_new.rename(columns=name_mapper, inplace=True)
+#     df_new[:] = np.nan
+#     return df_new
 
 
 def check_if_fully_sparse(df):
@@ -167,3 +180,17 @@ def get_contiguous_blocks_from_column(tracklet):
         else:
             block_starts.append(i)
     return block_starts, block_ends
+
+
+def check_if_heterogenous_columns(df, verbose=1):
+    names = get_names_from_df(df)
+    expected_size = df[names[0]].shape[1]
+    for name in names:
+        if df[name].shape[1] != expected_size:
+            logging.warning(f"Expected {expected_size} columns, but found {df[name].shape[1]}")
+            if verbose >= 1:
+                print(df[name].columns)
+            return name, df[name]
+    else:
+        print("No heterogenous columns detected")
+    return None
