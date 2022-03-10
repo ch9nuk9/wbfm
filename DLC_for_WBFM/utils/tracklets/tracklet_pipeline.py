@@ -14,9 +14,9 @@ from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_fu
     calculate_frame_objects_full_video
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import delete_tracklets_using_ground_truth
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import delete_tracklets_using_ground_truth, PaddedDataFrame
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs, split_multiple_tracklets, \
-    get_next_name_generator, remove_tracklets_without_database_match
+    get_next_name_generator, remove_tracklets_from_dictionary_without_database_match
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -359,13 +359,25 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     gtneuron2tracklets = {name: new_name for name, new_name in zip(neuron_names, name_gen)}
     df_to_concat = df_to_concat.rename(mapper=gtneuron2tracklets, axis=1)
 
-    logging.info("Final pandas concat, may take a while...")
+    logging.info("Large pandas concat, may take a while...")
     df_including_tracks = pd.concat([df_tracklets_no_conflict, df_to_concat], axis=1)
+
+    logging.info("Splitting non-contiguous tracklets using custom dataframe class")
+    df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_including_tracks)
+    df_split, name_mapping = df_padded.split_all_non_contiguous_tracklets(verbose=3)
 
     # Keep the names as they are in the ground truth track, but others may be changed
     logging.info("Updating the dictionary that matches the neurons and tracklets")
     # Start with a copy of the gt tracks
-    global2tracklet_tmp = {v: [k] for v, k in gtneuron2tracklets.items()}
+    # global2tracklet_tmp = {v: [k] for v, k in gtneuron2tracklets.items()}
+    global2tracklet_tmp = {}
+    for neuron_name, single_match in gtneuron2tracklets.items():
+        if single_match in name_mapping:
+            global2tracklet_tmp[neuron_name] = name_mapping[single_match]
+        else:
+            global2tracklet_tmp[neuron_name] = [single_match]
+
+    global2tracklet_new = remove_tracklets_from_dictionary_without_database_match(df_split, global2tracklet_tmp)
 
     if keep_new_tracklet_matches:
         raise NotImplementedError
@@ -381,8 +393,6 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
         #         offset += 1
         #         new_neuron_name = int2name_neuron(i + offset)
         #     global2tracklet_tmp[new_neuron_name] = old_matches
-
-    global2tracklet_new = remove_tracklets_without_database_match(df_including_tracks, global2tracklet_tmp)
 
     # Save and update configs
     training_cfg = project_cfg.get_training_config()

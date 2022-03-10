@@ -725,7 +725,7 @@ def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
     return new_tracklets_list
 
 
-def remove_tracklets_without_database_match(df_tracklets, global2tracklet):
+def remove_tracklets_from_dictionary_without_database_match(df_tracklets, global2tracklet):
     # Remove any tracklets from this dict that were dropped in the above steps
     remaining_tracklets = set(get_names_from_df(df_tracklets))
     global2tracklet_new = {}
