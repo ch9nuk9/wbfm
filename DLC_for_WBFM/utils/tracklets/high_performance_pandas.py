@@ -121,25 +121,27 @@ class PaddedDataFrame(pd.DataFrame):
 
         df_working_copy = self
 
-        for name in tqdm(all_names):
+        for original_name in tqdm(all_names):
             df_working_copy = df_working_copy.add_new_empty_column_if_none_left()
 
-            tracklet = df_working_copy[name]['z']
+            tracklet = df_working_copy[original_name]['z']
             block_starts, block_ends = get_contiguous_blocks_from_column(tracklet)
-            name_mapping[name].add(name)
+            name_mapping[original_name].add(original_name)
             # First delete any isolated ones
             num_deleted = 0
+            name_of_current_block = original_name
             for i, (i_start, i_end) in enumerate(zip(block_starts, block_ends)):
                 if i_end - i_start == 1:
                     # Then it was a length-1 tracklet, so just delete it
                     if verbose >= 2:
-                        print(f"Deleting length-1 tracklet from {name}")
-                    insert_value_in_sparse_df(df_working_copy, i_start, name, np.nan)
+                        print(f"Deleting length-1 tracklet from {name_of_current_block}")
+                    insert_value_in_sparse_df(df_working_copy, i_start, name_of_current_block, np.nan)
                     num_deleted += 1
                 elif i > num_deleted:
                     # Don't split if it's the first non-deleted one
-                    flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name, verbose=verbose-1)
-                    name_mapping[name].add(right_name)
+                    flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name_of_current_block, verbose=verbose-1)
+                    name_mapping[original_name].add(right_name)
+                    name_of_current_block = right_name
 
         return df_working_copy, name_mapping
 

@@ -165,10 +165,10 @@ def plot_pandas_interactive(df):
 
 
 def get_contiguous_blocks_from_column(tracklet):
-    try:
-        change_ind = np.where(tracklet.isnull().diff().values)[0]
-    except AttributeError:
+    if hasattr(tracklet, 'sparse'):
         change_ind = np.where(tracklet.isnull().sparse.to_dense().diff().values)[0]
+    else:
+        change_ind = np.where(tracklet.isnull().diff().values)[0]
     block_starts = []
     block_ends = []
 

@@ -691,10 +691,10 @@ def split_single_tracklet(i_split, this_tracklet: pd.DataFrame):
 
 def split_single_sparse_tracklet(i_split, this_tracklet: pd.DataFrame):
     # Should be sparse, but there may be some weird corruption
-    try:
+    if hasattr(this_tracklet, 'sparse'):
         this_tracklet = this_tracklet.sparse.to_dense()
-    except AttributeError:
-        logging.warning(f"Tracklet {this_tracklet} was already dense")
+    else:
+        # logging.warning(f"Tracklet {this_tracklet} was already dense")
         pass
 
     left_half = this_tracklet.copy()
