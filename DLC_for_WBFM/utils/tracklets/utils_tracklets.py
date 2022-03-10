@@ -2,19 +2,13 @@ import copy
 import logging
 from collections import defaultdict
 from typing import List, Dict
-
 import numpy as np
 import pandas as pd
-
-
-##
-## Helper functions for tracks
-##
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, check_if_fully_sparse, to_sparse_multiindex
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet, name2int_neuron_and_tracklet, \
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, to_sparse_multiindex
+from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
+from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, \
     int2name_using_mode
 
 
@@ -729,3 +723,39 @@ def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
         new_tracklets_list.append(new_tracklet)
 
     return new_tracklets_list
+
+
+def remove_tracklets_without_database_match(df_tracklets, global2tracklet):
+    # Remove any tracklets from this dict that were dropped in the above steps
+    remaining_tracklets = set(get_names_from_df(df_tracklets))
+    global2tracklet_new = {}
+    for k, v in tqdm(global2tracklet.items()):
+        previous_tracklets = set(v)
+        current_tracklets = previous_tracklets.intersection(remaining_tracklets)
+        removed_tracklets = previous_tracklets - current_tracklets
+        if len(removed_tracklets) > 0:
+            logging.warning(f"Removed {len(removed_tracklets)} missing tracklets from {k}") #: {removed_tracklets}")
+        global2tracklet_new[k] = list(current_tracklets)
+    return global2tracklet_new
+
+
+def check_for_unmatched_tracklets(df_tracklets, global2tracklet, raise_error=True):
+    # Remove any tracklets from this dict that were dropped in the above steps
+    remaining_tracklets = set(get_names_from_df(df_tracklets))
+    unmatched_tracklets = {}
+    num_unmatched = 0
+    for k, v in global2tracklet.items():
+        previous_tracklets = set(v)
+        current_tracklets = previous_tracklets.intersection(remaining_tracklets)
+        removed_tracklets = previous_tracklets - current_tracklets
+        unmatched_tracklets[k] = removed_tracklets
+        num_unmatched += len(removed_tracklets)
+
+    if num_unmatched > 0:
+        logging.warning(f"Found {num_unmatched} unmatched tracklets")
+        if raise_error:
+            raise AnalysisOutOfOrderError("3b")
+    else:
+        print("Tracklet database and matching dictionary are not desynced")
+
+    return unmatched_tracklets

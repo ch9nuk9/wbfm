@@ -3,7 +3,6 @@ import logging
 from collections import defaultdict
 
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
-from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import check_for_unmatched_tracklets
 
 logger = logging.getLogger('projectDataLogger')
 logger.setLevel(logging.INFO)
@@ -21,7 +20,7 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, check_if_fully_sparse
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
 from sklearn.neighbors import NearestNeighbors
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
