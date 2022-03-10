@@ -3,6 +3,7 @@ import logging
 from collections import defaultdict
 
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
+from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import check_for_unmatched_tracklets
 
 logger = logging.getLogger('projectDataLogger')
 logger.setLevel(logging.INFO)
@@ -240,6 +241,11 @@ class ProjectData:
     @property
     def num_training_frames(self):
         return len(self.which_training_frames)
+
+    def check_data_desyncing(self, raise_error=True):
+        logging.info("Checking for database desynchronization")
+        unmatched_tracklets = check_for_unmatched_tracklets(self.df_all_tracklets, self.global2tracklet,
+                                                            raise_error=raise_error)
 
     @staticmethod
     def unpack_config_file(project_path):

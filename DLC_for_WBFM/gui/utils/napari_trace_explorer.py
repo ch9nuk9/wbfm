@@ -36,6 +36,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def __init__(self, project_data: ProjectData, app: QApplication):
         check_all_needed_data_for_step(project_data.project_config.self_path,
                                        step_index=5, raise_error=True, training_data_required=False)
+        project_data.check_data_desyncing(raise_error=True)
 
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
