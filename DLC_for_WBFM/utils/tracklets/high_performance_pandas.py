@@ -5,77 +5,89 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, empty_dataframe_like, to_sparse_multiindex
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_using_mode, name2int_neuron_and_tracklet, \
-    int2name_dummy
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_tracklet
+from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, to_sparse_multiindex
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet, get_next_name_generator
 
 
 class PaddedDataFrame(pd.DataFrame):
+    _metadata = ["remaining_empty_column_names", "name_mode", "new_name_generator"]
 
-    _metadata = ["dummy_name_template", "remaining_dummy_names"]
+    def setup(self, name_mode, initial_empty_cols=100):
+        self.name_mode = name_mode
+        new_name_generator = get_next_name_generator(self, name_mode=name_mode)
+        self.new_name_generator = new_name_generator
+        self.remaining_empty_column_names = []
+
+        new_df = self.add_new_empty_column_if_few_left(initial_empty_cols)
+        return new_df
+
+    @property
+    def num_empty_columns(self):
+        return len(self.remaining_empty_column_names)
+
+    def new_like_self(self, df):
+        df_padded = PaddedDataFrame(df)
+        for attr in self._metadata:
+            val = self.__getattr__(attr)
+            df_padded.__setattr__(attr, val)
+        return df_padded
 
     @property
     def _constructor(self):
         return PaddedDataFrame
 
     @property
-    def num_dummy_columns(self):
-        return len(self.remaining_dummy_names)
+    def _constructor_expanddim(self):
+        return PaddedDataFrame
 
-    def add_dummy_columns(self, num_to_add=10):
-        # Must be correct type
+    # @property
+    # Series NOT implemented
+    # def _constructor_sliced(self):
+    #     return PaddedDataFrame
 
-        i_start = self.num_dummy_columns
-        new_names = [int2name_dummy(i_start + i) for i in range(num_to_add)]
-        self.remaining_dummy_names.extend(new_names)
+    def copy_and_add_empty_columns(self, num_to_add):
+        print(f"Adding {num_to_add} empty columns")
+        # Add correctly sorted column names
+        new_names = [name for _, name in zip(range(num_to_add), self.new_name_generator)]
+        self.remaining_empty_column_names.extend(new_names)
 
-        print(self.shape)
+        # Note: can't add more than double number of columns
         new_cols = empty_dataframe_like(self, new_names)
-        # print(new_cols)
 
-        df_new = self.join(new_cols, sort=False)
-        print(df_new.shape)
+        # Yikes, two copies... but this should be very rare
+        return self.new_like_self(self.join(new_cols, sort=False))
 
-        df_new.remaining_dummy_names = self.remaining_dummy_names
-        return df_new
+    def add_new_empty_column_if_few_left(self, min_empty_cols=10, num_to_add=100):
+        if self.num_empty_columns < min_empty_cols:
+            new_df = self.copy_and_add_empty_columns(num_to_add)
+            return new_df
+        else:
+            return self
 
-    def get_next_name_tracklet_or_neuron(self, name_mode="tracklet"):
-        all_names = get_names_from_df(self)
-        all_names = [n for n in all_names if "zzz" not in n]
-        max_int = name2int_neuron_and_tracklet(all_names[-1])
-        # Really want to make sure we are after all other names
-        i_tracklet = max_int + 1
-        new_name = int2name_using_mode(i_tracklet, name_mode)
-        assert new_name not in all_names, "Failed to generate new tracklet name"
-        return new_name
+    def get_next_empty_column_name(self):
+        return self.remaining_empty_column_names.pop(0)
 
-    def get_next_dummy_name(self):
-        return self.remaining_dummy_names.pop(-1)
-
-
-def split_tracklet_within_padded_dataframe(all_tracklets, i_split, old_name, verbose=1):
-    left_name = old_name
-    this_tracklet = all_tracklets[[left_name]]
-    idx = this_tracklet.index[this_tracklet[left_name]['z'].notnull()]
-    # if i_split not in this_tracklet.dropna(axis=0).index:
-    if i_split not in idx:
-        logging.warning(f"Tried to split {old_name} at {i_split}, but it doesn't exist at that time")
-        return False, all_tracklets, left_name, None
-    # Split
-    left_half, right_half = split_single_tracklet(i_split, this_tracklet)
-    right_name = all_tracklets.get_next_name_tracklet_or_neuron()
-    right_half.rename(columns={left_name: right_name}, level=0, inplace=True)
-    if verbose >= 1:
-        print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
-        print(
-            f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
-        # Performance tests
-    dummy_name = all_tracklets.get_next_dummy_name()
-    all_tracklets[dummy_name] = right_half[right_name]
-    all_tracklets[left_name] = left_half[left_name]
-    all_tracklets.rename(columns={dummy_name: right_name}, level=0, inplace=True)
-    return True, all_tracklets, left_name, right_name
+    def split_tracklet(self, i_split, old_name, verbose=1):
+        left_name = old_name
+        this_tracklet = self[[left_name]]
+        idx = this_tracklet.index[this_tracklet[left_name]['z'].notnull()]
+        if i_split not in idx:
+            logging.warning(f"Tried to split {old_name} at {i_split}, but it doesn't exist at that time")
+            return False, self, left_name, None
+        # Split
+        left_half, right_half = split_single_sparse_tracklet(i_split, this_tracklet)
+        right_name = self.get_next_empty_column_name()
+        right_half.rename(columns={left_name: right_name}, level=0, inplace=True)
+        if verbose >= 1:
+            print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
+            print(
+                f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
+        # new_name = self.get_next_empty_column_name()
+        self[right_name] = right_half[right_name]
+        self[left_name] = left_half[left_name]
+        # Do not rename; assume it was correct
+        # self.rename(columns={dummy_name: right_name}, level=0, inplace=True)
+        return True, self, left_name, right_name
 
 
 def insert_value_in_sparse_df(df, index, columns, val):
