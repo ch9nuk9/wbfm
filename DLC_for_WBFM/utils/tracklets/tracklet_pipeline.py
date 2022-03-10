@@ -363,7 +363,7 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     df_including_tracks = pd.concat([df_tracklets_no_conflict, df_to_concat], axis=1)
 
     logging.info("Splitting non-contiguous tracklets using custom dataframe class")
-    df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_including_tracks)
+    df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_including_tracks, name_mode='tracklet')
     df_split, name_mapping = df_padded.split_all_non_contiguous_tracklets(verbose=3)
 
     # Keep the names as they are in the ground truth track, but others may be changed
