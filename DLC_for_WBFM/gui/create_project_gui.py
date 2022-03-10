@@ -143,7 +143,7 @@ class CreateProjectDialog(QDialog):
             full_command = f"python {command} with project_dir={self.project_foldername} " \
                            f"red_bigtiff_fname={self.red_filename} green_bigtiff_fname={self.green_filename} " \
                            f"experimenter={experimenter} task_name={task}"
-            subprocess.run(full_command)
+            subprocess.run(full_command, shell=True)
 
             self.finishButton.setText("Create new project; Close the window if finished")
         else:
