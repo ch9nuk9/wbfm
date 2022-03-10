@@ -397,5 +397,3 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     training_cfg.update_on_disk()
 
     return df_including_tracks, global2tracklet_new
-
-

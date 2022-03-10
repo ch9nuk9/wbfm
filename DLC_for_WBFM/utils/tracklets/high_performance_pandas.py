@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, to_sparse_multiindex
+from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, to_sparse_multiindex, get_names_from_df, \
+    get_contiguous_blocks_from_column
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet, get_next_name_generator
 
 
@@ -18,7 +19,7 @@ class PaddedDataFrame(pd.DataFrame):
         self.new_name_generator = new_name_generator
         self.remaining_empty_column_names = []
 
-        new_df = self.add_new_empty_column_if_few_left(initial_empty_cols)
+        new_df = self.add_new_empty_column_if_none_left(num_to_add=initial_empty_cols)
         return new_df
 
     @property
@@ -55,9 +56,10 @@ class PaddedDataFrame(pd.DataFrame):
         new_cols = empty_dataframe_like(self, new_names)
 
         # Yikes, two copies... but this should be very rare
+        # In theory, the _constructor_expanddim constructor should work here, but it doesn't seem to be
         return self.new_like_self(self.join(new_cols, sort=False))
 
-    def add_new_empty_column_if_few_left(self, min_empty_cols=10, num_to_add=100):
+    def add_new_empty_column_if_none_left(self, min_empty_cols=1, num_to_add=500):
         if self.num_empty_columns < min_empty_cols:
             new_df = self.copy_and_add_empty_columns(num_to_add)
             return new_df
@@ -88,6 +90,31 @@ class PaddedDataFrame(pd.DataFrame):
         # Do not rename; assume it was correct
         # self.rename(columns={dummy_name: right_name}, level=0, inplace=True)
         return True, self, left_name, right_name
+
+    def split_all_non_contiguous_tracklets(self):
+        all_names = get_names_from_df(self)
+        name_mapping = defaultdict(set)
+
+        df_working_copy = self
+
+        for name in tqdm(all_names):
+            df_working_copy = df_working_copy.add_new_empty_column_if_none_left()
+
+            tracklet = df_working_copy[name]['z']
+            block_starts, block_ends = get_contiguous_blocks_from_column(tracklet)
+            name_mapping[name].add(name)
+            # First delete any isolated ones
+            for i, (i_start, i_end) in enumerate(zip(block_starts, block_ends)):
+                if i_end - i_start == 1:
+                    # Then it was a length-1 tracklet, so just delete it
+                    # print(f"Deleting length-1 tracklet from {name}")
+                    insert_value_in_sparse_df(df_working_copy, i_start, name, np.nan)
+                elif i > 0:
+                    # Don't split if it's the first one
+                    flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name, verbose=0)
+                    name_mapping[name].add(right_name)
+
+        return df_working_copy
 
 
 def insert_value_in_sparse_df(df, index, columns, val):
