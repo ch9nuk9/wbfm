@@ -97,6 +97,15 @@ class NeuronEmbeddingModel(BaseNeuronEmbeddingModel):
         self.log("val_loss", loss)
 
 
+class NullModel(BaseNeuronEmbeddingModel):
+
+    def forward(self, x):
+        return x
+
+    def embed(self, x):
+        return x
+
+
 class SiameseNeuronEmbeddingModel(LightningModule):
     """Designed as a basic Siamese network"""
 
