@@ -37,9 +37,8 @@ class WormWithNeuronClassifier:
             self.path_to_model = PATH_TO_MODEL
         if self.hparams is None:
             self.hparams = HPARAMS
-
-        self.model = self.model_type.load_from_checkpoint(checkpoint_path=self.path_to_model, **self.hparams)
-        # self.model
+        if self.model is None:
+            self.model = self.model_type.load_from_checkpoint(checkpoint_path=self.path_to_model, **self.hparams)
 
         self.initialize_template()
 
