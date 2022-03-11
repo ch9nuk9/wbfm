@@ -704,6 +704,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def remove_all_tracklets_after_current_time(self):
         t = self.t
         self.dat.tracklet_annotator.remove_all_tracklets_after_time(t)
+        self.tracklet_updated_psuedo_event()
 
     @property
     def y_on_plot(self):
