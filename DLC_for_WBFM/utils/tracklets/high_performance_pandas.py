@@ -123,10 +123,16 @@ class PaddedDataFrame(pd.DataFrame):
     def split_tracklet_multiple_times(self, split_list, old_name, verbose=1):
         old_tracklet = self[[old_name]]
         new_tracklets = split_multiple_tracklets(old_tracklet, split_list)
-        for tracklet in new_tracklets:
-            new_name = self.get_next_empty_column_name()
+        all_new_names = []
+        for i, tracklet in enumerate(new_tracklets):
+            if i > 0:
+                new_name = self.get_next_empty_column_name()
+            else:
+                new_name = old_name
             # They all have the old name
             self[new_name] = tracklet[old_name]
+            all_new_names.append(new_name)
+        return self, all_new_names
 
     def split_all_non_contiguous_tracklets(self, verbose=0, DEBUG=False):
         all_names = get_names_from_df(self)
@@ -164,7 +170,8 @@ class PaddedDataFrame(pd.DataFrame):
                     print(f"Splitting {original_name} {len(split_list)} times")
                 df_working_copy = df_working_copy.add_new_empty_column_if_none_left(min_empty_cols=len(split_list)+1,
                                                                                     num_to_add=5*len(split_list))
-                df_working_copy.split_tracklet_multiple_times(split_list, original_name)
+                _, all_new_names = df_working_copy.split_tracklet_multiple_times(split_list, original_name)
+                name_mapping[original_name].update(all_new_names)
                 if DEBUG:
                     break
 
