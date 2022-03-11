@@ -375,7 +375,7 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
 
     logging.info("Splitting non-contiguous tracklets using custom dataframe class")
     df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_including_tracks, name_mode='tracklet',
-                                                               initial_empty_cols=5000)
+                                                               initial_empty_cols=10000)
     df_split, name_mapping = df_padded.split_all_non_contiguous_tracklets(verbose=0)
 
     # Keep the names as they are in the ground truth track
@@ -390,7 +390,7 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
 
     global2tracklet_new = remove_tracklets_from_dictionary_without_database_match(df_split, global2tracklet_tmp)
 
-    df_final = df_split.return_normal_dataframe()
+    df_final = df_split.return_sparse_dataframe()
 
     if keep_new_tracklet_matches:
         raise NotImplementedError

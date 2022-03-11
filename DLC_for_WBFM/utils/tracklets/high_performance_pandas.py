@@ -40,20 +40,27 @@ class PaddedDataFrame(pd.DataFrame):
     def num_empty_columns(self):
         return len(self.remaining_empty_column_names)
 
-    def new_like_self(self, df):
-        df_padded = PaddedDataFrame(df)
+    def new_like_self(self, df=None):
+        if df is None:
+            df_padded = PaddedDataFrame(self)
+        else:
+            df_padded = PaddedDataFrame(df)
         for attr in self._metadata:
             val = self.__getattr__(attr)
             df_padded.__setattr__(attr, val)
         return df_padded
 
     def drop_empty_columns(self):
-        self.drop(columns=self.remaining_empty_column_names, inplace=True)
+        self.drop(columns=self.remaining_empty_column_names, level=0, inplace=True)
         self.remaining_empty_column_names = []
 
     def return_normal_dataframe(self):
         self.drop_empty_columns()
-        return pd.DataFrame(self, dtype=pd.SparseDtype(float, np.nan))
+        return pd.DataFrame(self)
+
+    def return_sparse_dataframe(self):
+        self.drop_empty_columns()
+        return pd.DataFrame(self).astype(pd.SparseDtype(float, np.nan))
 
     @property
     def _constructor(self):
@@ -121,14 +128,16 @@ class PaddedDataFrame(pd.DataFrame):
             # They all have the old name
             self[new_name] = tracklet[old_name]
 
-    def split_all_non_contiguous_tracklets(self, verbose=0):
+    def split_all_non_contiguous_tracklets(self, verbose=0, DEBUG=False):
         all_names = get_names_from_df(self)
+        # if DEBUG:
+        #     all_names = all_names[:15]
         name_mapping = defaultdict(set)
 
-        df_working_copy = self
+        df_working_copy = self.new_like_self()
 
         for original_name in tqdm(all_names):
-            df_working_copy = df_working_copy.add_new_empty_column_if_none_left()
+            # df_working_copy = df_working_copy.add_new_empty_column_if_none_left()
 
             tracklet = df_working_copy[original_name]['z']
             block_starts, block_ends = get_contiguous_blocks_from_column(tracklet)
@@ -151,9 +160,13 @@ class PaddedDataFrame(pd.DataFrame):
                     # name_mapping[original_name].add(right_name)
                     # name_of_current_block = right_name
             if len(split_list) >= 1:
+                if verbose >= 2:
+                    print(f"Splitting {original_name} {len(split_list)} times")
                 df_working_copy = df_working_copy.add_new_empty_column_if_none_left(min_empty_cols=len(split_list)+1,
                                                                                     num_to_add=5*len(split_list))
                 df_working_copy.split_tracklet_multiple_times(split_list, original_name)
+                if DEBUG:
+                    break
 
         return df_working_copy, name_mapping
 
@@ -203,15 +216,19 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
                                         col_to_check='raw_neuron_ind_in_list', DEBUG=False):
     """Loops through both ground truth and tracklets, and deletes any tracklets that conflict with the gt"""
     # Remove extra column added in steps after the tracklets
-    df_gt = df_gt.drop(level=1, columns='raw_tracklet_id')
+    # df_gt = df_gt.drop(level=1, columns='raw_tracklet_id')
 
     if gt_names is None:
         # Assume all are correct
         df_gt_just_cols = df_gt.loc[:, (slice(None), col_to_check)]
     else:
         df_gt_just_cols = df_gt.loc[:, (gt_names, col_to_check)]
+    if hasattr(df_gt_just_cols, 'sparse'):
+        df_gt_just_cols = df_gt_just_cols.sparse.to_dense()
     # Need to speed up, so unpack
     df_just_cols = df_tracker.loc[:, (slice(None), col_to_check)]
+    if hasattr(df_gt_just_cols, 'sparse'):
+        df_just_cols = df_gt_just_cols.sparse.to_dense()
     ind_to_delete = defaultdict(list)
 
     t_list = list(range(df_gt.shape[0]))
@@ -219,13 +236,22 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
         t_list = t_list[:5]
 
     # Get indices (row) to delete (longest step)
+    gt_at_all_times = df_gt_just_cols.T.to_dict(orient='list')
+    tracks_at_all_times = df_just_cols.T.to_dict(orient='list')
+    tracklet_names = get_names_from_df(df_just_cols)
     for t in tqdm(t_list):
-        gt_at_this_time = set(df_gt_just_cols.loc[t, :])
-        tracks_at_this_time = df_just_cols.loc[t, :]
+        gt_at_this_time = set(gt_at_all_times[t])
+        tracks_at_this_time = tracks_at_all_times[t]
 
-        for index, val in tracks_at_this_time.iteritems():
+        for i, val in enumerate(tracks_at_this_time):
             if val in gt_at_this_time:
-                ind_to_delete[index[0]].append(t)
+                ind_to_delete[tracklet_names[i]].append(t)
+        # gt_at_this_time = set(df_gt_just_cols.loc[t, :])
+        # tracks_at_this_time = df_just_cols.loc[t, :]
+        #
+        # for index, val in tracks_at_this_time.iteritems():
+        #     if val in gt_at_this_time:
+        #         ind_to_delete[index[0]].append(t)
 
     # Get corresponding column indices (full zxy, not just index column)
     tracklet_name_to_array_index = defaultdict(list)
@@ -236,7 +262,8 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
     values_as_array = df_tracker.values
     for name, t_list in ind_to_delete.items():
         cols = tracklet_name_to_array_index[name]
-        values_as_array[t_list[0]:t_list[-1]+1, cols[0]:cols[-1]+1] = np.nan
+        # values_as_array[t_list[0]:t_list[-1]+1, cols[0]:cols[-1]+1] = np.nan
+        values_as_array[np.array(t_list), cols[0]:cols[-1]+1] = np.nan
 
     # Recast as pandas
     df_out = pd.DataFrame(values_as_array, columns=df_tracker.columns)
