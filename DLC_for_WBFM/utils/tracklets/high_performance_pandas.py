@@ -251,9 +251,9 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
         values_at_this_time = tracks_at_all_times[t]
 
         # assert len(values_at_this_time) == len(tracklet_names)
-        for tracklet_name, val in values_at_this_time.items():
+        for tracklet_name_tuple, val in values_at_this_time.items():
             if ~np.isnan(val) and val in gt_at_this_time:
-                ind_to_delete[tracklet_name].append(t)
+                ind_to_delete[tracklet_name_tuple[0]].append(t)
                 # print(tracklet_name, t)
         # gt_at_this_time = set(df_gt_just_cols.loc[t, :])
         # tracks_at_this_time = df_just_cols.loc[t, :]
