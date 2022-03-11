@@ -9,7 +9,8 @@ from sklearn import manifold
 import matplotlib.cm as cm
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_name_mapping_for_track_dataframes
+from DLC_for_WBFM.utils.external.utils_pandas import get_name_mapping_for_track_dataframes, cast_int_or_nan
+from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import WormWithNeuronClassifier
 from DLC_for_WBFM.utils.projects.finished_project_data import template_matches_to_dataframe
@@ -89,20 +90,15 @@ def test_trained_embedding_matcher(dataloader, model,
     return correct_per_class, total_per_class
 
 
-def test_open_set_tracking(project_data, model_fname, neurons_that_are_finished,
-                           model_type=NeuronEmbeddingModel,
-                           model_hparams=None):
+def test_open_set_tracking(project_data, model, neurons_that_are_finished):
     # Build and use tracker class
-    if model_hparams is None:
-        model_hparams = {}
     tracking_cfg = project_data.project_config.get_tracking_config()
     t_template = tracking_cfg.config['final_3d_tracks'].get('template_time_point', 1001)
 
     num_frames = project_data.num_frames
     all_frames = project_data.raw_frames
-    tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template],
-                                       path_to_model=model_fname, hparams=model_hparams,
-                                       model_type=model_type)
+    tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template], model=model)
+
     all_matches = []
     for t in tqdm(range(num_frames)):
         matches_with_conf = tracker.match_target_frame(all_frames[t])
@@ -111,6 +107,47 @@ def test_open_set_tracking(project_data, model_fname, neurons_that_are_finished,
     df_gt = project_data.final_tracks
 
     return test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_finished)
+
+
+def test_adjacent_time_point_tracking(project_data, model, neurons_that_are_finished):
+    # Build and use tracker class
+    num_frames = project_data.num_frames
+    all_frames = project_data.raw_frames
+
+    all_matches = []
+    for t in tqdm(range(num_frames - 1)):
+        prev_frame, next_frame = all_frames[t], all_frames[t + 1]
+        tracker = WormWithNeuronClassifier(template_frame=prev_frame, model=model)
+        matches_with_conf = tracker.match_target_frame(next_frame)
+        all_matches.append(matches_with_conf)
+
+    # Cast as better objects
+    tmp = [np.array(m) for m in all_matches]
+    all_matches_obj = [MatchesWithConfidence.matches_from_array(m) for m in tmp]
+    all_matches_dicts = [m.get_mapping_0_to_1(unique=True) for m in all_matches_obj]
+    correct_per_class = defaultdict(int)
+    total_per_class = defaultdict(int)
+
+    df_gt = project_data.final_tracks
+    for i, gt_neuron_name in enumerate(tqdm(neurons_that_are_finished)):
+        gt_neuron_ind = list(df_gt.loc[:, (gt_neuron_name, 'raw_neuron_ind_in_list')])
+
+        prev_gt_ind = cast_int_or_nan(gt_neuron_ind[0])
+
+        for t_minus_1, gt in enumerate(gt_neuron_ind[1:]):
+            if np.isnan(gt):
+                continue
+            # t = t_minus_1 + 1
+
+            gt = int(gt)
+            tracker_match = all_matches_dicts[t_minus_1].get(prev_gt_ind, None)
+            prev_gt_ind = gt
+
+            if tracker_match and gt == tracker_match:
+                correct_per_class[gt_neuron_name] += 1
+            total_per_class[gt_neuron_name] += 1
+
+    return correct_per_class, total_per_class
 
 
 def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_finished):
