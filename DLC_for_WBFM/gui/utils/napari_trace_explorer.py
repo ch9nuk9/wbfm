@@ -554,6 +554,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def refresh_napari(viewer):
             self.refresh_segmentation_metadata()
 
+        # DANGER
+        @viewer.bind_key('Shift-Alt-Ctrl-t', overwrite=True)
+        def refresh_napari(viewer):
+            self.remove_all_tracklets_after_current_time()
+
     @property
     def max_time(self):
         return len(self.dat.final_tracks) - 1
@@ -695,6 +700,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def remove_tracklet_from_all_matches(self):
         self.dat.tracklet_annotator.remove_tracklet_from_all_matches()
         self.tracklet_updated_psuedo_event()
+
+    def remove_all_tracklets_after_current_time(self):
+        t = self.t
+        self.dat.tracklet_annotator.remove_all_tracklets_after_time(t)
 
     @property
     def y_on_plot(self):

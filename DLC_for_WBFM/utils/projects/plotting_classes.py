@@ -408,6 +408,14 @@ class TrackletAndSegmentationAnnotator:
         else:
             print("Already not conflicting")
 
+    def remove_all_tracklets_after_time(self, t):
+        logging.warning(f"Removing all tracklets attached to {self.current_neuron} after t={t}")
+        with self.saving_lock:
+            for tracklet_name in self.combined_global2tracklet_dict:
+                t_start = self.df_tracklet_obj.df_tracklets_zxy[tracklet_name].first_valid_index()
+                if t_start > t:
+                    self.remove_tracklet_from_neuron(tracklet_name, self.current_neuron)
+
     def save_current_tracklet_to_current_neuron(self):
         if self.current_tracklet_name is None:
             print("No neuron selected")
