@@ -32,6 +32,9 @@ class WormWithNeuronClassifier:
     embedding_template: torch.tensor = None
     labels_template: list = None
 
+    # To be optimized
+    confidence_gamma: float = 100.0
+
     def __post_init__(self):
         if self.path_to_model is None:
             self.path_to_model = PATH_TO_MODEL
@@ -62,7 +65,7 @@ class WormWithNeuronClassifier:
             query_embedding = self.model.embed(query_features)
 
             distances = torch.cdist(self.embedding_template, query_embedding)
-            conf_matrix = torch.nan_to_num(torch.softmax(1.0 / distances, dim=0), nan=1.0)
+            conf_matrix = torch.nan_to_num(torch.softmax(self.confidence_gamma / distances, dim=0), nan=1.0)
 
             matches = linear_sum_assignment(conf_matrix, maximize=True)
             matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
