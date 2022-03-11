@@ -374,8 +374,9 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     df_including_tracks = pd.concat([df_tracklets_no_conflict, df_to_concat], axis=1)
 
     logging.info("Splitting non-contiguous tracklets using custom dataframe class")
-    df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_including_tracks, name_mode='tracklet')
-    df_split, name_mapping = df_padded.split_all_non_contiguous_tracklets(verbose=3)
+    df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_including_tracks, name_mode='tracklet',
+                                                               initial_empty_cols=5000)
+    df_split, name_mapping = df_padded.split_all_non_contiguous_tracklets(verbose=0)
 
     # Keep the names as they are in the ground truth track
     logging.info("Updating the dictionary that matches the neurons and tracklets")
@@ -388,6 +389,8 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
             global2tracklet_tmp[neuron_name] = [single_match]
 
     global2tracklet_new = remove_tracklets_from_dictionary_without_database_match(df_split, global2tracklet_tmp)
+
+    df_final = df_split.return_normal_dataframe()
 
     if keep_new_tracklet_matches:
         raise NotImplementedError
@@ -407,7 +410,7 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     # Save and update configs
     training_cfg = project_cfg.get_training_config()
     out_fname = os.path.join('2-training_data', 'all_tracklets_with_ground_truth.pickle')
-    training_cfg.pickle_in_local_project(df_including_tracks, relative_path=out_fname, custom_writer=pd.to_pickle)
+    training_cfg.pickle_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
 
     global2tracklet_matches_fname = os.path.join('3-tracking', 'global2tracklet_with_ground_truth.pickle')
     tracking_cfg.pickle_in_local_project(global2tracklet_new, global2tracklet_matches_fname)

@@ -53,7 +53,7 @@ class PaddedDataFrame(pd.DataFrame):
 
     def return_normal_dataframe(self):
         self.drop_empty_columns()
-        return pd.DataFrame(self)
+        return pd.DataFrame(self, dtype=pd.SparseDtype(float, np.nan))
 
     @property
     def _constructor(self):
@@ -92,7 +92,6 @@ class PaddedDataFrame(pd.DataFrame):
             return self
 
     def get_next_empty_column_name(self):
-        self.add_new_empty_column_if_none_left()
         return self.remaining_empty_column_names.pop(0)
 
     def split_tracklet(self, i_split, old_name, verbose=1):
@@ -152,8 +151,8 @@ class PaddedDataFrame(pd.DataFrame):
                     # name_mapping[original_name].add(right_name)
                     # name_of_current_block = right_name
             if len(split_list) >= 1:
-                df_working_copy.add_new_empty_column_if_none_left(min_empty_cols=len(split_list),
-                                                                  num_to_add=2*len(split_list))
+                df_working_copy = df_working_copy.add_new_empty_column_if_none_left(min_empty_cols=len(split_list)+1,
+                                                                                    num_to_add=5*len(split_list))
                 df_working_copy.split_tracklet_multiple_times(split_list, original_name)
 
         return df_working_copy, name_mapping
