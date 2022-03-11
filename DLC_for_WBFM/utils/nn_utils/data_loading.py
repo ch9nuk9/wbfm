@@ -180,7 +180,8 @@ class NeuronTripletDataset(Dataset):
 #
 
 
-class NeuronImageFeaturesDataset(Dataset):
+class AbstractNeuronImageFeatures(Dataset):
+
     def __init__(self, all_feature_spaces, transform=None):
         self.transform = transform
         self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
@@ -197,10 +198,15 @@ class NeuronImageFeaturesDataset(Dataset):
         self.class_lens = np.array(class_lens)
         self.class_idx_starts = np.array(class_idx_starts)
 
+        self.len_longest_class = np.max(self.class_lens)
+
         self.labels = labels
 
     def __len__(self):
         return len(self.labels)
+
+
+class NeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
 
     def __getitem__(self, idx):
         features = torch.unsqueeze(self.stacked_feature_spaces[idx, :], 0)
@@ -209,23 +215,7 @@ class NeuronImageFeaturesDataset(Dataset):
         return features, label
 
 
-class PairedNeuronImageFeaturesDataset(Dataset):
-    def __init__(self, all_feature_spaces, transform=None):
-        self.transform = transform
-        self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
-
-        labels = []
-        class_lens = []
-        class_idx_starts = []
-        for i, x in enumerate(all_feature_spaces):
-            class_lens.append(len(x))
-            class_idx_starts.append(len(labels))
-            labels.extend([i] * len(x))
-        self.num_classes = len(all_feature_spaces)
-        self.class_lens = np.array(class_lens)
-        self.class_idx_starts = np.array(class_idx_starts)
-
-        self.labels = labels
+class PairedNeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
 
     def get_idx_of_same_class(self, data_idx):
         class_idx = np.argmax(self.class_idx_starts > data_idx) - 1
@@ -236,9 +226,6 @@ class PairedNeuronImageFeaturesDataset(Dataset):
         i_match = np.random.randint(low=0, high=len(possible_idx))
         return possible_idx[i_match]
 
-    def __len__(self):
-        return len(self.labels)
-
     def __getitem__(self, idx):
         idx2 = self.get_idx_of_same_class(idx)
         features = self.stacked_feature_spaces[[idx, idx2], :]
@@ -248,23 +235,26 @@ class PairedNeuronImageFeaturesDataset(Dataset):
         return features, label
 
 
-class TripletNeuronImageFeaturesDataset(Dataset):
-    def __init__(self, all_feature_spaces, transform=None):
-        self.transform = transform
-        self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
+class AdjacentNeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
 
-        labels = []
-        class_lens = []
-        class_idx_starts = []
-        for i, x in enumerate(all_feature_spaces):
-            class_lens.append(len(x))
-            class_idx_starts.append(len(labels))
-            labels.extend([i] * len(x))
-        self.num_classes = len(all_feature_spaces)
-        self.class_lens = np.array(class_lens)
-        self.class_idx_starts = np.array(class_idx_starts)
+    def get_next_idx_of_same_class(self, data_idx):
+        next_idx = data_idx + 1
+        class_idx = np.argmax(self.class_idx_starts > data_idx) - 1
+        this_len = self.class_lens[class_idx]
+        if next_idx >= this_len:
+            # Go back in time instead of forward
+            next_idx = data_idx - 1
 
-        self.labels = labels
+        return next_idx
+
+    def __getitem__(self, idx):
+        idx2 = self.get_next_idx_of_same_class(idx)
+        features = self.stacked_feature_spaces[[idx, idx2], :]
+        label = self.labels[idx]
+        return features, label
+
+
+class TripletNeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
 
     def get_random_idx_of_same_class_from_data_idx(self, data_idx):
         class_idx = np.argmax(self.class_idx_starts > data_idx) - 1
@@ -293,9 +283,6 @@ class TripletNeuronImageFeaturesDataset(Dataset):
             idx_random_class += 1
         return idx_random_class
 
-    def __len__(self):
-        return len(self.labels)
-
     def __getitem__(self, idx):
         # Anchor, positive, negative
         # print(f"Getting {idx}")
@@ -309,25 +296,7 @@ class TripletNeuronImageFeaturesDataset(Dataset):
         return features, labels
 
 
-class FullVolumeNeuronImageFeaturesDataset(Dataset):
-    def __init__(self, all_feature_spaces, transform=None):
-        self.transform = transform
-        self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
-
-        labels = []
-        class_lens = []
-        class_idx_starts = []
-        for i, x in enumerate(all_feature_spaces):
-            class_lens.append(len(x))
-            class_idx_starts.append(len(labels))
-            labels.extend([i] * len(x))
-        self.num_classes = len(all_feature_spaces)
-        self.class_lens = np.array(class_lens)
-        self.class_idx_starts = np.array(class_idx_starts)
-
-        self.len_longest_class = np.max(self.class_lens)
-
-        self.labels = np.array(labels)
+class FullVolumeNeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
 
     def __len__(self):
         return self.len_longest_class

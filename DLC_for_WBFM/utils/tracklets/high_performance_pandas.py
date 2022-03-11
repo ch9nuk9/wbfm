@@ -244,7 +244,7 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
         tracks_at_this_time = tracks_at_all_times[t]
 
         for i, val in enumerate(tracks_at_this_time):
-            if val in gt_at_this_time:
+            if ~np.isnan(val) and val in gt_at_this_time:
                 ind_to_delete[tracklet_names[i]].append(t)
         # gt_at_this_time = set(df_gt_just_cols.loc[t, :])
         # tracks_at_this_time = df_just_cols.loc[t, :]
