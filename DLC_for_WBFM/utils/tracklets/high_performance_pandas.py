@@ -244,15 +244,17 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
 
     # Get indices (row) to delete (longest step)
     gt_at_all_times = df_gt_just_cols.T.to_dict(orient='list')
-    tracks_at_all_times = df_just_cols.T.to_dict(orient='list')
-    tracklet_names = get_names_from_df(df_just_cols)
+    tracks_at_all_times = df_just_cols.T.to_dict(orient='dict')
+    # tracklet_names = get_names_from_df(df_just_cols)
     for t in tqdm(t_list):
         gt_at_this_time = set(gt_at_all_times[t])
-        tracks_at_this_time = tracks_at_all_times[t]
+        values_at_this_time = tracks_at_all_times[t]
 
-        for i, val in enumerate(tracks_at_this_time):
+        # assert len(values_at_this_time) == len(tracklet_names)
+        for tracklet_name, val in values_at_this_time.items():
             if ~np.isnan(val) and val in gt_at_this_time:
-                ind_to_delete[tracklet_names[i]].append(t)
+                ind_to_delete[tracklet_name].append(t)
+                # print(tracklet_name, t)
         # gt_at_this_time = set(df_gt_just_cols.loc[t, :])
         # tracks_at_this_time = df_just_cols.loc[t, :]
         #
@@ -273,10 +275,10 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
         values_as_array[np.array(t_list), cols[0]:cols[-1]+1] = np.nan
 
     # Recast as pandas
-    df_out = pd.DataFrame(values_as_array, columns=df_tracker.columns)
+    df_out = pd.DataFrame(data=values_as_array, index=df_tracker.index, columns=df_tracker.columns)
     df_out.dropna(axis=1, how='all', inplace=True)
 
-    return df_out
+    return df_out, ind_to_delete, tracklet_name_to_array_index
 
     # tracklet_cols = df_tracker.loc(axis=1)[:, col]
     #

@@ -150,10 +150,13 @@ def test_adjacent_time_point_tracking(project_data, model, neurons_that_are_fini
     return correct_per_class, total_per_class
 
 
-def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_finished):
+def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_finished,
+                                          also_return_accuracy=False):
     # NOTE: the neuron names as used in the tracker may not match the names as used in the database
     df_new = df_tracker
     correct_per_class = defaultdict(int)
+    accuracy_correct_per_class = defaultdict(list)
+    accuracy_incorrect_per_class = defaultdict(list)
     total_per_class = defaultdict(int)
     # Use multiple templates, in case the gt has an error on that frame
     templates = [10, 100, 1000, 1010, 1100, 1500, 1800, 2000]
@@ -169,15 +172,22 @@ def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_fi
             continue
         new_neuron_ind = list(df_new.loc[:, (new_neuron_name, 'raw_neuron_ind_in_list')])
 
-        for gt, new in zip(gt_neuron_ind, new_neuron_ind):
+        for t, (gt, new) in enumerate(zip(gt_neuron_ind, new_neuron_ind)):
             if np.isnan(gt):
                 continue
             if gt == new:
                 correct_per_class[gt_neuron_name] += 1
+                accuracy_correct_per_class[gt_neuron_name].append(df_new.at[t, (new_neuron_name, 'likelihood')])
+            else:
+                accuracy_incorrect_per_class[gt_neuron_name].append(df_new.at[t, (new_neuron_name, 'likelihood')])
             total_per_class[gt_neuron_name] += 1
     mean_acc = np.mean([cor / tot for cor, tot in zip(correct_per_class.values(), total_per_class.values())])
     print(f"Mean accuracy: {mean_acc}")
-    return correct_per_class, total_per_class, dfold2dfnew_dict
+    if not also_return_accuracy:
+        return correct_per_class, total_per_class, dfold2dfnew_dict
+    else:
+        return correct_per_class, total_per_class, dfold2dfnew_dict, \
+               accuracy_correct_per_class, accuracy_incorrect_per_class
 
 
 def build_template_from_loader(volume_module, model):
