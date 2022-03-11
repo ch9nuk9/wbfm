@@ -27,6 +27,17 @@ class TestOverwriteUsingGroundTruth(unittest.TestCase):
         self.df_target = pd.DataFrame(target_dict)
 
     def test_delete(self):
-        df_out = delete_tracklets_using_ground_truth(self.df_gt, self.df_tracker)
+        df_out, ind_to_delete, tracklet_name_to_array_index = \
+            delete_tracklets_using_ground_truth(self.df_gt, self.df_tracker)
 
         self.assertTrue(dataframe_equal_including_nan(df_out, self.df_target).values.all())
+
+        expected = [0, 1, 2]
+        self.assertTrue(ind_to_delete['tracklet_001'] == expected)
+        expected = [3, 4, 5]
+        self.assertTrue(ind_to_delete['tracklet_002'] == expected)
+
+        expected = [0, 1]
+        self.assertTrue(tracklet_name_to_array_index['tracklet_001'] == expected)
+        expected = [2, 3]
+        self.assertTrue(tracklet_name_to_array_index['tracklet_002'] == expected)

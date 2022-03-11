@@ -357,7 +357,7 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
         neurons_that_are_finished = None
 
     # Delete conflicting tracklets, then concat
-    df_tracklets_no_conflict = delete_tracklets_using_ground_truth(df_gt, df_tracklets,
+    df_tracklets_no_conflict, _, _ = delete_tracklets_using_ground_truth(df_gt, df_tracklets,
                                                                    gt_names=neurons_that_are_finished,
                                                                    DEBUG=DEBUG)
 
