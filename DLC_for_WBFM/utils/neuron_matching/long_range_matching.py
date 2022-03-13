@@ -401,7 +401,7 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
     bipartite_slice_matches = MatchesWithConfidence()
     neuron_nodes = global_tracklet_neuron_graph.get_nodes_of_class(0)
 
-    print("Precalculating tracklets exist at each time point")
+    print("Precalculating tracklets that exist at each time point")
     time2names_mapping = defaultdict(list)
     names = get_names_from_df(df_tracklets)
     for name in tqdm(names):

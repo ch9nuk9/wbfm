@@ -422,7 +422,7 @@ class TrackedWorm:
         neuron_zxy = self.detections.get_neurons_at_time(t)
         num_neurons = neuron_zxy.shape[0]
         if num_expected_neurons and num_expected_neurons != num_neurons:
-            print(f"{num_neurons} is not equal to the expected number of neurons at the template t={t} "
+            logging.warning(f"{num_neurons} is not equal to the expected number of neurons at the template t={t} "
                   f"({num_expected_neurons})")
             if raise_error:
                 raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
