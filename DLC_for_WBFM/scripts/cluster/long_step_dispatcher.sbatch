@@ -23,7 +23,7 @@ do
 done
 
 # Unpack the flag into an actual command
-CMD_DIR="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
+CMD_DIR="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
 
 declare -A CMD_DICT
 CMD_DICT["0b"]="0b-preprocess_working_copy_of_data.py"
