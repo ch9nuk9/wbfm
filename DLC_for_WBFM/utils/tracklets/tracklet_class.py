@@ -420,7 +420,7 @@ class TrackedWorm:
         # Instead of getting the neurons from the segmentation directly, get them from the global track dataframe
         # TODO: I can use this directly if they exist at this time, but right now they don't always exist on the template
         neurons_at_template = self.detections.df_tracklets_zxy.loc[t, (slice(None), 'raw_neuron_ind_in_list')]
-        # neurons_in_global_df = get_names_from_df(neurons_at_template)
+        neurons_in_global_df = get_names_from_df(neurons_at_template)
         # neuron_zxy = self.detections.get_neurons_at_time(t)
         # num_neurons = neuron_zxy.shape[0]
         num_neurons = len(neurons_at_template)
@@ -431,22 +431,23 @@ class TrackedWorm:
                 raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
 
         new_tracklets = []
-        for i_neuron_ind in tqdm(range(num_neurons), total=num_neurons, leave=False):
-            new_neuron = self.initialize_new_neuron(initialization_frame=t)
+        for i_neuron_ind, name_in_df in tqdm(enumerate(neurons_in_global_df), leave=False):
+        # for i_neuron_ind in tqdm(range(num_neurons), total=num_neurons, leave=False):
+            new_neuron = self.initialize_new_neuron(initialization_frame=t, name=name_in_df)
             # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
-            _, name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
+            _, tracklet_name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
 
-            if not name:
+            if not tracklet_name:
                 # Make a new tracklet, and give it data
-                name = self.detections.initialize_new_empty_tracklet()
+                tracklet_name = self.detections.initialize_new_empty_tracklet()
                 mask_ind = self.detections.segmentation_metadata.seg_array_to_mask_index(t, i_neuron_ind)
                 self.detections.update_tracklet_metadata_using_segmentation_metadata(
-                    t=t, tracklet_name=name, mask_ind=mask_ind, likelihood=1.0, verbose=self.verbose-1)
-                new_tracklets.append(name)
+                    t=t, tracklet_name=tracklet_name, mask_ind=mask_ind, likelihood=1.0, verbose=self.verbose-1)
+                new_tracklets.append(tracklet_name)
 
-            tracklet = self.detections.df_tracklets_zxy[[name]]
+            tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
             confidence = 1.0
-            new_neuron.add_tracklet(confidence, tracklet, metadata=name)
+            new_neuron.add_tracklet(confidence, tracklet, metadata=tracklet_name)
 
         logging.info(f"Added new tracklets: {new_tracklets}")
         self.detections.synchronize_dataframe_to_disk()
