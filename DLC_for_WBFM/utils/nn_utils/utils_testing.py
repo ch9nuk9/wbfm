@@ -51,6 +51,7 @@ def test_trained_classifier(dataloader, model, loss_fn=None, device=None):
 
 
 def test_trained_embedding_matcher(dataloader, model,
+                                   which_dataset='test_dataset',
                                    trained_embedding=None, trained_labels=None,
                                    loss_fn=None):
     if loss_fn is None:
@@ -58,7 +59,7 @@ def test_trained_embedding_matcher(dataloader, model,
         loss_fn = model.criterion
     if trained_embedding is None:
         trained_labels, trained_embedding = build_template_from_loader(dataloader, model)
-    dataset = dataloader.test_dataset
+    dataset = dataloader.__getattribute__(which_dataset)
 
     correct_per_class = defaultdict(int)
     total_per_class = defaultdict(int)
@@ -125,7 +126,10 @@ def test_adjacent_time_point_tracking(project_data, model, neurons_that_are_fini
     tmp = [np.array(m) for m in all_matches]
     all_matches_obj = [MatchesWithConfidence.matches_from_array(m) for m in tmp]
     all_matches_dicts = [m.get_mapping_0_to_1(unique=True) for m in all_matches_obj]
+    all_conf_dicts = [m.get_mapping_pair_to_conf() for m in all_matches_obj]
     correct_per_class = defaultdict(int)
+    accuracy_correct_per_class = defaultdict(list)
+    accuracy_incorrect_per_class = defaultdict(list)
     total_per_class = defaultdict(int)
 
     df_gt = project_data.final_tracks
@@ -137,21 +141,25 @@ def test_adjacent_time_point_tracking(project_data, model, neurons_that_are_fini
         for t_minus_1, gt in enumerate(gt_neuron_ind[1:]):
             if np.isnan(gt):
                 continue
-            # t = t_minus_1 + 1
 
             gt = int(gt)
             tracker_match = all_matches_dicts[t_minus_1].get(prev_gt_ind, None)
+            conf = all_conf_dicts[t_minus_1].get((prev_gt_ind, gt), 0)
+
             prev_gt_ind = gt
 
             if tracker_match and gt == tracker_match:
                 correct_per_class[gt_neuron_name] += 1
+                accuracy_correct_per_class[gt_neuron_name].append(conf)
+            else:
+                accuracy_incorrect_per_class[gt_neuron_name].append(conf)
             total_per_class[gt_neuron_name] += 1
 
-    return correct_per_class, total_per_class
+    return correct_per_class, total_per_class, \
+           accuracy_correct_per_class, accuracy_incorrect_per_class
 
 
-def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_finished,
-                                          also_return_accuracy=False):
+def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_finished, verbose=0):
     # NOTE: the neuron names as used in the tracker may not match the names as used in the database
     df_new = df_tracker
     correct_per_class = defaultdict(int)
@@ -168,7 +176,8 @@ def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_fi
         gt_neuron_ind = list(df_gt.loc[:, (gt_neuron_name, 'raw_neuron_ind_in_list')])
         new_neuron_name = dfold2dfnew_dict.get(gt_neuron_name, None)
         if new_neuron_name is None:
-            print(f"Did not find old name {gt_neuron_name} in the new tracker")
+            if verbose >= 1:
+                print(f"Did not find old name {gt_neuron_name} in the new tracker")
             continue
         new_neuron_ind = list(df_new.loc[:, (new_neuron_name, 'raw_neuron_ind_in_list')])
 
@@ -183,11 +192,8 @@ def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_fi
             total_per_class[gt_neuron_name] += 1
     mean_acc = np.mean([cor / tot for cor, tot in zip(correct_per_class.values(), total_per_class.values())])
     print(f"Mean accuracy: {mean_acc}")
-    if not also_return_accuracy:
-        return correct_per_class, total_per_class, dfold2dfnew_dict
-    else:
-        return correct_per_class, total_per_class, dfold2dfnew_dict, \
-               accuracy_correct_per_class, accuracy_incorrect_per_class
+    return correct_per_class, total_per_class, dfold2dfnew_dict, \
+           accuracy_correct_per_class, accuracy_incorrect_per_class
 
 
 def build_template_from_loader(volume_module, model):
