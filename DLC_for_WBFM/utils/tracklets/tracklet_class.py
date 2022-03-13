@@ -418,12 +418,15 @@ class TrackedWorm:
         Note: this is offset by at least one from the segmentation ID label
         """
         # Instead of getting the neurons from the segmentation directly, get them from the global track dataframe
-        # neurons_in_global_df = get_names_from_df(self.detections.df_tracklets_zxy)
-        neuron_zxy = self.detections.get_neurons_at_time(t)
-        num_neurons = neuron_zxy.shape[0]
+        # TODO: I can use this directly if they exist at this time, but right now they don't always exist on the template
+        neurons_at_template = self.detections.df_tracklets_zxy.loc[t, (slice(None), 'raw_neuron_ind_in_list')]
+        # neurons_in_global_df = get_names_from_df(neurons_at_template)
+        # neuron_zxy = self.detections.get_neurons_at_time(t)
+        # num_neurons = neuron_zxy.shape[0]
+        num_neurons = len(neurons_at_template)
         if num_expected_neurons and num_expected_neurons != num_neurons:
             logging.warning(f"{num_neurons} is not equal to the expected number of neurons at the template t={t} "
-                  f"({num_expected_neurons})")
+                            f"({num_expected_neurons})")
             if raise_error:
                 raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
 
