@@ -261,6 +261,7 @@ def _save_final_tracks(df, tracks_cfg, output_df_fname):
 def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     use_zimmer_template = tracks_cfg.config['leifer_params']['use_zimmer_template']
     use_multiple_templates = tracks_cfg.config['leifer_params']['use_multiple_templates']
+    i_template = use_multiple_templates = tracks_cfg.config['final_3d_tracks']['template_time_point']
     num_templates = tracks_cfg.config['leifer_params'].get('num_random_templates', None)
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     if DEBUG:
@@ -268,7 +269,7 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     physical_unit_conversion = project_cfg.get_physical_unit_conversion_class()
     if use_zimmer_template:
         # TODO: use a hand-curated segmentation or read from config
-        i_template = 10
+        # i_template = 10
         custom_template = project_data.get_centroids_as_numpy(i_template)
         custom_template = physical_unit_conversion.zimmer2leifer(custom_template)
     else:
