@@ -7,7 +7,6 @@
 # First, cd to the conda-environments folder
 # install: conda env create -f segmentation.yaml
 
-name: segmentation
 channels:
   - conda-forge
   - defaults
