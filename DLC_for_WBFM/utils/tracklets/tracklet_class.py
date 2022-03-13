@@ -425,10 +425,11 @@ class TrackedWorm:
         neurons_in_global_df = get_names_from_df(neurons_at_template)
         # neuron_zxy = self.detections.get_neurons_at_time(t)
         # num_neurons = neuron_zxy.shape[0]
-        num_neurons = len(neurons_at_template)
+        num_neurons = len(neurons_in_global_df)
+        print(f"Found {num_neurons} neurons, now initializing: {neurons_in_global_df}")
         if num_expected_neurons and num_expected_neurons != num_neurons:
-            logging.warning(f"{num_neurons} is not equal to the expected number of neurons at the template t={t} "
-                            f"({num_expected_neurons})")
+            logging.warning(f"Actual number of neurons ({num_neurons}) is not equal to the expected number "
+                            f"at the template t={t} ({num_expected_neurons})")
             raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
 
         new_tracklets = []
