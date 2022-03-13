@@ -439,6 +439,7 @@ class TrackedWorm:
             # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
             _, tracklet_name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
 
+            print(f"Initializing neuron indexed {i_neuron_ind} at t={t}, with tracklet {tracklet_name}")
             if not tracklet_name:
                 # Make a new tracklet, and give it data
                 tracklet_name = self.detections.initialize_new_empty_tracklet()
