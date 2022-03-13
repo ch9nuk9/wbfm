@@ -224,7 +224,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
 
     # Add new tracklets
     all_conf_output = {}
-    for i, (name, neuron) in enumerate(tqdm(worm_obj.global_name_to_neuron.items())):
+    for i, (name, neuron) in enumerate(tqdm(worm_obj.global_name_to_neuron.items(), total=worm_obj.num_neurons)):
 
         if verbose >= 2:
             print(f"Checking global track {name}")

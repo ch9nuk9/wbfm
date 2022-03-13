@@ -433,7 +433,7 @@ class TrackedWorm:
                 raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
 
         new_tracklets = []
-        for i_neuron_ind, name_in_df in tqdm(enumerate(neurons_in_global_df), leave=False):
+        for i_neuron_ind, name_in_df in tqdm(enumerate(neurons_in_global_df), total=num_neurons):
         # for i_neuron_ind in tqdm(range(num_neurons), total=num_neurons, leave=False):
             new_neuron = self.initialize_new_neuron(initialization_frame=t, name=name_in_df)
             # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
