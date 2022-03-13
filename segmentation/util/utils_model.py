@@ -42,7 +42,7 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
             folder_local = Path('/home/charles/Current_work/repos/segmentation/segmentation/notebooks/models')
 
     # available models' aliases
-    sd_options = ['versatile', 'lukas', 'lukas3d_zarr', 'students_and_lukas3d_zarr', 'lukas3d_zarr_25',
+    sd_options = ['versatile', 'lukas', 'lukas_3d_zarr', 'students_and_lukas_3d_zarr', 'lukas_3d_zarr_25',
                   'charlie', 'charlie_3d', 'charlie_3d_party']
 
     # create aliases for each model_name
@@ -57,11 +57,11 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
         model = StarDist2D(None, name='stardistCharlie', basedir=folder)
     elif model_name == 'charlie_3d':
         model = StarDist3D(None, name='Charlie100-3d', basedir=folder)
-    elif model_name == 'lukas3d_zarr':
+    elif model_name == 'lukas_3d_zarr':
         model = StarDist3D(None, name='Lukas3d_zarr', basedir=folder)
     elif model_name == 'students_and_lukas3d_zarr':
-        model = StarDist3D(None, name='Students_and_Lukas3d_zarr', basedir=folder)
-    elif model_name == 'lukas3d_zarr_25':
+        model = StarDist3D(None, name='Students_and_Lukas_3d_zarr', basedir=folder)
+    elif model_name == 'lukas_3d_zarr_25':
         model = StarDist3D(None, name='Lukas3d_zarr_25percentile', basedir=folder)
     elif model_name == 'lukas_3d_zarr_local':
         model = StarDist3D(None, name='Lukas3d_zarr_local', basedir=folder_local)
