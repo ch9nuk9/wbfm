@@ -264,7 +264,7 @@ def _save_final_tracks(df, tracks_cfg, output_df_fname):
 def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     use_zimmer_template = tracks_cfg.config['leifer_params']['use_zimmer_template']
     use_multiple_templates = tracks_cfg.config['leifer_params']['use_multiple_templates']
-    i_template = use_multiple_templates = tracks_cfg.config['final_3d_tracks']['template_time_point']
+    i_template = tracks_cfg.config['final_3d_tracks']['template_time_point']
     num_templates = tracks_cfg.config['leifer_params'].get('num_random_templates', None)
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     if DEBUG:
