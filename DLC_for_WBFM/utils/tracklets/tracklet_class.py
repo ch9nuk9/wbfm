@@ -412,7 +412,7 @@ class TrackedWorm:
 
         return new_neuron
 
-    def initialize_neurons_at_time(self, t=0, num_expected_neurons=None, raise_error=False):
+    def initialize_neurons_at_time(self, t=0, num_expected_neurons=None, df_global_tracks=None):
         """
         Each segmented neuron is initialized, even if there is not a tracklet at that particular volume
 
@@ -420,8 +420,8 @@ class TrackedWorm:
         Note: this is offset by at least one from the segmentation ID label
         """
         # Instead of getting the neurons from the segmentation directly, get them from the global track dataframe
-        # TODO: I can use this directly if they exist at this time, but right now they don't always exist on the template
-        neurons_at_template = self.detections.df_tracklets_zxy.loc[[t], (slice(None), 'raw_neuron_ind_in_list')]
+        # TODO: I can use this directly if they exist at this time, but they don't always exist on the template
+        neurons_at_template = df_global_tracks.loc[[t], (slice(None), 'raw_neuron_ind_in_list')]
         neurons_in_global_df = get_names_from_df(neurons_at_template)
         # neuron_zxy = self.detections.get_neurons_at_time(t)
         # num_neurons = neuron_zxy.shape[0]
@@ -429,8 +429,7 @@ class TrackedWorm:
         if num_expected_neurons and num_expected_neurons != num_neurons:
             logging.warning(f"{num_neurons} is not equal to the expected number of neurons at the template t={t} "
                             f"({num_expected_neurons})")
-            if raise_error:
-                raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
+            raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
 
         new_tracklets = []
         for i_neuron_ind, name_in_df in tqdm(enumerate(neurons_in_global_df), total=num_neurons):
@@ -439,7 +438,8 @@ class TrackedWorm:
             # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
             _, tracklet_name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
 
-            print(f"Initializing neuron indexed {i_neuron_ind} at t={t}, with tracklet {tracklet_name}")
+            print(f"Initializing neuron named {name_in_df} and indexed {i_neuron_ind} at t={t}, "
+                  f"with tracklet {tracklet_name} (None means a new tracklet is made)")
             if not tracklet_name:
                 # Make a new tracklet, and give it data
                 tracklet_name = self.detections.initialize_new_empty_tracklet()
