@@ -12,7 +12,7 @@ import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_of_columns_that_exist_at_t
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_of_columns_that_exist_at_t, get_names_from_df
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
@@ -200,7 +200,7 @@ class AbstractNeuronImageFeatures(Dataset):
 
         self.len_longest_class = np.max(self.class_lens)
 
-        self.labels = labels
+        self.labels = np.array(labels)
 
     def __len__(self):
         return len(self.labels)
@@ -326,22 +326,28 @@ class FullVolumeNeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
         return features, label
 
 
-def build_ground_truth_neuron_feature_spaces(project_data: ProjectData, num_neurons=None, num_frames=None):
+def build_ground_truth_neuron_feature_spaces(project_data: ProjectData,
+                                             assume_all_neurons_correct=False,
+                                             num_neurons=None, num_frames=None):
+
+    all_frames = project_data.raw_frames
+    df = project_data.final_tracks
 
     # Load ground truth
-    tracking_cfg = project_data.project_config.get_tracking_config()
-    fname = "manual_annotation/manual_tracking.csv"
-    fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-    df_manual_tracking = pd.read_csv(fname)
+    if assume_all_neurons_correct:
+        neurons_that_are_finished = get_names_from_df(df)
+    else:
+        tracking_cfg = project_data.project_config.get_tracking_config()
+        fname = "manual_annotation/manual_tracking.csv"
+        fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        df_manual_tracking = pd.read_csv(fname)
 
-    neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
+        neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
+
     if num_neurons is None:
         neurons = neurons_that_are_finished
     else:
         neurons = neurons_that_are_finished[:num_neurons]
-
-    all_frames = project_data.raw_frames
-    df = project_data.final_tracks
 
     if num_frames is None:
         num_frames = project_data.num_frames - 1
@@ -409,7 +415,8 @@ def get_test_train_split(project_data: ProjectData, num_neurons=None, num_frames
 
 class NeuronImageFeaturesDataModule(LightningDataModule):
     def __init__(self, batch_size=64, project_data: ProjectData = None, num_neurons=None, num_frames=None,
-                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=NeuronImageFeaturesDataset):
+                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=NeuronImageFeaturesDataset,
+                 assume_all_neurons_correct=False):
         super().__init__()
         self.batch_size = batch_size
         self.project_data = project_data
@@ -418,11 +425,14 @@ class NeuronImageFeaturesDataModule(LightningDataModule):
         self.train_fraction = train_fraction
         self.val_fraction = val_fraction
         self.base_dataset_class = base_dataset_class
+        self.assume_all_neurons_correct = assume_all_neurons_correct
 
     def setup(self, stage: Optional[str] = None):
         # transform and split
         all_feature_spaces = build_ground_truth_neuron_feature_spaces(self.project_data,
-                                                                      self.num_neurons, self.num_frames)
+                                                                      num_neurons=self.num_neurons,
+                                                                      num_frames=self.num_frames,
+                                                                      assume_all_neurons_correct=self.assume_all_neurons_correct)
         alldata = self.base_dataset_class(all_feature_spaces)
 
         train_fraction = int(len(alldata) * self.train_fraction)
