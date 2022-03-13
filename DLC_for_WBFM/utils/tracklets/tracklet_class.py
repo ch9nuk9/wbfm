@@ -87,10 +87,12 @@ class NeuronComposedOfTracklets:
                 print(f"{tracklet_name} did not pass classifier check")
             return False
 
-        is_match_added = self.neuron2tracklets.add_match_if_not_present([self.neuron_ind, i_tracklet, confidence],
+        match_with_names = [self.name, tracklet_name, confidence]
+        is_match_added = self.neuron2tracklets.add_match_if_not_present(match_with_names,
                                                                         node0_metadata=self.name,
                                                                         node1_metadata=tracklet_name,
-                                                                        edge_metadata=metadata)
+                                                                        edge_metadata=metadata,
+                                                                        convert_ind_to_names=False)
         if is_match_added:
             tracklet_covering = np.where(tracklet[tracklet_name]['z'].notnull())[0]
             self.tracklet_covering_ind.extend(tracklet_covering)
