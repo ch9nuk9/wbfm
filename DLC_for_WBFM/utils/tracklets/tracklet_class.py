@@ -419,7 +419,7 @@ class TrackedWorm:
         """
         # Instead of getting the neurons from the segmentation directly, get them from the global track dataframe
         # TODO: I can use this directly if they exist at this time, but right now they don't always exist on the template
-        neurons_at_template = self.detections.df_tracklets_zxy.loc[t, (slice(None), 'raw_neuron_ind_in_list')]
+        neurons_at_template = self.detections.df_tracklets_zxy.loc[[t], (slice(None), 'raw_neuron_ind_in_list')]
         neurons_in_global_df = get_names_from_df(neurons_at_template)
         # neuron_zxy = self.detections.get_neurons_at_time(t)
         # num_neurons = neuron_zxy.shape[0]
