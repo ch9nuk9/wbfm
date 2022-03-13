@@ -164,7 +164,7 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
                                  tracks_cfg: SubfolderConfigFile,
                                  DEBUG=False):
     match_confidence_threshold, prediction_options, template, project_data, use_multiple_templates, \
-    _, physical_unit_conversion = \
+    _, physical_unit_conversion, i_template = \
         _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG)
 
     if use_multiple_templates:
@@ -175,6 +175,9 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
         logging.info("Tracking using single template")
         all_matches = track_using_fdnc(project_data, prediction_options, template, match_confidence_threshold,
                                        physical_unit_conversion=physical_unit_conversion)
+    # Force the template to be actually correct
+    num_neurons = template.shape[0]
+    all_matches[i_template] = [(i, i, 1.0) for i in range(num_neurons)]
 
     logging.info("Converting matches to dataframe format")
     df = template_matches_to_dataframe(project_data, all_matches)
@@ -280,7 +283,7 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
 
     return match_confidence_threshold, prediction_options, template, project_data, \
-           use_multiple_templates, num_templates, physical_unit_conversion
+           use_multiple_templates, num_templates, physical_unit_conversion, i_template
 
 
 def get_putative_names_from_config(project_config: ModularProjectConfig):
