@@ -410,7 +410,7 @@ class TrackedWorm:
 
         return new_neuron
 
-    def initialize_neurons_at_time(self, t=0, num_expected_neurons=None):
+    def initialize_neurons_at_time(self, t=0, num_expected_neurons=None, raise_error=False):
         """
         Each segmented neuron is initialized, even if there is not a tracklet at that particular volume
 
@@ -424,7 +424,8 @@ class TrackedWorm:
         if num_expected_neurons and num_expected_neurons != num_neurons:
             print(f"{num_neurons} is not equal to the expected number of neurons at the template t={t} "
                   f"({num_expected_neurons})")
-            raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
+            if raise_error:
+                raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
 
         new_tracklets = []
         for i_neuron_ind in tqdm(range(num_neurons), total=num_neurons, leave=False):
