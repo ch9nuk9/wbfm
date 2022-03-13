@@ -59,7 +59,7 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
         model = StarDist3D(None, name='Charlie100-3d', basedir=folder)
     elif model_name == 'lukas_3d_zarr':
         model = StarDist3D(None, name='Lukas3d_zarr', basedir=folder)
-    elif model_name == 'students_and_lukas3d_zarr':
+    elif model_name == 'students_and_lukas_3d_zarr':
         model = StarDist3D(None, name='Students_and_Lukas_3d_zarr', basedir=folder)
     elif model_name == 'lukas_3d_zarr_25':
         model = StarDist3D(None, name='Lukas3d_zarr_25percentile', basedir=folder)
