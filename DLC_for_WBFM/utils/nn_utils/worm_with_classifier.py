@@ -100,7 +100,7 @@ def track_using_embedding_from_config(project_cfg, DEBUG):
         num_frames = 3
     all_frames = project_data.raw_frames
 
-    if use_multiple_templates:
+    if not use_multiple_templates:
         df_final = track_using_template(all_frames, num_frames, project_data, t_template)
     else:
         all_templates = [t_template]
