@@ -45,5 +45,6 @@ def main(_config, _run):
     calculate_bounding_boxes_from_fnames(video_fname, bbox_fname)
 
     segment_cfg = _config['segment_cfg']
+    bbox_fname = segment_cfg.unresolve_absolute_path(bbox_fname)
     segment_cfg.config['bbox_fname'] = bbox_fname
     segment_cfg.update_on_disk()
