@@ -1,3 +1,4 @@
+import logging
 import os.path
 from dataclasses import dataclass
 from typing import Dict
@@ -8,6 +9,8 @@ from scipy.optimize import linear_sum_assignment
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
+from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
+    combine_dataframes_using_mode
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
@@ -86,22 +89,49 @@ def track_using_embedding_from_config(project_cfg, DEBUG):
     tracking_cfg = project_data.project_config.get_tracking_config()
     t_template = tracking_cfg.config['final_3d_tracks']['template_time_point']
 
+    use_multiple_templates = tracking_cfg.config['leifer_params']['use_multiple_templates']
+    num_random_templates = tracking_cfg.config['leifer_params']['num_random_templates']
+
     num_frames = project_data.num_frames
     if DEBUG:
         num_frames = 3
     all_frames = project_data.raw_frames
-    tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template])
 
-    all_matches = []
-    for t in tqdm(range(num_frames)):
-        matches_with_conf = tracker.match_target_frame(all_frames[t])
+    if use_multiple_templates:
+        df_final = track_using_template(all_frames, num_frames, project_data, t_template)
+    else:
+        all_templates = [t_template]
+        permuted_times = np.random.permutation(range(num_frames))
+        for t_random in permuted_times[:num_random_templates-1]:
+            all_templates.extend(t_random)
 
-        all_matches.append(matches_with_conf)
+        logging.info(f"Using {num_random_templates} templates at t={all_templates}")
+        # All subsequent dataframes will have their names mapped to this
+        t = all_templates[0]
+        df_base = track_using_template(all_frames, num_frames, project_data, t)
+        all_dfs = [df_base]
+        for i, t in enumerate(tqdm(all_templates[1:])):
+            df = track_using_template(all_frames, num_frames, project_data, t)
+            df = rename_columns_using_matching(df_base, df)
+            all_dfs.append(df)
 
-    df = template_matches_to_dataframe(project_data, all_matches)
+        tracking_cfg.config['leifer_params']['t_templates'] = all_templates
+        df_final = combine_dataframes_using_mode(all_dfs)
 
     # Save
     out_fname = '3-tracking/postprocessing/df_tracks_embedding.h5'
-    tracking_cfg.h5_in_local_project(df, out_fname, also_save_csv=True)
+    tracking_cfg.h5_in_local_project(df_final, out_fname, also_save_csv=True)
     tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
+
     tracking_cfg.update_on_disk()
+
+
+def track_using_template(all_frames, num_frames, project_data, t_template):
+    tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template])
+    all_matches = []
+    for t in tqdm(range(num_frames), leave=False):
+        matches_with_conf = tracker.match_target_frame(all_frames[t])
+
+        all_matches.append(matches_with_conf)
+    df = template_matches_to_dataframe(project_data, all_matches)
+    return df
