@@ -207,7 +207,8 @@ def _unpack_config_training_data_conversion(training_config, segmentation_config
     df_clust = pd.read_pickle(fname)
 
     fname = training_config.resolve_relative_path_from_config('df_3d_tracklets')
-    df_tracklets: pd.DataFrame = pd.read_hdf(fname)
+    # df_tracklets: pd.DataFrame = pd.read_hdf(fname)
+    df_tracklets: pd.DataFrame = pd.read_pickle(fname)
 
     seg_metadata_fname = segmentation_config.resolve_relative_path_from_config('output_metadata')
     segmentation_metadata = DetectedNeurons(seg_metadata_fname)
