@@ -106,7 +106,7 @@ def track_using_embedding_from_config(project_cfg, DEBUG):
         all_templates = [t_template]
         permuted_times = np.random.permutation(range(num_frames))
         for t_random in permuted_times[:num_random_templates-1]:
-            all_templates.extend(t_random)
+            all_templates.append(t_random)
 
         logging.info(f"Using {num_random_templates} templates at t={all_templates}")
         # All subsequent dataframes will have their names mapped to this
