@@ -178,7 +178,7 @@ class PaddedDataFrame(pd.DataFrame):
         return df_working_copy, name_mapping
 
 
-def insert_value_in_sparse_df(df, index, columns, val):
+def insert_value_in_sparse_df(df, index, columns: pd.MultiIndex, val):
     """ Insert data in a DataFrame with SparseDtype format
 
     from: https://stackoverflow.com/questions/49032856/assign-values-to-sparsearray-in-pandas
@@ -201,7 +201,13 @@ def insert_value_in_sparse_df(df, index, columns, val):
 
     """
     # Convert concerned Series to dense format, but MAKE SURE it is actually sparse!
-    tmp_cols = df[[columns]].copy()
+    if type(columns) == pd.MultiIndex:
+        tmp_cols = df[columns].copy()
+    else:
+        logging.warning("Called insert_value_in_sparse_df without specifying the exact index; "
+                        "this assumes that val is ordered the same as df, and is not recommended")
+        tmp_cols = df[[columns]].copy()
+
     try:
         tmp_cols = tmp_cols.sparse.to_dense()
     except AttributeError:

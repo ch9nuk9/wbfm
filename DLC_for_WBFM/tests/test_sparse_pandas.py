@@ -10,8 +10,10 @@ from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tra
 class TestSparsePandas(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.cols = ('neuron_000', 'z')
-        self.df = pd.DataFrame({('neuron_000', 'z'): list(range(20))})
+        self.neuron_name = 'neuron_001'
+        self.cols = [(self.neuron_name, 'z'), (self.neuron_name, 'x')]
+        self.df = pd.DataFrame({(self.neuron_name, 'z'): list(range(20)),
+                                (self.neuron_name, 'x'): 10*np.array(list(range(20)))})
         self.assertRaises(AttributeError, lambda: self.df.sparse)
         self.df = to_sparse_multiindex(self.df)
         print(self.df.sparse)  # No error
@@ -49,23 +51,51 @@ class TestSparsePandas(unittest.TestCase):
         print(right.sparse)  # No error
 
     def test_add(self):
-        df = insert_value_in_sparse_df(self.df, index=0, columns=self.cols[0], val=10)
+        df = insert_value_in_sparse_df(self.df, index=0, columns=self.neuron_name, val=[10, 10])
 
-        self.assertEqual(10, int(df[self.cols][0]))
+        self.assertEqual(10, int(df[self.neuron_name, 'z'][0]))
         self.assertTrue(check_if_fully_sparse(df))
         print(df.sparse)
 
     def test_add_then_split(self):
-        df = insert_value_in_sparse_df(self.df, index=0, columns=self.cols[0], val=10)
+        df = insert_value_in_sparse_df(self.df, index=0, columns=self.neuron_name, val=10)
 
         left, right = split_single_sparse_tracklet(10, df)
         self.assertTrue(check_if_fully_sparse(left))
         self.assertTrue(check_if_fully_sparse(right))
 
     def test_remove_then_split(self):
-        df = insert_value_in_sparse_df(self.df, index=0, columns=self.cols[0], val=np.nan)
+        df = insert_value_in_sparse_df(self.df, index=0, columns=self.neuron_name, val=np.nan)
 
         left, right = split_single_sparse_tracklet(10, df)
         self.assertTrue(check_if_fully_sparse(left))
         self.assertTrue(check_if_fully_sparse(right))
-        
+
+    def test_multiindex_as_column(self):
+        cols = pd.MultiIndex.from_product([[self.neuron_name], ['x', 'z']])
+
+        df = insert_value_in_sparse_df(self.df, index=0, columns=cols, val=np.nan)
+
+        left, right = split_single_sparse_tracklet(10, df)
+        self.assertTrue(check_if_fully_sparse(left))
+        self.assertTrue(check_if_fully_sparse(right))
+
+    def test_insert_different_values(self):
+        cols = pd.MultiIndex.from_product([[self.neuron_name], ['x', 'z']])
+
+        df = insert_value_in_sparse_df(self.df, index=0, columns=cols, val=[1.5, 2.5])
+
+        self.assertEqual(2.5, df[self.neuron_name, 'z'][0])
+        self.assertEqual(1.5, df[self.neuron_name, 'x'][0])
+        self.assertTrue(check_if_fully_sparse(df))
+        print(df.sparse)
+
+    def test_insert_different_values_opposite_order(self):
+        cols = pd.MultiIndex.from_product([[self.neuron_name], ['z', 'x']])
+
+        df = insert_value_in_sparse_df(self.df, index=0, columns=cols, val=[1.5, 2.5])
+
+        self.assertEqual(1.5, df[self.neuron_name, 'z'][0])
+        self.assertEqual(2.5, df[self.neuron_name, 'x'][0])
+        self.assertTrue(check_if_fully_sparse(df))
+        print(df.sparse)
