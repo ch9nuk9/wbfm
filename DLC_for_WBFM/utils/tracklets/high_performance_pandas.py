@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -178,7 +179,7 @@ class PaddedDataFrame(pd.DataFrame):
         return df_working_copy, name_mapping
 
 
-def insert_value_in_sparse_df(df, index, columns: pd.MultiIndex, val):
+def insert_value_in_sparse_df(df: pd.DataFrame, index: Union[int, str], columns: pd.MultiIndex, val):
     """ Insert data in a DataFrame with SparseDtype format
 
     from: https://stackoverflow.com/questions/49032856/assign-values-to-sparsearray-in-pandas
@@ -204,8 +205,9 @@ def insert_value_in_sparse_df(df, index, columns: pd.MultiIndex, val):
     if type(columns) == pd.MultiIndex:
         tmp_cols = df[columns].copy()
     else:
-        logging.warning("Called insert_value_in_sparse_df without specifying the exact index; "
-                        "this assumes that val is ordered the same as df, and is not recommended")
+        logging.warning(f"Called insert_value_in_sparse_df without specifying the exact index; "
+                        "this assumes that val is ordered the same as df, and is not recommended. "
+                        f"Ignore this warning if val is nan: {val}")
         tmp_cols = df[[columns]].copy()
 
     try:

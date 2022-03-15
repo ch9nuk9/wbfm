@@ -306,18 +306,18 @@ class DetectedTrackletsAndNeurons:
         mask_ind, tracklet_name = self.get_mask_or_tracklet_from_other(mask_ind, t, tracklet_name)
 
         # TODO: check that this doesn't produce a time gap in the tracklet
-        row_data, _ = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t, likelihood=likelihood)
+        row_data, column_names = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t,
+                                                                                        likelihood=likelihood)
         if row_data is None:
             if verbose >= 1:
                 print(f"{tracklet_name} previously on segmentation {mask_ind} no longer exists, "
                       f"and was removed at that time point")
             self.delete_data_from_tracklet_at_time(t, tracklet_name)
-            # self.df_tracklets_zxy.loc[t, tracklet_name] = np.nan
         else:
             if verbose >= 1:
-                print(f"{tracklet_name} on segmentation {mask_ind} at t={t} updated")
-            self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, tracklet_name, row_data)
-            # self.df_tracklets_zxy.loc[t, tracklet_name] = row_data
+                print(f"{tracklet_name} on segmentation {mask_ind} at t={t} updated with data: {row_data}")
+            idx = pd.MultiIndex.from_product([[tracklet_name], column_names])
+            self.df_tracklets_zxy = insert_value_in_sparse_df(self.df_tracklets_zxy, t, idx, row_data)
             self.update_callback_dictionary_for_single_tracklet(tracklet_name)
             self.dataframe_is_synced_to_disk = False
 
