@@ -125,6 +125,8 @@ def extract_traces_of_training_data_from_config(project_cfg: SubfolderConfigFile
     # df_combined = df_red.join(df_green_subset)
 
     fname = os.path.join("2-training_data", "training_data_tracks.h5")
+    if hasattr(df_train, 'sparse'):
+        df_train = df_train.sparse.to_dense()
     training_cfg.h5_in_local_project(df_train, fname, also_save_csv=True)
 
 
