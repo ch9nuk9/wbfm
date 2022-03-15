@@ -5,9 +5,10 @@
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=long             # Time limit hrs:min:sec
 #SBATCH --output=log_long_step-%j.out    # Standard output and error log
-#SBATCH --time=12:00:00
+#SBATCH --time=16:00:00 # If it's on an older machine, will take a long time
 #SBATCH --mem=16G
 #SBATCH --exclusive
+#SBATCH --cpus-per-task=24 # Force it to avoid the old 16-core machines
 
 pwd; hostname; date
 
