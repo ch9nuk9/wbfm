@@ -32,7 +32,8 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     bbox_fname = segment_cfg.config.get('bbox_fname', None)
     if bbox_fname is not None:
         all_bounding_boxes = pickle_load_binary(bbox_fname)
+        print("Found bounding boxes!")
     else:
         all_bounding_boxes = None
-        logging.info("Did not find bounding boxes")
+        print("Did not find bounding boxes")
     return frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes

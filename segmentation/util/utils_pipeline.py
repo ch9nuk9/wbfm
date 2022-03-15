@@ -52,9 +52,10 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
     masks_zarr = _do_first_volume3d(frame_list, mask_fname, num_frames,
-                                    sd_model, verbose, video_dat, continue_from_frame)
+                                    sd_model, verbose, video_dat, all_bounding_boxes, continue_from_frame)
     # Main function
     segmentation_options = {'masks_zarr': masks_zarr,
+                            'all_bounding_boxes': all_bounding_boxes,
                             'sd_model': sd_model, 'verbose': verbose}
 
     # Will always be at least continuing after the first frame
@@ -70,7 +71,8 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
     calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
 
 
-def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num_frames: int, verbose: int,
+def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
+                           frame_list: list, mask_fname: str, num_frames: int, verbose: int,
                            video_dat: zarr.Array,
                            opt: dict, continue_from_frame: int) -> None:
     # with tifffile.TiffFile(video_path) as video_stream:
@@ -105,8 +107,7 @@ def _segment_full_video_3d(_config: dict, frame_list: list, mask_fname: str, num
                     future.result()
                     pbar.update(1)
 
-    if _config.config.get('self_path', None) is not None:
-        edit_config(_config.config['self_path'], _config.config)
+    segment_cfg.update_on_disk()
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
@@ -244,6 +245,7 @@ def get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat):
 
 def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int,
                        sd_model, verbose: int, video_dat: zarr.Array,
+                       all_bounding_boxes: list = None,
                        continue_from_frame: int = None) -> zarr.Array:
     # Do first loop to initialize the zarr data
     if continue_from_frame is None:
@@ -254,13 +256,14 @@ def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int,
         # Old file MUST exist in this case
         mode = 'r+'
     i_volume = frame_list[i]
-    volume = video_dat[i_volume, ...]
+    volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
+
     from segmentation.util.utils_model import segment_with_stardist_3d
     final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     _, num_slices, x_sz, y_sz = video_dat.shape
     masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
-    # Add masks to zarr file; automatically saves
-    masks_zarr[i, :, :, :] = final_masks
+
+    save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr)
     return masks_zarr
 
 
@@ -283,8 +286,9 @@ def _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mod
 
 
 def segment_and_save3d(i, i_volume, masks_zarr,
+                       all_bounding_boxes,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
-    volume = video_dat[i_volume, ...]
+    volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
     # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
     from segmentation.util.utils_model import segment_with_stardist_3d
     if keras_lock is None:
@@ -294,7 +298,7 @@ def segment_and_save3d(i, i_volume, masks_zarr,
             final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
 
     # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
-    masks_zarr[i, :, :, :] = final_masks
+    save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr)
 
 
 def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
