@@ -14,12 +14,14 @@ from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_co
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
-PATH_TO_MODEL = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/classifier_36_neurons.ckpt"
+model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/"
+PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
+# PATH_TO_MODEL = os.path.join(model_dir, "classifier_36_neurons.ckpt")
 if not os.path.exists(PATH_TO_MODEL):
     raise FileNotFoundError(PATH_TO_MODEL)
 
 # TODO: also save hyperparameters (doesn't work in jupyter notebooks)
-HPARAMS = dict(num_classes=36)
+HPARAMS = dict(num_classes=127)
 
 
 @dataclass
@@ -44,6 +46,7 @@ class WormWithNeuronClassifier:
         if self.hparams is None:
             self.hparams = HPARAMS
         if self.model is None:
+            # TODO: just load Siamese directly, and ignore the number of classes?
             self.model = self.model_type.load_from_checkpoint(checkpoint_path=self.path_to_model, **self.hparams)
 
         self.initialize_template()
