@@ -90,9 +90,11 @@ def pandas_read_any_filetype(filename):
         return None
 
 
-def pickle_load_binary(fname):
+def pickle_load_binary(fname, verbose=0):
     with open(fname, 'rb') as f:
         dat = pickle.load(f)
+    if verbose >= 1:
+        logging.info(f"Read from pickle file: {fname}")
     return dat
 
 
