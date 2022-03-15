@@ -96,7 +96,7 @@ def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
         for i_both in enumerate(tqdm(frame_list[continue_from_frame:])):
             parallel_func(i_both)
     else:
-        max_workers = 16
+        max_workers = 8
         logging.info("Did not find cuda, running in multi-threaded mode")
 
         with tqdm(total=num_frames - continue_from_frame) as pbar:
