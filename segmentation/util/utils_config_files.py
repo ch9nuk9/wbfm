@@ -1,4 +1,7 @@
+import logging
 import pickle
+
+from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 
 from segmentation.util.utils_paths import get_output_fnames
 
@@ -28,8 +31,8 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     # Preprocessing information
     bbox_fname = segment_cfg.config.get('bbox_fname', None)
     if bbox_fname is not None:
-        with open(bbox_fname, 'rb') as f:
-            all_bounding_boxes = pickle.load(f)
+        all_bounding_boxes = pickle_load_binary(bbox_fname)
     else:
         all_bounding_boxes = None
+        logging.info("Did not find bounding boxes")
     return frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes
