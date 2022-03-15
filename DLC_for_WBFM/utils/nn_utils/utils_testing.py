@@ -16,12 +16,13 @@ from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import WormWithNeuronClass
 from DLC_for_WBFM.utils.projects.finished_project_data import template_matches_to_dataframe
 
 
-def test_trained_classifier(dataloader, model, loss_fn=None, device=None):
+def test_trained_classifier(dataloader, model,
+                            which_dataset='test_dataset', loss_fn=None, device=None):
     if loss_fn is None:
         loss_fn = model.criterion
     if device is None:
         device = model.device
-    dataset = dataloader.test_dataset
+    dataset = dataloader.__getattribute__(which_dataset)
     size = len(dataset)
     num_batches = len(dataset)
     model.eval()

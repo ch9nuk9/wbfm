@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle
+from collections import defaultdict
 from pathlib import Path
 from typing import Optional
 
@@ -206,6 +207,13 @@ class AbstractNeuronImageFeatures(Dataset):
         return len(self.labels)
 
 
+class AbstractTimeAwareNeunImageFeatures(AbstractNeuronImageFeatures):
+    def __init__(self, all_feature_spaces, times_of_features, transform=None):
+        super().__init__(all_feature_spaces, transform)
+
+
+
+
 class NeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
 
     def __getitem__(self, idx):
@@ -296,6 +304,49 @@ class TripletNeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
         return features, labels
 
 
+class ShatterImageFeaturesDataset(AbstractNeuronImageFeatures):
+
+    def get_random_idx_of_same_class_from_data_idx(self, data_idx):
+        class_idx = np.argmax(self.class_idx_starts > data_idx) - 1
+        return self.get_random_idx_of_class(class_idx, data_idx)
+
+    def get_random_idx_of_class(self, class_idx, data_idx=None):
+        this_start = self.class_idx_starts[class_idx]
+        this_len = self.class_lens[class_idx]
+        possible_idx = list(range(this_start, this_start + this_len))
+        if data_idx is not None:
+            possible_idx.remove(data_idx)  # Sample without replacement
+        i_match = np.random.randint(low=0, high=len(possible_idx))
+        return possible_idx[i_match]
+
+    def get_triplet_idx(self, data_idx):
+        idx_positive = self.get_random_idx_of_same_class_from_data_idx(data_idx)
+        class_random_idx = self.get_random_class_exclusive(idx_positive)
+        idx_negative = self.get_random_idx_of_class(class_random_idx)
+
+        return idx_positive, idx_negative
+
+    def get_random_class_exclusive(self, idx_positive):
+        idx_random_class = np.random.randint(0, self.num_classes - 1)
+        # Disallow the same idx as the positive class
+        if idx_random_class >= idx_positive:
+            idx_random_class += 1
+        return idx_random_class
+
+    def __getitem__(self, idx):
+        # Anchor, positive, negative
+        # print(f"Getting {idx}")
+        idx_positive, idx_negative = self.get_triplet_idx(idx)
+        # print(f"Found {idx_positive}, {idx_negative}")
+        features = self.stacked_feature_spaces[[idx, idx_positive, idx_negative], :]
+
+        label_positive = self.labels[idx]
+        label_negative = self.labels[idx_negative]
+        labels = [label_positive, label_positive, label_negative]
+        return features, labels
+
+
+
 class FullVolumeNeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
 
     def __len__(self):
@@ -342,7 +393,10 @@ def build_ground_truth_neuron_feature_spaces(project_data: ProjectData,
         fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         df_manual_tracking = pd.read_csv(fname)
 
-        neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
+        # Use the ones that are partially tracked as well
+        neurons_that_are_finished = list(
+            df_manual_tracking[df_manual_tracking['auto-added tracklets correct']]['Neuron ID'])
+        # neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
 
     if num_neurons is None:
         neurons = neurons_that_are_finished
@@ -352,17 +406,19 @@ def build_ground_truth_neuron_feature_spaces(project_data: ProjectData,
     if num_frames is None:
         num_frames = project_data.num_frames - 1
 
-    all_feature_spaces = feature_spaces_from_dataframe(all_frames, df, neurons, num_frames)
+    all_feature_spaces, time_to_indices_dict = feature_spaces_from_dataframe(all_frames, df, neurons, num_frames)
 
-    return all_feature_spaces
+    return all_feature_spaces, time_to_indices_dict
 
 
 def feature_spaces_from_dataframe(all_frames, df, neurons, num_frames):
     # Get stored feature spaces from Frame objects
     all_feature_spaces = []
+    time_to_indices_dict = defaultdict(list)
     for neuron in tqdm(neurons):
         this_neuron = df[neuron]
         this_feature_space = []
+        this_feature_times_list = []
 
         for t in range(num_frames):
             ind_within_frame = this_neuron['raw_neuron_ind_in_list'][t]
@@ -376,9 +432,14 @@ def feature_spaces_from_dataframe(all_frames, df, neurons, num_frames):
                 logging.warning("Neuron not found within frame; these objects may need to be regenerated")
                 continue
             this_feature_space.append(frame.all_features[ind_within_frame, :])
+            this_feature_times_list.append(t)
         this_feature_space = np.vstack(this_feature_space)
+
+        offset = len(all_feature_spaces)
+        for i, t in enumerate(this_feature_times_list):
+            time_to_indices_dict[t].append(i + offset)
         all_feature_spaces.append(this_feature_space)
-    return all_feature_spaces
+    return all_feature_spaces, time_to_indices_dict
 
 
 def build_per_tracklet_feature_spaces(project_data: ProjectData, t_template=0, num_frames=None):
@@ -390,15 +451,16 @@ def build_per_tracklet_feature_spaces(project_data: ProjectData, t_template=0, n
     if num_frames is None:
         num_frames = project_data.num_frames - 1
 
-    all_feature_spaces = feature_spaces_from_dataframe(all_frames, df_tracklets, these_names, num_frames)
+    all_feature_spaces, time_to_indices_dict = feature_spaces_from_dataframe(all_frames, df_tracklets, these_names, num_frames)
 
-    return all_feature_spaces
+    return all_feature_spaces, time_to_indices_dict
 
 
 def get_test_train_split(project_data: ProjectData, num_neurons=None, num_frames=None,
                          batch_size=32, train_fraction=0.8):
 
-    all_feature_spaces = build_ground_truth_neuron_feature_spaces(project_data, num_neurons, num_frames)
+    all_feature_spaces, time_to_indices_dict = build_ground_truth_neuron_feature_spaces(project_data,
+                                                                                         num_neurons, num_frames)
     alldata = NeuronImageFeaturesDataset(all_feature_spaces)
 
     train_fraction = int(len(alldata) * train_fraction)
@@ -429,7 +491,7 @@ class NeuronImageFeaturesDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         # transform and split
-        all_feature_spaces = build_ground_truth_neuron_feature_spaces(self.project_data,
+        all_feature_spaces, time_to_indices_dict = build_ground_truth_neuron_feature_spaces(self.project_data,
                                                                       num_neurons=self.num_neurons,
                                                                       num_frames=self.num_frames,
                                                                       assume_all_neurons_correct=self.assume_all_neurons_correct)
@@ -471,7 +533,7 @@ class TrackletImageFeaturesDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         # transform and split
-        all_feature_spaces = build_per_tracklet_feature_spaces(self.project_data, num_frames=self.num_frames,
+        all_feature_spaces, time_to_indices_dict = build_per_tracklet_feature_spaces(self.project_data, num_frames=self.num_frames,
                                                                t_template=self.t_template)
         alldata = self.base_dataset_class(all_feature_spaces)
 
