@@ -102,7 +102,8 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         if use_multiple_templates:
             worm_obj.initialize_neurons_from_training_data(df_training_data)
         else:
-            worm_obj.initialize_neurons_at_time(t=t_template, num_expected_neurons=num_neurons)
+            worm_obj.initialize_neurons_at_time(t=t_template, num_expected_neurons=num_neurons,
+                                                df_global_tracks=df_global_tracks)
         if use_previous_matches:
             worm_obj.add_previous_matches(previous_matches)
         # TODO: make sure no neurons are initialized that are not in the global tracker dataframe
@@ -224,7 +225,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
 
     # Add new tracklets
     all_conf_output = {}
-    for i, (name, neuron) in enumerate(tqdm(worm_obj.global_name_to_neuron.items())):
+    for i, (name, neuron) in enumerate(tqdm(worm_obj.global_name_to_neuron.items(), total=worm_obj.num_neurons)):
 
         if verbose >= 2:
             print(f"Checking global track {name}")
@@ -401,7 +402,7 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
     bipartite_slice_matches = MatchesWithConfidence()
     neuron_nodes = global_tracklet_neuron_graph.get_nodes_of_class(0)
 
-    print("Precalculating tracklets exist at each time point")
+    print("Precalculating tracklets that exist at each time point")
     time2names_mapping = defaultdict(list)
     names = get_names_from_df(df_tracklets)
     for name in tqdm(names):
