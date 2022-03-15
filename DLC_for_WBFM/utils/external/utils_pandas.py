@@ -113,7 +113,8 @@ def cast_int_or_nan(i):
 
 def get_name_mapping_for_track_dataframes(df_old, df_new,
                                           t_templates=10, column_to_test='raw_neuron_ind_in_list',
-                                          names_old=None):
+                                          names_old=None,
+                                          verbose=0):
     """Checks for matches in all templates, and takes the most common match"""
     names_new = get_names_from_df(df_new)
     if np.isscalar(t_templates):
@@ -137,7 +138,8 @@ def get_name_mapping_for_track_dataframes(df_old, df_new,
                     # dfold2dfnew_dict[old] = new
                     break
             else:
-                print(f"Did not find new neuron for ground truth {old}")
+                if verbose >= 2:
+                    print(f"Did not find new neuron for ground truth {old}")
 
     # Take max
     for old, new_matches in dfold2dfnew_dict.items():

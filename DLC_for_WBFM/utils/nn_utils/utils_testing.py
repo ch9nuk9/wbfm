@@ -212,7 +212,7 @@ def build_template_from_loader(volume_module, model):
 
 
 def plot_accuracy(correct_per_class=None, total_per_class=None):
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(25, 15))
 
     x = list(correct_per_class.keys())
     y = []
