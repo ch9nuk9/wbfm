@@ -358,6 +358,12 @@ class MatchesAsGraph(Graph):
         return f"MatchesAsGraph object with {len(self.get_nodes_of_class(0))} class A nodes and " \
                f"{len(self.get_nodes_of_class(1))} class B nodes, with {len(self.edges)} edges"
 
+    def pretty_print_single_match(self, node):
+        dat = dict(self[node])
+        print(f"Matches for: {node}")
+        for key, val in dat.items():
+            print(f"{key} with weight={val['weight']}")
+
 
 # def get_tracklet_name_from_full_name(name):
 #     """Assume name is like: bipartite_1_trackletGroup_1_neuron228"""

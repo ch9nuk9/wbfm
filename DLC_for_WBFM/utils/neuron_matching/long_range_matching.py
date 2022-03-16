@@ -197,14 +197,16 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     coords = ['z', 'x', 'y']
     all_tracklet_names = get_names_from_df(df_tracklets)
     if DEBUG:
-        all_tracklet_names = all_tracklet_names[:10]
+        all_tracklet_names = all_tracklet_names[:1000]
     # list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
     # TODO: this should be faster, but causes a crash
-    list_tracklets_zxy_small, list_tracklets_zxy_ind = precalculate_lists_from_dataframe(
+    dict_tracklets_zxy_small, dict_tracklets_zxy_ind = precalculate_lists_from_dataframe(
         all_tracklet_names, coords, df_tracklets, min_overlap)
+    remaining_tracklet_names = list(dict_tracklets_zxy_small.keys())
 
     # if df_global_tracks.shape[0] - 1 == list_tracklets_zxy[0].shape[0]:
-    if df_global_tracks.shape[0] - 1 == list_tracklets_zxy_small[0].shape[0]:
+    _name = remaining_tracklet_names[0]
+    if df_global_tracks.shape[0] - 1 == dict_tracklets_zxy_small[_name].shape[0]:
         to_shorten = True
     else:
         to_shorten = False
@@ -228,7 +230,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         this_global_track = this_global_track.replace(0.0, np.nan).to_numpy(float)
 
         dist = calc_global_track_to_tracklet_distances_subarray(this_global_track,
-                                                                list_tracklets_zxy_small, list_tracklets_zxy_ind,
+                                                                dict_tracklets_zxy_small, dict_tracklets_zxy_ind,
                                                                 min_overlap=min_overlap)
         # dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy,
         #                                                min_overlap=min_overlap)
@@ -243,14 +245,14 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         num_candidate_neurons = 0
         for num_candidate_neurons, i_tracklet in enumerate(i_sorted_by_confidence):
             # Check if this was used before
-            candidate_name = all_tracklet_names[i_tracklet]
+            candidate_name = remaining_tracklet_names[i_tracklet]
             if candidate_name in used_names:
                 if verbose >= 3:
                     print(f"Already used: {candidate_name}")
                 continue
             # Check distance; break because they are sorted by distance
             this_confidence = all_summarized_conf[i_tracklet]
-            if this_confidence < min_confidence or np.isnan(this_confidence):
+            if this_confidence <= min_confidence or np.isnan(this_confidence):
                 break
 
             candidate_tracklet = df_tracklets[[candidate_name]]
