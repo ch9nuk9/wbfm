@@ -300,7 +300,7 @@ def combine_dataframes_using_bipartite_matching(all_dfs, column='raw_neuron_ind_
                 else:
                     g.add_edge(*edge, weight=1)
 
-    for t, g in graphs_all_times.items():
+    for t, g in tqdm(graphs_all_times.items()):
         top_nodes = [n for n in g if type(n) == str and 'neuron' in n]
         matching = nx.bipartite.maximum_matching(g, top_nodes=top_nodes)
 
