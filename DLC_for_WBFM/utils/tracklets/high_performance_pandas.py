@@ -8,7 +8,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, to_sparse_multiindex, get_names_from_df, \
     get_contiguous_blocks_from_column, check_if_heterogenous_columns
-from DLC_for_WBFM.utils.tracklets.utils_splitting import get_split_points_using_feature_jumps, TrackletSplitter
+from DLC_for_WBFM.utils.tracklets.utils_splitting import TrackletSplitter
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet, get_next_name_generator, \
     split_multiple_tracklets
 
