@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
-    combine_dataframes_using_mode
+    combine_dataframes_using_mode, combine_dataframes_using_bipartite_matching
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
@@ -119,7 +119,7 @@ def track_using_embedding_from_config(project_cfg, DEBUG):
             all_dfs.append(df)
 
         tracking_cfg.config['t_templates'] = all_templates
-        df_final = combine_dataframes_using_mode(all_dfs)
+        df_final = combine_dataframes_using_bipartite_matching(all_dfs)
 
     # Save
     out_fname = '3-tracking/postprocessing/df_tracks_embedding.h5'
