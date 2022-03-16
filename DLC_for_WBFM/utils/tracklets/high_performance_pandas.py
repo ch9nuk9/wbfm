@@ -137,35 +137,13 @@ class PaddedDataFrame(pd.DataFrame):
 
     def split_all_non_contiguous_tracklets(self, verbose=0, DEBUG=False):
         all_names = get_names_from_df(self)
-        # if DEBUG:
-        #     all_names = all_names[:15]
         name_mapping = defaultdict(set)
-
         df_working_copy = self.new_like_self()
 
         for original_name in tqdm(all_names):
-            # df_working_copy = df_working_copy.add_new_empty_column_if_none_left()
-
-            tracklet = df_working_copy[original_name]['z']
-            block_starts, block_ends = get_contiguous_blocks_from_column(tracklet)
             name_mapping[original_name].add(original_name)
-            # First delete any isolated ones
-            num_deleted = 0
-            # name_of_current_block = original_name
-            split_list = []
-            for i, (i_start, i_end) in enumerate(zip(block_starts, block_ends)):
-                if i_end - i_start == 1:
-                    # Then it was a length-1 tracklet, so just delete it
-                    if verbose >= 2:
-                        print(f"Deleting length-1 tracklet from {original_name}")
-                    insert_value_in_sparse_df(df_working_copy, i_start, original_name, np.nan)
-                    num_deleted += 1
-                elif i > num_deleted:
-                    # Don't split if it's the first non-deleted one
-                    split_list.append(i_start)
-                    # flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name_of_current_block, verbose=verbose-1)
-                    # name_mapping[original_name].add(right_name)
-                    # name_of_current_block = right_name
+            split_list = get_split_points_at_nans_and_delete_singles(df_working_copy, original_name, verbose)
+
             if len(split_list) >= 1:
                 if verbose >= 2:
                     print(f"Splitting {original_name} {len(split_list)} times")
@@ -177,6 +155,28 @@ class PaddedDataFrame(pd.DataFrame):
                     break
 
         return df_working_copy, name_mapping
+
+
+def get_split_points_at_nans_and_delete_singles(df_working_copy, original_name, verbose):
+    tracklet = df_working_copy[original_name]['z']
+    block_starts, block_ends = get_contiguous_blocks_from_column(tracklet)
+    # First delete any isolated ones
+    num_deleted = 0
+    split_list = []
+    for i, (i_start, i_end) in enumerate(zip(block_starts, block_ends)):
+        if i_end - i_start == 1:
+            # Then it was a length-1 tracklet, so just delete it
+            if verbose >= 2:
+                print(f"Deleting length-1 tracklet from {original_name}")
+            insert_value_in_sparse_df(df_working_copy, i_start, original_name, np.nan)
+            num_deleted += 1
+        elif i > num_deleted:
+            # Don't split if it's the first non-deleted one
+            split_list.append(i_start)
+            # flag, _, _, right_name = df_working_copy.split_tracklet(i_start, name_of_current_block, verbose=verbose-1)
+            # name_mapping[original_name].add(right_name)
+            # name_of_current_block = right_name
+    return split_list
 
 
 def insert_value_in_sparse_df(df: pd.DataFrame, index: Union[int, str], columns: pd.MultiIndex, val):
