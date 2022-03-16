@@ -273,3 +273,42 @@ def combine_dataframes_using_mode(all_dfs, column='raw_neuron_ind_in_list'):
         new_df[neuron_name] = new_df_one_neuron
 
     return new_df
+
+
+def combine_dataframes_using_bipartite_matching(all_dfs, column='raw_neuron_ind_in_list'):
+    """
+    Combines a list of dataframes using time-slice bipartite matching. Does not use likelihood, but simple voting
+
+    Note that the names must be aligned (as best they can be), probably using rename_columns_using_matching
+    """
+    names = get_names_from_df(all_dfs[0])
+    new_df = all_dfs[0].copy()
+
+    graphs_all_times = defaultdict(nx.Graph)
+    for i, neuron_name in enumerate(tqdm(names)):
+
+        dfs_containing_this_neuron = [df for df in all_dfs if neuron_name in df]
+
+        for df in dfs_containing_this_neuron:
+            ind_at_all_time = df.loc[:, (neuron_name, column)].values
+            for t, ind in enumerate(ind_at_all_time):
+                node_name = int(ind)
+                edge = [neuron_name, node_name]
+                g = graphs_all_times[t]
+                if neuron_name in g and node_name in g[neuron_name]:
+                    g[neuron_name][node_name]['weight'] += 1
+                else:
+                    g.add_edge(*edge, weight=1)
+
+    for t, g in graphs_all_times.items():
+        top_nodes = [n for n in g if type(n) == str and 'neuron' in n]
+        matching = nx.bipartite.maximum_matching(g, top_nodes=top_nodes)
+
+        for name, ind in matching.items():
+            # Note: matching includes both directions
+            if type(name) != str:
+                continue
+            ind = matching[name]
+            new_df.loc[t, (name, column)] = ind
+
+    return new_df
