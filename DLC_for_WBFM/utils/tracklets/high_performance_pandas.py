@@ -8,6 +8,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, to_sparse_multiindex, get_names_from_df, \
     get_contiguous_blocks_from_column, check_if_heterogenous_columns
+from DLC_for_WBFM.utils.tracklets.utils_splitting import get_split_points_using_feature_jumps, TrackletSplitter
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet, get_next_name_generator, \
     split_multiple_tracklets
 
@@ -135,14 +136,25 @@ class PaddedDataFrame(pd.DataFrame):
             all_new_names.append(new_name)
         return self, all_new_names
 
-    def split_all_non_contiguous_tracklets(self, verbose=0, DEBUG=False):
+    def split_all_non_contiguous_tracklets(self, split_mode='gap', verbose=0, DEBUG=False):
+        possible_modes = ['gap', 'jump']
+        split_mode = split_mode.lower()
+        assert split_mode in possible_modes, f"Found split_mode={split_mode}, but it must be one of {possible_modes}"
+        if split_mode == 'jump':
+            tracklet_splitter = TrackletSplitter(verbose=verbose)
+
         all_names = get_names_from_df(self)
         name_mapping = defaultdict(set)
         df_working_copy = self.new_like_self()
 
         for original_name in tqdm(all_names):
             name_mapping[original_name].add(original_name)
-            split_list = get_split_points_at_nans_and_delete_singles(df_working_copy, original_name, verbose)
+            if split_mode == 'gap':
+                split_list = get_split_points_at_nans_and_delete_singles(df_working_copy, original_name, verbose)
+            elif split_mode == 'jump':
+                split_list = tracklet_splitter.get_split_points_using_feature_jumps(df_working_copy, original_name)
+            else:
+                raise NotImplementedError
 
             if len(split_list) >= 1:
                 if verbose >= 2:
