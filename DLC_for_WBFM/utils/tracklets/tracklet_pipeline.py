@@ -325,6 +325,42 @@ def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, mi
     return df, tracklet2split
 
 
+def split_tracklets_using_change_detection(project_cfg: ModularProjectConfig, DEBUG=False):
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_tracklets=True)
+
+    # Unpack
+    # Get the tracklets directly from step 2
+    training_cfg = project_cfg.get_training_config()
+    # tracking_cfg = project_cfg.get_tracking_config()
+    fname = training_cfg.resolve_relative_path_from_config('df_3d_tracklets')
+    df_tracklets = pd.read_pickle(fname)
+    # df_gt = project_data.final_tracks
+    # sanity_checks_on_dataframes(df_gt, df_tracklets)
+
+    # g2t = project_data.global2tracklet
+
+    logging.info("Splitting jumping tracklets using custom dataframe class")
+    df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_tracklets, name_mode='tracklet',
+                                                               initial_empty_cols=10000)
+    df_split, name_mapping = df_padded.split_all_tracklets_using_mode(split_mode='jump', verbose=0)
+    # global2tracklet_new = update_global2tracklet_dictionary(df_split, g2t, name_mapping)
+
+    df_final = df_split.return_sparse_dataframe()
+
+    # Save and update configs
+    training_cfg = project_cfg.get_training_config()
+    out_fname = os.path.join('2-training_data', 'all_tracklets_after_splitting.pickle')
+    training_cfg.pickle_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
+
+    # global2tracklet_matches_fname = os.path.join('3-tracking', 'global2tracklet_after_splitting.pickle')
+    # tracking_cfg.pickle_in_local_project(global2tracklet_new, global2tracklet_matches_fname)
+
+    # tracking_cfg.config['global2tracklet_matches_fname'] = global2tracklet_matches_fname
+    training_cfg.config['df_3d_tracklets'] = out_fname
+    training_cfg.update_on_disk()
+    # tracking_cfg.update_on_disk()
+
+
 def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
                                            keep_new_tracklet_matches=False,
                                            update_only_finished_neurons=False, DEBUG=False):
@@ -337,18 +373,8 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     tracking_cfg = project_cfg.get_tracking_config()
     fname = training_cfg.resolve_relative_path_from_config('df_3d_tracklets')
     df_tracklets = pd.read_pickle(fname)
-    try:
-        df_tracklets.drop(level=1, columns='raw_tracklet_id', inplace=True)
-    except KeyError:
-        pass
-    check_if_heterogenous_columns(df_tracklets, raise_error=True)
-
     df_gt = project_data.final_tracks
-    try:
-        df_gt.drop(level=1, columns='raw_tracklet_id', inplace=True)
-    except KeyError:
-        pass
-    check_if_heterogenous_columns(df_gt, raise_error=True)
+    sanity_checks_on_dataframes(df_gt, df_tracklets)
 
     if update_only_finished_neurons:
         neurons_that_are_finished, _ = project_data.get_ground_truth_annotations()
@@ -376,19 +402,10 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     logging.info("Splitting non-contiguous tracklets using custom dataframe class")
     df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_including_tracks, name_mode='tracklet',
                                                                initial_empty_cols=10000)
-    df_split, name_mapping = df_padded.split_all_non_contiguous_tracklets(verbose=0)
+    df_split, name_mapping = df_padded.split_all_tracklets_using_mode(split_mode='gap', verbose=0)
 
     # Keep the names as they are in the ground truth track
-    logging.info("Updating the dictionary that matches the neurons and tracklets")
-    # Start with a copy of the gt tracks
-    global2tracklet_tmp = {}
-    for neuron_name, single_match in gtneuron2tracklets.items():
-        if single_match in name_mapping:
-            global2tracklet_tmp[neuron_name] = list(name_mapping[single_match])
-        else:
-            global2tracklet_tmp[neuron_name] = [single_match]
-
-    global2tracklet_new = remove_tracklets_from_dictionary_without_database_match(df_split, global2tracklet_tmp)
+    global2tracklet_new = update_global2tracklet_dictionary(df_split, gtneuron2tracklets, name_mapping)
 
     df_final = df_split.return_sparse_dataframe()
 
@@ -418,5 +435,32 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     tracking_cfg.config['global2tracklet_matches_fname'] = global2tracklet_matches_fname
     training_cfg.config['df_3d_tracklets'] = out_fname
     training_cfg.update_on_disk()
+    tracking_cfg.update_on_disk()
 
     return df_including_tracks, global2tracklet_new
+
+
+def update_global2tracklet_dictionary(df_split, global2tracklet_original, name_mapping):
+    logging.info("Updating the dictionary that matches the neurons and tracklets")
+    # Start with the original matches
+    global2tracklet_tmp = {}
+    for neuron_name, single_match in global2tracklet_original.items():
+        if single_match in name_mapping:
+            global2tracklet_tmp[neuron_name] = list(name_mapping[single_match])
+        else:
+            global2tracklet_tmp[neuron_name] = [single_match]
+    global2tracklet_new = remove_tracklets_from_dictionary_without_database_match(df_split, global2tracklet_tmp)
+    return global2tracklet_new
+
+
+def sanity_checks_on_dataframes(df_gt, df_tracklets):
+    try:
+        df_tracklets.drop(level=1, columns='raw_tracklet_id', inplace=True)
+    except KeyError:
+        pass
+    check_if_heterogenous_columns(df_tracklets, raise_error=True)
+    try:
+        df_gt.drop(level=1, columns='raw_tracklet_id', inplace=True)
+    except KeyError:
+        pass
+    check_if_heterogenous_columns(df_gt, raise_error=True)

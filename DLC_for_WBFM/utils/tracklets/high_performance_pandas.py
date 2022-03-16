@@ -136,7 +136,7 @@ class PaddedDataFrame(pd.DataFrame):
             all_new_names.append(new_name)
         return self, all_new_names
 
-    def split_all_non_contiguous_tracklets(self, split_mode='gap', verbose=0, DEBUG=False):
+    def split_all_tracklets_using_mode(self, split_mode='gap', verbose=0, DEBUG=False):
         possible_modes = ['gap', 'jump']
         split_mode = split_mode.lower()
         assert split_mode in possible_modes, f"Found split_mode={split_mode}, but it must be one of {possible_modes}"

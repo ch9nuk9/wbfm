@@ -15,14 +15,13 @@ class TrackletSplitter:
 
         return self._means_to_subtract
 
-    def __init__(self, features=None, split_model='l2', to_subtract_mean=True,
+    def __init__(self, features=None, split_model='l2',
                  penalty=0.5, verbose=0):
         if features is None:
             features = ['z', 'volume', 'brightness_red']
 
         self.features = features
         self.split_model = split_model
-        self.to_subtract_mean = to_subtract_mean
         self.penalty = penalty
         self.verbose = verbose
 
