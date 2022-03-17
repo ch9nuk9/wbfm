@@ -592,7 +592,7 @@ class TrackedWorm:
         return overlapping_confidences, overlapping_tracklet_names
 
     def plot_tracklets_for_neuron(self, neuron_name, with_names=True, with_confidence=True, plot_field='z',
-                                  diff_percentage=False):
+                                  diff_percentage=False, min_confidence=0.0):
         tracklet_list = self.get_tracklets_for_neuron(neuron_name)
         neuron = self.global_name_to_neuron[neuron_name]
         tracklet_names = neuron.get_raw_tracklet_names()
@@ -600,6 +600,12 @@ class TrackedWorm:
 
         plt.figure(figsize=(25, 5))
         for i, (t, name) in enumerate(zip(tracklet_list, tracklet_names)):
+            edge = (neuron.name_in_graph, neuron.neuron2tracklets.raw_name_to_network_name(name))
+            conf = neuron.neuron2tracklets.get_edge_data(*edge)['weight']
+
+            if conf < min_confidence:
+                continue
+
             y = t[plot_field]
             if diff_percentage:
                 y = y.diff() / y
@@ -609,18 +615,17 @@ class TrackedWorm:
 
             if with_names or with_confidence:
                 x0 = y.first_valid_index()
+                jitter = 0.2*np.max(y)*np.random.rand() - 0.1*np.max(y)
                 if i % 2 == 0:
-                    y_text = (i / num_lines) * np.min(y)
+                    y_text = (i / num_lines) * np.min(y) + jitter
                 else:
-                    y_text = (i / num_lines) * np.min(y) + np.max(y)
+                    y_text = (i / num_lines) * np.min(y) + np.max(y) + jitter
                 y0 = y.at[x0]
                 if with_names:
                     annotation_str = name
                 else:
                     annotation_str = ""
                 if with_confidence:
-                    edge = (neuron.name_in_graph, neuron.neuron2tracklets.raw_name_to_network_name(name))
-                    conf = neuron.neuron2tracklets.get_edge_data(*edge)['weight']
                     annotation_str = f"{annotation_str} conf={conf:.2f}"
                 plt.annotate(annotation_str, (x0, y0), xytext=(x0-1, y_text),
                              arrowprops=dict(facecolor=line[0].get_color()))

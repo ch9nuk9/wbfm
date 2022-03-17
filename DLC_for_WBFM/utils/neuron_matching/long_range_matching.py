@@ -49,7 +49,7 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
                                                                   reference_posture, verbose, worm_obj)
 
     global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
-    final_matching = b_matching_via_node_copying(global_tracklet_neuron_graph)
+    final_matching, _, _ = b_matching_via_node_copying(global_tracklet_neuron_graph)
     df_new = combine_tracklets_using_matching(df_tracklets, final_matching)
 
     # SAVE
@@ -123,7 +123,8 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 
     no_conflict_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
     # Final bipartite matching to prevent the same tracklet assigned to multiple neurons
-    final_matching_no_confict = b_matching_via_node_copying(no_conflict_neuron_graph)
+    # final_matching_no_confict, _, _ = b_matching_via_node_copying(no_conflict_neuron_graph)
+    final_matching_no_confict = greedy_matching_using_node_class(no_conflict_neuron_graph)
     df_new = combine_tracklets_using_matching(df_tracklets, final_matching_no_confict)
 
     # SAVE
@@ -434,13 +435,47 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
     return bipartite_slice_matches
 
 
+def greedy_matching_using_node_class(no_conflict_neuron_graph, node_class_to_match=1):
+    """Greedily matches one class of nodes. Assumes that other conflicts, like time, are dealt with"""
+    tracklet_nodes = no_conflict_neuron_graph.get_nodes_of_class(node_class_to_match)
+    final_matching = MatchesWithConfidence()
+    for tracklet_name in list(tracklet_nodes):
+        these_matches = dict(no_conflict_neuron_graph[tracklet_name])
+
+        # Greedy matching
+        weights = [val['weight'] for val in these_matches.values()]
+        i_max = np.argmax(weights)
+        neuron_name = list(these_matches.keys())[i_max]
+
+        new_match = [neuron_name, tracklet_name, weights[i_max]]
+        final_matching.add_match(new_match)
+    return final_matching
+
+
+
 def b_matching_via_node_copying(global_tracklet_neuron_graph):
     """
+    NOTE: there is apparently a bug that causes incorrect matching when there are too many copies...
+
+    Solves the many-to-one version of the bipartite matching problem
+
     Copy the bipartite=0 nodes so that this becomes a normal bipartite matching problem,
     i.e. one-to-one, not many-to-one
 
+    In more detail:
+    1. Get the nodes of class 0 (neurons) and 1 (tracklets)
+        - Final matching will be 100 tracklets per neuron (~150 neurons total)
+        - Currently they are overmatched, and have >1000 tracklet candidates per neuron
+    2. For each candidate tracklet, create a copy of the neuron node and add to a new graph
+        - Copies all of the edges as well, so that there are now 1000 tracklets matched to 1 neuron and 999 copies
+        - Now there are many more neurons than tracklets
+    3. Do normal bipartite matching
+        - Note: must explicitly decide which nodes to get matches, and it shouldn't be the copy nodes
+    4. Collapse the expanded neuron copies back to their original names
+
     NOTE: assumes the 'metadata' field of the nodes should be used as the final match names
     """
+    raise NotImplementedError
     logging.info("Matching using b_matching_via_node_copying")
     neuron_nodes = global_tracklet_neuron_graph.get_nodes_of_class(0)
     tracklet_nodes = global_tracklet_neuron_graph.get_nodes_of_class(1)
@@ -487,4 +522,4 @@ def b_matching_via_node_copying(global_tracklet_neuron_graph):
         new_match = [neuron_name, tracklet_name, weight]
 
         final_matching.add_match(new_match)
-    return final_matching
+    return final_matching, matching_with_copies, global_tracklet_neuron_graph_with_copies
