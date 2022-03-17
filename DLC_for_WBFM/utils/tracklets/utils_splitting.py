@@ -36,7 +36,7 @@ class TrackletSplitter:
         return self._means_to_subtract
 
     def get_split_points_using_feature_jumps(self, df_working_copy, original_name):
-        _ = self.get_means_to_subtract()
+        _ = self.get_means_to_subtract(df_working_copy)
         tracklet = df_working_copy[original_name]
         signal = self.get_signal_from_tracklet(tracklet)
         split_list = split_signal(signal, self.penalty)
