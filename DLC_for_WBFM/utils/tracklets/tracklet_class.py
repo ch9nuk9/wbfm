@@ -183,6 +183,9 @@ class NeuronComposedOfTracklets:
         return f"Neuron {self.name} (index={self.neuron_ind}) with {len(self.neuron2tracklets) - 1} tracklets " \
                f"from time {self.initialization_frame} to {self.next_gap}"
 
+    def pretty_print_matches(self):
+        self.neuron2tracklets.pretty_print_single_match(self.name)
+
 
 @dataclass
 class DetectedTrackletsAndNeurons:
