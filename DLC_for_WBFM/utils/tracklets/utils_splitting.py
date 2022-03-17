@@ -22,15 +22,11 @@ class TrackletSplitter:
 
     def get_means_to_subtract(self, df=None):
         if not self._means_to_subtract:
-            if not df:
+            if df is None:
                 raise AnalysisOutOfOrderError("Must call with dataframe first time")
             print("Initializing the means to subtract from the features (probably just z)")
-            num_frames = df.shape[0]
             df_z = df.loc[:, (slice(None), 'z')]
             av = np.array(df_z.mean(axis=1))
-
-            # for t in tqdm(range(num_frames), total=num_frames, leave=False):
-            #     av[t] = np.nanmean(df.loc[t, (slice(None), 'z')])
             self._means_to_subtract = [av, None, None]
 
         return self._means_to_subtract
