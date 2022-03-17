@@ -1,6 +1,7 @@
 import numpy as np
 import ruptures as rpt
 from matplotlib import pyplot as plt
+from ruptures.exceptions import BadSegmentationParameters
 
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
 
@@ -35,10 +36,13 @@ class TrackletSplitter:
         _ = self.get_means_to_subtract(df_working_copy)
         tracklet = df_working_copy[original_name]
         signal = self.get_signal_from_tracklet(tracklet)
-        split_list = split_signal(signal, self.penalty)
-        # Convert back to original times
-        ind_no_nan = tracklet.dropna(axis=0).index
-        split_list = [ind_no_nan[i] for i in split_list if i < len(ind_no_nan)]
+        try:
+            split_list = split_signal(signal, self.penalty)
+            # Convert back to original times
+            ind_no_nan = tracklet.dropna(axis=0).index
+            split_list = [ind_no_nan[i] for i in split_list if i < len(ind_no_nan)]
+        except BadSegmentationParameters:
+            split_list = []
 
         return split_list
 
