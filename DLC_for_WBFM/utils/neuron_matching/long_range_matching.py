@@ -435,7 +435,11 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
 
 
 def greedy_matching_using_node_class(no_conflict_neuron_graph, node_class_to_match=1):
-    """Greedily matches one class of nodes. Assumes that other conflicts, like time, are dealt with"""
+    """
+    Greedily matches one class of nodes.
+
+    Assumes that the greedy match must win every competition it is a part of, not just one
+    """
     tracklet_nodes = no_conflict_neuron_graph.get_nodes_of_class(node_class_to_match)
     final_matching = MatchesWithConfidence()
     for tracklet_name in list(tracklet_nodes):

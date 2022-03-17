@@ -1,19 +1,12 @@
 import numpy as np
 import ruptures as rpt
+from matplotlib import pyplot as plt
+
+from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
 
 
 class TrackletSplitter:
-
-    def get_means_to_subtract(self, df):
-        if not self._means_to_subtract:
-            print("Initializing the means to subtract from the features (probably just z)")
-            num_frames = df.shape[0]
-            av = np.zeros(num_frames)
-            for t in range(num_frames):
-                av[t] = df.loc[0, (slice(None), 'z')]
-            self._means_to_subtract = [av, None, None]
-
-        return self._means_to_subtract
+    # Note: I don't want to save the dataframe in this class, because splitting modifies it
 
     def __init__(self, features=None, split_model='l2',
                  penalty=0.5, verbose=0):
@@ -27,13 +20,43 @@ class TrackletSplitter:
 
         self._means_to_subtract = None
 
+    def get_means_to_subtract(self, df=None):
+        if not self._means_to_subtract:
+            if not df:
+                raise AnalysisOutOfOrderError("Must call with dataframe first time")
+            print("Initializing the means to subtract from the features (probably just z)")
+            num_frames = df.shape[0]
+            df_z = df.loc[:, (slice(None), 'z')]
+            av = np.array(df_z.mean(axis=1))
+
+            # for t in tqdm(range(num_frames), total=num_frames, leave=False):
+            #     av[t] = np.nanmean(df.loc[t, (slice(None), 'z')])
+            self._means_to_subtract = [av, None, None]
+
+        return self._means_to_subtract
+
     def get_split_points_using_feature_jumps(self, df_working_copy, original_name):
-        means_to_subtract = self.get_means_to_subtract(df_working_copy)
+        _ = self.get_means_to_subtract()
         tracklet = df_working_copy[original_name]
-        signal = get_signal_from_tracklet(tracklet, self.features, means_to_subtract=means_to_subtract)
+        signal = self.get_signal_from_tracklet(tracklet)
         split_list = split_signal(signal, self.penalty)
+        # Convert back to original times
+        ind_no_nan = tracklet.dropna(axis=0).index
+        split_list = [ind_no_nan[i] for i in split_list if i < len(ind_no_nan)]
 
         return split_list
+
+    def plot_split_points_and_tracklet(self, df, original_name, split_list):
+        tracklet = df[original_name]
+        signal = self.get_signal_from_tracklet(tracklet)
+        # Convert to local times
+        ind_no_nan = list(tracklet.dropna(axis=0).index)
+        split_list = [ind_no_nan.index(i) for i in split_list]
+        rpt.display(signal, [], split_list, figsize=(10, 6))
+        plt.show()
+
+    def get_signal_from_tracklet(self, tracklet):
+        return get_signal_from_tracklet(tracklet, self.features, means_to_subtract=self.get_means_to_subtract())
 
 
 def get_signal_from_tracklet(tracklet, features, means_to_subtract=None):
@@ -42,9 +65,10 @@ def get_signal_from_tracklet(tracklet, features, means_to_subtract=None):
     signal_list = []
     for f, av in zip(features, means_to_subtract):
         signal = np.array(tracklet[f])
-        signal = signal[~np.isnan(signal)]
-        if av:
-            signal -= av
+        ind_to_keep = ~np.isnan(signal)
+        signal = signal[ind_to_keep]
+        if av is not None:
+            signal -= av[ind_to_keep]
         signal /= np.max(signal)
         signal_list.append(signal)
     signal = np.vstack(signal_list).T
@@ -53,6 +77,6 @@ def get_signal_from_tracklet(tracklet, features, means_to_subtract=None):
 
 def split_signal(signal, penalty=0.5):
     model = "l2"  # "l2", "rbf"
-    algo = rpt.Pelt(model=model, min_size=3, jump=5).fit(signal)
+    algo = rpt.Pelt(model=model, min_size=3, jump=1).fit(signal)
     my_bkps = algo.predict(pen=penalty)
     return my_bkps

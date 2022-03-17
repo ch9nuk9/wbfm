@@ -551,7 +551,7 @@ class TrackedWorm:
             self.update_time_covering_ind_for_neuron(name)
 
     def remove_conflicting_tracklets_from_all_neurons(self, verbose=0):
-        for name in self.global_name_to_neuron.keys():
+        for name in tqdm(self.global_name_to_neuron.keys()):
             self.remove_conflicting_tracklets_from_neuron(name, verbose=verbose-1)
 
     def remove_conflicting_tracklets_from_neuron(self, neuron_name, verbose=0):
