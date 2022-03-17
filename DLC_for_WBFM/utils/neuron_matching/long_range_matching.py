@@ -123,8 +123,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 
     no_conflict_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
     # Final bipartite matching to prevent the same tracklet assigned to multiple neurons
-    # final_matching_no_confict, _, _ = b_matching_via_node_copying(no_conflict_neuron_graph)
-    final_matching_no_confict = greedy_matching_using_node_class(no_conflict_neuron_graph)
+    final_matching_no_confict = greedy_matching_using_node_class(no_conflict_neuron_graph, node_class_to_match=1)
     df_new = combine_tracklets_using_matching(df_tracklets, final_matching_no_confict)
 
     # SAVE
