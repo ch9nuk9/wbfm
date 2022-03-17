@@ -5,17 +5,20 @@ from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.projects.utils_redo_steps import remap_tracklets_to_new_segmentation_using_config
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import split_tracklets_using_change_detection
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 ex = Experiment()
-ex.add_config(project_path=None, new_segmentation_suffix=None, path_to_new_segmentation=None, path_to_new_metadata=None, DEBUG=False)
+ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
 def cfg(project_path, DEBUG):
+
+    cfg = ModularProjectConfig(project_path)
 
     if not DEBUG:
         using_monkeypatch()
@@ -27,12 +30,7 @@ def cfg(project_path, DEBUG):
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    project_path = _config['project_path']
-    path_to_new_segmentation = _config['path_to_new_segmentation']
-    path_to_new_metadata = _config['path_to_new_metadata']
-    new_segmentation_suffix = _config['new_segmentation_suffix']
+    cfg = _config['cfg']
     DEBUG = _config['DEBUG']
 
-    remap_tracklets_to_new_segmentation_using_config(project_path, new_segmentation_suffix,
-                                                     path_to_new_segmentation, path_to_new_metadata,
-                                                     DEBUG)
+    split_tracklets_using_change_detection(cfg, DEBUG)

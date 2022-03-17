@@ -326,17 +326,14 @@ def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, mi
 
 
 def split_tracklets_using_change_detection(project_cfg: ModularProjectConfig, DEBUG=False):
+    # For now, do not update any global2tracklet matches; assume this is done before step 3b
     project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_tracklets=True)
 
     # Unpack
-    # Get the tracklets directly from step 2
-    training_cfg = project_cfg.get_training_config()
-    # tracking_cfg = project_cfg.get_tracking_config()
-    fname = training_cfg.resolve_relative_path_from_config('df_3d_tracklets')
-    df_tracklets = pd.read_pickle(fname)
+    # training_cfg = project_cfg.get_training_config()
+    df_tracklets = project_data.df_all_tracklets
     # df_gt = project_data.final_tracks
     # sanity_checks_on_dataframes(df_gt, df_tracklets)
-
     # g2t = project_data.global2tracklet
 
     logging.info("Splitting jumping tracklets using custom dataframe class")
@@ -354,7 +351,6 @@ def split_tracklets_using_change_detection(project_cfg: ModularProjectConfig, DE
 
     # global2tracklet_matches_fname = os.path.join('3-tracking', 'global2tracklet_after_splitting.pickle')
     # tracking_cfg.pickle_in_local_project(global2tracklet_new, global2tracklet_matches_fname)
-
     # tracking_cfg.config['global2tracklet_matches_fname'] = global2tracklet_matches_fname
     training_cfg.config['df_3d_tracklets'] = out_fname
     training_cfg.update_on_disk()
