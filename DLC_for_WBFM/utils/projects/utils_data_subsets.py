@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -6,7 +7,8 @@ import tifffile
 import zarr
 
 from DLC_for_WBFM.utils.general.preprocessing.utils_tif import preprocess_all_frames_using_config, PreprocessingSettings
-from DLC_for_WBFM.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd
 
 
@@ -131,3 +133,30 @@ def segment_local_data_subset(project_config, out_fname=None):
         with safe_cd(project_dir):
             _segment_full_video_2d(cfg, frame_list, mask_fname, metadata, metadata_fname, num_frames, num_slices,
                                    opt_postprocessing, preprocessing_settings, stardist_model_name, verbose, video_path)
+
+
+def crop_zarr_using_config(cfg: ModularProjectConfig):
+
+    fields = ['preprocessed_red', 'preprocessed_green']
+    to_crop = [cfg.config[f] for f in fields]
+    start_volume = cfg.config['dataset_params']['start_volume']
+    num_frames = cfg.config['dataset_params']['num_frames']
+    end_volume = start_volume + num_frames
+
+    new_fnames = []
+    for fname in to_crop:
+        this_vid = zarr.open(fname)
+        new_vid = this_vid[start_volume:end_volume, ...]
+        new_fname = add_name_suffix(fname, f'-num_frames{num_frames}')
+        new_fnames.append(new_fname)
+        logging.info(f"Saving original file {fname} with new name {new_fname}")
+
+        zarr.save_array(new_fname, new_vid)
+
+    # Also update config file
+    for field, name in zip(fields, new_fnames):
+        cfg.config[field] = name
+    cfg.config['dataset_params']['start_volume'] = 0
+    cfg.config['dataset_params']['old_start_volume'] = start_volume
+
+    cfg.update_on_disk()
