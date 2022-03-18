@@ -37,10 +37,8 @@ def main(_config, _run):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    logging.info("Loading initial data...")
-
     ##
-    logging.info("Loading ground truth annotations")
+    print("Loading ground truth annotations")
     _, df_manual_tracking = project_data.get_ground_truth_annotations()
     neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['auto-added tracklets correct']]['Neuron ID'])
     num_finished = len(neurons_that_are_finished)
@@ -48,7 +46,7 @@ def main(_config, _run):
     print(f"Found {num_finished}/{len(df_manual_tracking)} finished neurons")
 
     ##
-    logging.info("Initializing network and hyperparameters...")
+    print("Initializing network and hyperparameters...")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if device == 'cuda':
         gpus = 1
@@ -62,10 +60,12 @@ def main(_config, _run):
     # First type of testing: as a classifier
     train_loader = NeuronImageFeaturesDataModule(batch_size=batch_size, project_data=project_data,
                                                  num_neurons=num_classes)
+    train_loader.setup()
     # Second type of testing: as a tracker (matcher)
     full_loader = NeuronImageFeaturesDataModule(batch_size=batch_size, project_data=project_data,
                                                 num_neurons=num_finished,
                                                 base_dataset_class=FullVolumeNeuronImageFeaturesDataset)
+    full_loader.setup()
 
     model_fname = f"classifier_{num_classes}_cluster.ckpt"
     training_folder = os.path.join(project_data.project_dir, 'nn_training')
@@ -73,7 +73,12 @@ def main(_config, _run):
     # TODO: actually save the hyperparameters
     model = NeuronEmbeddingModel.load_from_checkpoint(model_fname, num_classes=num_classes)
 
+    log_fname = str(Path(model_fname).with_suffix('.log'))
+    log_fname = add_name_suffix(log_fname, '-log')
+    logging.basicConfig(filename=log_fname)
+
     ##
+    print("Calculating classification accuracy")
     correct_per_class, total_per_class = test_trained_classifier(train_loader, model)
     plot_accuracy(correct_per_class, total_per_class)
     plt.title("Accuracy as a time-independent classifier")
@@ -83,6 +88,7 @@ def main(_config, _run):
     plt.savefig(fname)
 
     ##
+    print("Calculating tracker (matching) accuracy")
     correct_per_class, total_per_class = test_trained_embedding_matcher(full_loader, model)
     plot_accuracy(correct_per_class, total_per_class)
     plt.xticks(rotation=90)

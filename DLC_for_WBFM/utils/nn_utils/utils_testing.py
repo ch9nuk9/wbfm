@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 
 import numpy as np
@@ -11,7 +12,6 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_name_mapping_for_track_dataframes, cast_int_or_nan
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
-from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import WormWithNeuronClassifier
 from DLC_for_WBFM.utils.projects.finished_project_data import template_matches_to_dataframe
 
@@ -46,7 +46,9 @@ def test_trained_classifier(dataloader, model,
                 total_per_class[k] += 1
     test_loss /= num_batches
     correct /= size
-    print(f"Test Error: \n Accuracy: {(100 *correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    out = f"Test Error: \n Accuracy: {(100 *correct):>0.1f}%, Avg loss: {test_loss:>8f} \n"
+    logging.info(out)
+    print(out)
 
     return correct_per_class, total_per_class
 
@@ -87,7 +89,9 @@ def test_trained_embedding_matcher(dataloader, model,
                     total_per_class[labels[i_q]] += 1
 
     correct = sum(correct_per_class.values()) / sum(total_per_class.values())
-    print(f"Test Error: \n Accuracy: {(100 *correct):>0.1f}%\n")
+    out = f"Test Error: \n Accuracy: {(100 *correct):>0.1f}%\n"
+    logging.info(out)
+    print(out)
 
     return correct_per_class, total_per_class
 

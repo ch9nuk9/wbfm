@@ -17,7 +17,7 @@ from sacred import Experiment
 # !wandb login
 
 ex = Experiment()
-ex.add_config(project_path=None, DEBUG=False)
+ex.add_config(project_path=None, max_epochs=30, DEBUG=False)
 
 
 @ex.config
@@ -58,8 +58,8 @@ def main(_config, _run):
         print("Did not find cuda")
 
     num_classes = num_finished
-    batch_size = 1024
-    max_epochs = 100
+    batch_size = 2*1024
+    max_epochs = _config['max_epochs']
 
     train_loader = NeuronImageFeaturesDataModule(batch_size=batch_size, project_data=project_data,
                                                  num_neurons=num_classes)
