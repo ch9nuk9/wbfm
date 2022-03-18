@@ -43,7 +43,7 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def segment2d(_config, _run):
+def segment_video(_config, _run):
     sacred.commands.print_config(_run)
 
     # For windows workstation
