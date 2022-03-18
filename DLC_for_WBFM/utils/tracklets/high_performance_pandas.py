@@ -94,6 +94,8 @@ class PaddedDataFrame(pd.DataFrame):
         return new_cols
 
     def add_new_empty_column_if_none_left(self, min_empty_cols=1, num_to_add=500):
+        # Weird: the output must be assigned to actually save the new columns
+        # ... this is true even though the columns are actually added inplace!
         if self.num_empty_columns < min_empty_cols:
             new_df = self.copy_and_add_empty_columns(num_to_add)
             return new_df
@@ -101,6 +103,7 @@ class PaddedDataFrame(pd.DataFrame):
             return self
 
     def get_next_empty_column_name(self):
+        self.add_new_empty_column_if_none_left()
         return self.remaining_empty_column_names.pop(0)
 
     def split_tracklet(self, i_split, old_name, verbose=1):
@@ -123,18 +126,19 @@ class PaddedDataFrame(pd.DataFrame):
         return True, self, left_name, right_name
 
     def split_tracklet_multiple_times(self, split_list, old_name, verbose=1):
-        old_tracklet = self[[old_name]]
+        df_working_copy = self.add_new_empty_column_if_none_left(min_empty_cols=len(split_list))
+        old_tracklet = df_working_copy[[old_name]]
         new_tracklets = split_multiple_tracklets(old_tracklet, split_list)
         all_new_names = []
         for i, tracklet in enumerate(new_tracklets):
             if i > 0:
-                new_name = self.get_next_empty_column_name()
+                new_name = df_working_copy.get_next_empty_column_name()
             else:
                 new_name = old_name
             # They all have the old name
-            self[new_name] = tracklet[old_name]
+            df_working_copy[new_name] = tracklet[old_name]
             all_new_names.append(new_name)
-        return self, all_new_names
+        return df_working_copy, all_new_names
 
     def split_all_tracklets_using_mode(self, split_mode='gap', verbose=0, DEBUG=False):
         possible_modes = ['gap', 'jump']
@@ -162,7 +166,7 @@ class PaddedDataFrame(pd.DataFrame):
                 num_to_add = max([5*len(split_list), 10000])
                 df_working_copy = df_working_copy.add_new_empty_column_if_none_left(min_empty_cols=2*len(split_list),
                                                                                     num_to_add=num_to_add)
-                _, all_new_names = df_working_copy.split_tracklet_multiple_times(split_list, original_name)
+                df_working_copy, all_new_names = df_working_copy.split_tracklet_multiple_times(split_list, original_name)
                 name_mapping[original_name].update(all_new_names)
                 if DEBUG:
                     break

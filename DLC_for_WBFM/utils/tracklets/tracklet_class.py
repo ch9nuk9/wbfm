@@ -599,11 +599,13 @@ class TrackedWorm:
         num_lines = len(tracklet_names)
 
         plt.figure(figsize=(25, 5))
+        num_skipped = 0
         for i, (t, name) in enumerate(zip(tracklet_list, tracklet_names)):
             edge = (neuron.name_in_graph, neuron.neuron2tracklets.raw_name_to_network_name(name))
             conf = neuron.neuron2tracklets.get_edge_data(*edge)['weight']
 
             if conf < min_confidence:
+                num_skipped += 1
                 continue
 
             y = t[plot_field]
@@ -616,7 +618,7 @@ class TrackedWorm:
             if with_names or with_confidence:
                 x0 = y.first_valid_index()
                 jitter = 0.2*np.max(y)*np.random.rand() - 0.1*np.max(y)
-                if i % 2 == 0:
+                if (i - num_skipped) % 2 == 0:
                     y_text = (i / num_lines) * np.min(y) + jitter
                 else:
                     y_text = (i / num_lines) * np.min(y) + np.max(y) + jitter
