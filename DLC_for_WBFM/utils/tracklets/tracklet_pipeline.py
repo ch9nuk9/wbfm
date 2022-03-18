@@ -338,7 +338,7 @@ def split_tracklets_using_change_detection(project_cfg: ModularProjectConfig, DE
 
     logging.info("Splitting jumping tracklets using custom dataframe class")
     df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_tracklets, name_mode='tracklet',
-                                                               initial_empty_cols=10000)
+                                                               initial_empty_cols=50000)
     df_split, name_mapping = df_padded.split_all_tracklets_using_mode(split_mode='jump', verbose=0)
     # global2tracklet_new = update_global2tracklet_dictionary(df_split, g2t, name_mapping)
 

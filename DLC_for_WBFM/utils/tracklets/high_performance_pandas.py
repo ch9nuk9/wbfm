@@ -159,8 +159,9 @@ class PaddedDataFrame(pd.DataFrame):
             if len(split_list) >= 1:
                 if verbose >= 2:
                     print(f"Splitting {original_name} {len(split_list)} times")
-                df_working_copy = df_working_copy.add_new_empty_column_if_none_left(min_empty_cols=len(split_list)+1,
-                                                                                    num_to_add=5*len(split_list))
+                num_to_add = max([5*len(split_list), 1000])
+                df_working_copy = df_working_copy.add_new_empty_column_if_none_left(min_empty_cols=2*len(split_list),
+                                                                                    num_to_add=num_to_add)
                 _, all_new_names = df_working_copy.split_tracklet_multiple_times(split_list, original_name)
                 name_mapping[original_name].update(all_new_names)
                 if DEBUG:
