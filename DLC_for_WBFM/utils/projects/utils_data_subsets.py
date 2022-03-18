@@ -151,11 +151,11 @@ def crop_zarr_using_config(cfg: ModularProjectConfig):
         new_fnames.append(new_fname)
         logging.info(f"Saving original file {fname} with new name {new_fname}")
 
-        zarr.save_array(new_fname, new_vid)
+        zarr.save_array(new_fname, new_vid, chunks=this_vid.chunks)
 
     # Also update config file
     for field, name in zip(fields, new_fnames):
-        cfg.config[field] = name
+        cfg.config[field] = str(name)
     cfg.config['dataset_params']['start_volume'] = 0
     cfg.config['dataset_params']['old_start_volume'] = start_volume
 
