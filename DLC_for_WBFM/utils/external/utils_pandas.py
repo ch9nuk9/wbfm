@@ -62,6 +62,26 @@ def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
     return overlapping_tracklet_names
 
 
+def get_times_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
+    all_indices = [t.dropna().index for t in tracklet_list]
+    overlapping_tracklet_conflict_points = defaultdict(list)
+    for i1, (idx1, base_tracklet_name) in enumerate(zip(all_indices, tracklet_network_names)):
+        idx1_edges = [int(idx1[0]), int(idx1[-1])]
+        for i2, (idx2, target_tracklet_name) in enumerate(zip(all_indices[i1 + 1:], tracklet_network_names[i1 + 1:])):
+            intersecting_ind = list(idx1.intersection(idx2))
+            idx2_edges = [int(idx2[0]), int(idx2[-1])]
+            if len(intersecting_ind) > 0:
+                intersecting_ind.sort()
+                conflict_points = [intersecting_ind[0], intersecting_ind[-1]]
+                # Want to split both tracklets at both points, if they aren't at the extreme
+                for c in conflict_points:
+                    if c not in idx1_edges:
+                        overlapping_tracklet_conflict_points[base_tracklet_name].append(c)
+                    if c not in idx2_edges:
+                        overlapping_tracklet_conflict_points[target_tracklet_name].append(c)
+    return overlapping_tracklet_conflict_points
+
+
 def empty_dataframe_like(df_tracklets, new_names, dtype=pd.SparseDtype(float, np.nan)):
     # New: force all to be the same columns
     # Initialize using the index and column structure of the tracklets
