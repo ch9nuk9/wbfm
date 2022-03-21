@@ -148,9 +148,9 @@ class NeuronComposedOfTracklets:
         else:
             return True, fraction_outliers
 
-    def get_raw_tracklet_names(self):
+    def get_raw_tracklet_names(self, minimum_confidence=None):
         """Proper null value is []"""
-        network_names = self.get_network_tracklet_names()
+        network_names = self.get_network_tracklet_names(minimum_confidence=minimum_confidence)
         nodes = self.neuron2tracklets.nodes()
         try:
             tracklet_names = [nodes[n]['metadata'] for n in network_names]
@@ -158,13 +158,16 @@ class NeuronComposedOfTracklets:
         except TypeError:
             return []
 
-    def get_network_tracklet_names(self):
+    def get_network_tracklet_names(self, minimum_confidence=None):
         network_names = self.neuron2tracklets.get_all_matches(name=self.name_in_graph)
+        if minimum_confidence is not None:
+            all_conf = self.get_confidences_of_tracklets([network_names])[0]
+            network_names = [n for n, c in zip(network_names, all_conf) if c > minimum_confidence]
         return network_names
 
-    def get_confidences_of_tracklets(self, overlapping_tracklet_names):
+    def get_confidences_of_tracklets(self, list_of_lists_of_tracklet_names):
         overlapping_confidences = []
-        for these_names in overlapping_tracklet_names:
+        for these_names in list_of_lists_of_tracklet_names:
             overlapping_confidences.append(
                 [self.neuron2tracklets.get_edge_data(self.name_in_graph, t)['weight'] for t in these_names])
         return overlapping_confidences
@@ -528,10 +531,16 @@ class TrackedWorm:
     def tracks_with_gap_at_or_after_time(self, t) -> Dict[str, NeuronComposedOfTracklets]:
         return {name: neuron for name, neuron in self.global_name_to_neuron.items() if t > neuron.next_gap}
 
-    def get_tracklets_for_neuron(self, neuron_name) -> List[pd.DataFrame]:
+    def get_tracklets_and_network_names_for_neuron(self, neuron_name, minimum_confidence=None):
+        list_of_tracklets = self.get_tracklets_for_neuron(neuron_name, minimum_confidence=minimum_confidence)
+        neuron = self.global_name_to_neuron[neuron_name]
+        tracklet_network_names = neuron.get_network_tracklet_names(minimum_confidence=minimum_confidence)
+        return list_of_tracklets, tracklet_network_names
+
+    def get_tracklets_for_neuron(self, neuron_name, minimum_confidence=None) -> List[pd.DataFrame]:
         """Proper null value is []"""
         neuron = self.global_name_to_neuron[neuron_name]
-        tracklet_names = neuron.get_raw_tracklet_names()
+        tracklet_names = neuron.get_raw_tracklet_names(minimum_confidence=minimum_confidence)
         list_of_tracklets = [self.detections.df_tracklets_zxy[n] for n in tracklet_names]
         return list_of_tracklets
 
@@ -585,29 +594,31 @@ class TrackedWorm:
             print(f"Removed {len(names_to_remove)} tracklets from {neuron.name}")
             print(f"Current neuron status: {neuron}")
 
-    def get_conflicting_tracklets_for_neuron(self, neuron_name):
-        tracklet_list = self.get_tracklets_for_neuron(neuron_name)
+    def get_conflicting_tracklets_for_neuron(self, neuron_name, minimum_confidence=None):
+        tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,
+                                                                                                minimum_confidence)
         neuron = self.global_name_to_neuron[neuron_name]
-        tracklet_network_names = neuron.get_network_tracklet_names()
         # Loop through tracklets, and find conflicting sets
         overlapping_tracklet_names = get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names)
         overlapping_confidences = neuron.get_confidences_of_tracklets(overlapping_tracklet_names)
         return overlapping_confidences, overlapping_tracklet_names
 
-    def get_conflict_times_for_tracklets_for_neuron(self, neuron_name):
-        tracklet_list = self.get_tracklets_for_neuron(neuron_name)
+    def get_conflict_times_for_tracklets_for_neuron(self, neuron_name, minimum_confidence=None):
+        tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,
+                                                                                                minimum_confidence)
         neuron = self.global_name_to_neuron[neuron_name]
-        tracklet_network_names = neuron.get_network_tracklet_names()
         # Loop through tracklets, and find conflicting sets
         overlapping_tracklet_conflict_points = get_times_of_conflicting_dataframes(tracklet_list,
                                                                                    tracklet_network_names)
-        return overlapping_tracklet_conflict_points
+        overlapping_tracklet_names = [list(overlapping_tracklet_conflict_points.keys())]
+        overlapping_confidences = neuron.get_confidences_of_tracklets(overlapping_tracklet_names)
+        return overlapping_confidences, overlapping_tracklet_conflict_points
 
     def plot_tracklets_for_neuron(self, neuron_name, with_names=True, with_confidence=True, plot_field='z',
                                   diff_percentage=False, min_confidence=0.0):
         tracklet_list = self.get_tracklets_for_neuron(neuron_name)
         neuron = self.global_name_to_neuron[neuron_name]
-        tracklet_names = neuron.get_raw_tracklet_names()
+        tracklet_names = neuron.get_raw_tracklet_names(min_confidence=min_confidence)
         num_lines = len(tracklet_names)
 
         plt.figure(figsize=(25, 5))
