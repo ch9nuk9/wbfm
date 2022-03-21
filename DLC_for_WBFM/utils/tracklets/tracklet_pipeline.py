@@ -328,6 +328,9 @@ def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, mi
 def split_tracklets_using_change_detection(project_cfg: ModularProjectConfig, DEBUG=False):
     # For now, do not update any global2tracklet matches; assume this is done before step 3b
     project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_tracklets=True)
+    initial_empty_cols = 500000
+    if DEBUG:
+        initial_empty_cols = 10
 
     # Unpack
     # training_cfg = project_cfg.get_training_config()
@@ -338,7 +341,7 @@ def split_tracklets_using_change_detection(project_cfg: ModularProjectConfig, DE
 
     logging.info("Splitting jumping tracklets using custom dataframe class")
     df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_tracklets, name_mode='tracklet',
-                                                               initial_empty_cols=500000)
+                                                               initial_empty_cols=initial_empty_cols)
     df_split, name_mapping = df_padded.split_all_tracklets_using_mode(split_mode='jump', verbose=0)
     # global2tracklet_new = update_global2tracklet_dictionary(df_split, g2t, name_mapping)
 

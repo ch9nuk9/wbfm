@@ -103,8 +103,9 @@ class PaddedDataFrame(pd.DataFrame):
             return self
 
     def get_next_empty_column_name(self):
-        self.add_new_empty_column_if_none_left()
-        return self.remaining_empty_column_names.pop(0)
+        # This should update in-place, but only if I assign the output
+        df = self.add_new_empty_column_if_none_left()
+        return df.remaining_empty_column_names.pop(0)
 
     def split_tracklet(self, i_split, old_name, verbose=1):
         left_name = old_name
