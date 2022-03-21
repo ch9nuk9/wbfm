@@ -36,6 +36,8 @@ class TrackletSplitter:
         _ = self.get_means_to_subtract(df_working_copy)
         tracklet = df_working_copy[original_name]
         signal = self.get_signal_from_tracklet(tracklet)
+        if signal is None:
+            return []
         try:
             split_list = split_signal(signal, self.penalty)
             # Convert back to original times
@@ -67,6 +69,8 @@ def get_signal_from_tracklet(tracklet, features, means_to_subtract=None):
         signal = np.array(tracklet[f])
         ind_to_keep = ~np.isnan(signal)
         signal = signal[ind_to_keep]
+        if len(signal) == 0:
+            return None
         if av is not None:
             signal -= av[ind_to_keep]
         signal /= np.max(signal)
