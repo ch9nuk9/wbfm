@@ -614,6 +614,15 @@ class TrackedWorm:
         overlapping_confidences = neuron.get_confidences_of_tracklets(overlapping_tracklet_names)
         return overlapping_confidences, overlapping_tracklet_conflict_points
 
+    def get_conflict_time_dictionary_for_all_neurons(self, minimum_confidence=None):
+        # TODO: check if some conflict times are too close
+        overlapping_tracklet_conflict_points = {}
+        for name in self.neuron_names:
+            _, these_conflicts = self.get_conflict_times_for_tracklets_for_neuron(name,
+                                                                                  minimum_confidence=minimum_confidence)
+            overlapping_tracklet_conflict_points.update(these_conflicts)
+        return overlapping_tracklet_conflict_points
+
     def plot_tracklets_for_neuron(self, neuron_name, with_names=True, with_confidence=True, plot_field='z',
                                   diff_percentage=False, minimum_confidence=0.0):
         tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,

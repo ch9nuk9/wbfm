@@ -15,6 +15,7 @@ from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_fu
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import delete_tracklets_using_ground_truth, PaddedDataFrame
+from DLC_for_WBFM.utils.tracklets.tracklet_class import TrackedWorm
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs, split_multiple_tracklets, \
     get_next_name_generator, remove_tracklets_from_dictionary_without_database_match
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
@@ -368,31 +369,41 @@ def split_tracklets_using_neuron_match_conflicts(project_cfg: ModularProjectConf
         initial_empty_cols = 10
 
     # Unpack
-    # training_cfg = project_cfg.get_training_config()
-    df_tracklets = project_data.df_all_tracklets
-    # df_gt = project_data.final_tracks
-    # sanity_checks_on_dataframes(df_gt, df_tracklets)
-    # g2t = project_data.global2tracklet
+    logging.info("Initializing worm object with conflicting tracklet matches")
+    tracking_cfg = project_cfg.get_tracking_config()
+    minimum_confidence = tracking_cfg.config['final_3d_postprocessing']['min_confidence']
+    fname = os.path.join('raw', 'final_matching_with_conflict.pickle')
+    fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+    final_matching_with_conflict = pickle_load_binary(fname)
 
-    logging.info("Splitting jumping tracklets using custom dataframe class")
+    tracklets_and_neurons_class = project_data.tracklets_and_neurons_class
+    worm_obj = TrackedWorm(detections=tracklets_and_neurons_class)
+    worm_obj.reinitialize_all_neurons_from_final_matching(final_matching_with_conflict)
+
+    logging.info("Calculating all needed split points")
+    split_list_dict = worm_obj.get_conflict_time_dictionary_for_all_neurons(minimum_confidence=minimum_confidence)
+
+    logging.info("Initializing tracklet splitting class")
+    df_tracklets = worm_obj.detections.df_tracklets_zxy
     df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_tracklets, name_mode='tracklet',
                                                                initial_empty_cols=initial_empty_cols)
-    df_split, name_mapping = df_padded.split_all_tracklets_using_mode(split_mode='jump', verbose=0)
-    # global2tracklet_new = update_global2tracklet_dictionary(df_split, g2t, name_mapping)
 
+    df_split, name_mapping = PaddedDataFrame.split_using_dict_of_points(df_padded, split_list_dict)
+    # Do not explicitly use the name_mapping dict, because step 3b should just be rerun
     df_final = df_split.return_sparse_dataframe()
 
     # Save and update configs
-    training_cfg = project_cfg.get_training_config()
-    out_fname = os.path.join('2-training_data', 'all_tracklets_after_splitting.pickle')
-    training_cfg.pickle_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
+    # training_cfg = project_cfg.get_training_config()
+    out_fname = os.path.join('3-tracking', 'all_tracklets_after_conflict_splitting.pickle')
+    tracking_cfg.pickle_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
 
-    # global2tracklet_matches_fname = os.path.join('3-tracking', 'global2tracklet_after_splitting.pickle')
-    # tracking_cfg.pickle_in_local_project(global2tracklet_new, global2tracklet_matches_fname)
-    # tracking_cfg.config['global2tracklet_matches_fname'] = global2tracklet_matches_fname
-    training_cfg.config['df_3d_tracklets'] = out_fname
-    training_cfg.update_on_disk()
-    # tracking_cfg.update_on_disk()
+    # TODO: update the name of this field
+    tracking_cfg.config['wiggle_split_tracklets_df_fname'] = out_fname
+    tracking_cfg.update_on_disk()
+
+    logging.info("The tracklets have been split, but now step 3b should be rerun to regenerate the matches "
+                 "(Using previous matches should be fine)")
+
 
 def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
                                            keep_new_tracklet_matches=False,

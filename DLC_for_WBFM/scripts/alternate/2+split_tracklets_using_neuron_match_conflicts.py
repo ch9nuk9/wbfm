@@ -6,7 +6,8 @@ from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import split_tracklets_using_change_detection
+from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import split_tracklets_using_change_detection, \
+    split_tracklets_using_neuron_match_conflicts
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
@@ -33,4 +34,4 @@ def main(_config, _run):
     cfg = _config['cfg']
     DEBUG = _config['DEBUG']
 
-    split_tracklets_using_change_detection(cfg, DEBUG)
+    split_tracklets_using_neuron_match_conflicts(cfg, DEBUG)

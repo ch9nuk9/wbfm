@@ -175,7 +175,7 @@ class PaddedDataFrame(pd.DataFrame):
     def split_using_dict_of_points(df_working_copy, split_list_dict, name_mapping=None):
         if name_mapping is None:
             name_mapping = defaultdict(set)
-        for name, these_splits in split_list_dict.items():
+        for name, these_splits in tqdm(split_list_dict.items(), leave=False):
             if len(these_splits) >= 1:
                 num_to_add = max([5 * len(these_splits), 10000])
                 df_working_copy = df_working_copy.add_new_empty_column_if_none_left(
