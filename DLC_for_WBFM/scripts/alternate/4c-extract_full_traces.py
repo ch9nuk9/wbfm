@@ -4,6 +4,7 @@ The top level function for getting final traces from 3d tracks and neuron masks
 
 # Experiment tracking
 import logging
+import os
 
 import sacred
 from sacred import Experiment
@@ -46,6 +47,10 @@ def cfg(project_path, DEBUG):
 @ex.automain
 def make_full_tracks(_config, _run):
     sacred.commands.print_config(_run)
+
+    # Set environment variables to (try to) deal with rare blosc decompression errors
+    os.environ["BLOSC_NOLOCK"] = "1"
+    os.environ["BLOSC_NTHREADS"] = "1"
 
     DEBUG = _config['DEBUG']
     trace_cfg = _config['traces_cfg']

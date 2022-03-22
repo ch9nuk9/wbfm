@@ -33,18 +33,6 @@ def region_props_all_volumes(reindexed_masks, red_video, green_video,
     red_all_neurons = {}
     green_all_neurons = {}
 
-    # options = dict(
-    #     green_all_neurons=green_all_neurons,
-    #     green_video=green_video,
-    #     mask2final_name_per_volume=mask2final_name_per_volume,
-    #     params_start_volume=params_start_volume,
-    #     red_all_neurons=red_all_neurons,
-    #     red_video=red_video,
-    #     reindexed_masks=reindexed_masks
-    # )
-
-    # def _parallel_func(i_volume, green_all_neurons, green_video, mask2final_name_per_volume, params_start_volume,
-    #                    red_all_neurons, red_video, reindexed_masks):
     def _parallel_func(i_volume):
         i_mask = i_volume - params_start_volume
         this_mask_volume = reindexed_masks[i_mask, ...]

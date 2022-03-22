@@ -4,6 +4,7 @@ The top level function for getting final traces from 3d tracks and neuron masks
 
 # Experiment tracking
 import logging
+import os
 
 import sacred
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -59,6 +60,10 @@ def make_full_tracks(_config, _run):
     track_cfg = _config['tracking_cfg']
     traces_cfg = _config['traces_cfg']
     project_cfg = _config['cfg']
+
+    # Set environment variables to (try to) deal with rare blosc decompression errors
+    os.environ["BLOSC_NOLOCK"] = "1"
+    os.environ["BLOSC_NTHREADS"] = "1"
 
     with safe_cd(_config['project_dir']):
         # Overwrites matching pickle object; nothing needs to be reloaded
