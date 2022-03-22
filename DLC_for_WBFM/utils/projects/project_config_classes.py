@@ -64,7 +64,7 @@ class ConfigFileWithProjectContext:
             abs_path += ".pickle"
         if make_sequential_filename:
             abs_path = get_sequential_filename(abs_path)
-        logging.info(f"Saving at: {relative_path}")
+        logging.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
         check_exists(abs_path, allow_overwrite)
         if custom_writer:
             # Useful for pickling dataframes
@@ -80,10 +80,10 @@ class ConfigFileWithProjectContext:
         abs_path = self.resolve_relative_path(relative_path)
         if not abs_path.endswith('.h5'):
             abs_path += ".h5"
-        logging.info(f"Saving at: {relative_path}")
-        check_exists(abs_path, allow_overwrite)
         if make_sequential_filename:
             abs_path = get_sequential_filename(abs_path)
+        logging.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
+        check_exists(abs_path, allow_overwrite)
         data.to_hdf(abs_path, key="df_with_missing")
 
         if also_save_csv:
