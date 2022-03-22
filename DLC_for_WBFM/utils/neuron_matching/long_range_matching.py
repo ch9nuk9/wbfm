@@ -120,28 +120,31 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
         worm_obj.update_time_covering_ind_for_all_neurons()
     else:
         global_tracklet_neuron_graph = None
+        final_matching_with_conflict = None
 
     no_conflict_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
     # Final bipartite matching to prevent the same tracklet assigned to multiple neurons
-    final_matching_no_confict = greedy_matching_using_node_class(no_conflict_neuron_graph, node_class_to_match=1)
-    df_new = combine_tracklets_using_matching(df_tracklets, final_matching_no_confict)
+    final_matching_no_conflict = greedy_matching_using_node_class(no_conflict_neuron_graph, node_class_to_match=1)
+    df_new = combine_tracklets_using_matching(df_tracklets, final_matching_no_conflict)
 
     # SAVE
     if to_save:
         with safe_cd(project_data.project_dir):
-            _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_tracklet_neuron_graph,
+            _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_matching_with_conflict,
+                                             global_tracklet_neuron_graph,
                                              track_config, worm_obj)
-    return df_new, final_matching_no_confict, global_tracklet_neuron_graph, worm_obj
+    return df_new, final_matching_no_conflict, global_tracklet_neuron_graph, worm_obj
 
 
-def _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_tracklet_neuron_graph, track_config,
+def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_matching_with_conflict,
+                                     global_tracklet_neuron_graph, track_config,
                                      worm_obj):
     # Save both main products
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
     output_df_fname = track_config.h5_in_local_project(df_new, output_df_fname, also_save_csv=True,
                                                        make_sequential_filename=True)
     output_fname = track_config.config['global2tracklet_matches_fname']
-    global2tracklet = final_matching_no_confict.get_mapping_0_to_1(unique=False)
+    global2tracklet = final_matching_no_conflict.get_mapping_0_to_1(unique=False)
     output_fname = track_config.pickle_in_local_project(global2tracklet, output_fname,
                                                         make_sequential_filename=True)
     # Update config file
@@ -159,7 +162,10 @@ def _save_graphs_and_combined_tracks(df_new, final_matching_no_confict, global_t
         fname = str(dir_name.joinpath('global_tracklet_neuron_graph.pickle'))
         track_config.pickle_in_local_project(global_tracklet_neuron_graph, fname)
     fname = str(dir_name.joinpath('final_matching.pickle'))
-    track_config.pickle_in_local_project(final_matching_no_confict, fname)
+    track_config.pickle_in_local_project(final_matching_no_conflict, fname)
+    if final_matching_with_conflict is not None:
+        fname = str(dir_name.joinpath('final_matching_with_conflict.pickle'))
+        track_config.pickle_in_local_project(final_matching_with_conflict, fname)
     # Sometimes this object is too big, so change the protocol
     fname = str(dir_name.joinpath('worm_obj.pickle'))
     track_config.pickle_in_local_project(worm_obj, fname, protocol=4)
