@@ -615,10 +615,12 @@ class TrackedWorm:
         return overlapping_confidences, overlapping_tracklet_conflict_points
 
     def plot_tracklets_for_neuron(self, neuron_name, with_names=True, with_confidence=True, plot_field='z',
-                                  diff_percentage=False, min_confidence=0.0):
-        tracklet_list = self.get_tracklets_for_neuron(neuron_name)
+                                  diff_percentage=False, minimum_confidence=0.0):
+        tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,
+                                                                                                minimum_confidence)
+        # tracklet_list = self.get_tracklets_for_neuron(neuron_name)
         neuron = self.global_name_to_neuron[neuron_name]
-        tracklet_names = neuron.get_raw_tracklet_names(min_confidence=min_confidence)
+        tracklet_names = neuron.get_raw_tracklet_names(minimum_confidence=minimum_confidence)
         num_lines = len(tracklet_names)
 
         plt.figure(figsize=(25, 5))
@@ -627,7 +629,7 @@ class TrackedWorm:
             edge = (neuron.name_in_graph, neuron.neuron2tracklets.raw_name_to_network_name(name))
             conf = neuron.neuron2tracklets.get_edge_data(*edge)['weight']
 
-            if conf < min_confidence:
+            if conf < minimum_confidence:
                 num_skipped += 1
                 continue
 
