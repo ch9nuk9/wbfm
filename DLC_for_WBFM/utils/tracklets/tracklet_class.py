@@ -617,7 +617,7 @@ class TrackedWorm:
     def get_conflict_time_dictionary_for_all_neurons(self, minimum_confidence=None):
         # TODO: check if some conflict times are too close
         overlapping_tracklet_conflict_points = {}
-        for name in self.neuron_names:
+        for name in tqdm(self.neuron_names):
             _, these_conflicts = self.get_conflict_times_for_tracklets_for_neuron(name,
                                                                                   minimum_confidence=minimum_confidence)
             overlapping_tracklet_conflict_points.update(these_conflicts)

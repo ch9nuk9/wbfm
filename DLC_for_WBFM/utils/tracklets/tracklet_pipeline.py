@@ -384,7 +384,7 @@ def split_tracklets_using_neuron_match_conflicts(project_cfg: ModularProjectConf
     split_list_dict = worm_obj.get_conflict_time_dictionary_for_all_neurons(minimum_confidence=minimum_confidence)
 
     logging.info("Initializing tracklet splitting class")
-    df_tracklets = worm_obj.detections.df_tracklets_zxy
+    df_tracklets = project_data.df_all_tracklets
     df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_tracklets, name_mode='tracklet',
                                                                initial_empty_cols=initial_empty_cols)
 
