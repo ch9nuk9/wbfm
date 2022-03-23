@@ -42,7 +42,8 @@ def main(_config, _run):
     logging.info("Loading ground truth annotations")
     _, df_manual_tracking = project_data.get_ground_truth_annotations()
     # neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
-    neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['auto-added tracklets correct']]['Neuron ID'])
+    # neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['auto-added tracklets correct']]['Neuron ID'])
+    neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['first 1300 frames']]['Neuron ID'])
     num_finished = len(neurons_that_are_finished)
 
     print(f"Found {num_finished}/{len(df_manual_tracking)} finished neurons")

@@ -99,7 +99,7 @@ def test_trained_embedding_matcher(dataloader, model,
 def test_open_set_tracking(project_data, model, neurons_that_are_finished):
     # Build and use tracker class
     tracking_cfg = project_data.project_config.get_tracking_config()
-    t_template = tracking_cfg.config['final_3d_tracks'].get('template_time_point', 1001)
+    t_template = tracking_cfg.config['final_3d_tracks'].get('template_time_point', 10)
 
     num_frames = project_data.num_frames
     all_frames = project_data.raw_frames

@@ -8,7 +8,7 @@ import torch
 from matplotlib import pyplot as plt
 
 from DLC_for_WBFM.utils.nn_utils.utils_testing import test_trained_classifier, plot_accuracy, \
-    test_trained_embedding_matcher
+    test_trained_embedding_matcher, test_open_set_tracking
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.nn_utils.data_loading import NeuronImageFeaturesDataModule, FullVolumeNeuronImageFeaturesDataset
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
@@ -40,7 +40,7 @@ def main(_config, _run):
     ##
     print("Loading ground truth annotations")
     _, df_manual_tracking = project_data.get_ground_truth_annotations()
-    neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['auto-added tracklets correct']]['Neuron ID'])
+    neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['first 1300 frames']]['Neuron ID'])
     num_finished = len(neurons_that_are_finished)
 
     print(f"Found {num_finished}/{len(df_manual_tracking)} finished neurons")
@@ -78,13 +78,25 @@ def main(_config, _run):
     logging.basicConfig(filename=log_fname)
 
     ##
-    print("Calculating classification accuracy")
+    print("Calculating closed set classification accuracy")
     correct_per_class, total_per_class = test_trained_classifier(train_loader, model)
     plot_accuracy(correct_per_class, total_per_class)
-    plt.title("Accuracy as a time-independent classifier")
+    plt.xticks(rotation=90)
+    plt.title("Accuracy as a time-independent classifier (closed set)")
 
     fname = str(Path(model_fname).with_suffix('.png'))
     fname = add_name_suffix(fname, '-classifier_accuracy')
+    plt.savefig(fname)
+
+    ##
+    print("Calculating open-set classification accuracy")
+    correct_per_class, total_per_class = test_trained_classifier(full_loader, model)
+    plot_accuracy(correct_per_class, total_per_class)
+    plt.xticks(rotation=90)
+    plt.title("Accuracy as a time-independent classifier (open set)")
+
+    fname = str(Path(model_fname).with_suffix('.png'))
+    fname = add_name_suffix(fname, '-open_set_classifier_accuracy')
     plt.savefig(fname)
 
     ##
