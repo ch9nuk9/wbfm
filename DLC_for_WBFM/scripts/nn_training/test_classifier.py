@@ -78,11 +78,11 @@ def main(_config, _run):
     logging.basicConfig(filename=log_fname)
 
     ##
-    print("Calculating closed set classification accuracy")
+    print("Calculating one-at-a-time classification accuracy")
     correct_per_class, total_per_class = test_trained_classifier(train_loader, model)
     plot_accuracy(correct_per_class, total_per_class)
     plt.xticks(rotation=90)
-    plt.title("Accuracy as a time-independent classifier (closed set)")
+    plt.title("Accuracy as a one-at-a-time, time-independent classifier")
 
     fname = str(Path(model_fname).with_suffix('.png'))
     fname = add_name_suffix(fname, '-classifier_accuracy')
