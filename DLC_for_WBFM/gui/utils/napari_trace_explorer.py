@@ -335,7 +335,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def change_neurons(self):
         if not self._disable_callbacks:
-            self.update_dataframe_using_points()
+            # self.update_dataframe_using_final_tracks_layer()
             self.update_neuron_in_tracklet_annotator()
             self.update_track_layers()
             self.update_trace_or_tracklet_subplot(preserve_xlims=False)
@@ -1008,7 +1008,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     #
     #     print(f"Saved manual annotations for neuron {self.current_name} at {out_fname}")
 
-    def update_dataframe_using_points(self):
+    def update_dataframe_using_final_tracks_layer(self):
+        logging.warning("DEPRECATION WARNING: Overwriting tracks using manual points from final_tracks layer")
         # Note: this allows for manual changing of the points
         new_df = self.build_df_of_current_points()
 
