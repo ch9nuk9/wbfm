@@ -89,17 +89,6 @@ def main(_config, _run):
     plt.savefig(fname)
 
     ##
-    print("Calculating open-set classification accuracy")
-    correct_per_class, total_per_class = test_trained_classifier(full_loader, model)
-    plot_accuracy(correct_per_class, total_per_class)
-    plt.xticks(rotation=90)
-    plt.title("Accuracy as a time-independent classifier (open set)")
-
-    fname = str(Path(model_fname).with_suffix('.png'))
-    fname = add_name_suffix(fname, '-open_set_classifier_accuracy')
-    plt.savefig(fname)
-
-    ##
     print("Calculating tracker (matching) accuracy")
     correct_per_class, total_per_class = test_trained_embedding_matcher(full_loader, model)
     plot_accuracy(correct_per_class, total_per_class)
