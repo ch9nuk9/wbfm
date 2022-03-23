@@ -164,10 +164,10 @@ def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy
     # track_id, t, z, y, x
     try:
         coords = ['z', 'x', 'y']
-        zxy_array = np.array(df_single_track[coords])
+        zxy_array = np.array(df_single_track[coords]).copy()
     except KeyError:
         coords = ['z_dlc', 'x_dlc', 'y_dlc']
-        zxy_array = np.array(df_single_track[coords])
+        zxy_array = np.array(df_single_track[coords]).copy()
 
     all_tracks_list = []
     t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
