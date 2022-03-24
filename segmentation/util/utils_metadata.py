@@ -125,6 +125,9 @@ class DetectedNeurons:
         if self._volumes_cache is None:
             self._volumes_cache = {}
 
+    def setup(self):
+        _ = self.segmentation_metadata
+
     @property
     def segmentation_metadata(self):
         assert Path(self.detection_fname).exists(), f"{self.detection_fname} doesn't exist!"
