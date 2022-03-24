@@ -97,15 +97,17 @@ def test_trained_embedding_matcher(dataloader, model,
     return correct_per_class, total_per_class
 
 
-def test_open_set_tracking(project_data, model, neurons_that_are_finished, all_frames=None):
+def test_open_set_tracking(project_data, model, neurons_that_are_finished, all_frames=None, tracker_opt=None):
     # Build and use tracker class
+    if tracker_opt is None:
+        tracker_opt = {}
     tracking_cfg = project_data.project_config.get_tracking_config()
     t_template = tracking_cfg.config['final_3d_tracks'].get('template_time_point', 10)
 
     if all_frames is None:
         all_frames = project_data.raw_frames
     num_frames = len(all_frames)
-    tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template], model=model)
+    tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template], model=model, **tracker_opt)
 
     all_matches = []
     for t in tqdm(range(num_frames)):

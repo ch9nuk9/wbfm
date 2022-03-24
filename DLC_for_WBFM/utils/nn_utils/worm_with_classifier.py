@@ -39,6 +39,7 @@ class WormWithNeuronClassifier:
 
     # To be optimized
     confidence_gamma: float = 100.0
+    cdist_p: int = 2
 
     def __post_init__(self):
         if self.path_to_model is None:
@@ -60,7 +61,7 @@ class WormWithNeuronClassifier:
             raise NotImplementedError("Must pass template_frame or initialize self.t_template")
 
         features = torch.from_numpy(template_frame.all_features)
-        self.embedding_template = self.model.embed(features.to(self.model.device))
+        self.embedding_template = self.model.embed(features.to(self.model.device)).type(torch.float)
         # TODO: better naming?
         self.labels_template = list(range(features.shape[0]))
 
@@ -68,9 +69,9 @@ class WormWithNeuronClassifier:
 
         with torch.no_grad():
             query_features = torch.tensor(target_frame.all_features).to(self.model.device)
-            query_embedding = self.model.embed(query_features)
+            query_embedding = self.model.embed(query_features).type(torch.float)
 
-            distances = torch.cdist(self.embedding_template, query_embedding)
+            distances = torch.cdist(self.embedding_template, query_embedding, p=self.cdist_p)
             conf_matrix = torch.nan_to_num(torch.softmax(self.confidence_gamma / distances, dim=0), nan=1.0)
 
             matches = linear_sum_assignment(conf_matrix, maximize=True)

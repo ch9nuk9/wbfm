@@ -13,13 +13,6 @@ ex = Experiment()
 ex.add_config(encoder_type='baseline', DEBUG=False)
 
 
-@ex.automain
-def main(_config, _run):
-    sacred.commands.print_config(_run)
-
-    test_feature_encoder(_config)
-
-
 def test_feature_encoder(encoder_type='baseline', DEBUG=False):
     fname = "/home/charles/dlc_stacks/worm1_for_students/project_config-workstation.yaml"
     project_data = ProjectData.load_final_project_data_from_config(fname)
@@ -31,6 +24,8 @@ def test_feature_encoder(encoder_type='baseline', DEBUG=False):
     num_finished = len(neurons_that_are_finished)
     print(f"Found {num_finished}/{len(df_manual_tracking)} finished neurons")
     ## Setup
+    tracker_opt = {}
+
     training_config = project_data.project_config.get_training_config()
     metadata_fname = training_config.config['tracker_params']['external_detections']
     external_detections = training_config.resolve_relative_path(metadata_fname)
@@ -110,6 +105,9 @@ def test_feature_encoder(encoder_type='baseline', DEBUG=False):
         encoder_opt = dict(base_2d_encoder=base_2d_encoder)
         frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
                                                             z_depth_neuron_encoding, encoder_opt, max_workers=1)
+
+        tracker_opt = dict(cdist_p=0)
+
     elif encoder_type == 'orb_different_defaults':
         opt = dict(edgeThreshold=0, patchSize=71)
         base_2d_encoder = cv2.ORB_create(**opt)
@@ -124,7 +122,7 @@ def test_feature_encoder(encoder_type='baseline', DEBUG=False):
     ## Use as tracker
     model = NullModel()
     correct_per_class, total_per_class, name_mapping, accuracy_correct_per_class, accuracy_incorrect_per_class, mean_acc = \
-        test_open_set_tracking(project_data, model, neurons_that_are_finished, all_frames=frames_to_test)
+        test_open_set_tracking(project_data, model, neurons_that_are_finished, all_frames=frames_to_test, tracker_opt=tracker_opt)
     plot_accuracy(correct_per_class, total_per_class)
     plt.xticks(rotation=90)
     plt.title(f"Accuracy={mean_acc}")
@@ -133,3 +131,11 @@ def test_feature_encoder(encoder_type='baseline', DEBUG=False):
     fname = add_name_suffix(fname, suffix=suffix)
     plt.savefig(fname)
     ##
+
+
+
+@ex.automain
+def main(_config, _run):
+    sacred.commands.print_config(_run)
+
+    test_feature_encoder(_config['encoder_type'], _config['DEBUG'])
