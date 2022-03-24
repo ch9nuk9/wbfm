@@ -150,9 +150,17 @@ def get_name_mapping_for_track_dataframes(df_old, df_new,
     # Count matches on all templates
     for t in t_templates:
         for old in tqdm(names_old, leave=False):
-            old_ind = df_old.loc[t, (old, column_to_test)]
+            try:
+                old_ind = df_old.loc[t, (old, column_to_test)]
+            except KeyError:
+                # Template time is outside the tracked time
+                break
             for new in names_new:
-                new_ind = df_new.loc[t, (new, column_to_test)]
+                try:
+                    new_ind = df_new.loc[t, (new, column_to_test)]
+                except KeyError:
+                    # Template time is outside the tracked time
+                    break
                 if old_ind == new_ind:
                     dfold2dfnew_dict[old][new] += 1
                     # dfold2dfnew_dict[old] = new

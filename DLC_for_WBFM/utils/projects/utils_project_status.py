@@ -2,6 +2,9 @@ import logging
 import os.path as osp
 from pathlib import Path
 
+import zarr
+from tqdm import tqdm
+
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -151,6 +154,19 @@ def check_traces(project_path, verbose=0):
             return all_exist
     except (AssertionError, TypeError):
         return False
+
+
+def check_zarr_file_integrity(project_path, verbose=0):
+    cfg = ModularProjectConfig(project_path)
+
+    fnames = [cfg.config['preprocessed_red'], cfg.config['preprocessed_green']]
+
+    for fname in fnames:
+        logging.info(f"Checking integrity of {fname}")
+        z = zarr.open(fname)
+
+        for frame in tqdm(z, leave=False):
+            tmp = frame.shape
 
 
 def print_sacred_log(project_path: str) -> None:

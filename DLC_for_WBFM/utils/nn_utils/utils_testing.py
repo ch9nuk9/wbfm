@@ -173,7 +173,7 @@ def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_fi
     accuracy_incorrect_per_class = defaultdict(list)
     total_per_class = defaultdict(int)
     # Use multiple templates, in case the gt has an error on that frame
-    templates = [10, 100, 1000, 1010, 1100, 1500, 1800, 2000]
+    templates = [10, 50, 100, 1000, 1010, 1100, 1500, 2000]
     dfold2dfnew_dict, out = get_name_mapping_for_track_dataframes(df_gt, df_new,
                                                                   t_templates=templates,
                                                                   names_old=neurons_that_are_finished)
@@ -199,7 +199,7 @@ def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_fi
     mean_acc = np.mean([cor / tot for cor, tot in zip(correct_per_class.values(), total_per_class.values())])
     print(f"Mean accuracy: {mean_acc}")
     return correct_per_class, total_per_class, dfold2dfnew_dict, \
-           accuracy_correct_per_class, accuracy_incorrect_per_class
+           accuracy_correct_per_class, accuracy_incorrect_per_class, mean_acc
 
 
 def build_template_from_loader(volume_module, model):
