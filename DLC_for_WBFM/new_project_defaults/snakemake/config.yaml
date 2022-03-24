@@ -1,8 +1,7 @@
 
 # Global requirement
-project_dir: "/scratch/zimmer/Charles/dlc_stacks/worm3-2021_09_29"
-#project_path: "/scratch/zimmer/Charles/dlc_stacks/worm3-2021_09_29/project_config.yaml"
-code_path: "/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
+project_dir: "/home/charles/dlc_stacks/worm1_for_students-retrack"
+code_path: "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
 
 # Step 0: preprocessing
 #... for now, do manually
@@ -43,37 +42,27 @@ output_2c_dir:
   - 2-training_data/training_data_tracks.h5
   - 2-training_data/reindexed_metadata.pickle
 
-# Step 3: Alternate: leifer style
+# Step 3: Alternate: embedding style
 input_3a:
   - 1-segmentation/metadata.pickle
-  - 2-training_data/training_data_tracks.h5 # Optional; only if using training data as templates
+  - 2-training_data/raw/frame_dat.pickle
 output_3a:
-  - 3-tracking/postprocessing/leifer_tracks.h5
+  - 3-tracking/postprocessing/embedding_tracks.h5
 
 input_3b:
-  - 3-tracking/postprocessing/leifer_tracks.h5
+  - 3-tracking/postprocessing/embedding_tracks.h5
   - 2-training_data/all_tracklets.h5
 output_3b:
   - 3-tracking/postprocessing/combined_3d_tracks.h5
   - 3-tracking/global2tracklet.pickle
 
 # Step 4: final traces
-input_4a:
+input_4:
   - 3-tracking/postprocessing/combined_3d_tracks.h5
   - 1-segmentation/metadata.pickle
-output_4a:
+output_4:
   - 4-traces/all_matches.pickle
-
-input_4b:
-  - 4-traces/all_matches.pickle
-input_4b_dir:
-  - 1-segmentation/masks.zarr
-output_4b_dir:
-  - 4-traces/reindexed_masks.zarr
-
-# Note: also needs raw data
-input_4c_dir:
-  - 4-traces/reindexed_masks.zarr
-output_4c:
   - 4-traces/red_traces.h5
   - 4-traces/green_traces.h5
+output_4_dir:
+  - 4-traces/reindexed_masks.zarr

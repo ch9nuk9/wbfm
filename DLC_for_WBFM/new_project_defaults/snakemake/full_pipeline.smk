@@ -2,7 +2,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("{dir}/{test}", test=config['output_4c'], dir=config['project_dir'])
+        expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir'])
 
 #
 # Preprocessing
@@ -59,26 +59,13 @@ rule postprocess_matches_to_tracklets:
     shell:
         "python {input.code_path} with project_path={input.cfg}"
 
-
-rule reindex_segmentation_tracklets:
-    input:
-        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}/2c-reindex_segmentation_training_masks.py", code=config['code_path']),
-        files=expand("{dir}/{input}", input=config['input_2c'], dir=config['project_dir']),
-        masks=ancient(rules.segmentation.output.masks)
-    output:
-        directory(expand("{dir}/{output}", output=config['output_2c_dir'], dir=config['project_dir']))
-    threads: 56
-    shell:
-        "python {input.code_path} with project_path={input.cfg}"
-
 #
 # Tracking
 #
-rule fndc_tracking:
+rule embedding_tracking:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}/3a-track_using_fdnc.py", code=config['code_path']),
+        code_path=expand("{code}/3a-track_using_embedding.py", code=config['code_path']),
         files=expand("{dir}/{input}", input=config['input_3a'], dir=config['project_dir'])
     output:
         expand("{dir}/{output}", output=config['output_3a'], dir=config['project_dir'])
@@ -100,36 +87,13 @@ rule combine_tracking_and_tracklets:
 #
 # Traces
 #
-rule match_tracks_and_segmentation:
-    input:
-        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}/4a-match_tracks_and_segmentation.py", code=config['code_path']),
-        files=expand("{dir}/{input}", input=config['input_4a'], dir=config['project_dir'])
-    output:
-        expand("{dir}/{output}", output=config['output_4a'], dir=config['project_dir'])
-    threads: 56
-    shell:
-        "python {input.code_path} with project_path={input.cfg}"
-
-rule reindex_segmentation:
-    input:
-        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}/4b-reindex_segmentation_full.py", code=config['code_path']),
-        files=expand("{dir}/{input}", input=config['input_4b'], dir=config['project_dir']),
-        masks=ancient(rules.segmentation.output.masks)
-    output:
-        directory(expand("{dir}/{output}", output=config['output_4b_dir'], dir=config['project_dir']))
-    threads: 8
-    shell:
-        "python {input.code_path} with project_path={input.cfg}"
-
 rule extract_full_traces:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}/4c-extract_full_traces.py", code=config['code_path']),
-        masks=ancient(rules.reindex_segmentation.output)
+        code_path=expand("{code}/4-make_final_traces.py", code=config['code_path']),
+        files=expand("{dir}/{input}", input=config['input_4'], dir=config['project_dir'])
     output:
-        expand("{dir}/{output}", output=config['output_4c'], dir=config['project_dir'])
+        expand("{dir}/{output}", output=config['output_4'], dir=config['project_dir'])
     threads: 56
     shell:
         "python {input.code_path} with project_path={input.cfg}"
