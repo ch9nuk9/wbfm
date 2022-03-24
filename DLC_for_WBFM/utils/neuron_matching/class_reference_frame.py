@@ -244,7 +244,7 @@ class ReferenceFrame:
                                         transpose_images=True) -> None:
         """
         Builds a feature vector for each neuron (zxy location) in a 3d volume
-        Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
+        Default: Uses opencv VGG as a 2d encoder for a number of slices above and below the exact z location
 
         Note: overwrites the keypoints using only the locations
 
@@ -388,12 +388,15 @@ class RegisteredReferenceFrames:
                 Number of frames: {len(self.reference_frames)} \n"
 
 
-def build_reference_frame_encoding(metadata=None, all_detected_neurons: DetectedNeurons = None, verbose=0):
+def build_reference_frame_encoding(metadata=None, all_detected_neurons: DetectedNeurons = None,
+                                   encoder_opt=None, verbose=0):
     """
     New traces that directly builds an embedding for each neuron, instead of detecting keypoints
 
     See: build_reference_frame
     """
+    if encoder_opt is None:
+        encoder_opt = {}
     if metadata is None:
         metadata = {}
 
@@ -408,7 +411,7 @@ def build_reference_frame_encoding(metadata=None, all_detected_neurons: Detected
     frame.copy_neurons_to_keypoints()
 
     # Calculate encodings
-    frame.encode_all_keypoints_or_neurons()
+    frame.encode_all_keypoints_or_neurons(**encoder_opt)
 
     # Set up mapping between neurons and keypoints
     frame.build_trivial_keypoint_to_neuron_mapping()

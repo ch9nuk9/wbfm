@@ -340,7 +340,7 @@ def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_param
 
 
 def calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                       z_depth_neuron_encoding):
+                                       z_depth_neuron_encoding, encoder_opt):
     # Get initial volume; settings are same for all
     vid_dat = zarr.open(video_fname)
     vol_shape = vid_dat[0, ...].shape
@@ -351,7 +351,8 @@ def calculate_frame_objects_full_video(external_detections, start_volume, end_vo
                     'vol_shape': vol_shape,
                     'video_fname': video_fname,
                     'z_depth': z_depth_neuron_encoding}
-        f = build_reference_frame_encoding(metadata=metadata, all_detected_neurons=all_detected_neurons)
+        f = build_reference_frame_encoding(metadata=metadata, all_detected_neurons=all_detected_neurons,
+                                           encoder_opt=encoder_opt)
         return f
 
     # Build all frames initially, then match
