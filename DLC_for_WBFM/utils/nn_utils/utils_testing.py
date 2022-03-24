@@ -73,7 +73,8 @@ def test_trained_embedding_matcher(dataloader, model,
         for i, (volume, labels) in enumerate(tqdm(dataset)):
             volume = torch.squeeze(volume.to(model.device))
             # labels = labels[0].to("cpu").numpy().astype(int)
-            query_embedding = model.embed(volume)
+            # TODO: check for binary
+            query_embedding = model.embed(volume).astype(float)
 
             distances = torch.cdist(trained_embedding, query_embedding)
             confidences = torch.softmax(torch.sigmoid(1.0 / distances), dim=1)
@@ -212,7 +213,7 @@ def build_template_from_loader(volume_module, model):
 
     with torch.no_grad():
         trained_template, trained_labels = alldata_loader[0]
-        trained_embedding = model.embed(trained_template)
+        trained_embedding = model.embed(trained_template).astype(float)
 
     return trained_labels, trained_embedding
 

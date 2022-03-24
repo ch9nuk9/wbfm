@@ -340,11 +340,12 @@ def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_param
 
 
 def calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                       z_depth_neuron_encoding, encoder_opt):
+                                       z_depth_neuron_encoding, encoder_opt, max_workers=8):
     # Get initial volume; settings are same for all
-    vid_dat = zarr.open(video_fname)
+    vid_dat = zarr.open(video_fname, synchronizer=zarr.ThreadSynchronizer())
     vol_shape = vid_dat[0, ...].shape
     all_detected_neurons = DetectedNeurons(external_detections)
+    all_detected_neurons.setup()
 
     def _build_frame(frame_ind: int) -> ReferenceFrame:
         metadata = {'frame_ind': frame_ind,
@@ -360,7 +361,7 @@ def calculate_frame_objects_full_video(external_detections, start_volume, end_vo
     all_frame_dict = dict()
     logging.info(f"Calculating Frame objects for frames: {start_volume} to {end_volume}")
     with tqdm(total=len(frame_range)) as pbar:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(_build_frame, i): i for i in frame_range}
             for future in concurrent.futures.as_completed(futures):
                 i_frame = futures[future]
