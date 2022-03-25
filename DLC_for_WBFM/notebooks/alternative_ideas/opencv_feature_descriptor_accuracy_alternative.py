@@ -13,7 +13,10 @@ ex = Experiment()
 ex.add_config(encoder_type='baseline', DEBUG=False)
 
 
-def test_feature_encoder(encoder_type='baseline', DEBUG=False):
+def test_feature_encoder(encoder_type='baseline', encoder_kwargs=None, DEBUG=False):
+    if encoder_kwargs is None:
+        encoder_kwargs = {}
+
     fname = "/home/charles/dlc_stacks/worm1_for_students/project_config-workstation.yaml"
     project_data = ProjectData.load_final_project_data_from_config(fname)
     track_cfg = project_data.project_config.get_tracking_config()
@@ -38,87 +41,46 @@ def test_feature_encoder(encoder_type='baseline', DEBUG=False):
     video_fname = project_data.project_config.config['preprocessed_red']
     z_depth_neuron_encoding = 3
     # Define new encoder
+
     if encoder_type == 'baseline':
-        encoder_opt = {}
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt)
+        base_2d_encoder = cv2.xfeatures2d.VGG_create(**encoder_kwargs)
     elif encoder_type == 'vgg_different_defaults':
-        opt = dict(img_normalize=False, use_scale_orientation=False)
-        base_2d_encoder = cv2.xfeatures2d.VGG_create(**opt)
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
+        encoder_kwargs.update(dict(img_normalize=False, use_scale_orientation=False))
+        base_2d_encoder = cv2.xfeatures2d.VGG_create(**encoder_kwargs)
     elif encoder_type == 'latch':
-        opt = dict()
-        base_2d_encoder = cv2.xfeatures2d.LATCH_create(**opt)
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
-
+        base_2d_encoder = cv2.xfeatures2d.LATCH_create(**encoder_kwargs)
     elif encoder_type == 'latch_different_defaults':
-        opt = dict(sigma=1.4)
-        base_2d_encoder = cv2.xfeatures2d.LATCH_create(**opt)
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
-
+        encoder_kwargs.update(dict(sigma=1.4))
+        base_2d_encoder = cv2.xfeatures2d.LATCH_create(**encoder_kwargs)
     elif encoder_type == 'daisy':
-        opt = dict()
-        base_2d_encoder = cv2.xfeatures2d.DAISY_create(**opt)
-
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
+        base_2d_encoder = cv2.xfeatures2d.DAISY_create(**encoder_kwargs)
     elif encoder_type == 'daisy_different_defaults':
-        opt = dict(interpolation=False, q_theta=4, q_hist=4)
-        base_2d_encoder = cv2.xfeatures2d.DAISY_create(**opt)
-
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
+        encoder_kwargs.update(dict(interpolation=False, q_theta=4, q_hist=4))
+        base_2d_encoder = cv2.xfeatures2d.DAISY_create(**encoder_kwargs)
     elif encoder_type == 'akaze':
-        opt = dict()
-        base_2d_encoder = cv2.AKAZE_create(**opt)
-
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
+        base_2d_encoder = cv2.AKAZE_create(**encoder_kwargs)
     elif encoder_type == 'freak':
-        opt = dict()
-        base_2d_encoder = cv2.xfeatures2d.FREAK_create(**opt)
-
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
-
+        base_2d_encoder = cv2.xfeatures2d.FREAK_create(**encoder_kwargs)
     elif encoder_type == 'freak_different_defaults':
-        opt = dict(scaleNormalized=False)
-        base_2d_encoder = cv2.xfeatures2d.FREAK_create(**opt)
-
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
+        encoder_kwargs.update(dict(scaleNormalized=False))
+        base_2d_encoder = cv2.xfeatures2d.FREAK_create(**encoder_kwargs)
     elif encoder_type == 'orb':
-        opt = dict(edgeThreshold=0)
-        base_2d_encoder = cv2.ORB_create(**opt)
-
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
+        encoder_kwargs.update(dict(edgeThreshold=0))
+        base_2d_encoder = cv2.ORB_create(**encoder_kwargs)
 
         tracker_opt = dict(cdist_p=0)
-
     elif encoder_type == 'orb_different_defaults':
-        opt = dict(edgeThreshold=0, patchSize=71)
-        base_2d_encoder = cv2.ORB_create(**opt)
-
-        encoder_opt = dict(base_2d_encoder=base_2d_encoder)
-        frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                                            z_depth_neuron_encoding, encoder_opt, max_workers=1)
-
+        encoder_kwargs.update(dict(edgeThreshold=0, patchSize=71, scaleFactor=1.5))
+        base_2d_encoder = cv2.ORB_create(**encoder_kwargs)
+        tracker_opt = dict(cdist_p=0)
 
     else:
         raise NotImplementedError
+
+    encoder_opt = dict(base_2d_encoder=base_2d_encoder)
+    frames_to_test = calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
+                                                        z_depth_neuron_encoding, encoder_opt, max_workers=1)
+
     ## Use as tracker
     model = NullModel()
     correct_per_class, total_per_class, name_mapping, accuracy_correct_per_class, accuracy_incorrect_per_class, mean_acc = \
@@ -127,11 +89,11 @@ def test_feature_encoder(encoder_type='baseline', DEBUG=False):
     plt.xticks(rotation=90)
     plt.title(f"Accuracy={mean_acc}")
     suffix = f'-{encoder_type}'
-    fname = 'plots/classifier_accuracy.png'
+    fname = f'plots/classifier_accuracy_{encoder_kwargs}.png'
+    fname = fname.replace('{', '').replace('}', '')
     fname = add_name_suffix(fname, suffix=suffix)
     plt.savefig(fname)
     ##
-
 
 
 @ex.automain
