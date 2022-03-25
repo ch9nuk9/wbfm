@@ -1,3 +1,4 @@
+import itertools
 import logging
 import os
 import pickle
@@ -207,15 +208,60 @@ class AbstractNeuronImageFeatures(Dataset):
         return len(self.labels)
 
 
-class AbstractTimeAwareNeunImageFeatures(AbstractNeuronImageFeatures):
-    def __init__(self, all_feature_spaces, times_of_features, transform=None):
+class AbstractTimeAwareNeuronImageFeatures(AbstractNeuronImageFeatures):
+    """Same as AbstractNeuronImageFeatures, but when looping, idx explicitly references time"""
+    def __init__(self, all_feature_spaces, time_to_indices_dict, transform=None):
         super().__init__(all_feature_spaces, transform)
 
+        self.time_to_indices_dict = time_to_indices_dict
 
+    def __len__(self):
+        return len(self.time_to_indices_dict.keys())
+
+
+class TimePairedFullVolumeNeuronImageFeaturesDataset(AbstractTimeAwareNeuronImageFeatures):
+
+    def __post_init__(self):
+        t_list = list(range(len(self.time_to_indices_dict.keys())))
+        self.time_pairs = list(itertools.combinations(t_list, 2))
+
+    def __len__(self):
+        return len(self.time_pairs)
+
+    def __getitem__(self, idx):
+        """Here, idx refers to a pair of times
+
+        Return 2 feature spaces, and a list of matches
+        """
+
+        t0, t1 = self.time_pairs[idx]
+
+        idx0 = self.time_to_indices_dict[t0]
+        idx1 = self.time_to_indices_dict[t1]
+
+        features0 = self.stacked_feature_spaces[idx0, :]
+        label0 = self.labels[idx0]
+
+        features1 = self.stacked_feature_spaces[idx1, :]
+        label1 = self.labels[idx1]
+
+        matches = []
+        for i, class0 in enumerate(label0):
+            if class0 in label1:
+                matches.append([i, label1.index(class0)])
+
+        # Pad shorter one?
+        # if features0.shape[0] < self.num_classes:
+        #     num_missing = self.num_classes - features0.shape[0]
+        #     padding = (0, 0, 0, num_missing)
+        #     features = torch.nn.functional.pad(features0, padding)
+        #
+        #     label = np.hstack([label0, [-1] * num_missing])
+
+        return features0, features1, matches
 
 
 class NeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
-
     def __getitem__(self, idx):
         features = torch.unsqueeze(self.stacked_feature_spaces[idx, :], 0)
         # features = self.transform(features)
@@ -346,7 +392,6 @@ class ShatterImageFeaturesDataset(AbstractNeuronImageFeatures):
         return features, labels
 
 
-
 class FullVolumeNeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
 
     def __len__(self):
@@ -377,9 +422,11 @@ class FullVolumeNeuronImageFeaturesDataset(AbstractNeuronImageFeatures):
         return features, label
 
 
+## Utility functions
 def build_ground_truth_neuron_feature_spaces(project_data: ProjectData,
                                              assume_all_neurons_correct=False,
-                                             num_neurons=None, num_frames=None):
+                                             num_neurons=None, num_frames=None,
+                                             col='auto-added tracklets correct'):
 
     all_frames = project_data.raw_frames
     df = project_data.final_tracks
@@ -394,8 +441,7 @@ def build_ground_truth_neuron_feature_spaces(project_data: ProjectData,
         df_manual_tracking = pd.read_csv(fname)
 
         # Use the ones that are partially tracked as well
-        neurons_that_are_finished = list(
-            df_manual_tracking[df_manual_tracking['auto-added tracklets correct']]['Neuron ID'])
+        neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking[col]]['Neuron ID'])
         # neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
 
     if num_neurons is None:
@@ -476,6 +522,52 @@ def get_test_train_split(project_data: ProjectData, num_neurons=None, num_frames
 
 
 class NeuronImageFeaturesDataModule(LightningDataModule):
+    """Return neurons and their labels, e.g. for a classifier"""
+    def __init__(self, batch_size=64, project_data: ProjectData = None, num_neurons=None, num_frames=None,
+                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=NeuronImageFeaturesDataset,
+                 assume_all_neurons_correct=False):
+        super().__init__()
+        self.batch_size = batch_size
+        self.project_data = project_data
+        self.num_neurons = num_neurons
+        self.num_frames = num_frames
+        self.train_fraction = train_fraction
+        self.val_fraction = val_fraction
+        self.base_dataset_class = base_dataset_class
+        self.assume_all_neurons_correct = assume_all_neurons_correct
+
+    def setup(self, stage: Optional[str] = None):
+        # transform and split
+        all_feature_spaces, time_to_indices_dict = build_ground_truth_neuron_feature_spaces(self.project_data,
+                                                                      num_neurons=self.num_neurons,
+                                                                      num_frames=self.num_frames,
+                                                                      assume_all_neurons_correct=self.assume_all_neurons_correct)
+        alldata = self.base_dataset_class(all_feature_spaces)
+
+        train_fraction = int(len(alldata) * self.train_fraction)
+        val_fraction = int(len(alldata) * self.val_fraction)
+        splits = [train_fraction, val_fraction, len(alldata) - train_fraction - val_fraction]
+        trainset, valset, testset = random_split(alldata, splits)
+
+        # assign to use in dataloaders
+        self.train_dataset = trainset
+        self.val_dataset = valset
+        self.test_dataset = testset
+
+        self.alldata = alldata
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.batch_size)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_dataset, batch_size=self.batch_size)
+
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size)
+
+
+class PairedNeuronImageFeaturesDataModule(LightningDataModule):
+    """Returns pairs of matched neurons in feature space"""
     def __init__(self, batch_size=64, project_data: ProjectData = None, num_neurons=None, num_frames=None,
                  train_fraction=0.8, val_fraction=0.1, base_dataset_class=NeuronImageFeaturesDataset,
                  assume_all_neurons_correct=False):
@@ -520,6 +612,7 @@ class NeuronImageFeaturesDataModule(LightningDataModule):
 
 
 class TrackletImageFeaturesDataModule(LightningDataModule):
+    """Same as NeuronImageFeaturesDataModule, but for tracklets not tracks"""
     def __init__(self, batch_size=256, project_data: ProjectData=None, t_template=0, num_frames=None,
                  train_fraction=0.8, val_fraction=0.1, base_dataset_class=TripletNeuronImageFeaturesDataset):
         super().__init__()
