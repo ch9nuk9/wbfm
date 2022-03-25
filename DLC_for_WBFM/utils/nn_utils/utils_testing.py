@@ -5,11 +5,11 @@ import numpy as np
 import seaborn as sns
 import torch
 from matplotlib import pyplot as plt
-from scipy.optimize import linear_sum_assignment
 from sklearn import manifold
 import matplotlib.cm as cm
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.external.utils_networkx import calc_matches_from_positions_using_softmax
 from DLC_for_WBFM.utils.external.utils_pandas import get_name_mapping_for_track_dataframes, cast_int_or_nan
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import WormWithNeuronClassifier
@@ -76,13 +76,10 @@ def test_trained_embedding_matcher(dataloader, model,
             # TODO: check for binary
             query_embedding = model.embed(volume).astype(float)
 
-            distances = torch.cdist(trained_embedding, query_embedding)
-            confidences = torch.softmax(torch.sigmoid(1.0 / distances), dim=1)
-
-            i_trained, i_query = linear_sum_assignment(confidences, maximize=True)
+            matches = calc_matches_from_positions_using_softmax(query_embedding, trained_embedding)
 
             num_correct_this_volume = 0
-            for i_t, i_q in zip(i_trained, i_query):
+            for i_t, i_q in matches:
                 if labels[i_q] != -1:
                     if trained_labels[i_t] == labels[i_q]:
                         correct_per_class[labels[i_q]] += 1
@@ -97,7 +94,7 @@ def test_trained_embedding_matcher(dataloader, model,
     return correct_per_class, total_per_class
 
 
-def test_open_set_tracking(project_data, model, neurons_that_are_finished, all_frames=None, tracker_opt=None):
+def test_open_set_tracking(project_data, neurons_that_are_finished, model=None, all_frames=None, tracker_opt=None):
     # Build and use tracker class
     if tracker_opt is None:
         tracker_opt = {}
@@ -202,7 +199,7 @@ def test_open_set_tracking_from_dataframe(df_tracker, df_gt, neurons_that_are_fi
     mean_acc = np.mean([cor / tot for cor, tot in zip(correct_per_class.values(), total_per_class.values())])
     print(f"Mean accuracy: {mean_acc}")
     return correct_per_class, total_per_class, dfold2dfnew_dict, \
-           accuracy_correct_per_class, accuracy_incorrect_per_class, mean_acc
+           accuracy_correct_per_class, accuracy_incorrect_per_class, mean_acc, df_new
 
 
 def build_template_from_loader(volume_module, model):

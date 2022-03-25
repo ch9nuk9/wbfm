@@ -3,6 +3,7 @@ from typing import Tuple
 
 import networkx as nx
 import numpy as np
+import torch
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 
@@ -321,3 +322,11 @@ def is_one_neuron_per_frame(node_names, min_size=None, total_frames=None):
     if len(all_frames) > len(set(all_frames)):
         return False
     return True
+
+
+def calc_matches_from_positions_using_softmax(query_embedding, trained_embedding):
+    distances = torch.cdist(trained_embedding, query_embedding)
+    confidences = torch.softmax(torch.sigmoid(1.0 / distances), dim=1)
+    i_trained, i_query = linear_sum_assignment(confidences, maximize=True)
+    matches = list(zip(i_query, i_trained))
+    return matches

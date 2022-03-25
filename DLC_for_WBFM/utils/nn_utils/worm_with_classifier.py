@@ -68,8 +68,7 @@ class WormWithNeuronClassifier:
     def match_target_frame(self, target_frame: ReferenceFrame):
 
         with torch.no_grad():
-            query_features = torch.tensor(target_frame.all_features).to(self.model.device)
-            query_embedding = self.model.embed(query_features).type(torch.float)
+            query_embedding = self.embed_target_frame(target_frame)
 
             distances = torch.cdist(self.embedding_template, query_embedding, p=self.cdist_p)
             conf_matrix = torch.nan_to_num(torch.softmax(self.confidence_gamma / distances, dim=0), nan=1.0)
@@ -81,6 +80,11 @@ class WormWithNeuronClassifier:
             matches_with_conf = [[m[0], m[1], c] for m, c in zip(matches, conf)]
 
         return matches_with_conf
+
+    def embed_target_frame(self, target_frame):
+        query_features = torch.tensor(target_frame.all_features).to(self.model.device)
+        query_embedding = self.model.embed(query_features).type(torch.float)
+        return query_embedding
 
     def __repr__(self):
         return f"Worm Tracker based on network: {self.path_to_model}"

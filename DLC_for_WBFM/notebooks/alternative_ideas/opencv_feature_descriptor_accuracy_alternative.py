@@ -83,8 +83,8 @@ def test_feature_encoder(encoder_type='baseline', encoder_kwargs=None, DEBUG=Fal
 
     ## Use as tracker
     model = NullModel()
-    correct_per_class, total_per_class, name_mapping, accuracy_correct_per_class, accuracy_incorrect_per_class, mean_acc = \
-        test_open_set_tracking(project_data, model, neurons_that_are_finished, all_frames=frames_to_test, tracker_opt=tracker_opt)
+    correct_per_class, total_per_class, name_mapping, accuracy_correct_per_class, accuracy_incorrect_per_class, mean_acc, _ = \
+        test_open_set_tracking(project_data, neurons_that_are_finished, model=model, all_frames=frames_to_test, tracker_opt=tracker_opt)
     plot_accuracy(correct_per_class, total_per_class)
     plt.xticks(rotation=90)
     plt.title(f"Accuracy={mean_acc}")
