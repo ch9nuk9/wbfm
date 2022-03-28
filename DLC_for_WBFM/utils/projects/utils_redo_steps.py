@@ -13,7 +13,9 @@ from skimage.measure import regionprops
 from tqdm.auto import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df
 
 
 def remap_tracklets_to_new_segmentation(project_data: ProjectData,
@@ -170,3 +172,51 @@ def remap_tracklets_to_new_segmentation_using_config(project_path: str,
                                         path_to_new_segmentation,
                                         path_to_new_metadata,
                                         DEBUG)
+
+
+def correct_tracks_dataframe_using_frame_class(project_cfg: ModularProjectConfig, overwrite=False):
+    """
+    Just checks to make sure all of the IDs in the dataframe are within the number of physical neurons, nothing else
+
+    Similar to: build_ground_truth_neuron_feature_spaces
+    """
+    if overwrite:
+        logging.warning("Using frame objects to correct dataframe... "
+                        "you must be sure that the frame objects are not invalid!")
+
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg,
+                                                                   to_load_tracklets=True, to_load_frames=True)
+
+    all_frames = project_data.raw_frames
+    df = project_data.final_tracks
+    df_fname = project_data.final_tracks_fname
+    num_frames = project_data.num_frames
+
+    neurons = get_names_from_df(df)
+    updated_neurons_and_times = defaultdict(list)
+    # Get stored feature spaces from Frame objects
+    for neuron in tqdm(neurons):
+        this_neuron = df[neuron]
+
+        for t in range(num_frames):
+            ind_within_frame = this_neuron['raw_neuron_ind_in_list'][t]
+            if np.isnan(ind_within_frame):
+                continue
+            else:
+                ind_within_frame = int(ind_within_frame)
+            frame = all_frames[t]
+
+            if ind_within_frame >= frame.all_features.shape[0]:
+                updated_neurons_and_times[neuron].append(t)
+                logging.warning(f"Neuron not found within frame; deleting {neuron} at t={t}")
+                insert_value_in_sparse_df(df, index=t, columns=neuron, val=np.nan)
+
+    # Save
+    if len(updated_neurons_and_times) > 0:
+        tracking_cfg = project_data.project_config.get_tracking_config()
+        tracking_cfg.h5_in_local_project(df, df_fname, allow_overwrite=overwrite,
+                                         make_sequential_filename=~overwrite)
+    else:
+        print("No updates needed")
+
+    return df
