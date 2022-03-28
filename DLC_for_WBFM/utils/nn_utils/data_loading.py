@@ -182,9 +182,19 @@ class NeuronTripletDataset(Dataset):
 #
 
 
+
+class AbstractNeuronImageFeaturesFromProject(Dataset):
+
+    def __init__(self, project_data: ProjectData, transform=None):
+        self.project_data = project_data
+
+    def __len__(self):
+        return len(self.project_data.num_frames)
+
+
 class AbstractNeuronImageFeatures(Dataset):
 
-    def __init__(self, all_feature_spaces, transform=None):
+    def __init__(self, all_feature_spaces, time_to_indices_dict, transform=None):
         self.transform = transform
         self.stacked_feature_spaces = torch.from_numpy(np.vstack(all_feature_spaces))
 
@@ -211,7 +221,7 @@ class AbstractNeuronImageFeatures(Dataset):
 class AbstractTimeAwareNeuronImageFeatures(AbstractNeuronImageFeatures):
     """Same as AbstractNeuronImageFeatures, but when looping, idx explicitly references time"""
     def __init__(self, all_feature_spaces, time_to_indices_dict, transform=None):
-        super().__init__(all_feature_spaces, transform)
+        super().__init__(all_feature_spaces, time_to_indices_dict, transform)
 
         self.time_to_indices_dict = time_to_indices_dict
 
@@ -542,7 +552,7 @@ class NeuronImageFeaturesDataModule(LightningDataModule):
                                                                       num_neurons=self.num_neurons,
                                                                       num_frames=self.num_frames,
                                                                       assume_all_neurons_correct=self.assume_all_neurons_correct)
-        alldata = self.base_dataset_class(all_feature_spaces)
+        alldata = self.base_dataset_class(all_feature_spaces, time_to_indices_dict)
 
         train_fraction = int(len(alldata) * self.train_fraction)
         val_fraction = int(len(alldata) * self.val_fraction)
@@ -566,10 +576,10 @@ class NeuronImageFeaturesDataModule(LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=self.batch_size)
 
 
-class PairedNeuronImageFeaturesDataModule(LightningDataModule):
-    """Returns pairs of matched neurons in feature space"""
+class NeuronImageFeaturesDataModuleFromProject(LightningDataModule):
+    """Return neurons and their labels, e.g. for a classifier"""
     def __init__(self, batch_size=64, project_data: ProjectData = None, num_neurons=None, num_frames=None,
-                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=NeuronImageFeaturesDataset,
+                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=AbstractNeuronImageFeaturesFromProject,
                  assume_all_neurons_correct=False):
         super().__init__()
         self.batch_size = batch_size
@@ -583,11 +593,7 @@ class PairedNeuronImageFeaturesDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         # transform and split
-        all_feature_spaces, time_to_indices_dict = build_ground_truth_neuron_feature_spaces(self.project_data,
-                                                                      num_neurons=self.num_neurons,
-                                                                      num_frames=self.num_frames,
-                                                                      assume_all_neurons_correct=self.assume_all_neurons_correct)
-        alldata = self.base_dataset_class(all_feature_spaces)
+        alldata = self.base_dataset_class(self.project_data)
 
         train_fraction = int(len(alldata) * self.train_fraction)
         val_fraction = int(len(alldata) * self.val_fraction)
@@ -609,6 +615,7 @@ class PairedNeuronImageFeaturesDataModule(LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size)
+
 
 
 class TrackletImageFeaturesDataModule(LightningDataModule):
@@ -628,7 +635,7 @@ class TrackletImageFeaturesDataModule(LightningDataModule):
         # transform and split
         all_feature_spaces, time_to_indices_dict = build_per_tracklet_feature_spaces(self.project_data, num_frames=self.num_frames,
                                                                t_template=self.t_template)
-        alldata = self.base_dataset_class(all_feature_spaces)
+        alldata = self.base_dataset_class(all_feature_spaces, time_to_indices_dict)
 
         train_fraction = int(len(alldata) * self.train_fraction)
         val_fraction = int(len(alldata) * self.val_fraction)

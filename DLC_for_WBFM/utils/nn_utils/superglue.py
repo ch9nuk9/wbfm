@@ -40,10 +40,18 @@
 # %AUTHORS_END%
 # --------------------------------------------------------------------*/
 # %BANNER_END%
-
+import itertools
 from copy import deepcopy
+from dataclasses import dataclass
+
+import numpy as np
 import torch
-from torch import nn
+from pytorch_lightning import LightningModule
+from torch import nn, optim
+
+from DLC_for_WBFM.utils.external.utils_pandas import df_to_matches
+from DLC_for_WBFM.utils.nn_utils.data_loading import AbstractNeuronImageFeaturesFromProject
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
 def MLP(channels: list, do_bn=True):
@@ -82,8 +90,8 @@ class KeypointEncoder(nn.Module):
         nn.init.constant_(self.encoder[-1].bias, 0.0)
 
     def forward(self, kpts, scores):
-        inputs = [kpts.transpose(1, 2), scores.unsqueeze(1)]
-        return self.encoder(torch.cat(inputs, dim=1))
+        inputs = [kpts.transpose(2, 3), scores.unsqueeze(2)]
+        return self.encoder(torch.squeeze(torch.cat(inputs, dim=2), dim=1))
 
 
 def attention(query, key, value):
@@ -222,8 +230,11 @@ class SuperGlue(nn.Module):
             self.config['descriptor_dim'], self.config['descriptor_dim'],
             kernel_size=1, bias=True)
 
-        bin_score = torch.nn.Parameter(torch.tensor(1.))
-        self.register_parameter('bin_score', bin_score)
+        # bin_score = torch.nn.Parameter(torch.tensor(1.))
+        # self.register_parameter('bin_score', bin_score)
+
+        self.bin_score = torch.nn.Parameter(torch.tensor(1.))
+        self.loss_epsilon = 1e-6
 
         # assert self.config['weights'] in ['indoor', 'outdoor']
         # path = Path(__file__).parent
@@ -239,23 +250,30 @@ class SuperGlue(nn.Module):
         desc0, desc1 = data['descriptors0'].float(), data['descriptors1'].float()
         kpts0, kpts1 = data['keypoints0'].float(), data['keypoints1'].float()
 
-        desc0 = desc0.transpose(0, 1)
-        desc1 = desc1.transpose(0, 1)
-        kpts0 = torch.reshape(kpts0, (1, -1, 3)) # NEW: 3d
-        kpts1 = torch.reshape(kpts1, (1, -1, 3))
+        # desc0 = desc0.transpose(0, 1)
+        # desc1 = desc1.transpose(0, 1)
+        # kpts0 = torch.reshape(kpts0, (1, -1, 3)) # NEW: 3d
+        # kpts1 = torch.reshape(kpts1, (1, -1, 3))
+        # Batch is 0
+        batch_sz = data['scores0'].shape[0]
 
-        if kpts0.shape[1] == 0 or kpts1.shape[1] == 0:  # no keypoints
-            shape0, shape1 = kpts0.shape[:-1], kpts1.shape[:-1]
-            return {
-                'matches0': kpts0.new_full(shape0, -1, dtype=torch.int)[0],
-                'matches1': kpts1.new_full(shape1, -1, dtype=torch.int)[0],
-                'matching_scores0': kpts0.new_zeros(shape0)[0],
-                'matching_scores1': kpts1.new_zeros(shape1)[0],
-                'skip_train': True
-            }
+        desc0 = desc0.transpose(1, 2)
+        desc1 = desc1.transpose(1, 2)
+        kpts0 = torch.reshape(kpts0, (batch_sz, 1, -1, 3)) # NEW: 3d
+        kpts1 = torch.reshape(kpts1, (batch_sz, 1, -1, 3))
 
-        # file_name = data['file_name']
+        # if kpts0.shape[1] == 0 or kpts1.shape[1] == 0:  # no keypoints
+        #     shape0, shape1 = kpts0.shape[:-1], kpts1.shape[:-1]
+        #     return {
+        #         'matches0': kpts0.new_full(shape0, -1, dtype=torch.int)[0],
+        #         'matches1': kpts1.new_full(shape1, -1, dtype=torch.int)[0],
+        #         'matching_scores0': kpts0.new_zeros(shape0)[0],
+        #         'matching_scores1': kpts1.new_zeros(shape1)[0],
+        #         'skip_train': True
+        #     }
+
         # all_matches = data['all_matches'].permute(1, 2, 0)  # shape=torch.Size([1, 87, 2])
+        # Ground truth
         all_matches = data['all_matches']  # shape=torch.Size([1, 87, 2])
 
         # Keypoint normalization.
@@ -263,8 +281,8 @@ class SuperGlue(nn.Module):
         kpts1 = normalize_keypoints_3d(kpts1, data['image1'].shape)
 
         # Keypoint MLP encoder.
-        desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 0, 1))
-        desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 0, 1))
+        desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
+        desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
 
         # Multi-layer Transformer network.
         desc0, desc1 = self.gnn(desc0, desc1)
@@ -299,12 +317,13 @@ class SuperGlue(nn.Module):
         for i in range(len(all_matches[0])):
             x = all_matches[0][i][0]
             y = all_matches[0][i][1]
-            loss.append(-torch.log(scores[0][x][y].exp()))  # check batch size == 1 ?
+            loss.append(-torch.log(scores[0][x][y].exp() + self.loss_epsilon))  # check batch size == 1 ?
         # for p0 in unmatched0:
         #     loss += -torch.log(scores[0][p0][-1])
         # for p1 in unmatched1:
         #     loss += -torch.log(scores[0][-1][p1])
-        loss_mean = torch.mean(torch.stack(loss))
+        raw_loss = torch.stack(loss)
+        loss_mean = torch.mean(raw_loss)
         loss_mean = torch.reshape(loss_mean, (1, -1))
         return {
             'matches0': indices0[0],  # use -1 for invalid match
@@ -312,7 +331,102 @@ class SuperGlue(nn.Module):
             'matching_scores0': mscores0[0],
             'matching_scores1': mscores1[0],
             'loss': loss_mean[0],
+            'raw_loss': raw_loss,
+            'raw_scores': scores,
             'skip_train': False
         }
 
         # scores big value or small value means confidence? log can't take neg value
+
+
+## MY ADDITIONS
+
+
+class SuperGlueModel(LightningModule):
+    def __init__(self, feature_dim=840, criterion=None, lr=1e-3):
+        super().__init__()
+
+        self.superglue = SuperGlue(config=dict(descriptor_dim=feature_dim))
+        self.lr = lr
+
+    def forward(self, x):
+        # Returns a dict with several values
+        return self.superglue(x)
+
+    def training_step(self, batch, batch_idx):
+        # Designed to be used with SuperGlueUnpacker
+        pred = self(batch)
+        loss = pred['loss']
+        self.log("loss", loss, prog_bar=True)
+
+        return loss
+
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.parameters(), lr=self.lr)
+        return optimizer
+
+    def validation_step(self, batch, batch_idx):
+        pred = self(batch)
+        loss = pred['loss']
+        self.log("val_loss", loss)
+
+
+@dataclass
+class SuperGlueUnpacker:
+
+    project_data: ProjectData = None
+
+    def convert_frames_to_superglue_format(self, t0, t1):
+        project_data = self.project_data
+        df_gt = project_data.final_tracks
+
+        f0 = project_data.raw_frames[t0]
+        f1 = project_data.raw_frames[t1]
+
+        # Unpack
+        desc0 = torch.tensor(f0.all_features).float()
+        desc1 = torch.tensor(f1.all_features).float()
+
+        # For now, remove z
+        # kpts0 = torch.tensor(f0.neuron_locs)[:, 1:].float()
+        # kpts1 = torch.tensor(f1.neuron_locs)[:, 1:].float()
+        # frame dim is 0
+        # kpts0 = torch.unsqueeze(torch.tensor(f0.neuron_locs).float(), dim=0)
+        kpts0 = torch.tensor(f0.neuron_locs).float()
+        kpts1 = torch.tensor(f1.neuron_locs).float()
+
+        scores0 = torch.ones((kpts0.shape[0], 1)).float()
+        scores1 = torch.ones((kpts1.shape[0], 1)).float()
+
+        image0 = np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0)
+        # image1 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t1]), axis=0), axis=0)
+
+        # Need expansion when not used in loop
+        # all_matches = torch.unsqueeze(torch.tensor(df_to_matches(df_gt, t0, t1)), dim=0)
+        all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
+
+        # Repack
+        data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
+                    image0=image0, image1=image0,
+                    scores0=scores0, scores1=scores1)
+
+        return data
+
+
+class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronImageFeaturesFromProject):
+
+    def __init__(self, project_data: ProjectData):
+        super().__init__(project_data)
+
+        self.unpacker = SuperGlueUnpacker(project_data=project_data)
+
+        t_list = list(range(project_data.num_frames - 1))
+        self.time_pairs = list(itertools.combinations(t_list, 2))
+
+    def __getitem__(self, idx):
+        t0, t1 = self.time_pairs[idx]
+
+        return self.unpacker.convert_frames_to_superglue_format(t0, t1)
+
+    def __len__(self):
+        return len(self.time_pairs)

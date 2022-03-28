@@ -226,3 +226,31 @@ def check_if_heterogenous_columns(df, verbose=1, raise_error=False):
     else:
         print("No heterogenous columns detected")
     return None
+
+
+def df_to_matches(df_gt, t0, t1=None, col='raw_neuron_ind_in_list'):
+    if t1 is None:
+        t1 = t0 + 1
+
+    ind0 = df_gt.loc[t0, (slice(None), col)]
+    ind1 = df_gt.loc[t1, (slice(None), col)]
+
+    def _neither_nan(i0, i1):
+        return (not np.isnan(i0)) and (not np.isnan(i1))
+
+    return list([int(i0), int(i1)] for i0, i1 in zip(ind0, ind1) if _neither_nan(i0, i1))
+
+
+def accuracy_of_matches(gt_matches, new_matches, null_value=-1):
+    tp = 0
+    fp = 0
+    fn = 0
+    gt_matches = np.array(gt_matches)
+    for m in new_matches:
+        if null_value in m:
+            fn += 1
+        elif m in gt_matches:
+            tp += 1
+        else:
+            fp += 1
+    return tp, fp, fn
