@@ -184,13 +184,11 @@ def correct_tracks_dataframe_using_frame_class(project_cfg: ModularProjectConfig
         logging.warning("Using frame objects to correct dataframe... "
                         "you must be sure that the frame objects are not invalid!")
 
-    project_data = ProjectData.load_final_project_data_from_config(project_cfg,
-                                                                   to_load_tracklets=True, to_load_frames=True)
-
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_frames=True)
     all_frames = project_data.raw_frames
     df = project_data.final_tracks
     df_fname = project_data.final_tracks_fname
-    num_frames = project_data.num_frames
+    num_frames = df.shape[0]
 
     neurons = get_names_from_df(df)
     updated_neurons_and_times = defaultdict(list)
@@ -209,7 +207,8 @@ def correct_tracks_dataframe_using_frame_class(project_cfg: ModularProjectConfig
             if ind_within_frame >= frame.all_features.shape[0]:
                 updated_neurons_and_times[neuron].append(t)
                 logging.warning(f"Neuron not found within frame; deleting {neuron} at t={t}")
-                insert_value_in_sparse_df(df, index=t, columns=neuron, val=np.nan)
+                df.loc[t, neuron] = np.nan
+                # insert_value_in_sparse_df(df, index=t, columns=neuron, val=np.nan)
 
     # Save
     if len(updated_neurons_and_times) > 0:
