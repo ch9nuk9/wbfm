@@ -234,9 +234,10 @@ def insert_value_in_sparse_df(df: pd.DataFrame, index: Union[int, str], columns:
     if type(columns) == pd.MultiIndex:
         tmp_cols = df[columns].copy()
     else:
-        logging.warning(f"Called insert_value_in_sparse_df without specifying the exact index; "
-                        "this assumes that val is ordered the same as df, and is not recommended. "
-                        f"Ignore this warning if val is nan: {val}")
+        if not all(np.isnan(val)):
+            logging.warning(f"Called insert_value_in_sparse_df without specifying the exact index; "
+                            "this assumes that val is ordered the same as df, and is not recommended. "
+                            f"Ignore this warning if val is nan: {val}")
         tmp_cols = df[[columns]].copy()
 
     try:

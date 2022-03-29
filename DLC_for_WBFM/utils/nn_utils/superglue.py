@@ -43,11 +43,13 @@
 import itertools
 from copy import deepcopy
 from dataclasses import dataclass
+import random
 
 import numpy as np
 import torch
 from pytorch_lightning import LightningModule
 from torch import nn, optim
+from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import df_to_matches
 from DLC_for_WBFM.utils.nn_utils.data_loading import AbstractNeuronImageFeaturesFromProject
@@ -331,8 +333,8 @@ class SuperGlue(nn.Module):
             'matching_scores0': mscores0[0],
             'matching_scores1': mscores1[0],
             'loss': loss_mean[0],
-            'raw_loss': raw_loss,
-            'raw_scores': scores,
+            # 'raw_loss': raw_loss,
+            # 'raw_scores': scores,
             'skip_train': False
         }
 
@@ -415,18 +417,34 @@ class SuperGlueUnpacker:
 
 class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronImageFeaturesFromProject):
 
-    def __init__(self, project_data: ProjectData):
+    def __init__(self, project_data: ProjectData, num_to_calculate=100):
         super().__init__(project_data)
+        self.num_to_calculate = num_to_calculate
 
         self.unpacker = SuperGlueUnpacker(project_data=project_data)
 
         t_list = list(range(project_data.num_frames - 1))
-        self.time_pairs = list(itertools.combinations(t_list, 2))
+        self.time_pairs = []
+        for _ in range(num_to_calculate):
+            self.time_pairs.append(random_combination(t_list, 2))
+
+        # Precalculate
+        print("Precaculating training data")
+        self._items = []
+        for t0, t1 in tqdm(self.time_pairs):
+            val = self.unpacker.convert_frames_to_superglue_format(t0, t1)
+            self._items.append(val)
 
     def __getitem__(self, idx):
-        t0, t1 = self.time_pairs[idx]
-
-        return self.unpacker.convert_frames_to_superglue_format(t0, t1)
+        return self._items[idx]
 
     def __len__(self):
-        return len(self.time_pairs)
+        return self.num_to_calculate
+
+
+def random_combination(iterable, r):
+    """Random selection from itertools.combinations(iterable, r)"""
+    pool = tuple(iterable)
+    n = len(pool)
+    indices = sorted(random.sample(range(n), r))
+    return tuple(pool[i] for i in indices)
