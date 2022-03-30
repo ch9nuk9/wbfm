@@ -128,12 +128,7 @@ def track_using_embedding_from_config(project_cfg, DEBUG):
         tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template])
         df_final = track_using_template(all_frames, num_frames, project_data, tracker)
     else:
-        all_templates = [t_template]
-        permuted_times = np.random.permutation(range(num_frames))
-        for t_random in permuted_times[:num_random_templates-1]:
-            all_templates.append(int(t_random))
-
-        logging.info(f"Using {num_random_templates} templates at t={all_templates}")
+        all_templates = generate_random_template_times(num_frames, num_random_templates, t_template)
         # All subsequent dataframes will have their names mapped to this
         t = all_templates[0]
         tracker = WormWithNeuronClassifier(template_frame=all_frames[t])
@@ -175,12 +170,7 @@ def track_using_superglue_from_config(project_cfg, DEBUG):
     if not use_multiple_templates:
         df_final = track_using_template(all_frames, num_frames, project_data, tracker)
     else:
-        all_templates = [t_template]
-        permuted_times = np.random.permutation(range(num_frames))
-        for t_random in permuted_times[:num_random_templates-1]:
-            all_templates.append(int(t_random))
-
-        logging.info(f"Using {num_random_templates} templates at t={all_templates}")
+        all_templates = generate_random_template_times(num_frames, num_random_templates, t_template)
         # All subsequent dataframes will have their names mapped to this
         df_base = track_using_template(all_frames, num_frames, project_data, tracker)
         all_dfs = [df_base]
@@ -195,11 +185,20 @@ def track_using_superglue_from_config(project_cfg, DEBUG):
         df_final = combine_dataframes_using_bipartite_matching(all_dfs)
 
     # Save
-    out_fname = '3-tracking/postprocessing/df_tracks_embedding.h5'
+    out_fname = '3-tracking/postprocessing/df_tracks_superglue.h5'
     tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True)
     tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
 
     tracking_cfg.update_self_on_disk()
+
+
+def generate_random_template_times(num_frames, num_random_templates, t_template):
+    all_templates = [t_template]
+    permuted_times = np.random.permutation(range(num_frames))
+    for t_random in permuted_times[:num_random_templates - 1]:
+        all_templates.append(int(t_random))
+    logging.info(f"Using {num_random_templates} templates at t={all_templates}")
+    return all_templates
 
 
 def _unpack_project_for_global_tracking(DEBUG, project_cfg):

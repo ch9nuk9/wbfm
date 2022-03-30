@@ -36,6 +36,7 @@ CMD_DICT["2b"]="2b-postprocess_matches_to_tracklets.py"
 CMD_DICT["2c"]="2c-reindex_segmentation_training_masks.py"
 CMD_DICT["3a"]="3a-track_using_fdnc.py"
 CMD_DICT["3a-alt"]="3a-track_using_embedding.py"
+CMD_DICT["3a-superglue"]="3a-track_using_superglue.py"
 CMD_DICT["3b"]="3b-match_tracklets_and_tracks_using_neuron_initialization.py"
 CMD_DICT["4"]="4-make_final_traces.py"
 
