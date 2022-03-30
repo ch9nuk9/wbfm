@@ -17,6 +17,7 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, templ
 
 model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/"
 PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
+PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_62_partial_neurons.ckpt")
 # PATH_TO_MODEL = os.path.join(model_dir, "classifier_36_neurons.ckpt")
 if not os.path.exists(PATH_TO_MODEL):
     raise FileNotFoundError(PATH_TO_MODEL)
@@ -97,6 +98,14 @@ class WormWithSuperGlueClassifier:
     model: SuperGlueModel = None
     superglue_unpacker: SuperGlueUnpacker = None  # Note: contains the reference frame
 
+    path_to_model: str = None
+
+    def __post_init__(self):
+        if self.path_to_model is None:
+            self.path_to_model = PATH_TO_SUPERGLUE_MODEL
+        if self.model is None:
+            self.model = SuperGlueModel.load_from_checkpoint(checkpoint_path=self.path_to_model)
+
     def match_target_frame(self, target_frame: ReferenceFrame):
 
         with torch.no_grad():
@@ -112,22 +121,12 @@ class WormWithSuperGlueClassifier:
 
 
 def track_using_embedding_from_config(project_cfg, DEBUG):
-    project_data = ProjectData.load_final_project_data_from_config(project_cfg,
-                                                                   to_load_tracklets=True, to_load_frames=True)
-
-    tracking_cfg = project_data.project_config.get_tracking_config()
-    t_template = tracking_cfg.config['final_3d_tracks']['template_time_point']
-
-    use_multiple_templates = tracking_cfg.config['leifer_params']['use_multiple_templates']
-    num_random_templates = tracking_cfg.config['leifer_params']['num_random_templates']
-
-    num_frames = project_data.num_frames
-    if DEBUG:
-        num_frames = 3
-    all_frames = project_data.raw_frames
+    all_frames, num_frames, num_random_templates, project_data, t_template, tracking_cfg, use_multiple_templates = _unpack_project_for_global_tracking(
+        DEBUG, project_cfg)
 
     if not use_multiple_templates:
-        df_final = track_using_template(all_frames, num_frames, project_data, t_template)
+        tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template])
+        df_final = track_using_template(all_frames, num_frames, project_data, tracker)
     else:
         all_templates = [t_template]
         permuted_times = np.random.permutation(range(num_frames))
@@ -137,10 +136,12 @@ def track_using_embedding_from_config(project_cfg, DEBUG):
         logging.info(f"Using {num_random_templates} templates at t={all_templates}")
         # All subsequent dataframes will have their names mapped to this
         t = all_templates[0]
-        df_base = track_using_template(all_frames, num_frames, project_data, t)
+        tracker = WormWithNeuronClassifier(template_frame=all_frames[t])
+        df_base = track_using_template(all_frames, num_frames, project_data, tracker)
         all_dfs = [df_base]
         for i, t in enumerate(tqdm(all_templates[1:])):
-            df = track_using_template(all_frames, num_frames, project_data, t)
+            tracker = WormWithNeuronClassifier(template_frame=all_frames[t])
+            df = track_using_template(all_frames, num_frames, project_data, tracker)
             df = rename_columns_using_matching(df_base, df)
             all_dfs.append(df)
 
@@ -155,8 +156,7 @@ def track_using_embedding_from_config(project_cfg, DEBUG):
     tracking_cfg.update_self_on_disk()
 
 
-def track_using_template(all_frames, num_frames, project_data, t_template):
-    tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template])
+def track_using_template(all_frames, num_frames, project_data, tracker):
     all_matches = []
     for t in tqdm(range(num_frames), leave=False):
         matches_with_conf = tracker.match_target_frame(all_frames[t])
@@ -164,3 +164,52 @@ def track_using_template(all_frames, num_frames, project_data, t_template):
         all_matches.append(matches_with_conf)
     df = template_matches_to_dataframe(project_data, all_matches)
     return df
+
+
+def track_using_superglue_from_config(project_cfg, DEBUG):
+    all_frames, num_frames, num_random_templates, project_data, t_template, tracking_cfg, use_multiple_templates = _unpack_project_for_global_tracking(
+        DEBUG, project_cfg)
+    superglue_unpacker = SuperGlueUnpacker(project_data=project_data, t_template=t_template)
+    tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
+
+    if not use_multiple_templates:
+        df_final = track_using_template(all_frames, num_frames, project_data, tracker)
+    else:
+        all_templates = [t_template]
+        permuted_times = np.random.permutation(range(num_frames))
+        for t_random in permuted_times[:num_random_templates-1]:
+            all_templates.append(int(t_random))
+
+        logging.info(f"Using {num_random_templates} templates at t={all_templates}")
+        # All subsequent dataframes will have their names mapped to this
+        df_base = track_using_template(all_frames, num_frames, project_data, tracker)
+        all_dfs = [df_base]
+        for i, t in enumerate(tqdm(all_templates[1:])):
+            superglue_unpacker = SuperGlueUnpacker(project_data=project_data, t_template=t)
+            tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
+            df = track_using_template(all_frames, num_frames, project_data, tracker)
+            df = rename_columns_using_matching(df_base, df)
+            all_dfs.append(df)
+
+        tracking_cfg.config['t_templates'] = all_templates
+        df_final = combine_dataframes_using_bipartite_matching(all_dfs)
+
+    # Save
+    out_fname = '3-tracking/postprocessing/df_tracks_embedding.h5'
+    tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True)
+    tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
+
+    tracking_cfg.update_self_on_disk()
+
+
+def _unpack_project_for_global_tracking(DEBUG, project_cfg):
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_frames=True)
+    tracking_cfg = project_data.project_config.get_tracking_config()
+    t_template = tracking_cfg.config['final_3d_tracks']['template_time_point']
+    use_multiple_templates = tracking_cfg.config['leifer_params']['use_multiple_templates']
+    num_random_templates = tracking_cfg.config['leifer_params']['num_random_templates']
+    num_frames = project_data.num_frames
+    if DEBUG:
+        num_frames = 3
+    all_frames = project_data.raw_frames
+    return all_frames, num_frames, num_random_templates, project_data, t_template, tracking_cfg, use_multiple_templates
