@@ -40,10 +40,8 @@
 # %AUTHORS_END%
 # --------------------------------------------------------------------*/
 # %BANNER_END%
-import itertools
 from copy import deepcopy
 from dataclasses import dataclass
-import random
 
 import numpy as np
 import torch
@@ -51,7 +49,9 @@ from pytorch_lightning import LightningModule
 from torch import nn, optim
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.external.utils_itertools import random_combination
 from DLC_for_WBFM.utils.external.utils_pandas import df_to_matches
+from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.nn_utils.data_loading import AbstractNeuronImageFeaturesFromProject
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
@@ -247,79 +247,21 @@ class SuperGlue(nn.Module):
 
     def forward(self, data):
         """Run SuperGlue on a pair of keypoints and descriptors"""
-        # desc0, desc1 = data['descriptors0'].double(), data['descriptors1'].double()
-        # kpts0, kpts1 = data['keypoints0'].double(), data['keypoints1'].double()
-        desc0, desc1 = data['descriptors0'].float(), data['descriptors1'].float()
-        kpts0, kpts1 = data['keypoints0'].float(), data['keypoints1'].float()
-
-        # desc0 = desc0.transpose(0, 1)
-        # desc1 = desc1.transpose(0, 1)
-        # kpts0 = torch.reshape(kpts0, (1, -1, 3)) # NEW: 3d
-        # kpts1 = torch.reshape(kpts1, (1, -1, 3))
-        # Batch is 0
-        batch_sz = data['scores0'].shape[0]
-
-        desc0 = desc0.transpose(1, 2)
-        desc1 = desc1.transpose(1, 2)
-        kpts0 = torch.reshape(kpts0, (batch_sz, 1, -1, 3)) # NEW: 3d
-        kpts1 = torch.reshape(kpts1, (batch_sz, 1, -1, 3))
-
-        # if kpts0.shape[1] == 0 or kpts1.shape[1] == 0:  # no keypoints
-        #     shape0, shape1 = kpts0.shape[:-1], kpts1.shape[:-1]
-        #     return {
-        #         'matches0': kpts0.new_full(shape0, -1, dtype=torch.int)[0],
-        #         'matches1': kpts1.new_full(shape1, -1, dtype=torch.int)[0],
-        #         'matching_scores0': kpts0.new_zeros(shape0)[0],
-        #         'matching_scores1': kpts1.new_zeros(shape1)[0],
-        #         'skip_train': True
-        #     }
-
         # all_matches = data['all_matches'].permute(1, 2, 0)  # shape=torch.Size([1, 87, 2])
         # Ground truth
         all_matches = data['all_matches']  # shape=torch.Size([1, 87, 2])
 
-        # Keypoint normalization.
-        kpts0 = normalize_keypoints_3d(kpts0, data['image0'].shape)
-        kpts1 = normalize_keypoints_3d(kpts1, data['image1'].shape)
-
-        # Keypoint MLP encoder.
-        desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
-        desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
-
-        # Multi-layer Transformer network.
-        desc0, desc1 = self.gnn(desc0, desc1)
-
-        # Final MLP projection.
-        mdesc0, mdesc1 = self.final_proj(desc0), self.final_proj(desc1)
-
-        # Compute matching descriptor distance.
-        scores = torch.einsum('bdn,bdm->bnm', mdesc0, mdesc1)
-        scores = scores / self.config['descriptor_dim'] ** .5
-
-        # Run the optimal transport.
-        scores = log_optimal_transport(
-            scores, self.bin_score,
-            iters=self.config['sinkhorn_iterations'])
-
-        # Get the matches with score above "match_threshold".
-        max0, max1 = scores[:, :-1, :-1].max(2), scores[:, :-1, :-1].max(1)
-        indices0, indices1 = max0.indices, max1.indices
-        mutual0 = arange_like(indices0, 1)[None] == indices1.gather(1, indices0)
-        mutual1 = arange_like(indices1, 1)[None] == indices0.gather(1, indices1)
-        zero = scores.new_tensor(0)
-        mscores0 = torch.where(mutual0, max0.values.exp(), zero)
-        mscores1 = torch.where(mutual1, mscores0.gather(1, indices1), zero)
-        valid0 = mutual0 & (mscores0 > self.config['match_threshold'])
-        valid1 = mutual1 & valid0.gather(1, indices1)
-        indices0 = torch.where(valid0, indices0, indices0.new_tensor(-1))
-        indices1 = torch.where(valid1, indices1, indices1.new_tensor(-1))
+        scores = self.calculate_match_scores(data)
+        indices0, indices1, mscores0, mscores1 = self.process_scores_into_matches(scores)
 
         # check if indexed correctly
+        # Note: if a keypoint doesn't have a match in the gt, then it is not penalized here by default
         loss = []
         for i in range(len(all_matches[0])):
             x = all_matches[0][i][0]
             y = all_matches[0][i][1]
             loss.append(-torch.log(scores[0][x][y].exp() + self.loss_epsilon))  # check batch size == 1 ?
+        # This penalizes matches that should be unmatched, and assumes the gt is complete
         # for p0 in unmatched0:
         #     loss += -torch.log(scores[0][p0][-1])
         # for p1 in unmatched1:
@@ -339,6 +281,71 @@ class SuperGlue(nn.Module):
         }
 
         # scores big value or small value means confidence? log can't take neg value
+
+    def process_scores_into_matches(self, scores):
+        # Get the matches with score above "match_threshold".
+        max0, max1 = scores[:, :-1, :-1].max(2), scores[:, :-1, :-1].max(1)
+        indices0, indices1 = max0.indices, max1.indices
+        mutual0 = arange_like(indices0, 1)[None] == indices1.gather(1, indices0)
+        mutual1 = arange_like(indices1, 1)[None] == indices0.gather(1, indices1)
+        zero = scores.new_tensor(0)
+        mscores0 = torch.where(mutual0, max0.values.exp(), zero)
+        mscores1 = torch.where(mutual1, mscores0.gather(1, indices1), zero)
+        valid0 = mutual0 & (mscores0 > self.config['match_threshold'])
+        valid1 = mutual1 & valid0.gather(1, indices1)
+        indices0 = torch.where(valid0, indices0, indices0.new_tensor(-1))
+        indices1 = torch.where(valid1, indices1, indices1.new_tensor(-1))
+        return indices0, indices1, mscores0, mscores1
+
+    def calculate_match_scores(self, data):
+        # desc0, desc1 = data['descriptors0'].double(), data['descriptors1'].double()
+        # kpts0, kpts1 = data['keypoints0'].double(), data['keypoints1'].double()
+        desc0, desc1 = data['descriptors0'].float(), data['descriptors1'].float()
+        kpts0, kpts1 = data['keypoints0'].float(), data['keypoints1'].float()
+        # desc0 = desc0.transpose(0, 1)
+        # desc1 = desc1.transpose(0, 1)
+        # kpts0 = torch.reshape(kpts0, (1, -1, 3)) # NEW: 3d
+        # kpts1 = torch.reshape(kpts1, (1, -1, 3))
+        # Batch is 0
+        batch_sz = data['scores0'].shape[0]
+        desc0 = desc0.transpose(1, 2)
+        desc1 = desc1.transpose(1, 2)
+        kpts0 = torch.reshape(kpts0, (batch_sz, 1, -1, 3))  # NEW: 3d
+        kpts1 = torch.reshape(kpts1, (batch_sz, 1, -1, 3))
+        # if kpts0.shape[1] == 0 or kpts1.shape[1] == 0:  # no keypoints
+        #     shape0, shape1 = kpts0.shape[:-1], kpts1.shape[:-1]
+        #     return {
+        #         'matches0': kpts0.new_full(shape0, -1, dtype=torch.int)[0],
+        #         'matches1': kpts1.new_full(shape1, -1, dtype=torch.int)[0],
+        #         'matching_scores0': kpts0.new_zeros(shape0)[0],
+        #         'matching_scores1': kpts1.new_zeros(shape1)[0],
+        #         'skip_train': True
+        #     }
+        # Keypoint normalization.
+        kpts0 = normalize_keypoints_3d(kpts0, data['image0'].shape)
+        kpts1 = normalize_keypoints_3d(kpts1, data['image1'].shape)
+        # Keypoint MLP encoder.
+        desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
+        desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
+        # Multi-layer Transformer network.
+        desc0, desc1 = self.gnn(desc0, desc1)
+        # Final MLP projection.
+        mdesc0, mdesc1 = self.final_proj(desc0), self.final_proj(desc1)
+        # Compute matching descriptor distance.
+        scores = torch.einsum('bdn,bdm->bnm', mdesc0, mdesc1)
+        scores = scores / self.config['descriptor_dim'] ** .5
+        # Run the optimal transport.
+        scores = log_optimal_transport(
+            scores, self.bin_score,
+            iters=self.config['sinkhorn_iterations'])
+        return scores
+
+    def match_and_output_list(self, data):
+        scores = self.calculate_match_scores(data)
+        indices0, _, mscores0, _ = self.process_scores_into_matches(scores)
+
+        matches_with_conf = [[i, int(m), score] for i, (m, score) in enumerate(zip(indices0[0], mscores0[0]))]
+        return matches_with_conf
 
 
 ## MY ADDITIONS
@@ -378,6 +385,33 @@ class SuperGlueUnpacker:
 
     project_data: ProjectData = None
 
+    t_template: int = 0
+    data_template: dict = None
+
+    def __post_init__(self):
+        # Make a partial dictionary with the data from a single time point
+        project_data = self.project_data
+        t0 = self.t_template
+        f0 = project_data.raw_frames[t0]
+
+        # Unpack
+        desc0, kpts0, scores0 = self.unpack_frame(f0)
+        image0 = np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0)
+
+        # Repack
+        data = dict(descriptors0=desc0, descriptors1=None,
+                    keypoints0=kpts0, keypoints1=None, all_matches=None,
+                    image0=image0, image1=image0,
+                    scores0=scores0, scores1=None)
+
+        self.data_template = data
+
+    def unpack_frame(self, f0):
+        desc0 = torch.tensor(f0.all_features).float()
+        kpts0 = torch.tensor(f0.neuron_locs).float()
+        scores0 = torch.ones((kpts0.shape[0], 1)).float()
+        return desc0, kpts0, scores0
+
     def convert_frames_to_superglue_format(self, t0, t1):
         project_data = self.project_data
         df_gt = project_data.final_tracks
@@ -386,21 +420,10 @@ class SuperGlueUnpacker:
         f1 = project_data.raw_frames[t1]
 
         # Unpack
-        desc0 = torch.tensor(f0.all_features).float()
-        desc1 = torch.tensor(f1.all_features).float()
+        desc0, kpts0, scores0 = self.unpack_frame(f0)
+        desc1, kpts1, scores1 = self.unpack_frame(f1)
 
-        # For now, remove z
-        # kpts0 = torch.tensor(f0.neuron_locs)[:, 1:].float()
-        # kpts1 = torch.tensor(f1.neuron_locs)[:, 1:].float()
-        # frame dim is 0
-        # kpts0 = torch.unsqueeze(torch.tensor(f0.neuron_locs).float(), dim=0)
-        kpts0 = torch.tensor(f0.neuron_locs).float()
-        kpts1 = torch.tensor(f1.neuron_locs).float()
-
-        scores0 = torch.ones((kpts0.shape[0], 1)).float()
-        scores1 = torch.ones((kpts1.shape[0], 1)).float()
-
-        image0 = np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0)
+        image0 = torch.tensor(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0))
         # image1 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t1]), axis=0), axis=0)
 
         # Need expansion when not used in loop
@@ -413,6 +436,30 @@ class SuperGlueUnpacker:
                     scores0=scores0, scores1=scores1)
 
         return data
+
+    def convert_single_frame_to_superglue_format(self, f1: ReferenceFrame):
+        data = self.data_template.copy()
+        project_data = self.project_data
+        df_gt = project_data.final_tracks
+
+        t0 = self.t_template
+        t1 = f1.frame_ind
+
+        desc1, kpts1, scores1 = self.unpack_frame(f1)
+        all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
+
+        to_update = dict(descriptors1=desc1, keypoints1=kpts1, all_matches=all_matches, scores1=scores1)
+        data.update(to_update)
+
+        return data
+
+    def expand_all_data(self, data):
+        # Necessary when calling outside a pytorch dataloader
+        new_data = {}
+        for k, v in data.items():
+            new_data[k] = torch.tensor(v).unsqueeze(0)
+
+        return new_data
 
 
 class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronImageFeaturesFromProject):
@@ -442,9 +489,3 @@ class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronIma
         return self.num_to_calculate
 
 
-def random_combination(iterable, r):
-    """Random selection from itertools.combinations(iterable, r)"""
-    pool = tuple(iterable)
-    n = len(pool)
-    indices = sorted(random.sample(range(n), r))
-    return tuple(pool[i] for i in indices)

@@ -12,6 +12,7 @@ from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFr
 from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
     combine_dataframes_using_mode, combine_dataframes_using_bipartite_matching
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
+from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
 model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/"
@@ -88,6 +89,26 @@ class WormWithNeuronClassifier:
 
     def __repr__(self):
         return f"Worm Tracker based on network: {self.path_to_model}"
+
+
+@dataclass
+class WormWithSuperGlueClassifier:
+    """Tracks neurons using a superglue network and pre-calculated Frame objects"""
+    model: SuperGlueModel = None
+    superglue_unpacker: SuperGlueUnpacker = None  # Note: contains the reference frame
+
+    def match_target_frame(self, target_frame: ReferenceFrame):
+
+        with torch.no_grad():
+            data = self.superglue_unpacker.convert_single_frame_to_superglue_format(target_frame)
+            data = self.superglue_unpacker.expand_all_data(data)
+
+            matches_with_conf = self.model.superglue.match_and_output_list(data)
+
+        return matches_with_conf
+
+    def __repr__(self):
+        return f"Worm Tracker based on superglue network"
 
 
 def track_using_embedding_from_config(project_cfg, DEBUG):

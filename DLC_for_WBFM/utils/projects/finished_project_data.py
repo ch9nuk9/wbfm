@@ -675,7 +675,8 @@ def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, n
 
 
 def template_matches_to_dataframe(project_data: ProjectData,
-                                  all_matches: list):
+                                  all_matches: list,
+                                  null_value = -1):
     """Correct null value within all_matches is []"""
     num_frames = len(all_matches)
     coords = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list']
@@ -690,9 +691,12 @@ def template_matches_to_dataframe(project_data: ProjectData,
             this_template_idx = m[0]
 
             # These columns must match the order of 'coords' above
-            neuron_arrays[this_template_idx][i_frame, :3] = this_unscaled_pt
-            neuron_arrays[this_template_idx][i_frame, 3] = m[2]  # Match confidence
-            neuron_arrays[this_template_idx][i_frame, 4] = m[1]  # Match index
+            if null_value in m:
+                neuron_arrays[this_template_idx][i_frame, :] = np.nan
+            else:
+                neuron_arrays[this_template_idx][i_frame, :3] = this_unscaled_pt
+                neuron_arrays[this_template_idx][i_frame, 3] = m[2]  # Match confidence
+                neuron_arrays[this_template_idx][i_frame, 4] = m[1]  # Match index
 
     # Convert to pandas multiindexing formatting
     new_dict = {}
