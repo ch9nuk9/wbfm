@@ -17,7 +17,7 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, templ
 
 model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/"
 PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
-PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_62_partial_neurons.ckpt")
+PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_62_partial_neurons_1000training.ckpt")
 # PATH_TO_MODEL = os.path.join(model_dir, "classifier_36_neurons.ckpt")
 if not os.path.exists(PATH_TO_MODEL):
     raise FileNotFoundError(PATH_TO_MODEL)
