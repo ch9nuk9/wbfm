@@ -128,7 +128,7 @@ def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
     rel_fname = tracks_config.unresolve_absolute_path(abs_fname)
     logging.info(f"Saving output file at: {rel_fname}")
     tracks_config.config.update({'missing_data_imputed_df': rel_fname})
-    tracks_config.update_on_disk()
+    tracks_config.update_self_on_disk()
 
 
 def _unpack_for_imputing(tracks_config):

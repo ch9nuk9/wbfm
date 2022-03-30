@@ -61,7 +61,7 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
                                   project_data, DEBUG=DEBUG)
 
     relative_fname = traces_cfg.config['all_matches']
-    project_cfg.pickle_in_local_project(all_matches, relative_fname)
+    project_cfg.pickle_data_in_local_project(all_matches, relative_fname)
 
 
 def extract_traces_using_config(project_cfg: SubfolderConfigFile,
@@ -127,7 +127,7 @@ def extract_traces_of_training_data_from_config(project_cfg: SubfolderConfigFile
     fname = os.path.join("2-training_data", "training_data_tracks.h5")
     if hasattr(df_train, 'sparse'):
         df_train = df_train.sparse.to_dense()
-    training_cfg.h5_in_local_project(df_train, fname, also_save_csv=True)
+    training_cfg.h5_data_in_local_project(df_train, fname, also_save_csv=True)
 
 
 def make_mask2final_mapping(all_matches: dict):
@@ -233,7 +233,7 @@ def _save_traces_as_hdf_and_update_configs(final_neuron_names: list,
     traces_cfg.config['traces']['green'] = str(green_fname)
     traces_cfg.config['traces']['red'] = str(red_fname)
     traces_cfg.config['traces']['neuron_names'] = final_neuron_names
-    traces_cfg.update_on_disk()
+    traces_cfg.update_self_on_disk()
     # edit_config(traces_cfg.config['self_path'], traces_cfg)
 
 

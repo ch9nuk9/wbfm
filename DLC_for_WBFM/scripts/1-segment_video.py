@@ -34,7 +34,7 @@ def cfg(project_path, DEBUG):
 
     segment_cfg = cfg.get_segmentation_config()
     segment_cfg.config = synchronize_segment_config(project_path, segment_cfg.config)
-    segment_cfg.update_on_disk()
+    segment_cfg.update_self_on_disk()
 
     if not DEBUG:
         using_monkeypatch()

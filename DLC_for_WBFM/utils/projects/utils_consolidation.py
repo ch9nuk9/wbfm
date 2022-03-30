@@ -52,4 +52,4 @@ def consolidate_tracklets_using_manual_annotation(project_data: ProjectData):
     print(f"Consolidated number of unique tracklets: {len(final_tracklet_names)}")
 
     output_df_fname = "df_consolidated.pickle"
-    track_cfg.pickle_in_local_project(df_new, output_df_fname=output_df_fname, custom_writer=pd.to_pickle)
+    track_cfg.pickle_data_in_local_project(df_new, output_df_fname=output_df_fname, custom_writer=pd.to_pickle)

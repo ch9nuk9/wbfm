@@ -32,7 +32,7 @@ def cfg(project_path, DEBUG):
     project_dir = cfg.project_dir
 
     train_cfg = update_path_to_segmentation_in_config(cfg)
-    train_cfg.update_on_disk()
+    train_cfg.update_self_on_disk()
 
     log_dir = cfg.get_log_dir()
     log_fname = os.path.join(log_dir, '2-training_data_warnings.log')

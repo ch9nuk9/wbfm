@@ -241,16 +241,26 @@ def df_to_matches(df_gt, t0, t1=None, col='raw_neuron_ind_in_list'):
     return list([int(i0), int(i1)] for i0, i1 in zip(ind0, ind1) if _neither_nan(i0, i1))
 
 
-def accuracy_of_matches(gt_matches, new_matches, null_value=-1):
+def accuracy_of_matches(gt_matches, new_matches, null_value=-1, allow_unknown=True):
+    """
+    Expects a list of 2-element lists for the matches
+
+    if allow_unknown is False, then:
+    Assumes that the gt is complete, i.e. there are no extra matches in new_matches that might be correct but unknown
+    """
     tp = 0
     fp = 0
     fn = 0
-    gt_matches = np.array(gt_matches)
+    unknown = 0
+    gt_dict = dict(gt_matches)
     for m in new_matches:
-        if null_value in m:
+        gt_val = gt_dict.get(m[0], None)
+        if allow_unknown and gt_val is None:
+            unknown += 1
+        elif null_value in m:
             fn += 1
-        elif m in gt_matches:
+        elif m[1] == gt_val:
             tp += 1
         else:
             fp += 1
-    return tp, fp, fn
+    return tp, fp, fn, unknown

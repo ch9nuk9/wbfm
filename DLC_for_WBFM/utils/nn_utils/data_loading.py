@@ -139,7 +139,7 @@ def save_training_data(df, project_data, num_triplets=1000):
         # all_fname_triplets.append([fname1, fname2, fname3])
 
     fname = os.path.join(relative_dir, 'metadata.pickle')
-    project_data.project_config.pickle_in_local_project(metadata_dict, fname)
+    project_data.project_config.pickle_data_in_local_project(metadata_dict, fname)
 
 
 class NeuronTripletDataset(Dataset):
@@ -580,8 +580,10 @@ class NeuronImageFeaturesDataModuleFromProject(LightningDataModule):
     """Return neurons and their labels, e.g. for a classifier"""
     def __init__(self, batch_size=64, project_data: ProjectData = None, num_neurons=None, num_frames=None,
                  train_fraction=0.8, val_fraction=0.1, base_dataset_class=AbstractNeuronImageFeaturesFromProject,
-                 assume_all_neurons_correct=False):
+                 assume_all_neurons_correct=False, dataset_kwargs=None):
         super().__init__()
+        if dataset_kwargs is None:
+            dataset_kwargs = {}
         self.batch_size = batch_size
         self.project_data = project_data
         self.num_neurons = num_neurons
@@ -589,11 +591,12 @@ class NeuronImageFeaturesDataModuleFromProject(LightningDataModule):
         self.train_fraction = train_fraction
         self.val_fraction = val_fraction
         self.base_dataset_class = base_dataset_class
+        self.dataset_kwargs = dataset_kwargs
         self.assume_all_neurons_correct = assume_all_neurons_correct
 
     def setup(self, stage: Optional[str] = None):
         # transform and split
-        alldata = self.base_dataset_class(self.project_data)
+        alldata = self.base_dataset_class(self.project_data, **self.dataset_kwargs)
 
         train_fraction = int(len(alldata) * self.train_fraction)
         val_fraction = int(len(alldata) * self.val_fraction)

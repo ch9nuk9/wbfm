@@ -187,7 +187,7 @@ def track_using_fdnc_from_config(project_cfg: ModularProjectConfig,
         output_df_fname = tracks_cfg.config['leifer_params']['output_df_fname']
 
         output_pickle_fname = Path(output_df_fname).with_name('fdnc_matches.pickle')
-        project_cfg.pickle_in_local_project(all_matches, str(output_pickle_fname))
+        project_cfg.pickle_data_in_local_project(all_matches, str(output_pickle_fname))
         _save_final_tracks(df, tracks_cfg, output_df_fname)
 
 
@@ -221,7 +221,7 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
 
             pickle_fname = Path(default_df_fname).with_name('random_template_matches.pickle')
             output_pickle_fname = get_sequential_filename(str(pickle_fname))
-            project_cfg.pickle_in_local_project(all_matches, output_pickle_fname)
+            project_cfg.pickle_data_in_local_project(all_matches, output_pickle_fname)
 
             _save_final_tracks(df, tracks_cfg, this_df_fname)
 
@@ -242,7 +242,7 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
 
     with safe_cd(project_cfg.project_dir):
         fname = os.path.join('3-tracking', 'random_template_matches.pickle')
-        tracks_cfg.pickle_in_local_project(all_mappings, fname)
+        tracks_cfg.pickle_data_in_local_project(all_mappings, fname)
 
     # Combine to make final tracks
     # TODO: should I calculate the final neuron matches, not just tracks?
@@ -256,9 +256,9 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
 def _save_final_tracks(df, tracks_cfg, output_df_fname):
     Path(output_df_fname).parent.mkdir(exist_ok=True)
 
-    tracks_cfg.h5_in_local_project(df, output_df_fname, also_save_csv=True)
+    tracks_cfg.h5_data_in_local_project(df, output_df_fname, also_save_csv=True)
     tracks_cfg.config['final_3d_tracks_df'] = str(output_df_fname)
-    tracks_cfg.update_on_disk()
+    tracks_cfg.update_self_on_disk()
 
 
 def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):

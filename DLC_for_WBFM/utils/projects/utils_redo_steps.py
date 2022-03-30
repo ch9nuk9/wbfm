@@ -98,19 +98,19 @@ def _save_new_tracklets_and_update_config_file(new_df, path_to_new_metadata, pat
     track_cfg = project_data.project_config.get_tracking_config()
     df_to_save = new_df.astype(pd.SparseDtype("float", np.nan))
     output_df_fname = os.path.join('3-tracking', 'postprocessing', 'df_resegmented.pickle')
-    track_cfg.pickle_in_local_project(df_to_save, output_df_fname, custom_writer=pd.to_pickle)
+    track_cfg.pickle_data_in_local_project(df_to_save, output_df_fname, custom_writer=pd.to_pickle)
     # logging.warning("Overwriting name of manual correction tracklets, assuming that was the most recent")
     df_fname = track_cfg.unresolve_absolute_path(output_df_fname)
     track_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
     if not DEBUG:
-        track_cfg.update_on_disk()
+        track_cfg.update_self_on_disk()
     segmentation_cfg = project_data.project_config.get_segmentation_config()
     fname = segmentation_cfg.unresolve_absolute_path(path_to_new_segmentation)
     segmentation_cfg.config['output_masks'] = fname
     fname = segmentation_cfg.unresolve_absolute_path(path_to_new_metadata)
     segmentation_cfg.config['output_metadata'] = fname
     if not DEBUG:
-        segmentation_cfg.update_on_disk()
+        segmentation_cfg.update_self_on_disk()
 
 
 def match_two_segmentations(new_seg, num_frames, old_seg, red):
@@ -213,8 +213,8 @@ def correct_tracks_dataframe_using_frame_class(project_cfg: ModularProjectConfig
     # Save
     if len(updated_neurons_and_times) > 0:
         tracking_cfg = project_data.project_config.get_tracking_config()
-        tracking_cfg.h5_in_local_project(df, df_fname, allow_overwrite=overwrite,
-                                         make_sequential_filename=~overwrite)
+        tracking_cfg.h5_data_in_local_project(df, df_fname, allow_overwrite=overwrite,
+                                              make_sequential_filename=~overwrite)
     else:
         print("No updates needed")
 

@@ -128,10 +128,10 @@ def track_using_embedding_from_config(project_cfg, DEBUG):
 
     # Save
     out_fname = '3-tracking/postprocessing/df_tracks_embedding.h5'
-    tracking_cfg.h5_in_local_project(df_final, out_fname, also_save_csv=True)
+    tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True)
     tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
 
-    tracking_cfg.update_on_disk()
+    tracking_cfg.update_self_on_disk()
 
 
 def track_using_template(all_frames, num_frames, project_data, t_template):

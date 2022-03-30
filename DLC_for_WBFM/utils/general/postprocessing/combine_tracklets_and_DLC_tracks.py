@@ -329,7 +329,7 @@ def match_dlc_and_tracklet_coverings_from_config(track_config: SubfolderConfigFi
     if num_final_tracklets > num_initial_tracklets:
         logging.info("Tracklet dataframe has been modified, so must be saved; this may take a while")
         fname = track_config.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname')
-        track_config.h5_in_local_project(df_tracklets, fname)
+        track_config.h5_data_in_local_project(df_tracklets, fname)
 
     _save_tracklet_matches(global2tracklet, project_cfg.project_dir, track_config)
 
@@ -380,7 +380,7 @@ def get_already_covered_indices(df_tracklets, previous_matches):
 def _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config):
     with safe_cd(project_dir):
         # Actually save
-        track_config.h5_in_local_project(combined_df, output_df_fname, also_save_csv=True)
+        track_config.h5_data_in_local_project(combined_df, output_df_fname, also_save_csv=True)
         # logging.info(f"Saving to: {output_df_fname}")
         # combined_df.to_hdf(output_df_fname, key='df_with_missing')
 
@@ -391,18 +391,18 @@ def _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, t
             # Save only df_fname in yaml; don't overwrite other fields
             updates = {'final_3d_tracks_df': str(output_df_fname)}
             track_config.config.update(updates)
-            track_config.update_on_disk()
+            track_config.update_self_on_disk()
 
 
 def _save_tracklet_matches(global2tracklet, project_dir, track_config):
     with safe_cd(project_dir):
         abs_fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')
         abs_fname = get_sequential_filename(abs_fname)
-        track_config.pickle_in_local_project(global2tracklet, abs_fname)
+        track_config.pickle_data_in_local_project(global2tracklet, abs_fname)
 
         rel_fname = track_config.unresolve_absolute_path(abs_fname)
         track_config.config.update({'global2tracklet_matches_fname': rel_fname})
-        track_config.update_on_disk()
+        track_config.update_self_on_disk()
 
 
 def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,

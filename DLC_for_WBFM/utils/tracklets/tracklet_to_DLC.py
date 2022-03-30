@@ -194,7 +194,7 @@ def save_training_data_as_dlc_format(training_config: SubfolderConfigFile,
     training_df.to_hdf(out_fname, 'df_with_missing')
 
     training_config.config['df_training_3d_tracks'] = out_fname
-    training_config.update_on_disk()
+    training_config.update_self_on_disk()
 
     out_fname = Path(out_fname).with_suffix(".csv")
     training_df.to_csv(str(out_fname))
@@ -474,7 +474,7 @@ def get_or_recalculate_which_frames(DEBUG, df: pd.DataFrame, num_frames: int,
         which_frames, _ = best_tracklet_covering_from_my_matches(df, **tracklet_opt)
 
         training_cfg.config['training_data_3d']['which_frames'] = which_frames
-        training_cfg.update_on_disk()
+        training_cfg.update_self_on_disk()
 
     return which_frames
 

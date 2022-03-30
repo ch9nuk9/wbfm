@@ -19,9 +19,22 @@ from DLC_for_WBFM.utils.general.preprocessing.utils_tif import PreprocessingSett
 
 @dataclass
 class ConfigFileWithProjectContext:
+    """
+    Top-level configuration file class
+
+    Knows how to:
+    1. update itself on disk
+    2. save new data inside the relevant project
+    3. change filepaths between relative and absolute
+    """
+
     self_path: str
     config: dict = None
     project_dir: str = None
+
+    def update_self_on_disk(self):
+        fname = self.resolve_relative_path(self.self_path)
+        edit_config(fname, self.config)
 
     def resolve_relative_path_from_config(self, key) -> str:
         val = self.config.get(key, None)
@@ -43,17 +56,13 @@ class ConfigFileWithProjectContext:
         except ValueError:
             return val
 
-    def update_on_disk(self):
-        fname = self.resolve_relative_path(self.self_path)
-        edit_config(fname, self.config)
-
     def to_json(self):
         return json.dumps(vars(self))
 
-    def pickle_in_local_project(self, data, relative_path: str,
-                                allow_overwrite=True, make_sequential_filename=False,
-                                custom_writer=None,
-                                **kwargs):
+    def pickle_data_in_local_project(self, data, relative_path: str,
+                                     allow_overwrite=True, make_sequential_filename=False,
+                                     custom_writer=None,
+                                     **kwargs):
         """
         For objects larger than 4GB and python<3.8, protocol=4 must be specified directly
 
@@ -75,8 +84,8 @@ class ConfigFileWithProjectContext:
 
         return abs_path
 
-    def h5_in_local_project(self, data: pd.DataFrame, relative_path: str,
-                            allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):
+    def h5_data_in_local_project(self, data: pd.DataFrame, relative_path: str,
+                                 allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):
         abs_path = self.resolve_relative_path(relative_path)
         if not abs_path.endswith('.h5'):
             abs_path += ".h5"
@@ -124,6 +133,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     Add functionality to get individual config files using the main project config filepath
 
     Returns config_file_with_project_context objects, instead of raw dictionaries for the subconfig files
+
+    Knows how to:
+    1. find the individual config files of the substeps
+    2. initialize the physical unit conversion class
+    3. and loading other options classes
+
     """
 
     def __post_init__(self):

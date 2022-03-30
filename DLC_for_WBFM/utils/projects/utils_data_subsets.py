@@ -159,4 +159,4 @@ def crop_zarr_using_config(cfg: ModularProjectConfig):
     cfg.config['dataset_params']['start_volume'] = 0
     cfg.config['dataset_params']['old_start_volume'] = start_volume
 
-    cfg.update_on_disk()
+    cfg.update_self_on_disk()

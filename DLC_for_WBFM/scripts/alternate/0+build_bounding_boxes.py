@@ -47,4 +47,4 @@ def main(_config, _run):
     segment_cfg = _config['segment_cfg']
     bbox_fname = segment_cfg.unresolve_absolute_path(bbox_fname)
     segment_cfg.config['bbox_fname'] = bbox_fname
-    segment_cfg.update_on_disk()
+    segment_cfg.update_self_on_disk()

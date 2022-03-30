@@ -86,7 +86,7 @@ def _update_tracking_config_with_project_names(project_config, tracking_config):
                 all_dlc_configs.append(str(dlc_name))
     print(f"Found config files: {all_dlc_configs}")
     tracking_config.config['dlc_projects']['all_configs'] = all_dlc_configs
-    tracking_config.update_on_disk()
+    tracking_config.update_self_on_disk()
     # edit_config(config['self_path'], config)
 
 
@@ -121,7 +121,7 @@ def unpack_configs_dlc_projects(DEBUG, project_config, scorer, task_name, tracki
         assert df_fname.endswith(".h5")
         df: pd.DataFrame = pd.read_hdf(df_fname)
     all_center_slices, which_frames = _get_frames_for_dlc_training(DEBUG, df, tracking_config)
-    tracking_config.update_on_disk()
+    tracking_config.update_self_on_disk()
     vid_cfg = tracking_config.config
     vid_cfg['dataset_params'] = project_config.config['dataset_params']
     video_fname = project_config.config['preprocessed_red']
@@ -357,7 +357,7 @@ def make_3d_tracks_from_stack(track_cfg: SubfolderConfigFile,
     # Save only df_fname in yaml; don't overwrite other fields
     updates = dict(final_3d_tracks_df=df_fname)
     track_cfg.config.update(updates)
-    track_cfg.update_on_disk()
+    track_cfg.update_self_on_disk()
     # edit_config(track_cfg['self_path'], {'final_3d_tracks': updates})
 
     return final_df

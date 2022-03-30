@@ -158,7 +158,7 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
         df_multi_index_format, split_times = filter_tracklets_using_volume(df_multi_index_format,
                                                                            **postprocessing_params)
         out_fname = '2-training_data/raw/volume_tracklet_split_points.pickle'
-        training_config.pickle_in_local_project(split_times, out_fname)
+        training_config.pickle_data_in_local_project(split_times, out_fname)
 
     save_all_tracklets(df_custom_format, df_multi_index_format, training_config)
 
@@ -192,7 +192,7 @@ def save_all_tracklets(df, df_multi_index_format, training_config):
         # df_multi_index_format.to_hdf(out_fname, 'df_with_missing')
         logging.info("Converting dataframe to sparse format")
         df_multi_index_format = df_multi_index_format.astype(pd.SparseDtype("float", np.nan))
-        training_config.pickle_in_local_project(df_multi_index_format, out_fname, custom_writer=pd.to_pickle)
+        training_config.pickle_data_in_local_project(df_multi_index_format, out_fname, custom_writer=pd.to_pickle)
 
 
 def _unpack_config_for_tracklets(training_config, segmentation_config):
@@ -351,13 +351,13 @@ def split_tracklets_using_change_detection(project_cfg: ModularProjectConfig, DE
     # Save and update configs
     training_cfg = project_cfg.get_training_config()
     out_fname = os.path.join('2-training_data', 'all_tracklets_after_splitting.pickle')
-    training_cfg.pickle_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
+    training_cfg.pickle_data_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
 
     # global2tracklet_matches_fname = os.path.join('3-tracking', 'global2tracklet_after_splitting.pickle')
     # tracking_cfg.pickle_in_local_project(global2tracklet_new, global2tracklet_matches_fname)
     # tracking_cfg.config['global2tracklet_matches_fname'] = global2tracklet_matches_fname
     training_cfg.config['df_3d_tracklets'] = out_fname
-    training_cfg.update_on_disk()
+    training_cfg.update_self_on_disk()
     # tracking_cfg.update_on_disk()
 
 
@@ -395,11 +395,11 @@ def split_tracklets_using_neuron_match_conflicts(project_cfg: ModularProjectConf
     # Save and update configs
     # training_cfg = project_cfg.get_training_config()
     out_fname = os.path.join('3-tracking', 'all_tracklets_after_conflict_splitting.pickle')
-    tracking_cfg.pickle_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
+    tracking_cfg.pickle_data_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
 
     # TODO: update the name of this field
     tracking_cfg.config['wiggle_split_tracklets_df_fname'] = out_fname
-    tracking_cfg.update_on_disk()
+    tracking_cfg.update_self_on_disk()
 
     logging.info("The tracklets have been split, but now step 3b should be rerun to regenerate the matches "
                  "(Using previous matches should be fine)")
@@ -471,15 +471,15 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     # Save and update configs
     training_cfg = project_cfg.get_training_config()
     out_fname = os.path.join('2-training_data', 'all_tracklets_with_ground_truth.pickle')
-    training_cfg.pickle_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
+    training_cfg.pickle_data_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
 
     global2tracklet_matches_fname = os.path.join('3-tracking', 'global2tracklet_with_ground_truth.pickle')
-    tracking_cfg.pickle_in_local_project(global2tracklet_new, global2tracklet_matches_fname)
+    tracking_cfg.pickle_data_in_local_project(global2tracklet_new, global2tracklet_matches_fname)
 
     tracking_cfg.config['global2tracklet_matches_fname'] = global2tracklet_matches_fname
     training_cfg.config['df_3d_tracklets'] = out_fname
-    training_cfg.update_on_disk()
-    tracking_cfg.update_on_disk()
+    training_cfg.update_self_on_disk()
+    tracking_cfg.update_self_on_disk()
 
     return df_including_tracks, global2tracklet_new
 
