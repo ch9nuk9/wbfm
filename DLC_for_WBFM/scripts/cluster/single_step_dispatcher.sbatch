@@ -32,6 +32,7 @@ declare -A CMD_DICT
 CMD_DICT["0b"]="0b-preprocess_working_copy_of_data.py"
 CMD_DICT["1"]="1-segment_video.py"
 CMD_DICT["2a"]="2a-pairwise_match_sequential_frames.py"
+CMD_DICT["2a-alt"]="alternate/2+only_build_frame_objects.py"
 CMD_DICT["2b"]="2b-postprocess_matches_to_tracklets.py"
 CMD_DICT["2c"]="2c-reindex_segmentation_training_masks.py"
 CMD_DICT["3a"]="3a-track_using_fdnc.py"
