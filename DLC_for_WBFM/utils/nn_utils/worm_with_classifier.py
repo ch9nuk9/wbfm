@@ -109,7 +109,7 @@ class WormWithSuperGlueClassifier:
     def match_target_frame(self, target_frame: ReferenceFrame):
 
         with torch.no_grad():
-            data = self.superglue_unpacker.convert_single_frame_to_superglue_format(target_frame)
+            data = self.superglue_unpacker.convert_single_frame_to_superglue_format(target_frame, use_gt_matches=False)
             data = self.superglue_unpacker.expand_all_data(data)
 
             matches_with_conf = self.model.superglue.match_and_output_list(data)

@@ -7,7 +7,7 @@
 #SBATCH --output=log_single_step-%j.out    # Standard output and error log
 #SBATCH --time=6:00:00
 #SBATCH --mem=16G
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=32
 # #SBATCH --partition=gpu
 
 pwd; hostname; date
