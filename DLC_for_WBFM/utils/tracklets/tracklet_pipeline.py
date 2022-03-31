@@ -105,8 +105,8 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
     dtype = 'uint8'
 
     # Build frames, then match them
-    del tracker_params['num_frames']
     tracker_params['end_volume'] = tracker_params['start_volume'] + tracker_params['num_frames']
+    del tracker_params['num_frames']
     all_frame_dict = calculate_frame_objects_full_video(video_fname=video_fname, **tracker_params)
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, None)
