@@ -340,7 +340,7 @@ def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_param
 
 
 def calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
-                                       z_depth_neuron_encoding, encoder_opt, max_workers=8):
+                                       z_depth_neuron_encoding, encoder_opt, max_workers=8, **kwargs):
     # Get initial volume; settings are same for all
     vid_dat = zarr.open(video_fname, synchronizer=zarr.ThreadSynchronizer())
     vol_shape = vid_dat[0, ...].shape
