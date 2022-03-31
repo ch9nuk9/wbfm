@@ -437,16 +437,19 @@ class SuperGlueUnpacker:
 
         return data
 
-    def convert_single_frame_to_superglue_format(self, f1: ReferenceFrame):
+    def convert_single_frame_to_superglue_format(self, f1: ReferenceFrame, use_gt_matches=False):
         data = self.data_template.copy()
         project_data = self.project_data
-        df_gt = project_data.final_tracks
 
         t0 = self.t_template
         t1 = f1.frame_ind
 
         desc1, kpts1, scores1 = self.unpack_frame(f1)
-        all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
+        if use_gt_matches:
+            df_gt = project_data.final_tracks
+            all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
+        else:
+            all_matches = []
 
         to_update = dict(descriptors1=desc1, keypoints1=kpts1, all_matches=all_matches, scores1=scores1)
         data.update(to_update)
