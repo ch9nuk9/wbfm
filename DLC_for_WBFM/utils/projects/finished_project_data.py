@@ -533,7 +533,7 @@ class ProjectData:
                              dask_for_segmentation=True):
         if viewer is None:
             import napari
-            viewer = napari.Viewer()
+            viewer = napari.Viewer(ndisplay=3)
         if which_layers == 'all':
             which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
                             'Neuron IDs', 'Intermediate global IDs']
@@ -551,7 +551,7 @@ class ProjectData:
 
         raw_chunk = self.red_data.chunks
         dask_chunk = list(raw_chunk).copy()
-        dask_chunk[0] = 20
+        dask_chunk[0] = 50
 
         if 'Red data' in which_layers:
             red_dask = da.from_zarr(self.red_data, chunk=dask_chunk)

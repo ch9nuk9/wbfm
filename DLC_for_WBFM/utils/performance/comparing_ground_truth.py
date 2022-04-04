@@ -126,6 +126,7 @@ def calc_accuracy(all_dist, dist_tol=1e-2):
 
 
 def plot_histogram_at_likelihood_thresh(df_tracks, df_leifer, likelihood_thresh):
+    """Assumes that the neurons have the same name; see rename_columns_using_matching"""
     df_leifer_filter = filter_dataframe_using_likelihood(df_leifer, likelihood_thresh)
     coords = ['z', 'x', 'y']
     tracked_names = [int2name_neuron(i) for i in TRACKED_IND]
@@ -135,7 +136,7 @@ def plot_histogram_at_likelihood_thresh(df_tracks, df_leifer, likelihood_thresh)
     all_total2 = {}
     for name in tqdm(tracked_names, leave=False):
         df1, df2 = df_tracks[name][coords].copy(), df_leifer_filter[name][coords].copy()
-        all_dist_dict[name], all_total1[name], all_total2[name], _  = calc_all_dist(df1, df2)
+        all_dist_dict[name], all_total1[name], all_total2[name], _ = calc_all_dist(df1, df2)
 
     num_t = df_tracks.shape[0]
     all_acc_dict = defaultdict(list)
