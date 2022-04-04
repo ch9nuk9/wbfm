@@ -3,7 +3,6 @@ from typing import Tuple
 
 import networkx as nx
 import numpy as np
-import torch
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 
@@ -163,7 +162,8 @@ def calc_bipartite_from_candidates(all_candidate_matches, min_confidence_after_s
 
 def calc_bipartite_from_positions(xyz0: np.ndarray, xyz1: np.ndarray,
                                   max_dist: float = None,
-                                  gamma: float = 1.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+                                  gamma: float = 1.0,
+                                  try_to_fix_inf = False) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Uses scipy implementation of linear_sum_assignment to calculate best matches
 
@@ -180,18 +180,29 @@ def calc_bipartite_from_positions(xyz0: np.ndarray, xyz1: np.ndarray,
     """
     # ENHANCE: use sparse distance matrix: https://stackoverflow.com/questions/52366421/how-to-do-n-d-distance-and-nearest-neighbor-calculations-on-numpy-arrays
     cost_matrix = cdist(np.array(xyz0), np.array(xyz1), 'euclidean')
-    # Scipy can't deal with np.inf, so we want to maximize, not minimize
-    # (And set impossible values to 0.0)
-    # inv_cost_matrix = 1.0 / (cost_matrix + 1e-6)
-    # np.where(inv_cost_matrix < (1.0 / max_dist), 0.0, inv_cost_matrix)
-    # inv_cost_matrix = np.nan_to_num(inv_cost_matrix)
+    if max_dist is None:
+        max_dist = 1e6
+    if try_to_fix_inf:
+        # Scipy can't deal with np.inf, so we want to maximize, not minimize
+        # (And set impossible values to 0.0)
+        # inv_cost_matrix = gamma / (cost_matrix + 1e-6)
+        # np.where(inv_cost_matrix < (gamma / max_dist), 0.0, inv_cost_matrix)
+        # inv_cost_matrix = np.nan_to_num(inv_cost_matrix)
+        #
+        # try:
+        #     matches = linear_sum_assignment(inv_cost_matrix, maximize=True)
+        # except ValueError:
+        #     raise ValueError
+
+        # Slower, so don't use by default
+        cost_matrix = cdist(np.array(xyz0), np.array(xyz1), lambda u, v: np.sqrt(np.nansum((u - v) ** 2)))
 
     try:
-        # matches = linear_sum_assignment(inv_cost_matrix, maximize=True)
         matches = linear_sum_assignment(cost_matrix)
     except ValueError:
-        # logging.info(inv_cost_matrix)
+        logging.warning("Value error probably means there were inf or nan detected; try try_to_fix_inf=True")
         raise ValueError
+
     raw_matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     matches = raw_matches.copy()
 
@@ -203,6 +214,9 @@ def calc_bipartite_from_positions(xyz0: np.ndarray, xyz1: np.ndarray,
     #     [matches.pop(i) for i in to_remove]
 
     matches = np.array(matches)
+    # if try_to_fix_inf:
+    #     conf = calc_confidence_from_distance_array_and_matches(inv_cost_matrix, matches, use_dist2conf=False)
+    # else:
     conf = calc_confidence_from_distance_array_and_matches(cost_matrix, matches, gamma)
     # conf = [conf_func(d) for d in match_dist]
 
@@ -325,6 +339,7 @@ def is_one_neuron_per_frame(node_names, min_size=None, total_frames=None):
 
 
 def calc_matches_from_positions_using_softmax(query_embedding, trained_embedding):
+    import torch
     distances = torch.cdist(trained_embedding, query_embedding)
     confidences = torch.softmax(torch.sigmoid(1.0 / distances), dim=1)
     i_trained, i_query = linear_sum_assignment(confidences, maximize=True)
