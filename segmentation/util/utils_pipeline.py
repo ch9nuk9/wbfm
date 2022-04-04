@@ -107,7 +107,7 @@ def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
                     future.result()
                     pbar.update(1)
 
-    segment_cfg.update_on_disk()
+    segment_cfg.update_self_on_disk()
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
@@ -201,7 +201,7 @@ def _segment_full_video_2d(segment_cfg: ConfigFileWithProjectContext,
                 future.result()
                 pbar.update(1)
 
-    segment_cfg.update_on_disk()
+    segment_cfg.update_self_on_disk()
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
@@ -514,7 +514,7 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
     #             pbar.update(1)
 
     # Update metadata
-    segment_cfg.update_on_disk()
+    segment_cfg.update_self_on_disk()
     if verbose >= 1:
         print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
