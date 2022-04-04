@@ -204,16 +204,22 @@ def matches_to_sparse_matrix(matches_with_conf, shape=None):
     return coo_matrix((data, (row, col)), shape=shape, dtype=float)
 
 
-def rename_columns_using_matching(df0, df1, column='raw_neuron_ind_in_list'):
-    """Aligns the names of df0 with the names of df1 based on bipartite matching on column"""
+def rename_columns_using_matching(df_base, df_to_rename, column='raw_neuron_ind_in_list',
+                                  try_to_fix_inf=False):
+    """
+    Aligns the names of df0 with the names of df1 based on bipartite matching on column
 
-    names0 = get_names_from_df(df0)
-    names1 = get_names_from_df(df1)
+    Note: can't really handle nan or inf values in either matrix
+    """
 
-    df0_ind = df0.loc(axis=1)[:, column].to_numpy()
-    df1_ind = df1.loc(axis=1)[:, column].to_numpy()
+    names0 = get_names_from_df(df_base)
+    names1 = get_names_from_df(df_to_rename)
 
-    matches, conf, _ = calc_bipartite_from_positions(df1_ind.T, df0_ind.T)
+    # Note: the bipartite index has to match the name indices
+    df0_ind = df_base.loc(axis=1)[names0, column].to_numpy()
+    df1_ind = df_to_rename.loc(axis=1)[names1, column].to_numpy()
+
+    matches, conf, _ = calc_bipartite_from_positions(df1_ind.T, df0_ind.T, try_to_fix_inf=try_to_fix_inf)
 
     # Start with default
     name_mapping = {n: 'unmatched_neuron' for n in names1}
@@ -221,11 +227,11 @@ def rename_columns_using_matching(df0, df1, column='raw_neuron_ind_in_list'):
         name_mapping[names1[m[0]]] = names0[m[1]]
 
     # Note: drops columns with no match!
-    df1_renamed = df1.rename(columns=name_mapping, inplace=False)
+    df1_renamed = df_to_rename.rename(columns=name_mapping, inplace=False)
     if len(names1) > len(names0):
         df1_renamed.drop(columns='unmatched_neuron', inplace=True)
 
-    return df1_renamed
+    return df1_renamed, matches, conf, name_mapping
 
 
 def combine_dataframes_using_max_of_column(df0, df1, column='likelihood'):

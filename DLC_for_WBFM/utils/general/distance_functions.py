@@ -103,10 +103,13 @@ def confidence_using_tracklet_lengths(length, percent_inliers,
     # return np.tanh(percent_inliers / gamma_inliers) * np.tanh(length / gamma_length)
 
 
-def calc_confidence_from_distance_array_and_matches(distance_matrix, matches, gamma=1.0):
+def calc_confidence_from_distance_array_and_matches(distance_matrix, matches, gamma=1.0, use_dist2conf=True):
     # Calculate confidences from distance
     conf = np.zeros((matches.shape[0], 1))
     for i, (m0, m1) in enumerate(matches):
         dist = distance_matrix[m0, m1]
-        conf[i] = dist2conf(dist, gamma)
+        if use_dist2conf:
+            conf[i] = dist2conf(dist, gamma)
+        else:
+            conf[i] = dist
     return conf
