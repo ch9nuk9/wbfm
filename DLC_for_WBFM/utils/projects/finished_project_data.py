@@ -59,6 +59,7 @@ class ProjectData:
     background_per_pixel: float = None
     likelihood_thresh: float = None
 
+    all_used_fnames: list = None
     verbose: int = 2
 
     # Precedence when multiple are available
@@ -110,6 +111,7 @@ class ProjectData:
         final_tracks, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                                 this_reader=read_if_exists)
         self.final_tracks_fname = fname
+        self.all_used_fnames.append(fname)
         return final_tracks
 
     @cached_property
@@ -136,6 +138,7 @@ class ProjectData:
         fname = os.path.join('raw', 'frame_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         frames = pickle_load_binary(fname)
+        self.all_used_fnames.append(fname)
         return frames
 
     @cached_property
@@ -145,6 +148,7 @@ class ProjectData:
         fname = os.path.join('raw', 'match_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         matches = pickle_load_binary(fname)
+        self.all_used_fnames.append(fname)
         return matches
 
     @cached_property
@@ -154,6 +158,7 @@ class ProjectData:
         fname = os.path.join('raw', 'clust_df_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         clust = pickle_load_binary(fname)
+        self.all_used_fnames.append(fname)
         return clust
 
     @cached_property
@@ -171,6 +176,7 @@ class ProjectData:
         df_all_tracklets, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                                     this_reader=pandas_read_any_filetype)
         self.df_all_tracklets_fname = fname
+        self.all_used_fnames.append(fname)
 
         if self.force_tracklets_to_be_sparse:
             if not check_if_fully_sparse(df_all_tracklets):
@@ -227,6 +233,7 @@ class ProjectData:
 
     def _load_segmentation_related_properties(self):
         _ = self.segmentation_metadata.segmentation_metadata
+        self.all_used_fnames.append(self.segmentation_metadata.segmentation_metadata.detection_fname)
 
     @property
     def num_frames(self):
@@ -271,6 +278,7 @@ class ProjectData:
                                 to_load_segmentation_metadata=False):
         # Initialize object in order to use cached properties
         obj = ProjectData(project_dir, cfg)
+        obj.all_used_fnames = []
 
         red_dat_fname = cfg.config['preprocessed_red']
         green_dat_fname = cfg.config['preprocessed_green']
@@ -337,6 +345,10 @@ class ProjectData:
                 red_traces.replace(0, np.nan, inplace=True)
                 green_traces.replace(0, np.nan, inplace=True)
             logger.info("Read all data")
+
+        obj.all_used_fnames.extend([red_dat_fname, green_dat_fname, red_traces_fname, green_traces_fname,
+                                    df_training_tracklets_fname, reindexed_masks_training_fname,
+                                    seg_fname_raw, seg_fname, behavior_fname])
 
         background_per_pixel = traces_cfg.config['visualization']['background_per_pixel']
         likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']
