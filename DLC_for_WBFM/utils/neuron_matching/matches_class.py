@@ -360,7 +360,7 @@ class MatchesAsGraph(Graph):
 
     def pretty_print_single_match(self, node):
         dat = dict(self[node])
-        print(f"Matches for: {node}")
+        print(f"{len(dat)} matches for {node}")
         for key, val in dat.items():
             print(f"{key} with weight={val['weight']}")
 
