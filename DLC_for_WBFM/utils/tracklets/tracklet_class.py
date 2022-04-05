@@ -8,6 +8,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import sklearn
+
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
@@ -624,7 +625,7 @@ class TrackedWorm:
         return overlapping_tracklet_conflict_points
 
     def plot_tracklets_for_neuron(self, neuron_name, with_names=True, with_confidence=True, plot_field='z',
-                                  diff_percentage=False, minimum_confidence=0.0):
+                                  diff_percentage=False, minimum_confidence=0.0, adjust_annotations=True):
         tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,
                                                                                                 minimum_confidence)
         # tracklet_list = self.get_tracklets_for_neuron(neuron_name)
@@ -634,7 +635,8 @@ class TrackedWorm:
 
         plt.figure(figsize=(25, 5))
         num_skipped = 0
-        for i, (t, name) in enumerate(zip(tracklet_list, tracklet_names)):
+        all_annotations = []
+        for i, (t, name) in enumerate(tqdm(zip(tracklet_list, tracklet_names))):
             edge = (neuron.name_in_graph, neuron.neuron2tracklets.raw_name_to_network_name(name))
             conf = neuron.neuron2tracklets.get_edge_data(*edge)['weight']
 
@@ -663,11 +665,17 @@ class TrackedWorm:
                     annotation_str = ""
                 if with_confidence:
                     annotation_str = f"{annotation_str} conf={conf:.2f}"
-                plt.annotate(annotation_str, (x0, y0), xytext=(x0-1, y_text),
-                             arrowprops=dict(facecolor=line[0].get_color()))
+                txt = plt.annotate(annotation_str, (x0, y0), xytext=(x0-1, y_text),
+                                   arrowprops=dict(facecolor=line[0].get_color()))
                 ylim = plt.gca().get_ylim()
                 plt.ylim([0, 2*np.max(y)])
+                all_annotations.append(txt)
         plt.title(f"Tracklets for {neuron_name}")
+
+        if adjust_annotations and len(all_annotations) > 0:
+            from adjustText import adjust_text
+            print("Adjusting annotations to not overlap...")
+            adjust_text(all_annotations, only_move={'points': 'y', 'text': 'y', 'objects': 'y'})
 
     def compose_global_neuron_and_tracklet_graph(self) -> MatchesAsGraph:
         return nx.compose_all([neuron.neuron2tracklets for neuron in self.global_name_to_neuron.values()])
