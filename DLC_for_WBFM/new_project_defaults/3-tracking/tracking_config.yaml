@@ -3,12 +3,34 @@
 
 self_path: 3-tracking/tracking_config.yaml # For programmatic updates
 
+##
+## Main output for future files
+##
 final_3d_tracks_df: null # See 3c-make_full_tracks.py
 
+precedence_tracks:
+- automatic
+- imputed
+- fdnc
+
+##
+## Global tracking
+##
+leifer_params:
+  match_confidence_threshold: 0.2
+  output_df_fname: 3-tracking/postprocessing/leifer_tracks.h5
+  use_zimmer_template: true
+  use_multiple_templates: true
+  core_options:
+    topn: 3
+  num_random_templates: 10
+
+##
+## Matching tracklets and global tracks
+##
+
 final_3d_tracks:
-  max_dist: 5.0 # CHANGE ME
   max_dist_to_segmentation: 1.0 # CHANGE ME
-  use_filtered: False # See postprocessing/3b+filter_dlc_predictions
   template_time_point: 10
 
 final_3d_postprocessing:
@@ -23,11 +45,6 @@ final_3d_postprocessing:
   bipartite_matching_t_step: 1  # Increase for speed, but may miss short tracklets
   output_df_fname: 3-tracking/postprocessing/combined_3d_tracks.h5
 
-precedence_tracks:
-- automatic
-- imputed
-- fdnc
-
 precedence_global2tracklet:
   - manual
   - automatic
@@ -38,22 +55,20 @@ precedence_df_tracklets:
   - wiggle
   - automatic
 wiggle_split_tracklets_df_fname: 3-tracking/postprocessing/wiggle_split_tracklets.h5
-manual_correction_global2tracklet_fname: 3-tracking/manual_annotation/global2tracklet_manual.pickle
 
+##
+## Manual annotation
+##
+manual_correction_global2tracklet_fname: 3-tracking/manual_annotation/global2tracklet_manual.pickle
 manual_correction_tracklets_df_fname: 3-tracking/manual_annotation/manually_split_tracklets.pickle
 manual_correction_3d_tracks_df_fname: 3-tracking/manual_annotation/combined_3d_tracks.h5 # Will be updated AFTER manual correction, not during
+
+##
+## Other postprocessing
+##
 
 missing_data_postprocessing:
   likelihood_threshold: 0.5
   n_nearest_features: 50
 
 missing_data_imputed_df: 3-tracking/postprocessing/imputed_3d_tracks.h5
-
-leifer_params:
-  match_confidence_threshold: 0.2
-  output_df_fname: 3-tracking/postprocessing/leifer_tracks.h5
-  use_zimmer_template: true
-  use_multiple_templates: true
-  core_options:
-    topn: 3
-  num_random_templates: null

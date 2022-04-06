@@ -34,7 +34,7 @@ df_3d_tracklets: 2-training_data/all_tracklets.pickle
 reindexed_masks: 2-training_data/reindexed_masks.zarr
 reindexed_metadata: 2-training_data/reindexed_metadata.pickle
 
-# Which frames have enough tracklets to be used for DLC later
+# Which frames have enough tracklets to be used as templates later
 training_data_3d:
   num_training_frames: 5 # CHANGE ME; trade-off between number of neurons and number of frames
   which_frames: null # To be calculated

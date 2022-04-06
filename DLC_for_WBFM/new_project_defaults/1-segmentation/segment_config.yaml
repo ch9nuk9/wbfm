@@ -10,10 +10,10 @@ bbox_fname: null
 
 # Segmentation
 segmentation_params:
-  stardist_model_name: lukas3d_zarr
+  stardist_model_name: students_and_lukas_3d_zarr
   zero_out_borders: false
 
-# Postprocessing
+# Postprocessing (only for 2d segmentation type)
 postprocessing_params:
   upper_length_threshold: 8 # Designed for a total z height of ~32 planes
   lower_length_threshold: 3 # Designed for a total z height of ~32 planes
