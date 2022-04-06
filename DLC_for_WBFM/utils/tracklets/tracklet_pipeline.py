@@ -372,7 +372,7 @@ def split_tracklets_using_neuron_match_conflicts(project_cfg: ModularProjectConf
     # Unpack
     logging.info("Initializing worm object with conflicting tracklet matches")
     tracking_cfg = project_cfg.get_tracking_config()
-    minimum_confidence = tracking_cfg.config['final_3d_postprocessing']['min_confidence']
+    minimum_confidence = tracking_cfg.config['tracklet_splitting_postprocessing']['min_confidence']
     fname = os.path.join('raw', 'final_matching_with_conflict.pickle')
     fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=True)
     final_matching_with_conflict = pickle_load_binary(fname)
