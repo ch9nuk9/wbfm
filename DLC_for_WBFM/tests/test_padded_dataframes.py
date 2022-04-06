@@ -116,6 +116,26 @@ class TestPaddedDataframes(unittest.TestCase):
         self.df = self.df.add_new_empty_column_if_none_left(min_empty_cols=10, num_to_add=10)
         self.assertEqual(len(self.df.remaining_empty_column_names), 11)
 
+    def test_add_empty_columns_new_object(self):
+        self.assertEqual(len(self.df.remaining_empty_column_names), 1)
+        new_df = self.df.add_new_empty_column_if_none_left(min_empty_cols=10, num_to_add=10)
+        self.assertEqual(len(self.df.remaining_empty_column_names), 11)
+        self.assertEqual(len(new_df.remaining_empty_column_names), 11)
+
+    def test_add_empty_columns_loop(self):
+        self.assertEqual(len(self.df.remaining_empty_column_names), 1)
+        new_df = self.df
+
+        for i in range(10):
+            new_df = new_df.add_new_empty_column_if_none_left(min_empty_cols=100, num_to_add=1)
+            # Test inplace change
+            self.assertEqual(len(self.df.remaining_empty_column_names), i + 2)
+            # Test persistent change
+            self.assertEqual(len(new_df.remaining_empty_column_names), i + 2)
+
+        self.assertEqual(len(self.df.remaining_empty_column_names), 11)
+        self.assertEqual(len(new_df.remaining_empty_column_names), 11)
+
     def test_inplace(self):
         self.assertEqual(len(self.df.remaining_empty_column_names), 1)
 
@@ -144,9 +164,11 @@ class TestPaddedDataframes(unittest.TestCase):
         # Will require adding columns
         df_working_copy, all_new_names = self.df.split_tracklet_multiple_times([5, 10, 15], self.neuron_name)
 
+        # Test added empty columns, in both objects
         self.assertEqual(len(df_working_copy.remaining_empty_column_names), 501-3)
         self.assertEqual(len(self.df.remaining_empty_column_names), 501-3)
 
+        # Test splits
         self.assertEqual(all_new_names[0], 'neuron_001')
         self.assertEqual(all_new_names[1], 'neuron_002')
         self.assertEqual(all_new_names[2], 'neuron_003')

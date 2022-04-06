@@ -78,22 +78,22 @@ class PaddedDataFrame(pd.DataFrame):
     #     return PaddedDataFrame
 
     def copy_and_add_empty_columns(self, num_to_add):
-        print(f"Adding {num_to_add} empty columns")
         new_cols = self.generate_new_columns(num_to_add)
 
         # Yikes, two copies... but this should be very rare
         # In theory, the _constructor_expanddim constructor should work here, but it doesn't seem to be
-        return self.new_like_self(self.join(new_cols, sort=False))
+        new_df = self.new_like_self(self.join(new_cols, sort=False))
+        print(f"Adding {num_to_add} empty columns; now has {self.num_empty_columns} empty columns")
+        return new_df
 
     def generate_new_columns(self, num_to_add):
         # Add correctly sorted column names
         new_names = [name for _, name in zip(range(num_to_add), self.new_name_generator)]
         self.remaining_empty_column_names.extend(new_names)
-        # Note: can't add more than double number of columns
         new_cols = empty_dataframe_like(self, new_names)
         return new_cols
 
-    def add_new_empty_column_if_none_left(self, min_empty_cols=1, num_to_add=500):
+    def add_new_empty_column_if_none_left(self, min_empty_cols=1, num_to_add=10000):
         # Weird: the output must be assigned to actually save the new columns
         # ... this is true even though the columns are actually added inplace!
         if self.num_empty_columns < min_empty_cols:
@@ -150,7 +150,8 @@ class PaddedDataFrame(pd.DataFrame):
 
         all_names = get_names_from_df(self)
         name_mapping = defaultdict(set)
-        df_working_copy = self.new_like_self()
+        df_working_copy = self
+        # df_working_copy = self.new_like_self()
 
         for original_name in tqdm(all_names):
             name_mapping[original_name].add(original_name)
@@ -164,6 +165,7 @@ class PaddedDataFrame(pd.DataFrame):
             split_list_dict = {original_name: split_list}
 
             # df_working_copy = self.split_using_dict_of_points(name_mapping, split_list_dict)
+            # Static method. Note that setting df_working_copy = self means that self should have additional columns too
             df_working_copy, name_mapping = self.split_using_dict_of_points(df_working_copy,
                                                                             split_list_dict, name_mapping)
             if DEBUG:
@@ -234,10 +236,9 @@ def insert_value_in_sparse_df(df: pd.DataFrame, index: Union[int, str], columns:
     if type(columns) == pd.MultiIndex:
         tmp_cols = df[columns].copy()
     else:
-        if not all(np.isnan(val)):
-            logging.warning(f"Called insert_value_in_sparse_df without specifying the exact index; "
-                            "this assumes that val is ordered the same as df, and is not recommended. "
-                            f"Ignore this warning if val is nan: {val}")
+        logging.warning(f"Called insert_value_in_sparse_df without specifying the exact index; "
+                        "this assumes that val is ordered the same as df, and is not recommended. "
+                        f"Ignore this warning if val is nan: {val}")
         tmp_cols = df[[columns]].copy()
 
     try:

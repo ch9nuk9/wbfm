@@ -629,8 +629,10 @@ def get_next_name_generator(df, name_mode='tracklet'):
     max_int = name2int_neuron_and_tracklet(all_names[-1])
     # Really want to make sure we are after all other names
     i_tracklet = max_int + 1
-    for i in range(10000):
+    i = 0
+    while True:
         new_name = int2name_using_mode(i_tracklet + i, name_mode)
+        i += 1
         yield new_name
 
 
