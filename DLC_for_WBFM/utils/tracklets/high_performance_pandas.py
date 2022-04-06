@@ -14,9 +14,13 @@ from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tra
 
 
 class PaddedDataFrame(pd.DataFrame):
-    _metadata = ["remaining_empty_column_names", "name_mode", "new_name_generator"]
+    _metadata = ["remaining_empty_column_names", "name_mode", "new_name_generator", "default_num_to_add"]
 
-    def setup(self, name_mode, initial_empty_cols=100):
+    def setup(self, name_mode, initial_empty_cols=100, default_num_to_add=None):
+        if default_num_to_add is None:
+            self.default_num_to_add = 10000
+        else:
+            self.default_num_to_add = default_num_to_add
         self.name_mode = name_mode
         new_name_generator = get_next_name_generator(self, name_mode=name_mode)
         self.new_name_generator = new_name_generator
@@ -26,7 +30,7 @@ class PaddedDataFrame(pd.DataFrame):
         return new_df
 
     @staticmethod
-    def construct_from_basic_dataframe(df, name_mode, initial_empty_cols=100):
+    def construct_from_basic_dataframe(df, name_mode, initial_empty_cols=100, default_num_to_add=None):
         out = check_if_heterogenous_columns(df)
         if out is not None:
             logging.warning("Padded dataframe will not work as expected when the dataframe has heterogeous columns")
@@ -35,7 +39,8 @@ class PaddedDataFrame(pd.DataFrame):
         df_pad = PaddedDataFrame(data=df.values, columns=df.columns, index=df.index,
                                  dtype=pd.SparseDtype(float, np.nan))
         # df_pad = PaddedDataFrame(df.astype(pd.SparseDtype(float, np.nan)))
-        df_pad = df_pad.setup(name_mode=name_mode, initial_empty_cols=initial_empty_cols)
+        df_pad = df_pad.setup(name_mode=name_mode, initial_empty_cols=initial_empty_cols,
+                              default_num_to_add=default_num_to_add)
         return df_pad
 
     @property
@@ -93,7 +98,9 @@ class PaddedDataFrame(pd.DataFrame):
         new_cols = empty_dataframe_like(self, new_names)
         return new_cols
 
-    def add_new_empty_column_if_none_left(self, min_empty_cols=1, num_to_add=10000):
+    def add_new_empty_column_if_none_left(self, min_empty_cols=1, num_to_add=None):
+        if num_to_add is None:
+            num_to_add = self.default_num_to_add
         # Weird: the output must be assigned to actually save the new columns
         # ... this is true even though the columns are actually added inplace!
         if self.num_empty_columns < min_empty_cols:

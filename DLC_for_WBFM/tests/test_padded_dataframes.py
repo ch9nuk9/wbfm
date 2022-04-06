@@ -15,7 +15,7 @@ class TestPaddedDataframes(unittest.TestCase):
         tmp_df = pd.DataFrame({(self.neuron_name, 'z'): list(range(20)),
                                 (self.neuron_name, 'x'): 10*np.array(list(range(20)))})
         self.df = PaddedDataFrame.construct_from_basic_dataframe(tmp_df, name_mode='neuron',
-                                                                 initial_empty_cols=1)
+                                                                 initial_empty_cols=1, default_num_to_add=10)
         self.df = to_sparse_multiindex(self.df)
         print(self.df.sparse)  # No error
 
@@ -165,8 +165,10 @@ class TestPaddedDataframes(unittest.TestCase):
         df_working_copy, all_new_names = self.df.split_tracklet_multiple_times([5, 10, 15], self.neuron_name)
 
         # Test added empty columns, in both objects
-        self.assertEqual(len(df_working_copy.remaining_empty_column_names), 501-3)
-        self.assertEqual(len(self.df.remaining_empty_column_names), 501-3)
+        initial_empty_cols = 1
+        num_expected = df_working_copy.default_num_to_add - 3 + initial_empty_cols
+        self.assertEqual(len(df_working_copy.remaining_empty_column_names), num_expected)
+        self.assertEqual(len(self.df.remaining_empty_column_names), num_expected)
 
         # Test splits
         self.assertEqual(all_new_names[0], 'neuron_001')
