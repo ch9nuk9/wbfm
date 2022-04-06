@@ -298,6 +298,8 @@ def combine_dataframes_using_bipartite_matching(all_dfs, column='raw_neuron_ind_
         for df in dfs_containing_this_neuron:
             ind_at_all_time = df.loc[:, (neuron_name, column)].values
             for t, ind in enumerate(ind_at_all_time):
+                if np.isnan(ind):
+                    continue
                 node_name = int(ind)
                 edge = [neuron_name, node_name]
                 g = graphs_all_times[t]

@@ -178,7 +178,7 @@ def track_using_superglue_from_config(project_cfg, DEBUG):
             superglue_unpacker = SuperGlueUnpacker(project_data=project_data, t_template=t)
             tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
             df = track_using_template(all_frames, num_frames, project_data, tracker)
-            df, _, _, _ = rename_columns_using_matching(df_base, df)
+            df, _, _, _ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
             all_dfs.append(df)
 
         tracking_cfg.config['t_templates'] = all_templates

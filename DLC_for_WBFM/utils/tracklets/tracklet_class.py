@@ -625,7 +625,7 @@ class TrackedWorm:
         return overlapping_tracklet_conflict_points
 
     def plot_tracklets_for_neuron(self, neuron_name, with_names=True, with_confidence=True, plot_field='z',
-                                  diff_percentage=False, minimum_confidence=0.0, adjust_annotations=True):
+                                  diff_percentage=False, minimum_confidence=0.0, adjust_annotations=False):
         tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,
                                                                                                 minimum_confidence)
         # tracklet_list = self.get_tracklets_for_neuron(neuron_name)
