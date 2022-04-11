@@ -413,9 +413,8 @@ class SuperGlueUnpacker:
         scores0 = torch.ones((kpts0.shape[0], 1)).float()
         return desc0, kpts0, scores0
 
-    def convert_frames_to_superglue_format(self, t0, t1):
+    def convert_frames_to_superglue_format(self, t0, t1, use_gt_matches=False):
         project_data = self.project_data
-        df_gt = project_data.final_tracks
 
         f0 = project_data.raw_frames[t0]
         f1 = project_data.raw_frames[t1]
@@ -423,13 +422,18 @@ class SuperGlueUnpacker:
         # Unpack
         desc0, kpts0, scores0 = self.unpack_frame(f0)
         desc1, kpts1, scores1 = self.unpack_frame(f1)
+        if use_gt_matches:
+            df_gt = project_data.final_tracks
+            all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
+        else:
+            all_matches = []
 
         image0 = torch.tensor(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0))
         # image1 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t1]), axis=0), axis=0)
 
         # Need expansion when not used in loop
         # all_matches = torch.unsqueeze(torch.tensor(df_to_matches(df_gt, t0, t1)), dim=0)
-        all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
+        # all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
 
         # Repack
         data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,

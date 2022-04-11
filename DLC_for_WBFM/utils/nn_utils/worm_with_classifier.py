@@ -20,7 +20,8 @@ PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
 PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_62_partial_neurons_1000training.ckpt")
 # PATH_TO_MODEL = os.path.join(model_dir, "classifier_36_neurons.ckpt")
 if not os.path.exists(PATH_TO_MODEL):
-    raise FileNotFoundError(PATH_TO_MODEL)
+    logging.warning(f"Did not find default model at {PATH_TO_MODEL}, is everything mounted correctly?")
+    # raise FileNotFoundError(PATH_TO_MODEL)
 
 # TODO: also save hyperparameters (doesn't work in jupyter notebooks)
 HPARAMS = dict(num_classes=127)
@@ -110,6 +111,15 @@ class WormWithSuperGlueClassifier:
 
         with torch.no_grad():
             data = self.superglue_unpacker.convert_single_frame_to_superglue_format(target_frame, use_gt_matches=False)
+            data = self.superglue_unpacker.expand_all_data(data)
+
+            matches_with_conf = self.model.superglue.match_and_output_list(data)
+
+        return matches_with_conf
+
+    def match_two_time_points(self, t0: int, t1: int):
+        with torch.no_grad():
+            data = self.superglue_unpacker.convert_frames_to_superglue_format(t0, t1, use_gt_matches=False)
             data = self.superglue_unpacker.expand_all_data(data)
 
             matches_with_conf = self.model.superglue.match_and_output_list(data)
