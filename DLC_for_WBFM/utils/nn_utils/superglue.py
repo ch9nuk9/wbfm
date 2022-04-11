@@ -40,6 +40,7 @@
 # %AUTHORS_END%
 # --------------------------------------------------------------------*/
 # %BANNER_END%
+import logging
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -467,7 +468,7 @@ class SuperGlueUnpacker:
 
 class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronImageFeaturesFromProject):
 
-    def __init__(self, project_data: ProjectData, num_to_calculate=100):
+    def __init__(self, project_data: ProjectData, num_to_calculate=100, use_adjacent_time_points=False):
         super().__init__(project_data)
         self.num_to_calculate = num_to_calculate
 
@@ -475,8 +476,16 @@ class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronIma
 
         t_list = list(range(project_data.num_frames - 1))
         self.time_pairs = []
-        for _ in range(num_to_calculate):
-            self.time_pairs.append(random_combination(t_list, 2))
+        for i in range(num_to_calculate):
+            if use_adjacent_time_points:
+                if i + 1 >= project_data.num_frames - 1:
+                    logging.warning(f"{num_to_calculate} requested, but only {i} available")
+                    self.num_to_calculate = i
+                    break
+                new_pair = [i, i + 1]
+            else:
+                new_pair = random_combination(t_list, 2)
+            self.time_pairs.append(new_pair)
 
         # Precalculate
         print("Precaculating training data")
