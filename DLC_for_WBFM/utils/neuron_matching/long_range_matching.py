@@ -205,15 +205,17 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     if DEBUG:
         all_tracklet_names = all_tracklet_names[:1000]
     # list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
-    # TODO: this should be faster, but causes a crash
+    # TODO: when tracklets are the length of the entire video, the lengths desynchronize
     dict_tracklets_zxy_small, dict_tracklets_zxy_ind = precalculate_lists_from_dataframe(
         all_tracklet_names, coords, df_tracklets, min_overlap)
     remaining_tracklet_names = list(dict_tracklets_zxy_small.keys())
 
-    # if df_global_tracks.shape[0] - 1 == list_tracklets_zxy[0].shape[0]:
     _name = remaining_tracklet_names[0]
+    logging.info(f"Found tracks and tracklets of shapes: {df_global_tracks.shape} and "
+                 f"{dict_tracklets_zxy_small[_name].shape}")
     if df_global_tracks.shape[0] - 1 == dict_tracklets_zxy_small[_name].shape[0]:
         to_shorten = True
+        logging.warning("Tracks are 1 time point shorter than tracklets; removing the last point")
     else:
         to_shorten = False
 

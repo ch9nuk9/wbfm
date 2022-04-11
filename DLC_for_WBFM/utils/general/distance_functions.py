@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from tqdm.auto import tqdm
 
@@ -37,16 +39,23 @@ def calc_global_track_to_tracklet_distances_subarray(this_global_track: np.ndarr
 
 
 def precalculate_lists_from_dataframe(all_tracklet_names, coords, df_tracklets, min_overlap):
-    list_tracklets_zxy_small = {}
-    list_tracklets_zxy_ind = {}
+    """
+    Calculates the zxy positions of each tracklet, and the non-nan indices
+
+    Outputs two separate dictionaries, indexed by the tracklet name (example: 'tracklet_0000000')
+    """
+    dict_tracklets_zxy_small = {}
+    dict_tracklets_zxy_ind = {}
     for name in tqdm(all_tracklet_names):
         # Note: can't just dropna because there may be gaps in the tracklet
         tmp = df_tracklets[name][coords]
         idx0, idx1 = tmp.first_valid_index(), tmp.last_valid_index()
         if idx0 and idx1 - idx0 > min_overlap:
-            list_tracklets_zxy_ind[name] = [idx0, idx1 + 1]
-            list_tracklets_zxy_small[name] = tmp.to_numpy()[idx0:idx1 + 1, :]
-    return list_tracklets_zxy_small, list_tracklets_zxy_ind
+            dict_tracklets_zxy_ind[name] = [idx0, idx1 + 1]
+            dict_tracklets_zxy_small[name] = tmp.to_numpy()[idx0:idx1 + 1, :]
+    _name = list(dict_tracklets_zxy_small.keys())[0]
+    logging.info(f"Precalculated tracklet zxy with shape: {dict_tracklets_zxy_small[_name].shape}")
+    return dict_tracklets_zxy_small, dict_tracklets_zxy_ind
 
 
 def calc_dist_if_overlap(this_tracklet: np.ndarray, min_overlap: int, this_global_track: np.ndarray):

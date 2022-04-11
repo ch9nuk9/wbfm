@@ -426,7 +426,7 @@ class TrackedWorm:
 
         return new_neuron
 
-    def initialize_neurons_at_time(self, t=0, num_expected_neurons=None, df_global_tracks=None):
+    def initialize_neurons_at_time(self, t=0, num_expected_neurons=None, df_global_tracks=None, verbose=0):
         """
         Each segmented neuron is initialized, even if there is not a tracklet at that particular volume
 
@@ -453,8 +453,9 @@ class TrackedWorm:
             # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
             _, tracklet_name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
 
-            print(f"Initializing neuron named {name_in_df} and indexed {i_neuron_ind} at t={t}, "
-                  f"with tracklet {tracklet_name} (None means a new tracklet is made)")
+            if verbose >= 2:
+                print(f"Initializing neuron named {name_in_df} and indexed {i_neuron_ind} at t={t}, "
+                      f"with tracklet {tracklet_name} (None means a new tracklet is made)")
             if not tracklet_name:
                 # Make a new tracklet, and give it data
                 tracklet_name = self.detections.initialize_new_empty_tracklet()
