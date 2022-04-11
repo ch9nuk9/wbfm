@@ -170,12 +170,12 @@ def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs
     opt = dict(z_threshold=z_threshold, min_confidence=min_confidence)
     logging.info(
         f"Postprocessing pairwise matches using confidence threshold {min_confidence} and z threshold: {z_threshold}")
-    all_matches_list = {k: pair.calc_final_matches(**opt)
+    all_matches_dict = {k: pair.calc_final_matches(**opt)
                         for k, pair in tqdm(all_frame_pairs.items())}
     logging.info("Extracting locations of neurons")
     all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
     logging.info("Building tracklets")
-    return build_tracklets_dfs(all_matches_list, all_zxy, verbose=verbose)
+    return build_tracklets_dfs(all_matches_dict, all_zxy, verbose=verbose)
 
 
 def save_all_tracklets(df, df_multi_index_format, training_config):
