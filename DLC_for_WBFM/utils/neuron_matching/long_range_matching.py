@@ -5,7 +5,8 @@ from pathlib import Path
 
 import numpy as np
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, empty_dataframe_like
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, empty_dataframe_like, \
+    fill_missing_indices_with_nan
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import calc_FramePair_from_Frames
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -127,13 +128,17 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
     final_matching_no_conflict = greedy_matching_using_node_class(no_conflict_neuron_graph, node_class_to_match=1)
     df_new = combine_tracklets_using_matching(df_tracklets, final_matching_no_conflict)
 
+    df_final, num_added = fill_missing_indices_with_nan(df_new)
+    if num_added > 0:
+        logging.warning(f"Some time points {num_added} are completely empty of tracklets, and are added as nan")
+
     # SAVE
     if to_save:
         with safe_cd(project_data.project_dir):
-            _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_matching_with_conflict,
+            _save_graphs_and_combined_tracks(df_final, final_matching_no_conflict, final_matching_with_conflict,
                                              global_tracklet_neuron_graph,
                                              track_config, worm_obj)
-    return df_new, final_matching_no_conflict, global_tracklet_neuron_graph, worm_obj
+    return df_final, final_matching_no_conflict, global_tracklet_neuron_graph, worm_obj
 
 
 def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_matching_with_conflict,

@@ -264,3 +264,15 @@ def accuracy_of_matches(gt_matches, new_matches, null_value=-1, allow_unknown=Tr
         else:
             fp += 1
     return tp, fp, fn, unknown
+
+
+def fill_missing_indices_with_nan(df):
+    t = df.index
+    if len(t) != int(t[-1]) + 1:
+        add_indices = pd.Index(range(int(t[-1]))).difference(t)
+        add_df = pd.DataFrame(index=add_indices, columns=df.columns)
+        df = pd.concat([df, add_df]).sort_index()
+        num_added = add_df.shape[0]
+    else:
+        num_added = 0
+    return df, num_added

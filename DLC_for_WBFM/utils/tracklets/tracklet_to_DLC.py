@@ -6,7 +6,7 @@ import pandas as pd
 from tqdm import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, fill_missing_indices_with_nan
 from DLC_for_WBFM.utils.general.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import add_empty_rows_to_correct_index
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
@@ -241,20 +241,11 @@ def alt_save_all_tracklets_as_dlc_format(train_cfg: SubfolderConfigFile,
 
     df = convert_training_dataframe_to_scalar_format(df_raw, min_length=min_length, scorer=None)
     # If there are no tracklets on some frames, then there will be gaps in the indices and it will cause errors
-    df = fill_missing_indices_with_nan(df)
+    df, num_added = fill_missing_indices_with_nan(df)
 
     out_fname = train_cfg.resolve_relative_path_from_config('df_3d_tracklets')
     # out_fname = train_cfg.resolve_relative_path("all_tracklets.h5", prepend_subfolder=True)
     df.to_hdf(out_fname, 'df_with_missing')
-
-
-def fill_missing_indices_with_nan(df):
-    t = df.index
-    if len(t) != int(t[-1]) + 1:
-        add_indices = pd.Index(range(int(t[-1]))).difference(t)
-        add_df = pd.DataFrame(index=add_indices, columns=df.columns)
-        df = pd.concat([df, add_df]).sort_index()
-    return df
 
 
 def build_subset_df_from_tracklets(df_tracklets, which_frames, verbose=0):
