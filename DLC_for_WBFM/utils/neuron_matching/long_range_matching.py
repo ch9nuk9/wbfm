@@ -173,7 +173,7 @@ def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_m
 
 def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj: TrackedWorm,
                                         min_overlap=5, min_confidence=0.2, outlier_threshold=1.0,
-                                        used_names=None,
+                                        used_names=None, to_reserve_initialization_tracklets=False,
                                         verbose=0, DEBUG=False):
     """
     For each neuron, get the relevant global track
@@ -209,6 +209,8 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     dict_tracklets_zxy_small, dict_tracklets_zxy_ind = precalculate_lists_from_dataframe(
         all_tracklet_names, coords, df_tracklets, min_overlap)
     remaining_tracklet_names = list(dict_tracklets_zxy_small.keys())
+    if verbose >= 1:
+        print(f"Found {len(remaining_tracklet_names)} candidate tracklets")
 
     _name = remaining_tracklet_names[0]
     logging.info(f"Found tracks and tracklets of shapes: {df_global_tracks.shape} and "
@@ -220,8 +222,9 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         to_shorten = False
 
     # Reserve any tracklets the neurons were initialized with (i.e. the training data)
-    for _, neuron in worm_obj.global_name_to_neuron.items():
-        used_names.update(neuron.get_raw_tracklet_names())
+    if to_reserve_initialization_tracklets:
+        for _, neuron in worm_obj.global_name_to_neuron.items():
+            used_names.update(neuron.get_raw_tracklet_names())
 
     # Add new tracklets
     all_conf_output = {}
@@ -261,6 +264,8 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
             # Check distance; break because they are sorted by distance
             this_confidence = all_summarized_conf[i_tracklet]
             if this_confidence <= min_confidence or np.isnan(this_confidence):
+                if verbose >= 3:
+                    print(f"Confidence {this_confidence} too low: {candidate_name}")
                 break
 
             candidate_tracklet = df_tracklets[[candidate_name]]
@@ -268,8 +273,11 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
             is_match_added = neuron.add_tracklet(this_confidence, candidate_tracklet, metadata=candidate_name,
                                                  check_using_classifier=True, verbose=verbose-2)
 
+            if verbose >= 3:
+                print(f"Tracklet successfully added: {candidate_name}")
+
         if verbose >= 2:
-            print(f"{num_candidate_neurons} candidate tracklets")
+            print(f"{num_candidate_neurons+1} candidate tracklets checked")
             print(f"Tracklets added to make neuron: {neuron}")
 
         if DEBUG and i > 1:
