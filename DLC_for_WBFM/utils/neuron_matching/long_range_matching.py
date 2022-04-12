@@ -213,8 +213,8 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         print(f"Found {len(remaining_tracklet_names)} candidate tracklets")
 
     _name = remaining_tracklet_names[0]
-    logging.info(f"Found tracks and tracklets of shapes: {df_global_tracks.shape} and "
-                 f"{dict_tracklets_zxy_small[_name].shape}")
+    logging.info(f"Found tracks of shape: {df_global_tracks.shape}")  # and "
+                 # f"{dict_tracklets_zxy_small[_name].shape}")
     if df_global_tracks.shape[0] - 1 == dict_tracklets_zxy_small[_name].shape[0]:
         to_shorten = True
         logging.warning("Tracks are 1 time point shorter than tracklets; removing the last point")
@@ -253,9 +253,12 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         all_conf_output[name] = all_summarized_conf
         # all_summarized_dist = summarize_distances_quantile(dist)
         # i_sorted_by_median_distance = np.argsort(all_summarized_dist)
+        # if name == 'neuron_002':
+        #     err
+
         num_candidate_neurons = 0
         for num_candidate_neurons, i_tracklet in enumerate(i_sorted_by_confidence):
-            # Check if this was used before
+            # Check if this was used before; note that conflicts may be desired for postprocessing
             candidate_name = remaining_tracklet_names[i_tracklet]
             if candidate_name in used_names:
                 if verbose >= 3:

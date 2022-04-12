@@ -54,7 +54,7 @@ def precalculate_lists_from_dataframe(all_tracklet_names, coords, df_tracklets, 
             dict_tracklets_zxy_ind[name] = [idx0, idx1 + 1]
             dict_tracklets_zxy_small[name] = tmp.to_numpy()[idx0:idx1 + 1, :]
     _name = list(dict_tracklets_zxy_small.keys())[0]
-    logging.info(f"Precalculated tracklet zxy with shape: {dict_tracklets_zxy_small[_name].shape}")
+    # logging.info(f"Precalculated tracklet zxy with shape: {dict_tracklets_zxy_small[_name].shape}")
     return dict_tracklets_zxy_small, dict_tracklets_zxy_ind
 
 
