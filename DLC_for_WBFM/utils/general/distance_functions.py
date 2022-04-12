@@ -50,7 +50,7 @@ def precalculate_lists_from_dataframe(all_tracklet_names, coords, df_tracklets, 
         # Note: can't just dropna because there may be gaps in the tracklet
         tmp = df_tracklets[name][coords]
         idx0, idx1 = tmp.first_valid_index(), tmp.last_valid_index()
-        if idx0 and idx1 - idx0 > min_overlap:
+        if np.isfinite(idx0) and idx1 - idx0 > min_overlap:
             dict_tracklets_zxy_ind[name] = [idx0, idx1 + 1]
             dict_tracklets_zxy_small[name] = tmp.to_numpy()[idx0:idx1 + 1, :]
     _name = list(dict_tracklets_zxy_small.keys())[0]
