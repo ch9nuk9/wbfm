@@ -51,8 +51,8 @@ def precalculate_lists_from_dataframe(all_tracklet_names, coords, df_tracklets, 
         tmp = df_tracklets[name][coords]
         idx0, idx1 = tmp.first_valid_index(), tmp.last_valid_index()
         if idx0 is not None and idx1 - idx0 > min_overlap:
-            dict_tracklets_zxy_ind[name] = [idx0, idx1 + 1]
-            dict_tracklets_zxy_small[name] = tmp.to_numpy()[idx0:idx1 + 1, :]
+            dict_tracklets_zxy_ind[name] = [idx0, idx1]
+            dict_tracklets_zxy_small[name] = tmp.loc[idx0:idx1, :].to_numpy()
     _name = list(dict_tracklets_zxy_small.keys())[0]
     # logging.info(f"Precalculated tracklet zxy with shape: {dict_tracklets_zxy_small[_name].shape}")
     return dict_tracklets_zxy_small, dict_tracklets_zxy_ind

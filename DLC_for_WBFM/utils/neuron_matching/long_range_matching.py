@@ -205,6 +205,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
     if DEBUG:
         all_tracklet_names = all_tracklet_names[:1000]
     # list_tracklets_zxy = [df_tracklets[name][coords].to_numpy() for name in tqdm(all_tracklet_names)]
+    # These dictionaries remove tracklets that are shorter than min_overlap (don't need to check individual tracks)
     # TODO: when tracklets are the length of the entire video, the lengths desynchronize
     dict_tracklets_zxy_small, dict_tracklets_zxy_ind = precalculate_lists_from_dataframe(
         all_tracklet_names, coords, df_tracklets, min_overlap)
