@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, to_sparse_multiindex
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, \
-    int2name_using_mode
+    int2name_using_mode, int2name_tracklet
 
 
 def create_new_track(i0, i1,
@@ -727,6 +727,39 @@ def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
         new_tracklets_list.append(new_tracklet)
 
     return new_tracklets_list
+
+
+def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dict, include_unsplit=True):
+    # See: split_using_dict_of_points
+
+    # Make long list of all split tracklets
+    all_new_tracklets = []
+    all_unsplit_tracklets = []
+    if include_unsplit:
+        all_names = get_names_from_df(df_tracklets)
+    else:
+        all_names = list(split_list_dict.keys())
+
+    for name in tqdm(all_names):
+        these_splits = split_list_dict.get(name, [])
+        this_tracklet = df_tracklets[[name]]
+        if len(these_splits) >= 1:
+            new_tracklets_list = split_multiple_tracklets(this_tracklet, these_splits)
+            all_new_tracklets.extend(new_tracklets_list)
+        elif include_unsplit:
+            all_unsplit_tracklets.append(this_tracklet)
+
+    all_new_tracklets.extend(all_unsplit_tracklets)
+
+    # Generate new tracklet names, ignoring the old ones
+    new_names = [int2name_tracklet(i) for i in range(len(all_new_tracklets))]
+    # Also have to remove the old names, i.e. remove the top level of the hierarchy
+    all_new_tracklets = [t[get_names_from_df(t)[0]] for t in all_new_tracklets]
+
+    logging.info("Concatenating final dataframe, may take a minute")
+    logging.info(f"Splitting went from {len(all_names)} tracklets to {len(all_new_tracklets)} tracklets")
+    df_final = pd.concat(all_new_tracklets, axis=1, keys=new_names)
+    return df_final, all_new_tracklets
 
 
 def remove_tracklets_from_dictionary_without_database_match(df_tracklets, global2tracklet):
