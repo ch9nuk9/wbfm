@@ -136,6 +136,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
                                                         DEBUG=DEBUG)
             # Overwrite original object, and continue
             worm_obj = worm_obj2
+            df_tracklets = df_tracklets_split.astype(pd.SparseDtype("float", np.nan))
 
         worm_obj.update_time_covering_ind_for_all_neurons()
     else:
@@ -143,7 +144,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
         final_matching_with_conflict = None
 
     no_conflict_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
-    # Final matching to prevent the same tracklet assigned to multiple neurons
+    logging.info("Final matching to prevent the same tracklet assigned to multiple neurons")
     final_matching_no_conflict = greedy_matching_using_node_class(no_conflict_neuron_graph, node_class_to_match=1)
     df_new = combine_tracklets_using_matching(df_tracklets, final_matching_no_conflict)
 
