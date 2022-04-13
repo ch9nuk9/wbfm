@@ -441,7 +441,7 @@ class TrackedWorm:
         # neuron_zxy = self.detections.get_neurons_at_time(t)
         # num_neurons = neuron_zxy.shape[0]
         num_neurons = len(neurons_in_global_df)
-        print(f"Found {num_neurons} neurons, now initializing: {neurons_in_global_df}")
+        print(f"Found {num_neurons} neurons")
         if num_expected_neurons and num_expected_neurons != num_neurons:
             logging.warning(f"Actual number of neurons ({num_neurons}) is not equal to the expected number "
                             f"at the template t={t} ({num_expected_neurons})")

@@ -116,10 +116,12 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
             worm_obj.remove_conflicting_tracklets_from_all_neurons()
         else:
             # For metadata saving (the original worm with conflicts is otherwise not saved)
+            logging.info("Calculating node matches for metadata purposes")
             final_matching_with_conflict = greedy_matching_using_node_class(global_tracklet_neuron_graph,
                                                                             node_class_to_match=1)
 
             # Split ALL tracklets with conflicts, and rematch
+            logging.info("Splitting tracklets using track matching conflicts")
             split_list_dict = worm_obj.get_conflict_time_dictionary_for_all_neurons(
                 minimum_confidence=min_confidence)
             df_tracklets_split, all_new_tracklets = split_all_tracklets_at_once(df_tracklets, split_list_dict)
@@ -188,24 +190,22 @@ def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_m
     global2tracklet = final_matching_no_conflict.get_mapping_0_to_1(unique=False)
     output_fname = track_config.pickle_data_in_local_project(global2tracklet, output_fname,
                                                              make_sequential_filename=True)
+    updates = {}
     if df_tracklets_split is not None:
         logging.info("Also saving automatically split tracklets")
-        out_fname = os.path.join('3-tracking', 'all_tracklets_after_conflict_splitting.pickle')
-        track_config.pickle_data_in_local_project(df_tracklets_split, relative_path=out_fname,
+        split_df_fname = os.path.join('3-tracking', 'all_tracklets_after_conflict_splitting.pickle')
+        track_config.pickle_data_in_local_project(df_tracklets_split, relative_path=split_df_fname,
                                                   custom_writer=pd.to_pickle)
         # TODO: update the name of this field
-        track_config.config['wiggle_split_tracklets_df_fname'] = out_fname
-        track_config.update_self_on_disk()
-        track_config.pickle_data_in_local_project()
+        updates['wiggle_split_tracklets_df_fname'] = split_df_fname
 
     # Update config file
     output_df_fname = track_config.unresolve_absolute_path(output_df_fname)
     output_fname = track_config.unresolve_absolute_path(output_fname)
-    updates = {'final_3d_tracks_df': str(output_df_fname),
-               'global2tracklet_matches_fname': str(output_fname)}
+    updates.update({'final_3d_tracks_df': str(output_df_fname),
+                    'global2tracklet_matches_fname': str(output_fname)})
     track_config.config.update(updates)
     track_config.update_self_on_disk()
-
 
     logging.info("Also saving raw intermediate products")
     dir_name = Path(os.path.join('3-tracking', 'raw'))
