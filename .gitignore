@@ -20,6 +20,7 @@ Scratch/
 *.mp4
 *.ckpt
 *.avi
+*.gif
 DLC_for_WBFM/utils/neuron_matching/opencv_samples/
 old/example-feature-workflow/feature_alignment/feature_alignment-Charlie-2021-01-06/
 old/example-feature-workflow/feature_alignment/feature_alignment-Charlie-2021-01-22/
@@ -35,8 +36,7 @@ old/example-feature-workflow/feature_alignment/Extract_traces.ipynb
 DLC_for_WBFM/new_project_defaults/snakemake/.snakemake/
 *.out.*
 *.out
-/DLC_for_WBFM/notebooks/alternative_ideas/wandb/*
-/DLC_for_WBFM/scripts/nn_training/wandb/*
 /DLC_for_WBFM/logs/*
 /DLC_for_WBFM/scratch/*
-/DLC_for_WBFM/notebooks/alternative_ideas/lightning_logs/*
+/DLC_for_WBFM/**/lightning_logs/*
+/DLC_for_WBFM/**/wandb/*
