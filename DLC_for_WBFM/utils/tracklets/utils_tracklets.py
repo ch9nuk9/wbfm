@@ -714,6 +714,7 @@ def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
 
     new_tracklets_list = []
     split_list_copy = split_list.copy()
+    split_list_copy.sort()
     split_list_copy.insert(0, 0)
     split_list_copy.append(-1)
     for i in range(len(split_list_copy) - 1):
@@ -759,6 +760,8 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
     old_names = [get_names_from_df(t)[0] for t in all_unsplit_tracklets]
     name_gen = get_next_name_generator(df_tracklets, name_mode)
     new_names = [name for _, name in zip(range(len(all_new_tracklets)), name_gen)]
+
+    # name_mapping = {}
 
     all_new_tracklets.extend(all_unsplit_tracklets)
     new_names.extend(old_names)
