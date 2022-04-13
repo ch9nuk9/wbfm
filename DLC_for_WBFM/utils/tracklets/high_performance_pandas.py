@@ -182,6 +182,8 @@ class PaddedDataFrame(pd.DataFrame):
 
     @staticmethod
     def split_using_dict_of_points(df_working_copy, split_list_dict, name_mapping=None):
+        # Note: this is a static method because I want to explicitly return the dataframe... but I'm not sure if that's
+        # necessary or good
         if name_mapping is None:
             name_mapping = defaultdict(set)
         for name, these_splits in tqdm(split_list_dict.items(), leave=False):

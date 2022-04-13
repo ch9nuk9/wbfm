@@ -144,6 +144,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, DEBU
 def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_matching_with_conflict,
                                      global_tracklet_neuron_graph, track_config,
                                      worm_obj):
+    logging.info("Finished calculations, now saving")
     # Save both main products
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
     output_df_fname = track_config.h5_data_in_local_project(df_new, output_df_fname, also_save_csv=True,
@@ -249,18 +250,11 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         dist = calc_global_track_to_tracklet_distances_subarray(this_global_track,
                                                                 dict_tracklets_zxy_small, dict_tracklets_zxy_ind,
                                                                 min_overlap=min_overlap)
-        # dist = calc_global_track_to_tracklet_distances(this_global_track, list_tracklets_zxy,
-        #                                                min_overlap=min_overlap)
-        #                                                # outlier_threshold=outlier_threshold)
 
         # Loop through candidates, and attempt to add
         all_summarized_conf = summarize_confidences_outlier_percent(dist, outlier_threshold=outlier_threshold)
         i_sorted_by_confidence = np.argsort(-all_summarized_conf)  # Reverse sort, but keep nans at the end
         all_conf_output[name] = all_summarized_conf
-        # all_summarized_dist = summarize_distances_quantile(dist)
-        # i_sorted_by_median_distance = np.argsort(all_summarized_dist)
-        # if name == 'neuron_002':
-        #     err
 
         num_candidate_neurons = 0
         for num_candidate_neurons, i_tracklet in enumerate(i_sorted_by_confidence):
@@ -278,7 +272,6 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
                 break
 
             candidate_tracklet = df_tracklets[[candidate_name]]
-            # conf = dist2conf(this_confidence)
             is_match_added = neuron.add_tracklet(this_confidence, candidate_tracklet, metadata=candidate_name,
                                                  check_using_classifier=True, verbose=verbose-2)
 
@@ -427,6 +420,7 @@ def bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph, df_track
         for t in ind:
             time2names_mapping[int(t)].append(name)
 
+    print("Matching the tracks to each tracklet")
     for t, names_at_time in tqdm(time2names_mapping.items()):
         names_at_time.sort()
 
