@@ -729,7 +729,8 @@ def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
     return new_tracklets_list
 
 
-def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dict, include_unsplit=True):
+def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dict,
+                                include_unsplit=True, name_mode='tracklet'):
     """
     Takes a dataframe (should be sparse) and a dictionary with lists of times to split each tracklet
 
@@ -756,7 +757,7 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
 
     # Generate new tracklet names, keeping the old ones
     old_names = [get_names_from_df(t)[0] for t in all_unsplit_tracklets]
-    name_gen = get_next_name_generator(df_tracklets, 'tracklet')
+    name_gen = get_next_name_generator(df_tracklets, name_mode)
     new_names = [name for _, name in zip(range(len(all_new_tracklets)), name_gen)]
 
     all_new_tracklets.extend(all_unsplit_tracklets)
