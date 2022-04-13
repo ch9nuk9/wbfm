@@ -23,10 +23,15 @@ def dataframe_to_numpy_zxy_single_frame(df_tracklets, t, flip_xy=False) -> np.nd
     return df_zxy.to_numpy().reshape(-1, 3)
 
 
-def get_names_from_df(df, level=0):
-    """If you do .columns.levels[0] it will not return the update properly!"""
+def get_names_from_df(df, level=0, to_sort=True):
+    """
+    If you do .columns.levels[0] it will not return the update properly!
+
+    Note that not sorting doesn't necessarily preserve the original order
+    """
     names = list(set(df.columns.get_level_values(level)))
-    names.sort()
+    if to_sort:
+        names.sort()
     return names
 
 
