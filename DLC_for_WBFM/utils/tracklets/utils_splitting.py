@@ -32,14 +32,14 @@ class TrackletSplitter:
 
         return self._means_to_subtract
 
-    def get_split_points_using_feature_jumps(self, df_working_copy, original_name):
+    def get_split_points_using_feature_jumps(self, df_working_copy, original_name, jump=1):
         _ = self.get_means_to_subtract(df_working_copy)
         tracklet = df_working_copy[original_name]
         signal = self.get_signal_from_tracklet(tracklet)
         if signal is None:
             return []
         try:
-            split_list = split_signal(signal, self.penalty)
+            split_list = split_signal(signal, self.penalty, jump=jump)
             # Convert back to original times
             ind_no_nan = tracklet.dropna(axis=0).index
             split_list = [ind_no_nan[i] for i in split_list if i < len(ind_no_nan)]
@@ -79,8 +79,9 @@ def get_signal_from_tracklet(tracklet, features, means_to_subtract=None):
     return signal
 
 
-def split_signal(signal, penalty=0.5):
+def split_signal(signal, penalty, jump):
+    # Note: the timing is quadratic (I think) in the jump parameter;
     model = "l2"  # "l2", "rbf"
-    algo = rpt.Pelt(model=model, min_size=3, jump=1).fit(signal)
+    algo = rpt.Pelt(model=model, min_size=3, jump=jump).fit(signal)
     my_bkps = algo.predict(pen=penalty)
     return my_bkps
