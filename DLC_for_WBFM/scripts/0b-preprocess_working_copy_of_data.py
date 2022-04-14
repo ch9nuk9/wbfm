@@ -95,7 +95,7 @@ def main(_config, _run):
         preprocessing_settings.save_all_warp_matrices()
 
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
-        video_fname = cfg.config['preprocessed_red']
+        video_fname = _config['out_fname_red']
         bbox_fname = _config['bounding_box_fname']
         calculate_bounding_boxes_from_fnames(video_fname, bbox_fname)
 
