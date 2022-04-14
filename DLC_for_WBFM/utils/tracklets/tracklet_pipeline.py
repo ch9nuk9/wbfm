@@ -7,6 +7,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
+from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueUnpacker
+from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import PATH_TO_SUPERGLUE_TRACKLET_MODEL, \
+    WormWithSuperGlueClassifier
 from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, check_if_heterogenous_columns
@@ -85,6 +89,61 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
                                                                pairwise_matches_params=pairwise_matches_params)
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+
+
+def build_frame_pairs_using_superglue_from_config(project_cfg: ModularProjectConfig, DEBUG=False):
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    training_cfg = project_cfg.get_training_config()
+    frame_pair_options = project_cfg.get_frame_pair_options(training_cfg)
+
+    all_frame_dict = project_data.raw_frames
+    assert all_frame_dict is not None, "Needs frame objects!"
+
+    all_frame_pairs = build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data)
+
+    with safe_cd(project_cfg.project_dir):
+        _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+
+    # # Use FramePair class to filter the matches, to make use of previous postprocessing functions
+    # all_matches_dict = {}
+    # for t, these_matches in tqdm(enumerate(all_matches)):
+    #     filtered_matches = [(m[0], m[1], m[2]) for m in these_matches if m[2] > min_confidence]
+    #
+    #     all_matches_dict[(t, t + 1)] = filtered_matches
+    #
+    # all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
+    #
+    # df_custom_format = build_tracklets_dfs(all_matches_dict, all_zxy, verbose=1)
+    #
+    # df_multi_index_format = convert_training_dataframe_to_scalar_format(df_custom_format,
+    #                                                                     min_length=min_length_to_save,
+    #                                                                     scorer=None,
+    #                                                                     segmentation_metadata=project_data.segmentation_metadata)
+    #
+    # # Save
+    # out_path = training_cfg.pickle_data_in_local_project(df_multi_index_format,
+    #                                                      '2-training_data/df_tracklets_superglue.pickle',
+    #                                                      custom_writer=pd.to_pickle)
+    #
+    # training_cfg.config['df_3d_tracklets'] = training_cfg.unresolve_absolute_path(out_path)
+    # training_cfg.update_self_on_disk()
+
+
+def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data):
+    path_to_model = PATH_TO_SUPERGLUE_TRACKLET_MODEL
+    superglue_unpacker = SuperGlueUnpacker(project_data=project_data)
+    tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker, path_to_model=path_to_model)
+    num_frames = project_data.num_frames - 1
+    all_frame_pairs = {}
+    for t in tqdm(range(num_frames)):
+        frame0, frame1 = all_frame_dict[t], all_frame_dict[t + 1]
+        frame_pair = FramePair(options=frame_pair_options, frame0=frame0, frame1=frame1)
+
+        # Use new method to match
+        matches_with_conf = tracker.match_two_time_points(t, t + 1)
+        frame_pair.feature_matches = matches_with_conf
+        all_frame_pairs[(t, t + 1)] = frame_pair
+    return all_frame_pairs
 
 
 def build_frame_objects_using_config(project_config: ModularProjectConfig,
@@ -248,9 +307,10 @@ def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> Non
     Path(subfolder).mkdir(exist_ok=True)
 
     fname = osp.join(subfolder, 'frame_dat.pickle')
-    [frame.prep_for_pickle() for frame in all_frame_dict.values()]
-    with open(fname, 'wb') as f:
-        pickle.dump(all_frame_dict, f)
+    if all_frame_dict is not None:
+        [frame.prep_for_pickle() for frame in all_frame_dict.values()]
+        with open(fname, 'wb') as f:
+            pickle.dump(all_frame_dict, f)
 
     if all_frame_pairs is not None:
         fname = osp.join(subfolder, 'match_dat.pickle')

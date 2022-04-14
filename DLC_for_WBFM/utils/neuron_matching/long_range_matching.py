@@ -137,6 +137,9 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
             worm_obj = worm_obj2
             df_tracklets = df_tracklets_split.astype(pd.SparseDtype("float", np.nan))
 
+        # TODO: should I do this after tracklet-unique processing? For now the formats are a pain
+        logging.info("Removing tracklets that have time conflicts on a single neuron ")
+        worm_obj.remove_conflicting_tracklets_from_all_neurons()
         worm_obj.update_time_covering_ind_for_all_neurons()
     else:
         global_tracklet_neuron_graph = None

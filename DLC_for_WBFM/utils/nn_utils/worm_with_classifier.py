@@ -4,13 +4,14 @@ from dataclasses import dataclass
 from typing import Dict
 
 import numpy as np
+import pandas as pd
 import torch
 from scipy.optimize import linear_sum_assignment
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
-    combine_dataframes_using_mode, combine_dataframes_using_bipartite_matching
+    combine_dataframes_using_bipartite_matching
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
@@ -18,6 +19,7 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, templ
 model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/"
 PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
 PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_62_partial_neurons_1000training.ckpt")
+PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir, "superglue_107_partial_neurons_3299training_adjacent.ckpt")
 # PATH_TO_MODEL = os.path.join(model_dir, "classifier_36_neurons.ckpt")
 if not os.path.exists(PATH_TO_MODEL):
     logging.warning(f"Did not find default model at {PATH_TO_MODEL}, is everything mounted correctly?")
