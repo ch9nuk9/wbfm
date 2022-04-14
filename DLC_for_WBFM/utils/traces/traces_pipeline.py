@@ -38,8 +38,6 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
     final_neuron_names = get_names_from_df(final_tracks)
     for name in final_neuron_names:
         assert 'tracklet' not in name, f"Improper name found: {name}"
-    assert 'neuron0' not in final_neuron_names, "Neuron0 found; 0 is reserved for background... check original " \
-                                                "dataframe generation and indexing"
     coords = ['z', 'x', 'y']
 
     def _get_zxy_from_pandas(t):
