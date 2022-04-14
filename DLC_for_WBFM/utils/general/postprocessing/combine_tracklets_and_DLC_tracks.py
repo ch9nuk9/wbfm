@@ -412,7 +412,7 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
                                     use_manual_matches):
     d_max = track_config.config['final_3d_postprocessing']['max_dist']
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
-    min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
+    # min_dlc_confidence = track_config.config['final_3d_postprocessing']['min_dlc_confidence']
     allowed_tracklet_endpoint_wiggle = track_config.config['final_3d_postprocessing']['allowed_tracklet_endpoint_wiggle']
     keep_only_tracklets_in_final_tracks = track_config.config['final_3d_postprocessing'][
         'keep_only_tracklets_in_final_tracks']

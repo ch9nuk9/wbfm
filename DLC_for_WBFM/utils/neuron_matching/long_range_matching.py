@@ -78,20 +78,19 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
                  f"use_previous_matches={use_previous_matches}\n"
                  f"use_multiple_templates={use_multiple_templates}")
 
-    def _initialize_worm(tracklets_and_neurons_class):
-        worm_obj = TrackedWorm(detections=tracklets_and_neurons_class, verbose=verbose)
+    def _initialize_worm(tracklets_obj):
+        _worm_obj = TrackedWorm(detections=tracklets_obj, verbose=verbose)
         if only_use_previous_matches:
-            worm_obj.initialize_neurons_using_previous_matches(previous_matches)
+            _worm_obj.initialize_neurons_using_previous_matches(previous_matches)
         else:
-            worm_obj.initialize_neurons_at_time(t=t_template, num_expected_neurons=num_neurons,
-                                                df_global_tracks=df_global_tracks)
+            _worm_obj.initialize_neurons_at_time(t=t_template, num_expected_neurons=num_neurons,
+                                                 df_global_tracks=df_global_tracks)
             if use_previous_matches:
-                worm_obj.add_previous_matches(previous_matches)
+                _worm_obj.add_previous_matches(previous_matches)
             # TODO: make sure no neurons are initialized that are not in the global tracker dataframe
-        worm_obj.initialize_all_neuron_tracklet_classifiers()
-        logging.info(f"Initialized worm object: {worm_obj}")
-
-        return worm_obj
+        _worm_obj.initialize_all_neuron_tracklet_classifiers()
+        logging.info(f"Initialized worm object: {_worm_obj}")
+        return _worm_obj
 
     worm_obj = _initialize_worm(tracklets_and_neurons_class)
 
@@ -282,16 +281,16 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
 
     # Add new tracklets
     all_conf_output = {}
-    for i, (name, neuron) in enumerate(tqdm(worm_obj.global_name_to_neuron.items(), total=worm_obj.num_neurons)):
+    for i, (neuron_name, neuron) in enumerate(tqdm(worm_obj.global_name_to_neuron.items(), total=worm_obj.num_neurons)):
 
         if verbose >= 2:
-            print(f"Checking global track {name}")
+            print(f"Checking global track {neuron_name}")
         # New: use the track as produced by the global tracking
         # TODO: confirm that the worm_obj has the same neuron names as leifer
         if to_shorten:
-            this_global_track = df_global_tracks[name][coords][:-1]
+            this_global_track = df_global_tracks[neuron_name][coords][:-1]
         else:
-            this_global_track = df_global_tracks[name][coords]
+            this_global_track = df_global_tracks[neuron_name][coords]
         this_global_track = this_global_track.replace(0.0, np.nan).to_numpy(float)
 
         dist = calc_global_track_to_tracklet_distances_subarray(this_global_track,
@@ -301,29 +300,30 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         # Loop through candidates, and attempt to add
         all_summarized_conf = summarize_confidences_outlier_percent(dist, outlier_threshold=outlier_threshold)
         i_sorted_by_confidence = np.argsort(-all_summarized_conf)  # Reverse sort, but keep nans at the end
-        all_conf_output[name] = all_summarized_conf
+        all_conf_output[neuron_name] = all_summarized_conf
 
         num_candidate_neurons = 0
         for num_candidate_neurons, i_tracklet in enumerate(i_sorted_by_confidence):
             # Check if this was used before; note that conflicts may be desired for postprocessing
-            candidate_name = remaining_tracklet_names[i_tracklet]
-            if candidate_name in used_names:
+            candidate_tracklet_name = remaining_tracklet_names[i_tracklet]
+            if candidate_tracklet_name in used_names:
                 if verbose >= 3:
-                    print(f"Already used: {candidate_name}")
+                    print(f"High confidence, but already used: {candidate_tracklet_name}")
                 continue
             # Check distance; break because they are sorted by distance
             this_confidence = all_summarized_conf[i_tracklet]
             if this_confidence <= min_confidence or np.isnan(this_confidence):
                 if verbose >= 3:
-                    print(f"Confidence {this_confidence} too low: {candidate_name}")
+                    print(f"Confidence {this_confidence} too low: {candidate_tracklet_name}; "
+                          f"not checking any further tracklets")
                 break
 
-            candidate_tracklet = df_tracklets[[candidate_name]]
-            is_match_added = neuron.add_tracklet(this_confidence, candidate_tracklet, metadata=candidate_name,
-                                                 check_using_classifier=True, verbose=verbose-2)
+            candidate_tracklet = df_tracklets[[candidate_tracklet_name]]
+            is_match_added = neuron.add_tracklet(this_confidence, candidate_tracklet, metadata=candidate_tracklet_name,
+                                                 check_using_classifier=False, verbose=verbose-2)
 
             if verbose >= 3:
-                print(f"Tracklet successfully added: {candidate_name}")
+                print(f"Tracklet successfully added: {candidate_tracklet_name}")
 
         if verbose >= 2:
             print(f"{num_candidate_neurons+1} candidate tracklets checked")
@@ -519,7 +519,6 @@ def greedy_matching_using_node_class(no_conflict_neuron_graph, node_class_to_mat
         new_match = [neuron_name, tracklet_name, weights[i_max]]
         final_matching.add_match(new_match)
     return final_matching
-
 
 
 def b_matching_via_node_copying(global_tracklet_neuron_graph):
