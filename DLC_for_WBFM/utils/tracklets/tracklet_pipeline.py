@@ -92,7 +92,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
 
 
 def build_frame_pairs_using_superglue_from_config(project_cfg: ModularProjectConfig, DEBUG=False):
-    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_frames=True)
     training_cfg = project_cfg.get_training_config()
     frame_pair_options = project_cfg.get_frame_pair_options(training_cfg)
 

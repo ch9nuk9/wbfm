@@ -2,10 +2,12 @@
 """
 
 # main function
+import os
 from pathlib import Path
 
 # Experiment tracking
 import sacred
+from DLC_for_WBFM.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames
 from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
@@ -36,6 +38,9 @@ def cfg(project_path, DEBUG):
 
     fname = cfg.resolve_mounted_path_in_current_os('green_bigtiff_fname')
     out_fname_green = str(fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr'))
+
+    bounding_box_fname = os.path.join(cfg.project_dir, '1-segmentation', 'bounding_boxes.pickle')
+    segment_cfg = cfg.get_segmentation_config()
 
     fname = str(fname)  # For pickling in tinydb
 
@@ -88,5 +93,15 @@ def main(_config, _run):
 
         # Save the warp matrices to disk if needed further
         preprocessing_settings.save_all_warp_matrices()
+
+        # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
+        video_fname = cfg.config['preprocessed_red']
+        bbox_fname = _config['bounding_box_fname']
+        calculate_bounding_boxes_from_fnames(video_fname, bbox_fname)
+
+        segment_cfg = _config['segment_cfg']
+        bbox_fname = segment_cfg.unresolve_absolute_path(bbox_fname)
+        segment_cfg.config['bbox_fname'] = bbox_fname
+        segment_cfg.update_self_on_disk()
 
         print("Finished.")
