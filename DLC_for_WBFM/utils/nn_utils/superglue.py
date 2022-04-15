@@ -422,11 +422,7 @@ class SuperGlueUnpacker:
         # Unpack
         desc0, kpts0, scores0 = self.unpack_frame(f0)
         desc1, kpts1, scores1 = self.unpack_frame(f1)
-        if use_gt_matches:
-            df_gt = project_data.get_final_tracks_only_finished_neurons()
-            all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
-        else:
-            all_matches = []
+        all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
 
         image0 = torch.tensor(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0))
         # image1 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t1]), axis=0), axis=0)
@@ -439,8 +435,15 @@ class SuperGlueUnpacker:
         data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
                     image0=image0, image1=image0,
                     scores0=scores0, scores1=scores1)
-
         return data
+
+    def get_gt_matches(self, t0, t1, use_gt_matches):
+        if use_gt_matches:
+            df_gt = self.project_data.get_final_tracks_only_finished_neurons()
+            all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
+        else:
+            all_matches = []
+        return all_matches
 
     def convert_single_frame_to_superglue_format(self, f1: ReferenceFrame, use_gt_matches=False):
         data = self.data_template.copy()
@@ -450,15 +453,10 @@ class SuperGlueUnpacker:
         t1 = f1.frame_ind
 
         desc1, kpts1, scores1 = self.unpack_frame(f1)
-        if use_gt_matches:
-            df_gt = project_data.final_tracks
-            all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
-        else:
-            all_matches = []
+        all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
 
         to_update = dict(descriptors1=desc1, keypoints1=kpts1, all_matches=all_matches, scores1=scores1)
         data.update(to_update)
-
         return data
 
     def expand_all_data(self, data):

@@ -249,7 +249,7 @@ class ProjectData:
         _ = self.segmentation_metadata.segmentation_metadata
         self.all_used_fnames.append(self.segmentation_metadata.segmentation_metadata.detection_fname)
 
-    @property
+    @cached_property
     def num_frames(self):
         return self.project_config.config['dataset_params']['num_frames']
 

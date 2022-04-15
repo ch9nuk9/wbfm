@@ -4,11 +4,12 @@ import os
 import pickle
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 import pandas as pd
 from pytorch_lightning import LightningDataModule
+from pytorch_lightning.utilities.types import TRAIN_DATALOADERS
 from skimage.measure import regionprops
 import torch
 from torch.utils.data import Dataset, random_split, DataLoader
@@ -620,7 +621,6 @@ class NeuronImageFeaturesDataModuleFromProject(LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=self.batch_size)
 
 
-
 class TrackletImageFeaturesDataModule(LightningDataModule):
     """Same as NeuronImageFeaturesDataModule, but for tracklets not tracks"""
     def __init__(self, batch_size=256, project_data: ProjectData=None, t_template=0, num_frames=None,
@@ -660,3 +660,92 @@ class TrackletImageFeaturesDataModule(LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size)
+
+
+class SequentialLoader:
+    """
+    Dataloader wrapper around multiple dataloaders, that returns data from them in sequence
+
+    From: https://github.com/PyTorchLightning/pytorch-lightning/issues/12650
+    """
+
+    def __init__(self, *dataloaders: DataLoader):
+        self.dataloaders = dataloaders
+
+    def __len__(self):
+        return sum(len(d) for d in self.dataloaders)
+
+    def __iter__(self):
+        for dataloader in self.dataloaders:
+            yield from dataloader
+
+
+class NeuronImageFeaturesDataModuleFromMultipleProjects(LightningDataModule):
+    """Return neurons and their labels, e.g. for a classifier"""
+    def __init__(self, batch_size=64, all_project_data: List[ProjectData] = None, num_neurons=None, num_frames=None,
+                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=AbstractNeuronImageFeaturesFromProject,
+                 assume_all_neurons_correct=False, dataset_kwargs=None):
+        super().__init__()
+        if dataset_kwargs is None:
+            dataset_kwargs = {}
+        self.batch_size = batch_size
+        self.all_project_data = all_project_data
+        self.train_fraction = train_fraction
+        self.val_fraction = val_fraction
+        self.base_dataset_class = base_dataset_class
+        self.dataset_kwargs = dataset_kwargs
+        self.assume_all_neurons_correct = assume_all_neurons_correct
+
+    def setup(self, stage: Optional[str] = None):
+        # Split each individually
+        self.train_dataset = []
+        self.val_dataset = []
+        self.test_dataset = []
+        self.alldata = []
+        for project_data in self.all_project_data:
+            alldata = self.base_dataset_class(project_data, **self.dataset_kwargs)
+
+            train_fraction = int(len(alldata) * self.train_fraction)
+            val_fraction = int(len(alldata) * self.val_fraction)
+            splits = [train_fraction, val_fraction, len(alldata) - train_fraction - val_fraction]
+            trainset, valset, testset = random_split(alldata, splits)
+
+            # assign to use in dataloaders
+            self.train_dataset.append(trainset)
+            self.val_dataset.append(valset)
+            self.test_dataset.append(testset)
+
+            self.alldata.append(alldata)
+
+    def train_dataloader(self) -> TRAIN_DATALOADERS:
+        dataloaders = (
+            DataLoader(
+                dataset=dataset,
+                batch_size=self.batch_size,
+                shuffle=True,
+            )
+            for dataset in self.train_dataset
+        )
+        return SequentialLoader(*dataloaders)
+
+    def val_dataloader(self) -> TRAIN_DATALOADERS:
+        dataloaders = (
+            DataLoader(
+                dataset=dataset,
+                batch_size=self.batch_size,
+                shuffle=True,
+            )
+            for dataset in self.val_dataset
+        )
+        return SequentialLoader(*dataloaders)
+
+    def test_dataloader(self) -> TRAIN_DATALOADERS:
+        dataloaders = (
+            DataLoader(
+                dataset=dataset,
+                batch_size=self.batch_size,
+                shuffle=True,
+            )
+            for dataset in self.test_dataset
+        )
+        return SequentialLoader(*dataloaders)
