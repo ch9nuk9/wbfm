@@ -423,7 +423,7 @@ class SuperGlueUnpacker:
         desc0, kpts0, scores0 = self.unpack_frame(f0)
         desc1, kpts1, scores1 = self.unpack_frame(f1)
         if use_gt_matches:
-            df_gt = project_data.final_tracks
+            df_gt = project_data.get_final_tracks_only_finished_neurons()
             all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
         else:
             all_matches = []
@@ -471,6 +471,11 @@ class SuperGlueUnpacker:
 
 
 class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronImageFeaturesFromProject):
+    """
+    Returns pairs of volumes in superglue format, using the SuperGlueUnpacker class
+
+
+    """
 
     def __init__(self, project_data: ProjectData, num_to_calculate=100, use_adjacent_time_points=False):
         super().__init__(project_data)

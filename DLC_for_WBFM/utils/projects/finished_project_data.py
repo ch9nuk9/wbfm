@@ -77,6 +77,9 @@ class ProjectData:
     trace_plotter: TracePlotter = None
     physical_unit_conversion: PhysicalUnitConversion = None
 
+    # Values for ground truth annotation (reading from excel or .csv)
+    finished_neurons_column_name: str = "Finished?"
+
     def __post_init__(self):
         track_cfg = self.project_config.get_tracking_config()
         if self.precedence_global2tracklet is None:
@@ -113,6 +116,17 @@ class ProjectData:
         self.final_tracks_fname = fname
         self.all_used_fnames.append(fname)
         return final_tracks
+
+    def get_final_tracks_only_finished_neurons(self, finished_neurons_column_name=None) -> pd.DataFrame:
+        """See get_ground_truth_annotations()"""
+        if finished_neurons_column_name is None:
+            finished_neurons_column_name = self.finished_neurons_column_name
+        df_gt = self.final_tracks
+        _, df_manual_tracking = self.get_ground_truth_annotations()
+        finished_neurons = list(
+            df_manual_tracking[df_manual_tracking[finished_neurons_column_name]]['Neuron ID'])
+
+        return df_gt.loc[:, finished_neurons]
 
     @cached_property
     def global2tracklet(self) -> dict:
