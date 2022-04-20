@@ -185,11 +185,14 @@ def correct_tracks_dataframe_using_frame_class(project_cfg: ModularProjectConfig
                         "you must be sure that the frame objects are not invalid!")
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_frames=True)
+    return correct_tracks_dataframe_using_project(project_data, overwrite)
+
+
+def correct_tracks_dataframe_using_project(project_data: ProjectData, overwrite: bool):
     all_frames = project_data.raw_frames
     df = project_data.final_tracks
     df_fname = project_data.final_tracks_fname
     num_frames = df.shape[0]
-
     neurons = get_names_from_df(df)
     updated_neurons_and_times = defaultdict(list)
     # Get stored feature spaces from Frame objects
@@ -209,7 +212,6 @@ def correct_tracks_dataframe_using_frame_class(project_cfg: ModularProjectConfig
                 logging.warning(f"Neuron not found within frame; deleting {neuron} at t={t}")
                 df.loc[t, neuron] = np.nan
                 # insert_value_in_sparse_df(df, index=t, columns=neuron, val=np.nan)
-
     # Save
     if len(updated_neurons_and_times) > 0:
         tracking_cfg = project_data.project_config.get_tracking_config()
@@ -217,5 +219,4 @@ def correct_tracks_dataframe_using_frame_class(project_cfg: ModularProjectConfig
                                               make_sequential_filename=~overwrite)
     else:
         print("No updates needed")
-
     return df

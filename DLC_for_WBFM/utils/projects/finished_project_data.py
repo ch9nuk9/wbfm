@@ -651,7 +651,10 @@ class ProjectData:
         track_cfg = self.project_config.get_tracking_config()
         fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
         df_manual_tracking = pd.read_csv(fname)
-        neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
+        try:
+            neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['Finished?']]['Neuron ID'])
+        except KeyError:
+            neurons_that_are_finished = []
         return neurons_that_are_finished, df_manual_tracking
 
     def __repr__(self):

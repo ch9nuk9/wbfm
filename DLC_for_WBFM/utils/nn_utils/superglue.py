@@ -498,7 +498,7 @@ class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronIma
         print("Precaculating training data")
         self._items = []
         for t0, t1 in tqdm(self.time_pairs):
-            val = self.unpacker.convert_frames_to_superglue_format(t0, t1)
+            val = self.unpacker.convert_frames_to_superglue_format(t0, t1, use_gt_matches=True)
             self._items.append(val)
 
     def __getitem__(self, idx):
