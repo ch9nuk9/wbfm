@@ -721,8 +721,7 @@ class NeuronImageFeaturesDataModuleFromMultipleProjects(LightningDataModule):
         dataloaders = (
             DataLoader(
                 dataset=dataset,
-                batch_size=self.batch_size,
-                shuffle=True,
+                batch_size=self.batch_size
             )
             for dataset in self.train_dataset
         )
@@ -732,8 +731,7 @@ class NeuronImageFeaturesDataModuleFromMultipleProjects(LightningDataModule):
         dataloaders = (
             DataLoader(
                 dataset=dataset,
-                batch_size=self.batch_size,
-                shuffle=True,
+                batch_size=self.batch_size
             )
             for dataset in self.val_dataset
         )
@@ -743,8 +741,7 @@ class NeuronImageFeaturesDataModuleFromMultipleProjects(LightningDataModule):
         dataloaders = (
             DataLoader(
                 dataset=dataset,
-                batch_size=self.batch_size,
-                shuffle=True,
+                batch_size=self.batch_size
             )
             for dataset in self.test_dataset
         )
