@@ -245,7 +245,8 @@ class DetectedTrackletsAndNeurons:
 
     @property
     def all_tracklet_names(self):
-        return self.df_tracklets_zxy.columns.get_level_values(0).drop_duplicates()
+        return get_names_from_df(self.df_tracklets_zxy)
+        # return self.df_tracklets_zxy.columns.get_level_values(0).drop_duplicates()
 
     def int_to_tracklet_name(self, i):
         return self.all_tracklet_names[i]

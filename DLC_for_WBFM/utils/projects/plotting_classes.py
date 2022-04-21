@@ -463,7 +463,11 @@ class TrackletAndSegmentationAnnotator:
 
             # Note: sparse matrices can only be pickled
             # self.tracking_cfg.h5_in_local_project(self.df_tracklet_obj.df_tracklets_zxy, self.output_df_fname)
-            self.tracking_cfg.pickle_data_in_local_project(self.df_tracklet_obj.df_tracklets_zxy, self.output_df_fname,
+            if self.use_custom_padded_dataframe:
+                df = self.df_tracklet_obj.df_tracklets_zxy.return_sparse_dataframe()
+            else:
+                df = self.df_tracklet_obj.df_tracklets_zxy
+            self.tracking_cfg.pickle_data_in_local_project(df, self.output_df_fname,
                                                            custom_writer=pd.to_pickle)
             df_fname = self.tracking_cfg.unresolve_absolute_path(self.output_df_fname)
             self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
@@ -489,8 +493,12 @@ class TrackletAndSegmentationAnnotator:
 
             # successfully_split, all_tracklets, left_name, right_name = \
             #     split_tracklet_within_dataframe(all_tracklets, i_split, old_name)
-            successfully_split, all_tracklets, left_name, right_name = \
-                split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name)
+            if self.use_custom_padded_dataframe:
+                successfully_split, all_tracklets, left_name, right_name = \
+                    all_tracklets.split_tracklet(i_split, old_name)
+            else:
+                successfully_split, all_tracklets, left_name, right_name = \
+                    split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name)
 
             if not successfully_split:
                 logging.warning("Did not successfully split; check logs")

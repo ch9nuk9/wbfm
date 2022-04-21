@@ -678,7 +678,6 @@ def split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name, ver
         print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
         print(
             f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
-    # TODO: use custom class with dummy names
     all_tracklets = all_tracklets.join(right_half, sort=False)
     all_tracklets[left_name] = left_half[left_name]
     return True, all_tracklets, left_name, right_name
