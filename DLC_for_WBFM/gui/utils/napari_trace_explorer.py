@@ -1068,10 +1068,15 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
         started_new_app = False
 
     # Build object that has all the data
+    initiliazation_kwargs = dict(use_custom_padded_dataframe=True)
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=True,
-                                                                   to_load_interactivity=True,
-                                                                   to_load_segmentation_metadata=True)
+                                                                   # to_load_interactivity=True,
+                                                                   to_load_segmentation_metadata=True,
+                                                                   initiliazation_kwargs=initiliazation_kwargs)
+    # TODO: debug custom dataframe here
+    project_data.use_custom_padded_dataframe = False
+    project_data.load_interactive_properties()
     ui, viewer = napari_trace_explorer(project_data, app=app, to_print_fps=to_print_fps)
 
     # Note: don't use this in jupyter

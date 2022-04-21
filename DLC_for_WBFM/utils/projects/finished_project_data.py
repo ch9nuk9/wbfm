@@ -181,7 +181,7 @@ class ProjectData:
 
     @cached_property
     def df_all_tracklets(self):
-        logger.info("First time loading the all tracklets, may take a while...")
+        logger.info("First time loading all the tracklets, may take a while...")
         train_cfg = self.project_config.get_training_config()
         track_cfg = self.project_config.get_tracking_config()
 
@@ -197,7 +197,8 @@ class ProjectData:
         self.all_used_fnames.append(fname)
 
         if self.force_tracklets_to_be_sparse:
-            if not check_if_fully_sparse(df_all_tracklets):
+            # if not check_if_fully_sparse(df_all_tracklets):
+            if True:
                 logger.warning("Casting tracklets as sparse, may take a minute")
                 # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
                 df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
@@ -226,6 +227,7 @@ class ProjectData:
 
     @cached_property
     def tracklets_and_neurons_class(self):
+        print("Loading ")
         _ = self.df_all_tracklets  # Make sure it is loaded
         return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata,
                                            dataframe_output_filename=self.df_all_tracklets_fname,
@@ -239,18 +241,18 @@ class ProjectData:
         df_fdnc_tracks = read_if_exists(fname)
         return df_fdnc_tracks
 
-    def _load_tracklet_related_properties(self):
+    def load_tracklet_related_properties(self):
         _ = self.df_all_tracklets
         _ = self.raw_clust
 
-    def _load_interactive_properties(self):
+    def load_interactive_properties(self):
         _ = self.tracklet_annotator
 
-    def _load_frame_related_properties(self):
+    def load_frame_related_properties(self):
         _ = self.raw_frames
         _ = self.raw_matches
 
-    def _load_segmentation_related_properties(self):
+    def load_segmentation_related_properties(self):
         _ = self.segmentation_metadata.segmentation_metadata
         self.all_used_fnames.append(self.segmentation_metadata.segmentation_metadata.detection_fname)
 
@@ -294,9 +296,18 @@ class ProjectData:
                                 to_load_tracklets=False,
                                 to_load_interactivity=False,
                                 to_load_frames=False,
-                                to_load_segmentation_metadata=False):
+                                to_load_segmentation_metadata=False,
+                                initiliazation_kwargs=None):
         # Initialize object in order to use cached properties
+        if initiliazation_kwargs is None:
+            initiliazation_kwargs = {}
+        else:
+            print(f"Initiliazed project with custom settings: {initiliazation_kwargs}")
+
         obj = ProjectData(project_dir, cfg)
+        for k, v in initiliazation_kwargs.items():
+            obj.k = v
+
         obj.all_used_fnames = []
 
         red_dat_fname = cfg.config['preprocessed_red']
@@ -337,13 +348,13 @@ class ProjectData:
             logger.info("Starting threads to read data...")
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
-                    ex.submit(obj._load_tracklet_related_properties)
+                    ex.submit(obj.load_tracklet_related_properties)
                 if to_load_interactivity:
-                    ex.submit(obj._load_interactive_properties)
+                    ex.submit(obj.load_interactive_properties)
                 if to_load_frames:
-                    ex.submit(obj._load_frame_related_properties)
+                    ex.submit(obj.load_frame_related_properties)
                 if to_load_segmentation_metadata:
-                    ex.submit(obj._load_segmentation_related_properties)
+                    ex.submit(obj.load_segmentation_related_properties)
                 red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader_readonly).result()
                 green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader_readonly).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()

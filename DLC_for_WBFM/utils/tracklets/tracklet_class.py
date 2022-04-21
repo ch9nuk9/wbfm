@@ -222,10 +222,12 @@ class DetectedTrackletsAndNeurons:
             self.setup_interactivity()
 
         if self.use_custom_padded_dataframe:
-            logging.warning("Using experimental custom padded dataframe")
+            print("Using experimental custom padded dataframe")
             self.df_tracklets_zxy = PaddedDataFrame.construct_from_basic_dataframe(self.df_tracklets_zxy,
                                                                                    name_mode='tracklet',
                                                                                    initial_empty_cols=10000)
+        else:
+            print("Using basic dataframe")
 
     def setup_interactivity(self):
         subcolumn_to_check = 'raw_segmentation_id'
