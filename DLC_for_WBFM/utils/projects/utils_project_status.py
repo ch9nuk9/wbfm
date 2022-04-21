@@ -5,6 +5,7 @@ from pathlib import Path
 import zarr
 from tqdm import tqdm
 
+from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_readonly
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -163,7 +164,7 @@ def check_zarr_file_integrity(project_path, verbose=0):
 
     for fname in fnames:
         logging.info(f"Checking integrity of {fname}")
-        z = zarr.open(fname)
+        z = zarr_reader_readonly(fname)
 
         for frame in tqdm(z, leave=False):
             tmp = frame.shape

@@ -77,6 +77,8 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
 
     logging.info(f"Producing tracklets")
 
+    project_data = ProjectData.load_final_project_data_from_config(project_config)
+    video_data = project_data.red_data
     raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
                                                       prepend_subfolder=True)
     if os.path.exists(raw_fname):
@@ -85,7 +87,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     # Intermediate products: pairwise matches between frames
     video_fname, tracker_params, pairwise_matches_params = _unpack_config_frame2frame_matches(
         DEBUG, project_config, training_config)
-    all_frame_pairs, all_frame_dict = track_neurons_full_video(video_fname, **tracker_params,
+    all_frame_pairs, all_frame_dict = track_neurons_full_video(video_data, video_fname, **tracker_params,
                                                                pairwise_matches_params=pairwise_matches_params)
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs)
@@ -163,10 +165,13 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
 
     dtype = 'uint8'
 
+    project_data = ProjectData.load_final_project_data_from_config(project_config)
+    video_data = project_data.red_data
+
     # Build frames, then match them
     tracker_params['end_volume'] = tracker_params['start_volume'] + tracker_params['num_frames']
     del tracker_params['num_frames']
-    all_frame_dict = calculate_frame_objects_full_video(video_fname=video_fname, **tracker_params)
+    all_frame_dict = calculate_frame_objects_full_video(video_data, video_fname=video_fname, **tracker_params)
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, None)
 

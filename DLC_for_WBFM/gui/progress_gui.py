@@ -269,6 +269,10 @@ class UiMainWindow(object):
     def preprocessed_green(self):
         return self.project_data.green_data
 
+    @property
+    def segment_zarr(self):
+        return self.project_data.raw_segmentation
+
     def check_valid_project(self, value):
         # TODO
         return os.path.exists(value)
@@ -302,13 +306,6 @@ class UiMainWindow(object):
         cfg = ModularProjectConfig(project_path)
         self.cfg = cfg
         self.segment_cfg = cfg.get_segmentation_config()
-        # TODO: The segmentation path may be different from the overall folder
-        seg_path = self.segment_cfg.config['output_masks']
-        self.segment_zarr = zarr.open(seg_path)
-        # other_project = get_project_of_substep(segment_fname)
-        # with safe_cd(other_project):
-        #     seg_path = self.segment_cfg['output_masks']
-        #     self.segment_zarr = zarr.open(seg_path)
         self.tracking_cfg = cfg.get_tracking_config()
         self.traces_cfg = cfg.get_traces_config()
 

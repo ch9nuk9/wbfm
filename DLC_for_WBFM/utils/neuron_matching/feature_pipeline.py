@@ -293,7 +293,7 @@ def create_dict_from_matches(self):
 ##
 
 
-def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames: int = 10,
+def track_neurons_full_video(video_data, video_fname: str, start_volume: int = 0, num_frames: int = 10,
                              z_depth_neuron_encoding: float = 5.0,
                              preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
                              pairwise_matches_params: FramePairOptions = None,
@@ -314,7 +314,7 @@ def track_neurons_full_video(video_fname: str, start_volume: int = 0, num_frames
 
     # Build frames, then match them
     end_volume = start_volume + num_frames
-    all_frame_dict = calculate_frame_objects_full_video(external_detections, start_volume, end_volume,
+    all_frame_dict = calculate_frame_objects_full_video(video_data, external_detections, start_volume, end_volume,
                                                         video_fname, z_depth_neuron_encoding)
 
     try:
@@ -339,11 +339,10 @@ def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_param
     return all_frame_pairs
 
 
-def calculate_frame_objects_full_video(external_detections, start_volume, end_volume, video_fname,
+def calculate_frame_objects_full_video(video_data, external_detections, start_volume, end_volume, video_fname,
                                        z_depth_neuron_encoding, encoder_opt=None, max_workers=8, **kwargs):
     # Get initial volume; settings are same for all
-    vid_dat = zarr.open(video_fname, synchronizer=zarr.ThreadSynchronizer())
-    vol_shape = vid_dat[0, ...].shape
+    vol_shape = video_data[0, ...].shape
     all_detected_neurons = DetectedNeurons(external_detections)
     all_detected_neurons.setup()
 

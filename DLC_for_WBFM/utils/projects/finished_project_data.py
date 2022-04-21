@@ -2,6 +2,7 @@ import concurrent
 import logging
 from collections import defaultdict
 
+from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_readonly
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 
 logger = logging.getLogger('projectDataLogger')
@@ -323,7 +324,6 @@ class ProjectData:
             behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
             behavior_fname = cfg.resolve_relative_path(behavior_fname)
 
-        zarr_reader_readonly = lambda fname: zarr.open(fname, mode='r')
         zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
