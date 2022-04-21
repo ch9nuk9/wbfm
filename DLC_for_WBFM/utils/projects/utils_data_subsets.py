@@ -12,7 +12,7 @@ from DLC_for_WBFM.utils.projects.utils_filenames import resolve_mounted_path_in_
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd
 
 
-def write_data_subset_from_config(cfg: dict,
+def write_data_subset_from_config(cfg: ModularProjectConfig,
                                   out_fname: str = None,
                                   video_fname: str = None,
                                   tiff_not_zarr: bool = True,
@@ -24,11 +24,11 @@ def write_data_subset_from_config(cfg: dict,
     """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
 
     out_fname, preprocessing_settings, project_dir, start_volume, verbose, video_fname = _unpack_config_for_data_subset(
-        cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data,
+        cfg.config, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data,
         video_fname)
 
     with safe_cd(project_dir):
-        preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg, verbose, video_fname,
+        preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg.config, verbose, video_fname,
                                                                  preprocessing_settings, None)
 
     if not pad_to_align_with_original:
@@ -54,7 +54,8 @@ def write_data_subset_from_config(cfg: dict,
             edits = {'preprocessed_red': out_fname}
         else:
             edits = {'preprocessed_green': out_fname}
-        edit_config(cfg['project_path'], edits)
+        cfg.config.update(edits)
+        cfg.update_self_on_disk()
 
 
 def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr,
