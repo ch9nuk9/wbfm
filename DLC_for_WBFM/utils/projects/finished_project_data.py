@@ -81,6 +81,9 @@ class ProjectData:
     # Values for ground truth annotation (reading from excel or .csv)
     finished_neurons_column_name: str = "Finished?"
 
+    # EXPERIMENTAL (but tested)
+    use_custom_padded_dataframe: bool = False
+
     def __post_init__(self):
         track_cfg = self.project_config.get_tracking_config()
         if self.precedence_global2tracklet is None:
@@ -225,7 +228,8 @@ class ProjectData:
     def tracklets_and_neurons_class(self):
         _ = self.df_all_tracklets  # Make sure it is loaded
         return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata,
-                                           dataframe_output_filename=self.df_all_tracklets_fname)
+                                           dataframe_output_filename=self.df_all_tracklets_fname,
+                                           use_custom_padded_dataframe=self.use_custom_padded_dataframe)
 
     @cached_property
     def df_fdnc_tracks(self):

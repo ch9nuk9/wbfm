@@ -156,9 +156,6 @@ class TrackletAndSegmentationAnnotator:
 
     is_currently_interactive: bool = True
 
-    # EXPERIMENTAL (but tested)
-    use_custom_padded_dataframe: bool = False
-
     def __post_init__(self):
         if self.manual_global2tracklet_names is None:
             self.manual_global2tracklet_names = defaultdict(list)
@@ -463,7 +460,7 @@ class TrackletAndSegmentationAnnotator:
 
             # Note: sparse matrices can only be pickled
             # self.tracking_cfg.h5_in_local_project(self.df_tracklet_obj.df_tracklets_zxy, self.output_df_fname)
-            if self.use_custom_padded_dataframe:
+            if self.df_tracklet_obj.use_custom_padded_dataframe:
                 df = self.df_tracklet_obj.df_tracklets_zxy.return_sparse_dataframe()
             else:
                 df = self.df_tracklet_obj.df_tracklets_zxy
@@ -493,7 +490,7 @@ class TrackletAndSegmentationAnnotator:
 
             # successfully_split, all_tracklets, left_name, right_name = \
             #     split_tracklet_within_dataframe(all_tracklets, i_split, old_name)
-            if self.use_custom_padded_dataframe:
+            if self.df_tracklet_obj.use_custom_padded_dataframe:
                 successfully_split, all_tracklets, left_name, right_name = \
                     all_tracklets.split_tracklet(i_split, old_name)
             else:
