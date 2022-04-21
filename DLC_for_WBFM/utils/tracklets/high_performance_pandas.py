@@ -9,9 +9,8 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import to_sparse_multiindex, \
     get_contiguous_blocks_from_column
+from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_using_mode
 from DLC_for_WBFM.utils.tracklets.utils_splitting import TrackletSplitter
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet, get_next_name_generator, \
-    split_multiple_tracklets
 
 
 class PaddedDataFrame(pd.DataFrame):
@@ -479,3 +478,55 @@ def check_if_heterogenous_columns(df, verbose=1, raise_error=False):
     else:
         print("No heterogenous columns detected")
     return None
+
+
+def get_next_name_generator(df, name_mode='tracklet'):
+    """See get_next_name_tracklet_or_neuron; this is just a generator version for doing many"""
+    all_names = get_names_from_df(df)
+    max_int = name2int_neuron_and_tracklet(all_names[-1])
+    # Really want to make sure we are after all other names
+    i_tracklet = max_int + 1
+    i = 0
+    while True:
+        new_name = int2name_using_mode(i_tracklet + i, name_mode)
+        i += 1
+        yield new_name
+
+
+def split_single_sparse_tracklet(i_split, this_tracklet: pd.DataFrame):
+    if hasattr(this_tracklet, 'sparse'):
+        this_tracklet = this_tracklet.sparse.to_dense()
+    else:
+        # logging.warning(f"Tracklet {this_tracklet} was already dense")
+        pass
+
+    left_half = this_tracklet.copy()
+    right_half = this_tracklet.copy()
+    left_half.iloc[i_split:] = np.nan
+    right_half.iloc[:i_split] = np.nan
+
+    left_half = to_sparse_multiindex(left_half)
+    right_half = to_sparse_multiindex(right_half)
+    return left_half, right_half
+
+
+def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
+    if hasattr(this_tracklet, 'sparse'):
+        this_tracklet = this_tracklet.sparse.to_dense()
+
+    new_tracklets_list = []
+    split_list_copy = split_list.copy()
+    split_list_copy.sort()
+    split_list_copy.insert(0, 0)
+    split_list_copy.append(-1)
+    for i in range(len(split_list_copy) - 1):
+        i_start = split_list_copy[i]
+        i_end = split_list_copy[i + 1]
+        new_tracklet = this_tracklet.copy()
+        if i_start > 0:
+            new_tracklet.iloc[:i_start] = np.nan
+        if i_end != -1:
+            new_tracklet.iloc[i_end:] = np.nan
+        new_tracklets_list.append(new_tracklet)
+
+    return new_tracklets_list

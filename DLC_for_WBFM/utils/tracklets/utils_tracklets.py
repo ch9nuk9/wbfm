@@ -6,11 +6,11 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import to_sparse_multiindex
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df, get_next_name_generator, \
+    split_single_sparse_tracklet, split_multiple_tracklets
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, \
-    int2name_using_mode, int2name_tracklet
+    int2name_using_mode
 
 
 def create_new_track(i0, i1,
@@ -624,19 +624,6 @@ def get_next_name_tracklet_or_neuron(df, name_mode='tracklet'):
     return new_name
 
 
-def get_next_name_generator(df, name_mode='tracklet'):
-    """See get_next_name_tracklet_or_neuron; this is just a generator version for doing many"""
-    all_names = get_names_from_df(df)
-    max_int = name2int_neuron_and_tracklet(all_names[-1])
-    # Really want to make sure we are after all other names
-    i_tracklet = max_int + 1
-    i = 0
-    while True:
-        new_name = int2name_using_mode(i_tracklet + i, name_mode)
-        i += 1
-        yield new_name
-
-
 def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1):
     left_name = old_name
     this_tracklet = all_tracklets[[left_name]]
@@ -689,45 +676,6 @@ def split_single_tracklet(i_split, this_tracklet: pd.DataFrame):
     left_half.iloc[i_split:] = np.nan
     right_half.iloc[:i_split] = np.nan
     return left_half, right_half
-
-
-def split_single_sparse_tracklet(i_split, this_tracklet: pd.DataFrame):
-    if hasattr(this_tracklet, 'sparse'):
-        this_tracklet = this_tracklet.sparse.to_dense()
-    else:
-        # logging.warning(f"Tracklet {this_tracklet} was already dense")
-        pass
-
-    left_half = this_tracklet.copy()
-    right_half = this_tracklet.copy()
-    left_half.iloc[i_split:] = np.nan
-    right_half.iloc[:i_split] = np.nan
-
-    left_half = to_sparse_multiindex(left_half)
-    right_half = to_sparse_multiindex(right_half)
-    return left_half, right_half
-
-
-def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
-    if hasattr(this_tracklet, 'sparse'):
-        this_tracklet = this_tracklet.sparse.to_dense()
-
-    new_tracklets_list = []
-    split_list_copy = split_list.copy()
-    split_list_copy.sort()
-    split_list_copy.insert(0, 0)
-    split_list_copy.append(-1)
-    for i in range(len(split_list_copy) - 1):
-        i_start = split_list_copy[i]
-        i_end = split_list_copy[i + 1]
-        new_tracklet = this_tracklet.copy()
-        if i_start > 0:
-            new_tracklet.iloc[:i_start] = np.nan
-        if i_end != -1:
-            new_tracklet.iloc[i_end:] = np.nan
-        new_tracklets_list.append(new_tracklet)
-
-    return new_tracklets_list
 
 
 def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dict,

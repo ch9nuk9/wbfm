@@ -18,10 +18,10 @@ from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_fu
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import delete_tracklets_using_ground_truth, PaddedDataFrame, \
-    get_names_from_df, check_if_heterogenous_columns
+    get_names_from_df, check_if_heterogenous_columns, get_next_name_generator, split_multiple_tracklets
 from DLC_for_WBFM.utils.tracklets.tracklet_class import TrackedWorm
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs, split_multiple_tracklets, \
-    get_next_name_generator, remove_tracklets_from_dictionary_without_database_match
+from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs, \
+    remove_tracklets_from_dictionary_without_database_match
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
