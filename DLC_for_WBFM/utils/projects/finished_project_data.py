@@ -575,27 +575,29 @@ class ProjectData:
         else:
             clipping_list = []
 
-        raw_chunk = self.red_data.chunks
-        dask_chunk = list(raw_chunk).copy()
-        dask_chunk[0] = 50
+        # raw_chunk = self.red_data.chunks
+        # dask_chunk = list(raw_chunk).copy()
+        # dask_chunk[0] = 50
 
         if 'Red data' in which_layers:
-            red_dask = da.from_zarr(self.red_data, chunk=dask_chunk)
-            viewer.add_image(red_dask, name="Red data", opacity=0.5, colormap='red',
+            # red_dask = da.from_zarr(self.red_data, chunk=dask_chunk)
+            viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red',
                              contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
+            # viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red',
+            #                  contrast_limits=[0, 200])
         if 'Green data' in which_layers:
-            green_dask = da.from_zarr(self.green_data, chunk=dask_chunk)
-            viewer.add_image(green_dask, name="Green data", opacity=0.5, colormap='green', visible=False,
+            # green_dask = da.from_zarr(self.green_data, chunk=dask_chunk)
+            viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
                              contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
-            if dask_for_segmentation:
-                seg_array = da.from_zarr(self.raw_segmentation, chunk=dask_chunk)
-            else:
-                seg_array = zarr.array(self.raw_segmentation)
+            # if dask_for_segmentation:
+            #     seg_array = da.from_zarr(self.raw_segmentation, chunk=dask_chunk)
+            # else:
+            seg_array = zarr.array(self.raw_segmentation)
             viewer.add_labels(seg_array, name="Raw segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=False,
                               rendering='translucent')

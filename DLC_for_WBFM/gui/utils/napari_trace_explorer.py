@@ -1059,7 +1059,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
 def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None):
     # A parent QT application must be initialized first
-    os.environ["NAPARI_ASYNC"] = "1"
+    # os.environ["NAPARI_ASYNC"] = "1"
+    # os.environ["NAPARI_OCTREE"] = "1" # No effect in tests
     if app is None:
         started_new_app = True
         app = QApplication([])
