@@ -261,6 +261,14 @@ class UiMainWindow(object):
                                                                to_load_tracklets=True,
                                                                to_load_segmentation_metadata=True)
 
+    @property
+    def preprocessed_red(self):
+        return self.project_data.red_data
+
+    @property
+    def preprocessed_green(self):
+        return self.project_data.green_data
+
     def check_valid_project(self, value):
         # TODO
         return os.path.exists(value)
@@ -303,17 +311,6 @@ class UiMainWindow(object):
         #     self.segment_zarr = zarr.open(seg_path)
         self.tracking_cfg = cfg.get_tracking_config()
         self.traces_cfg = cfg.get_traces_config()
-
-        fname = cfg.config.get('preprocessed_red', None)
-        if fname is not None:
-            self.preprocessed_red = zarr.open(fname)
-        else:
-            self.preprocessed_red = None
-        fname = cfg.config.get('preprocessed_green', None)
-        if fname is not None:
-            self.preprocessed_green = zarr.open(fname)
-        else:
-            self.preprocessed_green = None
 
     def napari_for_masks(self):
         """Open napari window for segmentation before tracking"""
