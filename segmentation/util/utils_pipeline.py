@@ -2,6 +2,7 @@ import logging
 import os
 import threading
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 from numcodecs import blosc
@@ -45,9 +46,10 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
         segment_cfg, project_cfg, DEBUG)
 
     # Open the file
-    if not video_path.endswith('.zarr'):
+    if not video_path.endswith('zarr'):
         raise ValueError("Non-zarr usage has been deprecated")
-    video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
+    project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
+    video_dat = project_dat.red_data
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
@@ -130,9 +132,10 @@ def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
         segment_cfg, project_cfg, DEBUG)
 
     # Open the file
-    if not video_path.endswith('.zarr'):
+    if not video_path.endswith('zarr'):
         raise ValueError("Non-zarr usage has been deprecated")
-    video_dat = zarr.open(video_path)
+    project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
+    video_dat = project_dat.red_data
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
