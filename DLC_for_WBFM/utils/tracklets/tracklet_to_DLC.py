@@ -6,7 +6,8 @@ import pandas as pd
 from tqdm import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, fill_missing_indices_with_nan
+from DLC_for_WBFM.utils.external.utils_pandas import fill_missing_indices_with_nan
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.custom_errors import ParameterTooStringentError
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import add_empty_rows_to_correct_index
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile

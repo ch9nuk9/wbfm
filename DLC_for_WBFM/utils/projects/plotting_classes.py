@@ -156,6 +156,9 @@ class TrackletAndSegmentationAnnotator:
 
     is_currently_interactive: bool = True
 
+    # EXPERIMENTAL (but tested)
+    use_custom_padded_dataframe: bool = False
+
     def __post_init__(self):
         if self.manual_global2tracklet_names is None:
             self.manual_global2tracklet_names = defaultdict(list)

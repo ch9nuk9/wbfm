@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df, to_sparse_multiindex
+from DLC_for_WBFM.utils.external.utils_pandas import to_sparse_multiindex
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, \
     int2name_using_mode, int2name_tracklet

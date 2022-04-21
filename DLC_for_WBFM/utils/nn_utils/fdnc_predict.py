@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, NoNeuronsError
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion

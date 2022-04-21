@@ -3,7 +3,7 @@ import logging
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 

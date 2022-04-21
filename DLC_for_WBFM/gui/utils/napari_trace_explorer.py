@@ -5,7 +5,7 @@ import os
 import signal
 
 from DLC_for_WBFM.gui.utils.utils_matplotlib import PlotQWidget
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 
 cgitb.enable(format='text')

@@ -6,6 +6,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
+
 
 def dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy=False) -> pd.DataFrame:
     """Currently, flipxy is true when calling from napari"""
@@ -21,18 +23,6 @@ def dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy=False) -> pd.DataFra
 def dataframe_to_numpy_zxy_single_frame(df_tracklets, t, flip_xy=False) -> np.ndarray:
     df_zxy = dataframe_to_dataframe_zxy_format(df_tracklets.iloc[[t], :], flip_xy)
     return df_zxy.to_numpy().reshape(-1, 3)
-
-
-def get_names_from_df(df, level=0, to_sort=True):
-    """
-    If you do .columns.levels[0] it will not return the update properly!
-
-    Note that not sorting doesn't necessarily preserve the original order
-    """
-    names = list(set(df.columns.get_level_values(level)))
-    if to_sort:
-        names.sort()
-    return names
 
 
 def get_names_of_columns_that_exist_at_t(df, t):

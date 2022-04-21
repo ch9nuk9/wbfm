@@ -10,7 +10,7 @@ import zarr
 from scipy.spatial.distance import pdist
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
 from DLC_for_WBFM.utils.general.preprocessing.DLC_utils import get_annotations_from_dlc_config, get_z_from_dlc_name, \
     update_pose_config, create_dlc_project, get_annotations_matching_video_in_folder, \

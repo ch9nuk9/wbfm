@@ -14,7 +14,7 @@ from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches, b
 ##
 from scipy.sparse import coo_matrix
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):

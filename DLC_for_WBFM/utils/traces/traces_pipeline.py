@@ -9,7 +9,7 @@ import pandas as pd
 import zarr
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 from DLC_for_WBFM.utils.general.postprocessing.utils_metadata import region_props_all_volumes, _convert_nested_dict_to_dataframe
 from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData

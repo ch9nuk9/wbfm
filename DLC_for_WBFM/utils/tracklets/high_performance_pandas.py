@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, to_sparse_multiindex, get_names_from_df, \
+from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, to_sparse_multiindex, \
     get_contiguous_blocks_from_column, check_if_heterogenous_columns
 from DLC_for_WBFM.utils.tracklets.utils_splitting import TrackletSplitter
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet, get_next_name_generator, \
@@ -27,10 +27,10 @@ class PaddedDataFrame(pd.DataFrame):
         self.new_name_generator = new_name_generator
         self.remaining_empty_column_names = []
 
-        new_df = self.add_new_empty_column_if_none_left(num_to_add=initial_empty_cols)
-
-        if self.nonempty_column_names is None:
+        if not hasattr(self, 'nonempty_column_names') or self.nonempty_column_names is None:
             self.nonempty_column_names = []
+
+        new_df = self.add_new_empty_column_if_none_left(num_to_add=initial_empty_cols)
 
         return new_df
 
@@ -44,10 +44,10 @@ class PaddedDataFrame(pd.DataFrame):
         df_pad = PaddedDataFrame(data=df.values, columns=df.columns, index=df.index,
                                  dtype=pd.SparseDtype(float, np.nan))
         # df_pad = PaddedDataFrame(df.astype(pd.SparseDtype(float, np.nan)))
+        df_pad.nonempty_column_names = get_names_from_df(df)
         df_pad = df_pad.setup(name_mode=name_mode, initial_empty_cols=initial_empty_cols,
                               default_num_to_add=default_num_to_add)
 
-        df_pad.nonempty_column_names = get_names_from_df(df)
         return df_pad
 
     @property
@@ -357,3 +357,17 @@ def delete_tracklets_using_ground_truth(df_gt, df_tracker, gt_names=None,
 def dataframe_equal_including_nan(df, df2):
     # From: https://stackoverflow.com/questions/19322506/pandas-dataframes-with-nans-equality-comparison
     return (df == df2) | ((df != df) & (df2 != df2))
+
+
+def get_names_from_df(df, level=0, to_sort=True):
+    """
+    If you do .columns.levels[0] it will not return the update properly!
+
+    Note that not sorting doesn't necessarily preserve the original order
+    """
+    if type(df) == PaddedDataFrame:
+        return df.nonempty_column_names
+    names = list(set(df.columns.get_level_values(level)))
+    if to_sort:
+        names.sort()
+    return names

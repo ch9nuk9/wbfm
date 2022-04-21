@@ -19,6 +19,9 @@ class TestPaddedDataframes(unittest.TestCase):
         self.df = to_sparse_multiindex(self.df)
         print(self.df.sparse)  # No error
 
+    def test_type(self):
+        self.assertEqual(type(self.df), PaddedDataFrame)
+
     def test_split(self):
         left, right = split_single_sparse_tracklet(10, self.df)
         self.assertTrue(check_if_fully_sparse(left))

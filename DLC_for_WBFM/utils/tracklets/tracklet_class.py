@@ -9,13 +9,14 @@ import numpy as np
 import pandas as pd
 import sklearn
 
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df, PaddedDataFrame, \
+    get_names_from_df
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, get_names_from_df, \
+from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, \
     get_names_of_conflicting_dataframes, get_times_of_conflicting_dataframes
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError, DataSynchronizationError
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
@@ -212,10 +213,19 @@ class DetectedTrackletsAndNeurons:
     segmentation_id_to_tracklet_name_database: dict = None
     interactive_mode: bool = False
 
+    # EXPERIMENTAL (but tested)
+    use_custom_padded_dataframe: bool = False
+
     def __post_init__(self):
         self.segmentation_id_to_tracklet_name_database = defaultdict(set)
         if self.interactive_mode:
             self.setup_interactivity()
+
+        if self.use_custom_padded_dataframe:
+            logging.warning("Using experimental custom padded dataframe")
+            self.df_tracklets_zxy = PaddedDataFrame.construct_from_basic_dataframe(self.df_tracklets_zxy,
+                                                                                   name_mode='tracklet',
+                                                                                   initial_empty_cols=10000)
 
     def setup_interactivity(self):
         subcolumn_to_check = 'raw_segmentation_id'

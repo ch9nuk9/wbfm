@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import zarr
 from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_positions
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from skimage.measure import regionprops
 from tqdm.auto import tqdm
@@ -15,7 +14,7 @@ from segmentation.util.utils_metadata import DetectedNeurons
 
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df, get_names_from_df
 
 
 def remap_tracklets_to_new_segmentation(project_data: ProjectData,
