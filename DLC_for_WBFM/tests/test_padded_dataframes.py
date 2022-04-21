@@ -7,7 +7,7 @@ from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tracklet
 
 
-class TestPaddedDataframes(unittest.TestCase):
+class TestPaddedDataFrame(unittest.TestCase):
 
     def setUp(self) -> None:
         self.neuron_name = 'neuron_001'

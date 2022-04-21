@@ -1,12 +1,6 @@
-import logging
 from collections import defaultdict
-
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-from tqdm.auto import tqdm
-
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy=False) -> pd.DataFrame:
@@ -23,22 +17,6 @@ def dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy=False) -> pd.DataFra
 def dataframe_to_numpy_zxy_single_frame(df_tracklets, t, flip_xy=False) -> np.ndarray:
     df_zxy = dataframe_to_dataframe_zxy_format(df_tracklets.iloc[[t], :], flip_xy)
     return df_zxy.to_numpy().reshape(-1, 3)
-
-
-def get_names_of_columns_that_exist_at_t(df, t):
-    """Note: MUST assign the output of dropna, otherwise the columns won't update"""
-    out = df.iloc[[t]].dropna(axis=1)
-    return get_names_from_df(out)
-
-
-def find_top_level_name_by_single_column_entry(df, t, value, subcolumn_to_check='raw_neuron_ind_in_list'):
-    """Assumes a multi-index format, with subcolumn_to_check existing at level 1"""
-    df_at_time = df.iloc[[t]].dropna(axis=1)
-    df_mask = df_at_time.loc(axis=1)[:, subcolumn_to_check] == value
-    df_match = df_mask[df_mask].dropna(axis=1)
-    name = get_names_from_df(df_match)
-
-    return name
 
 
 def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
@@ -75,18 +53,6 @@ def get_times_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
                     if c not in idx2_edges:
                         overlapping_tracklet_conflict_points[target_tracklet_name].append(c)
     return overlapping_tracklet_conflict_points
-
-
-def empty_dataframe_like(df_tracklets, new_names, dtype=pd.SparseDtype(float, np.nan)):
-    # New: force all to be the same columns
-    # Initialize using the index and column structure of the tracklets
-    cols = pd.MultiIndex.from_product([new_names, df_tracklets.columns.levels[1]])
-    vals = np.zeros((df_tracklets.shape[0], len(cols)))
-    vals[:] = np.nan
-
-    df_new = pd.DataFrame(data=vals, index=df_tracklets.index, columns=cols, dtype=dtype)
-
-    return df_new
 
 
 # def empty_dataframe_like(df_tracklets, new_names) -> pd.DataFrame:
@@ -126,69 +92,6 @@ def cast_int_or_nan(i):
         return int(i)
 
 
-def get_name_mapping_for_track_dataframes(df_old, df_new,
-                                          t_templates=10, column_to_test='raw_neuron_ind_in_list',
-                                          names_old=None,
-                                          verbose=0):
-    """Checks for matches in all templates, and takes the most common match"""
-    names_new = get_names_from_df(df_new)
-    if np.isscalar(t_templates):
-        t_templates = [t_templates]
-    if names_old is None:
-        names_old = get_names_from_df(df_old)
-    # dfold2dfnew_dict = defaultdict(int)
-    out_dict = {}
-    dfold2dfnew_dict = {}
-    for old in names_old:
-        dfold2dfnew_dict[old] = defaultdict(int)
-
-    # Count matches on all templates
-    for t in t_templates:
-        for old in tqdm(names_old, leave=False):
-            try:
-                old_ind = df_old.loc[t, (old, column_to_test)]
-            except KeyError:
-                # Template time is outside the tracked time
-                break
-            for new in names_new:
-                try:
-                    new_ind = df_new.loc[t, (new, column_to_test)]
-                except KeyError:
-                    # Template time is outside the tracked time
-                    break
-                if old_ind == new_ind:
-                    dfold2dfnew_dict[old][new] += 1
-                    # dfold2dfnew_dict[old] = new
-                    break
-            else:
-                if verbose >= 2:
-                    print(f"Did not find new neuron for ground truth {old}")
-
-    # Take max
-    for old, new_matches in dfold2dfnew_dict.items():
-        if new_matches:
-            i_best_match = np.argmax(list(new_matches.values()))
-            name_best_match = list(new_matches.keys())[i_best_match]
-            out_dict[old] = name_best_match
-
-    return out_dict, dfold2dfnew_dict
-
-
-def plot_pandas_interactive(df):
-    from ipywidgets import interact
-
-    names = get_names_from_df(df)
-    subcolumns = get_names_from_df(df, level=1)
-
-    def f(name, subcol):
-        this_col = df.loc[slice(None), (name, subcol)]
-        this_col.plot()
-        plt.title(f"Number of non-nan values: {this_col.notnull()}")
-        plt.show()
-
-    return interact(f, name=names, subcol=subcolumns)
-
-
 def get_contiguous_blocks_from_column(tracklet):
     if hasattr(tracklet, 'sparse'):
         change_ind = np.where(tracklet.isnull().sparse.to_dense().diff().values)[0]
@@ -205,22 +108,6 @@ def get_contiguous_blocks_from_column(tracklet):
         else:
             block_starts.append(i)
     return block_starts, block_ends
-
-
-def check_if_heterogenous_columns(df, verbose=1, raise_error=False):
-    names = get_names_from_df(df)
-    expected_size = df[names[0]].shape[1]
-    for name in names:
-        if df[name].shape[1] != expected_size:
-            logging.warning(f"Expected {expected_size} columns, but found {df[name].shape[1]}")
-            if verbose >= 1:
-                print(df[name].columns)
-            if raise_error:
-                raise NotImplementedError
-            return name, df[name]
-    else:
-        print("No heterogenous columns detected")
-    return None
 
 
 def df_to_matches(df_gt, t0, t1=None, col='raw_neuron_ind_in_list'):

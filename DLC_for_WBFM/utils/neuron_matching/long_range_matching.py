@@ -6,9 +6,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.external.utils_pandas import empty_dataframe_like, \
-    fill_missing_indices_with_nan
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
+from DLC_for_WBFM.utils.external.utils_pandas import fill_missing_indices_with_nan
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df, empty_dataframe_like
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import calc_FramePair_from_Frames
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd

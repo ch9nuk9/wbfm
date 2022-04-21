@@ -15,8 +15,7 @@ import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_names_of_columns_that_exist_at_t
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df, get_names_of_columns_that_exist_at_t
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
