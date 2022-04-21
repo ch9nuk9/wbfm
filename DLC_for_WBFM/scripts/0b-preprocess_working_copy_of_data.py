@@ -3,15 +3,19 @@
 
 # main function
 import os
+import subprocess
 from pathlib import Path
 
 # Experiment tracking
 import sacred
+
+from DLC_for_WBFM.utils.external.utils_zarr import zip_raw_data_zarr
 from DLC_for_WBFM.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames
 from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import zip_zarr_using_config
 
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
@@ -24,7 +28,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 
 ex = Experiment()
-ex.add_config(project_path=None, DEBUG=False)
+ex.add_config(project_path=None, to_zip_zarr_using_7z=True, DEBUG=False)
 
 
 @ex.config
@@ -58,7 +62,7 @@ def main(_config, _run):
                'pad_to_align_with_original': False,
                'use_preprocessed_data': False,
                'DEBUG': _config['DEBUG']}
-    cfg = _config['cfg']
+    cfg: ModularProjectConfig = _config['cfg']
     cfg.config['project_dir'] = _config['project_dir']
     cfg.config['project_path'] = _config['project_path']
 
@@ -77,7 +81,7 @@ def main(_config, _run):
             print("Preprocessing red...")
             preprocessing_settings.do_mirroring = False
             assert preprocessing_settings.to_save_warp_matrices
-            write_data_subset_from_config(cfg.config, preprocessing_settings=preprocessing_settings, **options)
+            write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **options)
         else:
             print("Preprocessed red already exists; skipping to green")
 
@@ -89,7 +93,7 @@ def main(_config, _run):
         # preprocessing_settings.do_mirroring = False
         if cfg.config['dataset_params']['red_and_green_mirrored']:
             preprocessing_settings.do_mirroring = True
-        write_data_subset_from_config(cfg.config, preprocessing_settings=preprocessing_settings, **options)
+        write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **options)
 
         # Save the warp matrices to disk if needed further
         preprocessing_settings.save_all_warp_matrices()
@@ -104,4 +108,8 @@ def main(_config, _run):
         segment_cfg.config['bbox_fname'] = bbox_fname
         segment_cfg.update_self_on_disk()
 
-        print("Finished.")
+    if _config['to_zip_zarr_using_7z']:
+        zip_zarr_using_config(cfg)
+
+    print("Finished.")
+
