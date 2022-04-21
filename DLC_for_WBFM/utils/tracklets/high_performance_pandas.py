@@ -14,7 +14,8 @@ from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_single_sparse_tra
 
 
 class PaddedDataFrame(pd.DataFrame):
-    _metadata = ["remaining_empty_column_names", "name_mode", "new_name_generator", "default_num_to_add"]
+    _metadata = ["remaining_empty_column_names", "name_mode", "new_name_generator", "default_num_to_add",
+                 "nonempty_column_names"]
 
     def setup(self, name_mode, initial_empty_cols=100, default_num_to_add=None):
         if default_num_to_add is None:
@@ -27,6 +28,10 @@ class PaddedDataFrame(pd.DataFrame):
         self.remaining_empty_column_names = []
 
         new_df = self.add_new_empty_column_if_none_left(num_to_add=initial_empty_cols)
+
+        if self.nonempty_column_names is None:
+            self.nonempty_column_names = []
+
         return new_df
 
     @staticmethod
@@ -41,6 +46,8 @@ class PaddedDataFrame(pd.DataFrame):
         # df_pad = PaddedDataFrame(df.astype(pd.SparseDtype(float, np.nan)))
         df_pad = df_pad.setup(name_mode=name_mode, initial_empty_cols=initial_empty_cols,
                               default_num_to_add=default_num_to_add)
+
+        df_pad.nonempty_column_names = get_names_from_df(df)
         return df_pad
 
     @property
@@ -112,7 +119,8 @@ class PaddedDataFrame(pd.DataFrame):
     def get_next_empty_column_name(self):
         # This should update in-place, but only if I assign the output
         df = self.add_new_empty_column_if_none_left()
-        return df.remaining_empty_column_names.pop(0)
+        next_name = df.remaining_empty_column_names.pop(0)
+        return next_name
 
     def split_tracklet(self, i_split, old_name, verbose=1):
         left_name = old_name
@@ -131,6 +139,7 @@ class PaddedDataFrame(pd.DataFrame):
                 f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
         self[right_name] = right_half[right_name]
         self[left_name] = left_half[left_name]
+        self.nonempty_column_names.append(right_name)
         return True, self, left_name, right_name
 
     def split_tracklet_multiple_times(self, split_list, old_name, verbose=1):
@@ -146,6 +155,8 @@ class PaddedDataFrame(pd.DataFrame):
             # They all have the old name
             df_working_copy[new_name] = tracklet[old_name]
             all_new_names.append(new_name)
+        self.nonempty_column_names.extend(all_new_names)
+
         return df_working_copy, all_new_names
 
     def split_all_tracklets_using_mode(self, split_mode='gap', verbose=0, DEBUG=False):
