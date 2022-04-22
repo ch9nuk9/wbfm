@@ -12,6 +12,9 @@
 
 pwd; hostname; date
 
+# Necessary because the default home directory is not writable from the cluster
+export HOME="/scratch/neurobiology/zimmer/Charles"
+
 # Get all user flags
 while getopts t:n:s: flag
 do

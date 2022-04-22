@@ -13,6 +13,9 @@
 pwd; hostname; date
 #module load cudnn/7.6.5
 
+# Necessary because the default home directory is not writable from the cluster
+export HOME="/scratch/neurobiology/zimmer/Charles"
+
 # Get all user flags
 while getopts t:n:s: flag
 do
