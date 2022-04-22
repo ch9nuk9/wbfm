@@ -131,6 +131,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
         self.formlayout3 = QtWidgets.QFormLayout(self.groupBox3)
 
+        self.changeSubplotMarkerDropdown = QtWidgets.QComboBox()
+        self.changeSubplotMarkerDropdown.addItems(['line', 'dots'])
+        self.changeSubplotMarkerDropdown.currentIndexChanged.connect(self.update_trace_or_tracklet_subplot)
+        self.formlayout3.addRow("Tracklet subplot marker:", self.changeSubplotMarkerDropdown)
+
         self.changeTraceCalculationDropdown = QtWidgets.QComboBox()
         self.changeTraceCalculationDropdown.addItems(['integration', 'z', 'volume'])
         # , 'likelihood' ... Too short
@@ -847,11 +852,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             self.current_subplot_xlim = None
         self.static_ax.clear()
+        marker_opt = self.get_marker_opt()
         for y in self.y_tracklets:
-            self.tracklet_lines.append(y['z'].plot(ax=self.static_ax, marker='o'))
+            self.tracklet_lines.append(y['z'].plot(ax=self.static_ax, **marker_opt))
         if self.y_tracklet_current is not None:
             self.tracklet_lines.append(self.y_tracklet_current['z'].plot(ax=self.static_ax,
-                                                                         color='k', lw=3, marker='o'))
+                                                                         color='k', lw=3, **marker_opt))
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
         # We are displaying z here
@@ -859,6 +865,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.init_subplot_post_clear()
         self.finish_subplot_update(title)
+
+    def get_marker_opt(self):
+        if self.changeSubplotMarkerDropdown.currentText() == 'line':
+            opt = dict(marker='')
+        elif self.changeSubplotMarkerDropdown.currentText() == 'dots':
+            opt = dict(marker='o')
+        else:
+            opt = {}
+        return opt
 
     def tracklet_updated_psuedo_event(self):
         self.update_tracklet_status_label()
