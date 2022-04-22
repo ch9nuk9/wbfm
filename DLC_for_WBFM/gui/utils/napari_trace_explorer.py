@@ -848,10 +848,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.current_subplot_xlim = None
         self.static_ax.clear()
         for y in self.y_tracklets:
-            self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
+            self.tracklet_lines.append(y['z'].plot(ax=self.static_ax, marker='o'))
         if self.y_tracklet_current is not None:
             self.tracklet_lines.append(self.y_tracklet_current['z'].plot(ax=self.static_ax,
-                                                                         color='k', lw=3))
+                                                                         color='k', lw=3, marker='o'))
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
         # We are displaying z here
