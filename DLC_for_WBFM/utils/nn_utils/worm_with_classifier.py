@@ -18,12 +18,17 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, templ
 
 model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/"
 PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
-PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_62_partial_neurons_1000training.ckpt")
-PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir, "superglue_107_partial_neurons_3299training_adjacent.ckpt")
 # PATH_TO_MODEL = os.path.join(model_dir, "classifier_36_neurons.ckpt")
+# PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_62_partial_neurons_1000training.ckpt")
+# PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir, "superglue_107_partial_neurons_3299training_adjacent.ckpt")
+
+# Update: 4/20/2022 - multiple datasets
+PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_neurons_3_datasets_04_19.ckpt")
+PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir, "superglue_neurons_3_datasets_adjacent_04_20.ckpt")
+
+
 if not os.path.exists(PATH_TO_MODEL):
     logging.warning(f"Did not find default model at {PATH_TO_MODEL}, is everything mounted correctly?")
-    # raise FileNotFoundError(PATH_TO_MODEL)
 
 # TODO: also save hyperparameters (doesn't work in jupyter notebooks)
 HPARAMS = dict(num_classes=127)
