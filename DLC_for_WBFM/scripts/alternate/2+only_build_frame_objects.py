@@ -21,7 +21,7 @@ cgitb.enable(format='text')
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None, DEBUG=False)
+ex.add_config(project_path=None, only_calculate_desynced=False, DEBUG=False)
 
 
 @ex.config
@@ -48,11 +48,13 @@ def produce_training_data(_config, _run):
 
     DEBUG = _config['DEBUG']
     project_config = _config['cfg']
+    only_calculate_desynced = _config['only_calculate_desynced']
 
     train_cfg = _config['train_cfg']
 
     build_frame_objects_using_config(
         project_config,
         train_cfg,
+        only_calculate_desynced=only_calculate_desynced,
         DEBUG=DEBUG
     )

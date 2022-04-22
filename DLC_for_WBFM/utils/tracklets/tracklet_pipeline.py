@@ -150,6 +150,7 @@ def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, projec
 
 def build_frame_objects_using_config(project_config: ModularProjectConfig,
                                      training_config: SubfolderConfigFile,
+                                     only_calculate_desynced: bool = False,
                                      DEBUG: bool = False) -> None:
     """
     Produce (or rebuild) the Frame objects associated with a project, without matching them or otherwise producing
@@ -165,14 +166,20 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
 
     dtype = 'uint8'
 
-    project_data = ProjectData.load_final_project_data_from_config(project_config)
+    project_data = ProjectData.load_final_project_data_from_config(project_config,
+                                                                   to_load_frames=only_calculate_desynced)
     video_data = project_data.red_data
 
     # Build frames, then match them
-    end_volume = tracker_params['start_volume'] + tracker_params['num_frames']
-    frame_range = list(range(tracker_params['start_volume'], end_volume))
-    del tracker_params['num_frames']
-    del tracker_params['start_volume']
+    if not only_calculate_desynced:
+        end_volume = tracker_params['start_volume'] + tracker_params['num_frames']
+        frame_range = list(range(tracker_params['start_volume'], end_volume))
+        del tracker_params['num_frames']
+        del tracker_params['start_volume']
+    else:
+        frame_range = project_data.get_desynced_seg_and_frame_object_frames()
+        if len(frame_range) == 0:
+            return
     all_frame_dict = calculate_frame_objects_full_video(video_data, video_fname=video_fname, frame_range=frame_range,
                                                         **tracker_params)
     with safe_cd(project_config.project_dir):

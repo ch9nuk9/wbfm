@@ -663,6 +663,18 @@ class ProjectData:
 
         return viewer
 
+    def get_desynced_seg_and_frame_object_frames(self, verbose=1):
+        desynced_frames = []
+        for t in range(self.num_frames):
+            pts_from_seg = self.get_centroids_as_numpy(t)
+            pts_from_frame = self.raw_frames[t].neuron_locs
+
+            if pts_from_seg.shape != pts_from_frame.shape:
+                desynced_frames.append(t)
+        if verbose >= 1:
+            print(f"Found {len(desynced_frames)} desynchronized frames")
+        return desynced_frames
+
     def get_ground_truth_annotations(self):
         # TODO: do not hardcode
         track_cfg = self.project_config.get_tracking_config()
