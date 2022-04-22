@@ -180,8 +180,14 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
         frame_range = project_data.get_desynced_seg_and_frame_object_frames()
         if len(frame_range) == 0:
             return
-    all_frame_dict = calculate_frame_objects_full_video(video_data, video_fname=video_fname, frame_range=frame_range,
+    all_new_frames = calculate_frame_objects_full_video(video_data, video_fname=video_fname, frame_range=frame_range,
                                                         **tracker_params)
+    if not only_calculate_desynced:
+        all_frame_dict = all_new_frames
+    else:
+        all_frame_dict = project_data.raw_frames
+        all_frame_dict.update(all_new_frames)
+
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, None)
 
