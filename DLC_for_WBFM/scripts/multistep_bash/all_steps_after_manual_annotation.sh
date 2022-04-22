@@ -16,7 +16,7 @@ done
 #source /home/charles/anaconda3/etc/profile.d/conda.sh
 #conda init bash
 
-CODE_PATH="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
+CODE_PATH="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
 SUFFIX="with project_path=$project_path"
 
 if [ "$is_dry_run" ]; then
@@ -26,16 +26,9 @@ else
 #  conda activate torch
 #  source activate torch
 
-#  CMD="${CODE_PATH}/3b-match_tracklets_and_dlc_tracks.py"
-#  python $CMD $SUFFIX start_from_manual_matches=Trueall_steps_after_manual_annotation.sh
-  CMD="${CODE_PATH}/3c-make_final_tracks_using_tracklet_matches.py"
-  python $CMD $SUFFIX start_from_manual_matches=True
-
-
-  CMD="${CODE_PATH}/4a-match_tracks_and_segmentation.py"
+  CMD="${CODE_PATH}/3b-match_tracklets_and_tracks_using_neuron_initialization.py"
   python $CMD $SUFFIX
-  CMD="${CODE_PATH}/4b-reindex_segmentation_full.py"
-  python $CMD $SUFFIX
-  CMD="${CODE_PATH}/4c-extract_full_traces.py"
+
+  CMD="${CODE_PATH}/4-make_final_traces.py"
   python $CMD $SUFFIX
 fi
