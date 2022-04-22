@@ -155,7 +155,7 @@ class PaddedDataFrame(pd.DataFrame):
             # They all have the old name
             df_working_copy[new_name] = tracklet[old_name]
             all_new_names.append(new_name)
-        self.nonempty_column_names.extend(all_new_names)
+        self.nonempty_column_names.extend(all_new_names[1:])  # Do not copy the first name, which is the old name
 
         return df_working_copy, all_new_names
 

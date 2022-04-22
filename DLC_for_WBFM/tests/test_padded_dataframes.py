@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from DLC_for_WBFM.utils.external.utils_pandas import to_sparse_multiindex, check_if_fully_sparse
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df, PaddedDataFrame, \
-    split_single_sparse_tracklet
+    split_single_sparse_tracklet, get_names_from_df
 
 
 class TestPaddedDataFrame(unittest.TestCase):
@@ -179,3 +179,65 @@ class TestPaddedDataFrame(unittest.TestCase):
         self.assertEqual(all_new_names[2], 'neuron_003')
         self.assertEqual(all_new_names[3], 'neuron_004')
         self.assertEqual(len(all_new_names), 4)
+
+    def test_roundtrip_sparse(self):
+        df_sparse = self.df.return_sparse_dataframe()
+
+        current_names = get_names_from_df(df_sparse)
+        expected_names = [self.neuron_name]
+        self.assertEqual(current_names, expected_names)
+
+        df_new_pad = PaddedDataFrame.construct_from_basic_dataframe(df_sparse, name_mode='neuron',
+                                                                    initial_empty_cols=1, default_num_to_add=10)
+        current_names = get_names_from_df(df_new_pad)  # Returns the non-empty names
+        expected_names = [self.neuron_name]
+        self.assertEqual(current_names, expected_names)
+
+    def test_roundtrip_normal(self):
+        df_normal = self.df.return_normal_dataframe()
+
+        current_names = get_names_from_df(df_normal)
+        expected_names = [self.neuron_name]
+        self.assertEqual(current_names, expected_names)
+
+        df_new_pad = PaddedDataFrame.construct_from_basic_dataframe(df_normal, name_mode='neuron',
+                                                                    initial_empty_cols=1, default_num_to_add=10)
+        current_names = get_names_from_df(df_new_pad)  # Returns the non-empty names
+        expected_names = [self.neuron_name]
+        self.assertEqual(current_names, expected_names)
+
+    def test_sparse_saving(self):
+        df_sparse = self.df.return_sparse_dataframe()
+        df_sparse.to_pickle('df_pytest.pickle')
+
+        df_loaded = pd.read_pickle('df_pytest.pickle')
+
+        current_names = get_names_from_df(df_loaded)
+        expected_names = [self.neuron_name]
+        self.assertEqual(current_names, expected_names)
+
+        df_new_pad = PaddedDataFrame.construct_from_basic_dataframe(df_loaded, name_mode='neuron',
+                                                                    initial_empty_cols=1, default_num_to_add=10)
+        current_names = get_names_from_df(df_new_pad)  # Returns the non-empty names
+        expected_names = [self.neuron_name]
+        self.assertEqual(current_names, expected_names)
+
+    def test_split_then_save(self):
+        df_working_copy, all_new_names = self.df.split_tracklet_multiple_times([5, 10, 15], self.neuron_name)
+        expected_names = ['neuron_001', 'neuron_002', 'neuron_003', 'neuron_004']
+
+        current_names = get_names_from_df(df_working_copy)  # Returns the non-empty names
+        self.assertEqual(current_names, expected_names)
+
+        df_sparse = df_working_copy.return_sparse_dataframe()
+        df_sparse.to_pickle('df_pytest.pickle')
+
+        df_loaded = pd.read_pickle('df_pytest.pickle')
+
+        current_names = get_names_from_df(df_loaded)
+        self.assertEqual(current_names, expected_names)
+
+        df_new_pad = PaddedDataFrame.construct_from_basic_dataframe(df_loaded, name_mode='neuron',
+                                                                    initial_empty_cols=1, default_num_to_add=10)
+        current_names = get_names_from_df(df_new_pad)  # Returns the non-empty names
+        self.assertEqual(current_names, expected_names)
