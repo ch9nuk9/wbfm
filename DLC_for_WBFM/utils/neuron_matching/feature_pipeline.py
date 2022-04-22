@@ -314,7 +314,8 @@ def track_neurons_full_video(video_data, video_fname: str, start_volume: int = 0
 
     # Build frames, then match them
     end_volume = start_volume + num_frames
-    all_frame_dict = calculate_frame_objects_full_video(video_data, external_detections, start_volume, end_volume,
+    frame_range = list(range(start_volume, end_volume))
+    all_frame_dict = calculate_frame_objects_full_video(video_data, external_detections, frame_range,
                                                         video_fname, z_depth_neuron_encoding)
 
     try:
@@ -339,7 +340,7 @@ def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_param
     return all_frame_pairs
 
 
-def calculate_frame_objects_full_video(video_data, external_detections, start_volume, end_volume, video_fname,
+def calculate_frame_objects_full_video(video_data, external_detections, frame_range, video_fname,
                                        z_depth_neuron_encoding, encoder_opt=None, max_workers=8, **kwargs):
     # Get initial volume; settings are same for all
     vol_shape = video_data[0, ...].shape
@@ -356,9 +357,8 @@ def calculate_frame_objects_full_video(video_data, external_detections, start_vo
         return f
 
     # Build all frames initially, then match
-    frame_range = range(start_volume, end_volume)
     all_frame_dict = dict()
-    logging.info(f"Calculating Frame objects for frames: {start_volume} to {end_volume}")
+    logging.info(f"Calculating Frame objects for frames: {frame_range[0]} to {frame_range[-1]}")
     with tqdm(total=len(frame_range)) as pbar:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(_build_frame, i): i for i in frame_range}

@@ -169,9 +169,12 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
     video_data = project_data.red_data
 
     # Build frames, then match them
-    tracker_params['end_volume'] = tracker_params['start_volume'] + tracker_params['num_frames']
+    end_volume = tracker_params['start_volume'] + tracker_params['num_frames']
+    frame_range = list(range(tracker_params['start_volume'], end_volume))
     del tracker_params['num_frames']
-    all_frame_dict = calculate_frame_objects_full_video(video_data, video_fname=video_fname, **tracker_params)
+    del tracker_params['start_volume']
+    all_frame_dict = calculate_frame_objects_full_video(video_data, video_fname=video_fname, frame_range=frame_range,
+                                                        **tracker_params)
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, None)
 
