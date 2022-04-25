@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 import numpy as np
 import pandas as pd
@@ -39,6 +40,9 @@ def get_times_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
     all_indices = [t.dropna().index for t in tracklet_list]
     overlapping_tracklet_conflict_points = defaultdict(list)
     for i1, (idx1, base_tracklet_name) in enumerate(zip(all_indices, tracklet_network_names)):
+        if len(idx1) == 0:
+            logging.warning(f"Skipping empty tracklet {base_tracklet_name}")
+            continue
         idx1_edges = [int(idx1[0]), int(idx1[-1])]
         for i2, (idx2, target_tracklet_name) in enumerate(zip(all_indices[i1 + 1:], tracklet_network_names[i1 + 1:])):
             intersecting_ind = list(idx1.intersection(idx2))
