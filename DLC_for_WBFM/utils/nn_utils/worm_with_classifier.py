@@ -113,6 +113,7 @@ class WormWithSuperGlueClassifier:
             self.path_to_model = PATH_TO_SUPERGLUE_MODEL
         if self.model is None:
             self.model = SuperGlueModel.load_from_checkpoint(checkpoint_path=self.path_to_model)
+        self.model.eval()
 
     def match_target_frame(self, target_frame: ReferenceFrame):
 
