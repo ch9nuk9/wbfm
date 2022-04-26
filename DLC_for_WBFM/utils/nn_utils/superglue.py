@@ -51,7 +51,7 @@ from torch import nn, optim
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_itertools import random_combination
-from DLC_for_WBFM.utils.external.utils_pandas import df_to_matches
+from DLC_for_WBFM.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.nn_utils.data_loading import AbstractNeuronImageFeaturesFromProject
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -351,7 +351,6 @@ class SuperGlue(nn.Module):
 
 ## MY ADDITIONS
 
-
 class SuperGlueModel(LightningModule):
     def __init__(self, feature_dim=840, criterion=None, lr=1e-3):
         super().__init__()
@@ -379,6 +378,17 @@ class SuperGlueModel(LightningModule):
         pred = self(batch)
         loss = pred['loss']
         self.log("val_loss", loss)
+
+        # Also calculate more interpretable m
+        new_matches = [[i, int(m)] for i, m in enumerate(pred['matches0'])]
+        gt_matches = np.squeeze(batch['all_matches'].numpy())
+
+        tp, fp, fn, unknown = accuracy_of_matches(gt_matches, new_matches)
+
+        self.log("True Positive (fraction of gt)", tp / len(gt_matches))
+        self.log("False Positive (fraction of gt)", fp / len(gt_matches))
+        self.log("False Negative (fraction of gt)", fn / len(gt_matches))
+        self.log("No ground truth (fraction of detections)", unknown / len(new_matches))
 
 
 @dataclass

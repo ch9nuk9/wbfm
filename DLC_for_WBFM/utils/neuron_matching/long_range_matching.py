@@ -88,7 +88,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
             if use_previous_matches:
                 _worm_obj.add_previous_matches(previous_matches)
             # TODO: make sure no neurons are initialized that are not in the global tracker dataframe
-        _worm_obj.initialize_all_neuron_tracklet_classifiers()
+        # _worm_obj.initialize_all_neuron_tracklet_classifiers()
         logging.info(f"Initialized worm object: {_worm_obj}")
         return _worm_obj
 
