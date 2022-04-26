@@ -481,7 +481,8 @@ class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronIma
 
         self.unpacker = SuperGlueUnpacker(project_data=project_data)
 
-        t_list = list(range(project_data.num_frames - 1))
+        # t_list = list(range(project_data.num_frames - 1))
+        t_list = project_data.custom_frame_indices()[:-1]
         self.time_pairs = []
         for i in range(num_to_calculate):
             if use_adjacent_time_points:
