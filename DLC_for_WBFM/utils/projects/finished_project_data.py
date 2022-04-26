@@ -74,6 +74,8 @@ class ProjectData:
     df_all_tracklets_fname: str = None
     force_tracklets_to_be_sparse: bool = True  # TODO: pass as arg
 
+    _custom_frame_indices: list = None
+
     # Classes for more functionality
     trace_plotter: TracePlotter = None
     physical_unit_conversion: PhysicalUnitConversion = None
@@ -259,6 +261,17 @@ class ProjectData:
     @cached_property
     def num_frames(self):
         return self.project_config.config['dataset_params']['num_frames']
+
+    def custom_frame_indices(self):
+        """For overriding the normal iterator over frames, for skipping problems etc."""
+        if self._custom_frame_indices is not None:
+            return self._custom_frame_indices
+        else:
+            return list(range(self.num_frames))
+
+    def get_frame_index_generator(self):
+        for val in self.custom_frame_indices():
+            yield val
 
     @property
     def which_training_frames(self):
