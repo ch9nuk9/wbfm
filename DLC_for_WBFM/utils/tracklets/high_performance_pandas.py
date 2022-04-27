@@ -230,7 +230,7 @@ def get_split_points_at_nans_and_delete_singles(df_working_copy, original_name, 
     return split_list
 
 
-def insert_value_in_sparse_df(df: pd.DataFrame, index: Union[int, str], columns: pd.MultiIndex, val):
+def insert_value_in_sparse_df(df: pd.DataFrame, index: Union[int, str, list], columns: pd.MultiIndex, val):
     """ Insert data in a DataFrame with SparseDtype format
 
     from: https://stackoverflow.com/questions/49032856/assign-values-to-sparsearray-in-pandas
