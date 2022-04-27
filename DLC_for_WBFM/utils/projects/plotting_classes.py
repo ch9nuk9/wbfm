@@ -341,13 +341,13 @@ class TrackletAndSegmentationAnnotator:
         conflicting_match = self.get_neuron_name_of_conflicting_match()
         if conflicting_match and conflicting_match == self.current_neuron:
             types_of_conflicts.append("Already added")
-        else:
-            if conflicting_match:
-                types_of_conflicts.append("Identity")
-            if self.get_dict_of_tracklet_time_conflicts():
-                types_of_conflicts.append("Time")
-            if len(types_of_conflicts) == 0:
-                types_of_conflicts.append("No conflicts")
+        # It's possible for a human to force an already added tracklet to have multiple tracklets, so display it
+        if conflicting_match:
+            types_of_conflicts.append("Identity")
+        if self.get_dict_of_tracklet_time_conflicts():
+            types_of_conflicts.append("Time")
+        if len(types_of_conflicts) == 0:
+            types_of_conflicts.append("No conflicts")
         return types_of_conflicts
 
     def print_tracklet_conflicts(self):
