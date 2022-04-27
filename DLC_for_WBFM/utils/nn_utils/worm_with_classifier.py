@@ -24,7 +24,9 @@ PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
 
 # Update: 4/20/2022 - multiple datasets
 PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_neurons_3_datasets_04_19.ckpt")
-PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir, "superglue_neurons_3_datasets_adjacent_04_20.ckpt")
+# PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir, "superglue_neurons_3_datasets_adjacent_04_20.ckpt")
+PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir,
+                                                "superglue_neurons_3_datasets_adjacent_remove_nonmoving_04_27.ckpt")
 
 
 if not os.path.exists(PATH_TO_MODEL):
