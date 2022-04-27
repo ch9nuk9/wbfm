@@ -115,6 +115,9 @@ class TrackletAndSegmentationAnnotator:
     global2tracklet: Dict[str, List[str]]
     segmentation_metadata: DetectedNeurons
 
+    # Same as global2tracklet, but updated with all manual changes
+    _combined_global2tracklet_dict: Dict[str, List[str]] = None
+
     # Annotation
     manual_global2tracklet_names: Dict[str, List[str]] = None
     manual_global2tracklet_removals: Dict[str, List[str]] = None
@@ -163,6 +166,8 @@ class TrackletAndSegmentationAnnotator:
             self.manual_global2tracklet_removals = defaultdict(list)
         if self.t_buffer_masks is None:
             self.t_buffer_masks = []
+        if self._combined_global2tracklet_dict is None:
+            self._combined_global2tracklet_dict = deepcopy(self.global2tracklet)
 
         if not self.df_tracklet_obj.interactive_mode:
             self.df_tracklet_obj.setup_interactivity()
@@ -204,14 +209,16 @@ class TrackletAndSegmentationAnnotator:
 
     @property
     def combined_global2tracklet_dict(self):
-        tmp = deepcopy(self.global2tracklet)
-        for k in tmp.keys():
-            tmp[k].extend(self.manual_global2tracklet_names[k].copy())
-            [tmp[k].remove(neuron) for neuron in self.manual_global2tracklet_removals[k] if neuron in tmp[k]]
-        if self.current_tracklet_name is not None:
-            pass
-            # logging.warning("Currently active tracklet not included in combined dict")
-        return tmp
+        # tmp = deepcopy(self.global2tracklet)
+        # for k in tmp.keys():
+        #     tmp[k].extend(self.manual_global2tracklet_names[k].copy())
+        #     [tmp[k].remove(neuron) for neuron in self.manual_global2tracklet_removals[k] if neuron in tmp[k]]
+        # if self.current_tracklet_name is not None:
+        #     pass
+        #     # logging.warning("Currently active tracklet not included in combined dict")
+        # return tmp
+        return self._combined_global2tracklet_dict
+
 
     @property
     def current_tracklet(self):
@@ -368,11 +375,25 @@ class TrackletAndSegmentationAnnotator:
             print(f"Tracklet {tracklet_name} already in {neuron_name}; nothing added")
         else:
             self.manual_global2tracklet_names[neuron_name].append(tracklet_name)
+            self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
             print(f"Successfully added tracklet {tracklet_name} to {neuron_name}")
 
         if tracklet_name in previously_removed:
             print(f"Tracklet was in the to-remove list, but was removed")
             self.manual_global2tracklet_removals[neuron_name].remove(tracklet_name)
+            self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
+
+    def remove_tracklet_from_global2tracklet_dict(self, tracklet_name, neuron_name):
+        if tracklet_name in self._combined_global2tracklet_dict[neuron_name]:
+            self._combined_global2tracklet_dict[neuron_name].remove(tracklet_name)
+        else:
+            logging.warning("Tried to remove tracklet, but is not added")
+
+    def add_tracklet_to_global2tracklet_dict(self, tracklet_name, neuron_name):
+        if tracklet_name not in self._combined_global2tracklet_dict[neuron_name]:
+            self._combined_global2tracklet_dict[neuron_name].append(tracklet_name)
+        else:
+            logging.warning("Tried to add tracklet, but is already added")
 
     def remove_tracklet_from_neuron(self, tracklet_name, neuron_name):
         previously_added = self.manual_global2tracklet_names[neuron_name]
@@ -381,11 +402,13 @@ class TrackletAndSegmentationAnnotator:
             print(f"Tracklet {tracklet_name} already removed from {neuron_name}; nothing removed")
         else:
             self.manual_global2tracklet_removals[neuron_name].append(tracklet_name)
+            self.remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
             print(f"Successfully added {tracklet_name} to removal list of {neuron_name}")
 
         if tracklet_name in previously_added:
             print(f"{tracklet_name} was in the manually to-add list, but was removed")
             self.manual_global2tracklet_names[neuron_name].remove(tracklet_name)
+            self.remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
 
     def remove_tracklet_from_all_matches(self):
         tracklet_name = self.current_tracklet_name
