@@ -526,7 +526,8 @@ class TrackedWorm:
             list_of_tracklets = self.get_tracklets_for_neuron(name)
             neuron.initialize_tracklet_classifier(list_of_tracklets)
 
-    def reinitialize_all_neurons_from_final_matching(self, final_matching: MatchesWithConfidence):
+    def reinitialize_all_neurons_from_final_matching(self, final_matching: MatchesWithConfidence,
+                                                     ignore_missing_tracklets=False):
         """Note: if there are originally neurons with no tracklet matches, then they should remain as they are"""
         self.backup_global_name_to_neuron()
         logging.info(f"Before reinitialization: {self}")
@@ -536,7 +537,13 @@ class TrackedWorm:
             new_neuron = NeuronComposedOfTracklets(neuron_name, initialization_frame=0, verbose=self.verbose - 1)
             for tracklet_name in tracklet_list:
                 conf = match2conf[(neuron_name, tracklet_name)]
-                tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
+                try:
+                    tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
+                except KeyError as e:
+                    if ignore_missing_tracklets:
+                        logging.warning(f"Attempted match with {tracklet_name}, but it is not in the database")
+                    else:
+                        raise e
                 new_neuron.add_tracklet(conf, tracklet, metadata=tracklet_name, check_using_classifier=False)
             self.global_name_to_neuron[neuron_name] = new_neuron
         logging.info(f"After reinitialization: {self}")
