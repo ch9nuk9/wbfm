@@ -1083,7 +1083,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
         started_new_app = False
 
     # Build object that has all the data
-    initiliazation_kwargs = dict(use_custom_padded_dataframe=True)
+    initiliazation_kwargs = dict(use_custom_padded_dataframe=False)
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=True,
                                                                    # to_load_interactivity=True,
