@@ -380,8 +380,8 @@ class SuperGlueModel(LightningModule):
         self.log("val_loss", loss)
 
         # Also calculate more interpretable m
-        new_matches = [[i, int(m)] for i, m in enumerate(pred['matches0'])]
-        gt_matches = np.squeeze(batch['all_matches'].numpy())
+        new_matches = [[i, int(m.detach().cpu())] for i, m in enumerate(pred['matches0'])]
+        gt_matches = np.squeeze(batch['all_matches'].cpu().detach().numpy())
 
         tp, fp, fn, unknown = accuracy_of_matches(gt_matches, new_matches)
 
