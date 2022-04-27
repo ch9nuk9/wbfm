@@ -21,41 +21,53 @@ def dataframe_to_numpy_zxy_single_frame(df_tracklets, t, flip_xy=False) -> np.nd
 
 
 def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
-    all_indices = [t.dropna().index for t in tracklet_list]
-    overlapping_tracklet_ind = []
+    all_times = [t.dropna().index for t in tracklet_list]
+    # overlapping_tracklet_ind = []
     overlapping_tracklet_names = []
-    for i1, idx1 in enumerate(all_indices):
-        this_overlapping_ind = [i1]
-        for i2, idx2 in enumerate(all_indices[i1 + 1:]):
-            if len(idx1.intersection(idx2)) > 0:
-                this_overlapping_ind.append(i2 + i1 + 1)
+    for i_base_neuron, times_base_neuron in enumerate(all_times):
+        this_overlapping_ind = [i_base_neuron]
+        # This base neuron could have many overlaps; keep track of all of them
+        for i2, times_target_neuron in enumerate(all_times[i_base_neuron + 1:]):
+            if len(times_base_neuron.intersection(times_target_neuron)) > 0:
+                i_target_neuron = i2 + i_base_neuron + 1
+                this_overlapping_ind.append(i_target_neuron)
         if len(this_overlapping_ind) > 1:
-            overlapping_tracklet_ind.append(this_overlapping_ind)
+            # overlapping_tracklet_ind.append(this_overlapping_ind)
             these_names = [tracklet_network_names[n] for n in this_overlapping_ind]
             overlapping_tracklet_names.append(these_names)
     return overlapping_tracklet_names
 
 
-def get_times_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
+def get_times_of_conflicting_dataframes(tracklet_list, tracklet_network_names, verbose=0):
     all_indices = [t.dropna().index for t in tracklet_list]
     overlapping_tracklet_conflict_points = defaultdict(list)
     for i1, (idx1, base_tracklet_name) in enumerate(zip(all_indices, tracklet_network_names)):
         if len(idx1) == 0:
             logging.warning(f"Skipping empty tracklet {base_tracklet_name}")
             continue
-        idx1_edges = [int(idx1[0]), int(idx1[-1])]
+        idx1_edges = [int(idx1[0]), int(idx1[-1])+1]
         for i2, (idx2, target_tracklet_name) in enumerate(zip(all_indices[i1 + 1:], tracklet_network_names[i1 + 1:])):
+            if base_tracklet_name == target_tracklet_name:
+                logging.warning("Attempted to compare tracklet to itself")
+                continue
             intersecting_ind = list(idx1.intersection(idx2))
-            idx2_edges = [int(idx2[0]), int(idx2[-1])]
+            idx2_edges = [int(idx2[0]), int(idx2[-1])+1]
             if len(intersecting_ind) > 0:
                 intersecting_ind.sort()
-                conflict_points = [intersecting_ind[0], intersecting_ind[-1]]
+                conflict_points = [intersecting_ind[0], intersecting_ind[-1]+1]
                 # Want to split both tracklets at both points, if they aren't at the extreme
                 for c in conflict_points:
                     if c not in idx1_edges:
                         overlapping_tracklet_conflict_points[base_tracklet_name].append(c)
+                        if verbose >= 2:
+                            print(f"Added point {c} to {base_tracklet_name}")
                     if c not in idx2_edges:
                         overlapping_tracklet_conflict_points[target_tracklet_name].append(c)
+                        if verbose >= 2:
+                            print(f"Added point {c} to {target_tracklet_name}")
+                    if verbose >= 2:
+                        print(f"Added point {c} with edge indices {idx1_edges} and {idx2_edges}")
+
     return overlapping_tracklet_conflict_points
 
 
