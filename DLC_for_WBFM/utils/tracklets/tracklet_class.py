@@ -167,6 +167,15 @@ class NeuronComposedOfTracklets:
             network_names = [n for n, c in zip(network_names, all_conf) if c > minimum_confidence]
         return network_names
 
+    def network2raw_name_tracklet_dict(self, minimum_confidence=None):
+        network_names = self.get_network_tracklet_names(minimum_confidence=minimum_confidence)
+        nodes = self.neuron2tracklets.nodes()
+        try:
+            tracklet_names = {n: nodes[n]['metadata'] for n in network_names}
+            return tracklet_names
+        except TypeError:
+            return []
+
     def get_confidences_of_tracklets(self, list_of_lists_of_tracklet_names):
         overlapping_confidences = []
         for these_names in list_of_lists_of_tracklet_names:
@@ -626,13 +635,14 @@ class TrackedWorm:
         overlapping_confidences = neuron.get_confidences_of_tracklets(overlapping_tracklet_names)
         return overlapping_confidences, overlapping_tracklet_names
 
-    def get_conflict_times_for_tracklets_for_neuron(self, neuron_name, minimum_confidence=None):
+    def get_conflict_times_for_tracklets_for_neuron(self, neuron_name, minimum_confidence=None, verbose=0):
         tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,
                                                                                                 minimum_confidence)
         neuron = self.global_name_to_neuron[neuron_name]
         # Loop through tracklets, and find conflicting sets
         overlapping_tracklet_conflict_points = get_times_of_conflicting_dataframes(tracklet_list,
-                                                                                   tracklet_network_names)
+                                                                                   tracklet_network_names,
+                                                                                   verbose=verbose)
         overlapping_tracklet_names = [list(overlapping_tracklet_conflict_points.keys())]
         overlapping_confidences = neuron.get_confidences_of_tracklets(overlapping_tracklet_names)
         return overlapping_confidences, overlapping_tracklet_conflict_points
