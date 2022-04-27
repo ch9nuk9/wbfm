@@ -92,6 +92,7 @@ def regionprops_one_volume_one_channel(mask, data, props_to_save, name_mode):
     for this_neuron in tqdm(props, leave=False):
         seg_index = this_neuron['label']
         # final_index = mask2final_name[seg_index]
+        # NOTE: This must be synchronized to the df_global_tracks naming and indexing scheme!
         key_base = (int2name_using_mode(seg_index, name_mode),)
 
         for this_prop in props_to_save:
