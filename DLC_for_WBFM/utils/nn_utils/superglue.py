@@ -47,11 +47,13 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 from pytorch_lightning import LightningModule
+from scipy.optimize import linear_sum_assignment
 from torch import nn, optim
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_itertools import random_combination
 from DLC_for_WBFM.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
+from DLC_for_WBFM.utils.general.distance_functions import dist2conf
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.nn_utils.data_loading import AbstractNeuronImageFeaturesFromProject
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -347,6 +349,42 @@ class SuperGlue(nn.Module):
 
         matches_with_conf = [[i, int(m), score] for i, (m, score) in enumerate(zip(indices0[0], mscores0[0]))]
         return matches_with_conf
+
+
+class BipartiteSuperGlueStyleModel:
+    """Use the superglue formatting, but just do bipartite matching"""
+
+    def __init__(self):
+        self.confidence_gamma: float = 1.0
+        self.cdist_p: int = 2
+
+    def forward(self, data):
+        descriptors0 = data['descriptors0']
+        descriptors1 = data['descriptors1']
+
+        distances = np.squeeze(torch.cdist(descriptors0, descriptors1, p=self.cdist_p))
+        conf_matrix = dist2conf(distances, self.confidence_gamma)
+        # conf_matrix = torch.nan_to_num(torch.softmax(self.confidence_gamma / distances, dim=0), nan=1.0)
+
+        raw_matches = linear_sum_assignment(conf_matrix, maximize=True)
+        matches = [[m0, m1] for (m0, m1) in zip(raw_matches[0], raw_matches[1])]
+        matches = np.array(matches)
+        conf = np.array([np.tanh(conf_matrix[i0, i1]) for i0, i1 in matches])
+        matches_with_conf = [[m[0], m[1], c] for m, c in zip(matches, conf)]
+
+        return {
+            'matches0': raw_matches[1],  # use -1 for invalid match
+            'matches1': raw_matches[0],  # use -1 for invalid match
+            'matching_scores0': None,
+            'matching_scores1': None,
+            'loss': None,
+            'skip_train': False,
+            'matches_with_conf': matches_with_conf,
+            'distances': distances
+        }
+
+    def __call__(self, data):
+        return self.forward(data)
 
 
 ## MY ADDITIONS
