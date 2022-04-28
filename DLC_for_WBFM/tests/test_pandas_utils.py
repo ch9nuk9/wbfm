@@ -25,7 +25,7 @@ class TestPaddedDataFrame(unittest.TestCase):
         df = insert_value_in_sparse_df(df, index=list(range(15, length)), columns='tracklet_0000003', val=np.nan)
 
         self.df = df
-        self.tracklet_list = [self.df[n] for n in self.tracklet_names]
+        self.tracklet_list = [self.df[[n]] for n in self.tracklet_names]
 
     def test_init(self):
         pass
@@ -39,7 +39,8 @@ class TestPaddedDataFrame(unittest.TestCase):
                         tracklet_0000003=[5])
         self.assertEqual(overlapping_tracklet_conflict_points, expected)
 
-        df_split, all_new_tracklets = split_all_tracklets_at_once(self.df, overlapping_tracklet_conflict_points)
+        df_split, all_new_tracklets, name_mapping = split_all_tracklets_at_once(self.df,
+                                                                                overlapping_tracklet_conflict_points)
 
         self.assertEqual(len(all_new_tracklets), 7)
         self.assertEqual(df_split.shape[0], self.df.shape[0])

@@ -709,7 +709,11 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
     name_gen = get_next_name_generator(df_tracklets, name_mode)
     new_names = [name for _, name in zip(range(len(all_new_tracklets)), name_gen)]
 
-    # name_mapping = {}
+    name_mapping = {}
+    # name_mapping = defaultdict(list)
+    # for old_name in old_names:
+    #
+    # name_mapping = {old_name: name for old_name, name in zip(old_names, name_gen)}
 
     all_new_tracklets.extend(all_unsplit_tracklets)
     new_names.extend(old_names)
@@ -720,7 +724,7 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
     logging.info("Concatenating final dataframe, may take a minute")
     logging.info(f"Splitting went from {len(all_names)} tracklets to {len(all_new_tracklets)} tracklets")
     df_final = pd.concat(all_new_tracklets, axis=1, keys=new_names)
-    return df_final, all_new_tracklets
+    return df_final, all_new_tracklets, name_mapping
 
 
 def remove_tracklets_from_dictionary_without_database_match(df_tracklets, global2tracklet):

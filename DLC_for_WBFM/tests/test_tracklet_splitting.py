@@ -18,7 +18,7 @@ class TestTrackletSplitting(unittest.TestCase):
 
     def test_split_several_at_once(self):
         split_list_dict = {self.neuron_name: [10, 15]}
-        df_split, all_new_tracklets = split_all_tracklets_at_once(self.df, split_list_dict, name_mode='neuron')
+        df_split, all_new_tracklets, name_mapping = split_all_tracklets_at_once(self.df, split_list_dict, name_mode='neuron')
 
         expected_names = ['neuron_002', 'neuron_003', 'neuron_004']
         split_names = get_names_from_df(df_split)
@@ -41,7 +41,7 @@ class TestTrackletSplitting(unittest.TestCase):
 
     def test_split_out_of_order(self):
         split_list_dict = {self.neuron_name: [15, 10]}
-        df_split, all_new_tracklets = split_all_tracklets_at_once(self.df, split_list_dict, name_mode='neuron')
+        df_split, all_new_tracklets, name_mapping = split_all_tracklets_at_once(self.df, split_list_dict, name_mode='neuron')
 
         expected_names = ['neuron_002', 'neuron_003', 'neuron_004']
         split_names = get_names_from_df(df_split)
