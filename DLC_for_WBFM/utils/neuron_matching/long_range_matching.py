@@ -78,7 +78,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
                  f"use_previous_matches={use_previous_matches}\n"
                  f"use_multiple_templates={use_multiple_templates}")
 
-    def _initialize_worm(tracklets_obj):
+    def _initialize_worm(tracklets_obj, verbose=verbose):
         _worm_obj = TrackedWorm(detections=tracklets_obj, verbose=verbose)
         if only_use_previous_matches:
             _worm_obj.initialize_neurons_using_previous_matches(previous_matches)
@@ -89,7 +89,8 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
                 _worm_obj.add_previous_matches(previous_matches)
             # TODO: make sure no neurons are initialized that are not in the global tracker dataframe
         # _worm_obj.initialize_all_neuron_tracklet_classifiers()
-        logging.info(f"Initialized worm object: {_worm_obj}")
+        if verbose >= 1:
+            logging.info(f"Initialized worm object: {_worm_obj}")
         return _worm_obj
 
     worm_obj = _initialize_worm(tracklets_and_neurons_class)
@@ -128,11 +129,11 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
                     break
                 else:
                     logging.info(f"Found conflicts on {len(split_list_dict)} tracklets")
-                df_tracklets_split, all_new_tracklets = split_all_tracklets_at_once(df_tracklets, split_list_dict)
+                df_tracklets_split, all_new_tracklets, name_mapping = split_all_tracklets_at_once(df_tracklets, split_list_dict)
                 tracklets_and_neurons_class2 = DetectedTrackletsAndNeurons(df_tracklets_split,
                                                                            project_data.segmentation_metadata,
                                                                            dataframe_output_filename=project_data.df_all_tracklets_fname)
-                worm_obj2 = _initialize_worm(tracklets_and_neurons_class2)
+                worm_obj2 = _initialize_worm(tracklets_and_neurons_class2, verbose=0)
                 conf2 = extend_tracks_using_global_tracking(df_global_tracks, df_tracklets_split, worm_obj2,
                                                             **extend_tracks_opt)
                 # Overwrite original object, and continue
