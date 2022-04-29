@@ -47,8 +47,8 @@ def cfg(project_path, DEBUG):
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    cfg: ModularProjectConfig = _config['cfg']
-    subtract_background_after_preprocessing_using_config(cfg)
+    cfg = _config['cfg']
+    subtract_background_after_preprocessing_using_config(cfg, DEBUG=_config['DEBUG'])
 
     print("Finished.")
 

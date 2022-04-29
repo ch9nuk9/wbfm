@@ -1,3 +1,4 @@
+import concurrent.futures
 import logging
 
 import numpy as np
@@ -22,17 +23,20 @@ def zip_zarr_using_config(project_cfg: ModularProjectConfig):
     project_cfg.update_self_on_disk()
 
 
-def subtract_background_after_preprocessing_using_config(cfg: ModularProjectConfig):
+def subtract_background_after_preprocessing_using_config(cfg: ModularProjectConfig, DEBUG=False):
     """Read a video of the background and the otherwise fully preprocessed data, and simply subtract"""
 
     preprocessing_settings = cfg.get_preprocessing_config()
     num_slices = cfg.config['dataset_params']['num_slices']
     num_frames = 50  # TODO: is this constant?
+    if DEBUG:
+        num_frames = 2
 
     opt = dict(num_frames=num_frames, num_slices=num_slices, preprocessing_settings=preprocessing_settings)
-    red_fname_subtracted = background_subtract_single_channel(cfg, 'red', **opt)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+        red_fname_subtracted = ex.submit(background_subtract_single_channel, cfg, 'red', **opt).result()
+        green_fname_subtracted = ex.submit(background_subtract_single_channel, cfg, 'green', **opt).result()
     cfg.config['preprocessed_red'] = str(red_fname_subtracted)
-    green_fname_subtracted = background_subtract_single_channel(cfg, 'green', **opt)
     cfg.config['preprocessed_green'] = str(green_fname_subtracted)
 
     zip_zarr_using_config(cfg)
