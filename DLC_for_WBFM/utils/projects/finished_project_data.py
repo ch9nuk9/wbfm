@@ -2,7 +2,7 @@ import concurrent
 import logging
 from collections import defaultdict
 
-from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_readonly
+from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 
 logger = logging.getLogger('projectDataLogger')
@@ -368,18 +368,18 @@ class ProjectData:
                     ex.submit(obj.load_frame_related_properties)
                 if to_load_segmentation_metadata:
                     ex.submit(obj.load_segmentation_related_properties)
-                red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader_readonly).result()
-                green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader_readonly).result()
+                red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader_folder_or_zipstore).result()
+                green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader_folder_or_zipstore).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
                 df_training_tracklets = ex.submit(read_if_exists, df_training_tracklets_fname).result()
-                reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader_readonly).result()
+                reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader_folder_or_zipstore).result()
                 # reindexed_metadata_training = ex.submit(read_if_exists,
                 #                                         reindexed_metadata_training_fname, pickle_load_binary).result()
                 # final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
                 # TODO: don't open this as read-write by default
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
-                segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_readonly).result()
+                segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_folder_or_zipstore).result()
                 # seg_metadata: dict = ex.submit(pickle_load_binary, seg_metadata_fname).result()
                 behavior_annotations = ex.submit(read_if_exists, behavior_fname, excel_reader).result()
 

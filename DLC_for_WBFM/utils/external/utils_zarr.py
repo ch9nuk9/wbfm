@@ -23,7 +23,8 @@ def zip_raw_data_zarr(out_fname, delete_original=True, verbose=1):
     return out_fname_7z
 
 
-def zarr_reader_readonly(fname: str):
+def zarr_reader_folder_or_zipstore(fname: str):
+    """Enforces readonly access"""
     if Path(fname).is_dir():
         dat = zarr.open(fname, mode='r')
     elif fname.endswith('.7zarr'):

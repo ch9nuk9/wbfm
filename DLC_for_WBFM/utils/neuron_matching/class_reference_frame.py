@@ -6,7 +6,7 @@ import numpy as np
 import zarr
 from tqdm.auto import tqdm
 from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
-from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_readonly
+from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from DLC_for_WBFM.utils.general.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
     AnalysisOutOfOrderError, DeprecationError, NoNeuronsError
 from DLC_for_WBFM.utils.neuron_matching.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
@@ -77,7 +77,7 @@ class ReferenceFrame:
 
     def get_raw_data(self) -> np.ndarray:
         if self._raw_data is None:
-            self._raw_data = zarr_reader_readonly(self.video_fname)[self.frame_ind, ...]
+            self._raw_data = zarr_reader_folder_or_zipstore(self.video_fname)[self.frame_ind, ...]
         return self._raw_data
 
     def detect_or_import_neurons(self, detected_neurons: DetectedNeurons) -> list:
