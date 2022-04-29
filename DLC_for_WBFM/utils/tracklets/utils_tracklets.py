@@ -722,7 +722,7 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
     all_new_tracklets = [t[get_names_from_df(t)[0]] for t in all_new_tracklets]
 
     logging.info("Concatenating final dataframe, may take a minute")
-    logging.info(f"Splitting went from {len(all_names)} tracklets to {len(all_new_tracklets)} tracklets")
+    logging.info(f"Split {len(all_names)} tracklets to {len(all_new_tracklets)} tracklets")
     df_final = pd.concat(all_new_tracklets, axis=1, keys=new_names)
     return df_final, all_new_tracklets, name_mapping
 
