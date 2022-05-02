@@ -5,16 +5,13 @@ import pickle
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Tuple
-
 import pandas as pd
 import pprint
 
-from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePairOptions
 from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename
 from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd
-from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 
 
 @dataclass
@@ -157,10 +154,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = Path(self.config['subfolder_configs']['tracking'])
         return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
-    def get_preprocessing_config(self):
-        """Different: plain dict, which is only used at the very beginning"""
-        fname = Path(self.project_dir).joinpath('preprocessing_config.yaml')
-        return PreprocessingSettings.load_from_yaml(fname)
+    # def get_preprocessing_config(self):
+    #     """Different: plain dict, which is only used at the very beginning"""
+    #     fname = Path(self.project_dir).joinpath('preprocessing_config.yaml')
+    #     return PreprocessingSettings.load_from_yaml(fname)
 
     def get_traces_config(self):
         fname = Path(self.config['subfolder_configs']['traces'])

@@ -5,6 +5,7 @@ import logging
 import pickle
 import threading
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
@@ -40,7 +41,7 @@ def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing
     NOTE: if z-alignment (rotation) is used, then this can cause some artifacts
     """
 
-    preprocessing_settings = cfg.get_preprocessing_config()
+    preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
     num_slices = preprocessing_settings.raw_number_of_planes
     num_frames = 50  # TODO: is this constant?
     if DEBUG:
@@ -172,6 +173,11 @@ class PreprocessingSettings:
         with open(fname, 'r') as f:
             cfg = YAML().load(f)
         return PreprocessingSettings(**cfg)
+
+    @staticmethod
+    def load_from_config(cfg):
+        fname = Path(cfg.project_dir).joinpath('preprocessing_config.yaml')
+        return PreprocessingSettings.load_from_yaml(fname)
 
     def write_to_yaml(self, fname):
         edit_config(fname, dataclasses.asdict(self))
