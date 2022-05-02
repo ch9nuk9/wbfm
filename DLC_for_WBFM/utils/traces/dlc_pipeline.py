@@ -16,7 +16,7 @@ from DLC_for_WBFM.utils.general.preprocessing.DLC_utils import get_annotations_f
     update_pose_config, create_dlc_project, get_annotations_matching_video_in_folder, \
     training_data_from_3dDLC_annotations
 from DLC_for_WBFM.utils.general.preprocessing.convert_matlab_annotations_to_DLC import csv_annotations2config_names
-from DLC_for_WBFM.utils.general.preprocessing.utils_tif import _get_video_options
+from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import _get_video_options
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi

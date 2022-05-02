@@ -11,7 +11,7 @@ from DLC_for_WBFM.utils.general.custom_errors import OverwritePreviousAnalysisEr
     AnalysisOutOfOrderError, DeprecationError, NoNeuronsError
 from DLC_for_WBFM.utils.neuron_matching.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints
-from DLC_for_WBFM.utils.general.preprocessing.utils_tif import PreprocessingSettings
+from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from segmentation.util.utils_metadata import DetectedNeurons
 
 ##

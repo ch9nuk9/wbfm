@@ -6,7 +6,7 @@ from deeplabcut.utils.make_labeled_video import CreateVideo
 from deeplabcut.utils.video_processor import VideoProcessorCV as vp
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.general.preprocessing.utils_tif import perform_preprocessing
+from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import perform_preprocessing
 
 
 ##

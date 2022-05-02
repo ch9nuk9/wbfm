@@ -16,7 +16,7 @@ from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import zip_zarr_using_config, \
-    subtract_background_after_preprocessing_using_config
+    subtract_background_using_config
 
 from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
@@ -48,7 +48,7 @@ def main(_config, _run):
     sacred.commands.print_config(_run)
 
     cfg = _config['cfg']
-    subtract_background_after_preprocessing_using_config(cfg, DEBUG=_config['DEBUG'])
+    subtract_background_using_config(cfg, DEBUG=_config['DEBUG'])
 
     print("Finished.")
 

@@ -258,7 +258,6 @@ class UiMainWindow(object):
     @cached_property
     def project_data(self):
         return ProjectData.load_final_project_data_from_config(self.project_file,
-                                                               to_load_tracklets=True,
                                                                to_load_segmentation_metadata=True)
 
     @property
