@@ -126,6 +126,7 @@ class PreprocessingSettings:
 
     background_red: np.ndarray = None
     background_green: np.ndarray = None
+    background_default_after_subtraction: int = 10
 
     # Mini max
     do_mini_max_projection: bool = False
@@ -141,7 +142,6 @@ class PreprocessingSettings:
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
     final_dtype: str = 'uint8'
     alpha: float = 0.15
-    background_default_after_subtraction: int = 10
 
     # Load results of a separate preprocessing step, if available
     to_save_warp_matrices: bool = True
@@ -165,6 +165,7 @@ class PreprocessingSettings:
         new_background = self.background_default_after_subtraction
         # Get a single image, because that's the physical camera
         background_video_mean = np.mean(np.mean(background_video_list, axis=0), axis=0) - new_background
+        logging.info(f"Loaded background with mean: {np.mean(background_video_mean)}")
 
         return background_video_mean
 
@@ -215,13 +216,13 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_background_subtraction:
         if which_channel == 'red':
-            single_volume_raw = np.array(np.maximum(single_volume_raw - preprocessing_settings.background_red, 0),
-                                         dtype=np.uint8)
+            single_volume_raw = single_volume_raw - s.background_red
         elif which_channel == 'green':
-            single_volume_raw = np.array(np.maximum(single_volume_raw - preprocessing_settings.background_green, 0),
-                                         dtype=np.uint8)
+            single_volume_raw = single_volume_raw - s.background_green
         else:
             raise NotImplementedError(f"Unrecognized channel: {which_channel}")
+        # Note: not uint8 yet, so we need to scale the background default
+        single_volume_raw = np.maximum(single_volume_raw + s.background_default_after_subtraction/s.alpha, 0)
 
     if s.do_filtering:
         single_volume_raw = filter_stack(single_volume_raw, s.filter_opt)
