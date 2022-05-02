@@ -215,9 +215,11 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_background_subtraction:
         if which_channel == 'red':
-            single_volume_raw = single_volume_raw - preprocessing_settings.background_red
+            single_volume_raw = np.array(np.maximum(single_volume_raw - preprocessing_settings.background_red, 0),
+                                         dtype=np.uint8)
         elif which_channel == 'green':
-            single_volume_raw = single_volume_raw - preprocessing_settings.background_green
+            single_volume_raw = np.array(np.maximum(single_volume_raw - preprocessing_settings.background_green, 0),
+                                         dtype=np.uint8)
         else:
             raise NotImplementedError(f"Unrecognized channel: {which_channel}")
 
