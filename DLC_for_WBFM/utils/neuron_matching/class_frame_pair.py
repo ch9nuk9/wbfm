@@ -18,6 +18,7 @@ from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candi
 from DLC_for_WBFM.utils.general.distance_functions import dist2conf
 from DLC_for_WBFM.utils.nn_utils.data_formatting import flatten_nested_list
 from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 
 
 @dataclass
@@ -68,6 +69,18 @@ class FramePairOptions:
         else:
             default_options.update(self.fdnc_options)
         self.fdnc_options = default_options
+
+    @staticmethod
+    def load_from_config_file(cfg: ModularProjectConfig, training_config=None):
+        if training_config is None:
+            training_config = cfg.get_training_config()
+        pairwise_matches_params = training_config.config['pairwise_matching_params'].copy()
+        pairwise_matches_params = FramePairOptions(**pairwise_matches_params)
+
+        physical_unit_conversion = cfg.get_physical_unit_conversion_class()
+        pairwise_matches_params.physical_unit_conversion = physical_unit_conversion
+
+        return pairwise_matches_params
 
 
 @dataclass

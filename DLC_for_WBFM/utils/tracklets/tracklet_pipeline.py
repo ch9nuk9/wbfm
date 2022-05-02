@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
+from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair, FramePairOptions
 from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueUnpacker
 from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import PATH_TO_SUPERGLUE_TRACKLET_MODEL, \
     WormWithSuperGlueClassifier
@@ -95,8 +95,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
 
 def build_frame_pairs_using_superglue_from_config(project_cfg: ModularProjectConfig, DEBUG=False):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_frames=True)
-    training_cfg = project_cfg.get_training_config()
-    frame_pair_options = project_cfg.get_frame_pair_options(training_cfg)
+    frame_pair_options = FramePairOptions.load_from_config_file(project_cfg)
 
     all_frame_dict = project_data.raw_frames
     assert all_frame_dict is not None, "Needs frame objects!"
@@ -312,7 +311,8 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     else:
         tracker_params['start_volume'] = project_config.config['dataset_params']['start_volume']
 
-    pairwise_matches_params = project_config.get_frame_pair_options(training_config)
+    pairwise_matches_params = FramePairOptions.load_from_config_file(project_config, training_config)
+    # pairwise_matches_params = project_config.get_frame_pair_options(training_config)
     tracker_params['preprocessing_settings'] = None
 
     video_fname = project_config.config['preprocessed_red']

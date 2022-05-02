@@ -173,18 +173,6 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             logging.warning("Using default physical unit conversions")
             return PhysicalUnitConversion()
 
-    def get_frame_pair_options(self, training_config=None) -> FramePairOptions:
-        if training_config is None:
-            training_config = self.get_training_config()
-        pairwise_matches_params = training_config.config['pairwise_matching_params'].copy()
-        pairwise_matches_params = FramePairOptions(**pairwise_matches_params)
-
-        physical_units = self.config['physical_units']
-        physical_unit_conversion = PhysicalUnitConversion(**physical_units)
-        pairwise_matches_params.physical_unit_conversion = physical_unit_conversion
-
-        return pairwise_matches_params
-
     def _check_path_and_load_config(self, subconfig_path: Path) -> Tuple[str, dict, str, str]:
         if subconfig_path.is_absolute():
             project_dir = subconfig_path.parent.parent
