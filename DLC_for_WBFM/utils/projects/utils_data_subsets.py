@@ -21,7 +21,7 @@ def write_data_subset_from_config(cfg: ModularProjectConfig,
                                   save_fname_in_red_not_green: bool = None,
                                   use_preprocessed_data: bool = False,
                                   preprocessing_settings: PreprocessingSettings = None,
-                                  subtract_background: bool = True,
+                                  which_channel: str = None,
                                   DEBUG: bool = False) -> None:
     """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
 
@@ -31,7 +31,7 @@ def write_data_subset_from_config(cfg: ModularProjectConfig,
 
     with safe_cd(project_dir):
         preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg.config, verbose, video_fname,
-                                                                 preprocessing_settings, None)
+                                                                 preprocessing_settings, None, which_channel)
 
     if not pad_to_align_with_original:
         preprocessed_dat = preprocessed_dat[start_volume:, ...]
@@ -45,6 +45,7 @@ def write_data_subset_from_config(cfg: ModularProjectConfig,
         out_dat = np.expand_dims(preprocessed_dat, 2).astype('uint16')
         tifffile.imwrite(out_fname, out_dat, imagej=True, metadata={'axes': 'TZCYX'})
     else:
+        # TODO: For now, loads the entire data into memory
         chunk_sz = (1,) + preprocessed_dat.shape[1:]
         print(f"Chunk size: {chunk_sz}")
         out_dat = np.array(preprocessed_dat)  # .astype('uint16')

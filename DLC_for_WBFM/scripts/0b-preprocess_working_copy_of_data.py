@@ -81,7 +81,8 @@ def main(_config, _run):
             print("Preprocessing red...")
             preprocessing_settings.do_mirroring = False
             assert preprocessing_settings.to_save_warp_matrices
-            write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **options)
+            write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings,
+                                          which_channel='red', **options)
         else:
             print("Preprocessed red already exists; skipping to green")
 
@@ -93,7 +94,8 @@ def main(_config, _run):
         # preprocessing_settings.do_mirroring = False
         if cfg.config['dataset_params']['red_and_green_mirrored']:
             preprocessing_settings.do_mirroring = True
-        write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings, **options)
+        write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings,
+                                      which_channel='green', **options)
 
         # Save the warp matrices to disk if needed further
         preprocessing_settings.save_all_warp_matrices()

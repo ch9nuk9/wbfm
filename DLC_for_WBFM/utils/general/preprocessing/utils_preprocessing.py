@@ -119,6 +119,7 @@ class PreprocessingSettings:
     do_filtering: bool = False
     filter_opt: List = field(default_factory=lambda: {'high_freq': 2.0, 'low_freq': 5000.0})
 
+    do_background_subtraction: bool = True
     background_fname_red: str = None
     background_fname_green: str = None
 
@@ -150,7 +151,8 @@ class PreprocessingSettings:
     all_warp_matrices: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        if self.background_fname_red is not None:
+        if self.do_background_subtraction:
+            logging.info("Loading background videos, may take a minute")
             self.background_red = self.load_background(self.background_fname_red)
             self.background_green = self.load_background(self.background_fname_green)
 
@@ -190,7 +192,8 @@ class PreprocessingSettings:
 
 def perform_preprocessing(single_volume_raw: np.ndarray,
                           preprocessing_settings: PreprocessingSettings,
-                          which_frame: int = None) -> np.ndarray:
+                          which_frame: int = None,
+                          which_channel: str = 'red') -> np.ndarray:
     """
     Performs all preprocessing as set by the fields of preprocessing_settings
 
@@ -203,6 +206,14 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.starting_plane is not None:
         single_volume_raw = single_volume_raw[s.starting_plane:, ...]
+
+    if s.do_background_subtraction:
+        if which_channel == 'red':
+            single_volume_raw = single_volume_raw - preprocessing_settings.background_red
+        elif which_channel == 'green':
+            single_volume_raw = single_volume_raw - preprocessing_settings.background_green
+        else:
+            raise NotImplementedError(f"Unrecognized channel: {which_channel}")
 
     if s.do_filtering:
         single_volume_raw = filter_stack(single_volume_raw, s.filter_opt)
@@ -231,7 +242,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
 def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, video_fname: str,
                                        preprocessing_settings: PreprocessingSettings = None,
-                                       which_frames: list = None) -> Tuple[zarr.Array, dict]:
+                                       which_frames: list = None, which_channel: str = None) -> Tuple[zarr.Array, dict]:
     """
     Preproceses all frames that will be analyzed as per config
 
@@ -249,12 +260,12 @@ def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, 
     num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config, verbose,
                                                                                                    video_fname)
     return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, video_fname, vid_opt,
-                                 which_frames)
+                                 which_frames, which_channel)
 
 
 def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p: PreprocessingSettings,
                           start_volume: int, sz: Tuple, video_fname: str, vid_opt: dict,
-                          which_frames: list) -> Tuple[zarr.Array, dict]:
+                          which_frames: list, which_channel: str) -> Tuple[zarr.Array, dict]:
     import tifffile
 
     if DEBUG:
@@ -277,7 +288,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
                 preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream,
-                                                              read_lock)
+                                                              which_channel, read_lock)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in frame_list}
@@ -317,7 +328,7 @@ def _get_video_options(config, video_fname):
     return sz, vid_opt
 
 
-def get_and_preprocess(i, num_slices, p, start_volume, video_fname, read_lock=None):
+def get_and_preprocess(i, num_slices, p, start_volume, video_fname, which_channel, read_lock=None):
     if p.raw_number_of_planes is not None:
         num_slices = p.raw_number_of_planes
     if read_lock is None:
@@ -327,6 +338,6 @@ def get_and_preprocess(i, num_slices, p, start_volume, video_fname, read_lock=No
             single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
-        return perform_preprocessing(single_volume_raw, p, i)
+        return perform_preprocessing(single_volume_raw, p, i, which_channel=which_channel)
     else:
         return single_volume_raw
