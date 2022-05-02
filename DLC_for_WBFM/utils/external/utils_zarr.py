@@ -5,20 +5,21 @@ from pathlib import Path
 import zarr
 
 
-def zip_raw_data_zarr(out_fname, delete_original=True, verbose=1):
-    out_fname_zip = Path(out_fname).with_suffix('.zarr.zip')
+def zip_raw_data_zarr(raw_fname, delete_original=True, verbose=1):
+    out_fname_zip = Path(raw_fname).with_suffix('.zarr.zip')
+    assert os.path.exists(raw_fname), f"Did not find original zarr at {raw_fname}"
     if verbose >= 1:
-        print(f"Zipping zarr file {out_fname} to {out_fname_zip}")
+        print(f"Zipping zarr file {raw_fname} to {out_fname_zip}")
 
     cmd = ['7z', 'a', '-tzip']
-    cmd.extend([os.path.join(out_fname_zip, '.'), out_fname])
+    cmd.extend([out_fname_zip, os.path.join(raw_fname, '.')])
 
     subprocess.run(cmd)
 
     if delete_original:
         if verbose >= 1:
-            print(f"Deleting original: {out_fname}")
-        shutil.rmtree(out_fname)
+            print(f"Deleting original: {raw_fname}")
+        shutil.rmtree(raw_fname)
 
     return out_fname_zip
 
