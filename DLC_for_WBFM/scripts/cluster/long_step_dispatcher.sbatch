@@ -9,6 +9,9 @@
 #SBATCH --mem=16G
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=24 # Force it to avoid the old 16-core machines
+#SBATCH --mail-user=charles.fieseler@univie.ac.at
+#SBATCH --mail-type=END
+#SBATCH --mail-type=FAIL
 
 pwd; hostname; date
 
