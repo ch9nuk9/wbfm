@@ -248,7 +248,8 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
 def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, video_fname: str,
                                        preprocessing_settings: PreprocessingSettings = None,
-                                       which_frames: list = None, which_channel: str = None) -> Tuple[zarr.Array, dict]:
+                                       which_frames: list = None, which_channel: str = None,
+                                       out_fname: str = None) -> Tuple[zarr.Array, dict]:
     """
     Preproceses all frames that will be analyzed as per config
 
@@ -266,12 +267,12 @@ def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, 
     num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config, verbose,
                                                                                                    video_fname)
     return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, video_fname, vid_opt,
-                                 which_frames, which_channel)
+                                 which_frames, which_channel, out_fname)
 
 
 def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p: PreprocessingSettings,
                           start_volume: int, sz: Tuple, video_fname: str, vid_opt: dict,
-                          which_frames: list, which_channel: str) -> Tuple[zarr.Array, dict]:
+                          which_frames: list, which_channel: str, out_fname: str) -> Tuple[zarr.Array, dict]:
     import tifffile
 
     if DEBUG:
@@ -285,8 +286,10 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     chunk_sz = (1, num_slices,) + sz
     total_sz = (num_total_frames,) + chunk_sz[1:]
 
+    store = zarr.DirectoryStore(path=out_fname)
     preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype=p.final_dtype,
-                                  synchronizer=zarr.ThreadSynchronizer())
+                                  synchronizer=zarr.ThreadSynchronizer(),
+                                  store=store)
     read_lock = threading.Lock()
     # Load data and preprocess
     frame_list = list(range(num_total_frames))

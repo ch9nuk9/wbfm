@@ -31,7 +31,8 @@ def write_data_subset_from_config(cfg: ModularProjectConfig,
 
     with safe_cd(project_dir):
         preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg.config, verbose, video_fname,
-                                                                 preprocessing_settings, None, which_channel)
+                                                                 preprocessing_settings, None, which_channel,
+                                                                 out_fname)
 
     if not pad_to_align_with_original:
         preprocessed_dat = preprocessed_dat[start_volume:, ...]
@@ -45,11 +46,12 @@ def write_data_subset_from_config(cfg: ModularProjectConfig,
         out_dat = np.expand_dims(preprocessed_dat, 2).astype('uint16')
         tifffile.imwrite(out_fname, out_dat, imagej=True, metadata={'axes': 'TZCYX'})
     else:
+        pass
         # TODO: For now, loads the entire data into memory
-        chunk_sz = (1,) + preprocessed_dat.shape[1:]
-        print(f"Chunk size: {chunk_sz}")
-        out_dat = np.array(preprocessed_dat)  # .astype('uint16')
-        zarr.save_array(out_fname, out_dat, chunks=chunk_sz)
+        # chunk_sz = (1,) + preprocessed_dat.shape[1:]
+        # print(f"Chunk size: {chunk_sz}")
+        # out_dat = np.array(preprocessed_dat)  # .astype('uint16')
+        # zarr.save_array(out_fname, out_dat, chunks=chunk_sz)
 
     # Save this name in the config file itself
     if save_fname_in_red_not_green is not None:
