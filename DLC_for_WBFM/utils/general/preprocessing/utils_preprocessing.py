@@ -27,12 +27,13 @@ def subtract_background_after_preprocessing_using_config(cfg: ModularProjectConf
     """Read a video of the background and the otherwise fully preprocessed data, and simply subtract"""
 
     preprocessing_settings = cfg.get_preprocessing_config()
-    num_slices = cfg.config['dataset_params']['num_slices']
+    num_slices = preprocessing_settings.raw_number_of_planes
     num_frames = 50  # TODO: is this constant?
     if DEBUG:
         num_frames = 2
 
-    opt = dict(num_frames=num_frames, num_slices=num_slices, preprocessing_settings=preprocessing_settings)
+    opt = dict(num_frames=num_frames, num_slices=num_slices, preprocessing_settings=preprocessing_settings,
+               DEBUG=DEBUG)
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
         red_fname_subtracted = ex.submit(background_subtract_single_channel, cfg, 'red', **opt).result()
         green_fname_subtracted = ex.submit(background_subtract_single_channel, cfg, 'green', **opt).result()
@@ -42,23 +43,25 @@ def subtract_background_after_preprocessing_using_config(cfg: ModularProjectConf
     zip_zarr_using_config(cfg)
 
 
-def background_subtract_single_channel(cfg, which_channel, num_frames, num_slices, preprocessing_settings):
+def background_subtract_single_channel(cfg, which_channel, num_frames, num_slices, preprocessing_settings,
+                                       DEBUG=False):
     raw_fname = cfg.config[f'preprocessed_{which_channel}']
     raw_data = zarr_reader_folder_or_zipstore(raw_fname)
     background_video_list = read_background_from_config(cfg, num_frames, num_slices, preprocessing_settings,
                                                         which_channel)
     # Add a new truly constant background value, to keep anything from going negative
     new_background = preprocessing_settings.background_default_after_subtraction
-    background_video_mean = np.mean(background_video_list) + new_background
+    background_video_mean = np.mean(background_video_list, axis=0) - new_background
     # Don't try to modify the data as read; it is read-only
-    # ... but this forces a full-memory copy of the data
     fname_subtracted = add_name_suffix(raw_fname, '_background_subtracted')
     logging.info(f"Creating data copy at {fname_subtracted}")
     store = zarr.DirectoryStore(fname_subtracted)
     background_subtracted = zarr.zeros_like(raw_data, store=store)
     # Loop so that not all is loaded in memory... should I use dask?
     for i, volume in enumerate(tqdm(raw_data)):
-        background_subtracted[i, ...] = volume - background_video_mean
+        background_subtracted[i, ...] = np.array(np.maximum(volume - background_video_mean, 0), dtype=np.uint8)
+        if DEBUG and i > 5:
+            break
     # zarr.save_array(background_subtracted, fname_subtracted)
 
     return fname_subtracted

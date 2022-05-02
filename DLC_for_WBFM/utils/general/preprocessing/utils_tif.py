@@ -53,7 +53,7 @@ class PreprocessingSettings:
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
     final_dtype: str = 'uint8'
     alpha: float = 0.15
-    background_default_after_subtraction: int = 14
+    background_default_after_subtraction: int = 10
 
     # Load results of a separate preprocessing step, if available
     to_save_warp_matrices: bool = True
