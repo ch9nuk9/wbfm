@@ -3,6 +3,7 @@ import logging
 from collections import defaultdict
 
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
+from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 
 logger = logging.getLogger('projectDataLogger')
@@ -322,6 +323,7 @@ class ProjectData:
             obj.k = v
 
         obj.all_used_fnames = []
+        preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
 
         red_dat_fname = cfg.config['preprocessed_red']
         green_dat_fname = cfg.config['preprocessed_green']
@@ -392,7 +394,7 @@ class ProjectData:
                                     df_training_tracklets_fname, reindexed_masks_training_fname,
                                     seg_fname_raw, seg_fname, behavior_fname])
 
-        background_per_pixel = traces_cfg.config['visualization']['background_per_pixel']
+        background_per_pixel = preprocessing_settings.background_per_pixel
         likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']
 
         # Return a full object

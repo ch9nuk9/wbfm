@@ -22,4 +22,3 @@ all_matches: 4-traces/all_matches.pickle
 # For final display
 visualization:
   likelihood_thresh: 0.0
-  background_per_pixel: 14
