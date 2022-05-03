@@ -10,6 +10,7 @@ filter_opt:
 do_background_subtraction: True
 background_fname_red: null # CHANGE ME
 background_fname_green: null # CHANGE ME
+background_per_pixel: 10
 
 # Mini-max projections
 do_mini_max_projection : false

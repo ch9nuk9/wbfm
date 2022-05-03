@@ -74,7 +74,7 @@ def background_subtract_single_channel(raw_fname, background_fname, num_frames, 
     background_video_list = read_background(background_fname, num_frames, num_slices,
                                             preprocessing_settings)
     # Add a new truly constant background value, to keep anything from going negative
-    new_background = preprocessing_settings.background_default_after_subtraction
+    new_background = preprocessing_settings.background_per_pixel
     # Get a single image, because that's the physical camera
     background_video_mean = np.mean(np.mean(background_video_list, axis=0), axis=0) - new_background
     # Don't try to modify the data as read; it is read-only
@@ -126,7 +126,7 @@ class PreprocessingSettings:
 
     background_red: np.ndarray = None
     background_green: np.ndarray = None
-    background_default_after_subtraction: int = 10
+    background_per_pixel: int = 10
 
     # Mini max
     do_mini_max_projection: bool = False
@@ -162,7 +162,7 @@ class PreprocessingSettings:
         background_video_list = read_background(background_fname, num_frames, self.raw_number_of_planes,
                                                 preprocessing_settings=None)
         # Add a new truly constant background value, to keep anything from going negative
-        new_background = self.background_default_after_subtraction
+        new_background = self.background_per_pixel
         # Get a single image, because that's the physical camera
         background_video_mean = np.mean(np.mean(background_video_list, axis=0), axis=0) - new_background
         logging.info(f"Loaded background with mean: {np.mean(background_video_mean)}")
@@ -222,7 +222,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
         else:
             raise NotImplementedError(f"Unrecognized channel: {which_channel}")
         # Note: not uint8 yet, so we need to scale the background default
-        single_volume_raw = np.maximum(single_volume_raw + s.background_default_after_subtraction/s.alpha, 0)
+        single_volume_raw = np.maximum(single_volume_raw + s.background_per_pixel / s.alpha, 0)
 
     if s.do_filtering:
         single_volume_raw = filter_stack(single_volume_raw, s.filter_opt)
