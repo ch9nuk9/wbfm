@@ -323,7 +323,7 @@ class ProjectData:
             obj.k = v
 
         obj.all_used_fnames = []
-        preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
+        preprocessing_settings = PreprocessingSettings.load_from_config(cfg, do_background_subtraction=False)
 
         red_dat_fname = cfg.config['preprocessed_red']
         green_dat_fname = cfg.config['preprocessed_green']

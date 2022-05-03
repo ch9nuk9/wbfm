@@ -153,9 +153,12 @@ class PreprocessingSettings:
 
     def __post_init__(self):
         if self.do_background_subtraction:
-            logging.info("Loading background videos, may take a minute")
-            self.background_red = self.load_background(self.background_fname_red)
-            self.background_green = self.load_background(self.background_fname_green)
+            self.initialize_background()
+
+    def initialize_background(self):
+        logging.info("Loading background videos, may take a minute")
+        self.background_red = self.load_background(self.background_fname_red)
+        self.background_green = self.load_background(self.background_fname_green)
 
     def load_background(self, background_fname):
         num_frames = 50  # TODO
@@ -170,15 +173,17 @@ class PreprocessingSettings:
         return background_video_mean
 
     @staticmethod
-    def load_from_yaml(fname):
+    def load_from_yaml(fname, do_background_subtraction=None):
         with open(fname, 'r') as f:
             cfg = YAML().load(f)
+        if do_background_subtraction is not None:
+            cfg['do_background_subtraction'] = do_background_subtraction
         return PreprocessingSettings(**cfg)
 
     @staticmethod
-    def load_from_config(cfg):
+    def load_from_config(cfg, do_background_subtraction=None):
         fname = Path(cfg.project_dir).joinpath('preprocessing_config.yaml')
-        return PreprocessingSettings.load_from_yaml(fname)
+        return PreprocessingSettings.load_from_yaml(fname, do_background_subtraction)
 
     def write_to_yaml(self, fname):
         edit_config(fname, dataclasses.asdict(self))
