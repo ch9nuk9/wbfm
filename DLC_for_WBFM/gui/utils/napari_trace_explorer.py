@@ -20,7 +20,7 @@ import pandas as pd
 from PyQt5 import QtWidgets
 
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
-    build_tracks_from_dataframe, zoom_using_viewer
+    build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
 
@@ -1074,7 +1074,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
 def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None):
     # A parent QT application must be initialized first
-    # os.environ["NAPARI_ASYNC"] = "1"
+    os.environ["NAPARI_ASYNC"] = "1"
     # os.environ["NAPARI_OCTREE"] = "1" # No effect in tests
     if app is None:
         started_new_app = True
@@ -1127,11 +1127,6 @@ def napari_trace_explorer(project_data: ProjectData,
 
     print("Finished GUI setup. If nothing is showing, trying quitting and running again")
     if to_print_fps:
-        # From: https://github.com/napari/napari/issues/836
-        def fps_status(viewer, x):
-            # viewer.help = f'{x:.1f} frames per second'
-            print(f'{x:.1f} frames per second')
-
-        viewer.window.qt_viewer.canvas.measure_fps(callback=lambda x: fps_status(viewer, x))
+        add_fps_printer(viewer)
 
     return ui, viewer

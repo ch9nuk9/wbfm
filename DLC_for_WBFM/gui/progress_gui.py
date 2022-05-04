@@ -16,6 +16,8 @@ import napari
 import zarr
 from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer
 from PyQt5 import QtCore, QtWidgets
+
+from DLC_for_WBFM.gui.utils.utils_gui import add_fps_printer
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
 from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
@@ -31,6 +33,9 @@ class UiMainWindow(object):
 
     def __init__(self, app=None):
         self.parent_qtapp = app
+
+        # Unclear if this matters
+        os.environ["NAPARI_ASYNC"] = "1"
 
     def setupUi(self, MainWindow, project_path):
         MainWindow.setObjectName("MainWindow")
@@ -314,6 +319,7 @@ class UiMainWindow(object):
         which_layers = ['Red data', 'Green data', 'Raw segmentation']
         self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
         self.viewer.show()
+        add_fps_printer(self.viewer)
 
     def napari_for_masks_tracking(self):
         """Open napari window for segmentation colored by tracking"""

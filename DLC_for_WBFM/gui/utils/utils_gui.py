@@ -192,3 +192,12 @@ def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy
     track_of_point = np.hstack([np.ones((all_tracks_array.shape[0], 1)), all_tracks_array])
 
     return all_tracks_array, track_of_point, to_remove
+
+
+def add_fps_printer(viewer):
+    # From: https://github.com/napari/napari/issues/836
+    def fps_status(viewer, x):
+        # viewer.help = f'{x:.1f} frames per second'
+        print(f'{x:.1f} frames per second')
+
+    viewer.window.qt_viewer.canvas.measure_fps(callback=lambda x: fps_status(viewer, x))
