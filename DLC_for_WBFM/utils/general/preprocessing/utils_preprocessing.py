@@ -205,14 +205,14 @@ class PreprocessingSettings:
                 else:
                     raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
 
-        # Actually load data
-        self.initialize_background()
-
-        # Finally, also update the preprocessing file on disk
+        # Also update the preprocessing file on disk
         cfg_preprocessing = cfg.get_preprocessing_config()
         cfg_preprocessing.config['background_fname_red'] = self.background_fname_red
         cfg_preprocessing.config['background_fname_green'] = self.background_fname_red
         cfg_preprocessing.update_self_on_disk()
+
+        # Actually load data
+        self.initialize_background()
 
     def load_background(self, background_fname):
         num_frames = 50  # TODO

@@ -29,6 +29,10 @@ class ConfigFileWithProjectContext:
     config: dict = None
     project_dir: str = None
 
+    def __post_init__(self):
+        self.config = load_config(self.self_path)
+        self.project_dir = str(Path(self.self_path).parent)
+
     def update_self_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)
         edit_config(fname, self.config)
@@ -113,6 +117,9 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
 
     subfolder: str = None
 
+    def __post_init__(self):
+        pass
+
     def resolve_relative_path(self, val: str, prepend_subfolder=False) -> str:
         if val is None:
             return None
@@ -137,10 +144,6 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     3. and loading other options classes
 
     """
-
-    def __post_init__(self):
-        self.config = load_config(self.self_path)
-        self.project_dir = str(Path(self.self_path).parent)
 
     def get_segmentation_config(self):
         fname = Path(self.config['subfolder_configs']['segmentation'])
