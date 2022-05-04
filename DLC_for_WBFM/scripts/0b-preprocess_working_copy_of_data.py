@@ -69,6 +69,8 @@ def main(_config, _run):
     with safe_cd(_config['project_dir']):
 
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
+        preprocessing_settings.find_background_files_from_raw_data_path(cfg)
+        # preprocessing_settings.asdict()
         # preprocessing_settings = cfg.get_preprocessing_config()
 
         options['out_fname'] = _config['out_fname_red']

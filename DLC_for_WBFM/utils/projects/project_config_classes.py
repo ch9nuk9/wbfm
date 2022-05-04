@@ -154,10 +154,14 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = Path(self.config['subfolder_configs']['tracking'])
         return SubfolderConfigFile(*self._check_path_and_load_config(fname))
 
-    # def get_preprocessing_config(self):
-    #     """Different: plain dict, which is only used at the very beginning"""
-    #     fname = Path(self.project_dir).joinpath('preprocessing_config.yaml')
-    #     return PreprocessingSettings.load_from_yaml(fname)
+    def get_preprocessing_config(self):
+        """
+        Not often used, except for updating the file.
+
+        Note: NOT a subfolder
+        """
+        fname = str(Path(self.project_dir).joinpath('preprocessing_config.yaml'))
+        return ConfigFileWithProjectContext(fname)
 
     def get_traces_config(self):
         fname = Path(self.config['subfolder_configs']['traces'])
