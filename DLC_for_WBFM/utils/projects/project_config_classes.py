@@ -36,6 +36,7 @@ class ConfigFileWithProjectContext:
     def update_self_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)
         edit_config(fname, self.config)
+        logging.info(f"Updating config file {fname} on disk")
 
     def resolve_relative_path_from_config(self, key) -> str:
         val = self.config.get(key, None)
