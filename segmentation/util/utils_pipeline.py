@@ -45,8 +45,6 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
         segment_cfg, project_cfg, DEBUG)
 
     # Open the file
-    if not video_path.endswith('zarr'):
-        raise ValueError("Non-zarr usage has been deprecated")
     project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
     video_dat = project_dat.red_data
 
