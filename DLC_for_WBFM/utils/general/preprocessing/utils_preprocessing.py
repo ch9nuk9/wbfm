@@ -157,7 +157,10 @@ class PreprocessingSettings:
 
     @property
     def background_is_ready(self):
-        return self.do_background_subtraction and (self.background_red is not None)
+        if not self.do_background_subtraction:
+            return True
+        else:
+            return self.background_red is not None
 
     def initialize_background(self):
         logging.info("Loading background videos, may take a minute")
