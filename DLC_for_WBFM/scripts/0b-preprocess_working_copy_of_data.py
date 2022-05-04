@@ -1,15 +1,9 @@
 """
 """
 
-# main function
 import os
-import subprocess
 from pathlib import Path
-
-# Experiment tracking
 import sacred
-
-from DLC_for_WBFM.utils.external.utils_zarr import zip_raw_data_zarr
 from DLC_for_WBFM.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames
 from sacred import Experiment
 from sacred import SETTINGS
@@ -70,8 +64,6 @@ def main(_config, _run):
 
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
         preprocessing_settings.find_background_files_from_raw_data_path(cfg)
-        # preprocessing_settings.asdict()
-        # preprocessing_settings = cfg.get_preprocessing_config()
 
         options['out_fname'] = _config['out_fname_red']
         options['save_fname_in_red_not_green'] = True
@@ -94,7 +86,6 @@ def main(_config, _run):
         options['out_fname'] = _config['out_fname_green']
         options['save_fname_in_red_not_green'] = False
         preprocessing_settings.to_use_previous_warp_matrices = True
-        # preprocessing_settings.do_mirroring = False
         if cfg.config['dataset_params']['red_and_green_mirrored']:
             preprocessing_settings.do_mirroring = True
         write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings,
