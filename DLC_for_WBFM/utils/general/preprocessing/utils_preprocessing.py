@@ -155,11 +155,15 @@ class PreprocessingSettings:
         if self.do_background_subtraction:
             self.initialize_background()
 
+    @property
+    def background_is_ready(self):
+        return self.do_background_subtraction and (self.background_red is not None)
+
     def initialize_background(self):
         logging.info("Loading background videos, may take a minute")
         if self.background_fname_red is None:
-            logging.warning("Didn't find background filename")
-            raise FileNotFoundError
+            logging.warning("Didn't find background filename; this will have to be rerun")
+            return
 
         self.background_red = self.load_background(self.background_fname_red)
         self.background_green = self.load_background(self.background_fname_green)
@@ -169,38 +173,40 @@ class PreprocessingSettings:
 
         if self.background_fname_red is not None:
             logging.info(f"Already has background at {self.background_fname_red}")
-            if force_search:
-                logging.info("Attempting to find new background files")
-            else:
+            if not force_search:
                 return
+        logging.info("Attempting to find new background files")
 
         raw_bigtiff_filename = Path(raw_bigtiff_filename)
 
-        folder_for_entire_day = raw_bigtiff_filename.parents[1]  # 2 folders up
+        folder_for_entire_day = raw_bigtiff_filename.parents[2]  # 3 folders up
         folder_for_background = folder_for_entire_day.joinpath('background')
 
         if not folder_for_background.is_dir():
             raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
 
         for subfolder in folder_for_background.iterdir():
-            if subfolder.is_dir() and 'background_Ch0' in subfolder:
+            if subfolder.is_dir() and 'background_Ch0' in subfolder.name:
                 # Red channel
                 for file in subfolder.iterdir():
-                    if file.is_file() and 'background_Ch0bigtiff.btf' in file:
+                    if file.is_file() and 'background_Ch0bigtiff.btf' in file.name:
                         self.background_fname_red = str(file)
                         logging.info(f"Found red channel background at: {file}")
                         break
                 else:
                     raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
-            elif subfolder.is_dir() and 'background_Ch1' in subfolder:
+            elif subfolder.is_dir() and 'background_Ch1' in subfolder.name:
                 # Green channel
                 for file in subfolder.iterdir():
-                    if file.is_file() and 'background_Ch1bigtiff.btf' in file:
-                        self.background_fname_red = str(file)
+                    if file.is_file() and 'background_Ch1bigtiff.btf' in file.name:
+                        self.background_fname_green = str(file)
                         logging.info(f"Found green channel background at: {file}")
                         break
                 else:
                     raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
+
+        # Actually load data
+        self.initialize_background()
 
         # Finally, also update the preprocessing file on disk
         cfg_preprocessing = cfg.get_preprocessing_config()
@@ -231,7 +237,10 @@ class PreprocessingSettings:
     @staticmethod
     def load_from_config(cfg, do_background_subtraction=None):
         fname = Path(cfg.project_dir).joinpath('preprocessing_config.yaml')
-        return PreprocessingSettings.load_from_yaml(fname, do_background_subtraction)
+        preprocessing_settings = PreprocessingSettings.load_from_yaml(fname, do_background_subtraction)
+        if not preprocessing_settings.background_is_ready:
+            preprocessing_settings.find_background_files_from_raw_data_path(cfg)
+        return preprocessing_settings
 
     def write_to_yaml(self, fname):
         edit_config(fname, dataclasses.asdict(self))
