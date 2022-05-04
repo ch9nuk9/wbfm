@@ -48,11 +48,11 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel):
     if calculation_mode == 'integration':
         def calc_single_trace(i, df_tmp):
             try:
-                y_raw = df_tmp[i]['brightness']
-                vol = df_tmp[i]['volume']
-            except KeyError:
                 y_raw = df_tmp[i]['intensity_image']
                 vol = df_tmp[i]['area']
+            except KeyError:
+                y_raw = df_tmp[i]['brightness']
+                vol = df_tmp[i]['volume']
             return y_raw - background_per_pixel * vol
     # elif calculation_mode == 'max':
     #     def calc_single_trace(i, df_tmp):
@@ -62,11 +62,11 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel):
     elif calculation_mode == 'mean':
         def calc_single_trace(i, df_tmp):
             try:
-                y_raw = df_tmp[i]['brightness']
-                vol = df_tmp[i]['volume']
-            except KeyError:
                 y_raw = df_tmp[i]['intensity_image']
                 vol = df_tmp[i]['area']
+            except KeyError:
+                y_raw = df_tmp[i]['brightness']
+                vol = df_tmp[i]['volume']
             return y_raw / vol - background_per_pixel
     # elif calculation_mode == 'quantile90':
     #     def calc_single_trace(i, df_tmp):
@@ -80,16 +80,16 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel):
     elif calculation_mode == 'volume':
         def calc_single_trace(i, df_tmp):
             try:
-                y_raw = df_tmp[i]['volume']
-            except KeyError:
                 y_raw = df_tmp[i]['area']
+            except KeyError:
+                y_raw = df_tmp[i]['volume']
             return y_raw
     elif calculation_mode == 'z':
         def calc_single_trace(i, df_tmp):
             try:
-                y_raw = df_tmp[i]['z_dlc']
-            except KeyError:
                 y_raw = df_tmp[i]['z']
+            except KeyError:
+                y_raw = df_tmp[i]['z_dlc']
             return y_raw
     elif calculation_mode == 'likelihood':
         def calc_single_trace(i, df_tmp):
