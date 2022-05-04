@@ -14,8 +14,7 @@ from tqdm import tqdm
 # preprocessing
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
-from DLC_for_WBFM.utils.general.preprocessing.utils_tif import perform_preprocessing
-from DLC_for_WBFM.utils.projects.utils_project import edit_config
+from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import perform_preprocessing
 # metadata
 from segmentation.util.utils_config_files import _unpack_config_file
 from segmentation.util.utils_metadata import get_metadata_dictionary, calc_metadata_full_video
