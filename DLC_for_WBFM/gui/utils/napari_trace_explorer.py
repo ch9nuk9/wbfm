@@ -67,6 +67,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                          'layer_name': 'final_track'}
         logger.info("Finished initializing Trace Explorer object")
 
+        self.traces_mode_calculation_options = ['integration', 'z', 'volume']
+        self.tracklet_mode_calculation_options = ['z', 'volume', 'likelihood', 'brightness_red']
+
     def setupUi(self, viewer: napari.Viewer):
 
         logger.info("Starting main UI setup")
@@ -137,9 +140,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.formlayout3.addRow("Tracklet subplot marker:", self.changeSubplotMarkerDropdown)
 
         self.changeTraceCalculationDropdown = QtWidgets.QComboBox()
-        self.changeTraceCalculationDropdown.addItems(['integration', 'z', 'volume'])
-        # , 'likelihood' ... Too short
-        self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_subplot)
+        self.changeTraceCalculationDropdown.addItems(self.traces_mode_calculation_options)
+        # , 'likelihood' ... Too short in time, so crashes
+        self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_or_tracklet_subplot)
         self.formlayout3.addRow("Trace calculation (y axis):", self.changeTraceCalculationDropdown)
         # Change trace filtering (checkbox)
         self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
@@ -753,10 +756,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def init_subplot_post_clear(self):
         self.time_line = None
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
-        if self.changeTraceTrackletDropdown.currentText() == "traces":
-            self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
-        else:
-            self.static_ax.set_ylabel("z")
+        # if self.changeTraceTrackletDropdown.currentText() == "traces":
+        self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
+        # else:
+        #     self.static_ax.set_ylabel("z")
         self.color_using_behavior()
         if self.current_subplot_xlim is not None:
             self.static_ax.set_xlim(self.current_subplot_xlim)
@@ -788,15 +791,24 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
     def change_trace_tracklet_mode(self):
-        print(f"Changed mode to: {self.changeTraceTrackletDropdown.currentText()}")
+        current_mode = self.changeTraceTrackletDropdown.currentText()
+
+        print(f"Changed mode to: {current_mode}")
         self.static_ax.clear()
         # Only show z coordinate for now
-        self.changeChannelDropdown.setCurrentText('z')
+
+        self.changeTraceCalculationDropdown.clear()
+        if current_mode == 'tracklets':
+            self.changeTraceCalculationDropdown.addItems(self.tracklet_mode_calculation_options)
+            self.changeTraceCalculationDropdown.setCurrentText('z')
+        elif current_mode == 'traces':
+            self.changeTraceCalculationDropdown.addItems(self.traces_mode_calculation_options)
+            self.changeTraceCalculationDropdown.setCurrentText('integration')
+
         self.initialize_trace_or_tracklet_subplot()
         # Not just updating the data because we fully cleared the axes
         self.init_subplot_post_clear()
-
-        self.finish_subplot_update(self.changeTraceTrackletDropdown.currentText())
+        self.finish_subplot_update(current_mode)
 
     def initialize_trace_or_tracklet_subplot(self):
         if not self.subplot_is_initialized:
@@ -853,10 +865,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.current_subplot_xlim = None
         self.static_ax.clear()
         marker_opt = self.get_marker_opt()
+
+        field_to_plot = self.changeTraceCalculationDropdown.currentText()
         for y in self.y_tracklets:
-            self.tracklet_lines.append(y['z'].plot(ax=self.static_ax, **marker_opt))
+            self.tracklet_lines.append(y[field_to_plot].plot(ax=self.static_ax, **marker_opt))
         if self.y_tracklet_current is not None:
-            self.tracklet_lines.append(self.y_tracklet_current['z'].plot(ax=self.static_ax,
+            self.tracklet_lines.append(self.y_tracklet_current[field_to_plot].plot(ax=self.static_ax,
                                                                          color='k', lw=3, **marker_opt))
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
