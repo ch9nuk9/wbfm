@@ -828,6 +828,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
 
     def update_trace_or_tracklet_subplot(self, preserve_xlims=True):
+        if self.changeTraceCalculationDropdown.currentText() == "":
+            # Assume it has just been cleared, and wait
+            return
+
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.update_tracklet_subplot(preserve_xlims)
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
