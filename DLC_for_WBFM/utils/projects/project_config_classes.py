@@ -195,16 +195,15 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return Path(resolve_mounted_path_in_current_os(self.config[key]))
 
 
-def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
-    # For now, does NOT overwrite anything on disk
-    project_cfg = load_config(project_path)
-
-    if 'preprocessed_red' not in project_cfg:
-        raise ValueError("Must preprocess data before the segmentation step")
-    updates = {'video_path': project_cfg['preprocessed_red']}
-    segment_cfg.update(updates)
-
-    return segment_cfg
+# def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
+#     project_cfg = load_config(project_path)
+#
+#     if 'preprocessed_red' not in project_cfg:
+#         raise ValueError("Must preprocess data before the segmentation step")
+#     updates = {'video_path': project_cfg['preprocessed_red']}
+#     segment_cfg.update(updates)
+#
+#     return segment_cfg
 
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:

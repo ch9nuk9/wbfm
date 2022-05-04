@@ -2,7 +2,6 @@
 self_path: 1-segmentation/segment_config.yaml # for programmatic updating
 
 # Project definitions
-video_path: null
 segmentation_type: 3d
 
 # External preprocessing: bounding boxes
