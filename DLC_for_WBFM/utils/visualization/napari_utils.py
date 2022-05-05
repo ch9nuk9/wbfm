@@ -75,7 +75,8 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
 
     # More info on text: https://github.com/napari/napari/blob/main/examples/add_points_with_text.py
     options = {'data': all_t_zxy, 'face_color': 'transparent', 'edge_color': 'transparent',
-               'text': {'text': 'label'}, # Can add color or size here
-               'properties': properties, 'name': 'Neuron IDs', 'blending': 'additive'}
+               'text': {'text': 'label'},  # Can add color or size here
+               'properties': properties, 'name': 'Neuron IDs', 'blending': 'additive',
+               'visible': False}
 
     return options

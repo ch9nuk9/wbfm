@@ -718,14 +718,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_on_plot = [line.get_ydata() for line in self.static_ax.lines]
-            if len(y_on_plot) == 0 or (len(y_on_plot) == 1 and len(y_on_plot[0])==2):
+            if len(y_on_plot) == 0 or (len(y_on_plot) == 1 and len(y_on_plot[0]) == 2):
                 # Empty neuron!
                 print("No data found")
                 return []
             proper_len = len(y_on_plot[0])  # Have to remove the time line!
             y_on_plot = [y for y in y_on_plot if len(y) == proper_len]
             y_on_plot = np.nansum(np.vstack(y_on_plot), axis=0)  # nansum because we might have overlap
-            y_on_plot[y_on_plot == 0] = np.nan  # nansum replaces nan with 0, but we want
+            y_on_plot[y_on_plot == 0] = np.nan  # nansum replaces nan with 0, but we want to keep nan
 
             # y_list = self.y_tracklets
             # if self.y_tracklet_current is not None:
@@ -1093,7 +1093,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None):
     # A parent QT application must be initialized first
     os.environ["NAPARI_ASYNC"] = "1"
-    # os.environ["NAPARI_OCTREE"] = "1" # No effect in tests
+    # os.environ["NAPARI_PERFMON"] = "1"
+    # os.environ["NAPARI_OCTREE"] = "1" # No effect in tests; seems to only matter in 2d
     if app is None:
         started_new_app = True
         app = QApplication([])
