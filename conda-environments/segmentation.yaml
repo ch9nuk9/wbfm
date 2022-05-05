@@ -40,3 +40,5 @@ dependencies:
     - tinydb-serialization
     - hashfs
     - pytest
+    - ruptures
+    - backports.cached_property

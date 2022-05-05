@@ -28,4 +28,5 @@ dependencies:
     - napari[all]
     - easydict
     - pytest
+    - ruptures
     - backports.cached_property

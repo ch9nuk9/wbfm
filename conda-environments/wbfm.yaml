@@ -38,4 +38,5 @@ dependencies:
     - tinydb-serialization
     - pytorch-lightning
     - openpyxl
+    - ruptures
     - backports.cached_property
