@@ -357,7 +357,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
             self.dat.tracklet_annotator.set_current_tracklet(self.recentTrackletSelector.currentText())
             self.dat.tracklet_annotator.add_current_tracklet_to_viewer(self.viewer)
-            self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+            self.tracklet_updated_psuedo_event()
 
     def get_dict_for_tracklet_change(self, next_tracklet):
         last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
@@ -649,7 +649,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             if successfully_split:
                 self.add_layer_of_current_tracklet()
-                self.tracklet_updated_psuedo_event(which_tracklets_to_update=self.get_dict_for_tracklet_split())
+                # self.tracklet_updated_psuedo_event(which_tracklets_to_update=self.get_dict_for_tracklet_split())
+                self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
@@ -659,7 +660,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t + 1, False)
             if successfully_split:
                 self.add_layer_of_current_tracklet()
-                self.tracklet_updated_psuedo_event(which_tracklets_to_update=self.get_dict_for_tracklet_split())
+                self.tracklet_updated_psuedo_event()
+                # self.tracklet_updated_psuedo_event(which_tracklets_to_update=self.get_dict_for_tracklet_split())
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
@@ -667,7 +669,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.remove_layer_of_current_tracklet()
         last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
         self.dat.tracklet_annotator.clear_current_tracklet()
-        self.tracklet_updated_psuedo_event(which_tracklets_to_update={last_tracklet: 'remove'})
+        self.tracklet_updated_psuedo_event()
+        # self.tracklet_updated_psuedo_event(which_tracklets_to_update={last_tracklet: 'remove'})
 
     def toggle_raw_segmentation_layer(self):
         if self.viewer.layers.selection.active == self.seg_layer:
@@ -683,7 +686,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             tracklet_name = self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
             if tracklet_name:
                 self.remove_layer_of_current_tracklet(tracklet_name)
-                self.tracklet_updated_psuedo_event(which_tracklets_to_update={tracklet_name: 'remove'})
+                # self.tracklet_updated_psuedo_event(which_tracklets_to_update={tracklet_name: 'remove'})
+                self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
@@ -720,7 +724,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def remove_time_conflicts(self):
         conflicting_names = self.dat.tracklet_annotator.remove_tracklets_with_time_conflicts()
         which_tracklets_to_update = {name: 'remove' for name in conflicting_names}
-        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+        # self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+        self.tracklet_updated_psuedo_event()
 
     def remove_tracklet_from_all_matches(self):
         self.dat.tracklet_annotator.remove_tracklet_from_all_matches()
@@ -898,12 +903,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     if type_of_update == 'remove' or type_of_update == 'replot':
                         self.tracklet_lines[tracklet_name].remove()
                         # del self.tracklet_lines[tracklet_name]
+                        print(f"Cleared tracklet {tracklet_name} from the subplot")
                 else:
                     logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
                 # Should NOT be elif
                 if type_of_update == 'plot' or type_of_update == 'replot':
                     y = self.y_tracklets_dict[tracklet_name]
                     self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
+                    print(f"Added tracklet {tracklet_name} to the subplot")
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
         # We are displaying z here
