@@ -799,7 +799,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_stored_tracklets_for_plotting()
         marker_opt = self.get_marker_opt()
         for name, y in self.y_tracklets_dict.items():
-            self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt)
+            self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
         self.update_neuron_in_tracklet_annotator()
 
     def on_subplot_click(self, event):
@@ -887,23 +887,23 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Replot ALL tracklets
             self.static_ax.clear()
             for name, y in self.y_tracklets_dict.items():
-                self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt)
+                self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
             if self.y_tracklet_current is not None:
                 y = self.y_tracklet_current[field_to_plot]
                 self.tracklet_lines[self.y_tracklet_current_name] = y.plot(ax=self.static_ax, color='k', lw=3,
-                                                                           **marker_opt)
+                                                                           **marker_opt).lines[0]
         else:
             for tracklet_name, type_of_update in which_tracklets_to_update.items():
                 if tracklet_name in self.tracklet_lines:
                     if type_of_update == 'remove' or type_of_update == 'replot':
                         self.tracklet_lines[tracklet_name].remove()
-                        del self.tracklet_lines[tracklet_name]
+                        # del self.tracklet_lines[tracklet_name]
                 else:
                     logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
                 # Should NOT be elif
                 if type_of_update == 'plot' or type_of_update == 'replot':
                     y = self.y_tracklets_dict[tracklet_name]
-                    self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt)
+                    self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
         # We are displaying z here
