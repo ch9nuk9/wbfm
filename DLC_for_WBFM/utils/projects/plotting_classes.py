@@ -427,12 +427,14 @@ class TrackletAndSegmentationAnnotator:
         all_overlap_dict = self.get_dict_of_tracklet_time_conflicts(tracklet_name)
         if all_overlap_dict is not None:
             with self.saving_lock:
-                for conflicting_tracklet_name in all_overlap_dict.keys():
+                conflicting_names = list(all_overlap_dict.keys())
+                for conflicting_tracklet_name in conflicting_names:
                     self.remove_tracklet_from_neuron(conflicting_tracklet_name, self.current_neuron)
                     # self.manual_global2tracklet_removals[self.current_neuron].append(conflicting_tracklet_name)
             # assert not self.tracklet_has_time_overlap(tracklet_name), f"Clean up of {tracklet_name} failed"
         else:
             print("Already not conflicting")
+        return conflicting_names
 
     def remove_all_tracklets_after_time(self, t):
         logging.warning(f"Removing all tracklets attached to {self.current_neuron} after t={t}")
