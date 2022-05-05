@@ -62,7 +62,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.scroll = scroll
 
 
-        self.tracklet_lines = []
+        self.tracklet_lines = {}
         self.main_subplot_xlim = []
         self.current_subplot_xlim = None
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
@@ -777,15 +777,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def initialize_tracklet_subplot(self):
         # Designed for traces, but reuse and force z coordinate
-        self.update_stored_time_series('z')
-        self.tracklet_lines = []
+        field_to_plot = self.changeTraceCalculationDropdown.currentText()
+        self.update_stored_time_series(field_to_plot)
+        self.tracklet_lines = {}
         self.update_stored_tracklets_for_plotting()
-        for y in self.y_tracklets:
-            this_line = self.static_ax.plot(self.tspan[:-1], y['z'])[0]
-            self.tracklet_lines.append(this_line)
-            # self.tracklet_lines.append(y['z'].plot(ax=self.static_ax))
+        marker_opt = self.get_marker_opt()
+        for name, y in self.y_tracklets_dict.items():
+            self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt)
         self.update_neuron_in_tracklet_annotator()
-        # self.trace_line = self.static_ax.plot(self.y)[0]
 
     def on_subplot_click(self, event):
         t = event.xdata
@@ -829,13 +828,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Finally, add the traces to napari
             self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
 
-    def update_trace_or_tracklet_subplot(self, preserve_xlims=True):
+    def update_trace_or_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
         if self.changeTraceCalculationDropdown.currentText() == "":
             # Assume it has just been cleared, and wait
             return
 
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.update_tracklet_subplot(preserve_xlims)
+            self.update_tracklet_subplot(preserve_xlims, which_tracklets_to_update=which_tracklets_to_update)
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
             self.update_trace_subplot()
         else:
@@ -854,30 +853,41 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.time_line.set_color(time_options[-1])
         self.finish_subplot_update(title)
 
-    def update_tracklet_subplot(self, preserve_xlims=True):
+    def update_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
         # For now, actually reinitializes the axes
         if not self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             print("Currently on traces setting, so this option didn't do anything")
             return
 
-        # Tracklet unique part
-        # if len(self.tracklet_lines) > 0:
-        #     [t.remove() for t in self.tracklet_lines]
-        # self.tracklet_lines = []
         self.update_stored_tracklets_for_plotting()
         if preserve_xlims:
             self.current_subplot_xlim = self.static_ax.get_xlim()
         else:
             self.current_subplot_xlim = None
-        self.static_ax.clear()
         marker_opt = self.get_marker_opt()
 
         field_to_plot = self.changeTraceCalculationDropdown.currentText()
-        for y in self.y_tracklets:
-            self.tracklet_lines.append(y[field_to_plot].plot(ax=self.static_ax, **marker_opt))
-        if self.y_tracklet_current is not None:
-            self.tracklet_lines.append(self.y_tracklet_current[field_to_plot].plot(ax=self.static_ax,
-                                                                         color='k', lw=3, **marker_opt))
+        if which_tracklets_to_update is None:
+            # Replot ALL tracklets
+            self.static_ax.clear()
+            for name, y in self.y_tracklets_dict.items():
+                self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt)
+            if self.y_tracklet_current is not None:
+                y = self.y_tracklet_current[field_to_plot]
+                self.tracklet_lines[self.y_tracklet_current_name] = y.plot(ax=self.static_ax, color='k', lw=3,
+                                                                           **marker_opt)
+        else:
+            for tracklet_name, type_of_update in which_tracklets_to_update.items():
+                if tracklet_name in self.tracklet_lines:
+                    if type_of_update == 'remove' or type_of_update == 'replot':
+                        self.tracklet_lines[tracklet_name].remove()
+                        del self.tracklet_lines[tracklet_name]
+                else:
+                    logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
+                # Should NOT be elif
+                if type_of_update == 'plot' or type_of_update == 'replot':
+                    y = self.y_tracklets_dict[tracklet_name]
+                    self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt)
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
         # We are displaying z here
@@ -895,11 +905,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             opt = {}
         return opt
 
-    def tracklet_updated_psuedo_event(self):
+    def tracklet_updated_psuedo_event(self, which_tracklets_to_update=None):
         self.update_tracklet_status_label()
         self.update_zoom_options_for_current_tracklet()
         self.add_to_recent_tracklet_dropdown()
-        self.update_trace_or_tracklet_subplot()
+        self.update_trace_or_tracklet_subplot(which_tracklets_to_update=which_tracklets_to_update)
 
     def update_tracklet_status_label(self):
         if self.dat.tracklet_annotator.current_neuron is None:
@@ -1014,12 +1024,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_stored_tracklets_for_plotting(self):
         name = self.current_name
-        tracklets, tracklet_current = self.dat.calculate_tracklets(name)
-        print(f"Found {len(tracklets)} tracklets for {name}")
+        tracklets_dict, tracklet_current, current_name = self.dat.calculate_tracklets(name)
+        print(f"Found {len(tracklets_dict)} tracklets for {name}")
         if tracklet_current is not None:
             print("Additionally found 1 currently selected tracklet")
-        self.y_tracklets = tracklets
+        self.y_tracklets_dict = tracklets_dict
         self.y_tracklet_current = tracklet_current
+        self.y_tracklet_current_name = current_name
 
     def get_track_data(self):
         self.current_name = self.changeNeuronsDropdown.currentText()

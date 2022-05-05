@@ -447,8 +447,8 @@ class ProjectData:
         return self.trace_plotter.tspan, y
 
     def calculate_tracklets(self, neuron_name):
-        y, y_current = self.tracklet_annotator.calculate_tracklets_for_neuron(neuron_name)
-        return y, y_current
+        y_dict, y_current, y_current_names = self.tracklet_annotator.calculate_tracklets_for_neuron(neuron_name)
+        return y_dict, y_current, y_current_names
 
     def modify_confidences_of_frame_pair(self, pair, gamma, mode):
         frame_match = self.raw_matches[pair]
