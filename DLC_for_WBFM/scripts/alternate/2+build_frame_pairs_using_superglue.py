@@ -1,10 +1,6 @@
 """
 The top level function for producing training data via feature-based tracking
 """
-import logging
-import os
-from datetime import date
-
 # Experiment tracking
 import sacred
 from sacred import Experiment
