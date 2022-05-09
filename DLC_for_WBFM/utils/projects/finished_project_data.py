@@ -38,7 +38,7 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from backports.cached_property import cached_property
 
 
-@dataclass
+@dataclass(slots=True)
 class ProjectData:
     project_dir: str
     project_config: ModularProjectConfig
