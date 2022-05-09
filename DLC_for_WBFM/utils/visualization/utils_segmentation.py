@@ -26,9 +26,10 @@ def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
     """
-    all_matches, raw_seg_masks, new_masks, min_confidence = _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg)
-
+    all_matches, raw_seg_masks, new_masks, min_confidence, out_fname = _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg)
     reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks, min_confidence)
+
+    return out_fname
 
 
 def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidence):
@@ -57,6 +58,8 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidenc
                 # _ = future_results[future]
                 _ = future.result()
                 pbar.update(1)
+
+    return
 
 #     with tqdm(total=len(all_lut)) as pbar:
 #
@@ -89,7 +92,7 @@ def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
 
     min_confidence = traces_cfg.config['traces']['min_confidence']
 
-    return all_matches, raw_seg_masks, new_masks, min_confidence
+    return all_matches, raw_seg_masks, new_masks, min_confidence, out_fname
 
 
 def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
