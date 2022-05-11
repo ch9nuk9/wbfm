@@ -1,0 +1,13 @@
+
+#SBATCH --job-name=gpu_check
+#SBATCH --nodes=1                   # Use one node
+#SBATCH --ntasks=1                  # Run a single task
+#SBATCH --qos=short             # Time limit hrs:min:sec
+#SBATCH --output=log_test-%j.out    # Standard output and error log
+#SBATCH --time=0:10:00
+#SBATCH --partition=gpu
+
+CMD_DIR="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
+CMD="${CMD_DIR}/examples/check_gpu.py"
+
+python $CMD
