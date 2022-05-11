@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 #SBATCH --job-name=gpu_check
 #SBATCH --nodes=1                   # Use one node
