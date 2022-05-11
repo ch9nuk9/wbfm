@@ -396,6 +396,8 @@ class SuperGlueModel(LightningModule):
         self.superglue = SuperGlue(config=dict(descriptor_dim=feature_dim))
         self.lr = lr
 
+        logging.info(f"Cuda is found: {torch.cuda.is_available()}")
+
     def forward(self, x):
         # Returns a dict with several values
         return self.superglue(x)
