@@ -398,7 +398,7 @@ class SuperGlueModel(LightningModule):
 
         if torch.cuda.is_available():
             logging.info(f"Found CUDA!")
-            self.to('gpu')
+            self.to('cuda')
         else:
             logging.info(f"Did not find CUDA")
 
