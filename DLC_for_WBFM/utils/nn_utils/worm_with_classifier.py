@@ -17,7 +17,8 @@ from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpac
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
 model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/"
-PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
+# PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
+PATH_TO_MODEL = os.path.join(model_dir, "superglue_neurons_4_datasets_adjacent_remove_nonmoving_05_11.ckpt")
 # PATH_TO_MODEL = os.path.join(model_dir, "classifier_36_neurons.ckpt")
 # PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_62_partial_neurons_1000training.ckpt")
 # PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir, "superglue_107_partial_neurons_3299training_adjacent.ckpt")
@@ -118,11 +119,14 @@ class WormWithSuperGlueClassifier:
             self.model = SuperGlueModel.load_from_checkpoint(checkpoint_path=self.path_to_model)
         self.model.eval()
 
+    def move_data_to_device(self, data_dict):
+        [v.to(self.model.device) for v in data_dict.values()]
+
     def match_target_frame(self, target_frame: ReferenceFrame):
 
         with torch.no_grad():
             data = self.superglue_unpacker.convert_single_frame_to_superglue_format(target_frame, use_gt_matches=False)
-            data = self.superglue_unpacker.expand_all_data(data)
+            data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
 
             matches_with_conf = self.model.superglue.match_and_output_list(data)
 
@@ -131,7 +135,7 @@ class WormWithSuperGlueClassifier:
     def match_two_time_points(self, t0: int, t1: int):
         with torch.no_grad():
             data = self.superglue_unpacker.convert_frames_to_superglue_format(t0, t1, use_gt_matches=False)
-            data = self.superglue_unpacker.expand_all_data(data)
+            data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
 
             matches_with_conf = self.model.superglue.match_and_output_list(data)
 

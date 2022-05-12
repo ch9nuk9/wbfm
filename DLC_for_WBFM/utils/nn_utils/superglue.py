@@ -396,7 +396,13 @@ class SuperGlueModel(LightningModule):
         self.superglue = SuperGlue(config=dict(descriptor_dim=feature_dim))
         self.lr = lr
 
-        logging.info(f"Cuda is found: {torch.cuda.is_available()}")
+        if torch.cuda.is_available():
+            logging.info(f"Found CUDA!")
+            self.to('gpu')
+        else:
+            logging.info(f"Did not find CUDA")
+
+        logging.info(f"This model is on device: {self.device}")
 
     def forward(self, x):
         # Returns a dict with several values
@@ -509,11 +515,14 @@ class SuperGlueUnpacker:
         data.update(to_update)
         return data
 
-    def expand_all_data(self, data):
+    def expand_all_data(self, data, device=None):
         # Necessary when calling outside a pytorch dataloader
         new_data = {}
         for k, v in data.items():
-            new_data[k] = torch.tensor(v).unsqueeze(0)
+            if device is not None:
+                new_data[k] = torch.tensor(v, device=device).unsqueeze(0)
+            else:
+                new_data[k] = torch.tensor(v).unsqueeze(0)
 
         return new_data
 
