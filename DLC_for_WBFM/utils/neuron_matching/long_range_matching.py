@@ -121,7 +121,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
                                                                             node_class_to_match=1)
 
             logging.info("Iteratively splitting tracklets using track matching conflicts")
-            for i_split in tqdm(range(10)):
+            for i_split in tqdm(range(4)):
                 # TODO: somehow there are sometimes multiple tracklets matched to the same segmentation
                 split_list_dict = worm_obj.get_conflict_time_dictionary_for_all_neurons(
                     minimum_confidence=min_confidence)
