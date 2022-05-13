@@ -878,7 +878,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.update_tracklet_subplot(preserve_xlims, which_tracklets_to_update=which_tracklets_to_update)
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
-            self.update_trace_subplot()
+            self.update_trace_subplot(preserve_xlims)
         else:
             raise ValueError
 
@@ -1026,11 +1026,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def time_changed_callbacks(self):
         self.set_segmentation_layer_do_not_show_selected_label()
 
-    def finish_subplot_update(self, title):
+    def finish_subplot_update(self, title, preserve_xlims):
         self.update_time_line()
         self.static_ax.set_title(title)
         self.static_ax.relim()
-        self.static_ax.autoscale()
+        if preserve_xlims:
+            self.static_ax.autoscale(axis='y')
+        else:
+            self.static_ax.autoscale(axis='both')
         # self.static_ax.update_params()
         self.mpl_widget.draw()
         # self.mpl_widget.canvas.draw()
