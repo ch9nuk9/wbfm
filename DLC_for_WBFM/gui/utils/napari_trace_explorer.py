@@ -3,8 +3,11 @@
 import cgitb
 import os
 import signal
+import warnings
 
+from backports.cached_property import cached_property
 from napari._qt.qthreading import thread_worker
+from tqdm.auto import tqdm
 
 from DLC_for_WBFM.gui.utils.utils_matplotlib import PlotQWidget
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -667,10 +670,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def clear_current_tracklet(self):
         self.remove_layer_of_current_tracklet()
-        last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
+        last_tracklet = f"{self.dat.tracklet_annotator.current_tracklet_name}_current"
         self.dat.tracklet_annotator.clear_current_tracklet()
-        self.tracklet_updated_psuedo_event()
-        # self.tracklet_updated_psuedo_event(which_tracklets_to_update={last_tracklet: 'remove'})
+        # self.tracklet_updated_psuedo_event()
+        self.tracklet_updated_psuedo_event(which_tracklets_to_update={last_tracklet: 'remove'})
 
     def toggle_raw_segmentation_layer(self):
         if self.viewer.layers.selection.active == self.seg_layer:
@@ -737,7 +740,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.tracklet_annotator.remove_all_tracklets_after_time(t)
         self.tracklet_updated_psuedo_event()
 
-    @property
+    @cached_property
     def y_on_plot(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_on_plot = [line.get_ydata() for line in self.static_ax.lines]
@@ -747,7 +750,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 return []
             proper_len = len(y_on_plot[0])  # Have to remove the time line!
             y_on_plot = [y for y in y_on_plot if len(y) == proper_len]
-            y_on_plot = np.nanmean(np.vstack(y_on_plot), axis=0)  # nanmean because we might have overlap
+            # I expect to see RuntimeWarnings in this block
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                y_on_plot = np.nanmean(np.vstack(y_on_plot), axis=0)  # nanmean because we might have overlap
             # y_on_plot[y_on_plot == 0] = np.nan  # nansum replaces nan with 0, but we want to keep nan
         else:
             y_on_plot = self.y_trace_mode
@@ -789,7 +795,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
 
     def initialize_tracklet_subplot(self):
-        # Designed for traces, but reuse and force z coordinate
+        # Designed for traces, but reuse
         field_to_plot = self.changeTraceCalculationDropdown.currentText()
         self.update_stored_time_series(field_to_plot)
         self.tracklet_lines = {}
@@ -821,6 +827,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.initialize_trace_or_tracklet_subplot()
         # Not just updating the data because we fully cleared the axes
+        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
         self.init_subplot_post_clear()
         self.finish_subplot_update(current_mode)
 
@@ -883,12 +890,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if which_tracklets_to_update is None:
             # Replot ALL tracklets
             self.static_ax.clear()
-            for name, y in self.y_tracklets_dict.items():
+            self.tracklet_lines = {}  # Remove references to old lines
+            for name, y in tqdm(self.y_tracklets_dict.items(), leave=False):
                 self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
             if self.y_tracklet_current is not None:
                 y = self.y_tracklet_current[field_to_plot]
-                self.tracklet_lines[self.y_tracklet_current_name] = y.plot(ax=self.static_ax, color='k', lw=3,
-                                                                           **marker_opt).lines[0]
+                self.tracklet_lines[f"{self.y_tracklet_current_name}_current"] = y.plot(ax=self.static_ax,
+                                                                                        color='k', lw=3,
+                                                                                        **marker_opt).lines[0]
         else:
             for tracklet_name, type_of_update in which_tracklets_to_update.items():
                 if tracklet_name in self.tracklet_lines:
@@ -905,10 +914,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     print(f"Added tracklet {tracklet_name} to the subplot")
 
         self.update_stored_time_series('z')  # Use this for the time line synchronization
-        # We are displaying z here
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
 
-        # self.init_subplot_post_clear()
+        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
+        self.init_subplot_post_clear()
         self.finish_subplot_update(title)
         pass
 
