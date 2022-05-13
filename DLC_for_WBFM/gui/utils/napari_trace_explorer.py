@@ -652,10 +652,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def split_current_tracklet_keep_right(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.remove_layer_of_current_tracklet()
+            which_tracklets_to_update = self.get_dict_for_tracklet_split()
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             if successfully_split:
                 self.add_layer_of_current_tracklet()
-                self.tracklet_updated_psuedo_event(which_tracklets_to_update=self.get_dict_for_tracklet_split())
+                post_split_dict = self.get_dict_for_tracklet_split()
+                which_tracklets_to_update.update(post_split_dict)
+                self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
                 # self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
@@ -663,11 +666,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def split_current_tracklet_keep_left(self):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.remove_layer_of_current_tracklet()
+            which_tracklets_to_update = self.get_dict_for_tracklet_split()
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t + 1, False)
             if successfully_split:
                 self.add_layer_of_current_tracklet()
                 # self.tracklet_updated_psuedo_event()
-                self.tracklet_updated_psuedo_event(which_tracklets_to_update=self.get_dict_for_tracklet_split())
+                post_split_dict = self.get_dict_for_tracklet_split()
+                which_tracklets_to_update.update(post_split_dict)
+                self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
