@@ -909,8 +909,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         current_tracklet_opt = dict(color='k', lw=3)
 
         field_to_plot = self.changeTraceCalculationDropdown.currentText()
-        if 'y_on_plot' in self.__dict__:
-            del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
         if which_tracklets_to_update is None:
             # Replot ALL tracklets
             self.static_ax.clear()
@@ -951,12 +949,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                                                                                **extra_opt,
                                                                                **marker_opt).lines[-1]
                     print(f"Added tracklet {tracklet_name} to the subplot")
+        self.invalidate_y_on_plot()
 
         self.update_stored_time_series(field_to_plot)
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
 
         self.finish_subplot_update(title)
         pass
+
+    def invalidate_y_on_plot(self):
+        if 'y_on_plot' in self.__dict__:
+            del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
 
     def get_marker_opt(self):
         if self.changeSubplotMarkerDropdown.currentText() == 'line':
