@@ -355,18 +355,26 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.update_trace_or_tracklet_subplot(preserve_xlims=False)
 
     def change_tracklets_using_dropdown(self):
-        if not self._disable_callbacks:
-            which_tracklets_to_update = self.get_dict_for_tracklet_change()
+        self.change_tracklets_from_gui(self.recentTrackletSelector.currentText())
 
-            self.dat.tracklet_annotator.set_current_tracklet(self.recentTrackletSelector.currentText())
+    def change_tracklets_from_gui(self, next_tracklet=None):
+        if not self._disable_callbacks and next_tracklet is not None:
+            which_tracklets_to_update = self.get_dict_for_tracklet_change(next_tracklet=next_tracklet)
+
+            self.dat.tracklet_annotator.set_current_tracklet(next_tracklet)
             self.dat.tracklet_annotator.add_current_tracklet_to_viewer(self.viewer)
-            # self.tracklet_updated_psuedo_event()
             self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
 
-    def get_dict_for_tracklet_change(self):
-        current_tracklet = self.y_tracklet_current_name
-        next_tracklet = self.recentTrackletSelector.currentText()
-        # last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
+    def change_tracklets_from_click(self):
+        previous_tracklet = self.dat.tracklet_annotator.previous_tracklet_name
+        next_tracklet = self.dat.tracklet_annotator.current_tracklet_name
+        which_tracklets_to_update = self.get_dict_for_tracklet_change(current_tracklet=previous_tracklet,
+                                                                      next_tracklet=next_tracklet)
+        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+
+    def get_dict_for_tracklet_change(self, current_tracklet=None, next_tracklet=None):
+        if current_tracklet is None:
+            current_tracklet = self.y_tracklet_current_name
         if current_tracklet == next_tracklet:
             which_tracklets_to_update = {f"{current_tracklet}_current": 'replot'}
         else:
@@ -490,7 +498,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.toggle_highlight_selected_neuron
         ]
         added_tracklet_callbacks = [
-            self.tracklet_updated_psuedo_event,
+            self.change_tracklets_from_click,
             self.set_segmentation_layer_invisible
         ]
         self.dat.tracklet_annotator.connect_tracklet_clicking_callback(
