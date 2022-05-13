@@ -898,6 +898,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             self.current_subplot_xlim = None
         marker_opt = self.get_marker_opt()
+        current_tracklet_opt = dict(color='k', lw=3)
 
         field_to_plot = self.changeTraceCalculationDropdown.currentText()
         if 'y_on_plot' in self.__dict__:
@@ -911,7 +912,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             if self.y_tracklet_current is not None:
                 y = self.y_tracklet_current[field_to_plot]
                 self.tracklet_lines[f"{self.y_tracklet_current_name}_current"] = y.plot(ax=self.static_ax,
-                                                                                        color='k', lw=3,
+                                                                                        **current_tracklet_opt,
                                                                                         **marker_opt).lines[-1]
             # Not a clear in the other branch
             self.init_subplot_post_clear()
@@ -927,17 +928,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 # Should NOT be elif
                 if type_of_update == 'plot' or type_of_update == 'replot':
                     y = self.y_tracklets_dict.get(tracklet_name, None)
-                    # if y is None and tracklet_name.endswith('_current'):
+                    extra_opt = dict()
                     if y is None and tracklet_name.endswith('_current'):
                         tracklet_name_exact = tracklet_name.replace("_current", "")
                         if tracklet_name_exact == self.y_tracklet_current_name:
                             y = self.y_tracklet_current
+                            extra_opt = current_tracklet_opt
 
                     if y is None:
                         logging.warning(f"Tried to plot {tracklet_name}, but it wasn't found")
                         continue
 
                     self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax,
+                                                                               **extra_opt,
                                                                                **marker_opt).lines[-1]
                     print(f"Added tracklet {tracklet_name} to the subplot")
 
