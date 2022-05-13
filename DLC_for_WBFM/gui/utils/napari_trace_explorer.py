@@ -600,7 +600,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.time_changed_callbacks()
 
     def zoom_to_next_nan(self, viewer=None):
-        y_on_plot = self.y_on_plot
+        y_on_plot = self.y_on_plot[0] # Don't need both min and max
         if len(y_on_plot) == 0:
             return
         t = self.t
@@ -742,6 +742,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     @cached_property
     def y_on_plot(self):
+        # Return the min and max, because there could be overlapping lines in tracklet mode
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_on_plot = [line.get_ydata() for line in self.static_ax.lines]
             if len(y_on_plot) == 0 or (len(y_on_plot) == 1 and len(y_on_plot[0]) == 2):
@@ -753,11 +754,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # I expect to see RuntimeWarnings in this block
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
-                y_on_plot = np.nanmean(np.vstack(y_on_plot), axis=0)  # nanmean because we might have overlap
-            # y_on_plot[y_on_plot == 0] = np.nan  # nansum replaces nan with 0, but we want to keep nan
+                y_on_plot_min = np.nanmin(np.vstack(y_on_plot), axis=0)
+                y_on_plot_max = np.nanmin(np.vstack(y_on_plot), axis=0)
         else:
-            y_on_plot = self.y_trace_mode
-        return y_on_plot
+            y_on_plot_min = self.y_trace_mode
+            y_on_plot_max = self.y_trace_mode
+        return y_on_plot_min, y_on_plot_max
 
     def init_universal_subplot(self):
         # Note: this causes a hang when the main window is closed, even though I'm trying to set the parent
@@ -775,8 +777,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.connect_time_line_callback()
 
     def init_subplot_post_clear(self):
+        # Recreate the time line, but make sure the references are removed
         self.time_line = None
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
+
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
         self.color_using_behavior()
         if self.current_subplot_xlim is not None:
@@ -867,10 +871,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.trace_line.set_ydata(self.y_trace_mode)
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
 
-        time_options = self.calculate_time_line()
-        self.time_line.set_data(time_options[:2])
-        self.time_line.set_color(time_options[-1])
         del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
+        self.update_time_line()
         self.init_subplot_post_clear()
         self.finish_subplot_update(title)
 
@@ -1018,12 +1020,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def calculate_time_line(self):
         t = self.t
-        y = self.y_on_plot
+        y_min, y_max = self.y_on_plot
         if len(y) == 0:
             return [t, t], [0, 30], 'r'
-        ymin, ymax = np.nanmin(y), np.nanmax(y)
+        ymin, ymax = np.nanmin(y_min), np.nanmax(y_max)
         if t < len(y):
-            self.tracking_is_nan = np.isnan(y[t])
+            self.tracking_is_nan = np.isnan(y_min[t])
         else:
             self.tracking_is_nan = True
         if self.tracking_is_nan:
