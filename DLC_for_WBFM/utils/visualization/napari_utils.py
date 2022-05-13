@@ -41,10 +41,10 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
     properties = dict(label=[])
     for n in all_neurons:
         try:
-            coords = ['z_dlc', 'x_dlc', 'y_dlc']
+            coords = ['z', 'x', 'y']
             zxy = np.array(df[n][coords])
         except KeyError:
-            coords = ['z', 'x', 'y']
+            coords = ['z_dlc', 'x_dlc', 'y_dlc']
             zxy = np.array(df[n][coords])
         # if round_in_z:
         #     zxy[:, 0] = np.round(zxy[:, 0])
