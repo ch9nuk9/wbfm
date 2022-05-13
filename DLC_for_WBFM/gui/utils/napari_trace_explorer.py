@@ -819,13 +819,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.color_using_behavior()
 
     def initialize_trace_subplot(self):
-        self.update_stored_time_series()
+        self.update_stored_trace_time_series()
         self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
 
     def initialize_tracklet_subplot(self):
         # Designed for traces, but reuse
         field_to_plot = self.changeTraceCalculationDropdown.currentText()
-        self.update_stored_time_series(field_to_plot)
+        # self.update_stored_time_series(field_to_plot)
         self.tracklet_lines = {}
         self.update_stored_tracklets_for_plotting()
         marker_opt = self.get_marker_opt()
@@ -898,7 +898,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
             print("Currently on tracklet setting, so this option didn't do anything")
             return
-        self.update_stored_time_series()
+        self.update_stored_trace_time_series()
         self.trace_line.set_ydata(self.y_trace_mode)
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
 
@@ -965,7 +965,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     print(f"Added tracklet {tracklet_name} to the subplot")
         self.invalidate_y_on_plot()
 
-        self.update_stored_time_series(field_to_plot)
+        # self.update_stored_time_series(field_to_plot)
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
 
         self.finish_subplot_update(title, preserve_xlims)
@@ -1087,7 +1087,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # print(f"Updating time line for t={t}, y[t] = {y[t]}, color={line_color}")
         return [t, t], [ymin, ymax], line_color
 
-    def update_stored_time_series(self, calc_mode=None):
+    def update_stored_trace_time_series(self, calc_mode=None):
         # i = self.changeNeuronsDropdown.currentIndex()
         name = self.current_name
         channel = self.changeChannelDropdown.currentText()
