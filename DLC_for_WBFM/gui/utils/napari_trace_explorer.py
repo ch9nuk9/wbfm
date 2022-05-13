@@ -890,6 +890,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         marker_opt = self.get_marker_opt()
 
         field_to_plot = self.changeTraceCalculationDropdown.currentText()
+        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
         if which_tracklets_to_update is None:
             # Replot ALL tracklets
             self.static_ax.clear()
@@ -901,12 +902,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 self.tracklet_lines[f"{self.y_tracklet_current_name}_current"] = y.plot(ax=self.static_ax,
                                                                                         color='k', lw=3,
                                                                                         **marker_opt).lines[0]
+            # Not a clear in the other branch
+            self.init_subplot_post_clear()
         else:
             for tracklet_name, type_of_update in which_tracklets_to_update.items():
                 if tracklet_name in self.tracklet_lines:
                     if type_of_update == 'remove' or type_of_update == 'replot':
                         self.tracklet_lines[tracklet_name].remove()
-                        # del self.tracklet_lines[tracklet_name]
+                        del self.tracklet_lines[tracklet_name]
                         print(f"Cleared tracklet {tracklet_name} from the subplot")
                 else:
                     logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
@@ -919,8 +922,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_stored_time_series(field_to_plot)
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
 
-        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
-        self.init_subplot_post_clear()
         self.finish_subplot_update(title)
         pass
 
