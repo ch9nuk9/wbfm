@@ -367,8 +367,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         current_tracklet = self.y_tracklet_current_name
         next_tracklet = self.recentTrackletSelector.currentText()
         # last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
-        which_tracklets_to_update = {f"{current_tracklet}_current": 'remove',
-                                     f"{next_tracklet}_current": 'plot'}
+        if current_tracklet == next_tracklet:
+            which_tracklets_to_update = {f"{current_tracklet}_current": 'replot'}
+        else:
+            which_tracklets_to_update = {f"{current_tracklet}_current": 'remove',
+                                         f"{next_tracklet}_current": 'plot'}
         return which_tracklets_to_update
 
     def get_dict_for_tracklet_split(self):
