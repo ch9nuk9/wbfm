@@ -920,9 +920,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
                 # Should NOT be elif
                 if type_of_update == 'plot' or type_of_update == 'replot':
-                    y = self.y_tracklets_dict[tracklet_name]
-                    self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
-                    print(f"Added tracklet {tracklet_name} to the subplot")
+                    if tracklet_name in self.tracklet_lines:
+                        y = self.y_tracklets_dict[tracklet_name]
+                        self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
+                        print(f"Added tracklet {tracklet_name} to the subplot")
 
         self.update_stored_time_series(field_to_plot)
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
