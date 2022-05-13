@@ -788,7 +788,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def init_subplot_post_clear(self):
         # Recreate the time line, but make sure the references are removed
-        self.time_line = None
+        if self.time_line is not None:
+            self.time_line.remove()
+            del self.time_line
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
 
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
