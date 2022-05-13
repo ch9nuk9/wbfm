@@ -990,6 +990,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.set_segmentation_layer_do_not_show_selected_label()
 
     def finish_subplot_update(self, title):
+        self.update_time_line()
         self.static_ax.set_title(title)
         self.static_ax.relim()
         self.static_ax.autoscale_view()
@@ -1002,10 +1003,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.dims.events.current_step.connect
         def update_time_line(event):
-            time_options = self.calculate_time_line()
-            self.time_line.set_data(time_options[:2])
-            self.time_line.set_color(time_options[-1])
-            self.mpl_widget.draw()
+            self.update_time_line()
+
+    def update_time_line(self):
+        # Doesn't work if the time line needs to be initialized
+        time_options = self.calculate_time_line()
+        self.time_line.set_data(time_options[:2])
+        self.time_line.set_color(time_options[-1])
+        self.mpl_widget.draw()
 
     @property
     def t(self):
