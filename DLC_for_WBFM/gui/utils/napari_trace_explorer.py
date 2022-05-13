@@ -1021,10 +1021,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def calculate_time_line(self):
         t = self.t
         y_min, y_max = self.y_on_plot
-        if len(y) == 0:
+        if len(y_min) == 0:
             return [t, t], [0, 30], 'r'
         ymin, ymax = np.nanmin(y_min), np.nanmax(y_max)
-        if t < len(y):
+        if t < len(y_min):
             self.tracking_is_nan = np.isnan(y_min[t])
         else:
             self.tracking_is_nan = True
