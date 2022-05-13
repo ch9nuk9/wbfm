@@ -942,16 +942,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                         del self.tracklet_lines[tracklet_name]
                         print(f"Cleared tracklet {tracklet_name} from the subplot")
                 else:
-                    logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
+                    if 'None' not in tracklet_name and '_current' not in tracklet_name:
+                        logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
                 # Should NOT be elif
                 if type_of_update == 'plot' or type_of_update == 'replot':
                     y = self.y_tracklets_dict.get(tracklet_name, None)
                     extra_opt = dict()
                     if y is None:
-                        tracklet_name_exact = tracklet_name.replace("_current", "")
-                        if tracklet_name_exact == self.y_tracklet_current_name:
-                            y = self.y_tracklet_current
-                            extra_opt = current_tracklet_opt
+                        if tracklet_name.endswith('_current'):
+                            tracklet_name_exact = tracklet_name.replace("_current", "")
+                            if tracklet_name_exact == self.y_tracklet_current_name:
+                                y = self.y_tracklet_current
+                                extra_opt = current_tracklet_opt
 
                     if y is None:
                         logging.warning(f"Tried to plot {tracklet_name}, but it wasn't found")
