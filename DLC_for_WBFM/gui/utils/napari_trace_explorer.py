@@ -926,12 +926,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
                 # Should NOT be elif
                 if type_of_update == 'plot' or type_of_update == 'replot':
-                    if tracklet_name in self.tracklet_lines:
-                        y = self.y_tracklets_dict[tracklet_name]
-                    elif tracklet_name.endswith('_current'):
+                    y = self.y_tracklets_dict.get(tracklet_name, None)
+                    if y is None and tracklet_name.endswith('_current'):
                         tracklet_name_exact = tracklet_name.replace("_current", "")
-                        y = self.y_tracklets_dict[tracklet_name_exact]
-                    else:
+                        y = self.y_tracklets_dict.get(tracklet_name_exact, None)
+                    if y is None:
                         logging.warning(f"Tried to plot {tracklet_name}, but it wasn't found")
                         continue
 
