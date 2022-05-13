@@ -317,7 +317,8 @@ class DetectedTrackletsAndNeurons:
         mask = df.loc[i_time, (slice(None), 'raw_neuron_ind_in_list')] == i_local_neuron
         try:
             ind = np.where(mask)[0][0]
-            return ind, self.all_tracklet_names[ind]
+            # return ind, self.all_tracklet_names[ind]
+            return ind, mask.index.levels[0][mask]
         except IndexError:
             return None, None
 
