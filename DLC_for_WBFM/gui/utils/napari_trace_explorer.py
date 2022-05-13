@@ -777,10 +777,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def init_subplot_post_clear(self):
         self.time_line = None
         self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
-        # if self.changeTraceTrackletDropdown.currentText() == "traces":
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
-        # else:
-        #     self.static_ax.set_ylabel("z")
         self.color_using_behavior()
         if self.current_subplot_xlim is not None:
             self.static_ax.set_xlim(self.current_subplot_xlim)
