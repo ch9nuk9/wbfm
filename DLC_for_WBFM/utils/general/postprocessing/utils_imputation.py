@@ -51,7 +51,7 @@ def scale_impute_descale(df_only_locations: pd.DataFrame, n_nearest_features=20,
     df_dat = df_no_all_nan.to_numpy()
 
     # This gray import must be present
-    from sklearn.impute import IterativeImputer
+    from sklearn.impute._iterative import IterativeImputer
     imputer = IterativeImputer(estimator=estimator,
                                random_state=random_state,
                                missing_values=np.nan,
@@ -105,7 +105,7 @@ def update_dataframe_using_flat_names(df_old, df_new, old2new_names):
             continue
         df_interp[n] = df_new[old2new_names[n]]
 
-    return df_interp
+    return pd.DataFrame(df_interp)  # Reduce fragmentation
 
 
 def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
@@ -179,7 +179,7 @@ def get_results_chained_imputation(X_ampute, random_state=0, max_iter=10):
     # Impute incomplete data with IterativeImputer using single imputation
     # We perform MAX_ITER imputations and only use the last imputation.
 
-    from sklearn.impute import IterativeImputer
+    from sklearn.impute._iterative import IterativeImputer
     imputer = IterativeImputer(max_iter=max_iter,
                                sample_posterior=True,
                                random_state=random_state)
