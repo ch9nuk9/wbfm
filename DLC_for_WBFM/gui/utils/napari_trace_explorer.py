@@ -895,12 +895,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.static_ax.clear()
             self.tracklet_lines = {}  # Remove references to old lines
             for name, y in tqdm(self.y_tracklets_dict.items(), leave=False):
-                self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
+                self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[-1]
             if self.y_tracklet_current is not None:
                 y = self.y_tracklet_current[field_to_plot]
                 self.tracklet_lines[f"{self.y_tracklet_current_name}_current"] = y.plot(ax=self.static_ax,
                                                                                         color='k', lw=3,
-                                                                                        **marker_opt).lines[0]
+                                                                                        **marker_opt).lines[-1]
             # Not a clear in the other branch
             self.init_subplot_post_clear()
         else:
@@ -993,7 +993,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.static_ax.set_title(title)
         self.static_ax.relim()
         self.static_ax.autoscale_view()
+        # self.static_ax.update_params()
         self.mpl_widget.draw()
+        self.mpl_widget.canvas.draw()
 
     def connect_time_line_callback(self):
         viewer = self.viewer
