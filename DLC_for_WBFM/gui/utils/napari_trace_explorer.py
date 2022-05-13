@@ -882,7 +882,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
 
         del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
-        self.update_time_line()
         self.init_subplot_post_clear()
         self.finish_subplot_update(title)
 
@@ -929,7 +928,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 if type_of_update == 'plot' or type_of_update == 'replot':
                     y = self.y_tracklets_dict.get(tracklet_name, None)
                     extra_opt = dict()
-                    if y is None and tracklet_name.endswith('_current'):
+                    if y is None:
                         tracklet_name_exact = tracklet_name.replace("_current", "")
                         if tracklet_name_exact == self.y_tracklet_current_name:
                             y = self.y_tracklet_current
