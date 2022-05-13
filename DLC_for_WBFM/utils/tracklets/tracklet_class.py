@@ -318,7 +318,7 @@ class DetectedTrackletsAndNeurons:
         try:
             ind = np.where(mask)[0][0]
             # return ind, self.all_tracklet_names[ind]
-            return ind, mask.index.levels[0][mask]
+            return ind, mask.index.levels[0][mask][0]
         except IndexError:
             return None, None
 
