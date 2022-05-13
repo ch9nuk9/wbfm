@@ -890,7 +890,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.trace_line.set_ydata(self.y_trace_mode)
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
 
-        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
+        self.invalidate_y_on_plot()
         self.init_subplot_post_clear()
         self.finish_subplot_update(title)
 
@@ -1030,10 +1030,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_time_line()
         self.static_ax.set_title(title)
         self.static_ax.relim()
-        self.static_ax.autoscale_view()
+        self.static_ax.autoscale()
         # self.static_ax.update_params()
         self.mpl_widget.draw()
-        self.mpl_widget.canvas.draw()
+        # self.mpl_widget.canvas.draw()
 
     def connect_time_line_callback(self):
         viewer = self.viewer
