@@ -818,6 +818,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Only show z coordinate for now
 
         self.changeTraceCalculationDropdown.clear()
+        # Note: Setting the value of changeTraceCalculationDropdown updates the subplot
         if current_mode == 'tracklets':
             self.changeTraceCalculationDropdown.addItems(self.tracklet_mode_calculation_options)
             self.changeTraceCalculationDropdown.setCurrentText('z')
@@ -825,11 +826,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.changeTraceCalculationDropdown.addItems(self.traces_mode_calculation_options)
             self.changeTraceCalculationDropdown.setCurrentText('integration')
 
-        self.initialize_trace_or_tracklet_subplot()
+        # self.initialize_trace_or_tracklet_subplot()
         # Not just updating the data because we fully cleared the axes
-        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
-        self.init_subplot_post_clear()
-        self.finish_subplot_update(current_mode)
+        # del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
+        # self.init_subplot_post_clear()
+        # self.finish_subplot_update(current_mode)
 
     def initialize_trace_or_tracklet_subplot(self):
         if not self.subplot_is_initialized:
@@ -871,6 +872,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         time_options = self.calculate_time_line()
         self.time_line.set_data(time_options[:2])
         self.time_line.set_color(time_options[-1])
+        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
+        self.init_subplot_post_clear()
         self.finish_subplot_update(title)
 
     def update_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
@@ -913,7 +916,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
                     print(f"Added tracklet {tracklet_name} to the subplot")
 
-        self.update_stored_time_series('z')  # Use this for the time line synchronization
+        self.update_stored_time_series(field_to_plot)
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
 
         del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
