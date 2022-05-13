@@ -882,7 +882,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             raise ValueError
 
-    def update_trace_subplot(self, preserve_xlims=True):
+    def update_trace_subplot(self):
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
             print("Currently on tracklet setting, so this option didn't do anything")
             return
@@ -892,7 +892,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.invalidate_y_on_plot()
         self.init_subplot_post_clear()
-        self.finish_subplot_update(title, preserve_xlims)
+        self.finish_subplot_update(title, preserve_xlims=True)
 
     def update_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
         # For now, actually reinitializes the axes
