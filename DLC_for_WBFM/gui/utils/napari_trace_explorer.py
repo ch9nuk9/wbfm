@@ -882,7 +882,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             raise ValueError
 
-    def update_trace_subplot(self):
+    def update_trace_subplot(self, preserve_xlims=True):
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
             print("Currently on tracklet setting, so this option didn't do anything")
             return
@@ -892,7 +892,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.invalidate_y_on_plot()
         self.init_subplot_post_clear()
-        self.finish_subplot_update(title)
+        self.finish_subplot_update(title, preserve_xlims)
 
     def update_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
         # For now, actually reinitializes the axes
@@ -954,7 +954,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_stored_time_series(field_to_plot)
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
 
-        self.finish_subplot_update(title)
+        self.finish_subplot_update(title, preserve_xlims)
         pass
 
     def invalidate_y_on_plot(self):
@@ -1026,7 +1026,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def time_changed_callbacks(self):
         self.set_segmentation_layer_do_not_show_selected_label()
 
-    def finish_subplot_update(self, title, preserve_xlims):
+    def finish_subplot_update(self, title, preserve_xlims=True):
         self.update_time_line()
         self.static_ax.set_title(title)
         self.static_ax.relim()
