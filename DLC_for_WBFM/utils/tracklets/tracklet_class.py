@@ -665,7 +665,7 @@ class TrackedWorm:
         tracklet_names = neuron.get_raw_tracklet_names(minimum_confidence=minimum_confidence)
         num_lines = len(tracklet_names)
 
-        plt.figure(figsize=(25, 5))
+        plt.figure(figsize=(45, 5))
         num_skipped = 0
         all_annotations = []
         for i, (t, name) in enumerate(tqdm(zip(tracklet_list, tracklet_names))):
