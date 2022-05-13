@@ -879,7 +879,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.update_tracklet_subplot(preserve_xlims, which_tracklets_to_update=which_tracklets_to_update)
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
-            self.update_trace_subplot(preserve_xlims)
+            self.update_trace_subplot()
         else:
             raise ValueError
 
