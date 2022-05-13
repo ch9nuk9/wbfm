@@ -922,7 +922,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 if type_of_update == 'plot' or type_of_update == 'replot':
                     if tracklet_name in self.tracklet_lines:
                         y = self.y_tracklets_dict[tracklet_name]
-                        self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
+                        self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax,
+                                                                                   **marker_opt).lines[-1]
                         print(f"Added tracklet {tracklet_name} to the subplot")
 
         self.update_stored_time_series(field_to_plot)
