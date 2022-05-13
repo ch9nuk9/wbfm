@@ -747,16 +747,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 return []
             proper_len = len(y_on_plot[0])  # Have to remove the time line!
             y_on_plot = [y for y in y_on_plot if len(y) == proper_len]
-            y_on_plot = np.nansum(np.vstack(y_on_plot), axis=0)  # nansum because we might have overlap
-            y_on_plot[y_on_plot == 0] = np.nan  # nansum replaces nan with 0, but we want to keep nan
-
-            # y_list = self.y_tracklets
-            # if self.y_tracklet_current is not None:
-            #     y_list.append(self.y_tracklet_current)
-            # tmp_df = y_list[0].copy()
-            # for df in y_list[1:]:
-            #     tmp_df = tmp_df.combine_first(df)
-            # y_on_plot = tmp_df['z']
+            y_on_plot = np.nanmean(np.vstack(y_on_plot), axis=0)  # nanmean because we might have overlap
+            # y_on_plot[y_on_plot == 0] = np.nan  # nansum replaces nan with 0, but we want to keep nan
         else:
             y_on_plot = self.y_trace_mode
         return y_on_plot
@@ -916,8 +908,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # We are displaying z here
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
 
-        self.init_subplot_post_clear()
+        # self.init_subplot_post_clear()
         self.finish_subplot_update(title)
+        pass
 
     def get_marker_opt(self):
         if self.changeSubplotMarkerDropdown.currentText() == 'line':
