@@ -612,7 +612,7 @@ class ProjectData:
 
         if 'Red data' in which_layers:
             # red_dask = da.from_zarr(self.red_data, chunk=dask_chunk)
-            viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red',
+            viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='PiYG',
                              contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
