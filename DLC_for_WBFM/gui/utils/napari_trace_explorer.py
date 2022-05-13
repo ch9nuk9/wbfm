@@ -64,8 +64,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.verticalLayout = inner_layout
         # self.scroll = scroll
 
-
+        # Helper fields for subplots
         self.tracklet_lines = {}
+        self.time_line = None
         self.main_subplot_xlim = []
         self.current_subplot_xlim = None
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
@@ -355,17 +356,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def change_tracklets_using_dropdown(self):
         if not self._disable_callbacks:
-            next_tracklet = self.recentTrackletSelector.currentText()
-            which_tracklets_to_update = self.get_dict_for_tracklet_change(next_tracklet)
+            which_tracklets_to_update = self.get_dict_for_tracklet_change()
 
             self.dat.tracklet_annotator.set_current_tracklet(self.recentTrackletSelector.currentText())
             self.dat.tracklet_annotator.add_current_tracklet_to_viewer(self.viewer)
             # self.tracklet_updated_psuedo_event()
             self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
 
-    def get_dict_for_tracklet_change(self, next_tracklet):
-        last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
-        which_tracklets_to_update = {last_tracklet: 'remove', next_tracklet: 'plot'}
+    def get_dict_for_tracklet_change(self):
+        current_tracklet = self.y_tracklet_current_name
+        next_tracklet = self.recentTrackletSelector.currentText()
+        # last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
+        which_tracklets_to_update = {f"{current_tracklet}_current": 'remove',
+                                     f"{next_tracklet}_current": 'plot'}
         return which_tracklets_to_update
 
     def get_dict_for_tracklet_split(self):
