@@ -836,18 +836,20 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.changeTraceCalculationDropdown.clear()
         # Note: Setting the value of changeTraceCalculationDropdown updates the subplot
+        self._disable_callbacks = True
         if current_mode == 'tracklets':
             self.changeTraceCalculationDropdown.addItems(self.tracklet_mode_calculation_options)
             self.changeTraceCalculationDropdown.setCurrentText('z')
         elif current_mode == 'traces':
             self.changeTraceCalculationDropdown.addItems(self.traces_mode_calculation_options)
             self.changeTraceCalculationDropdown.setCurrentText('integration')
+        self._disable_callbacks = False
 
-        # self.initialize_trace_or_tracklet_subplot()
+        self.initialize_trace_or_tracklet_subplot()
         # Not just updating the data because we fully cleared the axes
-        # del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
-        # self.init_subplot_post_clear()
-        # self.finish_subplot_update(current_mode)
+        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
+        self.init_subplot_post_clear()
+        self.finish_subplot_update(current_mode)
 
     def initialize_trace_or_tracklet_subplot(self):
         if not self.subplot_is_initialized:
@@ -867,6 +869,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
 
     def update_trace_or_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
+        if self._disable_callbacks:
+            return
         if self.changeTraceCalculationDropdown.currentText() == "":
             # Assume it has just been cleared, and wait
             return
