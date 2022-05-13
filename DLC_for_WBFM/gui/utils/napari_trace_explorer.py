@@ -789,6 +789,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.static_ax.set_xlim(self.main_subplot_xlim)
             # print("Resetting xlimits")
         self.subplot_is_initialized = True
+        self.color_using_behavior()
 
     def initialize_trace_subplot(self):
         self.update_stored_time_series()
@@ -992,7 +993,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def finish_subplot_update(self, title):
         self.static_ax.set_title(title)
-        self.color_using_behavior()
         self.static_ax.relim()
         self.static_ax.autoscale_view()
         self.mpl_widget.draw()
