@@ -868,7 +868,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Finally, add the traces to napari
             self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
 
-    def update_trace_or_tracklet_subplot(self, dropdown_ind, preserve_xlims=True, which_tracklets_to_update=None):
+    def update_trace_or_tracklet_subplot(self, dropdown_ind=None,
+                                         preserve_xlims=True, which_tracklets_to_update=None):
         if self._disable_callbacks:
             return
         if self.changeTraceCalculationDropdown.currentText() == "":
