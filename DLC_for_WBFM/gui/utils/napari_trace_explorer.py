@@ -496,7 +496,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         viewer = self.viewer
 
         @viewer.bind_key('r', overwrite=True)
-        def refresh_subplot(viewer):
+        def clear_segmentation(viewer):
             # self.update_trace_or_tracklet_subplot()
             self.clear_current_segmentations()
 
@@ -554,7 +554,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.toggle_raw_segmentation_layer()
 
         @viewer.bind_key('c', overwrite=True)
-        def refresh_subplot(viewer):
+        def save_tracklet(viewer):
             self.save_current_tracklet_to_neuron()
 
         @viewer.bind_key('v', overwrite=True)
@@ -888,7 +888,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         marker_opt = self.get_marker_opt()
 
         field_to_plot = self.changeTraceCalculationDropdown.currentText()
-        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
+        if 'y_on_plot' in self.__dict__:
+            del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
         if which_tracklets_to_update is None:
             # Replot ALL tracklets
             self.static_ax.clear()
