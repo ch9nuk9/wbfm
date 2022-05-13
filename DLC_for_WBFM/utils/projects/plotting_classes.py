@@ -123,6 +123,7 @@ class TrackletAndSegmentationAnnotator:
     manual_global2tracklet_removals: Dict[str, List[str]] = None
     current_neuron: str = None
     current_tracklet_name: Union[str, None] = None
+    previous_tracklet_name: Union[str, None] = None
 
     tracklet_split_names: Dict[str, List[str]] = None
     tracklet_split_times: Dict[str, List[Tuple[int, int]]] = None
@@ -228,12 +229,13 @@ class TrackletAndSegmentationAnnotator:
         return df_single_track
 
     def set_current_tracklet(self, tracklet_name):
+        self.previous_tracklet_name = self.current_tracklet_name
         self.current_tracklet_name = tracklet_name
 
     def clear_current_tracklet(self):
         if self.current_tracklet_name is not None:
             print(f"Cleared tracklet {self.current_tracklet_name}")
-            self.current_tracklet_name = None
+            self.set_current_tracklet(None)
         else:
             print("No current tracklet; this button did nothing")
 
@@ -455,7 +457,7 @@ class TrackletAndSegmentationAnnotator:
             with self.saving_lock:
                 self.add_tracklet_to_neuron(self.current_tracklet_name, self.current_neuron)
                 tracklet_name = self.current_tracklet_name
-                self.current_tracklet_name = None
+                self.set_current_tracklet(None)
             return tracklet_name
         else:
             print("Current tracklet has conflicts, please resolve before saving as a match")
@@ -534,9 +536,9 @@ class TrackletAndSegmentationAnnotator:
 
             self.df_tracklet_obj.df_tracklets_zxy = all_tracklets
             if set_new_half_to_current:
-                self.current_tracklet_name = right_name
+                self.set_current_tracklet(right_name)
             else:
-                self.current_tracklet_name = left_name
+                self.set_current_tracklet(left_name)
 
             # Save a record of the split
             self.tracklet_split_names[left_name].append(right_name)
