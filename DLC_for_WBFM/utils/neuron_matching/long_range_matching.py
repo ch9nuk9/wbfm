@@ -69,9 +69,9 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
     """Replaces: final_tracks_from_tracklet_matches_from_config"""
     # Initialize project data and unpack
     project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True)
-    df_global_tracks, min_confidence, min_overlap, num_neurons, only_use_previous_matches, outlier_threshold, previous_matches, t_template, track_config, tracklets_and_neurons_class, use_multiple_templates, use_previous_matches = _unpack_for_track_tracklet_matching(
-        project_data)
-    tracklet_splitting_iterations = 5
+    df_global_tracks, min_confidence, min_overlap, num_neurons, only_use_previous_matches, outlier_threshold, \
+    previous_matches, t_template, track_config, tracklets_and_neurons_class, use_multiple_templates, \
+    use_previous_matches, tracklet_splitting_iterations = _unpack_for_track_tracklet_matching(project_data)
 
     # Add initial tracklets to neurons, then add matches (if any found before)
     logging.info(f"Initializing worm class with settings: \n"
@@ -186,7 +186,10 @@ def _unpack_for_track_tracklet_matching(project_data):
     use_previous_matches = track_config.config['final_3d_postprocessing'].get('use_previous_matches', True)
     outlier_threshold = track_config.config['final_3d_postprocessing'].get('outlier_threshold', 1.0)
     min_confidence = track_config.config['final_3d_postprocessing'].get('min_confidence', 0.0)
-    return df_global_tracks, min_confidence, min_overlap, num_neurons, only_use_previous_matches, outlier_threshold, previous_matches, t_template, track_config, tracklets_and_neurons_class, use_multiple_templates, use_previous_matches
+    tracklet_splitting_iterations = track_config.config['final_3d_postprocessing'].get('tracklet_splitting_iterations', 5)
+    return df_global_tracks, min_confidence, min_overlap, num_neurons, only_use_previous_matches, outlier_threshold, \
+           previous_matches, t_template, track_config, tracklets_and_neurons_class, use_multiple_templates, \
+           use_previous_matches, tracklet_splitting_iterations
 
 
 def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_matching_with_conflict,

@@ -38,6 +38,7 @@ final_3d_postprocessing:
   min_overlap_dlc_and_tracklet: 5
   outlier_threshold: 1.0
   min_confidence: 0.1
+  tracklet_splitting_iterations: 5
   keep_only_tracklets_in_final_tracks: true
   allowed_tracklet_endpoint_wiggle: 3
   only_use_previous_matches: false
