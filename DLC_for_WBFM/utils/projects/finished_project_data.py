@@ -157,7 +157,7 @@ class ProjectData:
         return frames
 
     @cached_property
-    def raw_matches(self) -> Dict[FramePair]:
+    def raw_matches(self) -> Dict[tuple, FramePair]:
         self.logger.info("First time loading the raw matches, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'match_dat.pickle')
