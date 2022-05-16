@@ -298,7 +298,7 @@ def track_neurons_full_video(video_data, video_fname: str, start_volume: int = 0
                              preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
                              pairwise_matches_params: FramePairOptions = None,
                              external_detections: str = None,
-                             logger: logging.Logger,
+                             logger: logging.Logger = None,
                              verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
     """
     Detects and tracks neurons using opencv-based feature matching
