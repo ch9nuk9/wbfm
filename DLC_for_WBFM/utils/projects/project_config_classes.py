@@ -4,7 +4,7 @@ import os
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Dict
 import pandas as pd
 import pprint
 
@@ -153,15 +153,15 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_segmentation_config(self):
         fname = Path(self.config['subfolder_configs']['segmentation'])
-        return SubfolderConfigFile(*self._check_path_and_load_config(fname))
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def get_training_config(self):
         fname = Path(self.config['subfolder_configs']['training_data'])
-        return SubfolderConfigFile(*self._check_path_and_load_config(fname))
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def get_tracking_config(self):
         fname = Path(self.config['subfolder_configs']['tracking'])
-        return SubfolderConfigFile(*self._check_path_and_load_config(fname))
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def get_preprocessing_config(self):
         """
@@ -174,7 +174,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_traces_config(self):
         fname = Path(self.config['subfolder_configs']['traces'])
-        return SubfolderConfigFile(*self._check_path_and_load_config(fname))
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def get_physical_unit_conversion_class(self) -> PhysicalUnitConversion:
         if 'physical_units' in self.config:
@@ -183,7 +183,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             self.logger.warning("Using default physical unit conversions")
             return PhysicalUnitConversion()
 
-    def _check_path_and_load_config(self, subconfig_path: Path) -> Tuple[str, dict, str, str]:
+    def _check_path_and_load_config(self, subconfig_path: Path) -> Dict:
         if subconfig_path.is_absolute():
             project_dir = subconfig_path.parent.parent
         else:
@@ -191,7 +191,13 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         with safe_cd(project_dir):
             cfg = load_config(subconfig_path)
         subfolder = subconfig_path.parent
-        return str(subconfig_path), cfg, str(project_dir), str(subfolder)
+
+        args = dict(self_path=str(subconfig_path),
+                    config=cfg,
+                    project_dir=str(project_dir),
+                    logger=self.logger,
+                    subfolder=str(subfolder))
+        return args
 
     def get_log_dir(self):
         return str(Path(self.project_dir).joinpath('log'))
