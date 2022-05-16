@@ -148,7 +148,7 @@ class ProjectData:
 
     @cached_property
     def raw_frames(self):
-        self.project_config.logger.info("First time loading the raw frames, may take a while...")
+        self.logger.info("First time loading the raw frames, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'frame_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -158,7 +158,7 @@ class ProjectData:
 
     @cached_property
     def raw_matches(self) -> Dict[FramePair]:
-        self.project_config.logger.info("First time loading the raw matches, may take a while...")
+        self.logger.info("First time loading the raw matches, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'match_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -168,7 +168,7 @@ class ProjectData:
 
     @cached_property
     def raw_clust(self):
-        self.project_config.logger.info("First time loading the raw cluster dataframe, may take a while...")
+        self.logger.info("First time loading the raw cluster dataframe, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'clust_df_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -178,7 +178,7 @@ class ProjectData:
 
     @cached_property
     def df_all_tracklets(self):
-        self.project_config.logger.info("First time loading all the tracklets, may take a while...")
+        self.logger.info("First time loading all the tracklets, may take a while...")
         train_cfg = self.project_config.get_training_config()
         track_cfg = self.project_config.get_tracking_config()
 
@@ -196,12 +196,12 @@ class ProjectData:
         if self.force_tracklets_to_be_sparse:
             # if not check_if_fully_sparse(df_all_tracklets):
             if True:
-                self.project_config.logger.warning("Casting tracklets as sparse, may take a minute")
+                self.logger.warning("Casting tracklets as sparse, may take a minute")
                 # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
                 df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
             else:
-                self.project_config.logger.info("Found sparse matrix")
-        self.project_config.logger.info("Finished loading tracklets")
+                self.logger.info("Found sparse matrix")
+        self.logger.info("Finished loading tracklets")
 
         return df_all_tracklets
 
@@ -237,6 +237,10 @@ class ProjectData:
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         df_fdnc_tracks = read_if_exists(fname)
         return df_fdnc_tracks
+
+    @property
+    def logger(self):
+        return self.project_config.logger
 
     def load_tracklet_related_properties(self):
         _ = self.df_all_tracklets
@@ -278,7 +282,7 @@ class ProjectData:
         return len(self.which_training_frames)
 
     def check_data_desyncing(self, raise_error=True):
-        self.project_config.logger.info("Checking for database desynchronization")
+        self.logger.info("Checking for database desynchronization")
         unmatched_tracklets = check_for_unmatched_tracklets(self.df_all_tracklets, self.global2tracklet,
                                                             raise_error=raise_error)
 
@@ -462,8 +466,8 @@ class ProjectData:
             new_mask = self.tracklet_annotator.candidate_mask
             t = self.tracklet_annotator.time_of_candidate
         if new_mask is None:
-            self.project_config.logger.warning("Modification attempted, but no valid candidate mask exists; aborting")
-            self.project_config.logger.warning("HINT: if you produce a mask but then click different neurons, it invalidates the mask!")
+            self.logger.warning("Modification attempted, but no valid candidate mask exists; aborting")
+            self.logger.warning("HINT: if you produce a mask but then click different neurons, it invalidates the mask!")
             return
         affected_masks = self.tracklet_annotator.indices_of_original_neurons
         # this_seg = self.raw_segmentation[t, ...]
@@ -489,7 +493,7 @@ class ProjectData:
                 print(f"Updating {tracklet_name} corresponding to segmentation {m}")
             else:
                 print(f"No tracklet corresponding to segmentation {m}; not updated")
-        self.project_config.logger.debug("Segmentation and tracklet metadata modified successfully")
+        self.logger.debug("Segmentation and tracklet metadata modified successfully")
 
     def modify_segmentation_on_disk_using_buffer(self):
         for t in self.tracklet_annotator.t_buffer_masks:
@@ -587,7 +591,7 @@ class ProjectData:
             new_layers = set(which_layers) - set([layer.name for layer in viewer.layers])
             which_layers = list(new_layers)
 
-        self.project_config.logger.info(f"Finished loading data, adding following layers: {which_layers}")
+        self.logger.info(f"Finished loading data, adding following layers: {which_layers}")
         z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
         if to_remove_flyback:
             clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
@@ -663,7 +667,7 @@ class ProjectData:
             options = dict(data=pts_data, name="Point Cloud", size=1, blending='opaque')
             viewer.add_points(**options)
 
-        self.project_config.logger.info(f"Finished adding layers {which_layers}")
+        self.logger.info(f"Finished adding layers {which_layers}")
 
         return viewer
 
