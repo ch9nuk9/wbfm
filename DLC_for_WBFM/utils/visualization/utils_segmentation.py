@@ -84,9 +84,8 @@ def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
     if str(out_fname).endswith('.zip'):
         # Then it was already zipped, and should be written normally for this first step
         out_fname = str(Path(out_fname).with_suffix(''))
-    print(f"Saving masks at {out_fname}")
+    project_cfg.logger.info(f"Saving masks at {out_fname}")
     new_masks = zarr.open_like(raw_seg_masks, path=str(out_fname))
-    # new_masks = zarr.open_like(raw_seg_masks, path=out_fname, synchronizer=zarr.ThreadSynchronizer())
 
     # Get tracking (dataframe) with neuron names
     matches_fname = traces_cfg.resolve_relative_path_from_config('all_matches')

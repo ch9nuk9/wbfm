@@ -52,7 +52,7 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
     # TODO: Why is this one frame too short?
     frame_list = list(range(params_start_volume, num_frames + params_start_volume - 1))
     all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
-    logging.info("Matching segmentation and tracked positions...")
+    project_cfg.logger.info("Matching segmentation and tracked positions...")
     if DEBUG:
         frame_list = frame_list[:2]  # Shorten (to avoid break)
     match_segmentation_and_tracks(_get_zxy_from_pandas, all_matches, frame_list, max_dist,

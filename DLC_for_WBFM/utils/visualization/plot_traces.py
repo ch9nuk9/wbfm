@@ -46,8 +46,9 @@ def make_grid_plot_from_project(project_data: ProjectData,
     options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode}
     get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
+    logger = project_data.logger
 
-    make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func)
+    make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func, logger)
 
     # Save final figure
     if to_save:
@@ -86,8 +87,9 @@ def make_grid_plot_from_leifer_file(fname: str,
     # Build functions to make a single subplot
     get_data_func = lambda neuron_name: (np.arange(t), data[channel_mode][name2int_neuron_and_tracklet(neuron_name) - 1])
     shade_plot_func = lambda axis: shade_using_behavior(ethogram, axis, cmap=ethogram_cmap)
+    logger = logging.getLogger()
 
-    make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func)
+    make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func, logger)
 
     # Save final figure
     out_fname = f"leifer_{channel_mode}_grid_plot.png"
@@ -107,16 +109,15 @@ def save_grid_plot(out_fname):
     plt.savefig(out_fname, bbox_inches='tight', pad_inches=0)
 
 
-def make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func):
+def make_grid_plot_from_callables(color_using_behavior, get_data_func, neuron_names, shade_plot_func, logger):
     # Loop through neurons and plot
     num_neurons = len(neuron_names)
     num_columns = 5
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
-    print(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
+    logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
     fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 15), sharex=True, sharey=False)
     for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
-        # options['neuron_name'] = neuron_name
-        # t, y = project_data.calculate_traces(**options)
+
         t, y = get_data_func(neuron_name)
         ax.plot(t, y, label=neuron_name)
         # For removing the lines from the legends:
