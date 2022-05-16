@@ -21,7 +21,7 @@ cgitb.enable(format='text')
 # Initialize sacred experiment
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None, DEBUG=False)
+ex.add_config(project_path=None, use_superglue=True, DEBUG=False)
 
 
 @ex.config
@@ -47,6 +47,7 @@ def produce_training_data(_config, _run, _log):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
+    use_superglue = _config['use_superglue']
     project_config = _config['cfg']
     project_config.logger = _log
 
@@ -56,5 +57,6 @@ def produce_training_data(_config, _run, _log):
     partial_track_video_using_config(
         project_config,
         train_cfg,
+        use_superglue=use_superglue,
         DEBUG=DEBUG
     )

@@ -19,6 +19,9 @@ from DLC_for_WBFM.utils.neuron_matching.utils_features import build_features_and
 from DLC_for_WBFM.utils.external.utils_networkx import build_digraph_from_matches, unpack_node_name
 from DLC_for_WBFM.utils.neuron_matching.utils_reference_frames import add_all_good_components, \
     is_ordered_subset
+from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import build_frame_pairs_using_superglue
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import consolidate_tracklets
 from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 
@@ -296,9 +299,10 @@ def create_dict_from_matches(self):
 def track_neurons_full_video(video_data, video_fname: str, start_volume: int = 0, num_frames: int = 10,
                              z_depth_neuron_encoding: float = 5.0,
                              preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
-                             pairwise_matches_params: FramePairOptions = None,
+                             frame_pair_options: FramePairOptions = None,
                              external_detections: str = None,
-                             logger: logging.Logger = None,
+                             project_config: ModularProjectConfig = None,
+                             use_superglue: bool = True,
                              verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
     """
     Detects and tracks neurons using opencv-based feature matching
@@ -321,10 +325,14 @@ def track_neurons_full_video(video_data, video_fname: str, start_volume: int = 0
                                                         video_fname, z_depth_neuron_encoding)
 
     try:
-        all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
+        if use_superglue:
+            project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_frames=True)
+            all_frame_pairs = build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data)
+        else:
+            all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, frame_pair_options, start_volume)
         return all_frame_pairs, all_frame_dict
     except (ValueError, NoNeuronsError, NoMatchesError) as e:
-        logger.warning("Error in frame pair matching; quitting gracefully and saving the frame pairs:")
+        project_config.logger.warning("Error in frame pair matching; quitting gracefully and saving the frame pairs:")
         print(e)
         return None, all_frame_dict
 

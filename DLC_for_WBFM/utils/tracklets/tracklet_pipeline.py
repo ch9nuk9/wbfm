@@ -66,6 +66,7 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
 
 def partial_track_video_using_config(project_config: ModularProjectConfig,
                                      training_config: SubfolderConfigFile,
+                                     use_superglue: bool,
                                      DEBUG: bool = False) -> None:
     """
     Produce training data via partial tracking using 3d feature-based method
@@ -86,10 +87,11 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
         raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
     # Intermediate products: pairwise matches between frames
-    video_fname, tracker_params, pairwise_matches_params = _unpack_config_frame2frame_matches(
+    video_fname, tracker_params, frame_pair_options = _unpack_config_frame2frame_matches(
         DEBUG, project_config, training_config)
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_data, video_fname, **tracker_params,
-                                                               pairwise_matches_params=pairwise_matches_params)
+                                                               use_superglue=use_superglue,
+                                                               frame_pair_options=frame_pair_options)
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs, training_config)
 
@@ -105,30 +107,6 @@ def build_frame_pairs_using_superglue_from_config(project_cfg: ModularProjectCon
 
     with safe_cd(project_cfg.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs, project_cfg.get_training_config())
-
-    # # Use FramePair class to filter the matches, to make use of previous postprocessing functions
-    # all_matches_dict = {}
-    # for t, these_matches in tqdm(enumerate(all_matches)):
-    #     filtered_matches = [(m[0], m[1], m[2]) for m in these_matches if m[2] > min_confidence]
-    #
-    #     all_matches_dict[(t, t + 1)] = filtered_matches
-    #
-    # all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
-    #
-    # df_custom_format = build_tracklets_dfs(all_matches_dict, all_zxy, verbose=1)
-    #
-    # df_multi_index_format = convert_training_dataframe_to_scalar_format(df_custom_format,
-    #                                                                     min_length=min_length_to_save,
-    #                                                                     scorer=None,
-    #                                                                     segmentation_metadata=project_data.segmentation_metadata)
-    #
-    # # Save
-    # out_path = training_cfg.pickle_data_in_local_project(df_multi_index_format,
-    #                                                      '2-training_data/df_tracklets_superglue.pickle',
-    #                                                      custom_writer=pd.to_pickle)
-    #
-    # training_cfg.config['df_3d_tracklets'] = training_cfg.unresolve_absolute_path(out_path)
-    # training_cfg.update_self_on_disk()
 
 
 def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data):
@@ -301,6 +279,7 @@ def _unpack_config_for_tracklets(training_config, segmentation_config):
 def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     # Get options
     tracker_params = training_config.config['tracker_params'].copy()
+    tracker_params['project_config'] = project_config
     if 'num_frames' in training_config.config['tracker_params']:
         tracker_params['num_frames'] = training_config.config['tracker_params']['num_frames']
     else:
@@ -312,9 +291,8 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     else:
         tracker_params['start_volume'] = project_config.config['dataset_params']['start_volume']
 
-    tracker_params['logger'] = project_config.logger
 
-    pairwise_matches_params = FramePairOptions.load_from_config_file(project_config, training_config)
+    frame_pair_options = FramePairOptions.load_from_config_file(project_config, training_config)
     # pairwise_matches_params = project_config.get_frame_pair_options(training_config)
     tracker_params['preprocessing_settings'] = None
 
@@ -323,7 +301,7 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     metadata_fname = tracker_params['external_detections']
     tracker_params['external_detections'] = training_config.resolve_relative_path(metadata_fname)
 
-    return video_fname, tracker_params, pairwise_matches_params
+    return video_fname, tracker_params, frame_pair_options
 
 
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: Union[dict, None],
