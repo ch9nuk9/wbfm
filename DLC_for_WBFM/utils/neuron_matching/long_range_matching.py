@@ -71,6 +71,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
     project_data = ProjectData.load_final_project_data_from_config(project_path, to_load_tracklets=True)
     df_global_tracks, min_confidence, min_overlap, num_neurons, only_use_previous_matches, outlier_threshold, previous_matches, t_template, track_config, tracklets_and_neurons_class, use_multiple_templates, use_previous_matches = _unpack_for_track_tracklet_matching(
         project_data)
+    tracklet_splitting_iterations = 5
 
     # Add initial tracklets to neurons, then add matches (if any found before)
     logging.info(f"Initializing worm class with settings: \n"
@@ -121,7 +122,7 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
                                                                             node_class_to_match=1)
 
             logging.info("Iteratively splitting tracklets using track matching conflicts")
-            for i_split in tqdm(range(4)):
+            for i_split in tqdm(range(tracklet_splitting_iterations)):
                 # TODO: somehow there are sometimes multiple tracklets matched to the same segmentation
                 split_list_dict = worm_obj.get_conflict_time_dictionary_for_all_neurons(
                     minimum_confidence=min_confidence)
@@ -135,6 +136,9 @@ def global_track_matches_from_config(project_path, to_save=True, verbose=0, auto
                                                                            project_data.segmentation_metadata,
                                                                            dataframe_output_filename=project_data.df_all_tracklets_fname)
                 worm_obj2 = _initialize_worm(tracklets_and_neurons_class2, verbose=0)
+                if i_split == tracklet_splitting_iterations:
+                    # On the last iteration, allow short tracklets to be matched
+                    extend_tracks_opt['min_overlap'] = 1
                 conf2 = extend_tracks_using_global_tracking(df_global_tracks, df_tracklets_split, worm_obj2,
                                                             **extend_tracks_opt)
                 # Overwrite original object, and continue
