@@ -38,7 +38,6 @@ class TestTrackletSplitting(unittest.TestCase):
         df_split_sparse = to_sparse_multiindex(df_split)
         self.assertTrue(check_if_fully_sparse(df_split_sparse))
 
-
     def test_split_out_of_order(self):
         split_list_dict = {self.neuron_name: [15, 10]}
         df_split, all_new_tracklets, name_mapping = split_all_tracklets_at_once(self.df, split_list_dict, name_mode='neuron')

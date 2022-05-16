@@ -1,31 +1,30 @@
+import concurrent.futures
 import logging
 from collections import defaultdict
 from typing import Tuple, Dict
-import concurrent.futures
+
 import numpy as np
-import zarr as zarr
+from segmentation.util.utils_metadata import DetectedNeurons
 from tqdm import tqdm
 
+from DLC_for_WBFM.utils.external.utils_networkx import build_digraph_from_matches, unpack_node_name
+from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, NoNeuronsError
+from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair, calc_FramePair_from_Frames, \
     FramePairOptions
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame, \
     build_reference_frame_encoding
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, NoNeuronsError
 from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import calc_neurons_using_k_cliques, \
     calc_all_bipartite_matches, calc_neuron_using_voronoi
 from DLC_for_WBFM.utils.neuron_matching.utils_detection import detect_neurons_using_ICP
 from DLC_for_WBFM.utils.neuron_matching.utils_features import build_features_and_match_2volumes, \
     match_centroids_using_tree
-from DLC_for_WBFM.utils.external.utils_networkx import build_digraph_from_matches, unpack_node_name
 from DLC_for_WBFM.utils.neuron_matching.utils_reference_frames import add_all_good_components, \
     is_ordered_subset
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import build_frame_pairs_using_superglue
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import consolidate_tracklets
-from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 
-from segmentation.util.utils_metadata import DetectedNeurons
 
 ##
 ## Full traces
@@ -326,6 +325,7 @@ def build_tracklets_full_video(video_data, video_fname: str, start_volume: int =
 
     try:
         if use_superglue:
+            from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import build_frame_pairs_using_superglue
             project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_frames=True)
             all_frame_pairs = build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data)
         else:

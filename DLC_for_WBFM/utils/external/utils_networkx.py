@@ -5,15 +5,16 @@ import networkx as nx
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
-
-##
-## Use networkx to do bipartite matching
-##
 from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.general.distance_functions import dist2conf, calc_confidence_from_distance_array_and_matches
 
+
+
+##
+## Use networkx to do bipartite matching
+##
 
 def calc_bipartite_matches(all_candidate_matches, verbose=0):
     """
