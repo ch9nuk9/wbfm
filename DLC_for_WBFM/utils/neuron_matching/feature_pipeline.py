@@ -297,7 +297,9 @@ def track_neurons_full_video(video_data, video_fname: str, start_volume: int = 0
                              z_depth_neuron_encoding: float = 5.0,
                              preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
                              pairwise_matches_params: FramePairOptions = None,
-                             external_detections: str = None, verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
+                             external_detections: str = None,
+                             logger: logging.Logger,
+                             verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
     """
     Detects and tracks neurons using opencv-based feature matching
     Note: only compares adjacent frames
@@ -322,7 +324,7 @@ def track_neurons_full_video(video_data, video_fname: str, start_volume: int = 0
         all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
         return all_frame_pairs, all_frame_dict
     except (ValueError, NoNeuronsError, NoMatchesError) as e:
-        logging.warning("Error in frame pair matching; quitting gracefully and saving the frame pairs:")
+        logger.warning("Error in frame pair matching; quitting gracefully and saving the frame pairs:")
         print(e)
         return None, all_frame_dict
 
@@ -341,7 +343,8 @@ def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_param
 
 
 def calculate_frame_objects_full_video(video_data, external_detections, frame_range, video_fname,
-                                       z_depth_neuron_encoding, encoder_opt=None, max_workers=8, **kwargs):
+                                       z_depth_neuron_encoding, encoder_opt=None, max_workers=8,
+                                       logger=None, **kwargs):
     # Get initial volume; settings are same for all
     vol_shape = video_data[0, ...].shape
     all_detected_neurons = DetectedNeurons(external_detections)
@@ -358,7 +361,7 @@ def calculate_frame_objects_full_video(video_data, external_detections, frame_ra
 
     # Build all frames initially, then match
     all_frame_dict = dict()
-    logging.info(f"Calculating Frame objects for frames: {frame_range[0]} to {frame_range[-1]}")
+    logger.info(f"Calculating Frame objects for frames: {frame_range[0]} to {frame_range[-1]}")
     with tqdm(total=len(frame_range)) as pbar:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(_build_frame, i): i for i in frame_range}

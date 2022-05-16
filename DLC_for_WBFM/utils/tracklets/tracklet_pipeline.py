@@ -4,6 +4,7 @@ import os.path as osp
 import pickle
 from collections import defaultdict
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -60,7 +61,7 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
     all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
 
     with safe_cd(project_config.project_dir):
-        _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+        _save_matches_and_frames(all_frame_dict, all_frame_pairs, training_config)
 
 
 def partial_track_video_using_config(project_config: ModularProjectConfig,
@@ -90,7 +91,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     all_frame_pairs, all_frame_dict = track_neurons_full_video(video_data, video_fname, **tracker_params,
                                                                pairwise_matches_params=pairwise_matches_params)
     with safe_cd(project_config.project_dir):
-        _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+        _save_matches_and_frames(all_frame_dict, all_frame_pairs, training_config)
 
 
 def build_frame_pairs_using_superglue_from_config(project_cfg: ModularProjectConfig, DEBUG=False):
@@ -103,7 +104,7 @@ def build_frame_pairs_using_superglue_from_config(project_cfg: ModularProjectCon
     all_frame_pairs = build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data)
 
     with safe_cd(project_cfg.project_dir):
-        _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+        _save_matches_and_frames(all_frame_dict, all_frame_pairs, project_cfg.get_training_config())
 
     # # Use FramePair class to filter the matches, to make use of previous postprocessing functions
     # all_matches_dict = {}
@@ -188,7 +189,7 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
         all_frame_dict.update(all_new_frames)
 
     with safe_cd(project_config.project_dir):
-        _save_matches_and_frames(all_frame_dict, None)
+        _save_matches_and_frames(all_frame_dict, None, training_config)
 
 
 def postprocess_and_build_matches_from_config(project_config: ModularProjectConfig,
@@ -224,7 +225,7 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
                                                                     z_threshold, min_confidence)
     # Overwrite intermediate products, because the pair objects save the postprocessing options
     with safe_cd(training_config.project_dir):
-        _save_matches_and_frames(all_frame_dict, all_frame_pairs)
+        _save_matches_and_frames(all_frame_dict, all_frame_pairs, training_config)
 
     # Convert to easier format and save
     min_length = postprocessing_params['min_length_to_save']
@@ -311,6 +312,8 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     else:
         tracker_params['start_volume'] = project_config.config['dataset_params']['start_volume']
 
+    tracker_params['logger'] = project_config.logger
+
     pairwise_matches_params = FramePairOptions.load_from_config_file(project_config, training_config)
     # pairwise_matches_params = project_config.get_frame_pair_options(training_config)
     tracker_params['preprocessing_settings'] = None
@@ -323,23 +326,22 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     return video_fname, tracker_params, pairwise_matches_params
 
 
-def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: dict) -> None:
+def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: Union[dict, None],
+                             training_config: SubfolderConfigFile) -> None:
     subfolder = osp.join('2-training_data', 'raw')
     Path(subfolder).mkdir(exist_ok=True)
 
-    fname = osp.join(subfolder, 'frame_dat.pickle')
     if all_frame_dict is not None:
+        fname = osp.join(subfolder, 'frame_dat.pickle')
         [frame.prep_for_pickle() for frame in all_frame_dict.values()]
-        with open(fname, 'wb') as f:
-            pickle.dump(all_frame_dict, f)
+        training_config.pickle_data_in_local_project(all_frame_dict, fname)
 
     if all_frame_pairs is not None:
         fname = osp.join(subfolder, 'match_dat.pickle')
         [p.prep_for_pickle() for p in all_frame_pairs.values()]
-        with open(fname, 'wb') as f:
-            pickle.dump(all_frame_pairs, f)
+        training_config.pickle_data_in_local_project(all_frame_pairs, fname)
     else:
-        logging.warning(f"all_frame_pairs is None; this step will need to be rerun")
+        training_config.logger.warning(f"all_frame_pairs is None; this step will need to be rerun")
 
 
 def filter_tracklets_using_volume(df_all_tracklets, volume_percent_threshold, min_length_to_save, verbose=0,
