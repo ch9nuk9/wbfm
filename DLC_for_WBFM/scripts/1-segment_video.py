@@ -43,7 +43,7 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def segment_video(_config, _run):
+def segment_video(_config, _run, _log):
     sacred.commands.print_config(_run)
 
     # For windows workstation
@@ -56,6 +56,8 @@ def segment_video(_config, _run):
 
     segment_cfg = _config['segment_cfg']
     project_cfg = _config['cfg']
+    project_cfg.logger = _log
+    segment_cfg.logger = _log
 
     if _config['DEBUG']:
         project_cfg.config['dataset_params']['num_frames'] = 3
