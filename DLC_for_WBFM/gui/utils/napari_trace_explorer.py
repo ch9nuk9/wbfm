@@ -523,6 +523,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # self.update_trace_or_tracklet_subplot()
             self.clear_current_segmentations()
 
+        @viewer.bind_key('Shift-r', overwrite=True)
+        def refresh_subplot(viewer):
+            self.update_trace_or_tracklet_subplot()
+
         @viewer.bind_key('Shift-t', overwrite=True)
         def remove_tracklets(viewer):
             self.remove_all_tracklet_layers()
@@ -726,9 +730,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def save_segmentation_to_tracklet(self):
         flag = self.dat.tracklet_annotator.attach_current_segmentation_to_current_tracklet()
+        which_tracklets_to_update = {self.y_tracklet_current_name: 'replot'}
+        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
 
     def delete_segmentation_from_tracklet(self):
         flag = self.dat.tracklet_annotator.delete_current_segmentation_from_tracklet()
+        which_tracklets_to_update = {self.y_tracklet_current_name: 'replot'}
+        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
 
     def remove_layer_of_current_tracklet(self, layer_name=None):
         if layer_name is None:
