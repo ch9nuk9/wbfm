@@ -64,10 +64,10 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
         _save_matches_and_frames(all_frame_dict, all_frame_pairs, training_config)
 
 
-def build_tracklets_using_config(project_config: ModularProjectConfig,
-                                 training_config: SubfolderConfigFile,
-                                 use_superglue: bool,
-                                 DEBUG: bool = False) -> None:
+def build_frames_and_adjacent_matches_using_config(project_config: ModularProjectConfig,
+                                                   training_config: SubfolderConfigFile,
+                                                   use_superglue: bool,
+                                                   DEBUG: bool = False) -> None:
     """
     Produce training data via partial tracking using 3d feature-based method
 
@@ -170,9 +170,9 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
         _save_matches_and_frames(all_frame_dict, None, training_config)
 
 
-def postprocess_and_build_matches_from_config(project_config: ModularProjectConfig,
-                                              segmentation_config: SubfolderConfigFile,
-                                              training_config: SubfolderConfigFile, DEBUG):
+def postprocess_matches_to_tracklets_using_config(project_config: ModularProjectConfig,
+                                                  segmentation_config: SubfolderConfigFile,
+                                                  training_config: SubfolderConfigFile, DEBUG):
     """
     Starting with pairwise matches of neurons between sequential Frame objects, postprocess the matches and generate
     longer tracklets
@@ -199,8 +199,9 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
     assert val == expected, msg
 
     # Calculate and save in both raw and dataframe format
-    df_custom_format = postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs,
-                                                                    z_threshold, min_confidence)
+    df_custom_format = postprocess_matches_to_tracklets(all_frame_dict, all_frame_pairs,
+                                                        z_threshold, min_confidence,
+                                                        logger=project_config.logger)
     # Overwrite intermediate products, because the pair objects save the postprocessing options
     with safe_cd(training_config.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs, training_config)
@@ -210,7 +211,8 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
     df_multi_index_format = convert_training_dataframe_to_scalar_format(df_custom_format,
                                                                         min_length=min_length,
                                                                         scorer=None,
-                                                                        segmentation_metadata=segmentation_metadata)
+                                                                        segmentation_metadata=segmentation_metadata,
+                                                                        logger=project_config.logger)
     volume_threshold = postprocessing_params.get('volume_percent_threshold', 0)
     if volume_threshold > 0:
         logging.info(f"Postprocessing using volume threshold: {volume_threshold}")
@@ -222,17 +224,17 @@ def postprocess_and_build_matches_from_config(project_config: ModularProjectConf
     save_all_tracklets(df_custom_format, df_multi_index_format, training_config)
 
 
-def postprocess_and_build_tracklets_from_matches(all_frame_dict, all_frame_pairs, z_threshold, min_confidence,
-                                                 verbose=0):
+def postprocess_matches_to_tracklets(all_frame_dict, all_frame_pairs, z_threshold, min_confidence, logger,
+                                     verbose=0):
     # Also updates the matches of the object
     opt = dict(z_threshold=z_threshold, min_confidence=min_confidence)
-    logging.info(
+    logger.info(
         f"Postprocessing pairwise matches using confidence threshold {min_confidence} and z threshold: {z_threshold}")
     all_matches_dict = {k: pair.calc_final_matches(**opt)
                         for k, pair in tqdm(all_frame_pairs.items())}
-    logging.info("Extracting locations of neurons")
+    logger.info("Extracting locations of neurons")
     all_zxy = {k: f.neuron_locs for k, f in all_frame_dict.items()}
-    logging.info("Building tracklets")
+    logger.info("Building tracklets")
     return build_tracklets_dfs(all_matches_dict, all_zxy, verbose=verbose)
 
 

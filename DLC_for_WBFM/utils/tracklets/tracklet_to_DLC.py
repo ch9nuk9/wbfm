@@ -73,7 +73,8 @@ def calculate_best_covering_from_tracklets(dlc_df: pd.DataFrame, num_training_fr
 
 
 def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
-                                                segmentation_metadata: DetectedNeurons = None):
+                                                segmentation_metadata: DetectedNeurons = None,
+                                                logger: logging.Logger = None):
     """
     Converts a dataframe of my tracklets to a format with all scalar elements
 
@@ -96,7 +97,7 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
         else:
             return True
 
-    logging.info("Converting to pandas multi-index format")
+    logger.info("Converting to pandas multi-index format")
     for ind, row in tqdm(df.iterrows(), total=df.shape[0]):
         if not is_valid(df, ind):
             continue
