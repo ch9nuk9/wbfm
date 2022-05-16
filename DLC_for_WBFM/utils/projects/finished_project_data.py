@@ -218,7 +218,8 @@ class ProjectData:
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg,
             z_to_xy_ratio=self.physical_unit_conversion.z_to_xy_ratio,
-            buffer_masks=zarr.zeros_like(self.segmentation)
+            buffer_masks=zarr.zeros_like(self.segmentation),
+            logger=self.logger
         )
         return obj
 

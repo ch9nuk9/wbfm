@@ -14,7 +14,7 @@ from DLC_for_WBFM.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
 
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
-    split_tracklet_within_dataframe, split_tracklet_within_sparse_dataframe
+    split_tracklet_within_sparse_dataframe
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
 from segmentation.util.utils_postprocessing import split_neuron_interactive
@@ -160,6 +160,8 @@ class TrackletAndSegmentationAnnotator:
 
     is_currently_interactive: bool = True
 
+    logger: logging.Logger = None
+
     def __post_init__(self):
         if self.manual_global2tracklet_names is None:
             self.manual_global2tracklet_names = defaultdict(list)
@@ -206,7 +208,7 @@ class TrackletAndSegmentationAnnotator:
         if self.indices_of_original_neurons is None:
             self.indices_of_original_neurons = []
 
-        print(f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
+        self.logger.info(f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
     @property
     def combined_global2tracklet_dict(self):
@@ -219,7 +221,6 @@ class TrackletAndSegmentationAnnotator:
         #     # logging.warning("Currently active tracklet not included in combined dict")
         # return tmp
         return self._combined_global2tracklet_dict
-
 
     @property
     def current_tracklet(self):
@@ -234,10 +235,10 @@ class TrackletAndSegmentationAnnotator:
 
     def clear_current_tracklet(self):
         if self.current_tracklet_name is not None:
-            print(f"Cleared tracklet {self.current_tracklet_name}")
+            self.logger.info(f"Cleared tracklet {self.current_tracklet_name}")
             self.set_current_tracklet(None)
         else:
-            print("No current tracklet; this button did nothing")
+            self.logger.info("No current tracklet; this button did nothing")
 
     def calculate_tracklets_for_neuron(self, neuron_name=None) -> \
             Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
@@ -365,25 +366,25 @@ class TrackletAndSegmentationAnnotator:
     def print_tracklet_conflicts(self):
         name = self.get_neuron_name_of_conflicting_match()
         if name is not None:
-            print(f"Tracklet {self.current_tracklet_name} is already matched to other neuron: {name}")
+            self.logger.info(f"Tracklet {self.current_tracklet_name} is already matched to other neuron: {name}")
         name_dict = self.get_dict_of_tracklet_time_conflicts()
         if name_dict is not None:
-            print(f"Current tracklet {self.current_tracklet_name} has time conflict with tracklet(s):")
+            self.logger.info(f"Current tracklet {self.current_tracklet_name} has time conflict with tracklet(s):")
             for name, times in name_dict.items():
-                print(f"{name} at times {times}")
+                self.logger.info(f"{name} at times {times}")
 
     def add_tracklet_to_neuron(self, tracklet_name, neuron_name):
         previously_added = self.manual_global2tracklet_names[neuron_name]
         previously_removed = self.manual_global2tracklet_removals[neuron_name]
         if tracklet_name in previously_added:
-            print(f"Tracklet {tracklet_name} already in {neuron_name}; nothing added")
+            self.logger.info(f"Tracklet {tracklet_name} already in {neuron_name}; nothing added")
         else:
             self.manual_global2tracklet_names[neuron_name].append(tracklet_name)
             self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
-            print(f"Successfully added tracklet {tracklet_name} to {neuron_name}")
+            self.logger.info(f"Successfully added tracklet {tracklet_name} to {neuron_name}")
 
         if tracklet_name in previously_removed:
-            print(f"Tracklet was in the to-remove list, but was removed")
+            self.logger.info(f"Tracklet was in the to-remove list, but was removed")
             self.manual_global2tracklet_removals[neuron_name].remove(tracklet_name)
             self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
 
@@ -403,14 +404,14 @@ class TrackletAndSegmentationAnnotator:
         previously_added = self.manual_global2tracklet_names[neuron_name]
         previously_removed = self.manual_global2tracklet_removals[neuron_name]
         if tracklet_name in previously_removed:
-            print(f"Tracklet {tracklet_name} already removed from {neuron_name}; nothing removed")
+            self.logger.info(f"Tracklet {tracklet_name} already removed from {neuron_name}; nothing removed")
         else:
             self.manual_global2tracklet_removals[neuron_name].append(tracklet_name)
             self.remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
-            print(f"Successfully added {tracklet_name} to removal list of {neuron_name}")
+            self.logger.info(f"Successfully added {tracklet_name} to removal list of {neuron_name}")
 
         if tracklet_name in previously_added:
-            print(f"{tracklet_name} was in the manually to-add list, but was removed")
+            self.logger.info(f"{tracklet_name} was in the manually to-add list, but was removed")
             self.manual_global2tracklet_names[neuron_name].remove(tracklet_name)
             self.remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
 
@@ -440,7 +441,7 @@ class TrackletAndSegmentationAnnotator:
         return conflicting_names
 
     def remove_all_tracklets_after_time(self, t):
-        logging.warning(f"Removing all tracklets attached to {self.current_neuron} after t={t}")
+        self.logger.warning(f"Removing all tracklets attached to {self.current_neuron} after t={t}")
         conflicting_names = []
         with self.saving_lock:
             for tracklet_name in self.combined_global2tracklet_dict[self.current_neuron]:
@@ -472,17 +473,17 @@ class TrackletAndSegmentationAnnotator:
             print("No neuron selected")
         else:
             these_names = self.global2tracklet[self.current_neuron]
-            print(f"Initial tracklets for {self.current_neuron}: {these_names}")
-            print(f"Previous manually added tracklets: {self.manual_global2tracklet_names[neuron_name]}")
-            print(f"Previous manually removed tracklets: {self.manual_global2tracklet_removals[neuron_name]}")
-            print(f"Currently selected (not yet added) tracklet: {self.current_tracklet_name}")
+            self.logger.info(f"Initial tracklets for {self.current_neuron}: {these_names}")
+            self.logger.info(f"Previous manually added tracklets: {self.manual_global2tracklet_names[neuron_name]}")
+            self.logger.info(f"Previous manually removed tracklets: {self.manual_global2tracklet_removals[neuron_name]}")
+            self.logger.info(f"Currently selected (not yet added) tracklet: {self.current_tracklet_name}")
 
     def save_manual_matches_to_disk_dispatch(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches
-        logging.warning("Saving tracklet dataframe, DO NOT QUIT")
-        print("Note: the GUI might still respond, but you can't split or save any tracklets")
+        self.logger.warning("Saving tracklet dataframe, DO NOT QUIT")
+        self.logger.info("Note: the GUI might still respond, but you can't split or save any tracklets")
         # self.saving_lock.acquire(blocking=True)
-        logging.warning("Acquired saving lock; currently saving")
+        self.logger.warning("Acquired saving lock; currently saving")
         t = threading.Thread(target=self.save_manual_matches_to_disk)
         t.start()
 
@@ -507,7 +508,7 @@ class TrackletAndSegmentationAnnotator:
             self.tracking_cfg.pickle_data_in_local_project(self.tracklet_split_times, self.tracklet_split_times_fname)
 
             self.tracking_cfg.update_self_on_disk()
-        print("Saving successful! You may now quit")
+        self.logger.info("Saving successful! You may now quit")
 
     def split_current_tracklet(self, i_split, set_new_half_to_current=True):
         # The current time is included in the "new half" of the tracklet
@@ -532,7 +533,7 @@ class TrackletAndSegmentationAnnotator:
                     split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name)
 
             if not successfully_split:
-                logging.warning("Did not successfully split; check logs")
+                self.logger.warning("Did not successfully split; check logs")
                 return False
 
             self.df_tracklet_obj.df_tracklets_zxy = all_tracklets
@@ -578,7 +579,7 @@ class TrackletAndSegmentationAnnotator:
             print("Event triggered on background; returning")
         else:
             if self.verbose >= 1:
-                print(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
+                self.logger.info(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
                       f"and position {event.position[1:]}")
 
             # Decide which mode: segmentation or tracklet
@@ -606,7 +607,7 @@ class TrackletAndSegmentationAnnotator:
                     seg_ind=seg_index
                 )
                 if self.verbose >= 1:
-                    print(f"Neuron is part of tracklet {tracklet_name}")
+                    self.logger.info(f"Neuron is part of tracklet {tracklet_name}")
 
                 if tracklet_name:
                     self.set_current_tracklet(tracklet_name)
@@ -616,7 +617,7 @@ class TrackletAndSegmentationAnnotator:
                 else:
                     self.set_selected_segmentation(time_index, seg_index)
                     if self.verbose >= 1:
-                        print(f"Tracklet not found; adding segmentation only")
+                        self.logger.info(f"Tracklet not found; adding segmentation only")
 
     def _unpack_click_event(self, event, layer):
         # Get information about clicked-on neuron
@@ -633,7 +634,7 @@ class TrackletAndSegmentationAnnotator:
     def add_current_tracklet_to_viewer(self, viewer):
         df_single_track = self.current_tracklet
         if self.verbose >= 1:
-            print(f"Adding tracklet of length {df_single_track['z'].count()}")
+            self.logger.info(f"Adding tracklet of length {df_single_track['z'].count()}")
         if self.to_add_layer_to_viewer:
             all_tracks_array, track_of_point, to_remove = build_tracks_from_dataframe(df_single_track,
                                                                                       z_to_xy_ratio=self.z_to_xy_ratio)
@@ -647,7 +648,7 @@ class TrackletAndSegmentationAnnotator:
         # Note: keeps both indices saved in the object
         seg_index = self.indices_of_original_neurons
         if len(seg_index) > 1:
-            print("Multiple neurons selected, splitting is ambiguous... returning")
+            self.logger.info("Multiple neurons selected, splitting is ambiguous... returning")
             return
         else:
             seg_index = seg_index[0]
@@ -668,10 +669,10 @@ class TrackletAndSegmentationAnnotator:
     def merge_current_neurons(self, viewer):
         # NOTE: will keep the index of the first selected neuron
         if len(self.indices_of_original_neurons) <= 1:
-            print(f"Too few neurons selected ({len(self.indices_of_original_neurons)}), aborting")
+            self.logger.info(f"Too few neurons selected ({len(self.indices_of_original_neurons)}), aborting")
             return
         elif len(self.indices_of_original_neurons) > 2:
-            print(f"Merging than 2 neurons not supported, aborting")
+            self.logger.info(f"Merging than 2 neurons not supported, aborting")
             return
 
         time_index = self.time_of_candidate
@@ -708,7 +709,7 @@ class TrackletAndSegmentationAnnotator:
             # Default to most recent buffer change
             t = self.t_buffer_masks[-1]
         elif t not in self.t_buffer_masks:
-            logging.warning(f"Tried to update segmentation layer at t={t}, but no buffer mask found")
+            self.logger.warning(f"Tried to update segmentation layer at t={t}, but no buffer mask found")
             return
         layer.data[t] = self.buffer_masks[t]
 
@@ -730,9 +731,9 @@ class TrackletAndSegmentationAnnotator:
                 self.indices_of_original_neurons.append(seg_index)
                 self.invalidate_candidate_mask()
                 self.segmentation_updated_callbacks()
-                print(f"Added neuron to list; current neurons: {self.indices_of_original_neurons}")
+                self.logger.info(f"Added neuron to list; current neurons: {self.indices_of_original_neurons}")
             else:
-                logging.warning("Attempt to add segmentations of different time points; not supported")
+                self.logger.warning("Attempt to add segmentations of different time points; not supported")
 
     def invalidate_candidate_mask(self):
         # Make sure the metadata and so on is synced to the saved mask
@@ -747,7 +748,7 @@ class TrackletAndSegmentationAnnotator:
         layer = viewer.layers['Raw segmentation']
         ind = self.indices_of_original_neurons
         if len(ind) > 1:
-            logging.warning("Selection not implemented if more than one neuron is selected")
+            self.logger.warning("Selection not implemented if more than one neuron is selected")
             return
         elif len(ind) == 1:
             layer.show_selected_label = True
@@ -779,7 +780,7 @@ class TrackletAndSegmentationAnnotator:
         # Check that the segmentation is actually attached to this neuron
         old_mask_ind = cast_int_or_nan(self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]['raw_segmentation_id'][t])
         if np.isnan(old_mask_ind) or old_mask_ind != mask_ind:
-            logging.warning(f"Deletion of segmentation {mask_ind} from {tracklet_name} attempted, "
+            self.logger.warning(f"Deletion of segmentation {mask_ind} from {tracklet_name} attempted, "
                             f"but current mask is instead {old_mask_ind}; aborting")
             return False
 
@@ -795,7 +796,7 @@ class TrackletAndSegmentationAnnotator:
     def check_validity_of_tracklet_and_segmentation(self):
         flag = True
         if len(self.indices_of_original_neurons) != 1:
-            logging.warning(f"Selected segmentation must be unique; "
+            self.logger.warning(f"Selected segmentation must be unique; "
                             f"found {len(self.indices_of_original_neurons)} segmentations")
             flag = False
             mask_ind = None
@@ -806,8 +807,8 @@ class TrackletAndSegmentationAnnotator:
         t = self.time_of_candidate
         tracklet_name = self.current_tracklet_name
         if tracklet_name is None:
-            logging.warning("No tracklet selected, can't modify using segmentation")
+            self.logger.warning("No tracklet selected, can't modify using segmentation")
             flag = False
         else:
-            logging.info(f"Modifying {tracklet_name} using segmentation {mask_ind} at t={t}")
+            self.logger.info(f"Modifying {tracklet_name} using segmentation {mask_ind} at t={t}")
         return t, tracklet_name, mask_ind, flag

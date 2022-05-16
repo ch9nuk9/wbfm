@@ -10,14 +10,13 @@ from napari._qt.qthreading import thread_worker
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.gui.utils.utils_matplotlib import PlotQWidget
+from DLC_for_WBFM.utils.external.utils_logging import setup_logger
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 
 cgitb.enable(format='text')
 import logging
 from PyQt5.QtWidgets import QApplication
-logger = logging.getLogger('traceExplorerLogger')
-logger.setLevel(logging.INFO)
 import sys
 import napari
 import numpy as np
@@ -35,6 +34,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     tracklet_lines = None
     zoom_opt = None
     main_subplot_xlim = None
+
+    logger: logging.Logger = None
 
     _disable_callbacks = False
 
@@ -71,14 +72,16 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.current_subplot_xlim = None
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
                          'layer_name': 'final_track'}
-        logger.info("Finished initializing Trace Explorer object")
+        self.logger = setup_logger('trace_explorer.log')
+        project_data.tracklet_annotator.logger = self.logger
+        self.logger.info("Finished initializing Trace Explorer object")
 
         self.traces_mode_calculation_options = ['integration', 'z', 'volume']
         self.tracklet_mode_calculation_options = ['z', 'volume', 'likelihood', 'brightness_red']
 
     def setupUi(self, viewer: napari.Viewer):
 
-        logger.info("Starting main UI setup")
+        self.logger.info("Starting main UI setup")
         # Load dataframe and path to outputs
         self.viewer = viewer
         neuron_names = get_names_from_df(self.dat.red_traces)
@@ -133,7 +136,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.initialize_trace_or_tracklet_subplot()
         self.update_interactivity()
 
-        logger.info("Finished main UI setup")
+        self.logger.info("Finished main UI setup")
 
     def _setup_trace_filtering_buttons(self):
         # Change traces (dropdown)
@@ -334,18 +337,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return self.viewer.layers['Raw segmentation']
 
     def refresh_default_napari_layers(self):
-        print("Undocumented shortcut!")
+        self.logger.info("Undocumented shortcut!")
         self.dat.add_layers_to_viewer(self.viewer, which_layers='all', check_if_layers_exist=True,
                                       dask_for_segmentation=False)
 
     def refresh_segmentation_metadata(self):
-        print("Undocumented shortcut!")
+        self.logger.info("Undocumented shortcut!")
         t = self.t
-        print(f"Updating segmentation metadata at t={t}")
+        self.logger.info(f"Updating segmentation metadata at t={t}")
         red_volume = self.viewer.layers['Red data'].data[t, ...]
         new_mask = self.seg_layer.data[t, ...]
         self.dat.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
-        print(f"Finished updating metadata")
+        self.logger.info(f"Finished updating metadata")
 
     def change_neurons(self):
         if not self._disable_callbacks:
@@ -884,10 +887,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # This middle block will be called when the mode is switched
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            print("Initializing tracklet mode")
+            self.logger.info("Initializing tracklet mode")
             self.initialize_tracklet_subplot()
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
-            print("Initializing trace mode")
+            self.logger.info("Initializing trace mode")
             self.initialize_trace_subplot()
 
         if not self.subplot_is_initialized:
@@ -956,7 +959,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     if type_of_update == 'remove' or type_of_update == 'replot':
                         self.tracklet_lines[tracklet_name].remove()
                         del self.tracklet_lines[tracklet_name]
-                        print(f"Cleared tracklet {tracklet_name} from the subplot")
+                        self.logger.info(f"Cleared tracklet {tracklet_name} from the subplot")
                 else:
                     if 'None' not in tracklet_name and '_current' not in tracklet_name:
                         logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
@@ -978,7 +981,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax,
                                                                                **extra_opt,
                                                                                **marker_opt).lines[-1]
-                    print(f"Added tracklet {tracklet_name} to the subplot")
+                    self.logger.info(f"Added tracklet {tracklet_name} to the subplot")
         self.invalidate_y_on_plot()
 
         # self.update_stored_time_series(field_to_plot)
@@ -1129,9 +1132,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_stored_tracklets_for_plotting(self):
         name = self.current_name
         tracklets_dict, tracklet_current, current_name = self.dat.calculate_tracklets(name)
-        print(f"Found {len(tracklets_dict)} tracklets for {name}")
+        self.logger.info(f"Found {len(tracklets_dict)} tracklets for {name}")
         if tracklet_current is not None:
-            print("Additionally found 1 currently selected tracklet")
+            self.logger.info("Additionally found 1 currently selected tracklet")
         self.y_tracklets_dict = tracklets_dict
         self.y_tracklet_current = tracklet_current
         self.y_tracklet_current_name = current_name
@@ -1234,7 +1237,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
     napari.run()
     if started_new_app:
         app.exec_()
-    logger.info("Quitting")
+    ui.logger.info("Quitting")
     sys.exit()
 
 
@@ -1251,7 +1254,7 @@ def napari_trace_explorer(project_data: ProjectData,
     # Build Napari and add data layers
     ui = NapariTraceExplorer(project_data, app)
     if viewer is None:
-        logger.info("Creating a new Napari window")
+        ui.logger.info("Creating a new Napari window")
         viewer = napari.Viewer(ndisplay=3)
     ui.dat.add_layers_to_viewer(viewer, dask_for_segmentation=False)
 
@@ -1261,7 +1264,7 @@ def napari_trace_explorer(project_data: ProjectData,
     ui.show()
     change_viewer_time_point(viewer, t_target=0)
 
-    print("Finished GUI setup. If nothing is showing, trying quitting and running again")
+    ui.logger.info("Finished GUI setup. If nothing is showing, trying quitting and running again")
     if to_print_fps:
         add_fps_printer(viewer)
 
