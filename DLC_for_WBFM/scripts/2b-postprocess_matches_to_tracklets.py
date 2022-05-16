@@ -27,31 +27,24 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
-    project_dir = cfg.project_dir
+    cfg.setup_logger('step_2b.log')
 
     train_cfg = cfg.get_training_config()
     segmentation_config = cfg.get_segmentation_config()
 
-    log_dir = cfg.get_log_dir()
-    log_fname = os.path.join(log_dir, '2-training_data_warnings.log')
-    logging.basicConfig(filename=log_fname, level=logging.DEBUG)
-    logging.warning(f'Starting run at: {date.today().strftime("%Y/%m/%d %H:%M:%S")}')
     if not DEBUG:
         using_monkeypatch()
         # ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain
-def produce_training_data(_config, _run, _log):
+def produce_training_data(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
     project_config = _config['cfg']
-    project_config.logger = _log
     train_cfg = _config['train_cfg']
-    train_cfg.logger = _log
     segmentation_config = _config['segmentation_config']
-    segmentation_config.logger = _log
 
     postprocess_matches_to_tracklets_using_config(
         project_config,

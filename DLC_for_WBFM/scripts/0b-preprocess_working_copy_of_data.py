@@ -29,6 +29,7 @@ ex.add_config(project_path=None, to_zip_zarr_using_7z=True, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    cfg.setup_logger('step_0b.log')
     project_dir = cfg.project_dir
 
     fname = cfg.resolve_mounted_path_in_current_os('red_bigtiff_fname')
@@ -49,7 +50,7 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def main(_config, _run, _log):
+def main(_config, _run):
     sacred.commands.print_config(_run)
 
     options = {'tiff_not_zarr': False,
@@ -59,7 +60,7 @@ def main(_config, _run, _log):
     cfg: ModularProjectConfig = _config['cfg']
     cfg.config['project_dir'] = _config['project_dir']
     cfg.config['project_path'] = _config['project_path']
-    cfg.logger = _log
+    logger = cfg.logger
 
     with safe_cd(_config['project_dir']):
 
@@ -73,16 +74,16 @@ def main(_config, _run, _log):
         preprocessing_settings.path_to_previous_warp_matrices = fname
 
         if not (Path(options['out_fname']).exists() and fname.exists()):
-            _log.info("Preprocessing red...")
+            logger.info("Preprocessing red...")
             preprocessing_settings.do_mirroring = False
             assert preprocessing_settings.to_save_warp_matrices
             write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings,
                                           which_channel='red', **options)
         else:
-            _log.info("Preprocessed red already exists; skipping to green")
+            logger.info("Preprocessed red already exists; skipping to green")
 
         # Now the green channel will read the artifact as saved above
-        _log.info("Preprocessing green...")
+        logger.info("Preprocessing green...")
         options['out_fname'] = _config['out_fname_green']
         options['save_fname_in_red_not_green'] = False
         preprocessing_settings.to_use_previous_warp_matrices = True
@@ -107,4 +108,4 @@ def main(_config, _run, _log):
     if _config['to_zip_zarr_using_7z']:
         zip_zarr_using_config(cfg)
 
-    _log.info("Finished.")
+    logger.info("Finished.")

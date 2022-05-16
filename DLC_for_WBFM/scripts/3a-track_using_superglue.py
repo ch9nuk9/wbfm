@@ -24,6 +24,7 @@ ex.add_config(project_path=None, out_fname=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    cfg.setup_logger('step_3a.log')
     project_dir = cfg.project_dir
 
     check_all_needed_data_for_step(project_path, 2)
@@ -35,12 +36,11 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def main(_config, _run, _log):
+def main(_config, _run):
     sacred.commands.print_config(_run)
 
     project_cfg = _config['cfg']
     project_dir = _config['project_dir']
-    project_cfg.logger = _log
 
     with safe_cd(project_dir):
         track_using_superglue_from_config(project_cfg, _config['DEBUG'])

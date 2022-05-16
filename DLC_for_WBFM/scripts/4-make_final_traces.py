@@ -39,6 +39,7 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    cfg.setup_logger('step_4.log')
     project_dir = cfg.project_dir
 
     seg_cfg = cfg.get_segmentation_config()
@@ -55,18 +56,14 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def make_full_tracks(_config, _run, _log):
+def make_full_tracks(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
     seg_cfg = _config['seg_cfg']
-    seg_cfg.logger = _log
     track_cfg = _config['tracking_cfg']
-    track_cfg.logger = _log
     traces_cfg: SubfolderConfigFile = _config['traces_cfg']
-    traces_cfg.logger = _log
     project_cfg = _config['cfg']
-    project_cfg.logger = _log
 
     # Set environment variables to (try to) deal with rare blosc decompression errors
     os.environ["BLOSC_NOLOCK"] = "1"
@@ -94,6 +91,6 @@ def make_full_tracks(_config, _run, _log):
 
         # By default make some visualizations
         # Note: reloads the project data
-        _log.info("Making default grid plots")
+        project_cfg.logger.info("Making default grid plots")
         proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
         make_grid_plot_from_project(proj_dat, channel_mode='all', calculation_mode='integration')

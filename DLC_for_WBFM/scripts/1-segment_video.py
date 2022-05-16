@@ -29,12 +29,11 @@ ex.add_config(project_path=None, continue_from_frame=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    cfg.setup_logger('step_1.log')
     check_all_needed_data_for_step(project_path, 1)
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()
-    # segment_cfg.config = synchronize_segment_config(project_path, segment_cfg.config)
-    # segment_cfg.update_self_on_disk()
 
     if not DEBUG:
         using_monkeypatch()
@@ -43,7 +42,7 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def segment_video(_config, _run, _log):
+def segment_video(_config, _run):
     sacred.commands.print_config(_run)
 
     # For windows workstation
@@ -56,9 +55,6 @@ def segment_video(_config, _run, _log):
 
     segment_cfg = _config['segment_cfg']
     project_cfg = _config['cfg']
-    project_cfg.logger = _log
-    segment_cfg.logger = _log
-
     if _config['DEBUG']:
         project_cfg.config['dataset_params']['num_frames'] = 3
 

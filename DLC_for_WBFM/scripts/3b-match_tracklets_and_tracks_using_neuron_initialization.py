@@ -23,6 +23,7 @@ ex.add_config(project_path=None, use_imputed_df=False, start_from_manual_matches
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
+    cfg.setup_logger('step_3b.log')
 
     if not DEBUG:
         using_monkeypatch()
@@ -34,7 +35,6 @@ def cfg(project_path, DEBUG):
 def combine_tracks(_config, _run, _log):
     sacred.commands.print_config(_run)
     cfg = _config['cfg']
-    cfg.logger = _log
 
     DEBUG = _config['DEBUG']
     global_track_matches_from_config(cfg, DEBUG=DEBUG)

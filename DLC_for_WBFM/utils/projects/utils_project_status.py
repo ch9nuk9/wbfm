@@ -1,8 +1,5 @@
 import logging
 import os.path as osp
-from pathlib import Path
-
-import zarr
 from tqdm import tqdm
 
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
