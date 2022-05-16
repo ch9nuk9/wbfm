@@ -14,7 +14,7 @@ from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import PATH_TO_SUPERGLUE_T
     WormWithSuperGlueClassifier
 from segmentation.util.utils_metadata import DetectedNeurons
 
-from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import track_neurons_full_video, match_all_adjacent_frames, \
+from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import build_tracklets_full_video, match_all_adjacent_frames, \
     calculate_frame_objects_full_video
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
@@ -64,10 +64,10 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
         _save_matches_and_frames(all_frame_dict, all_frame_pairs, training_config)
 
 
-def partial_track_video_using_config(project_config: ModularProjectConfig,
-                                     training_config: SubfolderConfigFile,
-                                     use_superglue: bool,
-                                     DEBUG: bool = False) -> None:
+def build_tracklets_using_config(project_config: ModularProjectConfig,
+                                 training_config: SubfolderConfigFile,
+                                 use_superglue: bool,
+                                 DEBUG: bool = False) -> None:
     """
     Produce training data via partial tracking using 3d feature-based method
 
@@ -89,9 +89,9 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     # Intermediate products: pairwise matches between frames
     video_fname, tracker_params, frame_pair_options = _unpack_config_frame2frame_matches(
         DEBUG, project_config, training_config)
-    all_frame_pairs, all_frame_dict = track_neurons_full_video(video_data, video_fname, **tracker_params,
-                                                               use_superglue=use_superglue,
-                                                               frame_pair_options=frame_pair_options)
+    all_frame_pairs, all_frame_dict = build_tracklets_full_video(video_data, video_fname, **tracker_params,
+                                                                 use_superglue=use_superglue,
+                                                                 frame_pair_options=frame_pair_options)
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs, training_config)
 

@@ -296,14 +296,14 @@ def create_dict_from_matches(self):
 ##
 
 
-def track_neurons_full_video(video_data, video_fname: str, start_volume: int = 0, num_frames: int = 10,
-                             z_depth_neuron_encoding: float = 5.0,
-                             preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
-                             frame_pair_options: FramePairOptions = None,
-                             external_detections: str = None,
-                             project_config: ModularProjectConfig = None,
-                             use_superglue: bool = True,
-                             verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
+def build_tracklets_full_video(video_data, video_fname: str, start_volume: int = 0, num_frames: int = 10,
+                               z_depth_neuron_encoding: float = 5.0,
+                               preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
+                               frame_pair_options: FramePairOptions = None,
+                               external_detections: str = None,
+                               project_config: ModularProjectConfig = None,
+                               use_superglue: bool = True,
+                               verbose: int = 0) -> Tuple[Dict[Tuple[int, int], FramePair], Dict[int, ReferenceFrame]]:
     """
     Detects and tracks neurons using opencv-based feature matching
     Note: only compares adjacent frames
