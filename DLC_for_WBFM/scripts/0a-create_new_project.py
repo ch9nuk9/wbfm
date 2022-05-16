@@ -20,7 +20,7 @@ def cfg(red_bigtiff_fname, green_bigtiff_fname):
 
 
 @ex.automain
-def main(_config, _run):
+def main(_config, _run, _log):
     sacred.commands.print_config(_run)
 
-    build_project_structure(_config)
+    build_project_structure(_config, _log)
