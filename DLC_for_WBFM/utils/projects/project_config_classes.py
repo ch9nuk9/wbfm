@@ -41,7 +41,7 @@ class ConfigFileWithProjectContext:
     def update_self_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)
         edit_config(fname, self.config)
-        logging.info(f"Updating config file {fname} on disk")
+        self.logger.info(f"Updating config file {fname} on disk")
 
     def resolve_relative_path_from_config(self, key) -> str:
         val = self.config.get(key, None)
@@ -80,7 +80,7 @@ class ConfigFileWithProjectContext:
             abs_path += ".pickle"
         if make_sequential_filename:
             abs_path = get_sequential_filename(abs_path)
-        logging.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
+        self.logger.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
         check_exists(abs_path, allow_overwrite)
         if custom_writer:
             # Useful for pickling dataframes
@@ -98,7 +98,7 @@ class ConfigFileWithProjectContext:
             abs_path += ".h5"
         if make_sequential_filename:
             abs_path = get_sequential_filename(abs_path)
-        logging.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
+        self.logger.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
         check_exists(abs_path, allow_overwrite)
         data.to_hdf(abs_path, key="df_with_missing")
 
@@ -180,7 +180,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         if 'physical_units' in self.config:
             return PhysicalUnitConversion(**self.config['physical_units'])
         else:
-            logging.warning("Using default physical unit conversions")
+            self.logger.warning("Using default physical unit conversions")
             return PhysicalUnitConversion()
 
     def _check_path_and_load_config(self, subconfig_path: Path) -> Tuple[str, dict, str, str]:
