@@ -38,6 +38,29 @@ class ConfigFileWithProjectContext:
         if self.logger is None:
             self.logger = logging.getLogger('ConfigFile')
 
+    def setup_logger(self, relative_log_filename: str):
+        # Log to a file and the console
+        # https://docs.python.org/3/howto/logging-cookbook.html
+        logger = logging.getLogger('ConfigFile')
+
+        log_filename = self.resolve_relative_path(relative_log_filename)
+        logging.basicConfig(level=logging.DEBUG,
+                            format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                            datefmt='%m-%d %H:%M',
+                            filename=log_filename,
+                            filemode='w')
+        # define a Handler which writes INFO messages or higher to the sys.stderr
+        console = logging.StreamHandler()
+        console.setLevel(logging.INFO)
+        # set a format which is simpler for console use
+        formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+        # tell the handler to use this format
+        console.setFormatter(formatter)
+        # add the handler to the base logger
+        logger.addHandler(console)
+
+        self.logger = logger
+
     def update_self_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)
         edit_config(fname, self.config)
