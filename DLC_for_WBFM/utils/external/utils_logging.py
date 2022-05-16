@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 
-def setup_logger(log_filename):
+def setup_logger(log_filename, filemode='w'):
     # Log to a file and the console
     # https://docs.python.org/3/howto/logging-cookbook.html
     log_name = Path(log_filename.stem)
@@ -11,7 +11,7 @@ def setup_logger(log_filename):
                         format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                         datefmt='%m-%d %H:%M',
                         filename=log_filename,
-                        filemode='w')
+                        filemode=filemode)
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)

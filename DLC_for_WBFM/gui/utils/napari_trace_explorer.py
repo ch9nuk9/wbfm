@@ -72,7 +72,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.current_subplot_xlim = None
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
                          'layer_name': 'final_track'}
-        self.logger = setup_logger('trace_explorer.log')
+        self.logger = setup_logger('trace_explorer.log', filemode='a')
         project_data.tracklet_annotator.logger = self.logger
         self.logger.info("Finished initializing Trace Explorer object")
 
