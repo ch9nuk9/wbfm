@@ -38,20 +38,13 @@ def write_data_subset_from_config(cfg: ModularProjectConfig,
         preprocessed_dat = preprocessed_dat[start_volume:, ...]
 
     if verbose >= 1:
-        print(f"Writing array of size: {preprocessed_dat.shape}")
+        cfg.logger.info(f"Writing array of size: {preprocessed_dat.shape}")
 
     if tiff_not_zarr:
         # Have to add a color channel to make format: TZCYX
         # Imagej seems to expect this weird format
         out_dat = np.expand_dims(preprocessed_dat, 2).astype('uint16')
         tifffile.imwrite(out_fname, out_dat, imagej=True, metadata={'axes': 'TZCYX'})
-    else:
-        pass
-        # TODO: For now, loads the entire data into memory
-        # chunk_sz = (1,) + preprocessed_dat.shape[1:]
-        # print(f"Chunk size: {chunk_sz}")
-        # out_dat = np.array(preprocessed_dat)  # .astype('uint16')
-        # zarr.save_array(out_fname, out_dat, chunks=chunk_sz)
 
     # Save this name in the config file itself
     if save_fname_in_red_not_green is not None:

@@ -25,7 +25,7 @@ from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import g
 
 
 def zip_zarr_using_config(project_cfg: ModularProjectConfig):
-    logging.info("Zipping zarr data (both channels)")
+    project_cfg.logger.info("Zipping zarr data (both channels)")
     out_fname_red_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_red'], verbose=1)
     out_fname_green_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_green'], verbose=1)
 

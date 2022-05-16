@@ -49,7 +49,7 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def main(_config, _run):
+def main(_config, _run, _log):
     sacred.commands.print_config(_run)
 
     options = {'tiff_not_zarr': False,
@@ -59,11 +59,11 @@ def main(_config, _run):
     cfg: ModularProjectConfig = _config['cfg']
     cfg.config['project_dir'] = _config['project_dir']
     cfg.config['project_path'] = _config['project_path']
+    cfg.logger = _log
 
     with safe_cd(_config['project_dir']):
 
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
-        # preprocessing_settings.find_background_files_from_raw_data_path(cfg)
 
         options['out_fname'] = _config['out_fname_red']
         options['save_fname_in_red_not_green'] = True
@@ -73,16 +73,16 @@ def main(_config, _run):
         preprocessing_settings.path_to_previous_warp_matrices = fname
 
         if not (Path(options['out_fname']).exists() and fname.exists()):
-            print("Preprocessing red...")
+            _log.info("Preprocessing red...")
             preprocessing_settings.do_mirroring = False
             assert preprocessing_settings.to_save_warp_matrices
             write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings,
                                           which_channel='red', **options)
         else:
-            print("Preprocessed red already exists; skipping to green")
+            _log.info("Preprocessed red already exists; skipping to green")
 
         # Now the green channel will read the artifact as saved above
-        print("Preprocessing green...")
+        _log.info("Preprocessing green...")
         options['out_fname'] = _config['out_fname_green']
         options['save_fname_in_red_not_green'] = False
         preprocessing_settings.to_use_previous_warp_matrices = True
@@ -107,5 +107,4 @@ def main(_config, _run):
     if _config['to_zip_zarr_using_7z']:
         zip_zarr_using_config(cfg)
 
-    print("Finished.")
-
+    _log.info("Finished.")

@@ -29,9 +29,14 @@ class ConfigFileWithProjectContext:
     config: dict = None
     project_dir: str = None
 
+    logger: logging.Logger = None
+
     def __post_init__(self):
         self.config = load_config(self.self_path)
         self.project_dir = str(Path(self.self_path).parent)
+
+        if self.logger is None:
+            self.logger = logging.getLogger('ConfigFile')
 
     def update_self_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)
