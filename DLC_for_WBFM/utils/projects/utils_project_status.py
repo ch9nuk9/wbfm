@@ -147,7 +147,8 @@ def check_traces(project_path, verbose=0):
     try:
         with safe_cd(cfg.project_dir):
             traces_cfg = cfg.get_traces_config()
-            file_names = ['reindexed_masks.zarr.zip', 'all_matches.pickle', 'green_traces.h5', 'red_traces.h5']
+            file_names = ['all_matches.pickle', 'green_traces.h5', 'red_traces.h5']
+            # file_names = ['reindexed_masks.zarr.zip', 'all_matches.pickle', 'green_traces.h5', 'red_traces.h5']
             make_full_name = lambda file: traces_cfg.resolve_relative_path(file, prepend_subfolder=True)
             all_to_check = map(make_full_name, file_names)
             all_exist = _check_and_print(all_to_check, 'traces', verbose)
