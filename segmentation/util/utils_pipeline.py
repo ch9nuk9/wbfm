@@ -62,7 +62,7 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
         continue_from_frame = 1
     else:
         continue_from_frame += 1
-        print(f"Continuing from frame {continue_from_frame}")
+        project_cfg.logger.info(f"Continuing from frame {continue_from_frame}")
 
     _segment_full_video_3d(segment_cfg, frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
@@ -74,9 +74,6 @@ def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
                            frame_list: list, mask_fname: str, num_frames: int, verbose: int,
                            video_dat: zarr.Array,
                            opt: dict, continue_from_frame: int) -> None:
-    # with tifffile.TiffFile(video_path) as video_stream:
-    #     for i_rel, i_abs in tqdm(enumerate(frame_list[1:]), total=len(frame_list) - 1):
-    #         segment_and_save3d(i_rel + 1, i_abs, **opt, video_path=video_stream)
     # Parallel version: threading
     keras_lock = threading.Lock()
     read_lock = threading.Lock()
@@ -85,18 +82,18 @@ def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
 
     is_cuda_gpu_available = tf.test.is_gpu_available(cuda_only=True)
 
-    def parallel_func(i_both):
-        i_out, i_vol = i_both
+    def parallel_func(_i_both):
+        i_out, i_vol = _i_both
         segment_and_save3d(i_out + continue_from_frame, i_vol, video_dat=video_dat, **opt)
 
     if is_cuda_gpu_available:
-        logging.info("Found cuda! Running single process")
+        segment_cfg.logger.info("Found cuda! Running single process")
 
         for i_both in enumerate(tqdm(frame_list[continue_from_frame:])):
             parallel_func(i_both)
     else:
         max_workers = 8
-        logging.info("Did not find cuda, running in multi-threaded mode")
+        segment_cfg.logger.info("Did not find cuda, running in multi-threaded mode")
 
         with tqdm(total=num_frames - continue_from_frame) as pbar:
 
@@ -108,7 +105,7 @@ def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
 
     segment_cfg.update_self_on_disk()
     if verbose >= 1:
-        print(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
+        segment_cfg.logger.info(f'Done with segmentation pipeline! Mask data saved at {mask_fname}')
 
 ##
 ## 2d pipeline (stitch to get 3d)
@@ -289,7 +286,6 @@ def segment_and_save3d(i, i_volume, masks_zarr,
                        all_bounding_boxes,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
-    # volume = _get_and_prepare_volume(i_volume, num_slices, preprocessing_settings, video_path, read_lock=read_lock)
     from segmentation.util.utils_model import segment_with_stardist_3d
     if keras_lock is None:
         final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
@@ -297,7 +293,6 @@ def segment_and_save3d(i, i_volume, masks_zarr,
         with keras_lock:  # Keras is not thread-safe in the end
             final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
 
-    # save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volume)
     save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr)
 
 
