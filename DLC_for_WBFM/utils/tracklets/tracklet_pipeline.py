@@ -75,7 +75,7 @@ def partial_track_video_using_config(project_config: ModularProjectConfig,
     See also track_neurons_full_video()
     """
 
-    logging.info(f"Producing tracklets")
+    project_config.logger.info(f"Producing tracklets")
 
     project_data = ProjectData.load_final_project_data_from_config(project_config)
     video_data = project_data.red_data

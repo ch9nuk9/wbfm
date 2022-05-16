@@ -40,17 +40,18 @@ def cfg(project_path, DEBUG):
     logging.warning(f'Starting run at: {date.today().strftime("%Y/%m/%d %H:%M:%S")}')
     if not DEBUG:
         using_monkeypatch()
-        # ex.observers.append(TinyDbObserver(log_dir))
 
 
 @ex.automain
-def produce_training_data(_config, _run):
+def produce_training_data(_config, _run, _log):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
     project_config = _config['cfg']
+    project_config.logger = _log
 
     train_cfg = _config['train_cfg']
+    train_cfg.logger = _log
 
     partial_track_video_using_config(
         project_config,
