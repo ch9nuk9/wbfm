@@ -389,6 +389,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                                      f"{last_tracklet}_current": 'replot'}
         return which_tracklets_to_update
 
+    def get_dict_for_tracklet_save(self, tracklet_name):
+        # Remove tracklet as black, but then replot as colored
+        which_tracklets_to_update = {f"{tracklet_name}_current": 'remove',
+                                     tracklet_name: 'plot'}
+        return which_tracklets_to_update
+
     def add_to_recent_tracklet_dropdown(self):
         last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
         if last_tracklet is None:
@@ -712,7 +718,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             tracklet_name = self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
             if tracklet_name:
                 self.remove_layer_of_current_tracklet(tracklet_name)
-                self.tracklet_updated_psuedo_event(which_tracklets_to_update={f"{tracklet_name}_current": 'remove'})
+                which_tracklets_to_update = self.get_dict_for_tracklet_save(tracklet_name)
+                self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
                 # self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
