@@ -16,13 +16,13 @@ def _load_tracks() -> Tuple[object, ModularProjectConfig]:
 
 
 def test_pipeline_step_a():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.alternate.3-track_using_fdnc", package="DLC_for_WBFM")
+    mod = importlib.import_module("DLC_for_WBFM.scripts.3a-track_using_superglue", package="DLC_for_WBFM")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 
 
 def test_pipeline_step_b():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.postprocessing.3c+combine_tracklets_and_dlc_tracks", package="DLC_for_WBFM")
+    mod = importlib.import_module("DLC_for_WBFM.scripts.3b-match_tracklets_and_tracks", package="DLC_for_WBFM")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 

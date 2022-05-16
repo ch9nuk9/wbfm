@@ -31,18 +31,6 @@ def test_pipeline_step_b():
     mod.ex.run(config_updates=config_updates)
 
 
-def test_pipeline_step_c():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.2c-reindex_segmentation_training_masks", package="DLC_for_WBFM")
-    config_updates = {'project_path': project_path, 'DEBUG': False}
-    mod.ex.run(config_updates=config_updates)
-
-
-def test_pipeline_step_d():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.2d-save_training_tracklets_as_dlc", package="DLC_for_WBFM")
-    config_updates = {'project_path': project_path, 'DEBUG': False}
-    mod.ex.run(config_updates=config_updates)
-
-
 def test_saved_properly():
     df, _ = _load_training_data()
     assert type(df) == pd.DataFrame
