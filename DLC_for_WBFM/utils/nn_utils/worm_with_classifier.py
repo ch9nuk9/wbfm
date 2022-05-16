@@ -196,6 +196,7 @@ def track_using_superglue_from_config(project_cfg, DEBUG):
         df_final = track_using_template(all_frames, num_frames, project_data, tracker)
     else:
         all_templates = generate_random_template_times(num_frames, num_random_templates, t_template)
+        project_cfg.logger.info(f"Using {num_random_templates} templates at t={all_templates}")
         # All subsequent dataframes will have their names mapped to this
         df_base = track_using_template(all_frames, num_frames, project_data, tracker)
         all_dfs = [df_base]
@@ -222,7 +223,6 @@ def generate_random_template_times(num_frames, num_random_templates, t_template)
     permuted_times = np.random.permutation(range(num_frames))
     for t_random in permuted_times[:num_random_templates - 1]:
         all_templates.append(int(t_random))
-    logging.info(f"Using {num_random_templates} templates at t={all_templates}")
     return all_templates
 
 

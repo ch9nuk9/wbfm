@@ -35,11 +35,12 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def main(_config, _run):
+def main(_config, _run, _log):
     sacred.commands.print_config(_run)
 
     project_cfg = _config['cfg']
     project_dir = _config['project_dir']
+    project_cfg.logger = _log
 
     with safe_cd(project_dir):
         track_using_superglue_from_config(project_cfg, _config['DEBUG'])
