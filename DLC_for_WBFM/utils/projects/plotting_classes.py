@@ -423,6 +423,7 @@ class TrackletAndSegmentationAnnotator:
             # assert not self.is_tracklet_already_matched(tracklet_name), f"Removal of {tracklet_name} from {other_match} failed"
         else:
             print("Already unmatched")
+        return tracklet_name
 
     def remove_tracklets_with_time_conflicts(self):
         tracklet_name = self.current_tracklet_name

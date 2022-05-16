@@ -761,9 +761,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.tracklet_updated_psuedo_event()
 
     def remove_tracklet_from_all_matches(self):
-        self.dat.tracklet_annotator.remove_tracklet_from_all_matches()
+        tracklet_name = self.dat.tracklet_annotator.remove_tracklet_from_all_matches()
         self.update_tracklet_status_label()
-        # self.tracklet_updated_psuedo_event()
+        which_tracklets_to_update = {tracklet_name: 'remove'}
+        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
 
     def remove_all_tracklets_after_current_time(self):
         # Just clear and update the entire plot because this should be rare and a huge change
