@@ -1,25 +1,18 @@
 import concurrent
-import logging
 from collections import defaultdict
-
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
-
-logger = logging.getLogger('projectDataLogger')
-logger.setLevel(logging.INFO)
 import os
 from dataclasses import dataclass
-from typing import Tuple, List
-
-import dask.array as da
+from typing import Tuple, Dict
 import napari
 import numpy as np
 import pandas as pd
 import zarr
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, check_if_fully_sparse
+from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
@@ -155,7 +148,7 @@ class ProjectData:
 
     @cached_property
     def raw_frames(self):
-        logger.info("First time loading the raw frames, may take a while...")
+        self.project_config.logger.info("First time loading the raw frames, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'frame_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -164,8 +157,8 @@ class ProjectData:
         return frames
 
     @cached_property
-    def raw_matches(self) -> List[FramePair]:
-        logger.info("First time loading the raw matches, may take a while...")
+    def raw_matches(self) -> Dict[FramePair]:
+        self.project_config.logger.info("First time loading the raw matches, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'match_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -175,7 +168,7 @@ class ProjectData:
 
     @cached_property
     def raw_clust(self):
-        logger.info("First time loading the raw cluster dataframe, may take a while...")
+        self.project_config.logger.info("First time loading the raw cluster dataframe, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'clust_df_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -185,7 +178,7 @@ class ProjectData:
 
     @cached_property
     def df_all_tracklets(self):
-        logger.info("First time loading all the tracklets, may take a while...")
+        self.project_config.logger.info("First time loading all the tracklets, may take a while...")
         train_cfg = self.project_config.get_training_config()
         track_cfg = self.project_config.get_tracking_config()
 
@@ -203,12 +196,12 @@ class ProjectData:
         if self.force_tracklets_to_be_sparse:
             # if not check_if_fully_sparse(df_all_tracklets):
             if True:
-                logger.warning("Casting tracklets as sparse, may take a minute")
+                self.project_config.logger.warning("Casting tracklets as sparse, may take a minute")
                 # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
                 df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
             else:
-                logger.info("Found sparse matrix")
-        logging.info("Finished loading tracklets")
+                self.project_config.logger.info("Found sparse matrix")
+        self.project_config.logger.info("Finished loading tracklets")
 
         return df_all_tracklets
 
@@ -285,7 +278,7 @@ class ProjectData:
         return len(self.which_training_frames)
 
     def check_data_desyncing(self, raise_error=True):
-        logging.info("Checking for database desynchronization")
+        self.project_config.logger.info("Checking for database desynchronization")
         unmatched_tracklets = check_for_unmatched_tracklets(self.df_all_tracklets, self.global2tracklet,
                                                             raise_error=raise_error)
 
@@ -317,7 +310,7 @@ class ProjectData:
         if initiliazation_kwargs is None:
             initiliazation_kwargs = {}
         else:
-            print(f"Initiliazed project with custom settings: {initiliazation_kwargs}")
+            cfg.logger.info(f"Initialized project with custom settings: {initiliazation_kwargs}")
 
         obj = ProjectData(project_dir, cfg)
         for k, v in initiliazation_kwargs.items():
@@ -346,7 +339,6 @@ class ProjectData:
 
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
-        # obj.final_tracks = read_if_exists(final_tracks_fname)
 
         # TODO: do not hardcode
         behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
@@ -361,7 +353,7 @@ class ProjectData:
         # Note: when running on the cluster the raw data isn't (for now) accessible
         with safe_cd(cfg.project_dir):
 
-            logger.info("Starting threads to read data...")
+            cfg.logger.info("Starting threads to read data...")
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
                     ex.submit(obj.load_tracklet_related_properties)
@@ -377,19 +369,16 @@ class ProjectData:
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
                 df_training_tracklets = ex.submit(read_if_exists, df_training_tracklets_fname).result()
                 reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader_folder_or_zipstore).result()
-                # reindexed_metadata_training = ex.submit(read_if_exists,
-                #                                         reindexed_metadata_training_fname, pickle_load_binary).result()
-                # final_tracks = ex.submit(read_if_exists, final_tracks_fname).result()
+
                 # TODO: don't open this as read-write by default
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_folder_or_zipstore).result()
-                # seg_metadata: dict = ex.submit(pickle_load_binary, seg_metadata_fname).result()
                 behavior_annotations = ex.submit(read_if_exists, behavior_fname, excel_reader).result()
 
             if red_traces is not None:
                 red_traces.replace(0, np.nan, inplace=True)
                 green_traces.replace(0, np.nan, inplace=True)
-            logger.info("Read all data")
+            cfg.logger.info("Read all data")
 
         obj.all_used_fnames.extend([red_dat_fname, green_dat_fname, red_traces_fname, green_traces_fname,
                                     df_training_tracklets_fname, reindexed_masks_training_fname,
@@ -473,8 +462,8 @@ class ProjectData:
             new_mask = self.tracklet_annotator.candidate_mask
             t = self.tracklet_annotator.time_of_candidate
         if new_mask is None:
-            logger.warning("Modification attempted, but no valid candidate mask exists; aborting")
-            logger.warning("HINT: if you produce a mask but then click different neurons, it invalidates the mask!")
+            self.project_config.logger.warning("Modification attempted, but no valid candidate mask exists; aborting")
+            self.project_config.logger.warning("HINT: if you produce a mask but then click different neurons, it invalidates the mask!")
             return
         affected_masks = self.tracklet_annotator.indices_of_original_neurons
         # this_seg = self.raw_segmentation[t, ...]
@@ -500,7 +489,7 @@ class ProjectData:
                 print(f"Updating {tracklet_name} corresponding to segmentation {m}")
             else:
                 print(f"No tracklet corresponding to segmentation {m}; not updated")
-        logger.debug("Segmentation and tracklet metadata modified successfully")
+        self.project_config.logger.debug("Segmentation and tracklet metadata modified successfully")
 
     def modify_segmentation_on_disk_using_buffer(self):
         for t in self.tracklet_annotator.t_buffer_masks:
@@ -509,7 +498,6 @@ class ProjectData:
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
         if self.behavior_annotations is None:
             pass
-            # logger.warning("No behavior annotations present; skipping")
         else:
             shade_using_behavior(self.behavior_annotations, ax, behaviors_to_ignore)
 
@@ -599,7 +587,7 @@ class ProjectData:
             new_layers = set(which_layers) - set([layer.name for layer in viewer.layers])
             which_layers = list(new_layers)
 
-        logger.info(f"Finished loading data, adding following layers: {which_layers}")
+        self.project_config.logger.info(f"Finished loading data, adding following layers: {which_layers}")
         z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
         if to_remove_flyback:
             clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
@@ -675,7 +663,7 @@ class ProjectData:
             options = dict(data=pts_data, name="Point Cloud", size=1, blending='opaque')
             viewer.add_points(**options)
 
-        logger.info(f"Finished adding layers {which_layers}")
+        self.project_config.logger.info(f"Finished adding layers {which_layers}")
 
         return viewer
 
@@ -738,7 +726,7 @@ def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, n
     z_dat = z_dat[i_seg_start:i_seg_end, ...]
     raw_seg = raw_seg[i_seg_start:i_seg_end, ...]
 
-    logger.info(f"Size of reindexed_masks: {z_dat.shape}")
+    cfg.logger.info(f"Size of reindexed_masks: {z_dat.shape}")
 
     viewer = napari.view_labels(z_seg, ndisplay=3)
     viewer.add_labels(raw_seg, visible=False)
