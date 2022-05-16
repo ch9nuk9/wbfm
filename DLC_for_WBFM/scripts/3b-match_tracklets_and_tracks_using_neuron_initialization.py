@@ -31,8 +31,10 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def combine_tracks(_config, _run):
+def combine_tracks(_config, _run, _log):
     sacred.commands.print_config(_run)
+    cfg = _config['cfg']
+    cfg.logger = _log
 
     DEBUG = _config['DEBUG']
-    global_track_matches_from_config(_config['project_path'], DEBUG=DEBUG)
+    global_track_matches_from_config(cfg, DEBUG=DEBUG)
