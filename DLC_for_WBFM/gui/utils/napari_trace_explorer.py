@@ -73,15 +73,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.logger = project_data.project_config.setup_global_logger('trace_explorer.log')
         self.logger = project_data.project_config.setup_logger('trace_explorer.log')
         project_data.tracklet_annotator.logger = self.logger
-        self.logger.info("Finished initializing Trace Explorer object")
-        logging.info("Finished initializing Trace Explorer object")
+        self.logger.debug("Finished initializing Trace Explorer object")
 
         self.traces_mode_calculation_options = ['integration', 'z', 'volume']
         self.tracklet_mode_calculation_options = ['z', 'volume', 'likelihood', 'brightness_red']
 
     def setupUi(self, viewer: napari.Viewer):
 
-        self.logger.info("Starting main UI setup")
+        self.logger.debug("Starting main UI setup")
         # Load dataframe and path to outputs
         self.viewer = viewer
         neuron_names = get_names_from_df(self.dat.red_traces)
@@ -136,7 +135,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.initialize_trace_or_tracklet_subplot()
         self.update_interactivity()
 
-        self.logger.info("Finished main UI setup")
+        self.logger.debug("Finished main UI setup")
 
     def _setup_trace_filtering_buttons(self):
         # Change traces (dropdown)
@@ -337,12 +336,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return self.viewer.layers['Raw segmentation']
 
     def refresh_default_napari_layers(self):
-        self.logger.info("Undocumented shortcut!")
+        self.logger.warning("Undocumented shortcut!")
         self.dat.add_layers_to_viewer(self.viewer, which_layers='all', check_if_layers_exist=True,
                                       dask_for_segmentation=False)
 
     def refresh_segmentation_metadata(self):
-        self.logger.info("Undocumented shortcut!")
+        self.logger.warning("Undocumented shortcut!")
         t = self.t
         self.logger.info(f"Updating segmentation metadata at t={t}")
         red_volume = self.viewer.layers['Red data'].data[t, ...]
@@ -887,10 +886,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # This middle block will be called when the mode is switched
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.logger.info("Initializing tracklet mode")
+            self.logger.debug("Initializing tracklet mode")
             self.initialize_tracklet_subplot()
         elif self.changeTraceTrackletDropdown.currentText() == 'traces':
-            self.logger.info("Initializing trace mode")
+            self.logger.debug("Initializing trace mode")
             self.initialize_trace_subplot()
 
         if not self.subplot_is_initialized:
@@ -960,7 +959,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     if type_of_update == 'remove' or type_of_update == 'replot':
                         self.tracklet_lines[tracklet_name].remove()
                         del self.tracklet_lines[tracklet_name]
-                        self.logger.info(f"Cleared tracklet {tracklet_name} from the subplot")
+                        self.logger.debug(f"Cleared tracklet {tracklet_name} from the subplot")
                 else:
                     if 'None' not in tracklet_name and '_current' not in tracklet_name:
                         logging.warning(f"Tried to modify {tracklet_name} on the subplot, but it wasn't found")
@@ -977,13 +976,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                                 extra_opt = current_tracklet_opt
 
                     if y is None:
-                        logging.warning(f"Tried to plot {tracklet_name}, but it wasn't found")
+                        self.logger.debug(f"Tried to plot {tracklet_name}, but it wasn't found")
                         continue
 
                     self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax,
                                                                                **extra_opt,
                                                                                **marker_opt).lines[-1]
-                    self.logger.info(f"Added tracklet {tracklet_name} to the subplot")
+                    self.logger.debug(f"Added tracklet {tracklet_name} to the subplot")
         self.invalidate_y_on_plot()
 
         # self.update_stored_time_series(field_to_plot)
@@ -1134,9 +1133,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_stored_tracklets_for_plotting(self):
         name = self.current_name
         tracklets_dict, tracklet_current, current_name = self.dat.calculate_tracklets(name)
-        self.logger.info(f"Found {len(tracklets_dict)} tracklets for {name}")
+        self.logger.debug(f"Found {len(tracklets_dict)} tracklets for {name}")
         if tracklet_current is not None:
-            self.logger.info("Additionally found 1 currently selected tracklet")
+            self.logger.debug("Additionally found 1 currently selected tracklet")
         self.y_tracklets_dict = tracklets_dict
         self.y_tracklet_current = tracklet_current
         self.y_tracklet_current_name = current_name

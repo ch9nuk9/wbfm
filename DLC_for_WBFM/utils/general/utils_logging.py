@@ -29,8 +29,8 @@ def setup_logger_object(log_filename):
     logger.propagate = False
 
     logger.info(f"Set up logger with name: {log_name}")
-    logger.debug("Check that debugging works")
-    logger.warning("Check that warning works")
+    # logger.debug("Check that debugging works")
+    # logger.warning("Check that warning works")
 
     return logger
 
