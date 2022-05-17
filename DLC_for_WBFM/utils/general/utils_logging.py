@@ -19,7 +19,7 @@ def setup_logger_object(log_filename):
 
     # Main log object
     logger = logging.getLogger(f'{log_name}')
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     ch = _get_console_handler()
 

@@ -781,7 +781,7 @@ class TrackletAndSegmentationAnnotator:
         old_mask_ind = cast_int_or_nan(self.df_tracklet_obj.df_tracklets_zxy[tracklet_name]['raw_segmentation_id'][t])
         if np.isnan(old_mask_ind) or old_mask_ind != mask_ind:
             self.logger.warning(f"Deletion of segmentation {mask_ind} from {tracklet_name} attempted, "
-                            f"but current mask is instead {old_mask_ind}; aborting")
+                                f"but current mask is instead {old_mask_ind}; aborting")
             return False
 
         with self.saving_lock:
@@ -790,7 +790,6 @@ class TrackletAndSegmentationAnnotator:
         self.clear_currently_selected_segmentations(do_callbacks=False)
         self.segmentation_updated_callbacks()
         self.tracklet_updated_callbacks()
-
         return True
 
     def check_validity_of_tracklet_and_segmentation(self):
