@@ -13,12 +13,11 @@ from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 
-from DLC_for_WBFM.utils.traces.traces_pipeline import match_segmentation_and_tracks_using_config, \
-    extract_traces_using_config
+from DLC_for_WBFM.pipeline.traces import match_segmentation_and_tracks_using_config, extract_traces_using_config
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_project
+from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_using_project
 import cgitb
 cgitb.enable(format='text')
 
@@ -64,4 +63,4 @@ def make_full_tracks(_config, _run):
         # Note: reloads the project data
         logging.info("Making default grid plots")
         proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
-        make_grid_plot_from_project(proj_dat, channel_mode='all', calculation_mode='integration')
+        make_grid_plot_using_project(proj_dat, channel_mode='all', calculation_mode='integration')

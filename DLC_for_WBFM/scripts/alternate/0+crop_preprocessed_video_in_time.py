@@ -8,7 +8,7 @@ from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.projects.utils_data_subsets import crop_zarr_using_config
+from DLC_for_WBFM.pipeline.project_initialization import crop_zarr_using_config
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

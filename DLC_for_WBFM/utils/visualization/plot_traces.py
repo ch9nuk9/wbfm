@@ -20,20 +20,20 @@ from DLC_for_WBFM.utils.visualization.utils_plot_traces import build_trace_facto
 ## New functions for use with project_config files
 ##
 
-def make_grid_plot_from_project(project_data: ProjectData,
-                                channel_mode: str,
-                                calculation_mode: str,
-                                neuron_names_to_plot: list = None,
-                                filter_mode: str = 'no_filtering',
-                                color_using_behavior=True,
-                                to_save=True):
+def make_grid_plot_using_project(project_data: ProjectData,
+                                 channel_mode: str,
+                                 calculation_mode: str,
+                                 neuron_names_to_plot: list = None,
+                                 filter_mode: str = 'no_filtering',
+                                 color_using_behavior=True,
+                                 to_save=True):
     if channel_mode == 'all':
         all_modes = ['red', 'green', 'ratio']
         opt = dict(project_data=project_data,
                    calculation_mode=calculation_mode,
                    color_using_behavior=color_using_behavior)
         for mode in all_modes:
-            make_grid_plot_from_project(channel_mode=mode, **opt)
+            make_grid_plot_using_project(channel_mode=mode, **opt)
         return
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot

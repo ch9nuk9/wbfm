@@ -62,10 +62,10 @@ def test_custom_package_imports():
     from DLC_for_WBFM.utils.projects.project_config_classes import ConfigFileWithProjectContext
     from DLC_for_WBFM.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
     from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
-    from DLC_for_WBFM.utils.projects.utils_project import build_project_structure
+    from DLC_for_WBFM.pipeline.project_initialization import build_project_structure_from_config
     from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 
-    from DLC_for_WBFM.utils.traces.traces_pipeline import extract_traces_using_config
+    from DLC_for_WBFM.pipeline.traces import extract_traces_using_config
 
     from DLC_for_WBFM.utils.tracklets.high_performance_pandas import PaddedDataFrame
     from DLC_for_WBFM.utils.tracklets.tracklet_class import NeuronComposedOfTracklets
@@ -76,8 +76,8 @@ def test_custom_package_imports():
 
     from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_full_data
     from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
-    from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_project
-    from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
+    from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_using_project
+    from DLC_for_WBFM.pipeline.traces import reindex_segmentation_using_config
 
 
 @pytest.mark.skipif(os.environ.get('CONDA_DEFAULT_ENV', '') != "segmentation", reason="incorrect conda env")

@@ -15,56 +15,13 @@ from scipy import ndimage as ndi
 from tifffile import tifffile
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_zarr import zip_raw_data_zarr, zarr_reader_folder_or_zipstore
+from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from DLC_for_WBFM.utils.neuron_matching.utils_rigid_alignment import filter_stack, align_stack, \
     align_stack_using_previous_results
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
-
-
-def zip_zarr_using_config(project_cfg: ModularProjectConfig):
-    project_cfg.logger.info("Zipping zarr data (both channels)")
-    out_fname_red_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_red'], verbose=1)
-    out_fname_green_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_green'], verbose=1)
-
-    project_cfg.config['preprocessed_red'] = str(out_fname_red_7z)
-    project_cfg.config['preprocessed_green'] = str(out_fname_green_7z)
-    project_cfg.update_self_on_disk()
-
-
-def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing=True, DEBUG=False):
-    """
-    Read a video of the background and the otherwise fully preprocessed data, and simply subtract
-
-    NOTE: if z-alignment (rotation) is used, then this can cause some artifacts
-    """
-
-    preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
-    num_slices = preprocessing_settings.raw_number_of_planes
-    num_frames = 50  # TODO: is this constant?
-    if DEBUG:
-        num_frames = 2
-
-    opt = dict(num_frames=num_frames, num_slices=num_slices, preprocessing_settings=preprocessing_settings,
-               DEBUG=DEBUG)
-    if not do_preprocessing:
-        opt['preprocessing_settings'] = None
-    raw_fname_red = cfg.config[f'preprocessed_red']
-    background_fname_red = cfg.config[f'red_background_fname']
-    raw_fname_green = cfg.config[f'preprocessed_green']
-    background_fname_green = cfg.config[f'green_background_fname']
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
-        red_fname_subtracted = ex.submit(background_subtract_single_channel, raw_fname_red, background_fname_red,
-                                         **opt).result()
-        green_fname_subtracted = ex.submit(background_subtract_single_channel, raw_fname_green, background_fname_green,
-                                           **opt).result()
-    cfg.config['preprocessed_red'] = str(red_fname_subtracted)
-    cfg.config['preprocessed_green'] = str(green_fname_subtracted)
-
-    zip_zarr_using_config(cfg)
 
 
 def background_subtract_single_channel(raw_fname, background_fname, num_frames, num_slices, preprocessing_settings,

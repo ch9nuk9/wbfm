@@ -6,7 +6,7 @@ import sacred
 from sacred import Experiment
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
-from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import build_frame_pairs_using_superglue_from_config
+from DLC_for_WBFM.pipeline.tracklets import build_frame_pairs_using_superglue_using_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from sacred import SETTINGS
 SETTINGS.CAPTURE_MODE = 'sys'  # Capture stdout
@@ -37,4 +37,4 @@ def produce_training_data(_config, _run):
     DEBUG = _config['DEBUG']
     project_config = _config['cfg']
 
-    build_frame_pairs_using_superglue_from_config(project_config, DEBUG=False)
+    build_frame_pairs_using_superglue_using_config(project_config, DEBUG=False)

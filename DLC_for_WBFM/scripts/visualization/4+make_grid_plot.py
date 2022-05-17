@@ -12,7 +12,7 @@ from sacred.observers import TinyDbObserver
 # main function
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_project
+from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_using_project
 
 # Initialize sacred experiment
 ex = Experiment()
@@ -36,5 +36,5 @@ def make_dlc_labeled_videos(_config, _run):
     proj_dat.verbose = 0
 
     with safe_cd(_config['project_dir']):
-        make_grid_plot_from_project(proj_dat, channel_mode=_config['channel_mode'],
-                                    calculation_mode=_config['calculation_mode'])
+        make_grid_plot_using_project(proj_dat, channel_mode=_config['channel_mode'],
+                                     calculation_mode=_config['calculation_mode'])

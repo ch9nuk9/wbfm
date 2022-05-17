@@ -6,7 +6,7 @@ import sacred
 from sacred import Experiment
 
 from DLC_for_WBFM.utils.projects.utils_project import load_config
-from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
+from DLC_for_WBFM.pipeline.traces import reindex_segmentation_using_config
 
 # Initialize sacred experiment
 

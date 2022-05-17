@@ -9,9 +9,9 @@ from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import zip_zarr_using_config, PreprocessingSettings
+from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 
-from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
+from DLC_for_WBFM.pipeline.project_initialization import write_data_subset_using_config, zip_zarr_using_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 import cgitb
@@ -77,8 +77,8 @@ def main(_config, _run):
             logger.info("Preprocessing red...")
             preprocessing_settings.do_mirroring = False
             assert preprocessing_settings.to_save_warp_matrices
-            write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings,
-                                          which_channel='red', **options)
+            write_data_subset_using_config(cfg, preprocessing_settings=preprocessing_settings,
+                                           which_channel='red', **options)
         else:
             logger.info("Preprocessed red already exists; skipping to green")
 
@@ -89,8 +89,8 @@ def main(_config, _run):
         preprocessing_settings.to_use_previous_warp_matrices = True
         if cfg.config['dataset_params']['red_and_green_mirrored']:
             preprocessing_settings.do_mirroring = True
-        write_data_subset_from_config(cfg, preprocessing_settings=preprocessing_settings,
-                                      which_channel='green', **options)
+        write_data_subset_using_config(cfg, preprocessing_settings=preprocessing_settings,
+                                       which_channel='green', **options)
 
         # Save the warp matrices to disk if needed further
         preprocessing_settings.save_all_warp_matrices()

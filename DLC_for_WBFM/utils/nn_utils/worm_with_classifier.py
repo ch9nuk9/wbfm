@@ -1,17 +1,13 @@
 import logging
 import os.path
 from dataclasses import dataclass
-from typing import Dict
 
 import numpy as np
-import pandas as pd
 import torch
 from scipy.optimize import linear_sum_assignment
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
-    combine_dataframes_using_bipartite_matching
 from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
@@ -145,37 +141,6 @@ class WormWithSuperGlueClassifier:
         return f"Worm Tracker based on superglue network"
 
 
-def track_using_embedding_from_config(project_cfg, DEBUG):
-    all_frames, num_frames, num_random_templates, project_data, t_template, tracking_cfg, use_multiple_templates = _unpack_project_for_global_tracking(
-        DEBUG, project_cfg)
-
-    if not use_multiple_templates:
-        tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template])
-        df_final = track_using_template(all_frames, num_frames, project_data, tracker)
-    else:
-        all_templates = generate_random_template_times(num_frames, num_random_templates, t_template)
-        # All subsequent dataframes will have their names mapped to this
-        t = all_templates[0]
-        tracker = WormWithNeuronClassifier(template_frame=all_frames[t])
-        df_base = track_using_template(all_frames, num_frames, project_data, tracker)
-        all_dfs = [df_base]
-        for i, t in enumerate(tqdm(all_templates[1:])):
-            tracker = WormWithNeuronClassifier(template_frame=all_frames[t])
-            df = track_using_template(all_frames, num_frames, project_data, tracker)
-            df, _, _, _ = rename_columns_using_matching(df_base, df)
-            all_dfs.append(df)
-
-        tracking_cfg.config['t_templates'] = all_templates
-        df_final = combine_dataframes_using_bipartite_matching(all_dfs)
-
-    # Save
-    out_fname = '3-tracking/postprocessing/df_tracks_embedding.h5'
-    tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True)
-    tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
-
-    tracking_cfg.update_self_on_disk()
-
-
 def track_using_template(all_frames, num_frames, project_data, tracker):
     all_matches = []
     for t in tqdm(range(num_frames), leave=False):
@@ -184,38 +149,6 @@ def track_using_template(all_frames, num_frames, project_data, tracker):
         all_matches.append(matches_with_conf)
     df = template_matches_to_dataframe(project_data, all_matches)
     return df
-
-
-def track_using_superglue_from_config(project_cfg, DEBUG):
-    all_frames, num_frames, num_random_templates, project_data, t_template, tracking_cfg, use_multiple_templates = _unpack_project_for_global_tracking(
-        DEBUG, project_cfg)
-    superglue_unpacker = SuperGlueUnpacker(project_data=project_data, t_template=t_template)
-    tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
-
-    if not use_multiple_templates:
-        df_final = track_using_template(all_frames, num_frames, project_data, tracker)
-    else:
-        all_templates = generate_random_template_times(num_frames, num_random_templates, t_template)
-        project_cfg.logger.info(f"Using {num_random_templates} templates at t={all_templates}")
-        # All subsequent dataframes will have their names mapped to this
-        df_base = track_using_template(all_frames, num_frames, project_data, tracker)
-        all_dfs = [df_base]
-        for i, t in enumerate(tqdm(all_templates[1:])):
-            superglue_unpacker = SuperGlueUnpacker(project_data=project_data, t_template=t)
-            tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
-            df = track_using_template(all_frames, num_frames, project_data, tracker)
-            df, _, _, _ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
-            all_dfs.append(df)
-
-        tracking_cfg.config['t_templates'] = all_templates
-        df_final = combine_dataframes_using_bipartite_matching(all_dfs)
-
-    # Save
-    out_fname = '3-tracking/postprocessing/df_tracks_superglue.h5'
-    tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True)
-    tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
-
-    tracking_cfg.update_self_on_disk()
 
 
 def generate_random_template_times(num_frames, num_random_templates, t_template):

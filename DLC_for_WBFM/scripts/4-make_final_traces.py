@@ -10,8 +10,7 @@ import sacred
 
 from DLC_for_WBFM.utils.external.utils_zarr import zip_raw_data_zarr
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_from_project
-from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_using_config
+from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_using_project
 from sacred import Experiment
 from sacred import SETTINGS
 # main function
@@ -19,8 +18,8 @@ from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 
-from DLC_for_WBFM.utils.traces.traces_pipeline import match_segmentation_and_tracks_using_config, \
-    extract_traces_using_config
+from DLC_for_WBFM.pipeline.traces import match_segmentation_and_tracks_using_config, extract_traces_using_config, \
+    reindex_segmentation_using_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext, \
     SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -93,4 +92,4 @@ def make_full_tracks(_config, _run):
         # Note: reloads the project data
         project_cfg.logger.info("Making default grid plots")
         proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
-        make_grid_plot_from_project(proj_dat, channel_mode='all', calculation_mode='integration')
+        make_grid_plot_using_project(proj_dat, channel_mode='all', calculation_mode='integration')

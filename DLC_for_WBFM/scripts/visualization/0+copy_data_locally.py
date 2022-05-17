@@ -10,7 +10,7 @@ import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 
-from DLC_for_WBFM.utils.projects.utils_data_subsets import write_data_subset_from_config
+from DLC_for_WBFM.pipeline.project_initialization import write_data_subset_using_config
 from DLC_for_WBFM.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
 from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
 
@@ -67,4 +67,4 @@ def main(_config, _run):
     cfg = _config['cfg']
     cfg['project_dir'] = _config['project_dir']
     with safe_cd(_config['project_dir']):
-        write_data_subset_from_config(cfg, **options)
+        write_data_subset_using_config(cfg, **options)

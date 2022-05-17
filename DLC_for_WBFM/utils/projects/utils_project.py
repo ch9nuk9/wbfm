@@ -1,4 +1,3 @@
-import logging
 import os
 import os.path as osp
 import pathlib
@@ -6,29 +5,8 @@ import typing
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from shutil import copytree
 
-from DLC_for_WBFM.utils.projects.utils_filenames import get_sequential_filename
 from ruamel.yaml import YAML
-
-
-def build_project_structure(_config: dict, logger: logging.Logger) -> None:
-    parent_folder = _config['project_dir']
-    rel_dir_name = get_project_name(_config)
-
-    # Build copied folder structure
-    abs_dir_name = osp.join(parent_folder, rel_dir_name)
-    abs_dir_name = get_sequential_filename(abs_dir_name)
-    logger.info(f"Building new project at: {abs_dir_name}")
-
-    src = 'new_project_defaults'
-    copytree(src, abs_dir_name)
-
-    # Update the copied project config with the new dest folder
-    dest_fname = 'project_config.yaml'
-    project_fname = osp.join(abs_dir_name, dest_fname)
-    project_fname = Path(project_fname).resolve()
-    edit_config(str(project_fname), _config)
 
 
 #####################

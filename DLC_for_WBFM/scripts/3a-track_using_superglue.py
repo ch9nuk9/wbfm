@@ -3,8 +3,7 @@ import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import track_using_embedding_from_config, \
-    track_using_superglue_from_config
+from DLC_for_WBFM.pipeline.tracking import track_using_superglue_using_config, track_using_embedding_using_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 import cgitb
 
@@ -43,4 +42,4 @@ def main(_config, _run):
     project_dir = _config['project_dir']
 
     with safe_cd(project_dir):
-        track_using_superglue_from_config(project_cfg, _config['DEBUG'])
+        track_using_superglue_using_config(project_cfg, _config['DEBUG'])

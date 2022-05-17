@@ -19,19 +19,6 @@ from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import build_subset_df_from_tr
     get_or_recalculate_which_frames, _unpack_config_training_data_conversion
 
 
-def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
-                                      segment_cfg: SubfolderConfigFile,
-                                      project_cfg: ModularProjectConfig,
-                                      DEBUG=False):
-    """
-    Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
-    """
-    all_matches, raw_seg_masks, new_masks, min_confidence, out_fname = _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg)
-    reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks, min_confidence)
-
-    return out_fname
-
-
 def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidence):
     all_lut = all_matches_to_lookup_tables(all_matches, min_confidence=min_confidence)
     all_lut_keys = all_lut.keys()

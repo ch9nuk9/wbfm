@@ -9,7 +9,7 @@ from sacred import Experiment
 # main function
 
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.neuron_matching.long_range_matching import global_track_matches_from_config
+from DLC_for_WBFM.pipeline.tracking import match_tracks_and_tracklets_using_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 import cgitb
 cgitb.enable(format='text')
@@ -37,4 +37,4 @@ def combine_tracks(_config, _run, _log):
     cfg = _config['cfg']
 
     DEBUG = _config['DEBUG']
-    global_track_matches_from_config(cfg, DEBUG=DEBUG)
+    match_tracks_and_tracklets_using_config(cfg, DEBUG=DEBUG)
