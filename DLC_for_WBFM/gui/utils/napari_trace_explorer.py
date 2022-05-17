@@ -84,14 +84,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Load dataframe and path to outputs
         self.viewer = viewer
         neuron_names = get_names_from_df(self.dat.red_traces)
-        self.current_name = neuron_names[0]
+        self.current_neuron_name = neuron_names[0]
 
         # BOX 1: Change neurons (dropdown)
         self.groupBox1 = QtWidgets.QGroupBox("Selection", self.verticalLayoutWidget)
         self.vbox1 = QtWidgets.QVBoxLayout(self.groupBox1)
         self.changeNeuronsDropdown = QtWidgets.QComboBox()
         self.changeNeuronsDropdown.addItems(neuron_names)
-        self.changeNeuronsDropdown.setItemText(0, self.current_name)
+        self.changeNeuronsDropdown.setItemText(0, self.current_neuron_name)
         self.changeNeuronsDropdown.currentIndexChanged.connect(self.change_neurons)
         # self.verticalLayout.addWidget(self.changeNeuronsDropdown)
         self.vbox1.addWidget(self.changeNeuronsDropdown)
@@ -376,7 +376,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def get_dict_for_tracklet_change(self, current_tracklet=None, next_tracklet=None):
         if current_tracklet is None:
-            current_tracklet = self.y_tracklet_current_name
+            current_tracklet = self.current_tracklet_name
         if current_tracklet == next_tracklet:
             which_tracklets_to_update = {f"{current_tracklet}_current": 'replot'}
         else:
@@ -732,12 +732,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def save_segmentation_to_tracklet(self):
         flag = self.dat.tracklet_annotator.attach_current_segmentation_to_current_tracklet()
-        which_tracklets_to_update = {self.y_tracklet_current_name: 'replot'}
+        # which_tracklets_to_update = {self.current_tracklet_name: 'replot'}
+        which_tracklets_to_update = self.get_dict_for_tracklet_split()
         self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
 
     def delete_segmentation_from_tracklet(self):
         flag = self.dat.tracklet_annotator.delete_current_segmentation_from_tracklet()
-        which_tracklets_to_update = {self.y_tracklet_current_name: 'replot'}
+        # which_tracklets_to_update = {self.current_tracklet_name: 'replot'}
+        which_tracklets_to_update = self.get_dict_for_tracklet_split()
         self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
 
     def remove_layer_of_current_tracklet(self, layer_name=None):
@@ -945,11 +947,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.tracklet_lines = {}  # Remove references to old lines
             for name, y in tqdm(self.y_tracklets_dict.items(), leave=False):
                 self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[-1]
-            if self.y_tracklet_current is not None:
-                y = self.y_tracklet_current[field_to_plot]
-                self.tracklet_lines[f"{self.y_tracklet_current_name}_current"] = y.plot(ax=self.static_ax,
-                                                                                        **current_tracklet_opt,
-                                                                                        **marker_opt).lines[-1]
+            if self.current_tracklet is not None:
+                y = self.current_tracklet[field_to_plot]
+                self.tracklet_lines[f"{self.current_tracklet_name}_current"] = y.plot(ax=self.static_ax,
+                                                                                      **current_tracklet_opt,
+                                                                                      **marker_opt).lines[-1]
             # Not a clear in the other branch
             self.init_subplot_post_clear()
         else:
@@ -971,8 +973,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     if y is None:
                         if tracklet_name.endswith('_current'):
                             tracklet_name_exact = tracklet_name.replace("_current", "")
-                            if tracklet_name_exact == self.y_tracklet_current_name:
-                                y = self.y_tracklet_current
+                            if tracklet_name_exact == self.current_tracklet_name:
+                                y = self.current_tracklet
                                 extra_opt = current_tracklet_opt
 
                     if y is None:
@@ -1109,7 +1111,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_stored_trace_time_series(self, calc_mode=None):
         # i = self.changeNeuronsDropdown.currentIndex()
-        name = self.current_name
+        name = self.current_neuron_name
         channel = self.changeChannelDropdown.currentText()
         if calc_mode is None:
             calc_mode = self.changeTraceCalculationDropdown.currentText()
@@ -1131,17 +1133,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.tspan = t
 
     def update_stored_tracklets_for_plotting(self):
-        name = self.current_name
+        name = self.current_neuron_name
         tracklets_dict, tracklet_current, current_name = self.dat.calculate_tracklets(name)
         self.logger.debug(f"Found {len(tracklets_dict)} tracklets for {name}")
         if tracklet_current is not None:
             self.logger.debug("Additionally found 1 currently selected tracklet")
         self.y_tracklets_dict = tracklets_dict
-        self.y_tracklet_current = tracklet_current
-        self.y_tracklet_current_name = current_name
+        self.current_tracklet = tracklet_current
+        self.current_tracklet_name = current_name
 
     def get_track_data(self):
-        self.current_name = self.changeNeuronsDropdown.currentText()
+        self.current_neuron_name = self.changeNeuronsDropdown.currentText()
         return self.build_tracks_from_name()
 
     def color_using_behavior(self):
@@ -1167,11 +1169,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Note: this allows for manual changing of the points
         new_df = self.build_df_of_current_points()
 
-        self.dat.final_tracks = self.dat.final_tracks.drop(columns=self.current_name, level=0)
+        self.dat.final_tracks = self.dat.final_tracks.drop(columns=self.current_neuron_name, level=0)
         self.dat.final_tracks = pd.concat([self.dat.final_tracks, new_df], axis=1)
 
     def build_df_of_current_points(self) -> pd.DataFrame:
-        name = self.current_name
+        name = self.current_neuron_name
         new_points = self.viewer.layers['final_track'].data
 
         # Initialize as dict and immediately create dataframe
@@ -1199,7 +1201,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return df_new
 
     def build_tracks_from_name(self):
-        neuron_name = self.current_name
+        neuron_name = self.current_neuron_name
         df_single_track = self.dat.final_tracks[neuron_name]
         likelihood_threshold = self.dat.likelihood_thresh
         z_to_xy_ratio = self.dat.physical_unit_conversion.z_to_xy_ratio
