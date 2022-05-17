@@ -6,11 +6,9 @@ import signal
 import warnings
 
 from backports.cached_property import cached_property
-from napari._qt.qthreading import thread_worker
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.gui.utils.utils_matplotlib import PlotQWidget
-from DLC_for_WBFM.utils.external.utils_logging import setup_logger
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 
@@ -72,9 +70,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.current_subplot_xlim = None
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
                          'layer_name': 'final_track'}
-        self.logger = setup_logger('trace_explorer.log', filemode='a')
+        # self.logger = project_data.project_config.setup_global_logger('trace_explorer.log')
+        self.logger = project_data.project_config.setup_logger('trace_explorer.log')
         project_data.tracklet_annotator.logger = self.logger
         self.logger.info("Finished initializing Trace Explorer object")
+        logging.info("Finished initializing Trace Explorer object")
 
         self.traces_mode_calculation_options = ['integration', 'z', 'volume']
         self.tracklet_mode_calculation_options = ['z', 'volume', 'likelihood', 'brightness_red']
@@ -955,6 +955,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.init_subplot_post_clear()
         else:
             for tracklet_name, type_of_update in which_tracklets_to_update.items():
+                # If it is an already plotted (colored) tracklet
                 if tracklet_name in self.tracklet_lines:
                     if type_of_update == 'remove' or type_of_update == 'replot':
                         self.tracklet_lines[tracklet_name].remove()
@@ -962,9 +963,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                         self.logger.info(f"Cleared tracklet {tracklet_name} from the subplot")
                 else:
                     if 'None' not in tracklet_name and '_current' not in tracklet_name:
-                        logging.warning(f"Tried to modify {tracklet_name}, but it wasn't found")
+                        logging.warning(f"Tried to modify {tracklet_name} on the subplot, but it wasn't found")
                 # Should NOT be elif
                 if type_of_update == 'plot' or type_of_update == 'replot':
+                    # If it is an already plotted (colored) tracklet
                     y = self.y_tracklets_dict.get(tracklet_name, None)
                     extra_opt = dict()
                     if y is None:

@@ -4,11 +4,11 @@ import os
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Tuple, Dict
+from typing import Dict
 import pandas as pd
 import pprint
 
-from DLC_for_WBFM.utils.external.utils_logging import setup_logger
+from DLC_for_WBFM.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
 from DLC_for_WBFM.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename
@@ -40,8 +40,14 @@ class ConfigFileWithProjectContext:
             self.logger = logging.getLogger('ConfigFile')
 
     def setup_logger(self, relative_log_filename: str):
-        log_filename = self.resolve_relative_path(relative_log_filename)
-        self.logger = setup_logger(log_filename)
+        log_filename = self.resolve_relative_path(os.path.join('log', relative_log_filename))
+        self.logger = setup_logger_object(log_filename)
+        return self.logger
+
+    def setup_global_logger(self, relative_log_filename: str):
+        log_filename = self.resolve_relative_path(os.path.join('log', relative_log_filename))
+        logger = setup_root_logger(log_filename)
+        return logger
 
     def update_self_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)

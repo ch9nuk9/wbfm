@@ -383,11 +383,11 @@ class ProjectData:
             if red_traces is not None:
                 red_traces.replace(0, np.nan, inplace=True)
                 green_traces.replace(0, np.nan, inplace=True)
-            cfg.logger.info("Read all data")
 
         obj.all_used_fnames.extend([red_dat_fname, green_dat_fname, red_traces_fname, green_traces_fname,
                                     df_training_tracklets_fname, reindexed_masks_training_fname,
                                     seg_fname_raw, seg_fname, behavior_fname])
+        cfg.logger.info(f"Read all data from files: {obj.all_used_fnames}")
 
         background_per_pixel = preprocessing_settings.background_per_pixel
         likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']
