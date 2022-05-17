@@ -30,19 +30,22 @@ class ConfigFileWithProjectContext:
     config: dict = None
     project_dir: str = None
 
-    logger: logging.Logger = None
+    _logger: logging.Logger = None
 
     def __post_init__(self):
         self.config = load_config(self.self_path)
         self.project_dir = str(Path(self.self_path).parent)
 
-        if self.logger is None:
-            self.logger = logging.getLogger('ConfigFile')
+    @property
+    def logger(self):
+        if self._logger is None:
+            self.setup_logger('ConfigFile.log')
+        return self._logger
 
     def setup_logger(self, relative_log_filename: str):
         log_filename = self.resolve_relative_path(os.path.join('log', relative_log_filename))
-        self.logger = setup_logger_object(log_filename)
-        return self.logger
+        self._logger = setup_logger_object(log_filename)
+        return self._logger
 
     def setup_global_logger(self, relative_log_filename: str):
         log_filename = self.resolve_relative_path(os.path.join('log', relative_log_filename))
@@ -206,7 +209,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         args = dict(self_path=str(subconfig_path),
                     config=cfg,
                     project_dir=str(project_dir),
-                    logger=self.logger,
+                    _logger=self.logger,
                     subfolder=str(subfolder))
         return args
 

@@ -38,7 +38,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     _disable_callbacks = False
 
     def __init__(self, project_data: ProjectData, app: QApplication):
-        check_all_needed_data_for_step(project_data.project_config.self_path,
+        check_all_needed_data_for_step(project_data.project_config,
                                        step_index=5, raise_error=True, training_data_required=False)
         project_data.check_data_desyncing(raise_error=True)
 

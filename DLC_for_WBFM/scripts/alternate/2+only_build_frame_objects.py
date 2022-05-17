@@ -28,7 +28,7 @@ ex.add_config(project_path=None, only_calculate_desynced=False, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
-    check_all_needed_data_for_step(project_path, 2)
+    check_all_needed_data_for_step(cfg, 2)
 
     train_cfg = update_path_to_segmentation_in_config(cfg)
     train_cfg.update_self_on_disk()

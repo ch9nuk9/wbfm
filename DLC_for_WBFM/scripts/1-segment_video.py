@@ -30,7 +30,7 @@ def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
     cfg.setup_logger('step_1.log')
-    check_all_needed_data_for_step(project_path, 1)
+    check_all_needed_data_for_step(cfg, 1)
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()

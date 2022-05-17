@@ -46,7 +46,7 @@ def cfg(project_path, DEBUG):
     traces_cfg = cfg.get_traces_config()
 
     # use_training = tracking_cfg.config['leifer_params']['use_multiple_templates']
-    check_all_needed_data_for_step(project_path, 4, training_data_required=False)
+    check_all_needed_data_for_step(cfg, 4, training_data_required=False)
 
     if not DEBUG:
         using_monkeypatch()

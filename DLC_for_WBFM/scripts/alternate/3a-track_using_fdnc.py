@@ -28,9 +28,9 @@ def cfg(project_path, DEBUG):
     tracks_cfg = cfg.get_tracking_config()
 
     if tracks_cfg.config['leifer_params']['use_multiple_templates']:
-        check_all_needed_data_for_step(project_path, 3)
+        check_all_needed_data_for_step(cfg, 3)
     else:
-        check_all_needed_data_for_step(project_path, 2)
+        check_all_needed_data_for_step(cfg, 2)
 
     if not DEBUG:
         using_monkeypatch()

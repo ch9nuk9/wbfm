@@ -310,15 +310,15 @@ class ProjectData:
                                 to_load_interactivity=False,
                                 to_load_frames=False,
                                 to_load_segmentation_metadata=False,
-                                initiliazation_kwargs=None):
+                                initialization_kwargs=None):
         # Initialize object in order to use cached properties
-        if initiliazation_kwargs is None:
-            initiliazation_kwargs = {}
+        if initialization_kwargs is None:
+            initialization_kwargs = {}
         else:
-            cfg.logger.info(f"Initialized project with custom settings: {initiliazation_kwargs}")
+            cfg.logger.info(f"Initialized project with custom settings: {initialization_kwargs}")
 
         obj = ProjectData(project_dir, cfg)
-        for k, v in initiliazation_kwargs.items():
+        for k, v in initialization_kwargs.items():
             obj.k = v
 
         obj.all_used_fnames = []

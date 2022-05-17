@@ -26,7 +26,7 @@ def cfg(project_path, DEBUG):
     cfg.setup_logger('step_3a.log')
     project_dir = cfg.project_dir
 
-    check_all_needed_data_for_step(project_path, 2)
+    check_all_needed_data_for_step(cfg, 2)
 
     if not DEBUG:
         using_monkeypatch()
