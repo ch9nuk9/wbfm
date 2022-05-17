@@ -347,9 +347,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         red_volume = self.viewer.layers['Red data'].data[t, ...]
         new_mask = self.seg_layer.data[t, ...]
         self.dat.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
-        self.logger.info(f"Finished updating metadata")
+        self.logger.debug(f"Finished updating metadata")
 
     def change_neurons(self):
+        self.logger.debug("USER: change neuron")
         if not self._disable_callbacks:
             # self.update_dataframe_using_final_tracks_layer()
             self.update_neuron_in_tracklet_annotator()
@@ -360,6 +361,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.change_tracklets_from_gui(self.recentTrackletSelector.currentText())
 
     def change_tracklets_from_gui(self, next_tracklet=None):
+        self.logger.debug("USER: change tracklets from gui")
         if not self._disable_callbacks and next_tracklet is not None:
             which_tracklets_to_update = self.get_dict_for_tracklet_change(next_tracklet=next_tracklet)
 
@@ -368,6 +370,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
 
     def change_tracklets_from_click(self):
+        self.logger.debug("USER: click on segmentation")
         previous_tracklet = self.dat.tracklet_annotator.previous_tracklet_name
         next_tracklet = self.dat.tracklet_annotator.current_tracklet_name
         which_tracklets_to_update = self.get_dict_for_tracklet_change(current_tracklet=previous_tracklet,
@@ -676,6 +679,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.time_changed_callbacks()
 
     def split_current_tracklet_keep_right(self):
+        self.logger.debug("USER: split tracklet keep right")
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.remove_layer_of_current_tracklet()
             which_tracklets_to_update = self.get_dict_for_tracklet_split()
@@ -690,6 +694,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def split_current_tracklet_keep_left(self):
+        self.logger.debug("USER: split tracklet keep left")
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.remove_layer_of_current_tracklet()
             which_tracklets_to_update = self.get_dict_for_tracklet_split()
@@ -704,6 +709,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def clear_current_tracklet(self):
+        self.logger.debug("USER: clear current tracklet")
         self.remove_layer_of_current_tracklet()
         current_tracklet_name = f"{self.dat.tracklet_annotator.current_tracklet_name}_current"
         self.dat.tracklet_annotator.clear_current_tracklet()
@@ -720,6 +726,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.seg_layer.visible = True
 
     def save_current_tracklet_to_neuron(self):
+        self.logger.debug("USER: save current tracklet to neuron")
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             tracklet_name = self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
             if tracklet_name:
@@ -731,12 +738,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def save_segmentation_to_tracklet(self):
+        self.logger.debug("USER: save single segmentation")
         flag = self.dat.tracklet_annotator.attach_current_segmentation_to_current_tracklet()
         # which_tracklets_to_update = {self.current_tracklet_name: 'replot'}
         which_tracklets_to_update = self.get_dict_for_tracklet_split()
         self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
 
     def delete_segmentation_from_tracklet(self):
+        self.logger.debug("USER: delete single segmentation")
         flag = self.dat.tracklet_annotator.delete_current_segmentation_from_tracklet()
         # which_tracklets_to_update = {self.current_tracklet_name: 'replot'}
         which_tracklets_to_update = self.get_dict_for_tracklet_split()
