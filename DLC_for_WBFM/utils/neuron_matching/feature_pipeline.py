@@ -326,7 +326,8 @@ def build_tracklets_full_video(video_data, video_fname: str, start_volume: int =
     try:
         if use_superglue:
             from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import build_frame_pairs_using_superglue
-            project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_frames=True)
+            project_data = ProjectData.load_final_project_data_from_config(project_config)
+            project_data.raw_frames = all_frame_dict
             all_frame_pairs = build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data)
         else:
             all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, frame_pair_options, start_volume)
@@ -369,7 +370,7 @@ def calculate_frame_objects_full_video(video_data, external_detections, frame_ra
 
     # Build all frames initially, then match
     all_frame_dict = dict()
-    logger.info(f"Calculating Frame objects for frames: {frame_range[0]} to {frame_range[-1]}")
+    # logger.info(f"Calculating Frame objects for frames: {frame_range[0]} to {frame_range[-1]}")
     with tqdm(total=len(frame_range)) as pbar:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(_build_frame, i): i for i in frame_range}
