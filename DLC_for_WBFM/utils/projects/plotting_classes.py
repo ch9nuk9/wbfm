@@ -757,7 +757,8 @@ class TrackletAndSegmentationAnnotator:
             layer.show_selected_label = False
 
     def attach_current_segmentation_to_current_tracklet(self):
-        t, tracklet_name, mask_ind, flag = self.check_validity_of_tracklet_and_segmentation()
+        t, tracklet_name, mask_ind, flag = \
+            self.check_validity_of_tracklet_and_segmentation(can_be_attached_to_tracklet=False)
         if not flag:
             return flag
 
@@ -792,7 +793,7 @@ class TrackletAndSegmentationAnnotator:
         self.tracklet_updated_callbacks()
         return True
 
-    def check_validity_of_tracklet_and_segmentation(self):
+    def check_validity_of_tracklet_and_segmentation(self, can_be_attached_to_tracklet=True):
         """
         1) A segmentation and a tracklet must be selected
         2) segmentation must be unique (not 2 segmentations selected)
@@ -811,13 +812,17 @@ class TrackletAndSegmentationAnnotator:
             mask_ind = self.indices_of_original_neurons[0]
 
         # Check if segmentation already has a tracklet
-        previous_tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
-            i_time=t,
-            seg_ind=mask_ind
-        )
-        if previous_tracklet_name:
-            self.logger.warning(f"Selected segmentation must not be attached to a tracklet; "
-                                f"is currently attached to {previous_tracklet_name}")
+        allowed_tracklet_attachment_state = True
+        if not can_be_attached_to_tracklet:
+            previous_tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
+                i_time=t,
+                seg_ind=mask_ind
+            )
+            if previous_tracklet_name:
+                allowed_tracklet_attachment_state = False
+
+        if not allowed_tracklet_attachment_state:
+            self.logger.warning(f"Selected segmentation must not be attached to a tracklet")
             flag = False
         else:
             # Get known data, then rebuild the other metadata from this
