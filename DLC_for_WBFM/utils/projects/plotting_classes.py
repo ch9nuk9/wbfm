@@ -818,12 +818,13 @@ class TrackletAndSegmentationAnnotator:
         if previous_tracklet_name:
             self.logger.warning(f"Selected segmentation must not be attached to a tracklet; "
                                 f"is currently attached to {previous_tracklet_name}")
-            return False
-
-        # Get known data, then rebuild the other metadata from this
-        if tracklet_name is None:
-            self.logger.warning("No tracklet selected, can't modify using segmentation")
             flag = False
         else:
-            self.logger.info(f"Modifying {tracklet_name} using segmentation {mask_ind} at t={t}")
+            # Get known data, then rebuild the other metadata from this
+            if tracklet_name is None:
+                self.logger.warning("No tracklet selected, can't modify using segmentation")
+                flag = False
+            else:
+                self.logger.info(f"Modifying {tracklet_name} using segmentation {mask_ind} at t={t}")
+
         return t, tracklet_name, mask_ind, flag
