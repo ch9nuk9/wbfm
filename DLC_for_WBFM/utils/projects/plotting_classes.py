@@ -795,9 +795,9 @@ class TrackletAndSegmentationAnnotator:
 
     def check_validity_of_tracklet_and_segmentation(self, can_be_attached_to_tracklet=True):
         """
-        1) A segmentation and a tracklet must be selected
-        2) segmentation must be unique (not 2 segmentations selected)
-        3) segmentation must not be attached to a tracklet
+        1) segmentation must be unique (not 2 segmentations selected)
+        2) segmentation must not be attached to a tracklet
+        3) A segmentation and a tracklet must both be selected
         """
         flag = True
         t = self.time_of_candidate
@@ -829,7 +829,8 @@ class TrackletAndSegmentationAnnotator:
             if tracklet_name is None:
                 self.logger.warning("No tracklet selected, can't modify using segmentation")
                 flag = False
-            else:
-                self.logger.info(f"Modifying {tracklet_name} using segmentation {mask_ind} at t={t}")
+
+        if flag:
+            self.logger.info(f"Modifying {tracklet_name} using segmentation {mask_ind} at t={t}")
 
         return t, tracklet_name, mask_ind, flag
