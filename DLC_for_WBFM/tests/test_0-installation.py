@@ -34,10 +34,12 @@ def test_custom_package_imports():
     # Import something from each file
     import DLC_for_WBFM.utils.external.centerline_utils
     import DLC_for_WBFM.utils.external.utils_cv2
-    import DLC_for_WBFM.utils.external.utils_logging
     import DLC_for_WBFM.utils.external.utils_networkx
     import DLC_for_WBFM.utils.external.utils_pandas
     import DLC_for_WBFM.utils.external.utils_zarr
+
+    from segmentation.util.utils_pipeline import segment_video_using_config_3d
+    from segmentation.util.utils_metadata import get_metadata_dictionary
 
     from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
     from DLC_for_WBFM.utils.general.distance_functions import calc_global_track_to_tracklet_distances
