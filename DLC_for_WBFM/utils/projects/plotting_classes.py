@@ -235,7 +235,7 @@ class TrackletAndSegmentationAnnotator:
 
     def clear_current_tracklet(self):
         if self.current_tracklet_name is not None:
-            self.logger.debug(f"Cleared tracklet {self.current_tracklet_name}")
+            self.logger.debug(f"Cleared tracklet {self.current_tracklet_name} from the annotator")
             self.set_current_tracklet(None)
         else:
             self.logger.debug("No current tracklet; this button did nothing")
@@ -793,18 +793,34 @@ class TrackletAndSegmentationAnnotator:
         return True
 
     def check_validity_of_tracklet_and_segmentation(self):
+        """
+        1) A segmentation and a tracklet must be selected
+        2) segmentation must be unique (not 2 segmentations selected)
+        3) segmentation must not be attached to a tracklet
+        """
         flag = True
+        t = self.time_of_candidate
+        tracklet_name = self.current_tracklet_name
+
         if len(self.indices_of_original_neurons) != 1:
             self.logger.warning(f"Selected segmentation must be unique; "
-                            f"found {len(self.indices_of_original_neurons)} segmentations")
+                                f"found {len(self.indices_of_original_neurons)} segmentations")
             flag = False
             mask_ind = None
         else:
             mask_ind = self.indices_of_original_neurons[0]
 
+        # Check if segmentation already has a tracklet
+        previous_tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
+            i_time=t,
+            seg_ind=mask_ind
+        )
+        if previous_tracklet_name:
+            self.logger.warning(f"Selected segmentation must not be attached to a tracklet; "
+                                f"is currently attached to {previous_tracklet_name}")
+            return False
+
         # Get known data, then rebuild the other metadata from this
-        t = self.time_of_candidate
-        tracklet_name = self.current_tracklet_name
         if tracklet_name is None:
             self.logger.warning("No tracklet selected, can't modify using segmentation")
             flag = False
