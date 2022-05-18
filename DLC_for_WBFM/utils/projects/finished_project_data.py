@@ -5,7 +5,7 @@ from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import Preproc
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 import os
 from dataclasses import dataclass
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Union
 import napari
 import numpy as np
 import pandas as pd
@@ -288,8 +288,12 @@ class ProjectData:
                                                             raise_error=raise_error)
 
     @staticmethod
-    def unpack_config_file(project_path):
-        cfg = ModularProjectConfig(project_path)
+    def unpack_config_file(project_path: Union[str, ModularProjectConfig]):
+        if isinstance(project_path, ModularProjectConfig):
+            cfg = project_path
+        else:
+            cfg = ModularProjectConfig(project_path)
+
         project_dir = cfg.project_dir
 
         segment_cfg = cfg.get_segmentation_config()
