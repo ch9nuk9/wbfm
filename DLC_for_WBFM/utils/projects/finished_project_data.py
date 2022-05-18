@@ -414,11 +414,7 @@ class ProjectData:
 
     @staticmethod
     def load_final_project_data_from_config(project_path, **kwargs):
-        if isinstance(project_path, (str, os.PathLike)):
-            args = ProjectData.unpack_config_file(project_path)
-            return ProjectData._load_data_from_configs(*args, **kwargs)
-        elif isinstance(project_path, ModularProjectConfig):
-            project_path = project_path.self_path
+        if isinstance(project_path, (str, os.PathLike, ModularProjectConfig)):
             args = ProjectData.unpack_config_file(project_path)
             return ProjectData._load_data_from_configs(*args, **kwargs)
         elif isinstance(project_path, ProjectData):
