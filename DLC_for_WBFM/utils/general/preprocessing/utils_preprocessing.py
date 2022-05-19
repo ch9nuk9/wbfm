@@ -16,7 +16,7 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from DLC_for_WBFM.utils.neuron_matching.utils_rigid_alignment import filter_stack, align_stack, \
+from DLC_for_WBFM.utils.neuron_matching.utils_rigid_alignment import filter_stack, align_stack_to_middle_slice, \
     align_stack_using_previous_results
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
@@ -246,7 +246,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:
-            single_volume_raw, warp_matrices_dict = align_stack(single_volume_raw)
+            single_volume_raw, warp_matrices_dict = align_stack_to_middle_slice(single_volume_raw)
             if s.to_save_warp_matrices:
                 s.all_warp_matrices[which_frame] = warp_matrices_dict
         else:

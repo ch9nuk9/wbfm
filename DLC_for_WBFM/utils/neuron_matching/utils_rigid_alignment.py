@@ -172,7 +172,7 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
     return warp_matrix
 
 
-def align_stack(stack_to_align, hide_progress=True):
+def align_stack_to_middle_slice(stack_to_align, hide_progress=True):
     """
     Takes a z stack (format: ZXY) and rigidly aligns planes sequentially
     """
@@ -204,6 +204,38 @@ def align_stack(stack_to_align, hide_progress=True):
         stack_aligned[i + 1] = cv2.warpAffine(im_next, warp_mat, sz, flags=flags)
 
     return stack_aligned, warp_matrices
+
+
+def calculate_alignment_matrix_two_stacks(stack_template, stack_rotated, hide_progress=True):
+    """
+    Takes two z stacks (format: ZXY) and rigidly aligns plane, returning only the warp matrices
+    """
+    # Settings for the actual warping
+    sz = stack_template[0].shape
+    sz = (sz[1], sz[0])
+    warp_matrices = {}  # (i_prev, i_next) -> matrix
+
+    warp_mat = np.identity(3)[0:2, :]
+    for im0, im1 in tqdm(zip(stack_template, stack_rotated), disable=hide_progress):
+        warp_mat = calc_warp_ECC(im0, im1, termination_eps=1e-6, warp_mode=cv2.MOTION_AFFINE)
+        break
+    return warp_mat
+
+
+def apply_alignment_matrix_to_stack(stack_to_align, warp_mat, hide_progress=True):
+    """
+    Takes a z stack (zxy) and a single previous alignment matrix, and performs the same alignment
+    """
+    # Settings for the actual warping
+    sz = stack_to_align[0].shape
+    sz = (sz[1], sz[0])
+    flags = cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
+    stack_aligned = np.empty_like(stack_to_align)
+
+    for i, img in enumerate(tqdm(stack_to_align, disable=hide_progress)):
+        stack_aligned[i] = cv2.warpAffine(img, warp_mat, sz, flags=flags)
+
+    return stack_aligned
 
 
 def align_stack_using_previous_results(stack_to_align, previous_warp_matrices, hide_progress=True):
