@@ -118,23 +118,15 @@ class ProjectData:
         self.all_used_fnames.append(fname)
         return final_tracks
 
-    def get_final_tracks_only_finished_neurons(self, finished_neurons_column_name=None) -> pd.DataFrame:
+    def get_final_tracks_only_finished_neurons(self) -> pd.DataFrame:
         """See get_ground_truth_annotations()"""
-        if finished_neurons_column_name is None:
-            finished_neurons_column_name = self.finished_neurons_column_name
-        df_gt, finished_neurons = self.get_list_of_finished_neurons(finished_neurons_column_name)
+        df_gt, finished_neurons = self.get_list_of_finished_neurons()
 
         return df_gt.loc[:, finished_neurons]
 
-    def get_list_of_finished_neurons(self, finished_neurons_column_name=None, verbose=0):
-        if finished_neurons_column_name is None:
-            finished_neurons_column_name = self.finished_neurons_column_name
+    def get_list_of_finished_neurons(self):
         df_gt = self.final_tracks
-        _, df_manual_tracking = self.get_ground_truth_annotations()
-        finished_neurons = list(
-            df_manual_tracking[df_manual_tracking[finished_neurons_column_name]]['Neuron ID'])
-        if verbose >= 1:
-            self.logger.info(f"Found {len(finished_neurons)}/{df_manual_tracking.shape[0]} annotated neurons")
+        finished_neurons, df_manual_tracking = self.get_ground_truth_annotations()
         return df_gt, finished_neurons
 
     @cached_property
@@ -692,16 +684,27 @@ class ProjectData:
             self.logger.warning(f"Found {len(desynced_frames)} desynchronized frames")
         return desynced_frames
 
-    def get_ground_truth_annotations(self):
+    def get_ground_truth_annotations(self, verbose=0):
         # TODO: do not hardcode
         track_cfg = self.project_config.get_tracking_config()
         fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
         df_manual_tracking = pd.read_csv(fname)
         try:
-            neurons_finished_mask = df_manual_tracking['Finished?'].astype(bool)
+            neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name].astype(bool)
             neurons_that_are_finished = list(df_manual_tracking[neurons_finished_mask]['Neuron ID'])
+
+            # Filter to make sure they are the proper format
+            tmp = []
+            for col_name in neurons_that_are_finished:
+                if isinstance(col_name, str):
+                    tmp.append(col_name)
+                else:
+                    self.logger.warning(f"Found and removed improper column name in manual annotation : {col_name}")
+            neurons_that_are_finished = tmp
         except KeyError:
             neurons_that_are_finished = []
+        if verbose >= 1:
+            self.logger.info(f"Found {len(neurons_that_are_finished)}/{df_manual_tracking.shape[0]} annotated neurons")
         return neurons_that_are_finished, df_manual_tracking
 
     def __repr__(self):
