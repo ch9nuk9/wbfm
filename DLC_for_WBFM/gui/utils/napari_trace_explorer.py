@@ -1013,15 +1013,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def add_tracklet_to_cache(self, new_line, tracklet_name):
         self.tracklet_lines[tracklet_name] = new_line
-        self.logger.debug(f"Added tracklet {tracklet_name} to the subplot")
-        print(f"Added tracklet {tracklet_name} to the subplot")
-        print(new_line._yorig)
+        # self.logger.debug(f"Added tracklet {tracklet_name} to the subplot")
+        # print(f"Added tracklet {tracklet_name} to the subplot")
+        # print(new_line._yorig)
 
     def remove_tracklet_from_plot_and_cache(self, tracklet_name):
         self.tracklet_lines[tracklet_name].remove()
         del self.tracklet_lines[tracklet_name]
-        self.logger.debug(f"Cleared tracklet {tracklet_name} from the subplot")
-        print(f"Cleared tracklet {tracklet_name} from the subplot")
+        # self.logger.debug(f"Cleared tracklet {tracklet_name} from the subplot")
+        # print(f"Cleared tracklet {tracklet_name} from the subplot")
 
     def invalidate_y_on_plot(self):
         if 'y_on_plot' in self.__dict__:
