@@ -219,6 +219,30 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     def resolve_mounted_path_in_current_os(self, key):
         return Path(resolve_mounted_path_in_current_os(self.config[key]))
 
+    def get_folder_with_calibration_for_day(self):
+        raw_bigtiff_filename = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
+        raw_bigtiff_filename = Path(raw_bigtiff_filename)
+        folder_for_entire_day = raw_bigtiff_filename.parents[2]  # 3 folders up
+
+        if not Path(folder_for_entire_day).exists():
+            raise FileNotFoundError(folder_for_entire_day)
+        return folder_for_entire_day
+
+    def get_folder_with_background(self):
+        folder_for_entire_day = self.get_folder_with_calibration_for_day()
+        folder_for_background = folder_for_entire_day.joinpath('background')
+        if not folder_for_background.is_dir():
+            raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
+
+        return folder_for_background
+
+    def get_folder_with_calibration(self):
+        folder_for_entire_day = self.get_folder_with_calibration_for_day()
+        folder_for_calibration = folder_for_entire_day.joinpath('calibration')
+        if not folder_for_calibration.is_dir():
+            raise FileNotFoundError(f"Could not find calibration folder {folder_for_calibration}")
+
+        return folder_for_calibration
 
 # def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
 #     project_cfg = load_config(project_path)

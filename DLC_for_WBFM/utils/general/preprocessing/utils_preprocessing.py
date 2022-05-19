@@ -122,28 +122,20 @@ class PreprocessingSettings:
     def initialize_background(self):
         logging.info("Loading background videos, may take a minute")
         if self.background_fname_red is None:
-            logging.warning("Didn't find background filename; this will have to be rerun")
+            logging.debug("Didn't find background filename; this will have to be rerun")
             return
 
         self.background_red = self.load_background(self.background_fname_red)
         self.background_green = self.load_background(self.background_fname_green)
 
     def find_background_files_from_raw_data_path(self, cfg: ModularProjectConfig, force_search=False):
-        raw_bigtiff_filename = cfg.resolve_mounted_path_in_current_os('red_bigtiff_fname')
-
         if self.background_fname_red is not None:
             logging.info(f"Already has background at {self.background_fname_red}")
             if not force_search:
                 return
         logging.info("Attempting to find new background files")
 
-        raw_bigtiff_filename = Path(raw_bigtiff_filename)
-
-        folder_for_entire_day = raw_bigtiff_filename.parents[2]  # 3 folders up
-        folder_for_background = folder_for_entire_day.joinpath('background')
-
-        if not folder_for_background.is_dir():
-            raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
+        folder_for_background = cfg.get_folder_with_background()
 
         for subfolder in folder_for_background.iterdir():
             if subfolder.is_dir() and 'background_Ch0' in subfolder.name:
