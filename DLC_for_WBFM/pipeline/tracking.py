@@ -153,7 +153,7 @@ def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig
                                                                            project_data.segmentation_metadata,
                                                                            dataframe_output_filename=project_data.df_all_tracklets_fname)
                 worm_obj2 = _initialize_worm(tracklets_and_neurons_class2, verbose=0)
-                if i_split == tracklet_splitting_iterations:
+                if i_split == tracklet_splitting_iterations - 1:
                     # On the last iteration, allow short tracklets to be matched
                     extend_tracks_opt['min_overlap'] = 1
                 conf2 = extend_tracks_using_global_tracking(df_global_tracks, df_tracklets_split, worm_obj2,
