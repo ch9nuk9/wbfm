@@ -10,6 +10,7 @@ from typing import List, Tuple
 
 import numpy as np
 import zarr
+from backports.cached_property import cached_property
 from ruamel.yaml import YAML
 from scipy import ndimage as ndi
 from tifffile import tifffile
@@ -17,7 +18,8 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from DLC_for_WBFM.utils.neuron_matching.utils_rigid_alignment import filter_stack, align_stack_to_middle_slice, \
-    align_stack_using_previous_results
+    align_stack_using_previous_results, apply_alignment_matrix_to_stack
+from DLC_for_WBFM.utils.projects.paths_to_external_resources import get_camera_alignment_matrix
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
@@ -94,6 +96,9 @@ class PreprocessingSettings:
 
     # Rigid alignment (slices to each other)
     do_rigid_alignment: bool = False
+
+    # Rigid alignment (green to red channel)
+    align_green_red_cameras: bool = True
 
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
@@ -194,6 +199,11 @@ class PreprocessingSettings:
             preprocessing_settings.find_background_files_from_raw_data_path(cfg)
         return preprocessing_settings
 
+    @cached_property
+    def camera_alignment_matrix(self):
+        warp_mat = get_camera_alignment_matrix()
+        return warp_mat
+
     def write_to_yaml(self, fname):
         edit_config(fname, dataclasses.asdict(self))
 
@@ -253,6 +263,9 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             assert len(s.all_warp_matrices) > 0
             warp_matrices_dict = s.all_warp_matrices[which_frame]
             single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
+
+    if s.align_green_red_cameras:
+        single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, s.camera_alignment_matrix)
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
