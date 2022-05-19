@@ -126,7 +126,7 @@ class ProjectData:
 
     def get_list_of_finished_neurons(self):
         df_gt = self.final_tracks
-        finished_neurons, df_manual_tracking = self.finished_neuron_names, self.df_manual_tracking
+        finished_neurons = self.finished_neuron_names
         return df_gt, finished_neurons
 
     @cached_property
