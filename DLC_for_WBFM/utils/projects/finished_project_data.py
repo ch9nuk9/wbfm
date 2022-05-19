@@ -122,12 +122,20 @@ class ProjectData:
         """See get_ground_truth_annotations()"""
         if finished_neurons_column_name is None:
             finished_neurons_column_name = self.finished_neurons_column_name
+        df_gt, finished_neurons = self.get_list_of_finished_neurons(finished_neurons_column_name)
+
+        return df_gt.loc[:, finished_neurons]
+
+    def get_list_of_finished_neurons(self, finished_neurons_column_name=None, verbose=0):
+        if finished_neurons_column_name is None:
+            finished_neurons_column_name = self.finished_neurons_column_name
         df_gt = self.final_tracks
         _, df_manual_tracking = self.get_ground_truth_annotations()
         finished_neurons = list(
             df_manual_tracking[df_manual_tracking[finished_neurons_column_name]]['Neuron ID'])
-
-        return df_gt.loc[:, finished_neurons]
+        if verbose >= 1:
+            print(f"Found {len(finished_neurons)}/{df_manual_tracking.shape[0]} annotated neurons")
+        return df_gt, finished_neurons
 
     @cached_property
     def global2tracklet(self) -> dict:
