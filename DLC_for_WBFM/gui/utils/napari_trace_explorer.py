@@ -363,21 +363,26 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def change_tracklets_from_gui(self, next_tracklet=None):
         self.logger.debug("USER: change tracklets from gui")
         if not self._disable_callbacks and next_tracklet is not None:
-            which_tracklets_to_update = self.get_dict_for_tracklet_change(next_tracklet=next_tracklet)
-
+            # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_change(next_tracklet=next_tracklet)
             self.dat.tracklet_annotator.set_current_tracklet(next_tracklet)
             self.dat.tracklet_annotator.add_current_tracklet_to_viewer(self.viewer)
-            self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+            # self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+            self.tracklet_updated_psuedo_event()
 
     def change_tracklets_from_click(self):
         self.logger.debug("USER: click on segmentation")
         previous_tracklet = self.dat.tracklet_annotator.previous_tracklet_name
         next_tracklet = self.dat.tracklet_annotator.current_tracklet_name
-        which_tracklets_to_update = self.get_dict_for_tracklet_change(current_tracklet=previous_tracklet,
-                                                                      next_tracklet=next_tracklet)
-        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+        # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_change(current_tracklet=previous_tracklet,
+        #                                                                          next_tracklet=next_tracklet)
+        self.tracklet_updated_psuedo_event()
 
-    def get_dict_for_tracklet_change(self, current_tracklet=None, next_tracklet=None):
+    def modify_current_tracklet(self):
+        self.logger.debug(f"USER: modify current tracklet: {self.current_tracklet_name}")
+        # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_modification()
+        self.tracklet_updated_psuedo_event()
+
+    def subplot_update_dict_for_tracklet_change(self, current_tracklet=None, next_tracklet=None):
         if current_tracklet is None:
             current_tracklet = self.current_tracklet_name
         if current_tracklet == next_tracklet:
@@ -387,7 +392,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                                          f"{next_tracklet}_current": 'plot'}
         return which_tracklets_to_update
 
-    def get_dict_for_tracklet_split(self):
+    def subplot_update_dict_for_tracklet_modification(self):
         # The current tracklet may already be matched, so there are two lines that need to be updated
         last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
         which_tracklets_to_update = {last_tracklet: 'replot',
@@ -682,14 +687,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.logger.debug("USER: split tracklet keep right")
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.remove_layer_of_current_tracklet()
-            which_tracklets_to_update = self.get_dict_for_tracklet_split()
+            # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_modification()
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             if successfully_split:
                 self.add_layer_of_current_tracklet()
-                post_split_dict = self.get_dict_for_tracklet_split()
-                which_tracklets_to_update.update(post_split_dict)
-                self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
-                # self.tracklet_updated_psuedo_event()
+                post_split_dict = self.subplot_update_dict_for_tracklet_modification()
+                # which_tracklets_to_update.update(post_split_dict)
+                self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
@@ -697,24 +701,23 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.logger.debug("USER: split tracklet keep left")
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.remove_layer_of_current_tracklet()
-            which_tracklets_to_update = self.get_dict_for_tracklet_split()
+            # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_modification()
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t + 1, False)
             if successfully_split:
                 self.add_layer_of_current_tracklet()
-                # self.tracklet_updated_psuedo_event()
-                post_split_dict = self.get_dict_for_tracklet_split()
-                which_tracklets_to_update.update(post_split_dict)
-                self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+                self.tracklet_updated_psuedo_event()
+                # post_split_dict = self.subplot_update_dict_for_tracklet_modification()
+                # which_tracklets_to_update.update(post_split_dict)
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def clear_current_tracklet(self):
         self.logger.debug("USER: clear current tracklet")
         self.remove_layer_of_current_tracklet()
-        current_tracklet_name = f"{self.dat.tracklet_annotator.current_tracklet_name}_current"
+        # current_tracklet_name = f"{self.dat.tracklet_annotator.current_tracklet_name}_current"
         self.dat.tracklet_annotator.clear_current_tracklet()
-        # self.tracklet_updated_psuedo_event()
-        self.tracklet_updated_psuedo_event(which_tracklets_to_update={current_tracklet_name: 'remove'})
+        self.tracklet_updated_psuedo_event()
+        # self.tracklet_updated_psuedo_event(which_tracklets_to_update={current_tracklet_name: 'remove'})
 
     def toggle_raw_segmentation_layer(self):
         if self.viewer.layers.selection.active == self.seg_layer:
@@ -731,25 +734,26 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             tracklet_name = self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
             if tracklet_name:
                 self.remove_layer_of_current_tracklet(tracklet_name)
-                which_tracklets_to_update = self.get_dict_for_tracklet_save(tracklet_name)
-                self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
-                # self.tracklet_updated_psuedo_event()
+                # which_tracklets_to_update = self.get_dict_for_tracklet_save(tracklet_name)
+                self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def save_segmentation_to_tracklet(self):
-        self.logger.debug("USER: save single segmentation")
         flag = self.dat.tracklet_annotator.attach_current_segmentation_to_current_tracklet()
-        # which_tracklets_to_update = {self.current_tracklet_name: 'replot'}
-        which_tracklets_to_update = self.get_dict_for_tracklet_split()
-        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+        self.logger.debug(f"USER: save single segmentation with outcome: {flag}")
+        if flag:
+            # Do callbacks because the tracklet annotator assumes I'm changing tracklets
+            self.modify_current_tracklet()
+            self.set_segmentation_layer_invisible()
 
     def delete_segmentation_from_tracklet(self):
-        self.logger.debug("USER: delete single segmentation")
         flag = self.dat.tracklet_annotator.delete_current_segmentation_from_tracklet()
-        # which_tracklets_to_update = {self.current_tracklet_name: 'replot'}
-        which_tracklets_to_update = self.get_dict_for_tracklet_split()
-        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+        self.logger.debug(f"USER: delete single segmentation with outcome: {flag}")
+        if flag:
+            # Do callbacks because the tracklet annotator assumes I'm changing tracklets
+            self.modify_current_tracklet()
+            self.set_segmentation_layer_invisible()
 
     def remove_layer_of_current_tracklet(self, layer_name=None):
         if layer_name is None:
@@ -777,15 +781,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def remove_time_conflicts(self):
         conflicting_names = self.dat.tracklet_annotator.remove_tracklets_with_time_conflicts()
-        which_tracklets_to_update = {name: 'remove' for name in conflicting_names}
-        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
-        # self.tracklet_updated_psuedo_event()
+        # which_tracklets_to_update = {name: 'remove' for name in conflicting_names}
+        # self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+        self.tracklet_updated_psuedo_event()
 
     def remove_tracklet_from_all_matches(self):
         tracklet_name = self.dat.tracklet_annotator.remove_tracklet_from_all_matches()
         self.update_tracklet_status_label()
-        which_tracklets_to_update = {tracklet_name: 'remove'}
-        self.tracklet_updated_psuedo_event(which_tracklets_to_update=which_tracklets_to_update)
+        # which_tracklets_to_update = {tracklet_name: 'remove'}
+        self.tracklet_updated_psuedo_event()
 
     def remove_all_tracklets_after_current_time(self):
         # Just clear and update the entire plot because this should be rare and a huge change
@@ -859,7 +863,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_stored_tracklets_for_plotting()
         marker_opt = self.get_marker_opt()
         for name, y in self.y_tracklets_dict.items():
-            self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
+            new_line = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
+            self.add_tracklet_to_cache(new_line, name)
         self.update_neuron_in_tracklet_annotator()
 
     def on_subplot_click(self, event):
@@ -941,6 +946,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print("Currently on traces setting, so this option didn't do anything")
             return
 
+        # TODO: Only refresh this if it needs to be updated
         self.update_stored_tracklets_for_plotting()
         if preserve_xlims:
             self.current_subplot_xlim = self.static_ax.get_xlim()
@@ -955,25 +961,28 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.static_ax.clear()
             self.tracklet_lines = {}  # Remove references to old lines
             for name, y in tqdm(self.y_tracklets_dict.items(), leave=False):
-                self.tracklet_lines[name] = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[-1]
+                new_line = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[-1]
+                self.add_tracklet_to_cache(new_line, name)
             if self.current_tracklet is not None:
                 y = self.current_tracklet[field_to_plot]
-                self.tracklet_lines[f"{self.current_tracklet_name}_current"] = y.plot(ax=self.static_ax,
-                                                                                      **current_tracklet_opt,
-                                                                                      **marker_opt).lines[-1]
+                new_line = y.plot(ax=self.static_ax, **current_tracklet_opt, **marker_opt).lines[-1]
+                line_name = f"{self.current_tracklet_name}_current"
+                self.add_tracklet_to_cache(new_line, line_name)
             # Not a clear in the other branch
             self.init_subplot_post_clear()
         else:
+            print(f"Updates: {which_tracklets_to_update}")
             for tracklet_name, type_of_update in which_tracklets_to_update.items():
                 # If it is an already plotted (colored) tracklet
                 if tracklet_name in self.tracklet_lines:
                     if type_of_update == 'remove' or type_of_update == 'replot':
-                        self.tracklet_lines[tracklet_name].remove()
-                        del self.tracklet_lines[tracklet_name]
-                        self.logger.debug(f"Cleared tracklet {tracklet_name} from the subplot")
+                        self.remove_tracklet_from_plot_and_cache(tracklet_name)
                 else:
                     if 'None' not in tracklet_name and '_current' not in tracklet_name:
                         logging.warning(f"Tried to modify {tracklet_name} on the subplot, but it wasn't found")
+                        if type_of_update == 'replot':
+                            # Do not allow replotting, because it would actually add a spurious line
+                            type_of_update = ""
                 # Should NOT be elif
                 if type_of_update == 'plot' or type_of_update == 'replot':
                     # If it is an already plotted (colored) tracklet
@@ -990,17 +999,29 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                         self.logger.debug(f"Tried to plot {tracklet_name}, but it wasn't found")
                         continue
 
-                    self.tracklet_lines[tracklet_name] = y[field_to_plot].plot(ax=self.static_ax,
-                                                                               **extra_opt,
-                                                                               **marker_opt).lines[-1]
-                    self.logger.debug(f"Added tracklet {tracklet_name} to the subplot")
+                    new_line = y[field_to_plot].plot(ax=self.static_ax, **extra_opt, **marker_opt).lines[-1]
+                    self.add_tracklet_to_cache(new_line, tracklet_name)
         self.invalidate_y_on_plot()
 
         # self.update_stored_time_series(field_to_plot)
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
+        # print(f"Final tracklets on plot: {self.tracklet_lines.keys()}")
+        # print(self.static_ax.lines)
 
         self.finish_subplot_update(title, preserve_xlims)
         pass
+
+    def add_tracklet_to_cache(self, new_line, tracklet_name):
+        self.tracklet_lines[tracklet_name] = new_line
+        self.logger.debug(f"Added tracklet {tracklet_name} to the subplot")
+        print(f"Added tracklet {tracklet_name} to the subplot")
+        print(new_line._yorig)
+
+    def remove_tracklet_from_plot_and_cache(self, tracklet_name):
+        self.tracklet_lines[tracklet_name].remove()
+        del self.tracklet_lines[tracklet_name]
+        self.logger.debug(f"Cleared tracklet {tracklet_name} from the subplot")
+        print(f"Cleared tracklet {tracklet_name} from the subplot")
 
     def invalidate_y_on_plot(self):
         if 'y_on_plot' in self.__dict__:
@@ -1015,11 +1036,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             opt = {}
         return opt
 
-    def tracklet_updated_psuedo_event(self, which_tracklets_to_update=None):
+    # def tracklet_updated_psuedo_event(self, which_tracklets_to_update=None):
+    def tracklet_updated_psuedo_event(self):
         self.update_tracklet_status_label()
         self.update_zoom_options_for_current_tracklet()
         self.add_to_recent_tracklet_dropdown()
-        self.update_trace_or_tracklet_subplot(which_tracklets_to_update=which_tracklets_to_update)
+        self.update_trace_or_tracklet_subplot()
+        # self.update_trace_or_tracklet_subplot(which_tracklets_to_update=which_tracklets_to_update)
 
     def update_tracklet_status_label(self):
         if self.dat.tracklet_annotator.current_neuron is None:

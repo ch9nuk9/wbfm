@@ -252,8 +252,6 @@ class TrackletAndSegmentationAnnotator:
 
         these_names.extend(self.manual_global2tracklet_names[neuron_name])
         [these_names.remove(name) for name in self.manual_global2tracklet_removals[neuron_name] if name in these_names]
-        # if self.current_tracklet_name is not None:
-        #     these_names.append(self.current_tracklet_name)
 
         if self.verbose >= 1:
             self.print_current_status(neuron_name)
@@ -790,7 +788,7 @@ class TrackletAndSegmentationAnnotator:
 
         self.clear_currently_selected_segmentations(do_callbacks=False)
         self.segmentation_updated_callbacks()
-        self.tracklet_updated_callbacks()
+        # self.tracklet_updated_callbacks()
         return True
 
     def check_validity_of_tracklet_and_segmentation(self, can_be_attached_to_tracklet=True):
