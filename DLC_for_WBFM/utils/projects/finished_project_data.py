@@ -134,7 +134,7 @@ class ProjectData:
         finished_neurons = list(
             df_manual_tracking[df_manual_tracking[finished_neurons_column_name]]['Neuron ID'])
         if verbose >= 1:
-            print(f"Found {len(finished_neurons)}/{df_manual_tracking.shape[0]} annotated neurons")
+            self.logger.info(f"Found {len(finished_neurons)}/{df_manual_tracking.shape[0]} annotated neurons")
         return df_gt, finished_neurons
 
     @cached_property
@@ -233,7 +233,7 @@ class ProjectData:
 
     @cached_property
     def tracklets_and_neurons_class(self):
-        print("Loading ")
+        self.logger.info("Loading tracklets")
         _ = self.df_all_tracklets  # Make sure it is loaded
         return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata,
                                            dataframe_output_filename=self.df_all_tracklets_fname,
@@ -416,7 +416,7 @@ class ProjectData:
         obj.behavior_annotations = behavior_annotations
         obj.background_per_pixel = background_per_pixel
         obj.likelihood_thresh = likelihood_thresh
-        print(obj)
+        cfg.logger.info(obj)
 
         return obj
 
@@ -482,15 +482,15 @@ class ProjectData:
         # this_seg = self.raw_segmentation[t, ...]
         # affected_masks = np.unique(this_seg[(this_seg - new_mask) != 0])
 
-        print(f"Updating raw segmentation at t = {t}; affected masks={affected_masks}")
+        self.logger.info(f"Updating raw segmentation at t = {t}; affected masks={affected_masks}")
         self.tracklet_annotator.modify_buffer_segmentation(t, new_mask)
         # self.raw_segmentation[t, ...] = new_mask
 
-        print(f"Updating metadata at t, but NOT writing to disk...")
+        self.logger.info(f"Updating metadata at t, but NOT writing to disk...")
         red_volume = self.red_data[t, ...]
         self.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
 
-        print("Updating affected tracklets, but NOT writing to disk")
+        self.logger.info("Updating affected tracklets, but NOT writing to disk")
         for m in affected_masks:
             # Explicitly check to see if there actually was a tracklet before the segmentation was changed
             # Note that this metadata refers to the old masks, even if the mask is deleted above
@@ -499,9 +499,9 @@ class ProjectData:
                 self.tracklets_and_neurons_class.update_tracklet_metadata_using_segmentation_metadata(
                     t, tracklet_name=tracklet_name, mask_ind=m, likelihood=1.0, verbose=1
                 )
-                print(f"Updating {tracklet_name} corresponding to segmentation {m}")
+                self.logger.info(f"Updating {tracklet_name} corresponding to segmentation {m}")
             else:
-                print(f"No tracklet corresponding to segmentation {m}; not updated")
+                self.logger.info(f"No tracklet corresponding to segmentation {m}; not updated")
         self.logger.debug("Segmentation and tracklet metadata modified successfully")
 
     def modify_segmentation_on_disk_using_buffer(self):
@@ -689,7 +689,7 @@ class ProjectData:
             if pts_from_seg.shape != pts_from_frame.shape:
                 desynced_frames.append(t)
         if verbose >= 1:
-            print(f"Found {len(desynced_frames)} desynchronized frames")
+            self.logger.warning(f"Found {len(desynced_frames)} desynchronized frames")
         return desynced_frames
 
     def get_ground_truth_annotations(self):
