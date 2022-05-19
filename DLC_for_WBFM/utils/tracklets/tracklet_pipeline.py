@@ -339,7 +339,7 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     sanity_checks_on_dataframes(df_gt, df_tracklets)
 
     if update_only_finished_neurons:
-        neurons_that_are_finished, _ = project_data.get_ground_truth_annotations()
+        neurons_that_are_finished = project_data.finished_neuron_names
     else:
         logging.info("Assuming partially tracked neurons are correct")
         neurons_that_are_finished = None

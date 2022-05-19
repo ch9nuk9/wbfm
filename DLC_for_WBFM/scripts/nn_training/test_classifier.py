@@ -39,7 +39,7 @@ def main(_config, _run):
 
     ##
     print("Loading ground truth annotations")
-    _, df_manual_tracking = project_data.get_ground_truth_annotations()
+    df_manual_tracking = project_data.df_manual_tracking
     neurons_that_are_finished = list(df_manual_tracking[df_manual_tracking['first 1300 frames']]['Neuron ID'])
     num_finished = len(neurons_that_are_finished)
 

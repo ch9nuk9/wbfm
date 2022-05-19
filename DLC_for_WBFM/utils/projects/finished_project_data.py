@@ -126,7 +126,7 @@ class ProjectData:
 
     def get_list_of_finished_neurons(self):
         df_gt = self.final_tracks
-        finished_neurons, df_manual_tracking = self.get_ground_truth_annotations()
+        finished_neurons, df_manual_tracking = self.finished_neuron_names, self.df_manual_tracking
         return df_gt, finished_neurons
 
     @cached_property
@@ -638,7 +638,7 @@ class ProjectData:
         if 'GT IDs' in which_layers:
             # Not added by default!
             df = self.final_tracks
-            neurons_that_are_finished, _ = self.get_ground_truth_annotations()
+            neurons_that_are_finished = self.finished_neuron_names
             neuron_name_dict = {name: f"GT_{name.split('_')[1]}" for name in neurons_that_are_finished}
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
                                                           neuron_name_dict=neuron_name_dict)
@@ -684,11 +684,18 @@ class ProjectData:
             self.logger.warning(f"Found {len(desynced_frames)} desynchronized frames")
         return desynced_frames
 
-    def get_ground_truth_annotations(self, verbose=0):
+    @cached_property
+    def df_manual_tracking(self):
         # TODO: do not hardcode
         track_cfg = self.project_config.get_tracking_config()
         fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
         df_manual_tracking = pd.read_csv(fname)
+        return df_manual_tracking
+
+    @cached_property
+    def finished_neuron_names(self):
+        df_manual_tracking = self.df_manual_tracking
+
         try:
             neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name].astype(bool)
             neurons_that_are_finished = list(df_manual_tracking[neurons_finished_mask]['Neuron ID'])
@@ -703,9 +710,8 @@ class ProjectData:
             neurons_that_are_finished = tmp
         except KeyError:
             neurons_that_are_finished = []
-        if verbose >= 1:
-            self.logger.info(f"Found {len(neurons_that_are_finished)}/{df_manual_tracking.shape[0]} annotated neurons")
-        return neurons_that_are_finished, df_manual_tracking
+
+        return neurons_that_are_finished
 
     def __repr__(self):
         return f"=======================================\n\
