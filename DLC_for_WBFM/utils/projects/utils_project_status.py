@@ -176,12 +176,11 @@ def print_sacred_log(project_config: ModularProjectConfig) -> None:
 def print_project_status(project_config: ModularProjectConfig):
     opt = dict(project_config=project_config, training_data_required=False, raise_error=False)
 
-    print("Determining status of project...")
+    project_config.logger.info("Determining status of project...")
     for i_step in tqdm([1, 2, 3, 4]):
         passed = check_all_needed_data_for_step(step_index=i_step, **opt)
         if not passed:
-            print(f"Next pipeline step required: {i_step}")
+            project_config.logger.info(f"Next pipeline step required: {i_step}")
             break
     else:
-        print("All steps of project are complete; manual annotation can begin")
-        
+        project_config.logger.info("All steps of project are complete; manual annotation can begin")
