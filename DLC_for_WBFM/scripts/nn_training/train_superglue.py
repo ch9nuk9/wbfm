@@ -58,7 +58,8 @@ project_data3.num_frames = 100 # round2 worm 6
 base_dataset_class = SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject
 batch_size = 1
 max_epochs = 20
-gpus = torch.cuda.device_count()
+# Take the last gpu; for now, multiple gpus are not supported
+gpus = [torch.cuda.device_count() - 1]
 
 all_project_data = [project_data1, project_data2, project_data3, project_data4]
 train_loader = NeuronImageFeaturesDataModuleFromMultipleProjects(batch_size=batch_size,
