@@ -143,19 +143,23 @@ class PreprocessingSettings:
         folder_for_background = cfg.get_folder_with_background()
 
         for subfolder in folder_for_background.iterdir():
-            if subfolder.is_dir() and 'background_Ch0' in subfolder.name:
+
+            subfolder_is_ch0 = ('background_Ch0' in subfolder.name) or ('background-channel-0' in subfolder.name)
+            subfolder_is_ch1 = ('background_Ch1' in subfolder.name) or ('background-channel-1' in subfolder.name)
+
+            if subfolder.is_dir() and subfolder_is_ch0:
                 # Red channel
                 for file in subfolder.iterdir():
-                    if file.is_file() and 'background_Ch0bigtiff.btf' in file.name:
+                    if file.is_file() and 'background.btf' in file.name and file.name.endswith('.btf'):
                         self.background_fname_red = str(file)
                         logging.info(f"Found red channel background at: {file}")
                         break
                 else:
                     raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
-            elif subfolder.is_dir() and 'background_Ch1' in subfolder.name:
+            elif subfolder.is_dir() and subfolder_is_ch1:
                 # Green channel
                 for file in subfolder.iterdir():
-                    if file.is_file() and 'background_Ch1bigtiff.btf' in file.name:
+                    if file.is_file() and 'background.btf' in file.name and file.name.endswith('.btf'):
                         self.background_fname_green = str(file)
                         logging.info(f"Found green channel background at: {file}")
                         break
