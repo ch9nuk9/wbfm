@@ -17,7 +17,7 @@ from DLC_for_WBFM.utils.projects.utils_redo_steps import correct_tracks_datafram
 ##
 
 ## Load the 4 datasets that have manual annotations
-folder_name = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/"
+folder_name = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/"
 
 fname = os.path.join(folder_name, "round1_worm1/project_config.yaml")
 project_data1 = ProjectData.load_final_project_data_from_config(fname, to_load_frames=True)
