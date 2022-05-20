@@ -71,6 +71,7 @@ train_loader.setup()
 model = SuperGlueModel.load_from_checkpoint(PATH_TO_SUPERGLUE_MODEL)
 # model = SuperGlueModel(feature_dim=840, lr=1e-5)
 model.lr = 1e-5
+
 with wandb.init(project="superglue_training_multiple_projects", entity="charlesfieseler") as run:
     wandb_logger = WandbLogger()
 
