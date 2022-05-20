@@ -232,8 +232,9 @@ def apply_alignment_matrix_to_stack(stack_to_align, warp_mat, hide_progress=True
     flags = cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
     stack_aligned = np.empty_like(stack_to_align)
 
-    for i, img in enumerate(tqdm(stack_to_align, disable=hide_progress)):
-        stack_aligned[i] = cv2.warpAffine(img, warp_mat, sz, flags=flags)
+    for i in enumerate(tqdm(range(stack_to_align.shape[0]), disable=hide_progress, leave=False)):
+        img = stack_to_align[i, ...]
+        stack_aligned[i, ...] = cv2.warpAffine(img, warp_mat, sz, flags=flags)
 
     return stack_aligned
 

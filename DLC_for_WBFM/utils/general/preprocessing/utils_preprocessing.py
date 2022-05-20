@@ -269,7 +269,8 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
 
     if s.align_green_red_cameras:
-        single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, s.camera_alignment_matrix)
+        single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, s.camera_alignment_matrix,
+                                                            hide_progress=False)
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
@@ -333,7 +334,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
                 preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream,
                                                               which_channel, read_lock)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in frame_list}
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
