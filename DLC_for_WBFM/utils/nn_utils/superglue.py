@@ -556,15 +556,18 @@ class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronIma
 
         # Precalculate
         print("Precaculating training data")
+        min_matches_required = 50
         self._items = []
         for t0, t1 in tqdm(self.time_pairs):
             val = self.unpacker.convert_frames_to_superglue_format(t0, t1, use_gt_matches=True)
+            # Check to see that there really are enough matches
+            if len(val['all_matches']) < min_matches_required:
+                logging.warning(f"Skipping too few matches ({len(val['all_matches'])}) between frames: {t0}, {t1}")
+                continue
             self._items.append(val)
 
     def __getitem__(self, idx):
         return self._items[idx]
 
     def __len__(self):
-        return self.num_to_calculate
-
-
+        return len(self._items)
