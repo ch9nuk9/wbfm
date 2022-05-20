@@ -334,7 +334,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
                 preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream,
                                                               which_channel, read_lock)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in frame_list}
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
