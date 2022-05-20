@@ -24,6 +24,7 @@ def check_all_needed_data_for_step(project_config: ModularProjectConfig,
                                    raise_error=True,
                                    training_data_required=True,
                                    verbose=1):
+    flag = True
     if step_index > 0:
         flag = check_preprocessed_data(project_config, verbose)
         if not flag and raise_error:
@@ -47,6 +48,7 @@ def check_all_needed_data_for_step(project_config: ModularProjectConfig,
         flag = check_traces(project_config, verbose)
         if not flag and raise_error:
             raise AnalysisOutOfOrderError('Traces')
+    return flag
 
 
 def check_preprocessed_data(project_config: ModularProjectConfig, verbose=0):
@@ -169,3 +171,17 @@ def print_sacred_log(project_config: ModularProjectConfig) -> None:
         print(results[0])
     except KeyError:
         print("Key error in the log; this means a step is in progress or the log is corrupted")
+
+
+def print_project_status(project_config: ModularProjectConfig):
+    opt = dict(project_config=project_config, training_data_required=False, raise_error=False)
+
+    print("Determining status of project...")
+    for i_step in tqdm([1, 2, 3, 4]):
+        passed = check_all_needed_data_for_step(step_index=i_step, **opt)
+        if not passed:
+            print(f"Next pipeline step required: {i_step}")
+            break
+    else:
+        print("All steps of project are complete; manual annotation can begin")
+        
