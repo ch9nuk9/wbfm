@@ -6,9 +6,9 @@
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=log_single_step-%j.out    # Standard output and error log
 #SBATCH --time=6:00:00
-#SBATCH --mem=16G
-#SBATCH --cpus-per-task=64
-# #SBATCH --partition=gpu
+#SBATCH --mem=128G
+#SBATCH --cpus-per-task=8
+#SBATCH --partition=himem
 
 pwd; hostname; date
 #module load cudnn/7.6.5
