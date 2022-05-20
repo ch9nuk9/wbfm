@@ -231,7 +231,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     def get_folder_with_background(self):
         folder_for_entire_day = self.get_folder_with_calibration_for_day()
         folder_for_background = folder_for_entire_day.joinpath('background')
-        if not folder_for_background.is_dir():
+        if not folder_for_background.exists():
             raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
 
         return folder_for_background
@@ -239,7 +239,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     def get_folder_with_calibration(self):
         folder_for_entire_day = self.get_folder_with_calibration_for_day()
         folder_for_calibration = folder_for_entire_day.joinpath('calibration')
-        if not folder_for_calibration.is_dir():
+        if not folder_for_calibration.exists():
             raise FileNotFoundError(f"Could not find calibration folder {folder_for_calibration}")
 
         return folder_for_calibration
