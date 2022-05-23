@@ -1,0 +1,22 @@
+# Example from: https://hackmd.io/@bluegenes/BJPrrj7WB
+# cluster_config.yml - cluster configuration
+__default__:
+    partition: basic
+    time: 02:00:00
+    nodes: 1
+    cpus_per_task: 32
+    mem: 64G
+    output: log_snakemake_step-%j.out
+
+match_frame_pairs:
+    partition: gpu
+    cpus_per_task: 4
+    time: 04:00:00
+
+tracking:
+    partition: gpu
+    cpus_per_task: 4
+    time: 08:00:00
+
+combine_tracking_and_tracklets:
+    cpus_per_task: 4
