@@ -177,7 +177,7 @@ def print_project_status(project_config: ModularProjectConfig):
     opt = dict(project_config=project_config, training_data_required=False, raise_error=False)
 
     project_config.logger.info("Determining status of project...")
-    for i_step in tqdm([1, 2, 3, 4]):
+    for i_step in tqdm([1, 2, 3, 4, 5]):
         passed = check_all_needed_data_for_step(step_index=i_step, **opt)
         if not passed:
             project_config.logger.info(f"Next pipeline step required: {i_step-1}")
