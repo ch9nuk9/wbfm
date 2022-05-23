@@ -13,6 +13,10 @@ match_frame_pairs:
     cpus_per_task: 4
     time: 08:00:00
 
+postprocess_matches_to_tracklets:
+    partition: gpu
+    cpus_per_task: 1
+
 tracking:
     partition: gpu
     cpus_per_task: 4

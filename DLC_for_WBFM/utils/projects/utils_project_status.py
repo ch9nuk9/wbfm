@@ -180,7 +180,7 @@ def print_project_status(project_config: ModularProjectConfig):
     for i_step in tqdm([1, 2, 3, 4]):
         passed = check_all_needed_data_for_step(step_index=i_step, **opt)
         if not passed:
-            project_config.logger.info(f"Next pipeline step required: {i_step}")
+            project_config.logger.info(f"Next pipeline step required: {i_step-1}")
             break
     else:
         project_config.logger.info("All steps of project are complete; manual annotation can begin")
