@@ -127,9 +127,9 @@ def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig
         # Build candidate graph, then postprocess it
         global_tracklet_neuron_graph = worm_obj.compose_global_neuron_and_tracklet_graph()
         if not auto_split_conflicts:
-            logger.info("Bipartite matching for each time slice subgraph")
-            final_matching_with_conflict = bipartite_matching_on_each_time_slice(global_tracklet_neuron_graph,
-                                                                                 df_tracklets)
+            logger.info("Greedy matching for each time slice subgraph")
+            final_matching_with_conflict = greedy_matching_using_node_class(global_tracklet_neuron_graph,
+                                                                            node_class_to_match=1)
             # Final step to remove time conflicts
             worm_obj.reinitialize_all_neurons_from_final_matching(final_matching_with_conflict)
             worm_obj.remove_conflicting_tracklets_from_all_neurons()
@@ -148,19 +148,18 @@ def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig
                     break
                 else:
                     logger.info(f"Found conflicts on {len(split_list_dict)} tracklets")
-                df_tracklets_split, all_new_tracklets, name_mapping = split_all_tracklets_at_once(df_tracklets, split_list_dict)
-                tracklets_and_neurons_class2 = DetectedTrackletsAndNeurons(df_tracklets_split,
-                                                                           project_data.segmentation_metadata,
-                                                                           dataframe_output_filename=project_data.df_all_tracklets_fname)
-                worm_obj2 = _initialize_worm(tracklets_and_neurons_class2, verbose=0)
-                if i_split == tracklet_splitting_iterations - 1:
-                    # On the last iteration, allow short tracklets to be matched
-                    extend_tracks_opt['min_overlap'] = 1
-                conf2 = extend_tracks_using_global_tracking(df_global_tracks, df_tracklets_split, worm_obj2,
-                                                            **extend_tracks_opt)
-                # Overwrite original object, and continue
-                worm_obj = worm_obj2
-                df_tracklets = df_tracklets_split.astype(pd.SparseDtype("float", np.nan))
+                df_tracklets, df_tracklets_split, worm_obj = _split_tracklets_and_reinitialize_worm(
+                    _initialize_worm,
+                    df_global_tracks,
+                    df_tracklets,
+                    df_tracklets_split,
+                    extend_tracks_opt,
+                    i_split,
+                    project_data,
+                    split_list_dict,
+                    tracklet_splitting_iterations,
+                    worm_obj
+                )
 
         # TODO: should I do this after tracklet-unique processing? For now the formats are a pain
         logger.info("Removing tracklets that have time conflicts on a single neuron ")
@@ -187,3 +186,22 @@ def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig
                                              track_config, worm_obj,
                                              df_tracklets_split)
     return df_final, final_matching_no_conflict, global_tracklet_neuron_graph, worm_obj
+
+
+def _split_tracklets_and_reinitialize_worm(_initialize_worm, df_global_tracks, df_tracklets, df_tracklets_split,
+                                           extend_tracks_opt, i_split, project_data, split_list_dict,
+                                           tracklet_splitting_iterations, worm_obj):
+    df_tracklets_split, all_new_tracklets, name_mapping = split_all_tracklets_at_once(df_tracklets, split_list_dict)
+    tracklets_and_neurons_class2 = DetectedTrackletsAndNeurons(df_tracklets_split,
+                                                               project_data.segmentation_metadata,
+                                                               dataframe_output_filename=project_data.df_all_tracklets_fname)
+    worm_obj2 = _initialize_worm(tracklets_and_neurons_class2, verbose=0)
+    if i_split == tracklet_splitting_iterations - 1:
+        # On the last iteration, allow short tracklets to be matched
+        extend_tracks_opt['min_overlap'] = 1
+    conf2 = extend_tracks_using_global_tracking(df_global_tracks, df_tracklets_split, worm_obj2,
+                                                **extend_tracks_opt)
+    # Overwrite original object, and continue
+    worm_obj = worm_obj2
+    df_tracklets = df_tracklets_split.astype(pd.SparseDtype("float", np.nan))
+    return df_tracklets, df_tracklets_split, worm_obj
