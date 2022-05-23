@@ -417,6 +417,8 @@ class TrackedWorm:
     global_name_to_neuron_backup: Dict[str, NeuronComposedOfTracklets] = None
     detections: DetectedTrackletsAndNeurons = None
 
+    logger: logging.Logger = None
+
     verbose: int = 0
 
     @property
@@ -457,8 +459,8 @@ class TrackedWorm:
         Note: this is offset by at least one from the segmentation ID label
         """
         # Instead of getting the neurons from the segmentation directly, get them from the global track dataframe
-        logging.warning(f"Initializing at t={t}; if this is not the same as the template for the global track "
-                        f"dataframe, then this initial tracklet may be incorrect")
+        self.logger.warning(f"Initializing at t={t}; if this is not the same as the template for the global track "
+                            f"dataframe, then this initial tracklet may be incorrect")
         neurons_at_template = df_global_tracks.loc[[t], (slice(None), 'raw_neuron_ind_in_list')]
         neurons_in_global_df = get_names_from_df(neurons_at_template)
         # neuron_zxy = self.detections.get_neurons_at_time(t)
@@ -466,8 +468,8 @@ class TrackedWorm:
         num_neurons = len(neurons_in_global_df)
         print(f"Found {num_neurons} neurons")
         if num_expected_neurons and num_expected_neurons != num_neurons:
-            logging.warning(f"Actual number of neurons ({num_neurons}) is not equal to the expected number "
-                            f"at the template t={t} ({num_expected_neurons})")
+            self.logger.warning(f"Actual number of neurons ({num_neurons}) is not equal to the expected number "
+                                f"at the template t={t} ({num_expected_neurons})")
             raise DataSynchronizationError("global track dataframe", "segmentation", "3a")
 
         new_tracklets = []
@@ -492,7 +494,7 @@ class TrackedWorm:
             confidence = 1.0
             new_neuron.add_tracklet(confidence, tracklet, metadata=tracklet_name)
 
-        logging.info(f"Added new tracklets: {new_tracklets}")
+        self.logger.info(f"Added new tracklets: {new_tracklets}")
         self.detections.synchronize_dataframe_to_disk()
 
     def initialize_neurons_using_previous_matches(self, previous_matches):
@@ -520,7 +522,7 @@ class TrackedWorm:
         df_tracklets = self.detections.df_tracklets_zxy
         verbose = self.verbose
         if previous_matches is not None:
-            logging.info(f"Found {len(previous_matches)} previously matched neurons")
+            self.logger.info(f"Found {len(previous_matches)} previously matched neurons")
             for neuron_name, match_names in previous_matches.items():
                 neuron = self.global_name_to_neuron[neuron_name]
                 for name in match_names:
@@ -529,7 +531,7 @@ class TrackedWorm:
                     neuron.add_tracklet(conf, previously_matched_tracklet, metadata=name,
                                         check_using_classifier=False, verbose=verbose - 2)
         else:
-            logging.info("No previous matches found")
+            self.logger.info("No previous matches found")
 
     def initialize_all_neuron_tracklet_classifiers(self):
         for name, neuron in tqdm(self.global_name_to_neuron.items(), leave=False):
@@ -540,7 +542,7 @@ class TrackedWorm:
                                                      ignore_missing_tracklets=False):
         """Note: if there are originally neurons with no tracklet matches, then they should remain as they are"""
         self.backup_global_name_to_neuron()
-        logging.info(f"Before reinitialization: {self}")
+        self.logger.debug(f"Before reinitialization: {self}")
         neuron2tracklet = final_matching.get_mapping_0_to_1()
         match2conf = final_matching.get_mapping_pair_to_conf()
         for neuron_name, tracklet_list in tqdm(neuron2tracklet.items()):
@@ -551,12 +553,12 @@ class TrackedWorm:
                     tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
                 except KeyError as e:
                     if ignore_missing_tracklets:
-                        logging.warning(f"Attempted match with {tracklet_name}, but it is not in the database")
+                        self.logger.warning(f"Attempted match with {tracklet_name}, but it is not in the database")
                     else:
                         raise e
                 new_neuron.add_tracklet(conf, tracklet, metadata=tracklet_name, check_using_classifier=False)
             self.global_name_to_neuron[neuron_name] = new_neuron
-        logging.info(f"After reinitialization: {self}")
+        self.logger.debug(f"After reinitialization: {self}")
 
     def backup_global_name_to_neuron(self):
         self.global_name_to_neuron_backup = copy.deepcopy(self.global_name_to_neuron)

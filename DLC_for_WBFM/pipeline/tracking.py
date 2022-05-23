@@ -99,7 +99,7 @@ def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig
                 f"use_multiple_templates={use_multiple_templates}")
 
     def _initialize_worm(tracklets_obj, verbose=verbose):
-        _worm_obj = TrackedWorm(detections=tracklets_obj, verbose=verbose)
+        _worm_obj = TrackedWorm(detections=tracklets_obj, logger=logger, verbose=verbose)
         if only_use_previous_matches:
             _worm_obj.initialize_neurons_using_previous_matches(previous_matches)
         else:
