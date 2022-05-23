@@ -34,15 +34,15 @@ output_2b:
   - 2-training_data/all_tracklets.pickle
   - 2-training_data/raw/clust_df_dat.pickle
 
-# Step 3: Alternate: embedding style
+# Step 3: Tracking
 input_3a:
   - 1-segmentation/metadata.pickle
   - 2-training_data/raw/frame_dat.pickle
 output_3a:
-  - 3-tracking/postprocessing/df_superglue_tracks.h5
+  - 3-tracking/postprocessing/df_tracks_superglue.h5
 
 input_3b:
-  - 3-tracking/postprocessing/df_superglue_tracks.h5
+  - 3-tracking/postprocessing/df_tracks_superglue.h5
   - 2-training_data/all_tracklets.pickle
 output_3b:
   - 3-tracking/postprocessing/combined_3d_tracks.h5

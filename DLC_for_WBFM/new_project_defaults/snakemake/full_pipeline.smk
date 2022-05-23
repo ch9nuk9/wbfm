@@ -55,7 +55,7 @@ rule postprocess_matches_to_tracklets:
         files=expand("{dir}/{input}", input=config['input_2b'], dir=config['project_dir']),
     output:
         expand("{dir}/{output}", output=config['output_2b'], dir=config['project_dir'])
-    threads: 56
+    threads: 8
     shell:
         "python {input.code_path} with project_path={input.cfg}"
 
@@ -69,7 +69,7 @@ rule tracking:
         files=expand("{dir}/{input}", input=config['input_3a'], dir=config['project_dir'])
     output:
         expand("{dir}/{output}", output=config['output_3a'], dir=config['project_dir'])
-    threads: 56
+    threads: 48
     shell:
         "python {input.code_path} with project_path={input.cfg}"
 
@@ -80,7 +80,7 @@ rule combine_tracking_and_tracklets:
         files=expand("{dir}/{input}", input=config['input_3b'], dir=config['project_dir'])
     output:
         expand("{dir}/{output}", output=config['output_3b'], dir=config['project_dir'])
-    threads: 56
+    threads: 8
     shell:
         "python {input.code_path} with project_path={input.cfg}"
 
