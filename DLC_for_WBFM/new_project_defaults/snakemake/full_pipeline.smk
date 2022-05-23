@@ -62,10 +62,10 @@ rule postprocess_matches_to_tracklets:
 #
 # Tracking
 #
-rule embedding_tracking:
+rule tracking:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}/3a-track_using_embedding.py", code=config['code_path']),
+        code_path=expand("{code}/3a-track_using_superglue.py", code=config['code_path']),
         files=expand("{dir}/{input}", input=config['input_3a'], dir=config['project_dir'])
     output:
         expand("{dir}/{output}", output=config['output_3a'], dir=config['project_dir'])
