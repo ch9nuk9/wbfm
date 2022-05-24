@@ -37,6 +37,11 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     project_fname = Path(project_fname).resolve()
     edit_config(str(project_fname), _config)
 
+    # Also update the snakemake file with the project directory
+    snakemake_fname = osp.join(abs_dir_name, 'snakemake', 'config.yaml')
+    snakemake_updates = {'project_dir': abs_dir_name}
+    edit_config(snakemake_fname, snakemake_updates)
+
 
 def write_data_subset_using_config(cfg: ModularProjectConfig,
                                    out_fname: str = None,
