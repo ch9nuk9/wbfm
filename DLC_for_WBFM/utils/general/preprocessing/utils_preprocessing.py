@@ -150,21 +150,21 @@ class PreprocessingSettings:
             if subfolder.is_dir() and subfolder_is_ch0:
                 # Red channel
                 for file in subfolder.iterdir():
-                    if file.is_file() and 'background.btf' in file.name and file.name.endswith('.btf'):
+                    if file.is_file() and 'background' in file.name and file.name.endswith('.btf'):
                         self.background_fname_red = str(file)
                         logging.info(f"Found red channel background at: {file}")
                         break
                 else:
-                    raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
+                    raise FileNotFoundError(f"Could not find red background file within {folder_for_background}")
             elif subfolder.is_dir() and subfolder_is_ch1:
                 # Green channel
                 for file in subfolder.iterdir():
-                    if file.is_file() and 'background.btf' in file.name and file.name.endswith('.btf'):
+                    if file.is_file() and 'background' in file.name and file.name.endswith('.btf'):
                         self.background_fname_green = str(file)
                         logging.info(f"Found green channel background at: {file}")
                         break
                 else:
-                    raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
+                    raise FileNotFoundError(f"Could not find green background file within {folder_for_background}")
 
         # Also update the preprocessing file on disk
         cfg_preprocessing = cfg.get_preprocessing_config()
