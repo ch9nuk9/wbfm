@@ -6,6 +6,6 @@ OPT="sbatch -t {cluster.time} -p {cluster.partition} --cpus-per-task {cluster.cp
 NUM_JOBS_TO_SUBMIT=2
 
 # Needs writable cache
-export HOME="/scratch/neurobiology/zimmer/Charles"
+export HOME="/scratch/neurobiology/zimmer"
 
 snakemake -s post_segmentation_pipeline.smk --latency-wait 60 --cluster "$OPT" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT
