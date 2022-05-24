@@ -8,6 +8,12 @@ __default__:
     mem: 64G
     output: log_snakemake_step-%j.out
 
+preprocessing:
+    time: 12:00:00
+
+segmentation:
+    time: 12:00:00
+
 match_frame_pairs:
     partition: gpu
     cpus_per_task: 4
