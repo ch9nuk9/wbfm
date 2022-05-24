@@ -31,6 +31,7 @@ class ConfigFileWithProjectContext:
     project_dir: str = None
 
     _logger: logging.Logger = None
+    log_to_file: bool = True
 
     def __post_init__(self):
         self.config = load_config(self.self_path)
@@ -44,7 +45,7 @@ class ConfigFileWithProjectContext:
 
     def setup_logger(self, relative_log_filename: str):
         log_filename = self.resolve_relative_path(os.path.join('log', relative_log_filename))
-        self._logger = setup_logger_object(log_filename)
+        self._logger = setup_logger_object(log_filename, self.log_to_file)
         return self._logger
 
     def setup_global_logger(self, relative_log_filename: str):
