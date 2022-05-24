@@ -24,7 +24,7 @@ rule segmentation:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
         code_path=expand("{code}/1-segment_video.py", code=config['code_path']),
-        # files=expand("{input}", input=config['input_1'])
+        files=expand("{dir}/{input}", input=config['input_1'], dir=config['project_dir'])
     output:
         metadata=expand("{dir}/{output}", output=config['output_1'], dir=config['project_dir']),
         masks=directory(expand("{dir}/{output}", output=config['output_1_dir'], dir=config['project_dir']))
