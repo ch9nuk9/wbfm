@@ -8,4 +8,4 @@ NUM_JOBS_TO_SUBMIT=2
 # Needs writable cache
 export HOME="/scratch/neurobiology/zimmer"
 
-snakemake -s segmentation_pipeline.smk --latency-wait 60 --cluster "$OPT" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT
+snakemake -s pipeline_segmentation.smk --latency-wait 60 --cluster "$OPT" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT

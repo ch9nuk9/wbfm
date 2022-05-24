@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-snakemake -s post_segmentation_pipeline.smk --cores --latency-wait 600
+snakemake -s pipeline_post_segmentation.smk --cores --latency-wait 600

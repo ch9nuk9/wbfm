@@ -4,7 +4,7 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import fill_missing_indices_with_nan
 from DLC_for_WBFM.utils.neuron_matching.long_range_matching import _unpack_for_track_tracklet_matching, \
-    extend_tracks_using_global_tracking, bipartite_matching_on_each_time_slice, greedy_matching_using_node_class, \
+    extend_tracks_using_global_tracking, greedy_matching_using_node_class, \
     combine_tracklets_using_matching, _save_graphs_and_combined_tracks
 
 from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \

@@ -10,9 +10,14 @@ __default__:
 
 preprocessing:
     time: 12:00:00
+    partition: himem
+    mem: 600G
 
 segmentation:
     time: 12:00:00
+    mem: 600G
+    cpus_per_task: 32
+    partition: himem
 
 match_frame_pairs:
     partition: gpu
