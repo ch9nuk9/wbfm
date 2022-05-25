@@ -3,6 +3,7 @@ from typing import Tuple
 
 import networkx as nx
 import numpy as np
+import scipy.special
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from sklearn.neighbors import NearestNeighbors
@@ -231,7 +232,8 @@ def calc_bipartite_from_positions(xyz0: np.ndarray, xyz1: np.ndarray,
 def calc_nearest_neighbor_matches(zxy0: np.ndarray,
                                   zxy1: np.ndarray,
                                   max_dist: float = None,
-                                  n_neighbors: int = 1):
+                                  n_neighbors: int = 1,
+                                  softmax_for_confidence: bool = True):
     """
     Fast sklearn version of calc_icp_matches, based on raw neighbors, not a rigid transformation
 
@@ -270,7 +272,11 @@ def calc_nearest_neighbor_matches(zxy0: np.ndarray,
     all_ind_0, all_ind_1, all_dist = all_ind_0[to_keep], all_ind_1[to_keep], all_dist[to_keep]
     # Doing the subset here automatically flattens the arrays
     matches = np.array([[i0, i1] for i0, i1 in zip(all_ind_0, all_ind_1)])
-    conf = dist2conf(all_dist)
+    if softmax_for_confidence and n_neighbors > 1:
+        # Softmax doesn't make sense for only one distance
+        conf = scipy.special.softmax(all_dist, axis=1)
+    else:
+        conf = dist2conf(all_dist)
     # err
     return matches, conf
 

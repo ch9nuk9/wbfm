@@ -591,12 +591,17 @@ class FramePair:
             self._match_using_gp(self.options.gp_num_candidates, self.options.starting_matches)
 
     def _match_using_gp(self, n_neighbors, starting_matches_name='best'):
+        # err
         if starting_matches_name == 'best':
-            if len(self.affine_matches) > len(self.feature_matches):
+            if self.affine_matches is None:
+                starting_matches_name = 'feature_matches'
+            elif self.feature_matches is None:
+                starting_matches_name = 'affine_matches'
+            elif len(self.affine_matches) > len(self.feature_matches):
                 starting_matches_name = 'affine_matches'
             else:
                 starting_matches_name = 'feature_matches'
-        if starting_matches_name in ['affine_matches', 'feature_matches']:
+        if starting_matches_name in ['affine_matches', 'feature_matches', 'final_matches']:
             starting_matches = getattr(self, starting_matches_name)
         else:
             raise ValueError(f"Unknown starting matches: {starting_matches_name}")

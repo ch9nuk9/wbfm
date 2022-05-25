@@ -4,6 +4,7 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, DotProduct, ConstantKernel
 from sklearn.utils._testing import ignore_warnings
+from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.neuron_matching.utils_features import build_neuron_tree
 from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
@@ -30,7 +31,7 @@ def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,
     xyz = np.zeros((len(matches_with_conf), 3), dtype=np.float32)  # Start point
     dat = np.zeros((len(matches_with_conf), 3), dtype=np.float32)  # Difference vector
     noise = np.zeros(len(matches_with_conf), dtype=np.float32)  # Heuristic noise
-    for m, (match_and_conf) in enumerate(matches_with_conf):
+    for m, (match_and_conf) in enumerate(tqdm(matches_with_conf, leave=False)):
         v0 = n0_unmatched[match_and_conf[0]]
         v1 = n1_unmatched[match_and_conf[1]]
         xyz[m, :] = v0

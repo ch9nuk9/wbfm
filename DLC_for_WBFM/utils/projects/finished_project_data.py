@@ -539,7 +539,7 @@ class ProjectData:
         return self.which_training_frames[i]
 
     def napari_of_single_match(self, pair, which_matches='final_matches', this_match: FramePair = None,
-                               rigidly_align_volumetric_images=False):
+                               rigidly_align_volumetric_images=False, min_confidence=0.0):
         import napari
         from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
         if this_match is None:
@@ -568,6 +568,8 @@ class ProjectData:
 
         list_of_matches = getattr(this_match, which_matches)
         list_of_matches = [m for m in list_of_matches if -1 not in m]
+        list_of_matches = [m for m in list_of_matches if m[2] > min_confidence]
+
         all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy)
 
         v = napari.view_image(raw_red_data, ndisplay=3,
