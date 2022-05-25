@@ -36,32 +36,37 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
                                            training_config: SubfolderConfigFile,
                                            DEBUG: bool = False) -> None:
     """Substep if the frames exist, but the matches are corrupted or need to be redone"""
-    logging.info(f"Producing tracklets")
+
+    project_data = ProjectData.load_final_project_data_from_config(project_config)
+
+    project_config.logger.info(f"Producing tracklets")
 
     raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
                                                       prepend_subfolder=True)
     if os.path.exists(raw_fname):
         raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
-    frame_fname = training_config.resolve_relative_path(os.path.join('raw', 'frame_dat.pickle'),
-                                                        prepend_subfolder=True)
-    if not os.path.exists(frame_fname):
-        raise FileNotFoundError
-    else:
-        all_frame_dict = pickle_load_binary(frame_fname)
+    all_frame_dict = project_data.raw_frames
 
     # Intermediate products: pairwise matches between frames
-    _, tracker_params, pairwise_matches_params = _unpack_config_frame2frame_matches(
+    _, tracker_params, frame_pair_options = _unpack_config_frame2frame_matches(
         DEBUG, project_config, training_config)
     start_volume = tracker_params['start_volume']
     end_volume = start_volume + tracker_params['num_frames']
-    all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume)
+    project_config.logger.info(f"Calculating Frame pairs for frames: {start_volume + 1} to {end_volume}")
+
+    if use_superglue:
+        # This path builds the
+        all_frame_pairs = build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data)
+    else:
+        all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, frame_pair_options, start_volume)
 
     with safe_cd(project_config.project_dir):
         _save_matches_and_frames(all_frame_dict, all_frame_pairs, training_config)
 
 
-def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data):
+def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data,
+                                      match_using_additional_methods=True):
     path_to_model = PATH_TO_SUPERGLUE_TRACKLET_MODEL
     superglue_unpacker = SuperGlueUnpacker(project_data=project_data)
     tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker, path_to_model=path_to_model)
@@ -74,6 +79,8 @@ def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, projec
         # Use new method to match
         matches_with_conf = tracker.match_two_time_points(t, t + 1)
         frame_pair.feature_matches = matches_with_conf
+        if match_using_additional_methods:
+            frame_pair.match_using_all_methods()
         all_frame_pairs[(t, t + 1)] = frame_pair
     return all_frame_pairs
 

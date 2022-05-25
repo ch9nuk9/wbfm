@@ -10,7 +10,7 @@ rule all:
 rule match_frame_pairs:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}/2a-pairwise_match_sequential_frames.py", code=config['code_path']),
+        code_path=expand("{code}/2ab-build_feature_and_match.py", code=config['code_path']),
         masks=ancient(rules.segmentation.output)
     output:
         expand("{dir}/{output}", output=config['output_2a'], dir=config['project_dir'])
@@ -22,7 +22,7 @@ rule match_frame_pairs:
 rule postprocess_matches_to_tracklets:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}/2b-postprocess_matches_to_tracklets.py", code=config['code_path']),
+        code_path=expand("{code}/2c-postprocess_matches_to_tracklets.py", code=config['code_path']),
         files=expand("{dir}/{input}", input=config['input_2b'], dir=config['project_dir']),
     output:
         expand("{dir}/{output}", output=config['output_2b'], dir=config['project_dir'])

@@ -338,14 +338,13 @@ def build_tracklets_full_video(video_data, video_fname: str, start_volume: int =
         return None, all_frame_dict
 
 
-def match_all_adjacent_frames(all_frame_dict, end_volume, pairwise_matches_params, start_volume):
+def match_all_adjacent_frames(all_frame_dict, end_volume, frame_pair_options, start_volume):
     all_frame_pairs = {}
     frame_range = range(start_volume + 1, end_volume)
-    logging.info(f"Calculating Frame pairs for frames:  {start_volume + 1} to {end_volume}")
     for i_frame in tqdm(frame_range):
         key = (i_frame - 1, i_frame)
         frame0, frame1 = all_frame_dict[key[0]], all_frame_dict[key[1]]
-        this_pair = calc_FramePair_from_Frames(frame0, frame1, frame_pair_options=pairwise_matches_params)
+        this_pair = calc_FramePair_from_Frames(frame0, frame1, frame_pair_options=frame_pair_options)
 
         all_frame_pairs[key] = this_pair
     return all_frame_pairs

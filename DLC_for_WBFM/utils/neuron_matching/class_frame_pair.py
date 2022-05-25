@@ -527,9 +527,7 @@ class FramePair:
         self.keypoint_matches = neuron_embedding_matches_with_conf  # Overwritten by affine match, if used
 
     def match_using_local_affine(self):
-        if not self.options.add_affine_to_candidates:
-            return
-        else:
+        if self.options.add_affine_to_candidates:
             obj = self.options
             opt = dict(start_plane=obj.start_plane,
                        num_features_per_plane=obj.num_features_per_plane,
@@ -585,10 +583,7 @@ class FramePair:
         self.affine_pushed_locations = affine_pushed
 
     def match_using_gp(self):
-        if not self.options.add_gp_to_candidates:
-            return
-        else:
-            self._match_using_gp(self.options.gp_num_candidates, self.options.starting_matches)
+        self._match_using_gp(self.options.gp_num_candidates, self.options.starting_matches)
 
     def _match_using_gp(self, n_neighbors, starting_matches_name='best'):
         # err
@@ -619,10 +614,7 @@ class FramePair:
         self.gp_pushed_locations = gp_pushed
 
     def match_using_fdnc(self):
-        if not self.options.add_fdnc_to_candidates:
-            return
-        else:
-            self._match_using_fdnc(self.options.fdnc_options)
+        self._match_using_fdnc(self.options.fdnc_options)
 
     def _match_using_fdnc(self, prediction_options):
         from fDNC.src.DNC_predict import predict_matches
@@ -635,6 +627,20 @@ class FramePair:
         if prediction_options['topn'] is not None:
             matches_with_conf = flatten_nested_list(matches_with_conf)
         self.fdnc_matches = matches_with_conf
+
+    def match_using_all_methods(self):
+        """Assumes that """
+        if self.feature_matches is None:
+            raise NoMatchesError
+
+        if self.options.add_affine_to_candidates:
+            self.match_using_local_affine()
+        if self.options.add_gp_to_candidates:
+            self.match_using_gp()
+        if self.options.add_fdnc_to_candidates:
+            self.match_using_fdnc()
+
+        self.calc_final_matches()
 
     def print_reason_for_all_final_matches(self, which_set_of_matches=None):
         dict_of_matches = self.get_pair_to_conf_dict(which_set_of_matches)
@@ -675,11 +681,7 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame, frame1: ReferenceFrame, f
     # frame_pair.preprocess_data()
 
     # Add additional candidates; the class checks if they are used
-    frame_pair.match_using_local_affine()
-    frame_pair.match_using_gp()
-    frame_pair.match_using_fdnc()
-
-    frame_pair.calc_final_matches()
+    frame_pair.match_using_all_methods()
 
     return frame_pair
 

@@ -147,7 +147,7 @@ Preparation:
 
 Command:
 ```bash
-python scripts/2a-pairwise_match_sequential_frames.py with project_path=PATH-TO-YOUR-PROJECT
+python scripts/2ab-build_feature_and_match.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
 Speed: Fast, but depends on number of frames; 2-6 hours
