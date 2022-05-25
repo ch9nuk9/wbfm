@@ -347,7 +347,7 @@ class SuperGlue(nn.Module):
         scores = self.calculate_match_scores(data)
         indices0, _, mscores0, _ = self.process_scores_into_matches(scores)
 
-        matches_with_conf = [[i, int(m), score] for i, (m, score) in enumerate(zip(indices0[0], mscores0[0]))]
+        matches_with_conf = [[i, int(m), score.cpu().numpy()] for i, (m, score) in enumerate(zip(indices0[0], mscores0[0]))]
         return matches_with_conf
 
 
