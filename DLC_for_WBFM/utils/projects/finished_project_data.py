@@ -5,7 +5,7 @@ from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import Preproc
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 import os
 from dataclasses import dataclass
-from typing import Tuple, Dict, Union
+from typing import Tuple, Dict, Union, List
 import napari
 import numpy as np
 import pandas as pd
@@ -559,11 +559,17 @@ class ProjectData:
 
         n1_zxy = this_match.pts1
         raw_red_data = np.stack([dat0, dat1])
+        # Scale to physical units
+        z_to_xy_ratio= 1
+        # z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
+        # n0_zxy[0, :] = z_to_xy_ratio * n0_zxy[0, :]
+        # n1_zxy[0, :] = z_to_xy_ratio * n1_zxy[0, :]
 
         list_of_matches = getattr(this_match, which_matches)
         all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy)
 
-        v = napari.view_image(raw_red_data, ndisplay=3)
+        v = napari.view_image(raw_red_data, ndisplay=3,
+                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
         v.add_points(n0_zxy, size=3, face_color='green', symbol='x', n_dimensional=True)
         v.add_points(n1_zxy, size=3, face_color='blue', symbol='o', n_dimensional=True)
         v.add_tracks(all_tracks_list, head_length=2, name=which_matches)
@@ -578,7 +584,7 @@ class ProjectData:
 
         return v
 
-    def add_layers_to_viewer(self, viewer=None, which_layers='all',
+    def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[str]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
                              dask_for_segmentation=True):
         if viewer is None:
