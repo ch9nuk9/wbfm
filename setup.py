@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='dlc_for_wbfm',
-      version='0.4.0',
+      version='0.5.0',
       description='Using DeepLabCut for Whole Brain Freely Moving neuron tracking',
       url='https://bitbucket.vbc.ac.at/projects/ZL/repos/dlc_for_wbfm/browse',
       author='Charles Fieseler',
