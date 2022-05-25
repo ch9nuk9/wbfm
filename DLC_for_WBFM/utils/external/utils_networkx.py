@@ -109,7 +109,8 @@ def build_digraph_from_matches(pairwise_matches,
 ##
 
 def calc_bipartite_from_candidates(all_candidate_matches, min_confidence_after_sum=1e-3, verbose=0,
-                                   min_confidence_before_sum=1e-3):
+                                   min_confidence_before_sum=1e-3,
+                                   apply_tanh_to_confidence=True):
     """
     Sparse version of calc_bipartite_from_distance
 
@@ -149,8 +150,10 @@ def calc_bipartite_from_candidates(all_candidate_matches, min_confidence_after_s
     matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
     # Apply sigmoid to summed confidence
     matches = np.array(matches)
-    conf = np.array([np.tanh(conf_matrix[i0, i1]) for i0, i1 in matches])
-
+    if apply_tanh_to_confidence:
+        conf = np.array([np.tanh(conf_matrix[i0, i1]) for i0, i1 in matches])
+    else:
+        conf = np.array([conf_matrix[i0, i1] for i0, i1 in matches])
     to_keep = conf > min_confidence_after_sum
     matches = matches[to_keep]
     conf = conf[to_keep]

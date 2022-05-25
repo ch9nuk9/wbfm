@@ -53,6 +53,7 @@ class FramePairOptions:
     z_threshold: float = None
     min_confidence: float = 0.001
     z_to_xy_ratio: float = None  # Deprecated; will be removed after Ulises projects
+    apply_tanh_to_confidence: bool = True
 
     # Physical unit conversion; required for leifer network
     physical_unit_conversion: PhysicalUnitConversion = None
@@ -251,7 +252,8 @@ class FramePair:
 
         try:
             matches, conf, _ = calc_bipartite_from_candidates(self.all_candidate_matches,
-                                                              min_confidence_after_sum=min_confidence)
+                                                              min_confidence_after_sum=min_confidence,
+                                                              apply_tanh_to_confidence=self.options.apply_tanh_to_confidence)
             final_matches = [(m[0], m[1], c) for m, c in zip(matches, conf)]
             final_matches = self.filter_matches_using_z_threshold(final_matches, z_threshold)
         except NoMatchesError:
