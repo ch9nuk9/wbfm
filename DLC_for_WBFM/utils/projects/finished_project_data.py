@@ -545,7 +545,8 @@ class ProjectData:
         if this_match is None:
             this_match: FramePair = self.raw_matches[pair]
 
-        dat0, dat1 = self.red_data[pair[0], ...], self.red_data[pair[1], ...]
+        t0, t1 = pair
+        dat0, dat1 = self.red_data[t0, ...], self.red_data[t1, ...]
         this_match.load_raw_data(dat0, dat1)
         if rigidly_align_volumetric_images:
             # Ensure that both point cloud and data have rotations
@@ -560,7 +561,7 @@ class ProjectData:
         n1_zxy = this_match.pts1
         raw_red_data = np.stack([dat0, dat1])
         # Scale to physical units
-        z_to_xy_ratio= 1
+        z_to_xy_ratio = 1
         # z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
         # n0_zxy[0, :] = z_to_xy_ratio * n0_zxy[0, :]
         # n1_zxy[0, :] = z_to_xy_ratio * n1_zxy[0, :]
@@ -570,8 +571,22 @@ class ProjectData:
 
         v = napari.view_image(raw_red_data, ndisplay=3,
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
-        v.add_points(n0_zxy, size=3, face_color='green', symbol='x', n_dimensional=True)
-        v.add_points(n1_zxy, size=3, face_color='blue', symbol='o', n_dimensional=True)
+
+        df = self.final_tracks.loc[[t0], :]
+        options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
+        options['name'] = 'n0_final_id'
+        options['n_dimensional'] = True
+        v.add_points(**options)
+
+        df = self.final_tracks.loc[[t1], :]
+        options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
+        options['name'] = 'n1_final_id'
+        options['text']['color'] = 'green'
+        options['n_dimensional'] = True
+        options['symbol'] = 'x'
+        v.add_points(**options)
+        # v.add_points(n0_zxy, size=3, face_color='green', symbol='x', n_dimensional=True)
+        # v.add_points(n1_zxy, size=3, face_color='blue', symbol='o', n_dimensional=True)
         v.add_tracks(all_tracks_list, head_length=2, name=which_matches)
 
         # Add text overlay; temporarily change the neuron locations on the frame
