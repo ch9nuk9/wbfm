@@ -55,6 +55,8 @@ class FramePairOptions:
     z_to_xy_ratio: float = None  # Deprecated; will be removed after Ulises projects
     apply_tanh_to_confidence: bool = True
 
+    use_superglue: bool = True
+
     # Physical unit conversion; required for leifer network
     physical_unit_conversion: PhysicalUnitConversion = None
 

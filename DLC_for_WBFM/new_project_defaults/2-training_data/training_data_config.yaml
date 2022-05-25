@@ -23,7 +23,8 @@ pairwise_matching_params:
   min_confidence: 0.1
   z_threshold: 2.5
   matching_method: bipartite  # Or unanimous
-  preprocess_using_global_rotation: False
+  preprocess_using_global_rotation: false
+  use_superglue: true
 
 postprocessing_params:
   min_length_to_save: 5

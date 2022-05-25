@@ -55,8 +55,7 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
     end_volume = start_volume + tracker_params['num_frames']
     project_config.logger.info(f"Calculating Frame pairs for frames: {start_volume + 1} to {end_volume}")
 
-    if use_superglue:
-        # This path builds the
+    if frame_pair_options.use_superglue:
         all_frame_pairs = build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data)
     else:
         all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, frame_pair_options, start_volume)
