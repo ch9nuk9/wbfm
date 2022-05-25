@@ -24,12 +24,19 @@ input_2a:
   - 1-segmentation/metadata.pickle
 output_2a:
   - 2-training_data/raw/frame_dat.pickle
+
+input_2b_dir:
+  - 1-segmentation/masks.zarr
+input_2b:
+  - 1-segmentation/metadata.pickle
+  - 2-training_data/raw/frame_dat.pickle
+output_2b:
   - 2-training_data/raw/match_dat.pickle
 
-input_2b:
+input_2c:
   - 2-training_data/raw/frame_dat.pickle
   - 2-training_data/raw/match_dat.pickle
-output_2b:
+output_2c:
   - 2-training_data/all_tracklets.pickle
   - 2-training_data/raw/clust_df_dat.pickle
 

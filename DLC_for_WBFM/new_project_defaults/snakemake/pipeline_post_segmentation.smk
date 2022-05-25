@@ -7,13 +7,27 @@ rule all:
 #
 # Tracklets
 #
+rule build_frame_objects:
+    input:
+        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
+        code_path=expand("{code}/2a-build_frame_objects.py", code=config['code_path']),
+        masks=ancient(rules.segmentation.output),
+        files=expand("{dir}/{input}", input=config['input_2a'], dir=config['project_dir'])
+    output:
+        expand("{dir}/{output}", output=config['output_2a'], dir=config['project_dir'])
+    threads: 56
+    shell:
+        "python {input.code_path} with project_path={input.cfg}"
+
+
 rule match_frame_pairs:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
-        code_path=expand("{code}/2ab-build_feature_and_match.py", code=config['code_path']),
-        masks=ancient(rules.segmentation.output)
+        code_path=expand("{code}/2b-match_adjacent_volumes.py", code=config['code_path']),
+        masks=ancient(rules.segmentation.output),
+        files=expand("{dir}/{input}", input=config['input_2b'], dir=config['project_dir'])
     output:
-        expand("{dir}/{output}", output=config['output_2a'], dir=config['project_dir'])
+        expand("{dir}/{output}", output=config['output_2b'], dir=config['project_dir'])
     threads: 56
     shell:
         "python {input.code_path} with project_path={input.cfg}"
@@ -23,9 +37,9 @@ rule postprocess_matches_to_tracklets:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
         code_path=expand("{code}/2c-postprocess_matches_to_tracklets.py", code=config['code_path']),
-        files=expand("{dir}/{input}", input=config['input_2b'], dir=config['project_dir']),
+        files=expand("{dir}/{input}", input=config['input_2c'], dir=config['project_dir']),
     output:
-        expand("{dir}/{output}", output=config['output_2b'], dir=config['project_dir'])
+        expand("{dir}/{output}", output=config['output_2c'], dir=config['project_dir'])
     threads: 8
     shell:
         "python {input.code_path} with project_path={input.cfg}"
