@@ -6,7 +6,6 @@ from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 from numcodecs import blosc
-import tensorflow as tf
 
 import segmentation.util.utils_postprocessing as post
 import numpy as np
@@ -80,6 +79,7 @@ def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
     opt['keras_lock'] = keras_lock
     opt['read_lock'] = read_lock
 
+    import tensorflow as tf
     is_cuda_gpu_available = tf.test.is_gpu_available(cuda_only=True)
 
     def parallel_func(_i_both):
