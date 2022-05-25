@@ -567,6 +567,7 @@ class ProjectData:
         # n1_zxy[0, :] = z_to_xy_ratio * n1_zxy[0, :]
 
         list_of_matches = getattr(this_match, which_matches)
+        list_of_matches = [m for m in list_of_matches if -1 not in m]
         all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy)
 
         v = napari.view_image(raw_red_data, ndisplay=3,

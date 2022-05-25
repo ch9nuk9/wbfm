@@ -435,10 +435,12 @@ class FramePair:
         """Prints the total number of candidates, but not the exact matches"""
         num_matches = len(self.feature_matches)
         print(f"Found {num_matches} candidates via feature matching")
-        num_matches = len(self.affine_matches)
-        print(f"Found {num_matches} candidates via affine matching")
-        num_matches = len(self.gp_matches)
-        print(f"Found {num_matches} candidates via gaussian process matching")
+        if self.affine_matches is not None:
+            num_matches = len(self.affine_matches)
+            print(f"Found {num_matches} candidates via affine matching")
+        if self.gp_matches is not None:
+            num_matches = len(self.gp_matches)
+            print(f"Found {num_matches} candidates via gaussian process matching")
 
         num_matches = len(self.final_matches)
         print(f"Processed these into {num_matches} final matches candidates")
@@ -449,7 +451,18 @@ class FramePair:
                 print(f"Candidate: {m}")
 
     def print_reason_for_match(self, test_match):
-        m0, m1 = test_match
+        f0_to_1 = self.get_f0_to_f1_dict()
+
+        if np.isscalar(test_match):
+            # Assume the user gave the first time point ID
+            m0 = test_match
+            m1 = f0_to_1.get(m0, None)
+            if m1 is None:
+                print(f"Found no match for {m0}")
+                return
+            test_match = (m0, m1)
+        else:
+            m0, m1 = test_match
 
         all_match_types = [
             (self.feature_matches, "feature"),
@@ -458,7 +471,6 @@ class FramePair:
             (self.fdnc_matches, "fdnc (neural network)"),
         ]
 
-        f0_to_1 = self.get_f0_to_f1_dict()
         if f0_to_1[m0] == m1:
             f_to_conf = self.get_pair_to_conf_dict()
             print(f"Found match {test_match} with confidence {f_to_conf[test_match]}")
@@ -619,8 +631,8 @@ class FramePair:
             matches_with_conf = flatten_nested_list(matches_with_conf)
         self.fdnc_matches = matches_with_conf
 
-    def print_reason_for_all_final_matches(self):
-        dict_of_matches = self.get_pair_to_conf_dict()
+    def print_reason_for_all_final_matches(self, which_set_of_matches=None):
+        dict_of_matches = self.get_pair_to_conf_dict(which_set_of_matches)
         for k in dict_of_matches.keys():
             print("==================================")
             self.print_reason_for_match(k)

@@ -8,6 +8,7 @@ from tqdm.auto import tqdm
 import seaborn as sns
 from DLC_for_WBFM.utils.general.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def calc_true_positive(gt: dict, test: dict):
@@ -125,9 +126,51 @@ def calc_accuracy(all_dist, dist_tol=1e-2):
     return num_matches, num_mismatches, num_nan_total
 
 
-def plot_histogram_at_likelihood_thresh(df_tracks, df_leifer, likelihood_thresh):
+def calculate_column_of_differences(df_gt, df_test,
+                                    column_to_check='raw_neuron_ind_in_list', neurons_that_are_finished=None):
+    """
+    Compares the neuron indices between a ground truth and a test dataframe
+    Returns a list of columns with name 'true_neuron_ind' that can be concatenated to the original dataframe using:
+    ```
+    df_list.insert(0, df_test)
+    df_with_true_neuron_ind = pd.concat(df_list, axis=1)
+    ```
+
+    Note that df_test can be a dataframe of tracks or tracklets
+    """
+    if neurons_that_are_finished is None:
+        lookup = df_gt.loc[:, (slice(None), column_to_check)]
+    else:
+        lookup = df_gt.loc[:, (neurons_that_are_finished, column_to_check)]
+
+    names = get_names_from_df(neurons_that_are_finished)
+
+    df_list = []
+    for name in tqdm(names):
+        track = df_test[name][column_to_check]
+
+        # Note: nan evaluates to false
+        mask = lookup.apply(lambda col: col == track)
+        idx, true_neuron_ind = np.where(mask)
+
+        # Remove duplicates
+        idx, idx_unique = np.unique(idx, return_index=True)
+        true_neuron_ind = true_neuron_ind[idx_unique]
+
+        df_list.append(pd.DataFrame(data=true_neuron_ind, columns=[(name, 'true_neuron_ind')], index=idx))
+
+    # Construct full dataframe with these new columns
+    # df_list.insert(0, df_test)
+    # df_with_true_neuron_ind = pd.concat(df_list, axis=1)
+    return df_list
+
+##
+## Plotting
+##
+
+def plot_histogram_at_likelihood_thresh(df1, df2, likelihood_thresh):
     """Assumes that the neurons have the same name; see rename_columns_using_matching"""
-    df_leifer_filter = filter_dataframe_using_likelihood(df_leifer, likelihood_thresh)
+    df2_filter = filter_dataframe_using_likelihood(df2, likelihood_thresh)
     coords = ['z', 'x', 'y']
     tracked_names = [int2name_neuron(i) for i in TRACKED_IND]
 
@@ -135,10 +178,10 @@ def plot_histogram_at_likelihood_thresh(df_tracks, df_leifer, likelihood_thresh)
     all_total1 = {}
     all_total2 = {}
     for name in tqdm(tracked_names, leave=False):
-        df1, df2 = df_tracks[name][coords].copy(), df_leifer_filter[name][coords].copy()
+        df1, df2 = df1[name][coords].copy(), df2_filter[name][coords].copy()
         all_dist_dict[name], all_total1[name], all_total2[name], _ = calc_all_dist(df1, df2)
 
-    num_t = df_tracks.shape[0]
+    num_t = df1.shape[0]
     all_acc_dict = defaultdict(list)
     for name in tqdm(tracked_names, leave=False):
         matches, mismatches, nan = calc_accuracy(all_dist_dict[name])
