@@ -11,7 +11,7 @@ rule build_frame_objects:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
         code_path=expand("{code}/2a-build_frame_objects.py", code=config['code_path']),
-        masks=ancient(rules.segmentation.output),
+        masks=ancient(expand("{dir}/{input}", input=config['output_1_dir'], dir=config['project_dir'])),
         files=expand("{dir}/{input}", input=config['input_2a'], dir=config['project_dir'])
     output:
         expand("{dir}/{output}", output=config['output_2a'], dir=config['project_dir'])
@@ -24,7 +24,7 @@ rule match_frame_pairs:
     input:
         cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
         code_path=expand("{code}/2b-match_adjacent_volumes.py", code=config['code_path']),
-        masks=ancient(rules.segmentation.output),
+        masks=ancient(expand("{dir}/{input}", input=config['output_1_dir'], dir=config['project_dir'])),
         files=expand("{dir}/{input}", input=config['input_2b'], dir=config['project_dir'])
     output:
         expand("{dir}/{output}", output=config['output_2b'], dir=config['project_dir'])

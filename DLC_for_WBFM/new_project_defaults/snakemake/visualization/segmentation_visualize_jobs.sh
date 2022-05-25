@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-snakemake -ns segmentation_pipeline.smk --dag | dot | display
+snakemake -ns ../pipeline_segmentation.smk --dag | dot | display
