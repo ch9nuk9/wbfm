@@ -462,6 +462,8 @@ class FramePair:
             print(f"Found match {test_match} with confidence {f_to_conf[test_match]}")
 
             for match_type in all_match_types:
+                if match_type[0] is None:
+                    continue
                 self.print_match_by_method(match_type[0], m0, m1, match_type[1])
 
     def print_match_by_method(self, this_method_matches, m0, m1, method_name):
