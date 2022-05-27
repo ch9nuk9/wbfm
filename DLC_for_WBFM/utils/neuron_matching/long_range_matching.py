@@ -70,7 +70,7 @@ def _unpack_for_track_tracklet_matching(project_data):
     previous_matches = project_data.global2tracklet
     # d_max = track_config.config['final_3d_postprocessing']['max_dist']
     t_template = track_config.config['final_3d_tracks'].get('template_time_point', 1)
-    auto_split_conflicts = track_config.config['final_3d_tracks'].get('auto_split_conflicts', true)
+    auto_split_conflicts = track_config.config['final_3d_tracks'].get('auto_split_conflicts', True)
     use_multiple_templates = track_config.config['leifer_params']['use_multiple_templates']
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
     only_use_previous_matches = track_config.config['final_3d_postprocessing'].get('only_use_previous_matches', False)
