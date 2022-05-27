@@ -520,11 +520,11 @@ class SuperGlueUnpacker:
         new_data = {}
         for k, v in data.items():
             if device is not None:
-                # new_data[k] = torch.tensor(v, device=device).unsqueeze(0)
-                new_data[k] = v.clone(device=device).detach().required_grad_(True).unsqueeze(0)
+                new_data[k] = torch.tensor(v, device=device).unsqueeze(0)
+                # new_data[k] = v.clone().to(device=device).required_grad_(True).unsqueeze(0)
             else:
-                # new_data[k] = torch.tensor(v).unsqueeze(0)
-                new_data[k] = v.clone().detach().required_grad_(True).unsqueeze(0)
+                new_data[k] = torch.tensor(v).unsqueeze(0)
+                # new_data[k] = v.clone().to(device=device).required_grad_(True).unsqueeze(0)
 
         return new_data
 
