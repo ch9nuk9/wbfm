@@ -1,5 +1,8 @@
 import concurrent
 from collections import defaultdict
+from pathlib import Path
+
+from DLC_for_WBFM.utils.external.utils_jupyter import executing_in_notebook
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
@@ -292,7 +295,8 @@ class ProjectData:
         if isinstance(project_path, ModularProjectConfig):
             cfg = project_path
         else:
-            cfg = ModularProjectConfig(project_path)
+            opt = {'log_to_file': not executing_in_notebook()}
+            cfg = ModularProjectConfig(project_path, **opt)
 
         project_dir = cfg.project_dir
 
@@ -415,6 +419,8 @@ class ProjectData:
     @staticmethod
     def load_final_project_data_from_config(project_path, **kwargs):
         if isinstance(project_path, (str, os.PathLike, ModularProjectConfig)):
+            if Path(project_path).is_dir():
+                project_path = Path(project_path).joinpath('project_config.yaml')
             args = ProjectData.unpack_config_file(project_path)
             return ProjectData._load_data_from_configs(*args, **kwargs)
         elif isinstance(project_path, ProjectData):

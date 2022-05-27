@@ -29,14 +29,13 @@ def setup_logger_object(log_filename, actually_set_up_file=True):
         pass
     else:
         ch = _get_console_handler()
-        # Actually add the handlers
         logger.addHandler(ch)
 
     logger.propagate = False
 
     logger.info(f"Set up logger with name: {log_name}")
-    # logger.debug("Check that debugging works")
-    # logger.warning("Check that warning works")
+    if actually_set_up_file:
+        print(f"And file output at: {log_filename}")
 
     return logger
 
