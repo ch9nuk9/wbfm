@@ -32,6 +32,7 @@ leifer_params:
 final_3d_tracks:
   max_dist_to_segmentation: 1.0 # CHANGE ME
   template_time_point: 10
+  auto_split_conflicts: true
 
 final_3d_postprocessing:
   max_dist: 5.0

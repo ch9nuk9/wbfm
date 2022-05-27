@@ -16,7 +16,7 @@ cgitb.enable(format='text')
 
 # Initialize sacred experiment
 ex = Experiment()
-ex.add_config(project_path=None, auto_split_conflicts=True, DEBUG=False)
+ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
@@ -37,5 +37,4 @@ def combine_tracks(_config, _run, _log):
     cfg = _config['cfg']
 
     DEBUG = _config['DEBUG']
-    auto_split_conflicts = _config['auto_split_conflicts']
-    match_tracks_and_tracklets_using_config(cfg, auto_split_conflicts=auto_split_conflicts, DEBUG=DEBUG)
+    match_tracks_and_tracklets_using_config(cfg, DEBUG=DEBUG)

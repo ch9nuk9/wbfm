@@ -70,6 +70,7 @@ def _unpack_for_track_tracklet_matching(project_data):
     previous_matches = project_data.global2tracklet
     # d_max = track_config.config['final_3d_postprocessing']['max_dist']
     t_template = track_config.config['final_3d_tracks'].get('template_time_point', 1)
+    auto_split_conflicts = track_config.config['final_3d_tracks'].get('auto_split_conflicts', true)
     use_multiple_templates = track_config.config['leifer_params']['use_multiple_templates']
     min_overlap = track_config.config['final_3d_postprocessing']['min_overlap_dlc_and_tracklet']
     only_use_previous_matches = track_config.config['final_3d_postprocessing'].get('only_use_previous_matches', False)
@@ -79,7 +80,7 @@ def _unpack_for_track_tracklet_matching(project_data):
     tracklet_splitting_iterations = track_config.config['final_3d_postprocessing'].get('tracklet_splitting_iterations', 5)
     return df_global_tracks, min_confidence, min_overlap, num_neurons, only_use_previous_matches, outlier_threshold, \
            previous_matches, t_template, track_config, tracklets_and_neurons_class, use_multiple_templates, \
-           use_previous_matches, tracklet_splitting_iterations
+           use_previous_matches, tracklet_splitting_iterations, auto_split_conflicts
 
 
 def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_matching_with_conflict,

@@ -83,14 +83,15 @@ def track_using_embedding_using_config(project_cfg, DEBUG):
 
 
 def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig, to_save=True, verbose=0,
-                                            auto_split_conflicts=True, DEBUG=False):
+                                            DEBUG=False):
     """Replaces: final_tracks_from_tracklet_matches_from_config"""
     # Initialize project data and unpack
     logger = project_config.logger
     project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_tracklets=True)
+
     df_global_tracks, min_confidence, min_overlap, num_neurons, only_use_previous_matches, outlier_threshold, \
     previous_matches, t_template, track_config, tracklets_and_neurons_class, use_multiple_templates, \
-    use_previous_matches, tracklet_splitting_iterations = _unpack_for_track_tracklet_matching(project_data)
+    use_previous_matches, tracklet_splitting_iterations, auto_split_conflicts = _unpack_for_track_tracklet_matching(project_data)
 
     # Add initial tracklets to neurons, then add matches (if any found before)
     logger.info(f"Initializing worm class with settings: \n"
