@@ -511,7 +511,7 @@ class SuperGlueUnpacker:
         return all_matches
 
     def convert_single_frame_to_superglue_format(self, f1: ReferenceFrame, use_gt_matches=False):
-        is_valid_frame = f1.num_neurons > 0
+        is_valid_frame = f1.num_neurons > 1
         if is_valid_frame:
             data = self.data_template.copy()
             t0 = self.t_template
