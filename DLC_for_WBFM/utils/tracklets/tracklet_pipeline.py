@@ -74,12 +74,14 @@ def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, projec
     for t in tqdm(range(num_frames)):
         frame0, frame1 = all_frame_dict[t], all_frame_dict[t + 1]
         frame_pair = FramePair(options=frame_pair_options, frame0=frame0, frame1=frame1)
-
-        # Use new method to match
-        matches_with_conf = tracker.match_two_time_points(t, t + 1)
-        frame_pair.feature_matches = matches_with_conf
-        if match_using_additional_methods:
-            frame_pair.match_using_all_methods()
+        if frame_pair.check_both_frames_valid():
+            # Use new method to match
+            matches_with_conf = tracker.match_two_time_points(t, t + 1)
+            frame_pair.feature_matches = matches_with_conf
+            if match_using_additional_methods:
+                frame_pair.match_using_all_methods()
+        else:
+            frame_pair.feature_matches = []
         all_frame_pairs[(t, t + 1)] = frame_pair
     return all_frame_pairs
 

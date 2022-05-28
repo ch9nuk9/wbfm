@@ -500,7 +500,7 @@ class SuperGlueUnpacker:
         data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
                     image0=image0, image1=image0,
                     scores0=scores0, scores1=scores1)
-        return data
+        return data, is_valid_pair
 
     def get_gt_matches(self, t0, t1, use_gt_matches):
         if use_gt_matches:
@@ -570,9 +570,9 @@ class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronIma
         min_matches_required = 50
         self._items = []
         for t0, t1 in tqdm(self.time_pairs):
-            val = self.unpacker.convert_frames_to_superglue_format(t0, t1, use_gt_matches=True)
+            val, is_valid_pair = self.unpacker.convert_frames_to_superglue_format(t0, t1, use_gt_matches=True)
             # Check to see that there really are enough matches
-            if len(val['all_matches']) < min_matches_required:
+            if not is_valid_pair or len(val['all_matches']) < min_matches_required:
                 logging.warning(f"Skipping too few matches ({len(val['all_matches'])}) between frames: {t0}, {t1}")
                 continue
             self._items.append(val)
