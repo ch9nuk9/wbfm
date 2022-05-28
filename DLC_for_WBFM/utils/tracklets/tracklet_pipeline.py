@@ -99,18 +99,14 @@ def postprocess_matches_to_tracklets(all_frame_dict, all_frame_pairs, z_threshol
 
 
 def save_all_tracklets(df, df_multi_index_format, training_config):
-    logging.info("Saving dataframes; could take a while")
     with safe_cd(training_config.project_dir):
         # Custom format for pairs
         subfolder = osp.join('2-training_data', 'raw')
         fname = osp.join(subfolder, 'clust_df_dat.pickle')
-        with open(fname, 'wb') as f:
-            pickle.dump(df, f)
+        training_config.pickle_data_in_local_project(df, fname)
 
-        # General format; ONLY this should be used going forward
         # Update to save as sparse from the beginning
         out_fname = training_config.config['df_3d_tracklets']
-        # df_multi_index_format.to_hdf(out_fname, 'df_with_missing')
         logging.info("Converting dataframe to sparse format")
         df_multi_index_format = df_multi_index_format.astype(pd.SparseDtype("float", np.nan))
         training_config.pickle_data_in_local_project(df_multi_index_format, out_fname, custom_writer=pd.to_pickle)
