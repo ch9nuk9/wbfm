@@ -53,7 +53,9 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_itertools import random_combination
 from DLC_for_WBFM.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
+from DLC_for_WBFM.utils.general.custom_errors import NoNeuronsError
 from DLC_for_WBFM.utils.general.distance_functions import dist2conf
+from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.nn_utils.data_loading import AbstractNeuronImageFeaturesFromProject
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -475,10 +477,17 @@ class SuperGlueUnpacker:
         f0 = project_data.raw_frames[t0]
         f1 = project_data.raw_frames[t1]
 
-        # Unpack
-        desc0, kpts0, scores0 = self.unpack_frame(f0)
-        desc1, kpts1, scores1 = self.unpack_frame(f1)
-        all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
+        pair = FramePair(frame0=f0, frame1=f1)
+        is_valid_pair = pair.check_both_frames_valid()
+        if is_valid_pair:
+            # Unpack
+            desc0, kpts0, scores0 = self.unpack_frame(f0)
+            desc1, kpts1, scores1 = self.unpack_frame(f1)
+            all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
+        else:
+            desc0, kpts0, scores0 = [], [], []
+            desc1, kpts1, scores1 = [], [], []
+            all_matches = []
 
         image0 = torch.tensor(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0))
         # image1 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t1]), axis=0), axis=0)

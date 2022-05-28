@@ -139,9 +139,7 @@ class FramePair:
 
     @property
     def num_possible_matches(self) -> int:
-        if self.frame0 is None:
-            return np.nan
-        return min(self.frame0.num_neurons(), self.frame1.num_neurons())
+        return num_possible_matches_between_two_frames(self.frame0, self.frame1)
 
     @property
     def dat0(self):
@@ -714,3 +712,9 @@ def calc_FramePair_like(pair: FramePair, frame0: ReferenceFrame = None, frame1: 
     new_pair.calc_final_matches()
 
     return new_pair
+
+
+def num_possible_matches_between_two_frames(frame0: ReferenceFrame, frame1: ReferenceFrame):
+    if frame0 is None or frame1 is None:
+        return np.nan
+    return min(frame0.num_neurons(), frame1.num_neurons())
