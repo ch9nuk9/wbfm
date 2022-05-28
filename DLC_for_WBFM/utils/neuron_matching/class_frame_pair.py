@@ -717,4 +717,4 @@ def calc_FramePair_like(pair: FramePair, frame0: ReferenceFrame = None, frame1: 
 def num_possible_matches_between_two_frames(frame0: ReferenceFrame, frame1: ReferenceFrame):
     if frame0 is None or frame1 is None:
         return np.nan
-    return min(frame0.num_neurons(), frame1.num_neurons())
+    return min(frame0.num_neurons, frame1.num_neurons)

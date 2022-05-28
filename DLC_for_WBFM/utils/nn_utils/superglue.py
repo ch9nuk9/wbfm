@@ -511,18 +511,20 @@ class SuperGlueUnpacker:
         return all_matches
 
     def convert_single_frame_to_superglue_format(self, f1: ReferenceFrame, use_gt_matches=False):
-        data = self.data_template.copy()
-        project_data = self.project_data
+        is_valid_frame = f1.num_neurons > 0
+        if is_valid_frame:
+            data = self.data_template.copy()
+            t0 = self.t_template
+            t1 = f1.frame_ind
 
-        t0 = self.t_template
-        t1 = f1.frame_ind
+            desc1, kpts1, scores1 = self.unpack_frame(f1)
+            all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
 
-        desc1, kpts1, scores1 = self.unpack_frame(f1)
-        all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
-
-        to_update = dict(descriptors1=desc1, keypoints1=kpts1, all_matches=all_matches, scores1=scores1)
-        data.update(to_update)
-        return data
+            to_update = dict(descriptors1=desc1, keypoints1=kpts1, all_matches=all_matches, scores1=scores1)
+            data.update(to_update)
+        else:
+            data = {}
+        return data, is_valid_frame
 
     def expand_all_data(self, data, device=None):
         # Necessary when calling outside a pytorch dataloader

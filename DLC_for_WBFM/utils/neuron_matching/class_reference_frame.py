@@ -69,6 +69,7 @@ class ReferenceFrame:
         iter_tmp = self.features_to_neurons.items()
         return [key for key, val in iter_tmp if val == which_neuron]
 
+    @property
     def num_neurons(self):
         if self.neuron_locs is not None:
             return self.neuron_locs.shape[0]
