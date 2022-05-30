@@ -156,12 +156,14 @@ def track_using_template(all_frames, num_frames, project_data, tracker):
     return df
 
 
-def generate_random_template_times(num_frames, num_random_templates, t_template):
-    all_templates = [t_template]
+def generator_random_template_times(num_frames, t_template):
+    yield t_template
     permuted_times = np.random.permutation(range(num_frames))
-    for t_random in permuted_times[:num_random_templates - 1]:
-        all_templates.append(int(t_random))
-    return all_templates
+    for t_random in permuted_times:
+        if t_random != t_template:
+            yield int(t_random)
+        else:
+            continue
 
 
 def _unpack_project_for_global_tracking(DEBUG, project_cfg):
