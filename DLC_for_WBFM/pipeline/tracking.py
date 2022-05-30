@@ -11,7 +11,9 @@ from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_co
     combine_dataframes_using_bipartite_matching
 from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueUnpacker
 from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import _unpack_project_for_global_tracking, \
-    WormWithSuperGlueClassifier, track_using_template, generator_random_template_times, WormWithNeuronClassifier
+    WormWithSuperGlueClassifier, track_using_template, WormWithNeuronClassifier
+from DLC_for_WBFM.utils.postures.random_templates import generator_random_template_times, \
+    generate_random_valid_template_frames
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -53,12 +55,6 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
     tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
 
     tracking_cfg.update_self_on_disk()
-
-
-def generate_random_valid_template_frames(all_frames, min_neurons_for_template, num_frames, t_template):
-    template_generator = generator_random_template_times(num_frames, t_template)
-    all_templates = [t for t in template_generator if all_frames[t].num_neurons > min_neurons_for_template]
-    return all_templates
 
 
 def track_using_embedding_using_config(project_cfg, DEBUG):
