@@ -8,11 +8,13 @@ __default__:
     mem: 64G
     output: log_snakemake_step-%j.out
 
+# Note: himem is not actually needed at the moment, but is usually more free for large jobs
 preprocessing:
     time: 18:00:00
     partition: himem
     mem: 600G
 
+# Note: himem is not actually needed at the moment, but is usually more free for large jobs
 segmentation:
     time: 18:00:00
     mem: 600G
