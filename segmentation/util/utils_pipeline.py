@@ -236,7 +236,10 @@ def get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat):
         volume = video_dat[i_volume, ...]
     else:
         bbox = all_bounding_boxes[i_volume]
-        volume = video_dat[i_volume, :, bbox[0]:bbox[2], bbox[1]:bbox[3]]
+        if bbox is None or len(bbox) == 0:
+            volume = video_dat[i_volume, ...]
+        else:
+            volume = video_dat[i_volume, :, bbox[0]:bbox[2], bbox[1]:bbox[3]]
     return volume
 
 
