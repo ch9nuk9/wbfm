@@ -206,7 +206,7 @@ class PreprocessingSettings:
         # Note that this doesn't take into account background subtraction
         # Note: dask isn't faster than just numpy, but manages memory much better
         logging.warning(f"Calculating alpha from data for channel {which_channel}; may take ~2 minutes per video")
-        this_max = dask.array.from_zarr(video).max().compute()
+        this_max = dask.array.from_array(video).max().compute()
 
         if which_channel == 'red':
             self.alpha_red = 254.0 / this_max
