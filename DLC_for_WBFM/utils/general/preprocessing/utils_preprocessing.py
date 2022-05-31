@@ -177,7 +177,7 @@ class PreprocessingSettings:
 
         # Also update the preprocessing file on disk
         self.cfg_preprocessing.config['background_fname_red'] = self.background_fname_red
-        self.cfg_preprocessing.config['background_fname_green'] = self.background_fname_red
+        self.cfg_preprocessing.config['background_fname_green'] = self.background_fname_green
         self.cfg_preprocessing.update_self_on_disk()
 
         # Actually load data
