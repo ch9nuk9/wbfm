@@ -412,10 +412,10 @@ def get_and_preprocess(i, num_slices, p, start_volume, video_fname, which_channe
     if p.raw_number_of_planes is not None:
         num_slices = p.raw_number_of_planes
     if read_lock is None:
-        single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
+        single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype=p.initial_dtype)
     else:
         with read_lock:
-            single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
+            single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype=p.initial_dtype)
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
         return perform_preprocessing(single_volume_raw, p, i, which_channel=which_channel)
