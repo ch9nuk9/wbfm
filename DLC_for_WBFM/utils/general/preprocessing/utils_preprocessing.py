@@ -386,7 +386,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
 
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
-                preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream,
+                preprocessed_dat[i, ...] = get_and_preprocess(i, p, start_volume, vid_stream,
                                                               which_channel, read_lock)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
@@ -426,12 +426,13 @@ def _get_video_options(config, video_fname):
     return sz, vid_opt
 
 
-def get_and_preprocess(i, num_slices, p, start_volume, video_fname, which_channel, read_lock=None):
+def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock=None):
+    # Note: the preprocessing class must know the number of planes in a volume
     if read_lock is None:
-        single_volume_raw = p.get_single_volume(video_fname, i, num_slices=num_slices)
+        single_volume_raw = p.get_single_volume(video_fname, i)
     else:
         with read_lock:
-            single_volume_raw = p.get_single_volume(video_fname, i, num_slices=num_slices)
+            single_volume_raw = p.get_single_volume(video_fname, i)
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
         return perform_preprocessing(single_volume_raw, p, i, which_channel=which_channel)
