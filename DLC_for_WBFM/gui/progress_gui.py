@@ -282,24 +282,24 @@ class UiMainWindow(object):
         return os.path.exists(value)
 
     def check_project_status(self):
-        seg_status = check_segmentation(self.project_file)
+        seg_status = check_segmentation(self.cfg)
         if seg_status:
             self.segmentationProgress.setValue(100)
         else:
             self.segmentationProgress.setValue(0)
-        training_status = check_training_final(self.project_file)
+        training_status = check_training_final(self.cfg)
         # print(f"training: {training_status}")
         if training_status:
             self.trainingProgress.setValue(100)
         else:
             self.trainingProgress.setValue(0)
-        tracking_status = check_tracking(self.project_file)
+        tracking_status = check_tracking(self.cfg)
         # print(f"tracking_status: {tracking_status}")
         if tracking_status:
             self.trackingProgress.setValue(100)
         else:
             self.trackingProgress.setValue(0)
-        traces_status = check_traces(self.project_file)
+        traces_status = check_traces(self.cfg)
         # print(f"traces_status: {traces_status}")
         if traces_status:
             self.tracesProgress.setValue(100)
