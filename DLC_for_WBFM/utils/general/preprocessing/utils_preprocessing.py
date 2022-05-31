@@ -202,17 +202,26 @@ class PreprocessingSettings:
         else:
             return False
 
-    def calculate_alpha_from_data(self, video, which_channel='red'):
+    def calculate_alpha_from_data(self, video, which_channel='red', num_volumes_to_load=None):
         # Note that this doesn't take into account background subtraction
         # Note: dask isn't faster than just numpy, but manages memory much better
         logging.warning(f"Calculating alpha from data for channel {which_channel}; may take ~2 minutes per video")
-        this_max = dask.array.from_array(video).max().compute()
+        if num_volumes_to_load is None:
+            # Load the entire video; only really works with zarr
+            current_max_value = dask.array.from_array(video).max().compute()
+            targeted_max_value = 254.0
+        else:
+            # Assumed to be tiff files; note that the stack axis doesn't matter
+            # Requires setting an estimated maximum, to give clipping room
+            this_dat = np.vstack([self.get_single_volume(video, i) for i in range(num_volumes_to_load)])
+            current_max_value = np.max(this_dat)
+            targeted_max_value = 200.0
 
         if which_channel == 'red':
-            self.alpha_red = 254.0 / this_max
+            self.alpha_red = targeted_max_value / current_max_value
             self.cfg_preprocessing.config['alpha_red'] = self.alpha_red
         elif which_channel == 'green':
-            self.alpha_green = 254.0 / this_max
+            self.alpha_green = targeted_max_value / current_max_value
             self.cfg_preprocessing.config['alpha_green'] = self.alpha_green
 
         self.cfg_preprocessing.update_self_on_disk()
@@ -254,6 +263,12 @@ class PreprocessingSettings:
         """
         with open(self.path_to_previous_warp_matrices, 'rb') as f:
             self.all_warp_matrices = pickle.load(f)
+
+    def get_single_volume(self, video_fname, i_time: int, num_slices=None):
+        if num_slices is not None:
+            raise NotImplementedError("Should set PreprocessingSettings.raw_number_of_planes")
+        raw_volume = get_single_volume(video_fname, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
+        return raw_volume
 
 
 def perform_preprocessing(single_volume_raw: np.ndarray,
@@ -364,7 +379,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     frame_list = list(range(num_total_frames))
     with tifffile.TiffFile(video_fname) as vid_stream:
         # Note: this saves alpha to disk
-        p.calculate_alpha_from_data(vid_stream, which_channel=which_channel)
+        p.calculate_alpha_from_data(vid_stream, which_channel=which_channel, num_volumes_to_load=10)
 
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
@@ -409,13 +424,11 @@ def _get_video_options(config, video_fname):
 
 
 def get_and_preprocess(i, num_slices, p, start_volume, video_fname, which_channel, read_lock=None):
-    if p.raw_number_of_planes is not None:
-        num_slices = p.raw_number_of_planes
     if read_lock is None:
-        single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype=p.initial_dtype)
+        single_volume_raw = p.get_single_volume(video_fname, i, num_slices=num_slices)
     else:
         with read_lock:
-            single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype=p.initial_dtype)
+            single_volume_raw = p.get_single_volume(video_fname, i, num_slices=num_slices)
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
         return perform_preprocessing(single_volume_raw, p, i, which_channel=which_channel)
