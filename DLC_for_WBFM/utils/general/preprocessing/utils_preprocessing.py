@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
+import dask.array
 import numpy as np
 import zarr
 from backports.cached_property import cached_property
@@ -20,7 +21,7 @@ from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstor
 from DLC_for_WBFM.utils.neuron_matching.utils_rigid_alignment import filter_stack, align_stack_to_middle_slice, \
     align_stack_using_previous_results, apply_alignment_matrix_to_stack
 from DLC_for_WBFM.utils.projects.paths_to_external_resources import get_camera_alignment_matrix
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
@@ -105,6 +106,12 @@ class PreprocessingSettings:
     final_dtype: str = 'uint8'
     alpha: float = 0.15
 
+    alpha_red: float = None
+    alpha_green: float = None
+
+    # For updating self on disk
+    cfg_preprocessing: ConfigFileWithProjectContext = None
+
     # Load results of a separate preprocessing step, if available
     to_save_warp_matrices: bool = True
     to_use_previous_warp_matrices: bool = False
@@ -116,6 +123,8 @@ class PreprocessingSettings:
     def __post_init__(self):
         if self.do_background_subtraction:
             self.initialize_background()
+        if self.alpha is None:
+            logging.warning("Alpha is not set in the yaml; will have to be calculated from data")
 
     @property
     def background_is_ready(self):
@@ -187,18 +196,37 @@ class PreprocessingSettings:
 
         return background_video_mean
 
+    @property
+    def alpha_is_ready(self):
+        if self.alpha is not None:
+            return True
+        elif self.alpha_red is not None and self.alpha_green is not None:
+            return True
+        else:
+            return False
+
+    def calculate_alpha_from_data(self, red_video, green_video):
+        # Note: dask isn't faster than just numpy, but manages memory much better
+        logging.warning("Calculating alpha from data; may take ~2 minutes per video")
+        red_max = dask.array.from_zarr(red_video).max().compute()
+        green_max = dask.array.from_zarr(green_video).max().compute()
+
+        self.alpha_red = 254.0 / red_max
+        self.alpha_green = 254.0 / green_max
+
+
     @staticmethod
-    def load_from_yaml(fname, do_background_subtraction=None):
+    def _load_from_yaml(fname, do_background_subtraction=None):
         with open(fname, 'r') as f:
-            cfg = YAML().load(f)
+            preprocessing_dict = YAML().load(f)
         if do_background_subtraction is not None:
-            cfg['do_background_subtraction'] = do_background_subtraction
-        return PreprocessingSettings(**cfg)
+            preprocessing_dict['do_background_subtraction'] = do_background_subtraction
+        return PreprocessingSettings(**preprocessing_dict)
 
     @staticmethod
     def load_from_config(cfg, do_background_subtraction=None):
         fname = Path(cfg.project_dir).joinpath('preprocessing_config.yaml')
-        preprocessing_settings = PreprocessingSettings.load_from_yaml(fname, do_background_subtraction)
+        preprocessing_settings = PreprocessingSettings._load_from_yaml(fname, do_background_subtraction)
         if not preprocessing_settings.background_is_ready:
             preprocessing_settings.find_background_files_from_raw_data_path(cfg)
         return preprocessing_settings
@@ -281,7 +309,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     return single_volume_raw
 
 
-def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, video_fname: str,
+def preprocess_all_frames_using_config(DEBUG: bool, config: ModularProjectConfig, verbose: int, video_fname: str,
                                        preprocessing_settings: PreprocessingSettings = None,
                                        which_frames: list = None, which_channel: str = None,
                                        out_fname: str = None) -> Tuple[zarr.Array, dict]:
@@ -295,11 +323,12 @@ def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, 
         (to keep the indices the same as the original dataset)
     """
     if preprocessing_settings is None:
-        p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
+        p = PreprocessingSettings.load_from_config(config)
     else:
         p = preprocessing_settings
 
-    num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config, verbose,
+    num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config.config,
+                                                                                                   verbose,
                                                                                                    video_fname)
     return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, video_fname, vid_opt,
                                  which_frames, which_channel, out_fname)
