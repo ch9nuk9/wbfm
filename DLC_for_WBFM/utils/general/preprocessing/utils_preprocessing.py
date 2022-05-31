@@ -202,19 +202,19 @@ class PreprocessingSettings:
         else:
             return False
 
-    def calculate_alpha_from_data(self, red_video, green_video):
+    def calculate_alpha_from_data(self, video, which_channel='red'):
         # Note that this doesn't take into account background subtraction
-
         # Note: dask isn't faster than just numpy, but manages memory much better
-        logging.warning("Calculating alpha from data; may take ~2 minutes per video")
-        red_max = dask.array.from_zarr(red_video).max().compute()
-        green_max = dask.array.from_zarr(green_video).max().compute()
+        logging.warning(f"Calculating alpha from data for channel {which_channel}; may take ~2 minutes per video")
+        this_max = dask.array.from_zarr(video).max().compute()
 
-        self.alpha_red = 254.0 / red_max
-        self.alpha_green = 254.0 / green_max
+        if which_channel == 'red':
+            self.alpha_red = 254.0 / this_max
+            self.cfg_preprocessing.config['alpha_red'] = self.alpha_red
+        elif which_channel == 'green':
+            self.alpha_green = 254.0 / this_max
+            self.cfg_preprocessing.config['alpha_green'] = self.alpha_green
 
-        self.cfg_preprocessing.config['alpha_red'] = self.alpha_red
-        self.cfg_preprocessing.config['alpha_green'] = self.alpha_green
         self.cfg_preprocessing.update_self_on_disk()
 
     @staticmethod
@@ -345,18 +345,16 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
                           start_volume: int, sz: Tuple, video_fname: str, vid_opt: dict,
                           which_frames: list, which_channel: str, out_fname: str) -> Tuple[zarr.Array, dict]:
     import tifffile
-
     if DEBUG:
         # Make a much shorter video
         if which_frames is not None:
             num_total_frames = which_frames[-1] + 1
         else:
             num_total_frames = 2
-        print("DEBUG MODE: Applying preprocessing:")
         print(p)
+
     chunk_sz = (1, num_slices,) + sz
     total_sz = (num_total_frames,) + chunk_sz[1:]
-
     store = zarr.DirectoryStore(path=out_fname)
     preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype=p.final_dtype,
                                   synchronizer=zarr.ThreadSynchronizer(),
@@ -365,6 +363,9 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
     with tifffile.TiffFile(video_fname) as vid_stream:
+        # Note: this saves alpha to disk
+        p.calculate_alpha_from_data(vid_stream, which_channel=which_channel)
+
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
                 preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream,
@@ -375,8 +376,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
                     pbar.update(1)
-        # for i in tqdm(frame_list):
-        #     preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream)
+
     return preprocessed_dat, vid_opt
 
 
