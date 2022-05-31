@@ -176,10 +176,9 @@ class PreprocessingSettings:
                     raise FileNotFoundError(f"Could not find green background file within {folder_for_background}")
 
         # Also update the preprocessing file on disk
-        cfg_preprocessing = cfg.get_preprocessing_config()
-        cfg_preprocessing.config['background_fname_red'] = self.background_fname_red
-        cfg_preprocessing.config['background_fname_green'] = self.background_fname_red
-        cfg_preprocessing.update_self_on_disk()
+        self.cfg_preprocessing.config['background_fname_red'] = self.background_fname_red
+        self.cfg_preprocessing.config['background_fname_green'] = self.background_fname_red
+        self.cfg_preprocessing.update_self_on_disk()
 
         # Actually load data
         self.initialize_background()
@@ -206,6 +205,8 @@ class PreprocessingSettings:
             return False
 
     def calculate_alpha_from_data(self, red_video, green_video):
+        # Note that this doesn't take into account background subtraction
+
         # Note: dask isn't faster than just numpy, but manages memory much better
         logging.warning("Calculating alpha from data; may take ~2 minutes per video")
         red_max = dask.array.from_zarr(red_video).max().compute()
@@ -214,6 +215,9 @@ class PreprocessingSettings:
         self.alpha_red = 254.0 / red_max
         self.alpha_green = 254.0 / green_max
 
+        self.cfg_preprocessing.config['alpha_red'] = self.alpha_red
+        self.cfg_preprocessing.config['alpha_green'] = self.alpha_green
+        self.cfg_preprocessing.update_self_on_disk()
 
     @staticmethod
     def _load_from_yaml(fname, do_background_subtraction=None):
@@ -224,9 +228,10 @@ class PreprocessingSettings:
         return PreprocessingSettings(**preprocessing_dict)
 
     @staticmethod
-    def load_from_config(cfg, do_background_subtraction=None):
+    def load_from_config(cfg: ModularProjectConfig, do_background_subtraction=None):
         fname = Path(cfg.project_dir).joinpath('preprocessing_config.yaml')
         preprocessing_settings = PreprocessingSettings._load_from_yaml(fname, do_background_subtraction)
+        preprocessing_settings.cfg_preprocessing = cfg.get_preprocessing_config()
         if not preprocessing_settings.background_is_ready:
             preprocessing_settings.find_background_files_from_raw_data_path(cfg)
         return preprocessing_settings
