@@ -208,7 +208,7 @@ class PreprocessingSettings:
         logging.warning(f"Calculating alpha from data for channel {which_channel}; may take ~2 minutes per video")
         if num_volumes_to_load is None:
             # Load the entire video; only really works with zarr
-            current_max_value = dask.array.from_array(video).max().compute()
+            current_max_value = dask.array.from_zarr(video).max().compute()
             targeted_max_value = 254.0
         else:
             # Assumed to be tiff files; note that the stack axis doesn't matter
