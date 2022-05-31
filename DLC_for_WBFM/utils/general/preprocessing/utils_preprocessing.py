@@ -205,7 +205,7 @@ class PreprocessingSettings:
     def calculate_alpha_from_data(self, video, which_channel='red', num_volumes_to_load=None):
         # Note that this doesn't take into account background subtraction
         # Note: dask isn't faster than just numpy, but manages memory much better
-        logging.warning(f"Calculating alpha from data for channel {which_channel}; may take ~2 minutes per video")
+        logging.info(f"Calculating alpha from data for channel {which_channel}; may take ~2 minutes per video")
         if num_volumes_to_load is None:
             # Load the entire video; only really works with zarr
             current_max_value = dask.array.from_zarr(video).max().compute()
@@ -217,12 +217,15 @@ class PreprocessingSettings:
             current_max_value = np.max(this_dat)
             targeted_max_value = 200.0
 
+        alpha = float(targeted_max_value / current_max_value)
+        logging.info(f"Calculated alpha={alpha} for mode {which_channel}")
+
         if which_channel == 'red':
-            self.alpha_red = targeted_max_value / current_max_value
-            self.cfg_preprocessing.config['alpha_red'] = self.alpha_red
+            self.alpha_red = alpha
+            self.cfg_preprocessing.config['alpha_red'] = alpha
         elif which_channel == 'green':
-            self.alpha_green = targeted_max_value / current_max_value
-            self.cfg_preprocessing.config['alpha_green'] = self.alpha_green
+            self.alpha_green = alpha
+            self.cfg_preprocessing.config['alpha_green'] = alpha
 
         self.cfg_preprocessing.update_self_on_disk()
 
