@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
+import cv2
 import dask.array
 import numpy as np
 import zarr
@@ -318,13 +319,18 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:
-            single_volume_raw, warp_matrices_dict = align_stack_to_middle_slice(single_volume_raw)
+            try:
+                single_volume_raw, warp_matrices_dict = align_stack_to_middle_slice(single_volume_raw)
+            except cv2.error as e:
+                logging.warning(f"When rigidly aligning in z, encountered opencv error {e}; leaving unaligned")
+                warp_matrices_dict = {}
             if s.to_save_warp_matrices:
                 s.all_warp_matrices[which_frame] = warp_matrices_dict
         else:
             assert len(s.all_warp_matrices) > 0
             warp_matrices_dict = s.all_warp_matrices[which_frame]
-            single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
+            if len(warp_matrices_dict) > 0:
+                single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
 
     if s.align_green_red_cameras:
         single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, s.camera_alignment_matrix,
