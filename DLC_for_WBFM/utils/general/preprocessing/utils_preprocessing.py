@@ -123,7 +123,7 @@ class PreprocessingSettings:
     def __post_init__(self):
         if self.do_background_subtraction:
             self.initialize_background()
-        if self.alpha is None:
+        if not self.alpha_is_ready:
             logging.warning("Alpha is not set in the yaml; will have to be calculated from data")
 
     @property
@@ -197,9 +197,7 @@ class PreprocessingSettings:
 
     @property
     def alpha_is_ready(self):
-        if self.alpha is not None:
-            return True
-        elif self.alpha_red is not None and self.alpha_green is not None:
+        if self.alpha_red is not None and self.alpha_green is not None:
             return True
         else:
             return False
@@ -272,18 +270,22 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     if s is None:
         return single_volume_raw
 
+    if which_channel == 'red':
+        alpha = s.alpha_red
+        background = s.background_red
+    elif which_channel == 'green':
+        alpha = s.alpha_green
+        background = s.background_green
+    else:
+        raise NotImplementedError(f"Unrecognized channel: {which_channel}")
+
     if s.starting_plane is not None:
         single_volume_raw = single_volume_raw[s.starting_plane:, ...]
 
     if s.do_background_subtraction:
-        if which_channel == 'red':
-            single_volume_raw = single_volume_raw - s.background_red
-        elif which_channel == 'green':
-            single_volume_raw = single_volume_raw - s.background_green
-        else:
-            raise NotImplementedError(f"Unrecognized channel: {which_channel}")
+        single_volume_raw = single_volume_raw - background
         # Note: not uint8 yet, so we need to scale the background default
-        single_volume_raw = np.maximum(single_volume_raw + s.background_per_pixel / s.alpha, 0)
+        single_volume_raw = np.maximum(single_volume_raw + s.background_per_pixel / alpha, 0)
 
     if s.do_filtering:
         single_volume_raw = filter_stack(single_volume_raw, s.filter_opt)
@@ -309,7 +311,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
         mini_max_size = s.mini_max_size
         single_volume_raw = ndi.maximum_filter(single_volume_raw, size=(mini_max_size, 1, 1))
 
-    single_volume_raw = (single_volume_raw * s.alpha).astype(s.final_dtype)
+    single_volume_raw = (single_volume_raw * alpha).astype(s.final_dtype)
 
     return single_volume_raw
 
@@ -319,7 +321,7 @@ def preprocess_all_frames_using_config(DEBUG: bool, config: ModularProjectConfig
                                        which_frames: list = None, which_channel: str = None,
                                        out_fname: str = None) -> Tuple[zarr.Array, dict]:
     """
-    Preproceses all frames that will be analyzed as per config
+    Preprocesses all frames that will be analyzed as per config
 
     NOTE: expects 'preprocessing_config' and 'dataset_params' to be in config
     OR for the PreprocessingSettings object to be passed directly
