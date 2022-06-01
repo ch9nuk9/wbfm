@@ -5,18 +5,33 @@ This repository contains python code for analyzing raw volumetric images in two 
 The segmentation portion of the algorithm is in a sibling repository, but all GUIs are in this one:
 https://github.com/Zimmer-lab/segmentation
 
-# Installation
+# Installation for running
 
-This project is designed to be installed with Anaconda, and requires one external local package to be installed.
+This project is designed to be installed with Anaconda, and requires two external local packages to be installed.
 The following are step-by-step instructions.
+
+If you just want to run the code, then you can use the pre-installed environments installed on the cluster, which can be activated using:
+```
+conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
+```
+
+Or:
+```
+conda activate /scratch/neurobiology/zimmer/.conda/envs/segmentation/
+```
+
+# Installation for developing
 
 ### Install Anaconda
 
 https://www.anaconda.com/products/individual
 
+There are additional details in the computational protocols repository:
+https://github.com/Zimmer-lab/protocols/tree/master/computational/zimmer_lab_code_pipeline
+
 ### Get the code
 
-Download or clone two repositories, both on the Zimmer group GitHub:
+Download or clone these repositories:
 1. DLC_for_WBFM (this repo): https://github.com/Zimmer-lab/dlc_for_wbfm
 2. Segmentation: https://github.com/Zimmer-lab/segmentation
 3. fDNC (leifer paper): https://github.com/Charles-Fieseler-Vienna/fDNC_Neuron_ID
@@ -66,7 +81,6 @@ In total, you will install 4 things: 2 environments and 2 custom packages
 
 ## Full workflow with commands and approximate times
 
-
 All examples assume that you are in the main folder:
 
 DLC_for_WBFM/
@@ -100,7 +114,6 @@ python $COMMAND with project_dir=$PROJECT_DIR red_bigtiff_fname=$RED_PATH green_
 ```
 
 This is the most complicated step, and I recommend that you create a bash script.
-An example can be found at:
 
 Speed: Fast
 
@@ -161,55 +174,36 @@ Output, in 2-training_data/raw:
 
 
 
-### DeepLabCut
+### Tracking
 
-Note: this step is being phased out
-
-#### Part 1/3
+#### Part 1/2
 
 Preparation:
 1. Open 3-tracking/tracking_config.yaml and change the variables marked CHANGE ME
 
 Command:
 ```bash
-python scripts/3a-initialize_dlc_stack.py with project_path=PATH-TO-YOUR-PROJECT
+python scripts/3a-track_using_superglue.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
-Speed: fast, but depends on number of frames and stacks; 10-30 minutes
+Speed: 1-3 hours
 
 Output, in 3-tracking:
-1. A DeepLabCut folder for each of the 2d tracking networks
-..* Within these folders, training data will be extracted as .pngs
-..* In the labeled-data subfolder you can see the produced training data
-   
-#### Part 2/3
+1. A dataframe with positions for all neurons
+
+#### Part 2/2
+
+Combine the tracks and tracklets
 
 Command:
 ```bash
-python scripts/3b-train_all_dlc_networks.py with project_path=PATH-TO-YOUR-PROJECT
+python scripts/3b-match_tracklets_and_tracks_using_neuron_initialization.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
-Speed: LONG, but depends on network convergence and number of stacks; 1-2 days
+Speed: Long; ~6 hours
 
-Output, in each DLC project folder:
-1. A trained network
-
-NOTE: can be run on the cluster; see scripts/cluster/3b-train_all_dlc_networks_array.sh.
-If using the cluster, the training time is reduced to ~12 hours
-
-#### Part 3/3
-
-Command:
-```bash
-python scripts/3c-make_full_tracks.py with project_path=PATH-TO-YOUR-PROJECT
-```
-
-Speed: Fast if using GPU; <1 hour
-
-Output, in 3-tracking:
-1. full_3d_tracks.h5, a dataframe of the tracks combined into 3d from each 2d network
-
-NOTE: can be run on the cluster; see scripts/cluster/3c-make-full_tracks.sbatch
+Output:
+1. A dataframe with positions for each neuron, corrected by the tracklets
 
 ### Traces
 
@@ -217,10 +211,10 @@ Preparation: None, for now
 
 Command:
 ```bash
-python scripts/4a-match_tracks_and_segmentation.py with project_path=PATH-TO-YOUR-PROJECT
+python scripts/4-make_final_traces.py with project_path=PATH-TO-YOUR-PROJECT
 ```
 
-Speed: Medium; 1-3 hours
+Speed: ~30 minutes
 
 Output, in 4-traces:
 1. all_matches.pickle, the matches between the DLC tracking and the original segmentation
@@ -237,9 +231,21 @@ Command:
 python gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
 ```
 
-Visualization of other steps in the analysis is also possible, and they can be accessed via the progress gui:
+# Summary of GUIs
 
-Command:
+Initial creation of project:
+```bash
+python gui/create_project_gui.py --project_path PATH-TO-YOUR-PROJECT
+```
+
+Visualization of all steps in the analysis is also possible, and they can be accessed via the progress gui:
+
 ```bash
 python gui/progress_gui.py --project_path PATH-TO-YOUR-PROJECT
+```
+
+Manual annotation and more detailed visualization:
+
+```bash
+python gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
 ```
