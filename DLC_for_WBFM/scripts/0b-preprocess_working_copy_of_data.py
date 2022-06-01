@@ -73,14 +73,14 @@ def main(_config, _run):
         fname = red_name.parent / (red_name.stem + "_preprocessed.pickle")
         preprocessing_settings.path_to_previous_warp_matrices = fname
 
-        if not (Path(options['out_fname']).exists() and fname.exists()):
+        if Path(options['out_fname']).exists() and fname.exists():
+            logger.info("Preprocessed red already exists; skipping to green")
+        else:
             logger.info("Preprocessing red...")
             preprocessing_settings.do_mirroring = False
             assert preprocessing_settings.to_save_warp_matrices
             write_data_subset_using_config(cfg, preprocessing_settings=preprocessing_settings,
                                            which_channel='red', **options)
-        else:
-            logger.info("Preprocessed red already exists; skipping to green")
 
         # Now the green channel will read the artifact as saved above
         logger.info("Preprocessing green...")
