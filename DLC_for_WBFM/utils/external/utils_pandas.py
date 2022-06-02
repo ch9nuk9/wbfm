@@ -38,7 +38,19 @@ def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
     return overlapping_tracklet_names
 
 
-def get_times_of_conflicting_dataframes(tracklet_list, tracklet_network_names, verbose=0):
+def get_times_of_conflicting_dataframes(tracklet_list: list,
+                                        tracklet_network_names: list,
+                                        verbose=0):
+    """
+    Takes a list of tracklets and their names, and finds the conflict points between the tracklets in the list
+
+    Returns the times of the conflict points
+
+    @param tracklet_list:
+    @param tracklet_network_names:
+    @param verbose:
+    @return:
+    """
     all_indices = [t.dropna().index for t in tracklet_list]
     overlapping_tracklet_conflict_points = defaultdict(list)
     for i1, (idx1, base_tracklet_name) in enumerate(zip(all_indices, tracklet_network_names)):
@@ -46,7 +58,7 @@ def get_times_of_conflicting_dataframes(tracklet_list, tracklet_network_names, v
             logging.warning(f"Skipping empty tracklet {base_tracklet_name}")
             continue
         idx1_edges = [int(idx1[0]), int(idx1[-1])+1]
-        for i2, (idx2, target_tracklet_name) in enumerate(zip(all_indices[i1 + 1:], tracklet_network_names[i1 + 1:])):
+        for idx2, target_tracklet_name in zip(all_indices[i1 + 1:], tracklet_network_names[i1 + 1:]):
             if base_tracklet_name == target_tracklet_name:
                 logging.warning("Attempted to compare tracklet to itself")
                 continue
