@@ -221,6 +221,7 @@ class SuperGlue(nn.Module):
         'GNN_layers': ['self', 'cross'] * 9,
         'sinkhorn_iterations': 100,
         'match_threshold': 0.2,
+        'to_normalize_keypoints': True
     }
 
     def __init__(self, config):
@@ -242,6 +243,8 @@ class SuperGlue(nn.Module):
 
         self.bin_score = torch.nn.Parameter(torch.tensor(1.))
         self.loss_epsilon = 1e-6
+
+        self.to_normalize_keypoints = self.config['to_normalize_keypoints']
 
         # assert self.config['weights'] in ['indoor', 'outdoor']
         # path = Path(__file__).parent
@@ -311,9 +314,10 @@ class SuperGlue(nn.Module):
         kpts0 = torch.reshape(kpts0, (batch_sz, 1, -1, 3))  # NEW: 3d
         kpts1 = torch.reshape(kpts1, (batch_sz, 1, -1, 3))
 
-        # Keypoint normalization.
-        kpts0 = normalize_keypoints_3d(kpts0, data['image0'].shape)
-        kpts1 = normalize_keypoints_3d(kpts1, data['image1'].shape)
+        if self.to_normalize_keypoints:
+            # Keypoint normalization.
+            kpts0 = normalize_keypoints_3d(kpts0, data['image0'].shape)
+            kpts1 = normalize_keypoints_3d(kpts1, data['image1'].shape)
         # Keypoint MLP encoder.
         if len(desc0) > 0:
             # Default: image + location information
