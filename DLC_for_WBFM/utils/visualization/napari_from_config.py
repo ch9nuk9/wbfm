@@ -57,12 +57,14 @@ def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
     return np.vstack(all_tracks_list)
 
 
-def napari_tracks_from_match_list(list_of_matches, n0_zxy_raw, n1_zxy_raw):
+def napari_tracks_from_match_list(list_of_matches, n0_zxy_raw, n1_zxy_raw, null_value=-1):
     all_tracks_list = []
     for i_track, m in enumerate(list_of_matches):
+        if null_value in m:
+            continue
+
         track_m0 = [i_track, 0]
         track_m0.extend(n0_zxy_raw[m[0]])
-
         track_m1 = [i_track, 1]
         track_m1.extend(n1_zxy_raw[m[1]])
 
