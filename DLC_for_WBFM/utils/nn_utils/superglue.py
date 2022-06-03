@@ -386,10 +386,10 @@ class BipartiteSuperGlueStyleModel:
 ## MY ADDITIONS
 
 class SuperGlueModel(LightningModule):
-    def __init__(self, feature_dim=840, criterion=None, lr=1e-3):
+    def __init__(self, feature_dim=840, criterion=None, lr=1e-3, **kwargs):
         super().__init__()
 
-        self.superglue = SuperGlue(config=dict(descriptor_dim=feature_dim))
+        self.superglue = SuperGlue(config={**dict(descriptor_dim=feature_dim), **kwargs})
         self.lr = lr
 
         if torch.cuda.is_available():
