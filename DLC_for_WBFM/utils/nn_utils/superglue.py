@@ -467,7 +467,9 @@ class SuperGlueUnpacker:
 
     def unpack_only_locations(self, t0):
         desc0 = []
-        kpts0 = torch.tensor(self.project_data.get_centroids_as_numpy(t0)).float()
+        kpts0 = self.project_data.get_centroids_as_numpy(t0)
+        kpts0 = self.project_data.physical_unit_conversion.zimmer2leifer(kpts0)
+        kpts0 = torch.tensor(kpts0).float()
         scores0 = torch.ones((kpts0.shape[0], 1)).float()
         return desc0, kpts0, scores0
 
