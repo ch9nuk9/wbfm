@@ -155,7 +155,7 @@ class WormWithSuperGlueClassifier:
             else:
                 data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
                 result = self.model(data)
-        return result
+        return result, data
 
     def __repr__(self):
         return f"Worm Tracker based on superglue network"

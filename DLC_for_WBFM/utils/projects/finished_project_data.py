@@ -556,6 +556,7 @@ class ProjectData:
 
         t0, t1 = pair
         dat0, dat1 = self.red_data[t0, ...], self.red_data[t1, ...]
+        seg0, seg1 = self.raw_segmentation[t0, ...], self.raw_segmentation[t1, ...]
         this_match.load_raw_data(dat0, dat1)
         if rigidly_align_volumetric_images:
             # Ensure that both point cloud and data have rotations
@@ -569,6 +570,7 @@ class ProjectData:
 
         n1_zxy = this_match.pts1
         raw_red_data = np.stack([dat0, dat1])
+        raw_seg_data = np.stack([seg0, seg1])
         # Scale to physical units
         z_to_xy_ratio = 1
         # z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
@@ -583,14 +585,17 @@ class ProjectData:
 
         v = napari.view_image(raw_red_data, ndisplay=3,
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
+        v.add_labels(raw_seg_data, scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
 
-        df = self.final_tracks.loc[[t0], :]
+        # This should not remember the original time point
+        df = self.final_tracks.loc[[t0], :].set_index(pd.Index([0]))
         options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
         options['name'] = 'n0_final_id'
         options['n_dimensional'] = True
         v.add_points(**options)
 
-        df = self.final_tracks.loc[[t1], :]
+        # This should not remember the original time point
+        df = self.final_tracks.loc[[t1], :].set_index(pd.Index([0]))
         options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
         options['name'] = 'n1_final_id'
         options['text']['color'] = 'green'
