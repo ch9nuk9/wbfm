@@ -283,7 +283,7 @@ class SuperGlue(nn.Module):
             'matching_scores0': mscores0[0],
             'matching_scores1': mscores1[0],
             'loss': loss_mean[0],
-            # 'raw_loss': raw_loss,
+            'raw_loss': raw_loss,
             # 'raw_scores': scores,
             'skip_train': False
         }

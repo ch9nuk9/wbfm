@@ -141,6 +141,22 @@ class WormWithSuperGlueClassifier:
                 matches_with_conf = self.model.superglue.match_and_output_list(data)
         return matches_with_conf
 
+    def match_two_time_points_return_full_loss(self, t0: int, t1: int):
+        """
+        Like match_two_time_points() but this does a full forward pass
+
+        Note that this needs ground truth matches
+        """
+        with torch.no_grad():
+            data, is_valid_pair = self.superglue_unpacker.convert_frames_to_superglue_format(t0, t1,
+                                                                                             use_gt_matches=True)
+            if not is_valid_pair:
+                result = {}
+            else:
+                data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
+                result = self.model(data)
+        return result
+
     def __repr__(self):
         return f"Worm Tracker based on superglue network"
 
