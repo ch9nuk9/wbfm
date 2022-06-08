@@ -618,6 +618,18 @@ class ProjectData:
             self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
 
     def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
+        """
+        Shades the currently active matplotlib axis using externally annotated behavior annotation
+
+        Parameters
+        ----------
+        ax
+        behaviors_to_ignore
+
+        Returns
+        -------
+
+        """
         if self.behavior_annotations is None:
             pass
         else:
@@ -634,6 +646,19 @@ class ProjectData:
         return dataframe_to_numpy_zxy_single_frame(self.df_training_tracklets, t=i_frame)
 
     def get_distance_to_closest_neuron(self, i_frame, target_pt, nbr_obj=None) -> float:
+        """
+        Get the 3d distance between a target neuron and its closest neighbor
+
+        Parameters
+        ----------
+        i_frame
+        target_pt
+        nbr_obj
+
+        Returns
+        -------
+
+        """
         # TODO: refactor to segmentation class?
         if nbr_obj is None:
             # TODO: cache these neighbor objects?
@@ -653,10 +678,26 @@ class ProjectData:
         return dist
 
     def correct_relative_training_index(self, i) -> int:
+        """Converts a relative index within the training set into a global index"""
         return self.which_training_frames[i]
 
     def napari_of_single_match(self, pair, which_matches='final_matches', this_match: FramePair = None,
                                rigidly_align_volumetric_images=False, min_confidence=0.0) -> napari.Viewer:
+        """
+        Visualize the matches between two volumes, including the raw segmentation
+
+        Parameters
+        ----------
+        pair
+        which_matches
+        this_match
+        rigidly_align_volumetric_images
+        min_confidence
+
+        Returns
+        -------
+
+        """
         from DLC_for_WBFM.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
         v = NapariLayerInitializer.napari_of_single_match(self, pair, which_matches, this_match,
                                                           rigidly_align_volumetric_images, min_confidence)
@@ -665,6 +706,34 @@ class ProjectData:
     def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[str]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
                              dask_for_segmentation=True) -> napari.Viewer:
+        """
+        Add layers corresponding to any analysis steps to a napari viewer object
+
+        If no viewer is passed, then this creates a new one.
+
+        By default, these layers are added to the viewer:
+            ['Red data',
+            'Green data',
+            'Raw segmentation',
+            'Colored segmentation',
+            'Neuron IDs',
+            'Intermediate global IDs']
+
+        An additional option that is not added:
+            'GT IDs'
+
+        Parameters
+        ----------
+        viewer
+        which_layers
+        to_remove_flyback
+        check_if_layers_exist
+        dask_for_segmentation
+
+        Returns
+        -------
+
+        """
         from DLC_for_WBFM.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
         v = NapariLayerInitializer.add_layers_to_viewer(self, viewer, which_layers,
                                                         to_remove_flyback, check_if_layers_exist,
@@ -672,6 +741,7 @@ class ProjectData:
         return v
 
     def get_desynced_seg_and_frame_object_frames(self, verbose=1) -> List[int]:
+        """Return frame objects that are obviously desynced from the segmentation"""
         desynced_frames = []
         for t in range(self.num_frames):
             pts_from_seg = self.get_centroids_as_numpy(t)
@@ -685,6 +755,7 @@ class ProjectData:
 
     @cached_property
     def df_manual_tracking(self) -> pd.DataFrame:
+        """Load a dataframe corresponding to manual tracking, i.e. which neurons have been manually corrected"""
         # TODO: do not hardcode
         track_cfg = self.project_config.get_tracking_config()
         fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
@@ -693,6 +764,9 @@ class ProjectData:
 
     @cached_property
     def finished_neuron_names(self) -> List[str]:
+        """
+        Uses df_manual_tracking to get a list of the neuron names that have been fully corrected
+        """
         df_manual_tracking = self.df_manual_tracking
 
         try:
