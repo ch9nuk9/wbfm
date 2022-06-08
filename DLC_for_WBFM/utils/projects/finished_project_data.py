@@ -1,10 +1,12 @@
 import concurrent
+import logging
 from collections import defaultdict
 from pathlib import Path
 
 from DLC_for_WBFM.utils.external.utils_jupyter import executing_in_notebook
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
+from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
 import os
 from dataclasses import dataclass
@@ -150,7 +152,7 @@ class ProjectData:
         return global2tracklet
 
     @cached_property
-    def raw_frames(self):
+    def raw_frames(self) -> List[ReferenceFrame]:
         self.logger.info("First time loading the raw frames, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'frame_dat.pickle')
@@ -170,7 +172,7 @@ class ProjectData:
         return matches
 
     @cached_property
-    def raw_clust(self):
+    def raw_clust(self) -> pd.DataFrame:
         self.logger.info("First time loading the raw cluster dataframe, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'clust_df_dat.pickle')
@@ -180,7 +182,7 @@ class ProjectData:
         return clust
 
     @cached_property
-    def df_all_tracklets(self):
+    def df_all_tracklets(self) -> pd.DataFrame:
         self.logger.info("First time loading all the tracklets, may take a while...")
         train_cfg = self.project_config.get_training_config()
         track_cfg = self.project_config.get_tracking_config()
@@ -209,7 +211,7 @@ class ProjectData:
         return df_all_tracklets
 
     @cached_property
-    def tracklet_annotator(self):
+    def tracklet_annotator(self) -> TrackletAndSegmentationAnnotator:
         tracking_cfg = self.project_config.get_tracking_config()
         training_cfg = self.project_config.get_training_config()
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
@@ -227,7 +229,7 @@ class ProjectData:
         return obj
 
     @cached_property
-    def tracklets_and_neurons_class(self):
+    def tracklets_and_neurons_class(self) -> DetectedTrackletsAndNeurons:
         self.logger.info("Loading tracklets")
         _ = self.df_all_tracklets  # Make sure it is loaded
         return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata,
@@ -235,7 +237,7 @@ class ProjectData:
                                            use_custom_padded_dataframe=self.use_custom_padded_dataframe)
 
     @cached_property
-    def df_fdnc_tracks(self):
+    def df_fdnc_tracks(self) -> pd.DataFrame:
         train_cfg = self.project_config.get_tracking_config()
         fname = os.path.join('postprocessing', 'leifer_tracks.h5')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -243,7 +245,7 @@ class ProjectData:
         return df_fdnc_tracks
 
     @property
-    def logger(self):
+    def logger(self) -> logging.Logger:
         return self.project_config.logger
 
     def load_tracklet_related_properties(self):
@@ -262,10 +264,10 @@ class ProjectData:
         self.all_used_fnames.append(self.segmentation_metadata.segmentation_metadata.detection_fname)
 
     @cached_property
-    def num_frames(self):
+    def num_frames(self) -> int:
         return self.project_config.config['dataset_params']['num_frames']
 
-    def custom_frame_indices(self):
+    def custom_frame_indices(self) -> list:
         """For overriding the normal iterator over frames, for skipping problems etc."""
         if self._custom_frame_indices is not None:
             return self._custom_frame_indices
@@ -277,12 +279,12 @@ class ProjectData:
             yield val
 
     @property
-    def which_training_frames(self):
+    def which_training_frames(self) -> list:
         train_cfg = self.project_config.get_training_config()
         return train_cfg.config['training_data_3d']['which_frames']
 
     @property
-    def num_training_frames(self):
+    def num_training_frames(self) -> int:
         return len(self.which_training_frames)
 
     def check_data_desyncing(self, raise_error=True):
@@ -434,7 +436,7 @@ class ProjectData:
     def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str,
                          remove_outliers: bool = False,
                          filter_mode: str = 'no_filtering',
-                         min_confidence: float = None):
+                         min_confidence: float = None) -> Tuple[list, list]:
         # Todo: don't recreate object every time
         self.trace_plotter = TracePlotter(
             self.red_traces,
@@ -450,11 +452,12 @@ class ProjectData:
         y = self.trace_plotter.calculate_traces(neuron_name)
         return self.trace_plotter.tspan, y
 
-    def calculate_tracklets(self, neuron_name):
-        y_dict, y_current, y_current_names = self.tracklet_annotator.calculate_tracklets_for_neuron(neuron_name)
-        return y_dict, y_current, y_current_names
+    def calculate_tracklets(self, neuron_name) -> \
+            Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
+        y_dict, y_current, y_current_name = self.tracklet_annotator.calculate_tracklets_for_neuron(neuron_name)
+        return y_dict, y_current, y_current_name
 
-    def modify_confidences_of_frame_pair(self, pair, gamma, mode):
+    def modify_confidences_of_frame_pair(self, pair, gamma, mode) -> list:
         frame_match = self.raw_matches[pair]
 
         matches = frame_match.modify_confidences_using_image_features(self.segmentation_metadata,
@@ -525,7 +528,7 @@ class ProjectData:
 
         return dataframe_to_numpy_zxy_single_frame(self.df_training_tracklets, t=i_frame)
 
-    def get_distance_to_closest_neuron(self, i_frame, target_pt, nbr_obj=None):
+    def get_distance_to_closest_neuron(self, i_frame, target_pt, nbr_obj=None) -> float:
         # TODO: refactor to segmentation class?
         if nbr_obj is None:
             # TODO: cache these neighbor objects?
@@ -544,11 +547,11 @@ class ProjectData:
 
         return dist
 
-    def correct_relative_training_index(self, i):
+    def correct_relative_training_index(self, i) -> int:
         return self.which_training_frames[i]
 
     def napari_of_single_match(self, pair, which_matches='final_matches', this_match: FramePair = None,
-                               rigidly_align_volumetric_images=False, min_confidence=0.0):
+                               rigidly_align_volumetric_images=False, min_confidence=0.0) -> napari.Viewer:
         import napari
         from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
         if this_match is None:
@@ -618,7 +621,7 @@ class ProjectData:
 
     def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[str]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
-                             dask_for_segmentation=True):
+                             dask_for_segmentation=True) -> napari.Viewer:
         if viewer is None:
             import napari
             viewer = napari.Viewer(ndisplay=3)
@@ -710,7 +713,7 @@ class ProjectData:
 
         return viewer
 
-    def get_desynced_seg_and_frame_object_frames(self, verbose=1):
+    def get_desynced_seg_and_frame_object_frames(self, verbose=1) -> List[int]:
         desynced_frames = []
         for t in range(self.num_frames):
             pts_from_seg = self.get_centroids_as_numpy(t)
@@ -723,7 +726,7 @@ class ProjectData:
         return desynced_frames
 
     @cached_property
-    def df_manual_tracking(self):
+    def df_manual_tracking(self) -> pd.DataFrame:
         # TODO: do not hardcode
         track_cfg = self.project_config.get_tracking_config()
         fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
@@ -731,7 +734,7 @@ class ProjectData:
         return df_manual_tracking
 
     @cached_property
-    def finished_neuron_names(self):
+    def finished_neuron_names(self) -> List[str]:
         df_manual_tracking = self.df_manual_tracking
 
         try:
