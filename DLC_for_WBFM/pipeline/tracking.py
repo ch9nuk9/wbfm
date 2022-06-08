@@ -11,7 +11,9 @@ from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_co
     combine_dataframes_using_bipartite_matching
 from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueUnpacker
 from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import _unpack_project_for_global_tracking, \
-    WormWithSuperGlueClassifier, track_using_template, generate_random_template_times, WormWithNeuronClassifier
+    WormWithSuperGlueClassifier, track_using_template, WormWithNeuronClassifier
+from DLC_for_WBFM.utils.postures.random_templates import generator_random_template_times, \
+    generate_random_valid_template_frames
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -24,11 +26,15 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
         DEBUG, project_cfg)
     superglue_unpacker = SuperGlueUnpacker(project_data=project_data, t_template=t_template)
     tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
+    min_neurons_for_template = 50
 
     if not use_multiple_templates:
         df_final = track_using_template(all_frames, num_frames, project_data, tracker)
     else:
-        all_templates = generate_random_template_times(num_frames, num_random_templates, t_template)
+        # Ensure the reference frames are actually good by checking they have a minimum number of neurons
+        all_templates = generate_random_valid_template_frames(all_frames, min_neurons_for_template, num_frames,
+                                                              t_template)
+
         project_cfg.logger.info(f"Using {num_random_templates} templates at t={all_templates}")
         # All subsequent dataframes will have their names mapped to this
         df_base = track_using_template(all_frames, num_frames, project_data, tracker)
@@ -59,7 +65,7 @@ def track_using_embedding_using_config(project_cfg, DEBUG):
         tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template])
         df_final = track_using_template(all_frames, num_frames, project_data, tracker)
     else:
-        all_templates = generate_random_template_times(num_frames, num_random_templates, t_template)
+        all_templates = generator_random_template_times(num_frames, num_random_templates, t_template)
         # All subsequent dataframes will have their names mapped to this
         t = all_templates[0]
         tracker = WormWithNeuronClassifier(template_frame=all_frames[t])
@@ -83,14 +89,15 @@ def track_using_embedding_using_config(project_cfg, DEBUG):
 
 
 def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig, to_save=True, verbose=0,
-                                            auto_split_conflicts=True, DEBUG=False):
+                                            DEBUG=False):
     """Replaces: final_tracks_from_tracklet_matches_from_config"""
     # Initialize project data and unpack
     logger = project_config.logger
     project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_tracklets=True)
+
     df_global_tracks, min_confidence, min_overlap, num_neurons, only_use_previous_matches, outlier_threshold, \
     previous_matches, t_template, track_config, tracklets_and_neurons_class, use_multiple_templates, \
-    use_previous_matches, tracklet_splitting_iterations = _unpack_for_track_tracklet_matching(project_data)
+    use_previous_matches, tracklet_splitting_iterations, auto_split_conflicts = _unpack_for_track_tracklet_matching(project_data)
 
     # Add initial tracklets to neurons, then add matches (if any found before)
     logger.info(f"Initializing worm class with settings: \n"

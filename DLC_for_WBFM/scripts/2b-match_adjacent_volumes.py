@@ -38,7 +38,7 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def produce_training_data(_config, _run):
+def tracklets(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']

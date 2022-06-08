@@ -56,11 +56,11 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
     """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
 
     out_fname, preprocessing_settings, project_dir, start_volume, verbose, video_fname = _unpack_config_for_data_subset(
-        cfg.config, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data,
+        cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data,
         video_fname)
 
     with safe_cd(project_dir):
-        preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg.config, verbose, video_fname,
+        preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg, verbose, video_fname,
                                                                  preprocessing_settings, None, which_channel,
                                                                  out_fname)
 
@@ -88,16 +88,17 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
 
 def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr,
                                    use_preprocessed_data, video_fname):
-    verbose = cfg['verbose']
-    project_dir = cfg['project_dir']
+    verbose = cfg.config['verbose']
+    project_dir = cfg.config['project_dir']
     # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
     if use_preprocessed_data:
         preprocessing_settings = None
         if verbose >= 1:
             print("Reusing already preprocessed data")
     elif preprocessing_settings is None:
-        preprocessing_fname = cfg['preprocessing_config']
-        preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_fname)
+        preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
+        # preprocessing_fname = cfg.config['preprocessing_config']
+        # preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_fname)
     if out_fname is None:
         if tiff_not_zarr:
             out_fname = os.path.join(project_dir, "data_subset.tiff")
@@ -108,16 +109,16 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
     if video_fname is None:
         if save_fname_in_red_not_green:
             if not use_preprocessed_data:
-                video_fname = cfg['red_bigtiff_fname']
+                video_fname = cfg.config['red_bigtiff_fname']
             else:
-                video_fname = cfg['preprocessed_red']
+                video_fname = cfg.config['preprocessed_red']
         else:
             if not use_preprocessed_data:
-                video_fname = cfg['green_bigtiff_fname']
+                video_fname = cfg.config['green_bigtiff_fname']
             else:
-                video_fname = cfg['preprocessed_green']
+                video_fname = cfg.config['preprocessed_green']
         video_fname = resolve_mounted_path_in_current_os(video_fname)
-    start_volume = cfg['dataset_params']['start_volume']
+    start_volume = cfg.config['dataset_params']['start_volume']
     return out_fname, preprocessing_settings, project_dir, start_volume, verbose, video_fname
 
 

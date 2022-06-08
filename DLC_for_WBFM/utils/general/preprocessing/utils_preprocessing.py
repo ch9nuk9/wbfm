@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
+import cv2
+import dask.array
 import numpy as np
 import zarr
 from backports.cached_property import cached_property
@@ -20,7 +22,7 @@ from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstor
 from DLC_for_WBFM.utils.neuron_matching.utils_rigid_alignment import filter_stack, align_stack_to_middle_slice, \
     align_stack_using_previous_results, apply_alignment_matrix_to_stack
 from DLC_for_WBFM.utils.projects.paths_to_external_resources import get_camera_alignment_matrix
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
 from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
@@ -103,7 +105,13 @@ class PreprocessingSettings:
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
     final_dtype: str = 'uint8'
-    alpha: float = 0.15
+    alpha: float = 0.15 # Deprecated
+
+    alpha_red: float = None
+    alpha_green: float = None
+
+    # For updating self on disk
+    cfg_preprocessing: ConfigFileWithProjectContext = None
 
     # Load results of a separate preprocessing step, if available
     to_save_warp_matrices: bool = True
@@ -116,6 +124,8 @@ class PreprocessingSettings:
     def __post_init__(self):
         if self.do_background_subtraction:
             self.initialize_background()
+        if not self.alpha_is_ready:
+            logging.warning("Alpha is not set in the yaml; will have to be calculated from data")
 
     @property
     def background_is_ready(self):
@@ -167,10 +177,9 @@ class PreprocessingSettings:
                     raise FileNotFoundError(f"Could not find green background file within {folder_for_background}")
 
         # Also update the preprocessing file on disk
-        cfg_preprocessing = cfg.get_preprocessing_config()
-        cfg_preprocessing.config['background_fname_red'] = self.background_fname_red
-        cfg_preprocessing.config['background_fname_green'] = self.background_fname_red
-        cfg_preprocessing.update_self_on_disk()
+        self.cfg_preprocessing.config['background_fname_red'] = self.background_fname_red
+        self.cfg_preprocessing.config['background_fname_green'] = self.background_fname_green
+        self.cfg_preprocessing.update_self_on_disk()
 
         # Actually load data
         self.initialize_background()
@@ -187,18 +196,53 @@ class PreprocessingSettings:
 
         return background_video_mean
 
-    @staticmethod
-    def load_from_yaml(fname, do_background_subtraction=None):
-        with open(fname, 'r') as f:
-            cfg = YAML().load(f)
-        if do_background_subtraction is not None:
-            cfg['do_background_subtraction'] = do_background_subtraction
-        return PreprocessingSettings(**cfg)
+    @property
+    def alpha_is_ready(self):
+        if self.alpha_red is not None and self.alpha_green is not None:
+            return True
+        else:
+            return False
+
+    def calculate_alpha_from_data(self, video, which_channel='red', num_volumes_to_load=None):
+        # Note that this doesn't take into account background subtraction
+        # Note: dask isn't faster than just numpy, but manages memory much better
+        logging.info(f"Calculating alpha from data for channel {which_channel}; may take ~2 minutes per video")
+        if num_volumes_to_load is None:
+            # Load the entire video; only really works with zarr
+            current_max_value = dask.array.from_zarr(video).max().compute()
+            targeted_max_value = 254.0
+        else:
+            # Assumed to be tiff files; note that the stack axis doesn't matter
+            # Requires setting an estimated maximum, to give clipping room
+            this_dat = np.vstack([self.get_single_volume(video, i) for i in range(num_volumes_to_load)])
+            current_max_value = np.max(this_dat)
+            targeted_max_value = 200.0
+
+        alpha = float(targeted_max_value / current_max_value)
+        logging.info(f"Calculated alpha={alpha} for mode {which_channel}")
+
+        if which_channel == 'red':
+            self.alpha_red = alpha
+            self.cfg_preprocessing.config['alpha_red'] = alpha
+        elif which_channel == 'green':
+            self.alpha_green = alpha
+            self.cfg_preprocessing.config['alpha_green'] = alpha
+
+        self.cfg_preprocessing.update_self_on_disk()
 
     @staticmethod
-    def load_from_config(cfg, do_background_subtraction=None):
+    def _load_from_yaml(fname, do_background_subtraction=None):
+        with open(fname, 'r') as f:
+            preprocessing_dict = YAML().load(f)
+        if do_background_subtraction is not None:
+            preprocessing_dict['do_background_subtraction'] = do_background_subtraction
+        return PreprocessingSettings(**preprocessing_dict)
+
+    @staticmethod
+    def load_from_config(cfg: ModularProjectConfig, do_background_subtraction=None):
         fname = Path(cfg.project_dir).joinpath('preprocessing_config.yaml')
-        preprocessing_settings = PreprocessingSettings.load_from_yaml(fname, do_background_subtraction)
+        preprocessing_settings = PreprocessingSettings._load_from_yaml(fname, do_background_subtraction)
+        preprocessing_settings.cfg_preprocessing = cfg.get_preprocessing_config()
         if not preprocessing_settings.background_is_ready:
             preprocessing_settings.find_background_files_from_raw_data_path(cfg)
         return preprocessing_settings
@@ -224,6 +268,12 @@ class PreprocessingSettings:
         with open(self.path_to_previous_warp_matrices, 'rb') as f:
             self.all_warp_matrices = pickle.load(f)
 
+    def get_single_volume(self, video_fname, i_time: int, num_slices=None):
+        if num_slices is not None:
+            raise NotImplementedError("Should set PreprocessingSettings.raw_number_of_planes")
+        raw_volume = get_single_volume(video_fname, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
+        return raw_volume
+
 
 def perform_preprocessing(single_volume_raw: np.ndarray,
                           preprocessing_settings: PreprocessingSettings,
@@ -239,18 +289,27 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     if s is None:
         return single_volume_raw
 
+    if which_channel == 'red':
+        alpha = s.alpha_red
+        background = s.background_red
+    elif which_channel == 'green':
+        alpha = s.alpha_green
+        background = s.background_green
+    else:
+        raise NotImplementedError(f"Unrecognized channel: {which_channel}")
+
     if s.starting_plane is not None:
         single_volume_raw = single_volume_raw[s.starting_plane:, ...]
 
     if s.do_background_subtraction:
-        if which_channel == 'red':
-            single_volume_raw = single_volume_raw - s.background_red
-        elif which_channel == 'green':
-            single_volume_raw = single_volume_raw - s.background_green
-        else:
-            raise NotImplementedError(f"Unrecognized channel: {which_channel}")
-        # Note: not uint8 yet, so we need to scale the background default
-        single_volume_raw = np.maximum(single_volume_raw + s.background_per_pixel / s.alpha, 0)
+        try:
+            single_volume_raw = single_volume_raw - background
+            # Note: not uint8 yet, so we need to scale the background default
+            single_volume_raw = np.maximum(single_volume_raw + s.background_per_pixel / alpha, 0)
+        except ValueError:
+            logging.warning(f"The background {background.shape} was not the correct shape {single_volume_raw.shape}")
+            logging.warning("Setting 'do_background_subtraction' to False")
+            s.do_background_subtraction = False
 
     if s.do_filtering:
         single_volume_raw = filter_stack(single_volume_raw, s.filter_opt)
@@ -260,13 +319,18 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:
-            single_volume_raw, warp_matrices_dict = align_stack_to_middle_slice(single_volume_raw)
+            try:
+                single_volume_raw, warp_matrices_dict = align_stack_to_middle_slice(single_volume_raw)
+            except cv2.error as e:
+                logging.warning(f"When rigidly aligning in z, encountered opencv error {e}; leaving unaligned")
+                warp_matrices_dict = {}
             if s.to_save_warp_matrices:
                 s.all_warp_matrices[which_frame] = warp_matrices_dict
         else:
             assert len(s.all_warp_matrices) > 0
             warp_matrices_dict = s.all_warp_matrices[which_frame]
-            single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
+            if len(warp_matrices_dict) > 0:
+                single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
 
     if s.align_green_red_cameras:
         single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, s.camera_alignment_matrix,
@@ -276,17 +340,17 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
         mini_max_size = s.mini_max_size
         single_volume_raw = ndi.maximum_filter(single_volume_raw, size=(mini_max_size, 1, 1))
 
-    single_volume_raw = (single_volume_raw * s.alpha).astype(s.final_dtype)
+    single_volume_raw = (single_volume_raw * alpha).astype(s.final_dtype)
 
     return single_volume_raw
 
 
-def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, video_fname: str,
+def preprocess_all_frames_using_config(DEBUG: bool, config: ModularProjectConfig, verbose: int, video_fname: str,
                                        preprocessing_settings: PreprocessingSettings = None,
                                        which_frames: list = None, which_channel: str = None,
                                        out_fname: str = None) -> Tuple[zarr.Array, dict]:
     """
-    Preproceses all frames that will be analyzed as per config
+    Preprocesses all frames that will be analyzed as per config
 
     NOTE: expects 'preprocessing_config' and 'dataset_params' to be in config
     OR for the PreprocessingSettings object to be passed directly
@@ -295,11 +359,12 @@ def preprocess_all_frames_using_config(DEBUG: bool, config: dict, verbose: int, 
         (to keep the indices the same as the original dataset)
     """
     if preprocessing_settings is None:
-        p = PreprocessingSettings.load_from_yaml(config['preprocessing_config'])
+        p = PreprocessingSettings.load_from_config(config)
     else:
         p = preprocessing_settings
 
-    num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config, verbose,
+    num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config.config,
+                                                                                                   verbose,
                                                                                                    video_fname)
     return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, video_fname, vid_opt,
                                  which_frames, which_channel, out_fname)
@@ -309,18 +374,16 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
                           start_volume: int, sz: Tuple, video_fname: str, vid_opt: dict,
                           which_frames: list, which_channel: str, out_fname: str) -> Tuple[zarr.Array, dict]:
     import tifffile
-
     if DEBUG:
         # Make a much shorter video
         if which_frames is not None:
             num_total_frames = which_frames[-1] + 1
         else:
             num_total_frames = 2
-        print("DEBUG MODE: Applying preprocessing:")
         print(p)
+
     chunk_sz = (1, num_slices,) + sz
     total_sz = (num_total_frames,) + chunk_sz[1:]
-
     store = zarr.DirectoryStore(path=out_fname)
     preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype=p.final_dtype,
                                   synchronizer=zarr.ThreadSynchronizer(),
@@ -329,9 +392,12 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
     with tifffile.TiffFile(video_fname) as vid_stream:
+        # Note: this saves alpha to disk
+        p.calculate_alpha_from_data(vid_stream, which_channel=which_channel, num_volumes_to_load=10)
+
         with tqdm(total=num_total_frames) as pbar:
             def parallel_func(i):
-                preprocessed_dat[i, ...] = get_and_preprocess(i, num_slices, p, start_volume, vid_stream,
+                preprocessed_dat[i, ...] = get_and_preprocess(i, p, start_volume, vid_stream,
                                                               which_channel, read_lock)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
@@ -339,8 +405,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
                     pbar.update(1)
-        # for i in tqdm(frame_list):
-        #     preprocessed_dat[i, ...] = _get_and_preprocess(i, num_slices, p, start_volume, vid_stream)
+
     return preprocessed_dat, vid_opt
 
 
@@ -372,14 +437,13 @@ def _get_video_options(config, video_fname):
     return sz, vid_opt
 
 
-def get_and_preprocess(i, num_slices, p, start_volume, video_fname, which_channel, read_lock=None):
-    if p.raw_number_of_planes is not None:
-        num_slices = p.raw_number_of_planes
+def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock=None):
+    # Note: the preprocessing class must know the number of planes in a volume
     if read_lock is None:
-        single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
+        single_volume_raw = p.get_single_volume(video_fname, i)
     else:
         with read_lock:
-            single_volume_raw = get_single_volume(video_fname, i, num_slices, dtype='uint16')
+            single_volume_raw = p.get_single_volume(video_fname, i)
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
         return perform_preprocessing(single_volume_raw, p, i, which_channel=which_channel)

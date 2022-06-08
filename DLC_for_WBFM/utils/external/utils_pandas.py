@@ -186,3 +186,12 @@ def fill_missing_indices_with_nan(df):
     else:
         num_added = 0
     return df, num_added
+
+
+def get_column_name_from_time_and_column_value(df, i_time, col_value, col_name):
+    mask = df.loc[i_time, (slice(None), col_name)] == col_value
+    try:
+        ind = np.where(mask)[0][0]
+        return ind, mask.index.levels[0][mask][0]
+    except IndexError:
+        return None, None

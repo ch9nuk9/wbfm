@@ -121,21 +121,41 @@ class WormWithSuperGlueClassifier:
     def match_target_frame(self, target_frame: ReferenceFrame):
 
         with torch.no_grad():
-            data = self.superglue_unpacker.convert_single_frame_to_superglue_format(target_frame, use_gt_matches=False)
-            data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
-
-            matches_with_conf = self.model.superglue.match_and_output_list(data)
-
+            data, is_valid_frame = self.superglue_unpacker.convert_single_frame_to_superglue_format(target_frame,
+                                                                                                    use_gt_matches=False)
+            if is_valid_frame:
+                data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
+                matches_with_conf = self.model.superglue.match_and_output_list(data)
+            else:
+                matches_with_conf = []
         return matches_with_conf
 
     def match_two_time_points(self, t0: int, t1: int):
         with torch.no_grad():
-            data = self.superglue_unpacker.convert_frames_to_superglue_format(t0, t1, use_gt_matches=False)
-            data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
-
-            matches_with_conf = self.model.superglue.match_and_output_list(data)
-
+            data, is_valid_pair = self.superglue_unpacker.convert_frames_to_superglue_format(t0, t1,
+                                                                                             use_gt_matches=False)
+            if not is_valid_pair:
+                matches_with_conf = []
+            else:
+                data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
+                matches_with_conf = self.model.superglue.match_and_output_list(data)
         return matches_with_conf
+
+    def match_two_time_points_return_full_loss(self, t0: int, t1: int):
+        """
+        Like match_two_time_points() but this does a full forward pass
+
+        Note that this needs ground truth matches
+        """
+        with torch.no_grad():
+            data, is_valid_pair = self.superglue_unpacker.convert_frames_to_superglue_format(t0, t1,
+                                                                                             use_gt_matches=True)
+            if not is_valid_pair:
+                result = {}
+            else:
+                data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
+                result = self.model(data)
+        return result, data
 
     def __repr__(self):
         return f"Worm Tracker based on superglue network"
@@ -144,19 +164,12 @@ class WormWithSuperGlueClassifier:
 def track_using_template(all_frames, num_frames, project_data, tracker):
     all_matches = []
     for t in tqdm(range(num_frames), leave=False):
+        # Note: if there are no neurons, this list should be empty
         matches_with_conf = tracker.match_target_frame(all_frames[t])
 
         all_matches.append(matches_with_conf)
     df = template_matches_to_dataframe(project_data, all_matches)
     return df
-
-
-def generate_random_template_times(num_frames, num_random_templates, t_template):
-    all_templates = [t_template]
-    permuted_times = np.random.permutation(range(num_frames))
-    for t_random in permuted_times[:num_random_templates - 1]:
-        all_templates.append(int(t_random))
-    return all_templates
 
 
 def _unpack_project_for_global_tracking(DEBUG, project_cfg):

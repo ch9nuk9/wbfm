@@ -17,7 +17,7 @@ from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, \
-    get_names_of_conflicting_dataframes, get_times_of_conflicting_dataframes
+    get_names_of_conflicting_dataframes, get_times_of_conflicting_dataframes, get_column_name_from_time_and_column_value
 from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError, DataSynchronizationError
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
@@ -314,13 +314,15 @@ class DetectedTrackletsAndNeurons:
     def get_tracklet_from_neuron_and_time(self, i_local_neuron, i_time):
         # NOTE: just uses a different column from get_tracklet_from_segmentation_index()
         df = self.df_tracklets_zxy
-        mask = df.loc[i_time, (slice(None), 'raw_neuron_ind_in_list')] == i_local_neuron
-        try:
-            ind = np.where(mask)[0][0]
-            # return ind, self.all_tracklet_names[ind]
-            return ind, mask.index.levels[0][mask][0]
-        except IndexError:
-            return None, None
+        ind, val = get_column_name_from_time_and_column_value(df, i_time, i_local_neuron, 'raw_neuron_ind_in_list')
+        return ind, val
+        # mask = df.loc[i_time, (slice(None), 'raw_neuron_ind_in_list')] == i_local_neuron
+        # try:
+        #     ind = np.where(mask)[0][0]
+        #     # return ind, self.all_tracklet_names[ind]
+        #     return ind, mask.index.levels[0][mask][0]
+        # except IndexError:
+        #     return None, None
 
     def get_number_of_neurons_at_time(self, t: int):
         return len(self.get_neurons_at_time(t))

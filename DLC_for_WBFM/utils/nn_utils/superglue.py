@@ -53,7 +53,9 @@ from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_itertools import random_combination
 from DLC_for_WBFM.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
+from DLC_for_WBFM.utils.general.custom_errors import NoNeuronsError
 from DLC_for_WBFM.utils.general.distance_functions import dist2conf
+from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.nn_utils.data_loading import AbstractNeuronImageFeaturesFromProject
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
@@ -219,6 +221,7 @@ class SuperGlue(nn.Module):
         'GNN_layers': ['self', 'cross'] * 9,
         'sinkhorn_iterations': 100,
         'match_threshold': 0.2,
+        'to_normalize_keypoints': True
     }
 
     def __init__(self, config):
@@ -240,6 +243,8 @@ class SuperGlue(nn.Module):
 
         self.bin_score = torch.nn.Parameter(torch.tensor(1.))
         self.loss_epsilon = 1e-6
+
+        self.to_normalize_keypoints = self.config['to_normalize_keypoints']
 
         # assert self.config['weights'] in ['indoor', 'outdoor']
         # path = Path(__file__).parent
@@ -278,7 +283,7 @@ class SuperGlue(nn.Module):
             'matching_scores0': mscores0[0],
             'matching_scores1': mscores1[0],
             'loss': loss_mean[0],
-            # 'raw_loss': raw_loss,
+            'raw_loss': raw_loss,
             # 'raw_scores': scores,
             'skip_train': False
         }
@@ -301,35 +306,30 @@ class SuperGlue(nn.Module):
         return indices0, indices1, mscores0, mscores1
 
     def calculate_match_scores(self, data):
-        # desc0, desc1 = data['descriptors0'].double(), data['descriptors1'].double()
-        # kpts0, kpts1 = data['keypoints0'].double(), data['keypoints1'].double()
-        desc0, desc1 = data['descriptors0'].float(), data['descriptors1'].float()
+        desc0, desc1 = data['descriptors0'], data['descriptors1']
         kpts0, kpts1 = data['keypoints0'].float(), data['keypoints1'].float()
-        # desc0 = desc0.transpose(0, 1)
-        # desc1 = desc1.transpose(0, 1)
-        # kpts0 = torch.reshape(kpts0, (1, -1, 3)) # NEW: 3d
-        # kpts1 = torch.reshape(kpts1, (1, -1, 3))
+
         # Batch is 0
         batch_sz = data['scores0'].shape[0]
-        desc0 = desc0.transpose(1, 2)
-        desc1 = desc1.transpose(1, 2)
         kpts0 = torch.reshape(kpts0, (batch_sz, 1, -1, 3))  # NEW: 3d
         kpts1 = torch.reshape(kpts1, (batch_sz, 1, -1, 3))
-        # if kpts0.shape[1] == 0 or kpts1.shape[1] == 0:  # no keypoints
-        #     shape0, shape1 = kpts0.shape[:-1], kpts1.shape[:-1]
-        #     return {
-        #         'matches0': kpts0.new_full(shape0, -1, dtype=torch.int)[0],
-        #         'matches1': kpts1.new_full(shape1, -1, dtype=torch.int)[0],
-        #         'matching_scores0': kpts0.new_zeros(shape0)[0],
-        #         'matching_scores1': kpts1.new_zeros(shape1)[0],
-        #         'skip_train': True
-        #     }
-        # Keypoint normalization.
-        kpts0 = normalize_keypoints_3d(kpts0, data['image0'].shape)
-        kpts1 = normalize_keypoints_3d(kpts1, data['image1'].shape)
+
+        if self.to_normalize_keypoints:
+            # Keypoint normalization.
+            kpts0 = normalize_keypoints_3d(kpts0, data['image0'].shape)
+            kpts1 = normalize_keypoints_3d(kpts1, data['image1'].shape)
         # Keypoint MLP encoder.
-        desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
-        desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
+        if len(desc0) > 0:
+            # Default: image + location information
+            desc0 = desc0.float().transpose(1, 2)
+            desc1 = desc1.float().transpose(1, 2)
+            desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
+            desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
+        else:
+            # Then only encode the spatial components
+            desc0 = self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
+            desc1 = self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
+
         # Multi-layer Transformer network.
         desc0, desc1 = self.gnn(desc0, desc1)
         # Final MLP projection.
@@ -390,10 +390,10 @@ class BipartiteSuperGlueStyleModel:
 ## MY ADDITIONS
 
 class SuperGlueModel(LightningModule):
-    def __init__(self, feature_dim=840, criterion=None, lr=1e-3):
+    def __init__(self, feature_dim=840, criterion=None, lr=1e-3, **kwargs):
         super().__init__()
 
-        self.superglue = SuperGlue(config=dict(descriptor_dim=feature_dim))
+        self.superglue = SuperGlue(config={**dict(descriptor_dim=feature_dim), **kwargs})
         self.lr = lr
 
         if torch.cuda.is_available():
@@ -469,16 +469,31 @@ class SuperGlueUnpacker:
         scores0 = torch.ones((kpts0.shape[0], 1)).float()
         return desc0, kpts0, scores0
 
+    def unpack_only_locations(self, t0):
+        desc0 = []
+        kpts0 = self.project_data.get_centroids_as_numpy(t0)
+        kpts0 = self.project_data.physical_unit_conversion.zimmer2leifer(kpts0)
+        kpts0 = torch.tensor(kpts0).float()
+        scores0 = torch.ones((kpts0.shape[0], 1)).float()
+        return desc0, kpts0, scores0
+
     def convert_frames_to_superglue_format(self, t0, t1, use_gt_matches=False):
         project_data = self.project_data
 
         f0 = project_data.raw_frames[t0]
         f1 = project_data.raw_frames[t1]
 
-        # Unpack
-        desc0, kpts0, scores0 = self.unpack_frame(f0)
-        desc1, kpts1, scores1 = self.unpack_frame(f1)
-        all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
+        pair = FramePair(frame0=f0, frame1=f1)
+        is_valid_pair = pair.check_both_frames_valid()
+        if is_valid_pair:
+            # Unpack
+            desc0, kpts0, scores0 = self.unpack_frame(f0)
+            desc1, kpts1, scores1 = self.unpack_frame(f1)
+            all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
+        else:
+            desc0, kpts0, scores0 = [], [], []
+            desc1, kpts1, scores1 = [], [], []
+            all_matches = []
 
         image0 = torch.tensor(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0))
         # image1 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t1]), axis=0), axis=0)
@@ -491,7 +506,24 @@ class SuperGlueUnpacker:
         data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
                     image0=image0, image1=image0,
                     scores0=scores0, scores1=scores1)
-        return data
+        return data, is_valid_pair
+
+    def convert_frames_to_superglue_format_spatial_only(self, t0, t1, use_gt_matches=False):
+        project_data = self.project_data
+
+        is_valid_pair = True
+
+        # Unpack, keeping the descriptions empty
+        desc0, kpts0, scores0 = self.unpack_only_locations(t0)
+        desc1, kpts1, scores1 = self.unpack_only_locations(t1)
+        all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
+
+        image0 = torch.tensor(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0))
+        # Repack
+        data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
+                    image0=image0, image1=image0,
+                    scores0=scores0, scores1=scores1)
+        return data, is_valid_pair
 
     def get_gt_matches(self, t0, t1, use_gt_matches):
         if use_gt_matches:
@@ -502,18 +534,20 @@ class SuperGlueUnpacker:
         return all_matches
 
     def convert_single_frame_to_superglue_format(self, f1: ReferenceFrame, use_gt_matches=False):
-        data = self.data_template.copy()
-        project_data = self.project_data
+        is_valid_frame = f1.num_neurons > 1
+        if is_valid_frame:
+            data = self.data_template.copy()
+            t0 = self.t_template
+            t1 = f1.frame_ind
 
-        t0 = self.t_template
-        t1 = f1.frame_ind
+            desc1, kpts1, scores1 = self.unpack_frame(f1)
+            all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
 
-        desc1, kpts1, scores1 = self.unpack_frame(f1)
-        all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
-
-        to_update = dict(descriptors1=desc1, keypoints1=kpts1, all_matches=all_matches, scores1=scores1)
-        data.update(to_update)
-        return data
+            to_update = dict(descriptors1=desc1, keypoints1=kpts1, all_matches=all_matches, scores1=scores1)
+            data.update(to_update)
+        else:
+            data = {}
+        return data, is_valid_frame
 
     def expand_all_data(self, data, device=None):
         # Necessary when calling outside a pytorch dataloader
@@ -521,8 +555,10 @@ class SuperGlueUnpacker:
         for k, v in data.items():
             if device is not None:
                 new_data[k] = torch.tensor(v, device=device).unsqueeze(0)
+                # new_data[k] = v.clone().to(device=device).required_grad_(True).unsqueeze(0)
             else:
                 new_data[k] = torch.tensor(v).unsqueeze(0)
+                # new_data[k] = v.clone().to(device=device).required_grad_(True).unsqueeze(0)
 
         return new_data
 
@@ -534,12 +570,35 @@ class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronIma
 
     """
 
-    def __init__(self, project_data: ProjectData, num_to_calculate=100, use_adjacent_time_points=False):
+    def __init__(self, project_data: ProjectData, num_to_calculate=100,
+                 use_adjacent_time_points=False, use_only_spatial_information=False):
         super().__init__(project_data)
         self.num_to_calculate = num_to_calculate
 
         self.unpacker = SuperGlueUnpacker(project_data=project_data)
 
+        self._calculate_time_points(num_to_calculate, project_data, use_adjacent_time_points)
+
+        # Precalculate
+
+        def _unpack(t0, t1):
+            if use_only_spatial_information:
+                return self.unpacker.convert_frames_to_superglue_format_spatial_only(t0, t1, use_gt_matches=True)
+            else:
+                return self.unpacker.convert_frames_to_superglue_format(t0, t1, use_gt_matches=True)
+
+        print("Precaculating training data")
+        min_matches_required = 50
+        self._items = []
+        for t0, t1 in tqdm(self.time_pairs):
+            val, is_valid_pair = _unpack(t0, t1)
+            # Check to see that there really are enough matches
+            if not is_valid_pair or len(val['all_matches']) < min_matches_required:
+                logging.warning(f"Skipping too few matches ({len(val['all_matches'])}) between frames: {t0}, {t1}")
+                continue
+            self._items.append(val)
+
+    def _calculate_time_points(self, num_to_calculate, project_data, use_adjacent_time_points):
         # t_list = list(range(project_data.num_frames - 1))
         t_list = project_data.custom_frame_indices()[:-1]
         self.time_pairs = []
@@ -553,18 +612,6 @@ class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronIma
             else:
                 new_pair = random_combination(t_list, 2)
             self.time_pairs.append(new_pair)
-
-        # Precalculate
-        print("Precaculating training data")
-        min_matches_required = 50
-        self._items = []
-        for t0, t1 in tqdm(self.time_pairs):
-            val = self.unpacker.convert_frames_to_superglue_format(t0, t1, use_gt_matches=True)
-            # Check to see that there really are enough matches
-            if len(val['all_matches']) < min_matches_required:
-                logging.warning(f"Skipping too few matches ({len(val['all_matches'])}) between frames: {t0}, {t1}")
-                continue
-            self._items.append(val)
 
     def __getitem__(self, idx):
         return self._items[idx]

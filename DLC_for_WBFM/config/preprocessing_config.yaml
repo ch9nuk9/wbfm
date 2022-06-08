@@ -22,4 +22,5 @@ do_rigid_alignment: false
 # Datatypes and scaling
 initial_dtype: 'uint16' # Filtering etc. will act on this
 final_dtype: 'uint8'
-alpha: 0.15
+alpha_red:
+alpha_green:

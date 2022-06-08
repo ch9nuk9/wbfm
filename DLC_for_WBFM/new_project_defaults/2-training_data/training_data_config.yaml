@@ -13,17 +13,18 @@ tracker_params: # OPTIMIZE
   external_detections: null # Will be synchronized with segmentation
 
 pairwise_matching_params:
-  add_affine_to_candidates: false # Doesn't work on cluster
+  add_affine_to_candidates: true
   affine_num_candidates: 1
-  add_gp_to_candidates: true
+  add_gp_to_candidates: false # Doesn't work on cluster
   gp_num_candidates: 1
-  add_fdnc_to_candidates: true
+  add_fdnc_to_candidates: false
   fdnc_options:
     topn: 1
   min_confidence: 0.1
   z_threshold: 2.5
   matching_method: bipartite  # Or unanimous
-  preprocess_using_global_rotation: False
+  preprocess_using_global_rotation: false
+  use_superglue: true
 
 postprocessing_params:
   min_length_to_save: 5

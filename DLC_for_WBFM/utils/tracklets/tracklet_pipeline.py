@@ -55,8 +55,7 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
     end_volume = start_volume + tracker_params['num_frames']
     project_config.logger.info(f"Calculating Frame pairs for frames: {start_volume + 1} to {end_volume}")
 
-    if use_superglue:
-        # This path builds the
+    if frame_pair_options.use_superglue:
         all_frame_pairs = build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data)
     else:
         all_frame_pairs = match_all_adjacent_frames(all_frame_dict, end_volume, frame_pair_options, start_volume)
@@ -75,12 +74,14 @@ def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, projec
     for t in tqdm(range(num_frames)):
         frame0, frame1 = all_frame_dict[t], all_frame_dict[t + 1]
         frame_pair = FramePair(options=frame_pair_options, frame0=frame0, frame1=frame1)
-
-        # Use new method to match
-        matches_with_conf = tracker.match_two_time_points(t, t + 1)
-        frame_pair.feature_matches = matches_with_conf
-        if match_using_additional_methods:
-            frame_pair.match_using_all_methods()
+        if frame_pair.check_both_frames_valid():
+            # Use new method to match
+            matches_with_conf = tracker.match_two_time_points(t, t + 1)
+            frame_pair.feature_matches = matches_with_conf
+            if match_using_additional_methods:
+                frame_pair.match_using_all_methods()
+        else:
+            frame_pair.feature_matches = []
         all_frame_pairs[(t, t + 1)] = frame_pair
     return all_frame_pairs
 
@@ -100,18 +101,14 @@ def postprocess_matches_to_tracklets(all_frame_dict, all_frame_pairs, z_threshol
 
 
 def save_all_tracklets(df, df_multi_index_format, training_config):
-    logging.info("Saving dataframes; could take a while")
     with safe_cd(training_config.project_dir):
         # Custom format for pairs
         subfolder = osp.join('2-training_data', 'raw')
         fname = osp.join(subfolder, 'clust_df_dat.pickle')
-        with open(fname, 'wb') as f:
-            pickle.dump(df, f)
+        training_config.pickle_data_in_local_project(df, fname)
 
-        # General format; ONLY this should be used going forward
         # Update to save as sparse from the beginning
         out_fname = training_config.config['df_3d_tracklets']
-        # df_multi_index_format.to_hdf(out_fname, 'df_with_missing')
         logging.info("Converting dataframe to sparse format")
         df_multi_index_format = df_multi_index_format.astype(pd.SparseDtype("float", np.nan))
         training_config.pickle_data_in_local_project(df_multi_index_format, out_fname, custom_writer=pd.to_pickle)
