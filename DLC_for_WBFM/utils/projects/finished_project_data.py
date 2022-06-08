@@ -552,166 +552,19 @@ class ProjectData:
 
     def napari_of_single_match(self, pair, which_matches='final_matches', this_match: FramePair = None,
                                rigidly_align_volumetric_images=False, min_confidence=0.0) -> napari.Viewer:
-        import napari
-        from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
-        if this_match is None:
-            this_match: FramePair = self.raw_matches[pair]
-
-        t0, t1 = pair
-        dat0, dat1 = self.red_data[t0, ...], self.red_data[t1, ...]
-        seg0, seg1 = self.raw_segmentation[t0, ...], self.raw_segmentation[t1, ...]
-        this_match.load_raw_data(dat0, dat1)
-        if rigidly_align_volumetric_images:
-            # Ensure that both point cloud and data have rotations
-            this_match.preprocess_data(force_rotation=True)
-            # Load the rotated versions
-            n0_zxy = this_match.pts0_preprocessed  # May be rotated
-            dat0 = this_match.dat0_preprocessed
-        else:
-            # Keep the non-rotated versions
-            n0_zxy = this_match.pts0
-
-        n1_zxy = this_match.pts1
-        raw_red_data = np.stack([dat0, dat1])
-        raw_seg_data = np.stack([seg0, seg1])
-        # Scale to physical units
-        z_to_xy_ratio = 1
-        # z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
-        # n0_zxy[0, :] = z_to_xy_ratio * n0_zxy[0, :]
-        # n1_zxy[0, :] = z_to_xy_ratio * n1_zxy[0, :]
-
-        list_of_matches = getattr(this_match, which_matches)
-        list_of_matches = [m for m in list_of_matches if -1 not in m]
-        list_of_matches = [m for m in list_of_matches if m[2] > min_confidence]
-
-        all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy)
-
-        v = napari.view_image(raw_red_data, ndisplay=3,
-                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
-        v.add_labels(raw_seg_data, scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
-
-        # This should not remember the original time point
-        df = self.final_tracks.loc[[t0], :].set_index(pd.Index([0]))
-        options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
-        options['name'] = 'n0_final_id'
-        options['n_dimensional'] = True
-        v.add_points(**options)
-
-        # This should not remember the original time point
-        df = self.final_tracks.loc[[t1], :].set_index(pd.Index([0]))
-        options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
-        options['name'] = 'n1_final_id'
-        options['text']['color'] = 'green'
-        options['n_dimensional'] = True
-        options['symbol'] = 'x'
-        v.add_points(**options)
-        # v.add_points(n0_zxy, size=3, face_color='green', symbol='x', n_dimensional=True)
-        # v.add_points(n1_zxy, size=3, face_color='blue', symbol='o', n_dimensional=True)
-        v.add_tracks(all_tracks_list, head_length=2, name=which_matches)
-
-        # Add text overlay; temporarily change the neuron locations on the frame
-        original_zxy = this_match.frame0.neuron_locs
-        this_match.frame0.neuron_locs = n0_zxy
-        frames = {0: this_match.frame0, 1: this_match.frame1}
-        options = napari_labels_from_frames(frames, num_frames=2, to_flip_zxy=False)
-        v.add_points(**options)
-        this_match.frame0.neuron_locs = original_zxy
-
+        from DLC_for_WBFM.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
+        v = NapariLayerInitializer.napari_of_single_match(self, pair, which_matches, this_match,
+                                                          rigidly_align_volumetric_images, min_confidence)
         return v
 
     def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[str]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
                              dask_for_segmentation=True) -> napari.Viewer:
-        if viewer is None:
-            import napari
-            viewer = napari.Viewer(ndisplay=3)
-        if which_layers == 'all':
-            which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
-                            'Neuron IDs', 'Intermediate global IDs']
-        if check_if_layers_exist:
-            # NOTE: only works if the layer names are the same as these convinience names
-            new_layers = set(which_layers) - set([layer.name for layer in viewer.layers])
-            which_layers = list(new_layers)
-
-        self.logger.info(f"Finished loading data, adding following layers: {which_layers}")
-        z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
-        if to_remove_flyback:
-            clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
-        else:
-            clipping_list = []
-
-        # raw_chunk = self.red_data.chunks
-        # dask_chunk = list(raw_chunk).copy()
-        # dask_chunk[0] = 50
-
-        if 'Red data' in which_layers:
-            # red_dask = da.from_zarr(self.red_data, chunk=dask_chunk)
-            viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='PiYG',
-                             contrast_limits=[0, 200],
-                             scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
-                             experimental_clipping_planes=clipping_list)
-            # viewer.add_image(self.red_data, name="Red data", opacity=0.5, colormap='red',
-            #                  contrast_limits=[0, 200])
-        if 'Green data' in which_layers:
-            # green_dask = da.from_zarr(self.green_data, chunk=dask_chunk)
-            viewer.add_image(self.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
-                             contrast_limits=[0, 200],
-                             scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
-                             experimental_clipping_planes=clipping_list)
-        if 'Raw segmentation' in which_layers:
-            # if dask_for_segmentation:
-            #     seg_array = da.from_zarr(self.raw_segmentation, chunk=dask_chunk)
-            # else:
-            seg_array = zarr.array(self.raw_segmentation)
-            viewer.add_labels(seg_array, name="Raw segmentation",
-                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=False,
-                              rendering='translucent')
-        if 'Colored segmentation' in which_layers and self.segmentation is not None:
-            viewer.add_labels(self.segmentation, name="Colored segmentation",
-                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=False)
-
-        # Add a text overlay
-        if 'Neuron IDs' in which_layers:
-            df = self.red_traces
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
-            viewer.add_points(**options)
-
-        if 'GT IDs' in which_layers:
-            # Not added by default!
-            df = self.final_tracks
-            neurons_that_are_finished = self.finished_neuron_names
-            neuron_name_dict = {name: f"GT_{name.split('_')[1]}" for name in neurons_that_are_finished}
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
-                                                          neuron_name_dict=neuron_name_dict)
-            options['name'] = 'GT IDs'
-            options['text']['color'] = 'red'
-            viewer.add_points(**options)
-
-        if 'Intermediate global IDs' in which_layers and self.intermediate_global_tracks is not None:
-            df = self.intermediate_global_tracks
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
-            options['name'] = 'Intermediate global IDs'
-            options['text']['color'] = 'green'
-            options['visible'] = False
-            viewer.add_points(**options)
-
-        if 'Point Cloud' in which_layers:
-            # Note: performance is horrible here
-            raise NotImplementedError
-            def make_time_vector(zxy, i):
-                out = np.array([i]*zxy.shape[0])
-                out = np.expand_dims(out, axis=-1)
-                return out
-            pts_data = [self.get_centroids_as_numpy(i) for i in tqdm(range(self.num_frames), leave=False)]
-            pts_data = [np.hstack([make_time_vector(zxy, i), zxy]) for i, zxy in enumerate(pts_data) if len(zxy) > 0]
-            pts_data = np.vstack(pts_data)
-
-            options = dict(data=pts_data, name="Point Cloud", size=1, blending='opaque')
-            viewer.add_points(**options)
-
-        self.logger.info(f"Finished adding layers {which_layers}")
-
-        return viewer
+        from DLC_for_WBFM.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
+        v = NapariLayerInitializer.add_layers_to_viewer(self, viewer, which_layers,
+                                                        to_remove_flyback, check_if_layers_exist,
+                                                        dask_for_segmentation)
+        return v
 
     def get_desynced_seg_and_frame_object_frames(self, verbose=1) -> List[int]:
         desynced_frames = []
