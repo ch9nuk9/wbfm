@@ -86,6 +86,9 @@ class ProjectData:
     use_custom_padded_dataframe: bool = False
 
     def __post_init__(self):
+        """
+        Load values from disk config files if the user did not set them
+        """
         track_cfg = self.project_config.get_tracking_config()
         if self.precedence_global2tracklet is None:
             self.precedence_global2tracklet = track_cfg.config['precedence_global2tracklet']
@@ -96,6 +99,11 @@ class ProjectData:
 
     @cached_property
     def intermediate_global_tracks(self) -> pd.DataFrame:
+        """
+        Dataframe of tracks produced by the global tracker alone (no tracklets)
+
+        Names are aligned with the final traces
+        """
         tracking_cfg = self.project_config.get_tracking_config()
 
         # Manual annotations take precedence by default
@@ -108,6 +116,11 @@ class ProjectData:
 
     @cached_property
     def final_tracks(self) -> pd.DataFrame:
+        """
+        Dataframe of tracks produced by combining the global tracker and tracklets
+
+        Names are aligned with the final traces
+        """
         tracking_cfg = self.project_config.get_tracking_config()
 
         # Manual annotations take precedence by default
@@ -124,18 +137,24 @@ class ProjectData:
         return final_tracks
 
     def get_final_tracks_only_finished_neurons(self) -> pd.DataFrame:
-        """See get_ground_truth_annotations()"""
+        """
+        See get_ground_truth_annotations()
+
+        Dataframe with subset of columns (neurons)
+        """
         df_gt, finished_neurons = self.get_list_of_finished_neurons()
 
         return df_gt.loc[:, finished_neurons]
 
     def get_list_of_finished_neurons(self):
+        """Get the finished neurons and dataframe that will be subset-ed"""
         df_gt = self.final_tracks
         finished_neurons = self.finished_neuron_names
         return df_gt, finished_neurons
 
     @cached_property
     def global2tracklet(self) -> dict:
+        """Dictionary of matches between neuron names (str) and tracklets (str)"""
         tracking_cfg = self.project_config.get_tracking_config()
 
         # Manual annotations take precedence by default
@@ -153,6 +172,11 @@ class ProjectData:
 
     @cached_property
     def raw_frames(self) -> List[ReferenceFrame]:
+        """
+        List of ReferenceFrame objects
+
+        This can become desynced if the user modifies segmentation
+        """
         self.logger.info("First time loading the raw frames, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'frame_dat.pickle')
@@ -163,6 +187,11 @@ class ProjectData:
 
     @cached_property
     def raw_matches(self) -> Dict[tuple, FramePair]:
+        """
+        Dict of FramePair objects
+
+        This can become desynced if the user modifies segmentation
+        """
         self.logger.info("First time loading the raw matches, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'match_dat.pickle')
@@ -172,7 +201,12 @@ class ProjectData:
         return matches
 
     @cached_property
-    def raw_clust(self) -> pd.DataFrame:
+    def _raw_clust(self) -> pd.DataFrame:
+        """
+        Legacy custom dataframe format, before transforming into tracklets.
+
+        Use not suggested
+        """
         self.logger.info("First time loading the raw cluster dataframe, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'clust_df_dat.pickle')
@@ -183,6 +217,7 @@ class ProjectData:
 
     @cached_property
     def df_all_tracklets(self) -> pd.DataFrame:
+        """Sparse Dataframe of all tracklets"""
         self.logger.info("First time loading all the tracklets, may take a while...")
         train_cfg = self.project_config.get_training_config()
         track_cfg = self.project_config.get_tracking_config()
@@ -212,6 +247,7 @@ class ProjectData:
 
     @cached_property
     def tracklet_annotator(self) -> TrackletAndSegmentationAnnotator:
+        """Custom class that implements manual modification of tracklets and segmentation"""
         tracking_cfg = self.project_config.get_tracking_config()
         training_cfg = self.project_config.get_training_config()
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
@@ -230,19 +266,12 @@ class ProjectData:
 
     @cached_property
     def tracklets_and_neurons_class(self) -> DetectedTrackletsAndNeurons:
+        """Class that connects tracklets with raw neuron segmentation"""
         self.logger.info("Loading tracklets")
         _ = self.df_all_tracklets  # Make sure it is loaded
         return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata,
                                            dataframe_output_filename=self.df_all_tracklets_fname,
                                            use_custom_padded_dataframe=self.use_custom_padded_dataframe)
-
-    @cached_property
-    def df_fdnc_tracks(self) -> pd.DataFrame:
-        train_cfg = self.project_config.get_tracking_config()
-        fname = os.path.join('postprocessing', 'leifer_tracks.h5')
-        fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        df_fdnc_tracks = read_if_exists(fname)
-        return df_fdnc_tracks
 
     @property
     def logger(self) -> logging.Logger:
@@ -250,7 +279,7 @@ class ProjectData:
 
     def load_tracklet_related_properties(self):
         _ = self.df_all_tracklets
-        _ = self.raw_clust
+        # _ = self._raw_clust
 
     def load_interactive_properties(self):
         _ = self.tracklet_annotator
@@ -265,6 +294,7 @@ class ProjectData:
 
     @cached_property
     def num_frames(self) -> int:
+        """Note that this is cached so that a user can overwrite the number of frames"""
         return self.project_config.config['dataset_params']['num_frames']
 
     def custom_frame_indices(self) -> list:
@@ -275,6 +305,7 @@ class ProjectData:
             return list(range(self.num_frames))
 
     def get_frame_index_generator(self):
+        """Generator yielding values from custom_frame_indices"""
         for val in self.custom_frame_indices():
             yield val
 
@@ -288,12 +319,18 @@ class ProjectData:
         return len(self.which_training_frames)
 
     def check_data_desyncing(self, raise_error=True):
+        """
+        Checks desynchronization in the tracklet-neuron matching database
+
+        See: check_for_unmatched_tracklets
+        """
         self.logger.info("Checking for database desynchronization")
         unmatched_tracklets = check_for_unmatched_tracklets(self.df_all_tracklets, self.global2tracklet,
                                                             raise_error=raise_error)
 
     @staticmethod
     def unpack_config_file(project_path: Union[str, ModularProjectConfig]):
+        """Unpack config file into its components"""
         if isinstance(project_path, ModularProjectConfig):
             cfg = project_path
         else:
@@ -321,6 +358,7 @@ class ProjectData:
                                 to_load_frames=False,
                                 to_load_segmentation_metadata=False,
                                 initialization_kwargs=None):
+        """Load all data (Dataframes, etc.) from disk using filenames defined in config files"""
         # Initialize object in order to use cached properties
         if initialization_kwargs is None:
             initialization_kwargs = {}
@@ -419,7 +457,19 @@ class ProjectData:
         return obj
 
     @staticmethod
-    def load_final_project_data_from_config(project_path, **kwargs):
+    def load_final_project_data_from_config(project_path: Union[str, os.PathLike, ModularProjectConfig],
+                                            **kwargs):
+        """
+        Main constructor that accepts multiple input formats
+        This includes an already initialized ProjectData class, in which case this function returns
+
+        valid kwargs are:
+            to_load_tracklets=False,
+            to_load_interactivity=False,
+            to_load_frames=False,
+            to_load_segmentation_metadata=False,
+            initialization_kwargs=None
+        """
         if isinstance(project_path, (str, os.PathLike)):
             if Path(project_path).is_dir():
                 project_path = Path(project_path).joinpath('project_config.yaml')
@@ -437,6 +487,7 @@ class ProjectData:
                          remove_outliers: bool = False,
                          filter_mode: str = 'no_filtering',
                          min_confidence: float = None) -> Tuple[list, list]:
+        """Uses TracePlotter class to calculate traces"""
         # Todo: don't recreate object every time
         self.trace_plotter = TracePlotter(
             self.red_traces,
@@ -454,10 +505,28 @@ class ProjectData:
 
     def calculate_tracklets(self, neuron_name) -> \
             Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
+        """
+        Calculates tracklets using the tracklet_annotator class
+
+        Returns all tracklets already attached, as well as any currently selected tracklets
+        """
         y_dict, y_current, y_current_name = self.tracklet_annotator.calculate_tracklets_for_neuron(neuron_name)
         return y_dict, y_current, y_current_name
 
     def modify_confidences_of_frame_pair(self, pair, gamma, mode) -> list:
+        """
+        Postprocessing function to be applied to frame pairs that incorporates similarity in image space
+
+        Parameters
+        ----------
+        pair
+        gamma
+        mode
+
+        Returns
+        -------
+
+        """
         frame_match = self.raw_matches[pair]
 
         matches = frame_match.modify_confidences_using_image_features(self.segmentation_metadata,
@@ -467,6 +536,18 @@ class ProjectData:
         return matches
 
     def modify_confidences_of_all_frame_pairs(self, gamma, mode):
+        """
+        Loops modify_confidences_of_frame_pair across all frames
+
+        Parameters
+        ----------
+        gamma
+        mode
+
+        Returns
+        -------
+
+        """
         frame_matches = self.raw_matches
         opt = dict(metadata=self.segmentation_metadata, gamma=gamma, mode=mode)
         for pair, obj in frame_matches.items():
@@ -474,6 +555,21 @@ class ProjectData:
             obj.final_matches = matches
 
     def modify_segmentation_using_manual_correction(self, t=None, new_mask=None):
+        """
+        Modifies single segmentation, but does NOT update the disk, but rather a buffer zarr array in the
+        tracklet_annotator class
+
+        NOTE: will invalidate raw_frames and raw_matches!!
+
+        Parameters
+        ----------
+        t
+        new_mask
+
+        Returns
+        -------
+
+        """
         # TODO: save the list of split neurons in separate pickle
         if new_mask is None or t is None:
             new_mask = self.tracklet_annotator.candidate_mask
@@ -509,6 +605,15 @@ class ProjectData:
         self.logger.debug("Segmentation and tracklet metadata modified successfully")
 
     def modify_segmentation_on_disk_using_buffer(self):
+        """
+        Modifies single segmentation ON DISK using tracklet_annotator class
+
+        NOTE: invalidates raw_frames and raw_matches!!
+
+        See: modify_segmentation_using_manual_correction
+
+        """
+
         for t in self.tracklet_annotator.t_buffer_masks:
             self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
 
