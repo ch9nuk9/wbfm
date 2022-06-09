@@ -263,18 +263,7 @@ class SuperGlue(nn.Module):
         indices0, indices1, mscores0, mscores1 = self.process_scores_into_matches(scores)
 
         # check if indexed correctly
-        # Note: if a keypoint doesn't have a match in the gt, then it is not penalized here by default
-        loss = []
-        for i in range(len(all_matches[0])):
-            x = all_matches[0][i][0]
-            y = all_matches[0][i][1]
-            loss.append(-torch.log(scores[0][x][y].exp() + self.loss_epsilon))  # check batch size == 1 ?
-        # This penalizes matches that should be unmatched, and assumes the gt is complete
-        # for p0 in unmatched0:
-        #     loss += -torch.log(scores[0][p0][-1])
-        # for p1 in unmatched1:
-        #     loss += -torch.log(scores[0][-1][p1])
-        raw_loss = torch.stack(loss)
+        raw_loss = self.calc_loss_from_scores(all_matches, scores)
         loss_mean = torch.mean(raw_loss)
         loss_mean = torch.reshape(loss_mean, (1, -1))
         return {
@@ -289,6 +278,24 @@ class SuperGlue(nn.Module):
         }
 
         # scores big value or small value means confidence? log can't take neg value
+
+    def calc_loss_from_scores(self, all_matches, scores, do_exponential=True):
+        # Note: if a keypoint doesn't have a match in the gt, then it is not penalized here by default
+        loss = []
+        for i in range(len(all_matches[0])):
+            x = all_matches[0][i][0]
+            y = all_matches[0][i][1]
+            if do_exponential:
+                loss.append(-torch.log(scores[0][x][y].exp() + self.loss_epsilon))  # check batch size == 1 ?
+            else:
+                loss.append(-torch.log(scores[0][x][y] + self.loss_epsilon))  # check batch size == 1 ?
+        # This penalizes matches that should be unmatched, and assumes the gt is complete
+        # for p0 in unmatched0:
+        #     loss += -torch.log(scores[0][p0][-1])
+        # for p1 in unmatched1:
+        #     loss += -torch.log(scores[0][-1][p1])
+        raw_loss = torch.stack(loss)
+        return raw_loss
 
     def process_scores_into_matches(self, scores):
         # Get the matches with score above "match_threshold".
