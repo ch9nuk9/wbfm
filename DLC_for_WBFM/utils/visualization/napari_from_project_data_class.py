@@ -53,7 +53,7 @@ class NapariLayerInitializer:
         all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy)
 
         v = napari.view_image(raw_red_data, ndisplay=3, scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
-        v.add_labels(raw_seg_data, scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
+        v.add_labels(raw_seg_data, scale=(1.0, z_to_xy_ratio, 1.0, 1.0), visible=False)
 
         # This should not remember the original time point
         df = project_data.final_tracks.loc[[t0], :].set_index(pd.Index([0]))
