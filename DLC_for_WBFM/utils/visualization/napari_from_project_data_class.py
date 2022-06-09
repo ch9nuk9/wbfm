@@ -52,8 +52,7 @@ class NapariLayerInitializer:
 
         all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy)
 
-        v = napari.view_image(raw_red_data, ndisplay=3,
-                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
+        v = napari.view_image(raw_red_data, ndisplay=3, scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
         v.add_labels(raw_seg_data, scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
 
         # This should not remember the original time point
@@ -80,6 +79,7 @@ class NapariLayerInitializer:
         this_match.frame0.neuron_locs = n0_zxy
         frames = {0: this_match.frame0, 1: this_match.frame1}
         options = napari_labels_from_frames(frames, num_frames=2, to_flip_zxy=False)
+        options['name'] = "Neuron ID in list"
         v.add_points(**options)
         this_match.frame0.neuron_locs = original_zxy
 
