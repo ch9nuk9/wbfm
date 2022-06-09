@@ -1,9 +1,11 @@
 from dataclasses import dataclass
-from typing import Union
-
+from typing import Union, List
+import numpy as np
+import pandas as pd
+import zarr
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 import napari
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
+from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list, napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 
 
