@@ -4,26 +4,25 @@ import cgitb
 import os
 import signal
 import warnings
-
-from backports.cached_property import cached_property
-from tqdm.auto import tqdm
-
-from DLC_for_WBFM.gui.utils.utils_matplotlib import PlotQWidget
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
-
-cgitb.enable(format='text')
 import logging
-from PyQt5.QtWidgets import QApplication
 import sys
 import napari
 import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets
 
+from backports.cached_property import cached_property
+from tqdm.auto import tqdm
+from PyQt5.QtWidgets import QApplication
+
+from DLC_for_WBFM.gui.utils.utils_matplotlib import PlotQWidget
+from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
+from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
 from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
     build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+
+cgitb.enable(format='text')
 
 
 class NapariTraceExplorer(QtWidgets.QWidget):
