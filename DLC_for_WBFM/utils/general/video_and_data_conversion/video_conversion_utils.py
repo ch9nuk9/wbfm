@@ -170,7 +170,7 @@ def write_video_from_ome_file(num_frames, video_fname, out_fname, out_dtype='uin
     #         this_volume = tifffile.imread(video_fname, key=vol_indices)
 
     # Save in output folder
-    output_name = os.path.join('.', out_fname)
+    output_name = os.path.join('', out_fname)
 
     tifffile.imsave(output_name, dat, dtype=out_dtype)
 

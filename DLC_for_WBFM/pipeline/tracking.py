@@ -12,7 +12,7 @@ from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_co
 from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueUnpacker
 from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import _unpack_project_for_global_tracking, \
     WormWithSuperGlueClassifier, track_using_template, WormWithNeuronClassifier
-from DLC_for_WBFM.utils.postures.random_templates import generator_random_template_times, \
+from DLC_for_WBFM.utils.general.postures.random_templates import generator_random_template_times, \
     generate_random_valid_template_frames
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig

@@ -4,7 +4,7 @@ import timeit
 
 import tifffile
 
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
+from DLC_for_WBFM.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume
 
 fname = r'D:\freely_immobilized\ZIM2051_trial_21_HEAD_mcherry_FULL_bigtiff.btf'
 import_opt = {'num_slices': 33, 'alpha': 1.0, 'dtype': 'uint16'}

@@ -25,7 +25,7 @@ from DLC_for_WBFM.utils.projects.paths_to_external_resources import get_camera_a
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
 from DLC_for_WBFM.utils.projects.utils_project import edit_config
-from DLC_for_WBFM.utils.video_and_data_conversion.import_video_as_array import get_single_volume
+from DLC_for_WBFM.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume
 
 
 def background_subtract_single_channel(raw_fname, background_fname, num_frames, num_slices, preprocessing_settings,
