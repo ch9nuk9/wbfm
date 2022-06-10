@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches
+from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches_using_networkx
 
 
 ##
@@ -267,7 +267,7 @@ def stepwise_bipartite_match(df, all_dist, i_start, num_frames):
     all_candidates = []
     for i in range(i_start, i_start + num_frames):
         candidates = get_sink_source_matches(df, all_dist, i, source_ind=previous_sources)
-        bp_matches = calc_bipartite_matches(candidates)
+        bp_matches = calc_bipartite_matches_using_networkx(candidates)
 
         # Remove the found matches
         to_pop = []

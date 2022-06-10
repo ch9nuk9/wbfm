@@ -6,8 +6,9 @@ import pandas as pd
 from networkx.algorithms.community import k_clique_communities
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches, build_digraph_from_matches, \
-    unpack_node_name, is_one_neuron_per_frame, calc_bipartite_from_positions
+from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches_using_networkx, build_digraph_from_matches, \
+    unpack_node_name, is_one_neuron_per_frame
+from DLC_for_WBFM.utils.external.utils_matching import calc_bipartite_from_positions
 
 ##
 ## Convinience function
@@ -27,7 +28,7 @@ def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):
     bp_match_dict = {}
     for key in candidates:
         these_candidates = [c for c in candidates[key] if c[-1] > min_edge_weight]
-        bp_matches = calc_bipartite_matches(these_candidates)
+        bp_matches = calc_bipartite_matches_using_networkx(these_candidates)
         bp_match_dict[key] = bp_matches
 
     return bp_match_dict

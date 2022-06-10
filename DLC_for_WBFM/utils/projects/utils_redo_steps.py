@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import zarr
-from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_positions
+from DLC_for_WBFM.utils.external.utils_matching import calc_bipartite_from_positions
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from skimage.measure import regionprops
 from tqdm.auto import tqdm

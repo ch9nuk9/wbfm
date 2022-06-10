@@ -7,7 +7,7 @@ from sklearn.utils._testing import ignore_warnings
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.neuron_matching.utils_features import build_neuron_tree
-from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
+from DLC_for_WBFM.utils.external.utils_matching import calc_nearest_neighbor_matches
 
 
 def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,

@@ -8,7 +8,7 @@ import pandas as pd
 import zarr
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.external.utils_networkx import calc_nearest_neighbor_matches
+from DLC_for_WBFM.utils.external.utils_matching import calc_nearest_neighbor_matches
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
 from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import build_subset_df_from_tracklets
