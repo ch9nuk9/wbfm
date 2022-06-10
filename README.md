@@ -146,14 +146,21 @@ bash RUNME_cluster_segmentation.sh
 
 # Running a project: start from a previous project
 
-TODO
+Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
+Thus, you should run each step one by one.
+Note that you can check the current status of the project by cd'ing to the project and running:
+```bash
+python log/print_project_status.py
+```
 
-## Running single steps on the cluster (sbatch)
+You can directly run the python scripts, or, most likely, run them using sbatch using the following syntax.
+
+### Running single steps on the cluster (sbatch)
 
 Once the project is created, each step can be run via sbatch using:
 
 ```commandline
-sbatch single_step_dispatcher.sbatch -s 1 -t /scratch/zimmer/Charles/dlc_stacks/worm10-gui_test/project_config.yaml
+sbatch single_step_dispatcher.sbatch -s 1 -t /scratch/neurobiology/zimmer/Charles/dlc_stacks/worm10-gui_test/project_config.yaml
 ```
 
 # More details on each step
