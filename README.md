@@ -69,9 +69,11 @@ Do `conda activate segmentation` and install the local code in the following way
 3. Repeat steps 1-2 for the other repository, DLC_for_WBFM
 4. Repeat steps 1-3 for the other environment
 
-In total, you will install 4 things: 2 environments and 2 custom packages
+#### Summary of installations
 
-# Running a project
+You will install 4 things: 2 environments and 3 custom packages
+
+# Running a project: start from nothing
 
 ## Preparation:
 
@@ -119,7 +121,34 @@ Speed: Fast
 
 Output: new project folder with project_config.yaml, and with 4 numbered subfolders
 
-## Running each step on the cluster (sbatch)
+## Running full workflow (snakemake)
+
+This code is designed in several different scripts, which can be running using two commands.
+The organization between these steps uses the workflow manager [snakemake](https://snakemake.readthedocs.io/en/stable/).
+Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
+If you are rerunning an old project, see the next section.
+
+Once a project is made, the analysis can be run in the following way:
+1. Activate the segmentation environment
+2. cd to the /snakemake folder within the project
+3. Do a dry run to catch any errors in initialization:
+```bash
+bash DRYRUN_segmentation.sh
+```
+4. If there are errors, see the next subsection
+5. Run the relevant RUNME script, either cluster or local. Probably, you want the cluster version:
+```bash
+bash RUNME_cluster_segmentation.sh
+```
+6. Wait for this to finish. Depending on scheduling, it could take 4-12 hours.
+7. Carefully check the log files (they will be in the /snakemake folder) to ensure success
+8. Repeat steps 3-7 for the *_post_segmentation.sh DRYRUN and RUNME scripts
+
+# Running a project: start from a previous project
+
+TODO
+
+## Running single steps on the cluster (sbatch)
 
 Once the project is created, each step can be run via sbatch using:
 
@@ -127,8 +156,8 @@ Once the project is created, each step can be run via sbatch using:
 sbatch single_step_dispatcher.sbatch -s 1 -t /scratch/zimmer/Charles/dlc_stacks/worm10-gui_test/project_config.yaml
 ```
 
+# More details on each step
 
-## More details on each step
 ### Segmentation
 
 Preparation:
