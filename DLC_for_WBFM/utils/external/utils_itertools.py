@@ -7,3 +7,7 @@ def random_combination(iterable, r):
     n = len(pool)
     indices = sorted(random.sample(range(n), r))
     return tuple(pool[i] for i in indices)
+
+
+def reverse_dict(d):
+    return {v: k for k, v in d.items()}

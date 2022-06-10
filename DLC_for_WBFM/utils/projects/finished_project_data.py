@@ -24,8 +24,6 @@ from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_ful
 from sklearn.neighbors import NearestNeighbors
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
-from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
 from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile

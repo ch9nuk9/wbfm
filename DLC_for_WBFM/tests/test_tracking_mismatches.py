@@ -1,6 +1,7 @@
 import unittest
 
-from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence, get_mismatches
+from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
+from DLC_for_WBFM.utils.performance.tracking_mismatches import get_mismatches
 
 
 class TestTrackingMismatches(unittest.TestCase):

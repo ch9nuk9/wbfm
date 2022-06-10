@@ -13,10 +13,6 @@ from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, int2
 from scipy.optimize import linear_sum_assignment
 
 
-def reverse_dict(d):
-    return {v: k for k, v in d.items()}
-
-
 @dataclass
 class MatchesWithConfidence:
 
@@ -205,65 +201,6 @@ class MatchesWithConfidence:
     def __repr__(self):
         return f"MatchesWithConfidence class with {len(self.get_mapping_0_to_1())} class A and " \
                f"{len(self.get_mapping_1_to_0())} class B matched objects, with {len(self.indices0)} edges"
-
-
-def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWithConfidence, verbose=0):
-    """
-    Get mismatches of different types:
-    1. Match is different between model and gt:
-        1a. The match that the model gave
-        1b. The match that the gt gave
-    2. Match doesn't exist in gt, but does in model
-    3. Match exists in gt, but doesn't in model
-
-    Parameters
-    ----------
-    gt_matches
-    model_matches
-
-    Returns
-    -------
-    gt_matches_different_model
-    model_matches_different_gt
-    model_matches_no_gt
-    gt_matches_no_model
-
-    """
-
-    dict_of_model_matches = model_matches.get_mapping_0_to_1(unique=True)
-    dict_of_gt_matches = gt_matches.get_mapping_0_to_1(unique=True)
-    list_of_model_matches: List[list] = model_matches.matches_without_conf.tolist()
-    list_of_gt_matches: List[list] = gt_matches.matches_without_conf.tolist()
-    inverse_dict_of_model_matches = model_matches.get_mapping_1_to_0()
-
-    model_matches_no_gt = []
-    gt_matches_no_model = []
-    gt_matches_different_model = []
-    model_matches_different_gt = []
-
-    for gt_m in list_of_gt_matches:
-        if gt_m in list_of_model_matches:
-            if verbose >= 3:
-                print(f"{gt_m} in {list_of_model_matches}")
-            # Do not explicitly save correct matches
-            continue
-        elif gt_m[0] != inverse_dict_of_model_matches.get(gt_m[1], gt_m[0]):
-            # The first time point had the wrong match
-            gt_matches_different_model.append(gt_m)
-            model_matches_different_gt.append([inverse_dict_of_model_matches[gt_m[1]], gt_m[1]])
-        elif gt_m[1] != dict_of_model_matches.get(gt_m[0], gt_m[1]):
-            # The second time point had the wrong match
-            gt_matches_different_model.append(gt_m)
-            model_matches_different_gt.append([gt_m[0], dict_of_model_matches[gt_m[0]]])
-        else:
-            # Rare; usually the model has many more matches
-            gt_matches_no_model.append(gt_m)
-
-    for model_m in list_of_model_matches:
-        if model_m[0] not in dict_of_gt_matches:
-            model_matches_no_gt.append(model_m)
-
-    return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
 
 
 class MatchesAsGraph(Graph):
