@@ -114,6 +114,7 @@ def to_sparse_multiindex(df, new_columns=None):
 
 
 def cast_int_or_nan(i):
+    """Cast as integer, but do not crash if np.nan"""
     if np.isnan(i):
         return i
     else:
@@ -138,7 +139,21 @@ def get_contiguous_blocks_from_column(tracklet):
     return block_starts, block_ends
 
 
-def df_to_matches(df_gt, t0, t1=None, col='raw_neuron_ind_in_list'):
+def df_to_matches(df_gt: pd.DataFrame, t0: int, t1: int = None, col='raw_neuron_ind_in_list') -> list:
+    """
+    Converts a dataframe that has a column corresponding to an ID index into a list of matches between indices
+
+    Parameters
+    ----------
+    df_gt
+    t0
+    t1
+    col
+
+    Returns
+    -------
+
+    """
     if t1 is None:
         t1 = t0 + 1
 
