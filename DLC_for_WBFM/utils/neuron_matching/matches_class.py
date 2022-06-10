@@ -193,7 +193,7 @@ class MatchesWithConfidence:
                f"{len(self.get_mapping_1_to_0())} class B matched objects, with {len(self.indices0)} edges"
 
 
-def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWithConfidence):
+def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWithConfidence, verbose=0):
     """
     Get mismatches of different types:
     1. Match is different between model and gt:
@@ -209,12 +209,17 @@ def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWith
 
     Returns
     -------
+    gt_matches_different_model
+    model_matches_different_gt
+    model_matches_no_gt
+    gt_matches_no_model
 
     """
 
-    dict_of_model_matches = model_matches.get_mapping_0_to_1()
-    list_of_model_matches = model_matches.matches_without_conf
-    list_of_gt_matches = gt_matches.matches_without_conf
+    dict_of_model_matches = model_matches.get_mapping_0_to_1(unique=True)
+    dict_of_gt_matches = gt_matches.get_mapping_0_to_1(unique=True)
+    list_of_model_matches: List[list] = model_matches.matches_without_conf.tolist()
+    list_of_gt_matches: List[list] = gt_matches.matches_without_conf.tolist()
     inverse_dict_of_model_matches = model_matches.get_mapping_1_to_0()
 
     model_matches_no_gt = []
@@ -223,9 +228,10 @@ def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWith
     model_matches_different_gt = []
 
     for gt_m in list_of_gt_matches:
-        gt_m = list(gt_m)
-
         if gt_m in list_of_model_matches:
+            if verbose >= 3:
+                print(f"{gt_m} in {list_of_model_matches}")
+            # Do not explicitly save correct matches
             continue
         elif gt_m[0] != inverse_dict_of_model_matches.get(gt_m[1], gt_m[0]):
             # The first time point had the wrong match
@@ -236,10 +242,11 @@ def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWith
             gt_matches_different_model.append(gt_m)
             model_matches_different_gt.append([gt_m[0], dict_of_model_matches[gt_m[0]]])
         else:
+            # Rare; usually the model has many more matches
             gt_matches_no_model.append(gt_m)
 
     for model_m in list_of_model_matches:
-        if model_m not in list_of_gt_matches:
+        if model_m[0] not in dict_of_gt_matches:
             model_matches_no_gt.append(model_m)
 
     return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
