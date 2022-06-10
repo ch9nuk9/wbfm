@@ -535,7 +535,7 @@ class SuperGlueUnpacker:
 
     def get_gt_matches(self, t0, t1, use_gt_matches):
         if use_gt_matches:
-            df_gt = self.project_data.get_final_tracks_only_finished_neurons()
+            df_gt, _ = self.project_data.get_final_tracks_only_finished_neurons()
             all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
         else:
             all_matches = []

@@ -137,7 +137,7 @@ class ProjectData:
         self.all_used_fnames.append(fname)
         return final_tracks
 
-    def get_final_tracks_only_finished_neurons(self) -> pd.DataFrame:
+    def get_final_tracks_only_finished_neurons(self) -> Tuple[pd.DataFrame, List[str]]:
         """
         See get_ground_truth_annotations()
 
@@ -145,7 +145,7 @@ class ProjectData:
         """
         df_gt, finished_neurons = self.get_list_of_finished_neurons()
 
-        return df_gt.loc[:, finished_neurons]
+        return df_gt.loc[:, finished_neurons], finished_neurons
 
     def get_list_of_finished_neurons(self):
         """Get the finished neurons and dataframe that will be subset-ed"""
@@ -263,6 +263,8 @@ class ProjectData:
             buffer_masks=zarr.zeros_like(self.segmentation),
             logger=self.logger
         )
+
+        obj.initialize_gt_model_mismatches(self)
         return obj
 
     @cached_property
@@ -760,7 +762,8 @@ class ProjectData:
         # TODO: do not hardcode
         track_cfg = self.project_config.get_tracking_config()
         fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
-        df_manual_tracking = pd.read_csv(fname)
+        df_manual_tracking = read_if_exists(fname, reader=pd.read_csv)
+        # df_manual_tracking = pd.read_csv(fname)
         return df_manual_tracking
 
     @cached_property
@@ -769,6 +772,8 @@ class ProjectData:
         Uses df_manual_tracking to get a list of the neuron names that have been fully corrected
         """
         df_manual_tracking = self.df_manual_tracking
+        if df_manual_tracking is None:
+            return []
 
         try:
             neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name].astype(bool)
@@ -963,7 +968,9 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
     """
     all_mismatches = list()
     all_matches = project_data.raw_matches
-    df_gt = project_data.get_final_tracks_only_finished_neurons()
+    df_gt, finished_neurons = project_data.get_final_tracks_only_finished_neurons()
+    if len(finished_neurons) == 0:
+        return []
 
     project_data.logger.info("Calculating mismatches between ground truth and automatic matches")
     for t0 in tqdm(range(project_data.num_frames - 2)):
