@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 import pandas as pd
