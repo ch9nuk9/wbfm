@@ -231,6 +231,7 @@ class DetectedTrackletsAndNeurons:
             self.setup_interactivity()
 
         if self.use_custom_padded_dataframe:
+            raise NotImplementedError
             print("Using experimental custom padded dataframe")
             self.df_tracklets_zxy = PaddedDataFrame.construct_from_basic_dataframe(self.df_tracklets_zxy,
                                                                                    name_mode='tracklet',
@@ -316,13 +317,6 @@ class DetectedTrackletsAndNeurons:
         df = self.df_tracklets_zxy
         ind, val = get_column_name_from_time_and_column_value(df, i_time, i_local_neuron, 'raw_neuron_ind_in_list')
         return ind, val
-        # mask = df.loc[i_time, (slice(None), 'raw_neuron_ind_in_list')] == i_local_neuron
-        # try:
-        #     ind = np.where(mask)[0][0]
-        #     # return ind, self.all_tracklet_names[ind]
-        #     return ind, mask.index.levels[0][mask][0]
-        # except IndexError:
-        #     return None, None
 
     def get_number_of_neurons_at_time(self, t: int):
         return len(self.get_neurons_at_time(t))
@@ -487,7 +481,7 @@ class TrackedWorm:
             if not tracklet_name:
                 # Make a new tracklet, and give it data
                 tracklet_name = self.detections.initialize_new_empty_tracklet()
-                mask_ind = self.detections.segmentation_metadata.seg_array_to_mask_index(t, i_neuron_ind)
+                mask_ind = self.detections.segmentation_metadata.i_in_array_to_mask_index(t, i_neuron_ind)
                 self.detections.update_tracklet_metadata_using_segmentation_metadata(
                     t=t, tracklet_name=tracklet_name, mask_ind=mask_ind, likelihood=1.0, verbose=self.verbose-1)
                 new_tracklets.append(tracklet_name)

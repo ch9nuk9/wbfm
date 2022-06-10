@@ -124,7 +124,7 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
         for i_local, i_frame in zip(this_local_ind, which_frames):
             this_brightness.append(segmentation_metadata.get_all_brightnesses(i_frame).iloc[i_local])
             this_volume.append(segmentation_metadata.get_all_volumes(i_frame).iloc[i_local])
-            this_seg_id.append(segmentation_metadata.seg_array_to_mask_index(i_frame, i_local))
+            this_seg_id.append(segmentation_metadata.i_in_array_to_mask_index(i_frame, i_local))
         this_brightness = np.expand_dims(np.array(this_brightness), -1)
         this_volume = np.expand_dims(np.array(this_volume, dtype=int), -1)
         this_local_ind = np.expand_dims(np.array(this_local_ind, dtype=int), -1)

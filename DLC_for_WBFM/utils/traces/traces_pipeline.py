@@ -86,7 +86,7 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
         def seg_array_to_mask_ind(i):
             # The seg_zxy array has the 0th row corresponding to segmentation mask label 1
             # BUT can also skip rows and might generally be non-monotonic
-            return project_data.segmentation_metadata.seg_array_to_mask_index(i_volume, i)
+            return project_data.segmentation_metadata.i_in_array_to_mask_index(i_volume, i)
 
         def dlc_array_to_ind(i):
             # the 0th index corresponds to neuron_001, and should finally be label 1

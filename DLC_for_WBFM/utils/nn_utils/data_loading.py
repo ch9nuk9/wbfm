@@ -32,7 +32,7 @@ def get_bbox_data(i_tracklet, df, project_data, t_local=None, target_sz=np.array
     t_global = track_time_ind[t_local]
     i_local = track_seg_ind[t_local]
 
-    seg_local = project_data.segmentation_metadata.seg_array_to_mask_index(t_global, i_local)
+    seg_local = project_data.segmentation_metadata.i_in_array_to_mask_index(t_global, i_local)
 
     # Get a bbox for a neuron in 3d
     this_seg = project_data.raw_segmentation[t_global, ...]
