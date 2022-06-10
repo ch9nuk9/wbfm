@@ -12,7 +12,7 @@ from sacred import Experiment
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 # Initialize sacred experiment
-from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import alt_save_all_tracklets_as_dlc_format
+from DLC_for_WBFM.utils.tracklets.training_data_from_tracklets import alt_save_all_tracklets_as_dlc_format
 
 ex = Experiment()
 # Add single variable so that the cfg() function works

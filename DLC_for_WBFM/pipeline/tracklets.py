@@ -10,7 +10,7 @@ from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import _unpack_config_frame2frame_matches, _save_matches_and_frames, \
     build_frame_pairs_using_superglue, _unpack_config_for_tracklets, postprocess_matches_to_tracklets, \
     filter_tracklets_using_volume, save_all_tracklets
-from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import convert_training_dataframe_to_scalar_format
+from DLC_for_WBFM.utils.tracklets.training_data_from_tracklets import convert_training_dataframe_to_scalar_format
 
 
 def build_frames_and_adjacent_matches_using_config(project_config: ModularProjectConfig,

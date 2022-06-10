@@ -14,7 +14,7 @@ from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectCon
 
 from sacred import SETTINGS
 
-from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import save_training_data_as_dlc_format
+from DLC_for_WBFM.utils.tracklets.training_data_from_tracklets import save_training_data_as_dlc_format
 
 SETTINGS.CAPTURE_MODE = 'sys' # Capture stdout
 

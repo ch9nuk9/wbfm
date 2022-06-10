@@ -6,7 +6,7 @@ import os
 from datetime import date
 import cgitb
 
-from DLC_for_WBFM.utils.tracklets.tracklet_to_DLC import modify_config_files_for_training_data
+from DLC_for_WBFM.utils.tracklets.training_data_from_tracklets import modify_config_files_for_training_data
 
 cgitb.enable(format='text')
 
