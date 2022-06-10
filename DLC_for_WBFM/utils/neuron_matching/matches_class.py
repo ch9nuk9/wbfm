@@ -140,11 +140,11 @@ class MatchesWithConfidence:
 
     @property
     def matches_with_conf(self):
-        return np.array(np.hstack([self.indices0, self.indices1, self.confidence]))
+        return np.array(np.stack([self.indices0, self.indices1, self.confidence], axis=1))
 
     @property
     def matches_without_conf(self):
-        return np.array(np.hstack([self.indices0, self.indices1]))
+        return np.array(np.stack([self.indices0, self.indices1], axis=1))
 
     @staticmethod
     def matches_from_array(matches_with_conf, confidence=None):
