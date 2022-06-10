@@ -3,8 +3,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.neuron_matching.utils_features import build_feature_tree
-from DLC_for_WBFM.utils.external.utils_matching import calc_nearest_neighbor_matches
+from DLC_for_WBFM.utils.general.utils_matching import calc_nearest_neighbor_matches
 
 
 def propagate_via_affine_model(which_neuron: int,

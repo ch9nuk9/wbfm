@@ -1,29 +1,18 @@
 import concurrent.futures
-import logging
-from collections import defaultdict
 from typing import Tuple, Dict
 
-import numpy as np
 from segmentation.util.utils_metadata import DetectedNeurons
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.external.utils_networkx import build_digraph_from_matches, unpack_node_name
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, NoNeuronsError
 from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair, calc_FramePair_from_Frames, \
     FramePairOptions
-from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import RegisteredReferenceFrames, ReferenceFrame, \
+from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame, \
     build_reference_frame_encoding
-from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import calc_neurons_using_k_cliques, \
-    calc_all_bipartite_matches, calc_neuron_using_voronoi
-from DLC_for_WBFM.utils.neuron_matching.utils_detection import detect_neurons_using_ICP
-from DLC_for_WBFM.utils.neuron_matching.utils_features import build_features_and_match_2volumes, \
-    match_centroids_using_tree
-from DLC_for_WBFM.utils.neuron_matching.utils_reference_frames import add_all_good_components, \
-    is_ordered_subset
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import consolidate_tracklets
+
 
 ##
 ## Full traces function

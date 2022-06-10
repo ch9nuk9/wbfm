@@ -6,9 +6,9 @@ import pandas as pd
 from networkx.algorithms.community import k_clique_communities
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_matches_using_networkx, build_digraph_from_matches, \
+from DLC_for_WBFM.utils.general.utils_networkx import calc_bipartite_matches_using_networkx, build_digraph_from_matches, \
     unpack_node_name, is_one_neuron_per_frame
-from DLC_for_WBFM.utils.external.utils_matching import calc_bipartite_from_positions
+from DLC_for_WBFM.utils.general.utils_matching import calc_bipartite_from_positions
 
 ##
 ## Convinience function

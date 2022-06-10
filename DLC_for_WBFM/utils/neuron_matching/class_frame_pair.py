@@ -14,7 +14,7 @@ from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, AnalysisOut
 from DLC_for_WBFM.utils.neuron_matching.utils_affine import calc_matches_using_affine_propagation
 from DLC_for_WBFM.utils.neuron_matching.utils_features import match_known_features, build_features_and_match_2volumes
 from DLC_for_WBFM.utils.neuron_matching.utils_gaussian_process import calc_matches_using_gaussian_process
-from DLC_for_WBFM.utils.external.utils_networkx import calc_bipartite_from_candidates
+from DLC_for_WBFM.utils.general.utils_networkx import calc_bipartite_from_candidates
 from DLC_for_WBFM.utils.general.distance_functions import dist2conf
 from DLC_for_WBFM.utils.nn_utils.data_formatting import flatten_nested_list
 from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion

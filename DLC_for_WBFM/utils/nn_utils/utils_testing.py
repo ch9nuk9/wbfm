@@ -9,7 +9,7 @@ from sklearn import manifold
 import matplotlib.cm as cm
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_matching import calc_matches_from_positions_using_softmax
+from DLC_for_WBFM.utils.general.utils_matching import calc_matches_from_positions_using_softmax
 from DLC_for_WBFM.utils.external.utils_pandas import cast_int_or_nan
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_name_mapping_for_track_dataframes
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence

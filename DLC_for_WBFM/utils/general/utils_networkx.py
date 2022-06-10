@@ -1,6 +1,5 @@
 import logging
 from typing import Tuple
-
 import networkx as nx
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -8,8 +7,6 @@ from scipy.spatial.distance import cdist
 
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.general.distance_functions import calc_confidence_from_distance_array_and_matches
-
-
 
 ##
 ## Use networkx to do bipartite matching
