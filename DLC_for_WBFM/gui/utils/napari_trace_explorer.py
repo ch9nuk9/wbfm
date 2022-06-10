@@ -685,7 +685,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.time_changed_callbacks()
 
     def zoom_to_next_ground_truth_conflict(self):
-        t, neuron_name, tracklet_name = self.dat.tracklet_annotator.gt_mismatches
+        if self.dat.tracklet_annotator.gt_mismatches is None:
+            self.logger.warning("No ground truth found; button not functional")
+            return
+        t, neuron_name, tracklet_name = self.dat.tracklet_annotator.gt_mismatches[0]
 
         # Zoom to the conflict
         self.logger.info(f"Jumped to conflict at t={t} on {neuron_name} and {tracklet_name}")
@@ -694,6 +697,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.change_tracklets_from_gui(tracklet_name)
 
     def resolve_current_ground_truth_conflict(self):
+        if self.dat.tracklet_annotator.gt_mismatches is None:
+            self.logger.warning("No ground truth found; button not functional")
+            return
         self.dat.tracklet_annotator.gt_mismatches.pop(0)
         self.logger.info(f"Resolved conflict. {len(self.dat.tracklet_annotator.gt_mismatches)} conflicts remaining")
 
