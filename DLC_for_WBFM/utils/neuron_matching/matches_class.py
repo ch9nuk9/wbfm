@@ -142,8 +142,12 @@ class MatchesWithConfidence:
     def matches_with_conf(self):
         return np.array(np.hstack([self.indices0, self.indices1, self.confidence]))
 
+    @property
+    def matches_without_conf(self):
+        return np.array(np.hstack([self.indices0, self.indices1]))
+
     @staticmethod
-    def matches_from_array(matches_with_conf):
+    def matches_from_array(matches_with_conf, confidence=None):
         try:
             i1 = [int(m) for m in matches_with_conf[:, 0]]
             i2 = [int(m) for m in matches_with_conf[:, 1]]
@@ -155,8 +159,12 @@ class MatchesWithConfidence:
                 matches_with_conf = np.array(matches_with_conf)
                 i1 = [int(m) for m in np.array(matches_with_conf[:, 0])]
                 i2 = [int(m) for m in np.array(matches_with_conf[:, 1])]
+        if confidence is None:
+            confidence = matches_with_conf[:, 2]
+        elif np.isscalar(confidence):
+            confidence = confidence * np.ones(len(i1))
 
-        return MatchesWithConfidence(i1, i2, matches_with_conf[:, 2])
+        return MatchesWithConfidence(i1, i2, confidence)
 
     @staticmethod
     def matches_from_distance_matrix(dist, gamma=1.0):
@@ -183,6 +191,58 @@ class MatchesWithConfidence:
     def __repr__(self):
         return f"MatchesWithConfidence class with {len(self.get_mapping_0_to_1())} class A and " \
                f"{len(self.get_mapping_1_to_0())} class B matched objects, with {len(self.indices0)} edges"
+
+
+def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWithConfidence):
+    """
+    Get mismatches of different types:
+    1. Match is different between model and gt:
+        1a. The match that the model gave
+        1b. The match that the gt gave
+    2. Match doesn't exist in gt, but does in model
+    3. Match exists in gt, but doesn't in model
+
+    Parameters
+    ----------
+    gt_matches
+    model_matches
+
+    Returns
+    -------
+
+    """
+
+    dict_of_model_matches = model_matches.get_mapping_0_to_1()
+    list_of_model_matches = model_matches.matches_without_conf
+    list_of_gt_matches = gt_matches.matches_without_conf
+    inverse_dict_of_model_matches = model_matches.get_mapping_1_to_0()
+
+    model_matches_no_gt = []
+    gt_matches_no_model = []
+    gt_matches_different_model = []
+    model_matches_different_gt = []
+
+    for gt_m in list_of_gt_matches:
+        gt_m = list(gt_m)
+
+        if gt_m in list_of_model_matches:
+            continue
+        elif gt_m[0] != inverse_dict_of_model_matches.get(gt_m[1], gt_m[0]):
+            # The first time point had the wrong match
+            gt_matches_different_model.append(gt_m)
+            model_matches_different_gt.append([inverse_dict_of_model_matches[gt_m[1]], gt_m[1]])
+        elif gt_m[1] != dict_of_model_matches.get(gt_m[0], gt_m[1]):
+            # The second time point had the wrong match
+            gt_matches_different_model.append(gt_m)
+            model_matches_different_gt.append([gt_m[0], dict_of_model_matches[gt_m[0]]])
+        else:
+            gt_matches_no_model.append(gt_m)
+
+    for model_m in list_of_model_matches:
+        if model_m not in list_of_gt_matches:
+            model_matches_no_gt.append(model_m)
+
+    return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
 
 
 class MatchesAsGraph(Graph):
