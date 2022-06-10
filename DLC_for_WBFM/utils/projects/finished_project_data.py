@@ -380,8 +380,8 @@ class ProjectData:
         red_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['red'])
         green_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['green'])
 
-        df_training_tracklets_fname = train_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
-        reindexed_masks_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_masks')
+        # df_training_tracklets_fname = train_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
+        # reindexed_masks_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_masks')
 
         final_tracks_fname = tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
         seg_fname_raw = segment_cfg.resolve_relative_path_from_config('output_masks')
@@ -423,8 +423,8 @@ class ProjectData:
                 green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader_folder_or_zipstore).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
-                df_training_tracklets = ex.submit(read_if_exists, df_training_tracklets_fname).result()
-                reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader_folder_or_zipstore).result()
+                # df_training_tracklets = ex.submit(read_if_exists, df_training_tracklets_fname).result()
+                # reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader_folder_or_zipstore).result()
 
                 # TODO: don't open this as read-write by default
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
@@ -436,7 +436,6 @@ class ProjectData:
                 green_traces.replace(0, np.nan, inplace=True)
 
         obj.all_used_fnames.extend([red_dat_fname, green_dat_fname, red_traces_fname, green_traces_fname,
-                                    df_training_tracklets_fname, reindexed_masks_training_fname,
                                     seg_fname_raw, seg_fname, behavior_fname])
         cfg.logger.info(f"Read all data from files: {obj.all_used_fnames}")
 
@@ -448,8 +447,6 @@ class ProjectData:
         obj.green_data = green_data
         obj.raw_segmentation = raw_segmentation
         obj.segmentation = segmentation
-        obj.df_training_tracklets = df_training_tracklets
-        obj.reindexed_masks_training = reindexed_masks_training
         obj.red_traces = red_traces
         obj.green_traces = green_traces
         obj.behavior_annotations = behavior_annotations
@@ -802,8 +799,6 @@ red_data:                 {self.red_data is not None}\n\
 green_data:               {self.green_data is not None}\n\
 ============Annotations================\n\
 behavior_annotations:     {self.behavior_annotations is not None}\n\
-============Training================\n\
-df_training_tracklets:    {self.df_training_tracklets is not None}\n\
 ============Segmentation===============\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
