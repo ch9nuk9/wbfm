@@ -72,7 +72,7 @@ def unpack_node_name(node_name):
     # if np.issubdtype(type(node_name), np.integer):
     try:
         return divmod(node_name, 10000)
-    except:
+    except TypeError:
         if type(node_name) == tuple:
             return node_name
         else:

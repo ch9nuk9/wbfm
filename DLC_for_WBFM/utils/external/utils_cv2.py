@@ -34,25 +34,6 @@ def get_keypoints_from_3dseg(kp0, i=None, sz=31.0, neuron_height=None):
     return kp_cv2
 
 
-# def encode_all_neurons_in_frame(frame, volume, z_depth):
-#     """
-#     Convinience wrapper around encode_all_neurons for a ReferenceFrame object
-#
-#     Also saves the output in the correct fields
-#
-#     Note that volume should be passed to ensure identical preprocessing
-#     """
-#
-#     embeddings = encode_all_neurons(frame.neuron_locs, volume, z_depth)
-#
-#     frame.all_features = embeddings
-#     frame.keypoint_locs = frame.neuron_locs
-#     # This is now just a trivial mapping
-#     frame.features_to_neurons = {i: i for i in range(len(frame.neurons_locs))}
-#
-#     return frame
-
-
 def recursive_cast_matches_as_array(list_of_cv2_matches: List[List], all_match_offsets: List, gamma: float):
     """
     Reformats a list of cv2 match objects (for different images, e.g. z slices) as one global list of matches

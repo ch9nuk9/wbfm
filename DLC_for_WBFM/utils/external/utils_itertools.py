@@ -2,7 +2,7 @@ import random
 
 
 def random_combination(iterable, r):
-    """Random selection from itertools.combinations(iterable, r)"""
+    """Random selection (single samples) from itertools.combinations(iterable, r)"""
     pool = tuple(iterable)
     n = len(pool)
     indices = sorted(random.sample(range(n), r))

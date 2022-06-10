@@ -1,6 +1,11 @@
 
 def executing_in_notebook() -> bool:
-    # From: https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
+    """
+    Check if this code is executed in a jupyter notebook
+
+    From: https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
+
+    """
     try:
         from IPython import get_ipython
         if 'IPKernelApp' not in get_ipython().config:  # pragma: no cover
