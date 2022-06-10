@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy=False) -> pd.DataFrame:
+def dataframe_to_dataframe_zxy_format(df_tracklets: pd.DataFrame, flip_xy=False) -> pd.DataFrame:
     """Currently, flipxy is true when calling from napari"""
     if not flip_xy:
         coords = ['z', 'x', 'y']
@@ -15,12 +15,28 @@ def dataframe_to_dataframe_zxy_format(df_tracklets, flip_xy=False) -> pd.DataFra
     return df_tracklets
 
 
-def dataframe_to_numpy_zxy_single_frame(df_tracklets, t, flip_xy=False) -> np.ndarray:
+def dataframe_to_numpy_zxy_single_frame(df_tracklets: pd.DataFrame, t: int, flip_xy=False) -> np.ndarray:
     df_zxy = dataframe_to_dataframe_zxy_format(df_tracklets.iloc[[t], :], flip_xy)
     return df_zxy.to_numpy().reshape(-1, 3)
 
 
-def get_names_of_conflicting_dataframes(tracklet_list, tracklet_network_names):
+def get_names_of_conflicting_dataframes(tracklet_list: list,
+                                        tracklet_network_names: List[str]) -> \
+                                        List[List[str]]:
+    """
+    Given a list of tracklets (sparse pd.Series), determine which if any have overlapping indices
+
+    tracklet_network_names is used to extract the final names
+
+    Parameters
+    ----------
+    tracklet_list
+    tracklet_network_names
+
+    Returns
+    -------
+
+    """
     all_times = [t.dropna().index for t in tracklet_list]
     # overlapping_tracklet_ind = []
     overlapping_tracklet_names = []
@@ -46,10 +62,15 @@ def get_times_of_conflicting_dataframes(tracklet_list: list,
 
     Returns the times of the conflict points
 
-    @param tracklet_list:
-    @param tracklet_network_names:
-    @param verbose:
-    @return:
+    Parameters
+    ----------
+    tracklet_list
+    tracklet_network_names
+    verbose
+
+    Returns
+    -------
+
     """
     all_indices = [t.dropna().index for t in tracklet_list]
     overlapping_tracklet_conflict_points = defaultdict(list)
@@ -83,27 +104,31 @@ def get_times_of_conflicting_dataframes(tracklet_list: list,
     return overlapping_tracklet_conflict_points
 
 
-# def empty_dataframe_like(df_tracklets, new_names) -> pd.DataFrame:
-#     # Initialize using the index and column structure of the tracklets
-#     all_tracklet_names = get_names_from_df(df_tracklets)
-#     num_neurons = len(new_names)
-#     new_names.sort()
-#     tmp_names = all_tracklet_names[:num_neurons]
-#
-#     df_new = df_tracklets.loc[:, tmp_names].copy()
-#     name_mapper = {t: n for t, n in zip(tmp_names, new_names)}
-#     df_new.rename(columns=name_mapper, inplace=True)
-#     df_new[:] = np.nan
-#     return df_new
+def check_if_fully_sparse(df: pd.DataFrame) -> False:
+    """
+    Checks if each individual column of df is sparse
 
-
-def check_if_fully_sparse(df):
+    Note: does not scale well!
+    """
     # No good way: https://github.com/pandas-dev/pandas/issues/26706
     return df.dtypes.apply(pd.api.types.is_sparse).all()
 
 
-def to_sparse_multiindex(df, new_columns=None):
-    # Must be done in a loop, per column (note: column index will generally be a tuple)
+def to_sparse_multiindex(df: pd.DataFrame, new_columns=None):
+    """
+    Converts a dataframe to a fully sparse version that may have renamed columns
+
+    Must be done in a loop, per column (note: column index will generally be a tuple)
+
+    Parameters
+    ----------
+    df
+    new_columns
+
+    Returns
+    -------
+
+    """
     if new_columns is None:
         new_columns = df
     new_columns = new_columns.astype(pd.SparseDtype("float", np.nan))  # This works, but then direct assignment doesn't
@@ -121,7 +146,18 @@ def cast_int_or_nan(i):
         return int(i)
 
 
-def get_contiguous_blocks_from_column(tracklet):
+def get_contiguous_blocks_from_column(tracklet: pd.Series) -> Tuple[list, list]:
+    """
+    Given a pd.Series that may have gaps, get the indices of the contiguous blocks of non-nan points
+
+    Parameters
+    ----------
+    tracklet
+
+    Returns
+    -------
+
+    """
     if hasattr(tracklet, 'sparse'):
         change_ind = np.where(tracklet.isnull().sparse.to_dense().diff().values)[0]
     else:
@@ -191,7 +227,18 @@ def accuracy_of_matches(gt_matches, new_matches, null_value=-1, allow_unknown=Tr
     return tp, fp, fn, unknown
 
 
-def fill_missing_indices_with_nan(df):
+def fill_missing_indices_with_nan(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Given a dataframe that may skip time points (e.g. the Index is 1, 2, 5), fill the missing Index values with nan
+
+    Parameters
+    ----------
+    df
+
+    Returns
+    -------
+
+    """
     t = df.index
     if len(t) != int(t[-1]) + 1:
         add_indices = pd.Index(range(int(t[-1]))).difference(t)
