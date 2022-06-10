@@ -1,5 +1,7 @@
 import logging
 from collections import defaultdict
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 
@@ -227,7 +229,7 @@ def accuracy_of_matches(gt_matches, new_matches, null_value=-1, allow_unknown=Tr
     return tp, fp, fn, unknown
 
 
-def fill_missing_indices_with_nan(df: pd.DataFrame) -> pd.DataFrame:
+def fill_missing_indices_with_nan(df: pd.DataFrame) -> Tuple[pd.DataFrame, int]:
     """
     Given a dataframe that may skip time points (e.g. the Index is 1, 2, 5), fill the missing Index values with nan
 
@@ -250,7 +252,21 @@ def fill_missing_indices_with_nan(df: pd.DataFrame) -> pd.DataFrame:
     return df, num_added
 
 
-def get_column_name_from_time_and_column_value(df, i_time, col_value, col_name):
+def get_column_name_from_time_and_column_value(df: pd.DataFrame, i_time: int, col_value: int, col_name: str):
+    """
+    Note that the col_value could be other data types as well
+
+    Parameters
+    ----------
+    df
+    i_time
+    col_value
+    col_name
+
+    Returns
+    -------
+
+    """
     mask = df.loc[i_time, (slice(None), col_name)] == col_value
     try:
         ind = np.where(mask)[0][0]
