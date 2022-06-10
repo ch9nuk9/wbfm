@@ -193,7 +193,7 @@ class DetectedNeurons:
                         'brightness_red', 'volume']
         # Note: column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
         #                     'brightness_red', 'volume']
-        ind_in_list = self.mask_index_to_seg_array(t, mask_ind)
+        ind_in_list = self.mask_index_to_i_in_array(t, mask_ind)
         if ind_in_list is None:
             return None, column_names
         zxy = self.mask_index_to_zxy(t, mask_ind)
@@ -232,11 +232,11 @@ class DetectedNeurons:
 
         return neuron_locs
 
-    def seg_array_to_mask_index(self, i_time, i_index):
+    def i_in_array_to_mask_index(self, i_time, i_index):
         # Given the row index in the position matrix, return the corresponding mask label integer
         return self.segmentation_metadata[i_time].iloc[i_index].name
 
-    def mask_index_to_seg_array(self, i_time, mask_index):
+    def mask_index_to_i_in_array(self, i_time, mask_index):
         # Inverse of seg_array_to_mask_index
         # Return index of seg array given the mask index, IF found
         these_indices = list(self.segmentation_metadata[i_time].index)
@@ -248,7 +248,7 @@ class DetectedNeurons:
     def mask_index_to_zxy(self, i_time, mask_index):
         # See mask_index_to_seg_array
         # Return position given the mask index
-        seg_index = self.mask_index_to_seg_array(i_time, mask_index)
+        seg_index = self.mask_index_to_i_in_array(i_time, mask_index)
         return np.array(self.segmentation_metadata[i_time].iloc[seg_index]['centroids'])
 
     def __repr__(self):
