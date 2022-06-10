@@ -148,8 +148,14 @@ class MatchesWithConfidence:
             i1 = [int(m) for m in matches_with_conf[:, 0]]
             i2 = [int(m) for m in matches_with_conf[:, 1]]
         except TypeError:
-            i1 = [int(m) for m in np.array(matches_with_conf[:, 0])]
-            i2 = [int(m) for m in np.array(matches_with_conf[:, 1])]
+            try:
+                i1 = [int(m) for m in np.array(matches_with_conf[:, 0])]
+                i2 = [int(m) for m in np.array(matches_with_conf[:, 1])]
+            except TypeError:
+                matches_with_conf = np.array(matches_with_conf)
+                i1 = [int(m) for m in np.array(matches_with_conf[:, 0])]
+                i2 = [int(m) for m in np.array(matches_with_conf[:, 1])]
+
         return MatchesWithConfidence(i1, i2, matches_with_conf[:, 2])
 
     @staticmethod
