@@ -128,6 +128,8 @@ class TrackletAndSegmentationAnnotator:
     tracklet_split_names: Dict[str, List[str]] = None
     tracklet_split_times: Dict[str, List[Tuple[int, int]]] = None
 
+    gt_mismatches: list = None
+
     # Saving
     training_cfg: SubfolderConfigFile = None
     tracking_cfg: SubfolderConfigFile = None
@@ -209,6 +211,10 @@ class TrackletAndSegmentationAnnotator:
             self.indices_of_original_neurons = []
 
         self.logger.debug(f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
+
+    def initialize_gt_model_mismatches(self, project_data):
+        from DLC_for_WBFM.utils.projects.finished_project_data import calc_all_mismatches_between_ground_truth_and_pairs
+        self.gt_mismatches = calc_all_mismatches_between_ground_truth_and_pairs(project_data)
 
     @property
     def combined_global2tracklet_dict(self):
