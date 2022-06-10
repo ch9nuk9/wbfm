@@ -7,6 +7,7 @@ import networkx as nx
 import numpy as np
 from networkx import Graph, NetworkXError
 
+from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.general.distance_functions import dist2conf
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, int2name_using_mode
 from scipy.optimize import linear_sum_assignment
@@ -147,18 +148,31 @@ class MatchesWithConfidence:
         return np.array(np.stack([self.indices0, self.indices1], axis=1))
 
     @staticmethod
-    def matches_from_array(matches_with_conf, confidence=None):
+    def matches_from_array(matches_with_conf, confidence=None, invalid_value=-1):
+        if len(matches_with_conf) == 0:
+            raise NoMatchesError
+
+        def _cast(vec, do_numpy):
+            if do_numpy:
+                return [int(m) for m in np.array(vec)]
+            else:
+                return [int(m) for m in vec]
+
+        def _cast_both(mat, do_numpy):
+            i1_vec, i2_vec = _cast(mat[:, 0], do_numpy), _cast(mat[:, 1], do_numpy)
+            keep_vec = [(i1 != invalid_value) and (i2 != invalid_value) for i1, i2 in zip(i1_vec, i2_vec)]
+            i1_out = [i1 for i1, keep in zip(i1_vec, keep_vec) if keep]
+            i2_out = [i2 for i2, keep in zip(i2_vec, keep_vec) if keep]
+            return i1_out, i2_out
+
         try:
-            i1 = [int(m) for m in matches_with_conf[:, 0]]
-            i2 = [int(m) for m in matches_with_conf[:, 1]]
+            i1, i2 = _cast_both(matches_with_conf, do_numpy=False)
         except TypeError:
             try:
-                i1 = [int(m) for m in np.array(matches_with_conf[:, 0])]
-                i2 = [int(m) for m in np.array(matches_with_conf[:, 1])]
+                i1, i2 = _cast_both(matches_with_conf, do_numpy=True)
             except TypeError:
                 matches_with_conf = np.array(matches_with_conf)
-                i1 = [int(m) for m in np.array(matches_with_conf[:, 0])]
-                i2 = [int(m) for m in np.array(matches_with_conf[:, 1])]
+                i1, i2 = _cast_both(matches_with_conf, do_numpy=True)
         if confidence is None:
             confidence = matches_with_conf[:, 2]
         elif np.isscalar(confidence):
