@@ -220,6 +220,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom5Button.pressed.connect(self.zoom_to_end_of_current_tracklet)
         self.vbox4.addWidget(self.zoom5Button)
 
+        # Ground truth conflict buttons
+        self.zoom6Button = QtWidgets.QPushButton("Jump to next model vs. ground truth conflict")
+        self.zoom6Button.setToolTip("Note: does not work if there are no ground truth neurons")
+        self.zoom6Button.pressed.connect(self.zoom_to_next_ground_truth_conflict)
+        self.vbox4.addWidget(self.zoom6Button)
+        self.resolveConflictButton = QtWidgets.QPushButton("Resolve current model vs. ground truth conflict")
+        self.resolveConflictButton.setToolTip("Note: does not work if there are no ground truth neurons")
+        self.resolveConflictButton.pressed.connect(self.resolve_current_ground_truth_conflict)
+        self.vbox4.addWidget(self.resolveConflictButton)
+
+        # Splitting and removing shortcuts
         self.toggleSegButton = QtWidgets.QPushButton("Toggle Raw segmentation layer (s)")
         self.toggleSegButton.pressed.connect(self.toggle_raw_segmentation_layer)
         self.splitTrackletButton1 = QtWidgets.QPushButton("Split current tracklet (keep past) (q)")
@@ -673,6 +684,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print("No tracklet selected; not zooming")
         self.time_changed_callbacks()
 
+    def zoom_to_next_ground_truth_conflict(self):
+        t, neuron_name, tracklet_name = self.dat.tracklet_annotator.gt_mismatches
+
+        # Zoom to the conflict
+        self.logger.info(f"Jumped to conflict at t={t} on {neuron_name} and {tracklet_name}")
+        change_viewer_time_point(self.viewer, t_target=t)
+        self.changeNeuronsDropdown.setCurrentText(neuron_name)
+        self.change_tracklets_from_gui(tracklet_name)
+
+    def resolve_current_ground_truth_conflict(self):
+        self.dat.tracklet_annotator.gt_mismatches.pop(0)
+        self.logger.info(f"Resolved conflict. {len(self.dat.tracklet_annotator.gt_mismatches)} conflicts remaining")
+
     def zoom_to_start_of_current_tracklet(self, viewer=None):
         t = self.dat.tracklet_annotator.start_time_of_current_tracklet()
         if t is not None:
@@ -1012,15 +1036,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def add_tracklet_to_cache(self, new_line, tracklet_name):
         self.tracklet_lines[tracklet_name] = new_line
-        # self.logger.debug(f"Added tracklet {tracklet_name} to the subplot")
-        # print(f"Added tracklet {tracklet_name} to the subplot")
-        # print(new_line._yorig)
 
     def remove_tracklet_from_plot_and_cache(self, tracklet_name):
         self.tracklet_lines[tracklet_name].remove()
         del self.tracklet_lines[tracklet_name]
-        # self.logger.debug(f"Cleared tracklet {tracklet_name} from the subplot")
-        # print(f"Cleared tracklet {tracklet_name} from the subplot")
 
     def invalidate_y_on_plot(self):
         if 'y_on_plot' in self.__dict__:
