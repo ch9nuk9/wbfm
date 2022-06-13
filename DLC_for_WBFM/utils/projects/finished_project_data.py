@@ -773,7 +773,11 @@ class ProjectData:
             return []
 
         try:
-            neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name].astype(bool)
+            neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name]
+            if neurons_finished_mask.dtype != bool:
+                self.logger.warning("Found non-boolean entries in manual annotation column; this may be a data error: "
+                                    f"{np.unique(neurons_finished_mask)}")
+                neurons_finished_mask = neurons_finished_mask.astype(bool)
             neurons_that_are_finished = list(df_manual_tracking[neurons_finished_mask]['Neuron ID'])
 
             # Filter to make sure they are the proper format
