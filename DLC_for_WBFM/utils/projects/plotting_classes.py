@@ -128,7 +128,7 @@ class TrackletAndSegmentationAnnotator:
     tracklet_split_names: Dict[str, List[str]] = None
     tracklet_split_times: Dict[str, List[Tuple[int, int]]] = None
 
-    gt_mismatches: list = None
+    gt_mismatches: dict = None
 
     # Saving
     training_cfg: SubfolderConfigFile = None

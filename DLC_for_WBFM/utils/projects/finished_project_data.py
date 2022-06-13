@@ -948,7 +948,7 @@ def calc_mismatch_between_ground_truth_and_pairs(all_matches, df_gt, t0):
     return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
 
 
-def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData) -> List:
+def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData) -> Dict[str, list]:
     """
     Calculates all mismatches between the ground truth and the matches class
 
@@ -965,7 +965,7 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
     -------
 
     """
-    all_mismatches = list()
+    all_mismatches = defaultdict(list)
     all_matches = project_data.raw_matches
     df_gt, finished_neurons = project_data.get_final_tracks_only_finished_neurons()
     if len(finished_neurons) == 0:
@@ -989,6 +989,6 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
                 mask_ind = project_data.segmentation_metadata.i_in_array_to_mask_index(t0, raw_neuron_ind_in_list)
                 tracklet_name = project_data.tracklets_and_neurons_class.get_tracklet_from_segmentation_index(t0,
                                                                                                               mask_ind)
-                all_mismatches.append((t0, neuron_name, tracklet_name))
+                all_mismatches[neuron_name].append((t0, tracklet_name))
 
     return all_mismatches
