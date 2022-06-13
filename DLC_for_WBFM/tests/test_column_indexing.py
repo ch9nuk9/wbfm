@@ -20,7 +20,13 @@ class TestTrackTrackletMatching(unittest.TestCase):
         # self.df_tracklets = tmp_df
 
     def test_get_column_name_from_time_and_column_value(self):
+        ind, name = get_column_name_from_time_and_column_value(self.df_tracks, 0, 0, 'z')
+
+        self.assertEqual('neuron_001', name)
+        self.assertEqual(0, ind)
+
+    def test_no_valid_value(self):
         ind, name = get_column_name_from_time_and_column_value(self.df_tracks, 0, 1, 'z')
 
-        self.assertEqual('neuron1', name)
-        self.assertEqual(1, ind)
+        self.assertEqual(None, name)
+        self.assertEqual(None, ind)

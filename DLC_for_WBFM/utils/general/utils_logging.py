@@ -24,7 +24,7 @@ def setup_logger_object(log_filename, actually_set_up_file=True):
         fh.setFormatter(formatter)
         logger.addHandler(fh)
 
-    if len(logger.handlers) >= 2:
+    if len(logger.handlers) >= 1:
         # Assume it has already been set up, so only set up the file handler
         pass
     else:

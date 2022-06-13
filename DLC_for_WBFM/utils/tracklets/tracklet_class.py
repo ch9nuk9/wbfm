@@ -299,6 +299,8 @@ class DetectedTrackletsAndNeurons:
         return dist, ind_global_coords, tracklet_name
 
     def get_tracklet_from_segmentation_index(self, i_time, seg_ind):
+        if not self.interactive_mode:
+            logging.warning("Interactive mode is not set; this method will always return None")
         names = list(self.segmentation_id_to_tracklet_name_database[(i_time, seg_ind)])
 
         # NOTE: just uses a different column from get_tracklet_from_neuron_and_time()
