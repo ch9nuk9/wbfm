@@ -222,7 +222,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # Ground truth conflict buttons
         self.gtDropdown = QtWidgets.QComboBox()
-        self.gtDropdown.addItems(list(self.dat.tracklet_annotator.gt_mismatches.keys()))
+        neurons_with_conflict = list(self.dat.tracklet_annotator.gt_mismatches.keys())
+        neurons_with_conflict.sort()
+        self.gtDropdown.addItems(neurons_with_conflict)
         self.gtDropdown.setToolTip("Note: does not work if there are no ground truth neurons")
         self.vbox4.addWidget(self.gtDropdown)
         self.zoom6Button = QtWidgets.QPushButton("Jump to next model vs. ground truth conflict")
@@ -698,13 +700,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.logger.info("This neuron has no remaining conflicts")
             return
         else:
-            t, tracklet_name = remaining_mismatches[0]
+            t, tracklet_name, model_mismatch = remaining_mismatches[0]
 
         # Zoom to the conflict
-        self.logger.info(f"Jumped to conflict at t={t} on {neuron_name} and {tracklet_name}")
+        self.logger.info(f"Jumped to conflict at t={t} on {neuron_name} and {tracklet_name} "
+                         f"with incorrect match: {model_mismatch}")
         change_viewer_time_point(self.viewer, t_target=t)
         self.changeNeuronsDropdown.setCurrentText(neuron_name)
-        self.change_tracklets_from_gui(tracklet_name)
+        # self.change_tracklets_from_gui(tracklet_name)
 
     def resolve_current_ground_truth_conflict(self):
         if self.dat.tracklet_annotator.gt_mismatches is None:
@@ -714,7 +717,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if len(self.dat.tracklet_annotator.gt_mismatches[neuron_name]) == 0:
             self.logger.info(f"No more conflicts on neuron {neuron_name}")
         else:
-            t, tracklet_name = self.dat.tracklet_annotator.gt_mismatches[neuron_name].pop(0)
+            t, tracklet_name, _ = self.dat.tracklet_annotator.gt_mismatches[neuron_name].pop(0)
             self.logger.info(f"Resolved conflict at t={t} on {neuron_name} and {tracklet_name}")
 
     def zoom_to_start_of_current_tracklet(self, viewer=None):

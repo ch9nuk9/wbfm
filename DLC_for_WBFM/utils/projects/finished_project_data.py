@@ -969,19 +969,20 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
     all_matches = project_data.raw_matches
     df_gt, finished_neurons = project_data.get_final_tracks_only_finished_neurons()
     if len(finished_neurons) == 0:
-        return []
+        return all_mismatches
 
     project_data.logger.info("Calculating mismatches between ground truth and automatic matches")
     for t0 in tqdm(range(project_data.num_frames - 2)):
         # Only need the first of the pair here, i.e. the index on t0, not t0+1
         try:
-            gt_matches_different_model, _, _, _ = calc_mismatch_between_ground_truth_and_pairs(all_matches, df_gt, t0)
+            gt_matches_different_model, model_matches_different_gt, _, _ = \
+                calc_mismatch_between_ground_truth_and_pairs(all_matches, df_gt, t0)
         except NoMatchesError:
             continue
 
         if gt_matches_different_model:
-            for mismatch in gt_matches_different_model:
-                raw_neuron_ind_in_list = mismatch[0]
+            for gt_mismatch, model_mismatch in zip(gt_matches_different_model, model_matches_different_gt):
+                raw_neuron_ind_in_list = gt_mismatch[0]
                 ind, neuron_name = get_column_name_from_time_and_column_value(df_gt, t0, raw_neuron_ind_in_list,
                                                                               col_name='raw_neuron_ind_in_list')
 
@@ -989,6 +990,6 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
                 mask_ind = project_data.segmentation_metadata.i_in_array_to_mask_index(t0, raw_neuron_ind_in_list)
                 tracklet_name = project_data.tracklets_and_neurons_class.get_tracklet_from_segmentation_index(t0,
                                                                                                               mask_ind)
-                all_mismatches[neuron_name].append((t0, tracklet_name))
+                all_mismatches[neuron_name].append((t0, tracklet_name, model_mismatch))
 
     return all_mismatches
