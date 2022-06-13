@@ -270,6 +270,6 @@ def get_column_name_from_time_and_column_value(df: pd.DataFrame, i_time: int, co
     mask = df.loc[i_time, (slice(None), col_name)] == col_value
     try:
         ind = np.where(mask)[0][0]
-        return ind, mask.index.levels[0][mask][0]
+        return ind, mask.index.get_level_values(0)[mask][0]
     except IndexError:
         return None, None
