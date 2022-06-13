@@ -714,11 +714,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.logger.warning("No ground truth found; button not functional")
             return
         neuron_name = self.gtDropdown.currentText()
-        if len(self.dat.tracklet_annotator.gt_mismatches[neuron_name]) == 0:
+        mismatches = self.dat.tracklet_annotator.gt_mismatches
+        if len(mismatches[neuron_name]) == 0:
             self.logger.info(f"No more conflicts on neuron {neuron_name}")
         else:
             t, tracklet_name, _ = self.dat.tracklet_annotator.gt_mismatches[neuron_name].pop(0)
-            self.logger.info(f"Resolved conflict at t={t} on {neuron_name} and {tracklet_name}")
+            self.logger.debug(f"Resolved conflict at t={t} on {neuron_name} and {tracklet_name}")
+            self.logger.info(f"Resolved conflict; {sum(map(len, mismatches.values()))} mismatches remaining")
 
     def zoom_to_start_of_current_tracklet(self, viewer=None):
         t = self.dat.tracklet_annotator.start_time_of_current_tracklet()

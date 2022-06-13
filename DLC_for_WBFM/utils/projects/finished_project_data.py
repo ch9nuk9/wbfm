@@ -933,14 +933,14 @@ def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWith
     return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
 
 
-def calc_mismatch_between_ground_truth_and_pairs(all_matches, df_gt, t0):
+def calc_mismatch_between_ground_truth_and_pairs(all_matches, df_gt, t0, minimum_confidence):
     pair = (t0, t0 + 1)
 
     model_matches = all_matches[pair].final_matches
     # model_matches = all_matches[pair].feature_matches
     gt_matches = df_to_matches(df_gt, t0)
 
-    model_obj = MatchesWithConfidence.matches_from_array(model_matches)
+    model_obj = MatchesWithConfidence.matches_from_array(model_matches, minimum_confidence=minimum_confidence)
     gt_obj = MatchesWithConfidence.matches_from_array(gt_matches, 1)
     gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model = \
         get_mismatches(gt_obj, model_obj)
@@ -948,7 +948,8 @@ def calc_mismatch_between_ground_truth_and_pairs(all_matches, df_gt, t0):
     return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
 
 
-def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData) -> Dict[str, list]:
+def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData,
+                                                       minimum_confidence=0.0) -> Dict[str, list]:
     """
     Calculates all mismatches between the ground truth and the matches class
 
@@ -959,6 +960,7 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
 
     Parameters
     ----------
+    minimum_confidence
     project_data
 
     Returns
@@ -976,7 +978,8 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
         # Only need the first of the pair here, i.e. the index on t0, not t0+1
         try:
             gt_matches_different_model, model_matches_different_gt, _, _ = \
-                calc_mismatch_between_ground_truth_and_pairs(all_matches, df_gt, t0)
+                calc_mismatch_between_ground_truth_and_pairs(all_matches, df_gt, t0,
+                                                             minimum_confidence=minimum_confidence)
         except NoMatchesError:
             continue
 

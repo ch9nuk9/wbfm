@@ -19,6 +19,8 @@ class NapariLayerInitializer:
                                this_match: FramePair = None,
                                rigidly_align_volumetric_images=False,
                                min_confidence=0.0) -> napari.Viewer:
+        if np.isscalar(pair):
+            pair = (pair, pair+1)
 
         if this_match is None:
             this_match: FramePair = project_data.raw_matches[pair]

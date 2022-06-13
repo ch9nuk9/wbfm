@@ -144,9 +144,12 @@ class MatchesWithConfidence:
         return np.array(np.stack([self.indices0, self.indices1], axis=1))
 
     @staticmethod
-    def matches_from_array(matches_with_conf, confidence=None, invalid_value=-1):
+    def matches_from_array(matches_with_conf, confidence=None, minimum_confidence=0.0, invalid_value=-1):
         if len(matches_with_conf) == 0:
             raise NoMatchesError
+        # if minimum_confidence > 0.0:
+        #     ... this doesn't work for lists!
+        #     assert matches_with_conf.shape[0] >= 2, "Must pass an array with confidence if using minimum_confidence"
 
         def _cast(vec, do_numpy):
             if do_numpy:
@@ -157,6 +160,8 @@ class MatchesWithConfidence:
         def _cast_both(mat, do_numpy):
             i1_vec, i2_vec = _cast(mat[:, 0], do_numpy), _cast(mat[:, 1], do_numpy)
             keep_vec = [(i1 != invalid_value) and (i2 != invalid_value) for i1, i2 in zip(i1_vec, i2_vec)]
+            if minimum_confidence > 0.0:
+                keep_vec = [k and (conf > minimum_confidence) for k, conf in zip(keep_vec, matches_with_conf[:, 2])]
             i1_out = [i1 for i1, keep in zip(i1_vec, keep_vec) if keep]
             i2_out = [i2 for i2, keep in zip(i2_vec, keep_vec) if keep]
             return i1_out, i2_out
