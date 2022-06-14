@@ -629,7 +629,7 @@ class FramePair:
         self.fdnc_matches = matches_with_conf
 
     def match_using_all_methods(self):
-        """Assumes that """
+        """Assumes that feature matches have already been calculated (superglue or basic)"""
         if self.feature_matches is None:
             raise NoMatchesError
 
