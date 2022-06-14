@@ -50,6 +50,17 @@ class TracePlotter:
             self.tspan = list(range(self.red_traces.shape[0]))
 
     def calculate_traces(self, neuron_name: str):
+        """
+        First step when plotting, with the mode saved as a class variable
+
+        Parameters
+        ----------
+        neuron_name
+
+        Returns
+        -------
+
+        """
         assert (self.channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {self.channel_mode}"
 
         if self.verbose >= 3:

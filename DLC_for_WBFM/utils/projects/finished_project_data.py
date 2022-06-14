@@ -40,28 +40,30 @@ from backports.cached_property import cached_property
 @dataclass
 class ProjectData:
     project_dir: str
-    project_config: ModularProjectConfig
+    project_config: ModularProjectConfig  # Custom class
 
-    red_data: zarr.Array = None
-    green_data: zarr.Array = None
+    red_data: zarr.Array = None  # Actual video (~100 GB)
+    green_data: zarr.Array = None  # Actual video (~100 GB)
 
-    raw_segmentation: zarr.Array = None
-    segmentation: zarr.Array = None
-    segmentation_metadata: DetectedNeurons = None
+    raw_segmentation: zarr.Array = None  # Full-sized segmentation (before tracking)
+    segmentation: zarr.Array = None  # Full-sized segmentation (after tracking -> colors are aligned)
+    segmentation_metadata: DetectedNeurons = None  # Easy conversion between segmentation ID and position
 
+    # OLD
     df_training_tracklets: pd.DataFrame = None
     reindexed_masks_training: zarr.Array = None
 
+    # Traces as calculated from the segmentation
     red_traces: pd.DataFrame = None
     green_traces: pd.DataFrame = None
-    # final_tracks: pd.DataFrame = None
 
-    behavior_annotations: pd.DataFrame = None
-    background_per_pixel: float = None
-    likelihood_thresh: float = None
+    # For plotting and visualization
+    behavior_annotations: pd.DataFrame = None  # Allows coloring the traces (currently, done manually)
+    background_per_pixel: float = None  # Simple version of background correction
+    likelihood_thresh: float = None  # When plotting, plot gaps for low-confidence time points
 
-    all_used_fnames: list = None
-    verbose: int = 2
+    all_used_fnames: list = None  # Save a list of all paths to raw data
+    verbose: int = 2  # How much to print when running methods
 
     # Precedence when multiple are available
     precedence_global2tracklet: list = None
@@ -77,7 +79,7 @@ class ProjectData:
     _custom_frame_indices: list = None
 
     # Classes for more functionality
-    trace_plotter: TracePlotter = None
+    _trace_plotter: TracePlotter = None
     physical_unit_conversion: PhysicalUnitConversion = None
 
     # Values for ground truth annotation (reading from excel or .csv)
@@ -483,13 +485,32 @@ class ProjectData:
         else:
             raise TypeError("Must pass pathlike or already loaded project data")
 
-    def calculate_traces(self, channel_mode: str, calculation_mode: str, neuron_name: str,
+    def calculate_traces(self, channel_mode: str,
+                         calculation_mode: str,
+                         neuron_name: str,
                          remove_outliers: bool = False,
                          filter_mode: str = 'no_filtering',
                          min_confidence: float = None) -> Tuple[list, list]:
-        """Uses TracePlotter class to calculate traces"""
+        """
+        Uses TracePlotter class to calculate traces
+
+        In other words, creates a class, then uses a method from that class
+
+        Parameters
+        ----------
+        channel_mode - red, green, or ratio
+        calculation_mode - integration (raw sum of pixels), volume, mean, z, likelihood (from the tracks dataframe)
+        neuron_name - example: 'neuron_001'
+        remove_outliers - try to remove spiking outliers
+        filter_mode - try to filter; not currently working
+        min_confidence - if confidence below this, plot a gap
+
+        Returns
+        -------
+
+        """
         # Todo: don't recreate object every time
-        self.trace_plotter = TracePlotter(
+        self._trace_plotter = TracePlotter(
             self.red_traces,
             self.green_traces,
             self.final_tracks,
@@ -500,8 +521,8 @@ class ProjectData:
             min_confidence,
             self.background_per_pixel
         )
-        y = self.trace_plotter.calculate_traces(neuron_name)
-        return self.trace_plotter.tspan, y
+        y = self._trace_plotter.calculate_traces(neuron_name)
+        return self._trace_plotter.tspan, y
 
     def calculate_tracklets(self, neuron_name) -> \
             Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
