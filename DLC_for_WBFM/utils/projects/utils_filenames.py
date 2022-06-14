@@ -196,3 +196,24 @@ def add_name_suffix(path: str, suffix='-1'):
 
     # Check for existence?
     return candidate_fname
+
+
+def generate_output_data_names(cfg):
+    """
+    Location of preprocessed data
+
+    Update: should be within the project folder itself!
+
+    Parameters
+    ----------
+    cfg
+
+    Returns
+    -------
+
+    """
+    fname = cfg.resolve_mounted_path_in_current_os('red_bigtiff_fname')
+    out_fname_red = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.name}_preprocessed.zarr")))
+    fname = cfg.resolve_mounted_path_in_current_os('green_bigtiff_fname')
+    out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.name}_preprocessed.zarr")))
+    return out_fname_red, out_fname_green

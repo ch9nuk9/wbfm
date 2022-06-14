@@ -7,12 +7,12 @@ import sacred
 from DLC_for_WBFM.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames
 from sacred import Experiment
 from sacred import SETTINGS
-from sacred.observers import TinyDbObserver
 from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
 from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 
 from DLC_for_WBFM.pipeline.project_initialization import write_data_subset_using_config, zip_zarr_using_config
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from DLC_for_WBFM.utils.projects.utils_filenames import generate_output_data_names
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 import cgitb
 cgitb.enable(format='text')
@@ -32,16 +32,10 @@ def cfg(project_path, DEBUG):
     cfg.setup_logger('step_0b.log')
     project_dir = cfg.project_dir
 
-    fname = cfg.resolve_mounted_path_in_current_os('red_bigtiff_fname')
-    out_fname_red = str(fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr'))
-
-    fname = cfg.resolve_mounted_path_in_current_os('green_bigtiff_fname')
-    out_fname_green = str(fname.with_name(fname.name + "_preprocessed").with_suffix('.zarr'))
+    out_fname_red, out_fname_green = generate_output_data_names(cfg)
 
     bounding_box_fname = os.path.join(cfg.project_dir, '1-segmentation', 'bounding_boxes.pickle')
     segment_cfg = cfg.get_segmentation_config()
-
-    fname = str(fname)  # For pickling in tinydb
 
     if not DEBUG:
         using_monkeypatch()
@@ -69,6 +63,7 @@ def main(_config, _run):
         options['out_fname'] = _config['out_fname_red']
         options['save_fname_in_red_not_green'] = True
         # The preprocessing will be calculated based off the red channel, and will be saved to disk
+        # Location: same as the preprocessed red channel (possibly not the bigtiff)
         red_name = Path(options['out_fname'])
         fname = red_name.parent / (red_name.stem + "_preprocessed.pickle")
         preprocessing_settings.path_to_previous_warp_matrices = fname
