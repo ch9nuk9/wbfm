@@ -1,0 +1,1 @@
+# Contains logs for each step of a project
