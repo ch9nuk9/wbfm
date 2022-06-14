@@ -642,10 +642,21 @@ class ProjectData:
         """
         Shades the currently active matplotlib axis using externally annotated behavior annotation
 
+        Note: only works if self.behavior_annotations is found
+
+        Example with a loaded project:
+
+        t, y = project_data.calculate_traces(channel_mode='ratio',
+                                             calculation_mode='integration',
+                                             neuron_name='neuron_001')
+        plt.plot(t, y)
+        project_data.shade_axis_using_behavior()
+        plt.show()
+
         Parameters
         ----------
-        ax
-        behaviors_to_ignore
+        ax - optional; takes the current one by default
+        behaviors_to_ignore - integer of behaviors to ignore when shading
 
         Returns
         -------
