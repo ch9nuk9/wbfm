@@ -119,8 +119,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # More complex boxes:
         self._setup_trace_filtering_buttons()  # Box 3
         # self._setup_general_shortcut_buttons()
-        self._setup_tracklet_correction_shortcut_buttons()  # Box 4
-        self._setup_segmentation_correction_buttons()  # Box 5
+        self._setup_tracklet_correction_shortcut_buttons()
+        self._setup_gt_correction_shortcut_buttons()
+        self._setup_segmentation_correction_buttons()
 
         self.verticalLayout.addWidget(self.groupBox1)
         # self.verticalLayout.addWidget(self.groupBox2)
@@ -128,6 +129,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.verticalLayout.addWidget(self.groupBox3b)
         self.verticalLayout.addWidget(self.groupBox4)
         self.verticalLayout.addWidget(self.groupBox5)
+        self.verticalLayout.addWidget(self.groupBox6)
 
         self.initialize_track_layers()
         self.initialize_shortcuts()
@@ -220,22 +222,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom5Button.pressed.connect(self.zoom_to_end_of_current_tracklet)
         self.vbox4.addWidget(self.zoom5Button)
 
-        # Ground truth conflict buttons
-        self.gtDropdown = QtWidgets.QComboBox()
-        neurons_with_conflict = list(self.dat.tracklet_annotator.gt_mismatches.keys())
-        neurons_with_conflict.sort()
-        self.gtDropdown.addItems(neurons_with_conflict)
-        self.gtDropdown.setToolTip("Note: does not work if there are no ground truth neurons")
-        self.vbox4.addWidget(self.gtDropdown)
-        self.zoom6Button = QtWidgets.QPushButton("Jump to next model vs. ground truth conflict")
-        self.zoom6Button.setToolTip("Note: does not work if there are no ground truth neurons")
-        self.zoom6Button.pressed.connect(self.zoom_to_next_ground_truth_conflict)
-        self.vbox4.addWidget(self.zoom6Button)
-        self.resolveConflictButton = QtWidgets.QPushButton("Resolve current model vs. ground truth conflict")
-        self.resolveConflictButton.setToolTip("Note: does not work if there are no ground truth neurons")
-        self.resolveConflictButton.pressed.connect(self.resolve_current_ground_truth_conflict)
-        self.vbox4.addWidget(self.resolveConflictButton)
-
         # Splitting and removing shortcuts
         self.toggleSegButton = QtWidgets.QPushButton("Toggle Raw segmentation layer (s)")
         self.toggleSegButton.pressed.connect(self.toggle_raw_segmentation_layer)
@@ -285,9 +271,37 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.deleteSegmentationFromTrackletButton
         ]
 
+    def _setup_gt_correction_shortcut_buttons(self):
+        self.groupBox5 = QtWidgets.QGroupBox("Ground Truth Correction", self.verticalLayoutWidget)
+        self.vbox5 = QtWidgets.QVBoxLayout(self.groupBox5)
+
+        # Ground truth conflict buttons
+        # self.gtDropdown = QtWidgets.QComboBox()
+        # neurons_with_conflict = list(self.dat.tracklet_annotator.gt_mismatches.keys())
+        # neurons_with_conflict.sort()
+        # self.gtDropdown.addItems(neurons_with_conflict)
+        # self.gtDropdown.setToolTip("Note: does not work if there are no ground truth neurons")
+        # self.vbox5.addWidget(self.gtDropdown)
+
+        self.zoom6Button = QtWidgets.QPushButton("Jump to next model vs. ground truth conflict")
+        self.zoom6Button.setToolTip("Note: does not work if there are no ground truth neurons")
+        self.zoom6Button.pressed.connect(self.zoom_to_next_ground_truth_conflict)
+        self.vbox5.addWidget(self.zoom6Button)
+        self.resolveConflictButton = QtWidgets.QPushButton("Resolve current model vs. ground truth conflict")
+        self.resolveConflictButton.setToolTip("Note: does not work if there are no ground truth neurons")
+        self.resolveConflictButton.pressed.connect(self.resolve_current_ground_truth_conflict)
+        self.vbox5.addWidget(self.resolveConflictButton)
+
+        self.list_of_gt_correction_widgets = [
+            self.zoom6Button,
+            self.resolveConflictButton
+        ]
+
+        self.update_gt_correction_interactivity()
+
     def _setup_segmentation_correction_buttons(self):
-        self.groupBox5 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
-        self.formlayout5 = QtWidgets.QFormLayout(self.groupBox5)
+        self.groupBox6 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
+        self.formlayout6 = QtWidgets.QFormLayout(self.groupBox6)
 
         # self.splitSegmentationHint1 = QtWidgets.QLabel()
         # self.splitSegmentationHint1.setText("Select segmentation")
@@ -299,39 +313,39 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
         self.splitSegmentationManualSliceButton.setRange(1, 20)  # TODO: look at actual z depth of neuron
         self.splitSegmentationManualSliceButton.valueChanged.connect(self.update_segmentation_options)
-        self.formlayout5.addRow("Manual slice index: ", self.splitSegmentationManualSliceButton)
+        self.formlayout6.addRow("Manual slice index: ", self.splitSegmentationManualSliceButton)
 
         self.splitSegmentationKeepOriginalIndexButton = QtWidgets.QComboBox()
         self.splitSegmentationKeepOriginalIndexButton.addItems(["Top", "Bottom"])
         self.splitSegmentationKeepOriginalIndexButton.currentIndexChanged.connect(self.update_segmentation_options)
-        self.formlayout5.addRow("Which side keeps original index: ", self.splitSegmentationKeepOriginalIndexButton)
+        self.formlayout6.addRow("Which side keeps original index: ", self.splitSegmentationKeepOriginalIndexButton)
 
         self.clearSelectedSegmentationsButton = QtWidgets.QPushButton("Clear (r)")
         self.clearSelectedSegmentationsButton.pressed.connect(self.clear_current_segmentations)
-        self.formlayout5.addRow("Remove selected segmentations: ", self.clearSelectedSegmentationsButton)
+        self.formlayout6.addRow("Remove selected segmentations: ", self.clearSelectedSegmentationsButton)
 
         self.splitSegmentationManualButton = QtWidgets.QPushButton("Try to manually split")
         self.splitSegmentationManualButton.pressed.connect(self.split_segmentation_manual)
-        self.formlayout5.addRow("Produce candidate mask: ", self.splitSegmentationManualButton)
+        self.formlayout6.addRow("Produce candidate mask: ", self.splitSegmentationManualButton)
         self.splitSegmentationAutomaticButton = QtWidgets.QPushButton("Try to automatically split")
         self.splitSegmentationAutomaticButton.pressed.connect(self.split_segmentation_automatic)
-        self.formlayout5.addRow("Produce candidate mask: ", self.splitSegmentationAutomaticButton)
+        self.formlayout6.addRow("Produce candidate mask: ", self.splitSegmentationAutomaticButton)
         self.mergeSegmentationButton = QtWidgets.QPushButton("Try to merge selected")
         self.mergeSegmentationButton.pressed.connect(self.merge_segmentation)
-        self.formlayout5.addRow("Produce candidate mask: ", self.mergeSegmentationButton)
+        self.formlayout6.addRow("Produce candidate mask: ", self.mergeSegmentationButton)
         self.candidateMaskButton = QtWidgets.QPushButton("Make copy of segmentation")
         self.candidateMaskButton.pressed.connect(self.add_candidate_mask_layer)
-        self.formlayout5.addRow("Produce candidate mask: ", self.candidateMaskButton)
+        self.formlayout6.addRow("Produce candidate mask: ", self.candidateMaskButton)
 
         self.splitSegmentationSaveButton1 = QtWidgets.QPushButton("Save to RAM")
         self.splitSegmentationSaveButton1.pressed.connect(self.modify_segmentation_using_manual_correction)
-        self.formlayout5.addRow("Save candidate mask: ", self.splitSegmentationSaveButton1)
+        self.formlayout6.addRow("Save candidate mask: ", self.splitSegmentationSaveButton1)
         self.mainSaveButton = QtWidgets.QPushButton("SAVE TO DISK")
         self.mainSaveButton.pressed.connect(self.modify_segmentation_and_tracklets_on_disk)
-        self.formlayout5.addRow("***Masks and Tracklets***", self.mainSaveButton)
+        self.formlayout6.addRow("***Masks and Tracklets***", self.mainSaveButton)
 
         self.saveSegmentationStatusLabel = QtWidgets.QLabel("No segmentation loaded")
-        self.formlayout5.addRow("STATUS: ", self.saveSegmentationStatusLabel)
+        self.formlayout6.addRow("STATUS: ", self.saveSegmentationStatusLabel)
 
         self.update_segmentation_options()
 
@@ -367,6 +381,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def change_neurons(self):
         self.logger.debug("USER: change neuron")
+        self.update_gt_correction_interactivity()
         if not self._disable_callbacks:
             # self.update_dataframe_using_final_tracks_layer()
             self.update_neuron_in_tracklet_annotator()
@@ -461,15 +476,23 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         if to_be_interactive:
             self.groupBox4.setTitle("Tracklet Correction (currently enabled)")
-            self.groupBox5.setTitle("Segmentation Correction (currently enabled)")
+            self.groupBox6.setTitle("Segmentation Correction (currently enabled)")
         else:
             self.groupBox4.setTitle("Tracklet Correction (currently disabled)")
-            self.groupBox5.setTitle("Segmentation Correction (currently disabled)")
+            self.groupBox6.setTitle("Segmentation Correction (currently disabled)")
 
         for widget in self.list_of_segmentation_correction_widgets:
             widget.setEnabled(to_be_interactive)
 
         for widget in self.list_of_tracklet_correction_widgets:
+            widget.setEnabled(to_be_interactive)
+
+    def update_gt_correction_interactivity(self):
+        # Initialize them as interactive or not
+        to_be_interactive = self.dat.tracklet_annotator.gt_mismatches is not None
+        if to_be_interactive:
+            to_be_interactive = len(self.dat.tracklet_annotator.gt_mismatches[self.current_neuron_name]) > 0
+        for widget in self.list_of_gt_correction_widgets:
             widget.setEnabled(to_be_interactive)
 
     def modify_segmentation_using_manual_correction(self):
@@ -694,10 +717,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.dat.tracklet_annotator.gt_mismatches is None:
             self.logger.warning("No ground truth found; button not functional")
             return
-        neuron_name = self.gtDropdown.currentText()
+        neuron_name = self.changeNeuronsDropdown.currentText()
         remaining_mismatches = self.dat.tracklet_annotator.gt_mismatches[neuron_name]
         if len(remaining_mismatches) == 0:
-            self.logger.info("This neuron has no remaining conflicts")
+            print("This neuron has no remaining conflicts")
             return
         else:
             t, tracklet_name, model_mismatch = remaining_mismatches[0]
@@ -710,9 +733,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.change_tracklets_from_gui(tracklet_name)
 
     def resolve_current_ground_truth_conflict(self):
-        if self.dat.tracklet_annotator.gt_mismatches is None:
-            self.logger.warning("No ground truth found; button not functional")
-            return
+        # if self.dat.tracklet_annotator.gt_mismatches is None:
+        #     self.logger.warning("No ground truth found; button not functional")
+        #     return
         neuron_name = self.gtDropdown.currentText()
         mismatches = self.dat.tracklet_annotator.gt_mismatches
         if len(mismatches[neuron_name]) == 0:
