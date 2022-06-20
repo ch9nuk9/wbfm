@@ -35,17 +35,22 @@ from tqdm.auto import tqdm
 def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
                                            training_config: SubfolderConfigFile,
                                            DEBUG: bool = False) -> None:
-    """Substep if the frames exist, but the matches are corrupted or need to be redone"""
+    """
+    Main pipeline step after the frames exist, but not the matches
+
+    Can also be used if the matches are corrupted or need to be redone
+    """
 
     project_data = ProjectData.load_final_project_data_from_config(project_config)
+    project_config.logger.info(f"Matching frames (pairwise)")
 
-    project_config.logger.info(f"Producing tracklets")
-
+    # Check for previously produced intermediate products
     raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
                                                       prepend_subfolder=True)
     if os.path.exists(raw_fname):
         raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
+    # Load the previous step
     all_frame_dict = project_data.raw_frames
 
     # Intermediate products: pairwise matches between frames
