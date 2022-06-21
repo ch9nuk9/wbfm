@@ -273,7 +273,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         ]
 
     def _setup_gt_correction_shortcut_buttons(self):
-        self.groupBox5 = QtWidgets.QGroupBox("Ground Truth Correction", self.verticalLayoutWidget)
+        self.groupBox5 = QtWidgets.QGroupBox("Ground Truth Correction (requires annotated ground truth)", self.verticalLayoutWidget)
         self.vbox5 = QtWidgets.QVBoxLayout(self.groupBox5)
 
         # Ground truth conflict buttons
@@ -285,11 +285,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.vbox5.addWidget(self.gtDropdown)
 
         self.zoom6Button = QtWidgets.QPushButton("Jump to next model vs. ground truth conflict")
-        self.zoom6Button.setToolTip("Note: does not work if there are no ground truth neurons")
+        self.zoom6Button.setToolTip("shift-f")
         self.zoom6Button.pressed.connect(self.zoom_to_next_ground_truth_conflict)
         self.vbox5.addWidget(self.zoom6Button)
         self.resolveConflictButton = QtWidgets.QPushButton("Resolve current model vs. ground truth conflict")
-        self.resolveConflictButton.setToolTip("Note: does not work if there are no ground truth neurons")
+        self.resolveConflictButton.setToolTip("shift-w")
         self.resolveConflictButton.pressed.connect(self.resolve_current_ground_truth_conflict)
         self.vbox5.addWidget(self.resolveConflictButton)
 
@@ -604,6 +604,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def zoom_to_next_nan(viewer):
             self.zoom_to_next_nan()
 
+        @viewer.bind_key('shift-f', overwrite=True)
+        def zoom_to_next_ground_truth_conflict(viewer):
+            self.zoom_to_next_ground_truth_conflict()
+
+        @viewer.bind_key('shift-w', overwrite=True)
+        def resolve_current_ground_truth_conflict(viewer):
+            self.resolve_current_ground_truth_conflict()
+
         @viewer.bind_key('g', overwrite=True)
         def zoom_to_next_nan(viewer):
             self.zoom_to_next_conflict()
@@ -749,9 +757,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             correct_match_tracks = np.array(correct_match_tracks)
             correct_match_tracks = z_scale(correct_match_tracks, which_col=2)
 
-            opt = dict(tail_width=10, head_length=2)
+            opt = dict(tail_width=10, head_length=0)
             self.viewer.add_tracks(incorrect_match_tracks, name="Incorrect model match", colormap='hsv', **opt)
-            self.viewer.add_tracks(incorrect_match_tracks, name="GT match", colormap='twilight', **opt)
+            self.viewer.add_tracks(correct_match_tracks, name="GT match", colormap='twilight', **opt)
         else:
             self.logger.warning("Did not find match")
 
@@ -768,8 +776,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.logger.debug(f"Resolved conflict at t={t} on {neuron_name} and {tracklet_name}")
             self.logger.info(f"Resolved conflict; {sum(map(len, mismatches.values()))} mismatches remaining")
 
+        # Unclear why, but multiple calls are necessary
+        self.remove_match_layers()
+        self.remove_match_layers()
+
+    def remove_match_layers(self):
         for layer in self.viewer.layers:
-            if 'Incorrect model match' in layer.name or 'GT match' in layer.name:
+            if 'match' in layer.name:
                 self.viewer.layers.remove(layer)
 
     def zoom_to_start_of_current_tracklet(self, viewer=None):
