@@ -52,7 +52,8 @@ def propagate_via_affine_model(which_neuron: int,
     return success, neuron0_trans
 
 
-def get_ball_of_points_to_use_for_local_affine(which_neuron, all_feature_matches, f0, f1, min_matches, radius):
+def get_ball_of_points_to_use_for_local_affine(which_neuron, all_feature_matches,
+                                               f0: ReferenceFrame, f1: ReferenceFrame, min_matches, radius):
     this_neuron = np.asarray(f0.neuron_locs[which_neuron])
     nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(f0.keypoint_locs)
 
