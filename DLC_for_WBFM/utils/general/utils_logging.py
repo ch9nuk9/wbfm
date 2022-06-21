@@ -32,10 +32,7 @@ def setup_logger_object(log_filename, actually_set_up_file=True):
         logger.addHandler(ch)
 
     logger.propagate = False
-
     logger.info(f"Set up logger with name: {log_name}")
-    if actually_set_up_file:
-        print(f"And file output at: {log_filename}")
 
     return logger
 
