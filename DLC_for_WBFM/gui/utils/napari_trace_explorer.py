@@ -738,14 +738,20 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Also display the incorrect match
         # incorrect_match = self.dat.napari_tracks_layer_of_single_neuron_match(neuron_name, t)
         this_pair = self.dat.raw_matches[(t, t + 1)]
-        incorrect_match_tracks = np.array(this_pair.napari_tracks_of_matches([model_mismatch]))
+        incorrect_match_tracks = this_pair.napari_tracks_of_matches([model_mismatch])
+        correct_match_tracks = this_pair.napari_tracks_of_matches([gt_mismatch])
         if incorrect_match_tracks:
             # Manually rescale z
-            obj = self.dat.physical_unit_conversion
-            incorrect_match_tracks = obj.zimmer2physical_fluorescence_single_column(incorrect_match_tracks, which_col=2)
+            z_scale = self.dat.physical_unit_conversion.zimmer2physical_fluorescence_single_column
 
-            self.viewer.add_tracks(incorrect_match_tracks,
-                                   name="Incorrect model match", colormap='hsv', tail_width=10, head_length=2)
+            incorrect_match_tracks = np.array(incorrect_match_tracks)
+            incorrect_match_tracks = z_scale(incorrect_match_tracks, which_col=2)
+            correct_match_tracks = np.array(correct_match_tracks)
+            correct_match_tracks = z_scale(correct_match_tracks, which_col=2)
+
+            opt = dict(tail_width=10, head_length=2)
+            self.viewer.add_tracks(incorrect_match_tracks, name="Incorrect model match", colormap='hsv', **opt)
+            self.viewer.add_tracks(incorrect_match_tracks, name="GT match", colormap='twilight', **opt)
         else:
             self.logger.warning("Did not find match")
 
@@ -761,6 +767,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             t, tracklet_name, _, _ = self.dat.tracklet_annotator.gt_mismatches[neuron_name].pop(0)
             self.logger.debug(f"Resolved conflict at t={t} on {neuron_name} and {tracklet_name}")
             self.logger.info(f"Resolved conflict; {sum(map(len, mismatches.values()))} mismatches remaining")
+
+        for layer in self.viewer.layers:
+            if 'Incorrect model match' in layer.name or 'GT match' in layer.name:
+                self.viewer.layers.remove(layer)
 
     def zoom_to_start_of_current_tracklet(self, viewer=None):
         t = self.dat.tracklet_annotator.start_time_of_current_tracklet()
