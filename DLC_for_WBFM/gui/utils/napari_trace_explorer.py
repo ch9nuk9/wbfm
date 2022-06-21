@@ -736,7 +736,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # if self.dat.tracklet_annotator.gt_mismatches is None:
         #     self.logger.warning("No ground truth found; button not functional")
         #     return
-        neuron_name = self.gtDropdown.currentText()
+        neuron_name = self.changeNeuronsDropdown.currentText()
         mismatches = self.dat.tracklet_annotator.gt_mismatches
         if len(mismatches[neuron_name]) == 0:
             self.logger.info(f"No more conflicts on neuron {neuron_name}")
