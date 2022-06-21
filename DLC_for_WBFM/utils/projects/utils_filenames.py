@@ -172,7 +172,8 @@ def get_sequential_filename(fname: str, verbose=1) -> str:
         # TODO: should work even if i > 9 (i.e. is 2 digits long)
         while Path(candidate_fname).exists():
             i += 1
-            new_base_fname = new_base_fname[:-2] + f"-{i}"
+            new_base_fname = new_base_fname[:-2].strip('-')
+            new_base_fname = f"{new_base_fname}-{i}"
             candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
             if verbose >= 2:
                 print(f"Trying {candidate_fname}...")
