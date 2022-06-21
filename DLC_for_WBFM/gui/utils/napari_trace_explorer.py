@@ -1328,6 +1328,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
                                                                    to_load_tracklets=True,
                                                                    # to_load_interactivity=True,
                                                                    to_load_segmentation_metadata=True,
+                                                                   to_load_frames=True,
                                                                    initialization_kwargs=initialization_kwargs)
     # TODO: debug custom dataframe here
     project_data.use_custom_padded_dataframe = False
