@@ -737,7 +737,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom_using_current_neuron_or_tracklet()
         # Also display the incorrect match
         # incorrect_match = self.dat.napari_tracks_layer_of_single_neuron_match(neuron_name, t)
-        this_pair = self.raw_matches[(t, t + 1)]
+        this_pair = self.dat.raw_matches[(t, t + 1)]
         incorrect_match_tracks = np.array(this_pair.napari_tracks_of_matches([model_mismatch]))
         if incorrect_match_tracks:
             # Manually rescale z
