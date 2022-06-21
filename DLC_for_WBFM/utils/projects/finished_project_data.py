@@ -1042,7 +1042,7 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
                 mask_ind = project_data.segmentation_metadata.i_in_array_to_mask_index(t0, raw_neuron_ind_in_list)
                 tracklet_name = project_data.tracklets_and_neurons_class.get_tracklet_from_segmentation_index(t0,
                                                                                                               mask_ind)
-                all_mismatches[neuron_name].append((t0, tracklet_name, model_mismatch))
+                all_mismatches[neuron_name].append((t0, tracklet_name, model_mismatch, gt_mismatch))
 
     logging.info(f"Found {sum(map(len, all_mismatches.values()))} mismatches")
 

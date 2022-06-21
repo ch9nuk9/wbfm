@@ -727,17 +727,27 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print("This neuron has no remaining conflicts")
             return
         else:
-            t, tracklet_name, model_mismatch = remaining_mismatches[0]
+            t, tracklet_name, model_mismatch, gt_mismatch = remaining_mismatches[0]
 
         # Zoom to the conflict
         self.logger.info(f"Jumped to conflict at t={t} on {neuron_name} and {tracklet_name} "
-                         f"with incorrect match: {model_mismatch}")
+                         f"with incorrect match: {model_mismatch} and correct match: {gt_mismatch}")
         change_viewer_time_point(self.viewer, t_target=t)
         self.changeNeuronsDropdown.setCurrentText(neuron_name)
         self.zoom_using_current_neuron_or_tracklet()
         # Also display the incorrect match
-        incorrect_match = self.dat.napari_tracks_layer_of_single_neuron_match(neuron_name, t)
-        self.viewer.add_tracks(incorrect_match, name="Incorrect model match", colormap='hsv', tail_width=10, head_length=2)
+        # incorrect_match = self.dat.napari_tracks_layer_of_single_neuron_match(neuron_name, t)
+        this_pair = self.raw_matches[(t, t + 1)]
+        incorrect_match_tracks = np.array(this_pair.napari_tracks_of_matches([model_mismatch]))
+        if incorrect_match_tracks:
+            # Manually rescale z
+            obj = self.dat.physical_unit_conversion
+            incorrect_match_tracks = obj.zimmer2physical_fluorescence_single_column(incorrect_match_tracks, which_col=2)
+
+            self.viewer.add_tracks(incorrect_match_tracks,
+                                   name="Incorrect model match", colormap='hsv', tail_width=10, head_length=2)
+        else:
+            self.logger.warning("Did not find match")
 
     def resolve_current_ground_truth_conflict(self):
         # if self.dat.tracklet_annotator.gt_mismatches is None:
@@ -748,7 +758,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if len(mismatches[neuron_name]) == 0:
             self.logger.info(f"No more conflicts on neuron {neuron_name}")
         else:
-            t, tracklet_name, _ = self.dat.tracklet_annotator.gt_mismatches[neuron_name].pop(0)
+            t, tracklet_name, _, _ = self.dat.tracklet_annotator.gt_mismatches[neuron_name].pop(0)
             self.logger.debug(f"Resolved conflict at t={t} on {neuron_name} and {tracklet_name}")
             self.logger.info(f"Resolved conflict; {sum(map(len, mismatches.values()))} mismatches remaining")
 

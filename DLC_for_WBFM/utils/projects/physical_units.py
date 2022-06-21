@@ -28,6 +28,12 @@ class PhysicalUnitConversion:
 
         return zxy_in_phyical
 
+    def zimmer2physical_fluorescence_single_column(self, dat0: np.ndarray, which_col=0) -> np.ndarray:
+        """Converts just a single column, in place"""
+
+        dat0[:, which_col] *= self.z_to_xy_ratio
+        return dat0
+
     def zimmer2physical_behavior(self, frame0_xy: np.ndarray) -> np.ndarray:
         # Assume no z coordinate
         xy_in_um = frame0_xy * self.zimmer_behavior_um_per_pixel_xy
