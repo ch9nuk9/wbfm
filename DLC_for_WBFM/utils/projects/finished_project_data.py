@@ -739,11 +739,16 @@ class ProjectData:
 
     def napari_tracks_layer_of_single_neuron_match(self, neuron_name, t):
         neuron_ind_in_list = self.final_tracks.loc[t, (neuron_name, 'raw_neuron_ind_in_list')]
+        if np.isnan(neuron_ind_in_list):
+            self.logger.debug(f"No match for {neuron_name} at t={t}")
+        else:
+            neuron_ind_in_list = int(neuron_ind_in_list)
+
         this_pair = self.raw_matches[(t, t + 1)]
         list_of_matches = this_pair.final_matches
         matches_class = MatchesWithConfidence.matches_from_array(list_of_matches)
         # If match is not found, use -1
-        this_match = [neuron_ind_in_list, matches_class.get_mapping_0_to_1().get(neuron_ind_in_list, -1)]
+        this_match = [neuron_ind_in_list, matches_class.get_mapping_0_to_1(unique=True).get(neuron_ind_in_list, -1)]
         tracks = this_pair.napari_tracks_of_matches(this_match)
         return tracks
 
