@@ -77,6 +77,7 @@ class ReferenceFrame:
             return 0
 
     def get_raw_data(self) -> np.ndarray:
+        logging.warning("Getting raw data using this method is not recommended (possible filename desynchronization)")
         if self._raw_data is None:
             self._raw_data = zarr_reader_folder_or_zipstore(self.video_fname)[self.frame_ind, ...]
         return self._raw_data
