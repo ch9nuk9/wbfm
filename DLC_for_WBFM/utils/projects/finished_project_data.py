@@ -737,6 +737,16 @@ class ProjectData:
                                                           rigidly_align_volumetric_images, min_confidence)
         return v
 
+    def napari_tracks_layer_of_single_neuron_match(self, neuron_name, t):
+        neuron_ind_in_list = self.final_tracks.loc[t, (neuron_name, 'raw_neuron_ind_in_list')]
+        this_pair = self.raw_matches[(t, t + 1)]
+        list_of_matches = this_pair.final_matches
+        matches_class = MatchesWithConfidence.matches_from_array(list_of_matches)
+        # If match is not found, use -1
+        this_match = [neuron_ind_in_list, matches_class.get_mapping_0_to_1().get(neuron_ind_in_list, -1)]
+        tracks = this_pair.napari_tracks_of_matches(this_match)
+        return tracks
+
     def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[str]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
                              dask_for_segmentation=True) -> napari.Viewer:

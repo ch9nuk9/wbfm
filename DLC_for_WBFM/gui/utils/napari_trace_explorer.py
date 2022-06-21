@@ -9,6 +9,7 @@ import sys
 import napari
 import numpy as np
 import pandas as pd
+from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
 from PyQt5 import QtWidgets
 
 from backports.cached_property import cached_property
@@ -734,7 +735,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         change_viewer_time_point(self.viewer, t_target=t)
         self.changeNeuronsDropdown.setCurrentText(neuron_name)
         self.zoom_using_current_neuron_or_tracklet()
-        # self.change_tracklets_from_gui(tracklet_name)
+        # Also display the incorrect match
+        incorrect_match = self.dat.napari_tracks_layer_of_single_neuron_match(neuron_name, t)
+        self.viewer.add_tracks(incorrect_match, name="Incorrect model match", colormap='hsv', tail_width=10, head_length=2)
 
     def resolve_current_ground_truth_conflict(self):
         # if self.dat.tracklet_annotator.gt_mismatches is None:

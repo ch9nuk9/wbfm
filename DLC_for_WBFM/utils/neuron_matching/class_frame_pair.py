@@ -6,6 +6,7 @@ import scipy.ndimage as ndi
 import cv2
 import numpy as np
 import pandas as pd
+from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
 from napari.utils.transforms import Affine
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
@@ -377,6 +378,15 @@ class FramePair:
 
         pts0, pts1 = np.array(pts0), np.array(pts1)
         return pts0, pts1
+
+    def napari_tracks_of_matches(self, list_of_matches=None):
+        if list_of_matches is None:
+            list_of_matches = self.final_matches
+        n0_zxy = self.pts0
+        n1_zxy = self.pts1
+
+        tracks = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy, t0=self.frame0.frame_ind)
+        return tracks
 
     def calc_or_get_alignment_between_matched_neurons(self, pts0=None, pts1=None, recalculate_alignment=True):
 
