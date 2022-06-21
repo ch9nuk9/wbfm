@@ -35,17 +35,22 @@ from tqdm.auto import tqdm
 def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
                                            training_config: SubfolderConfigFile,
                                            DEBUG: bool = False) -> None:
-    """Substep if the frames exist, but the matches are corrupted or need to be redone"""
+    """
+    Main pipeline step after the frames exist, but not the matches
+
+    Can also be used if the matches are corrupted or need to be redone
+    """
 
     project_data = ProjectData.load_final_project_data_from_config(project_config)
+    project_config.logger.info(f"Matching frames (pairwise)")
 
-    project_config.logger.info(f"Producing tracklets")
-
+    # Check for previously produced intermediate products
     raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
                                                       prepend_subfolder=True)
     if os.path.exists(raw_fname):
         raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
+    # Load the previous step
     all_frame_dict = project_data.raw_frames
 
     # Intermediate products: pairwise matches between frames
@@ -78,6 +83,10 @@ def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, projec
             # Use new method to match
             matches_with_conf = tracker.match_two_time_points(t, t + 1)
             frame_pair.feature_matches = matches_with_conf
+            # Explicitly load data to prevent frame class using original video path
+            dat0, dat1 = project_data.red_data[t], project_data.red_data[t+1]
+            frame_pair.load_raw_data(dat0, dat1)
+
             if match_using_additional_methods:
                 frame_pair.match_using_all_methods()
         else:
