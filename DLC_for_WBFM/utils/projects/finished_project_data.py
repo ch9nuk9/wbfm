@@ -748,7 +748,7 @@ class ProjectData:
         list_of_matches = this_pair.final_matches
         matches_class = MatchesWithConfidence.matches_from_array(list_of_matches)
         # If match is not found, use -1
-        this_match = [neuron_ind_in_list, matches_class.get_mapping_0_to_1(unique=True).get(neuron_ind_in_list, -1)]
+        this_match = [[neuron_ind_in_list, matches_class.get_mapping_0_to_1(unique=True).get(neuron_ind_in_list, -1)]]
         tracks = this_pair.napari_tracks_of_matches(this_match)
         return tracks
 
