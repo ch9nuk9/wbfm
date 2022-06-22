@@ -43,14 +43,13 @@ df4 = correct_tracks_dataframe_using_project(project_data4, overwrite=False)
 project_data4.final_tracks = df4
 
 ## Align with the manual annotation .csv file
-project_data1.finished_neurons_column_name = 'Finished?'
-project_data2.finished_neurons_column_name = 'Reanalysis finished' # worm 4
-project_data3.finished_neurons_column_name = 'first 100 frames' # round2 worm 6
-project_data4.finished_neurons_column_name = 'Finished' # round2 worm 3
+project_data1.finished_neurons_column_name = 'Finished?'  # round1 worm 1
+project_data2.finished_neurons_column_name = 'Finished?'  # round1 worm 4
+project_data3.finished_neurons_column_name = 'first 100 frames'  # round2 worm 6
+project_data4.finished_neurons_column_name = 'Finished?'  # round2 worm 3
 
-project_data1._custom_frame_indices = list(range(1000, 3000)) # round1 worm 1; do not include the non-moving portion
-# project_data2.num_frames = 100 # worm 4; now finished!
-project_data3.num_frames = 100 # round2 worm 6
+project_data1._custom_frame_indices = list(range(1000, 3000))  # round1 worm 1; do not include the non-moving portion
+project_data3.num_frames = 100  # round2 worm 6
 
 ##
 ## Set up the network
@@ -65,14 +64,16 @@ all_project_data = [project_data1, project_data2, project_data3, project_data4]
 train_loader = NeuronImageFeaturesDataModuleFromMultipleProjects(batch_size=batch_size,
                                                                  all_project_data=all_project_data,
                                                                  base_dataset_class=base_dataset_class,
-                                                                 dataset_kwargs=dict(num_to_calculate=1000)) # Calculates from each project
+                                                                 dataset_kwargs=dict(num_to_calculate=1000))  # Calculates from each project
+# Explicitly setup to see if there are problems
 train_loader.setup()
+
 # Start from pretrained
 model = SuperGlueModel.load_from_checkpoint(PATH_TO_SUPERGLUE_MODEL)
 # model = SuperGlueModel(feature_dim=840, lr=1e-5)
 model.lr = 1e-5
 
-with wandb.init(project="superglue_training_multiple_projects", entity="charlesfieseler") as run:
+with wandb.init(project="superglue_training_multiple_projects_fixed_r2w4", entity="charlesfieseler") as run:
     wandb_logger = WandbLogger()
 
     trainer = Trainer(gpus=gpus, max_epochs=max_epochs, terminate_on_nan=True,
@@ -83,5 +84,5 @@ with wandb.init(project="superglue_training_multiple_projects", entity="charlesf
     trainer.fit(model, train_loader)
 
 out_folder = '/scratch/neurobiology/zimmer/Charles/repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints'
-model_fname = os.path.join(out_folder, 'superglue_neurons_4_datasets_05_20.ckpt')
+model_fname = os.path.join(out_folder, 'superglue_neurons_4_datasets_06_22.ckpt')
 trainer.save_checkpoint(model_fname)
