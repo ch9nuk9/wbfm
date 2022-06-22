@@ -15,6 +15,7 @@ import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from tqdm.auto import tqdm
 
+from DLC_for_WBFM.utils.projects.utils_redo_steps import correct_tracks_dataframe_using_project
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df, get_names_of_columns_that_exist_at_t
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 
@@ -746,3 +747,37 @@ class NeuronImageFeaturesDataModuleFromMultipleProjects(LightningDataModule):
             for dataset in self.test_dataset
         )
         return SequentialLoader(*dataloaders)
+
+
+def load_data_with_ground_truth():
+    ## Load the 4 datasets that have manual annotations
+    folder_name = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/"
+    fname = os.path.join(folder_name, "round1_worm1/project_config.yaml")
+    project_data1 = ProjectData.load_final_project_data_from_config(fname, to_load_frames=True)
+    fname = os.path.join(folder_name, "round1_worm4/project_config.yaml")
+    project_data2 = ProjectData.load_final_project_data_from_config(fname, to_load_frames=True)
+    fname = os.path.join(folder_name, "round2_worm6/project_config.yaml")
+    project_data3 = ProjectData.load_final_project_data_from_config(fname, to_load_frames=True)
+    fname = os.path.join(folder_name, "round2_worm3/project_config.yaml")
+    project_data4 = ProjectData.load_final_project_data_from_config(fname, to_load_frames=True)
+    ## Confirm that the tracks are correct
+    df1 = correct_tracks_dataframe_using_project(project_data1, overwrite=False, actually_save=False)
+    project_data1.final_tracks = df1
+    df2 = correct_tracks_dataframe_using_project(project_data2, overwrite=False, actually_save=False)
+    project_data2.final_tracks = df2
+    df3 = correct_tracks_dataframe_using_project(project_data3, overwrite=False, actually_save=False)
+    project_data3.final_tracks = df3
+    df4 = correct_tracks_dataframe_using_project(project_data4, overwrite=False, actually_save=False)
+    project_data4.final_tracks = df4
+    ## Align with the manual annotation .csv file
+    project_data1.finished_neurons_column_name = 'Finished?'  # round1 worm 1
+    project_data2.finished_neurons_column_name = 'Finished?'  # round1 worm 4
+    project_data3.finished_neurons_column_name = 'first 100 frames'  # round2 worm 6
+    project_data4.finished_neurons_column_name = 'Finished?'  # round2 worm 3
+    project_data1._custom_frame_indices = list(
+        range(1000, 3000))  # round1 worm 1; do not include the non-moving portion
+    project_data3.num_frames = 100  # round2 worm 6
+
+    all_project_data = [project_data1, project_data2, project_data3, project_data4]
+
+    return all_project_data

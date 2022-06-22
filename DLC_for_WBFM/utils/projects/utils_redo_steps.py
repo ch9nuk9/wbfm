@@ -186,7 +186,7 @@ def correct_tracks_dataframe_using_frame_class(project_cfg: ModularProjectConfig
     return correct_tracks_dataframe_using_project(project_data, overwrite)
 
 
-def correct_tracks_dataframe_using_project(project_data: ProjectData, overwrite: bool):
+def correct_tracks_dataframe_using_project(project_data: ProjectData, overwrite: bool, actually_save: bool = True):
     all_frames = project_data.raw_frames
     df = project_data.final_tracks
     df_fname = project_data.final_tracks_fname
@@ -211,7 +211,7 @@ def correct_tracks_dataframe_using_project(project_data: ProjectData, overwrite:
                 df.loc[t, neuron] = np.nan
                 # insert_value_in_sparse_df(df, index=t, columns=neuron, val=np.nan)
     # Save
-    if len(updated_neurons_and_times) > 0:
+    if len(updated_neurons_and_times) > 0 and actually_save:
         tracking_cfg = project_data.project_config.get_tracking_config()
         tracking_cfg.h5_data_in_local_project(df, df_fname, allow_overwrite=overwrite,
                                               make_sequential_filename=~overwrite)
