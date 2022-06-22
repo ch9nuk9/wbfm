@@ -860,6 +860,7 @@ red_data:                 {self.red_data is not None}\n\
 green_data:               {self.green_data is not None}\n\
 ============Annotations================\n\
 behavior_annotations:     {self.behavior_annotations is not None}\n\
+manual_tracking:          {self.df_manual_tracking is not None}\n\
 ============Segmentation===============\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
