@@ -37,7 +37,8 @@ def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
     # Swap mounted drive locations
     # UPDATE REGULARLY
     mounted_drive_dict = {
-        'Y:': "/groups/zimmer"
+        'Y:': "/groups/zimmer",
+        'Z:': "/scratch"
     }
 
     for win_drive, linux_drive in mounted_drive_dict.items():
