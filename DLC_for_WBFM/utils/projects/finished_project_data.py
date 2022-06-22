@@ -769,7 +769,8 @@ class ProjectData:
             'Intermediate global IDs']
 
         An additional option that is not added:
-            'GT IDs'
+            'GT IDs' (only exists if ground truth annotation is present)
+            'Scaled colored segmentation' (counts number of non-nan entries in the traces)
 
         Parameters
         ----------

@@ -1,4 +1,8 @@
+from typing import Dict
+
 import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
 
 from DLC_for_WBFM.utils.external.utils_pandas import cast_int_or_nan
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -88,3 +92,20 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
                'visible': False}
 
     return options
+
+
+def count_nonnan_for_napari_property_dict(df: pd.DataFrame) -> Dict[int, float]:
+    num_nonnan = df.count()
+    percent_nonnan = list(num_nonnan + 1 / df.shape[0])
+
+    vec_of_labels = np.nanmean(df.to_numpy(), axis=0)
+
+    prop = np.array(percent_nonnan)
+    prop_scaled = (
+            (prop - prop.min()) / (prop.max() - prop.min())
+    )  # matplotlib cmaps need values in [0, 1]
+    colors = plt.cm.plasma(prop_scaled)
+
+    prop_dict = dict(zip(vec_of_labels, colors))
+
+    return prop_dict

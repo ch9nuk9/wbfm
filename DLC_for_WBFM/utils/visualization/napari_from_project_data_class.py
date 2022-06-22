@@ -3,10 +3,13 @@ from typing import Union, List
 import numpy as np
 import pandas as pd
 import zarr
+from matplotlib import pyplot as plt
+
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 import napari
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list, napari_labels_from_frames
-from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
+from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe, \
+    count_nonnan_for_napari_property_dict
 
 
 @dataclass
@@ -130,13 +133,24 @@ class NapariLayerInitializer:
             # if dask_for_segmentation:
             #     seg_array = da.from_zarr(project_data.raw_segmentation, chunk=dask_chunk)
             # else:
-            seg_array = zarr.array(project_data.raw_segmentation)
+            # Wrapper as a stub (?) to be able to modify the layer without modifying on disk
+            # seg_array = zarr.array(project_data.raw_segmentation)
+            seg_array = project_data.raw_segmentation
             viewer.add_labels(seg_array, name="Raw segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=False,
                               rendering='translucent')
         if 'Colored segmentation' in which_layers and project_data.segmentation is not None:
             viewer.add_labels(project_data.segmentation, name="Colored segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=False)
+
+        if 'Scaled colored segmentation' in which_layers and project_data.segmentation is not None:
+            prop_dict = count_nonnan_for_napari_property_dict(project_data.red_traces)
+            _layer = viewer.add_labels(project_data.segmentation, name="Scaled colored segmentation",
+                                       scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
+                                       opacity=0.4, visible=True, rendering='translucent')
+
+            _layer.color_mode = 'direct'
+            _layer.color = prop_dict
 
         # Add a text overlay
         if 'Neuron IDs' in which_layers:
