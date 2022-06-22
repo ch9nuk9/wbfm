@@ -1,7 +1,9 @@
+from dataclasses import dataclass
 from typing import Dict
 
 import numpy as np
 import pandas as pd
+from backports import cached_property
 from matplotlib import pyplot as plt
 
 from DLC_for_WBFM.utils.external.utils_pandas import cast_int_or_nan
@@ -94,18 +96,76 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
     return options
 
 
-def count_nonnan_for_napari_property_dict(df: pd.DataFrame) -> Dict[int, float]:
-    num_nonnan = df.count()
-    percent_nonnan = list(num_nonnan + 1 / df.shape[0])
+@dataclass
+class NapariPropertyHeatMapper:
+    """Builds dictionaries to map segmentation labels to various neuron properties (e.g. average or max brightness)"""
 
-    vec_of_labels = np.nanmean(df.to_numpy(), axis=0)
+    red_traces: pd.DataFrame
+    green_traces: pd.DataFrame
 
-    prop = np.array(percent_nonnan)
+    @property
+    def names(self):
+        return get_names_from_df(self.red_traces)
+
+    @property
+    def vec_of_labels(self):
+        return np.nanmean(self.df_labels.to_numpy(), axis=0).astype(int)
+
+    @property
+    def df_labels(self) -> pd.DataFrame:
+        return self.red_traces.loc[:, (slice(None), 'label')]
+
+    @property
+    def mean_red(self):
+        tmp1 = self.red_traces.loc[:, (slice(None), 'intensity_image')]
+        tmp1.columns = self.names
+        tmp2 = self.red_traces.loc[:, (slice(None), 'area')]
+        tmp2.columns = self.names
+        return tmp1 / tmp2
+
+    @property
+    def mean_green(self):
+        tmp1 = self.green_traces.loc[:, (slice(None), 'intensity_image')]
+        tmp1.columns = self.names
+        tmp2 = self.green_traces.loc[:, (slice(None), 'area')]
+        tmp2.columns = self.names
+        return tmp1 / tmp2
+
+    def count_nonnan(self) -> Dict[int, float]:
+        num_nonnan = self.df_labels.count()
+        val_to_plot = np.array(num_nonnan) / self.df_labels.shape[0]
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+
+    def max_of_red(self):
+        val_to_plot = list(self.mean_red.max())
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+
+    def std_of_red(self):
+        val_to_plot = list(self.mean_red.std())
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+
+    def max_of_green(self):
+        val_to_plot = list(self.mean_green.max())
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+
+    def std_of_green(self):
+        val_to_plot = list(self.mean_green.std())
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+
+    def max_of_ratio(self):
+        val_to_plot = list((self.mean_green / self.mean_red).max())
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+
+    def std_of_ratio(self):
+        val_to_plot = list((self.mean_green / self.mean_red).std())
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+
+
+def property_vector_to_colormap(val_to_plot, vec_of_labels, cmap=plt.cm.plasma):
+    prop = np.array(val_to_plot)
     prop_scaled = (
             (prop - prop.min()) / (prop.max() - prop.min())
     )  # matplotlib cmaps need values in [0, 1]
-    colors = plt.cm.plasma(prop_scaled)
-
+    colors = cmap(prop_scaled)
     prop_dict = dict(zip(vec_of_labels, colors))
-
     return prop_dict

@@ -2,14 +2,11 @@ from dataclasses import dataclass
 from typing import Union, List
 import numpy as np
 import pandas as pd
-import zarr
-from matplotlib import pyplot as plt
 
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 import napari
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list, napari_labels_from_frames
-from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe, \
-    count_nonnan_for_napari_property_dict
+from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe, NapariPropertyHeatMapper
 
 
 @dataclass
@@ -143,15 +140,6 @@ class NapariLayerInitializer:
             viewer.add_labels(project_data.segmentation, name="Colored segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=False)
 
-        if 'Scaled colored segmentation' in which_layers and project_data.segmentation is not None:
-            prop_dict = count_nonnan_for_napari_property_dict(project_data.red_traces)
-            _layer = viewer.add_labels(project_data.segmentation, name="Scaled colored segmentation",
-                                       scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
-                                       opacity=0.4, visible=True, rendering='translucent')
-
-            _layer.color_mode = 'direct'
-            _layer.color = prop_dict
-
         # Add a text overlay
         if 'Neuron IDs' in which_layers:
             df = project_data.red_traces
@@ -190,6 +178,25 @@ class NapariLayerInitializer:
 
             options = dict(data=pts_data, name="Point Cloud", size=1, blending='opaque')
             viewer.add_points(**options)
+
+        # Special layers from the heatmapper class
+        heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces)
+        for layer_tuple in which_layers:
+            if not isinstance(layer_tuple, tuple):
+                continue
+            elif 'heatmap' not in layer_tuple:
+                logging.warning(f"Skipping tuple: {layer_tuple}")
+                continue
+            else:
+                layer_name = layer_tuple[1]
+
+            prop_dict = getattr(heat_mapper, layer_name)()
+            # Note: this layer must be visible for the prop_dict to work correctly
+            _layer = viewer.add_labels(project_data.segmentation, name=layer_name,
+                                       scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
+                                       opacity=0.4, visible=True, rendering='translucent')
+            _layer.color = prop_dict
+            _layer.color_mode = 'direct'
 
         project_data.logger.info(f"Finished adding layers {which_layers}")
 

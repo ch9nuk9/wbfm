@@ -770,7 +770,14 @@ class ProjectData:
 
         An additional option that is not added:
             'GT IDs' (only exists if ground truth annotation is present)
-            'Scaled colored segmentation' (counts number of non-nan entries in the traces)
+
+        Additional special type, which should be passed as a tuple:
+            ('heatmap', 'count_nonnan')
+            ('heatmap', 'max_of_red')
+            ('heatmap', 'max_of_green')
+            ('heatmap', 'std_of_green')
+
+        See: NapariPropertyHeatMapper for up-to-date list of options (all methods are valid)
 
         Parameters
         ----------
