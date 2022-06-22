@@ -324,8 +324,8 @@ class SuperGlue(nn.Module):
 
         if self.to_normalize_keypoints:
             # Keypoint normalization.
-            kpts0 = normalize_keypoints_3d(kpts0, data['image0'].shape)
-            kpts1 = normalize_keypoints_3d(kpts1, data['image1'].shape)
+            kpts0 = normalize_keypoints_3d(kpts0, data['image0_sz'][0])
+            kpts1 = normalize_keypoints_3d(kpts1, data['image1_sz'][0])
         # Keypoint MLP encoder.
         if len(desc0) > 0:
             # Default: image + location information
@@ -398,15 +398,17 @@ class BipartiteSuperGlueStyleModel:
 ## MY ADDITIONS
 
 class SuperGlueModel(LightningModule):
-    def __init__(self, feature_dim=840, criterion=None, lr=1e-3, **kwargs):
+    def __init__(self, feature_dim=840, criterion=None, lr=1e-3, device=None, **kwargs):
         super().__init__()
 
         self.superglue = SuperGlue(config={**dict(descriptor_dim=feature_dim), **kwargs})
         self.lr = lr
 
-        if torch.cuda.is_available():
+        if device is None and torch.cuda.is_available():
             logging.info(f"Found CUDA!")
             self.to('cuda')
+        elif device is not None:
+            self.to(device)
         else:
             logging.info(f"Did not find CUDA")
 
@@ -503,7 +505,9 @@ class SuperGlueUnpacker:
             desc1, kpts1, scores1 = [], [], []
             all_matches = []
 
-        image0 = torch.tensor(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0))
+        image3d_sz = project_data.red_data.shape[1:]
+        image5d_sz = torch.tensor((1, 1) + image3d_sz)
+        # image0 = torch.tensor(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0))
         # image1 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t1]), axis=0), axis=0)
 
         # Need expansion when not used in loop
@@ -512,7 +516,7 @@ class SuperGlueUnpacker:
 
         # Repack
         data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
-                    image0=image0, image1=image0,
+                    image0_sz=image5d_sz, image1_sz=image5d_sz,
                     scores0=scores0, scores1=scores1)
         return data, is_valid_pair
 
