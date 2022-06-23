@@ -29,7 +29,7 @@ def cfg(project_path):
 
 
 @ex.automain
-def make_dlc_labeled_videos(_config, _run):
+def main(_config, _run):
     sacred.commands.print_config(_run)
 
     proj_dat = ProjectData.load_final_project_data_from_config(_config['project_path'])

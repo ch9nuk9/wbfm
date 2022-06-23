@@ -213,11 +213,12 @@ def take_screenshot_using_project(project_data, additional_layers, base_layers=N
     if base_layers is None:
         base_layers = ['Red data']
 
+    viewer = NapariLayerInitializer().add_layers_to_viewer(project_data, which_layers=base_layers,
+                                                           **kwargs)
+
     for layer in tqdm(additional_layers):
         if not isinstance(layer, list):
             layer = [layer]
-        viewer = NapariLayerInitializer().add_layers_to_viewer(project_data, which_layers=base_layers,
-                                                               **kwargs)
         NapariLayerInitializer().add_layers_to_viewer(project_data, viewer=viewer, which_layers=layer,
                                                       **kwargs)
 
@@ -226,11 +227,10 @@ def take_screenshot_using_project(project_data, additional_layers, base_layers=N
         output_folder = project_data.project_config.get_visualization_dir()
 
         # Assume I'm only adding one layer type over the base layer
-        layer = layer[0]
-        if isinstance(layer, tuple):
-            fname = os.path.join(output_folder, f'{layer[1]}.png')
-        else:
-            fname = os.path.join(output_folder, f'{layer}.png')
+        layer_name = layer[0]
+        if isinstance(layer_name, tuple):
+            layer_name = layer_name[1]
+        fname = os.path.join(output_folder, f'{layer_name}.png')
         viewer.screenshot(path=fname)
 
-        viewer.close()
+        viewer.layers.remove(layer_name)
