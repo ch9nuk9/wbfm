@@ -1,8 +1,11 @@
+import os
 from dataclasses import dataclass
 from typing import Union, List
 import numpy as np
 import pandas as pd
+from tqdm.auto import tqdm
 
+from DLC_for_WBFM.gui.utils.utils_gui import change_viewer_time_point
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 import napari
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list, napari_labels_from_frames
@@ -201,3 +204,33 @@ class NapariLayerInitializer:
         project_data.logger.info(f"Finished adding layers {which_layers}")
 
         return viewer
+
+
+def take_screenshot_using_project(project_data, additional_layers, base_layers=None, t_target=None, **kwargs):
+    if t_target is None:
+        tracking_cfg = project_data.project_config.get_tracking_config()
+        t_target = tracking_cfg.config['final_3d_tracks']['template_time_point']
+    if base_layers is None:
+        base_layers = ['Red data']
+
+    for layer in tqdm(additional_layers):
+        if not isinstance(layer, list):
+            layer = [layer]
+        viewer = NapariLayerInitializer().add_layers_to_viewer(project_data, which_layers=base_layers,
+                                                               **kwargs)
+        NapariLayerInitializer().add_layers_to_viewer(project_data, viewer=viewer, which_layers=layer,
+                                                      **kwargs)
+
+        change_viewer_time_point(viewer, t_target=t_target)
+
+        output_folder = project_data.project_config.get_visualization_dir()
+
+        # Assume I'm only adding one layer type over the base layer
+        layer = layer[0]
+        if isinstance(layer, tuple):
+            fname = os.path.join(output_folder, f'{layer[1]}.png')
+        else:
+            fname = os.path.join(output_folder, f'{layer}.png')
+        viewer.screenshot(path=fname)
+
+        viewer.close()
