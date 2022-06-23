@@ -214,13 +214,20 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     subfolder=str(subfolder))
         return args
 
-    def get_log_dir(self):
-        return str(Path(self.project_dir).joinpath('log'))
+    def get_log_dir(self) -> str:
+        foldername = Path(self.project_dir).joinpath('log')
+        foldername.mkdir(exist_ok=True)
+        return str(foldername)
 
-    def resolve_mounted_path_in_current_os(self, key):
+    def get_visualization_dir(self) -> str:
+        foldername = Path(self.project_dir).joinpath('visualization')
+        foldername.mkdir(exist_ok=True)
+        return str(foldername)
+
+    def resolve_mounted_path_in_current_os(self, key) -> Path:
         return Path(resolve_mounted_path_in_current_os(self.config[key]))
 
-    def get_folder_with_calibration_for_day(self):
+    def get_folder_with_calibration_for_day(self) -> Path:
         raw_bigtiff_filename = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
         raw_bigtiff_filename = Path(raw_bigtiff_filename)
         folder_for_entire_day = raw_bigtiff_filename.parents[2]  # 3 folders up
@@ -229,7 +236,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             raise FileNotFoundError(folder_for_entire_day)
         return folder_for_entire_day
 
-    def get_folder_with_background(self):
+    def get_folder_with_background(self) -> Path:
         folder_for_entire_day = self.get_folder_with_calibration_for_day()
         folder_for_background = folder_for_entire_day.joinpath('background')
         if not folder_for_background.exists():
