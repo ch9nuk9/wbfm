@@ -3,7 +3,6 @@ import logging
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
-
 from matplotlib import pyplot as plt
 from skimage import transform
 from sklearn.decomposition import PCA

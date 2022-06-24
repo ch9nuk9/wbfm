@@ -2,17 +2,16 @@ import logging
 import os
 from collections import defaultdict
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
+from DLC_for_WBFM.utils.general.postures.centerline_pca import WormFullVideoPosture, WormReferencePosture
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df, empty_dataframe_like
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import calc_FramePair_from_Frames
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons, TrackedWorm
 from DLC_for_WBFM.utils.general.distance_functions import summarize_confidences_outlier_percent, precalculate_lists_from_dataframe, \
     calc_global_track_to_tracklet_distances_subarray
-from DLC_for_WBFM.utils.general.postures import WormFullVideoPosture, WormReferencePosture
 from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
 import networkx as nx
 
