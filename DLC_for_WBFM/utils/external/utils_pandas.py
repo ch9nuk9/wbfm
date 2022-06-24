@@ -227,7 +227,7 @@ def accuracy_of_matches(gt_matches, new_matches, null_value=-1, allow_unknown=Tr
         else:
             fp += 1
     # Add the remainder (unmatched in the model) to fn
-    fn = len(gt_dict) - tp - fn
+    fn = len(gt_dict) - tp
     return tp, fp, fn, unknown
 
 
