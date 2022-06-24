@@ -213,15 +213,12 @@ def accuracy_of_matches(gt_matches, new_matches, null_value=-1, allow_unknown=Tr
     """
     tp = 0
     fp = 0
-    fn = 0
     unknown = 0
     gt_dict = dict(gt_matches)
     for m in new_matches:
         gt_val = gt_dict.get(m[0], None)
         if allow_unknown and gt_val is None:
             unknown += 1
-        # elif null_value in m:
-        #     fn += 1
         elif m[1] == gt_val:
             tp += 1
         else:
