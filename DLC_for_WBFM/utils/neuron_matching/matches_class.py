@@ -7,6 +7,7 @@ import networkx as nx
 import numpy as np
 from networkx import Graph, NetworkXError
 
+from DLC_for_WBFM.utils.external.utils_pandas import accuracy_of_matches
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
 from DLC_for_WBFM.utils.general.distance_functions import dist2conf
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, int2name_using_mode
@@ -188,6 +189,8 @@ class MatchesWithConfidence:
 
         gt_matches = []
         for i, gt0 in enumerate(gt_ids0):
+            if gt0 == -1:
+                continue
             match_ind1 = np.where(gt_ids1 == gt0)[0]
             if len(match_ind1) > 0:
                 match = (i, match_ind1[0])
@@ -408,9 +411,6 @@ class MatchesAsGraph(Graph):
             print(f"{key} with weight={val['weight']}")
 
 
-# def get_tracklet_name_from_full_name(name):
-#     """Assume name is like: bipartite_1_trackletGroup_1_neuron228"""
-#     return name.split('_')[-1]
 def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWithConfidence, verbose=0):
     """
     Get mismatches of different types:
@@ -468,3 +468,10 @@ def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWith
             model_matches_no_gt.append(model_m)
 
     return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
+
+
+def accuracy_of_matches_from_classes(gt_matches: MatchesWithConfidence, model_matches: MatchesWithConfidence):
+    gt_m = gt_matches.matches_without_conf
+    model_m = model_matches.matches_without_conf
+
+    return accuracy_of_matches(gt_m, model_m)
