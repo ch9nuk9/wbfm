@@ -182,6 +182,20 @@ class MatchesWithConfidence:
         return MatchesWithConfidence(i1, i2, confidence)
 
     @staticmethod
+    def matches_from_list_of_gt_ids(gt_ids0, gt_ids1, confidence=None):
+        if confidence is None:
+            confidence = 1.0
+
+        gt_matches = []
+        for i, gt0 in enumerate(gt_ids0):
+            match_ind1 = np.where(gt_ids1 == gt0)[0]
+            if len(match_ind1) > 0:
+                match = (i, match_ind1[0])
+                gt_matches.append(match)
+
+        return MatchesWithConfidence.matches_from_array(gt_matches, confidence)
+
+    @staticmethod
     def matches_from_distance_matrix(dist, gamma=1.0):
         row_i, col_i = linear_sum_assignment(dist)
         all_dist = [dist[i, j] for i, j in zip(row_i, col_i)]
@@ -397,3 +411,60 @@ class MatchesAsGraph(Graph):
 # def get_tracklet_name_from_full_name(name):
 #     """Assume name is like: bipartite_1_trackletGroup_1_neuron228"""
 #     return name.split('_')[-1]
+def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWithConfidence, verbose=0):
+    """
+    Get mismatches of different types:
+    1. Match is different between model and gt:
+        1a. The match that the model gave
+        1b. The match that the gt gave
+    2. Match doesn't exist in gt, but does in model
+    3. Match exists in gt, but doesn't in model
+
+    Parameters
+    ----------
+    gt_matches
+    model_matches
+
+    Returns
+    -------
+    gt_matches_different_model
+    model_matches_different_gt
+    model_matches_no_gt
+    gt_matches_no_model
+
+    """
+
+    dict_of_model_matches = model_matches.get_mapping_0_to_1(unique=True)
+    dict_of_gt_matches = gt_matches.get_mapping_0_to_1(unique=True)
+    list_of_model_matches: List[list] = model_matches.matches_without_conf.tolist()
+    list_of_gt_matches: List[list] = gt_matches.matches_without_conf.tolist()
+    inverse_dict_of_model_matches = model_matches.get_mapping_1_to_0()
+
+    model_matches_no_gt = []
+    gt_matches_no_model = []
+    gt_matches_different_model = []
+    model_matches_different_gt = []
+
+    for gt_m in list_of_gt_matches:
+        if gt_m in list_of_model_matches:
+            if verbose >= 3:
+                print(f"{gt_m} in {list_of_model_matches}")
+            # Do not explicitly save correct matches
+            continue
+        elif gt_m[0] != inverse_dict_of_model_matches.get(gt_m[1], gt_m[0]):
+            # The first time point had the wrong match
+            gt_matches_different_model.append(gt_m)
+            model_matches_different_gt.append([inverse_dict_of_model_matches[gt_m[1]], gt_m[1]])
+        elif gt_m[1] != dict_of_model_matches.get(gt_m[0], gt_m[1]):
+            # The second time point had the wrong match
+            gt_matches_different_model.append(gt_m)
+            model_matches_different_gt.append([gt_m[0], dict_of_model_matches[gt_m[0]]])
+        else:
+            # Rare; usually the model has many more matches
+            gt_matches_no_model.append(gt_m)
+
+    for model_m in list_of_model_matches:
+        if model_m[0] not in dict_of_gt_matches:
+            model_matches_no_gt.append(model_m)
+
+    return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
