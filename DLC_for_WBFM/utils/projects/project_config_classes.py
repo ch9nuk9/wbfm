@@ -252,6 +252,33 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return folder_for_calibration
 
+    def get_folder_with_behavior_from_red_fname(self):
+        """If the user did not set the behavior foldername, try to infer it from the red"""
+        red_fname = self.config['red_bigtiff_fname']
+        main_data_folder = Path(red_fname).parent
+        # First, get the subfolder
+        for content in main_data_folder.iterdir():
+            if content.is_dir():
+                # UK spelling
+                if 'behaviour' in content.name:
+                    behavior_subfolder = main_data_folder.joinpath(content)
+                    break
+        else:
+            print(f"Found no behavior subfolder in {main_data_folder}, aborting")
+            return None
+        # Second, get the file itself
+        for content in behavior_subfolder.iterdir():
+            if content.is_file():
+                # UK spelling, and there may be preprocessed bigtiffs in the folder
+                if str(content).endswith('-behaviour-bigtiff.btf'):
+                    behavior_fname = behavior_subfolder.joinpath(content)
+                    break
+        else:
+            print(f"Found no behavior file in {behavior_subfolder}, aborting")
+            return None
+
+        return behavior_fname, behavior_subfolder
+
 # def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
 #     project_cfg = load_config(project_path)
 #

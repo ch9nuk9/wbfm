@@ -11,6 +11,7 @@ project_path: null # For reference afterwards
 ###################
 # Data
 ###################
+behavior_bigtiff_fname: null
 red_bigtiff_fname: null
 green_bigtiff_fname: null
 
