@@ -455,6 +455,8 @@ class SuperGlueUnpacker:
     t_template: int = 0
     data_template: dict = None
 
+    convert_zimmer2leifer: bool = True  # Only relevant in the spatial-only context
+
     def __post_init__(self):
         # Make a partial dictionary with the data from a single time point
         project_data = self.project_data
@@ -492,7 +494,9 @@ class SuperGlueUnpacker:
     def unpack_only_locations(self, t0):
         desc0 = []
         kpts0 = self.project_data.get_centroids_as_numpy(t0)
-        kpts0 = self.project_data.physical_unit_conversion.zimmer2leifer(kpts0)
+        if self.convert_zimmer2leifer:
+            kpts0 = self.project_data.physical_unit_conversion.zimmer2leifer(kpts0)
+
         kpts0 = torch.tensor(kpts0).float()
         scores0 = torch.ones((kpts0.shape[0], 1)).float()
         return desc0, kpts0, scores0
