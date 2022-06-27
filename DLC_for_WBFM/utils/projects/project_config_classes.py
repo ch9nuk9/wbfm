@@ -255,7 +255,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     def get_behavior_from_red_fname(self):
         """If the user did not set the behavior foldername, try to infer it from the red"""
         red_fname = self.config['red_bigtiff_fname']
-        main_data_folder = Path(red_fname).parent
+        main_data_folder = Path(red_fname).parents[1]
         # First, get the subfolder
         for content in main_data_folder.iterdir():
             if content.is_dir():
