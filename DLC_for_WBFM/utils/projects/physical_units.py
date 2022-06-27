@@ -41,7 +41,7 @@ class PhysicalUnitConversion:
         return xy_in_um
 
     def zimmer2leifer(self, vol0_zxy: np.ndarray) -> np.ndarray:
-        """ Target: 1 unit = 84 um"""
+        """ Target: 1 unit = 84 um, and xyz from zxy"""
 
         # xy, then z
         xy_in_um = vol0_zxy[:, [1, 2]] * self.zimmer_fluroscence_um_per_pixel_xy
@@ -56,3 +56,20 @@ class PhysicalUnitConversion:
         xyz_in_leifer -= np.mean(xyz_in_leifer, axis=0)
 
         return xyz_in_leifer
+
+    def leifer2zimmer(self, vol0_xyz_leifer: np.ndarray) -> np.ndarray:
+        """Tries to invert zimmer2leifer, but does not know the original mean value"""
+
+        # xy, then z
+        xy_in_um = vol0_xyz_leifer[:, [0, 1]] * self.leifer_um_per_unit
+        xy_in_zimmer = xy_in_um / self.zimmer_fluroscence_um_per_pixel_xy
+
+        z_in_um = vol0_xyz_leifer[:, [2]] * self.leifer_um_per_unit
+        z_in_zimmer = z_in_um / self.zimmer_um_per_pixel_z
+
+        zxy_in_zimmer = np.hstack([z_in_zimmer, xy_in_zimmer])
+        xyz_in_zimmer = zxy_in_zimmer[:, [2, 1, 0]]
+
+        xyz_in_zimmer -= np.min(xyz_in_zimmer, axis=0)
+
+        return xyz_in_zimmer
