@@ -70,13 +70,13 @@ class WormFullVideoPosture:
                 project_config.logger.warning("behavior_fname search failed; aborting")
                 raise FileNotFoundError
         else:
-            behavior_foldername = Path(behavior_fname).parent
+            behavior_subfolder = Path(behavior_fname).parent
 
         # Second get the specific files
         filename_curvature = None
         filename_x = None
         filename_y = None
-        for file in Path(behavior_foldername).iterdir():
+        for file in Path(behavior_subfolder).iterdir():
             if not file.is_file():
                 continue
             if file.name == 'skeleton_spline_K.csv':
