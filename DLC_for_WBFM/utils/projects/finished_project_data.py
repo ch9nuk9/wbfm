@@ -944,7 +944,7 @@ def calc_mismatch_between_ground_truth_and_pairs(all_matches: Dict[tuple, FrameP
 
     model_obj = MatchesWithConfidence.matches_from_array(model_matches, minimum_confidence=minimum_confidence)
     gt_obj = MatchesWithConfidence.matches_from_array(gt_matches, 1)
-    gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model = \
+    correct_matches, gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model = \
         get_mismatches(gt_obj, model_obj)
 
     return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
