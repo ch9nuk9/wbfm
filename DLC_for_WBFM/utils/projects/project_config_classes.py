@@ -252,9 +252,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return folder_for_calibration
 
-    def get_behavior_file_from_red_fname(self):
+    def get_behavior_raw_file_from_red_fname(self):
         """If the user did not set the behavior foldername, try to infer it from the red"""
-        behavior_subfolder, flag = self.get_behavior_parent_folder_from_red_fname()
+        behavior_subfolder, flag = self.get_behavior_raw_parent_folder_from_red_fname()
         if not flag:
             return None
         # Second, get the file itself
@@ -270,7 +270,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return behavior_fname, behavior_subfolder
 
-    def get_behavior_parent_folder_from_red_fname(self):
+    def get_behavior_raw_parent_folder_from_red_fname(self):
         red_fname = self.config['red_bigtiff_fname']
         main_data_folder = Path(red_fname).parents[1]
         # First, get the subfolder
@@ -286,17 +286,6 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             flag = False
             behavior_subfolder = None
         return behavior_subfolder, flag
-
-
-# def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
-#     project_cfg = load_config(project_path)
-#
-#     if 'preprocessed_red' not in project_cfg:
-#         raise ValueError("Must preprocess data before the segmentation step")
-#     updates = {'video_path': project_cfg['preprocessed_red']}
-#     segment_cfg.update(updates)
-#
-#     return segment_cfg
 
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:

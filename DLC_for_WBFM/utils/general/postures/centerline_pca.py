@@ -65,7 +65,7 @@ class WormFullVideoPosture:
         behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
         if behavior_fname is None:
             project_config.logger.info("behavior_fname not found; searching")
-            behavior_subfolder, flag = project_config.get_behavior_parent_folder_from_red_fname()
+            behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
             if not flag:
                 project_config.logger.warning("behavior_fname search failed; aborting")
                 raise FileNotFoundError
