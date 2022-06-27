@@ -93,7 +93,7 @@ def visualize_tracks_simple(pc0, pc1, matches):
     return line_set
 
 
-def visualize_tracks_two_matches(neurons0, neurons1, match0, match1, offset=None):
+def visualize_tracks_two_matches(neurons0, neurons1, match0, match1, match2, offset=None):
     if offset is None:
         offset = np.array([0.001, 0, 0])
     import open3d as o3d
@@ -112,7 +112,13 @@ def visualize_tracks_two_matches(neurons0, neurons1, match0, match1, offset=None
     pc0.translate(-offset)
     pc1.translate(offset)
 
-    o3d.visualization.draw_geometries([lines0, lines1, pc0, pc1])
+    if match2 is not None:
+        lines2 = build_line_set_from_matches(pc0, pc1, match2)
+        c2 = [[0, 0, 1] for _ in range(len(match2))]
+        lines2.colors = o3d.utility.Vector3dVector(c2)
+        o3d.visualization.draw_geometries([lines0, lines1, lines2, pc0, pc1])
+    else:
+        o3d.visualization.draw_geometries([lines0, lines1, pc0, pc1])
 
     return lines0, lines1
 
