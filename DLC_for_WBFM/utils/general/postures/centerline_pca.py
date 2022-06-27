@@ -9,6 +9,8 @@ from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
 
+from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+
 
 @dataclass
 class WormFullVideoPosture:
@@ -48,6 +50,44 @@ class WormFullVideoPosture:
         c_x = self.centerlineX.iloc[t * self.fps]
         c_y = self.centerlineY.iloc[t * self.fps]
         return np.vstack([c_x, c_y]).T
+
+    @staticmethod
+    def load_from_config(project_config: ModularProjectConfig):
+        # Get the relevant foldernames from a config file
+        # The exact files may not be in the config, so try to find them
+
+        # First, get the folder
+        behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
+        if behavior_fname is None:
+            project_config.logger.info("behavior_fname not found; searching")
+            results = project_config.get_behavior_from_red_fname()
+            if results is not None:
+                behavior_fname, behavior_foldername = results
+            else:
+                project_config.logger.warning("behavior_fname search failed; aborting")
+                raise FileNotFoundError
+        else:
+            behavior_foldername = Path(behavior_fname).parent
+
+        # Second get the specific files
+        filename_curvature = None
+        filename_x = None
+        filename_y = None
+        for file in Path(behavior_foldername).iterdir():
+            if not file.is_file():
+                continue
+            if file.name == 'skeleton_spline_K.csv':
+                filename_curvature = str(file.name)
+            elif file.name == 'skeleton_spline_X_coords.csv':
+                filename_x = str(file.name)
+            elif file.name == 'skeleton_spline_Y_coords.csv':
+                filename_y = str(file.name)
+        all_files = [filename_curvature, filename_x, filename_y]
+        if None in all_files:
+            print(f"Did not find at least one file: {all_files}")
+            raise FileNotFoundError
+
+        return WormFullVideoPosture(*all_files)
 
 
 @dataclass

@@ -252,7 +252,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return folder_for_calibration
 
-    def get_folder_with_behavior_from_red_fname(self):
+    def get_behavior_from_red_fname(self):
         """If the user did not set the behavior foldername, try to infer it from the red"""
         red_fname = self.config['red_bigtiff_fname']
         main_data_folder = Path(red_fname).parent
