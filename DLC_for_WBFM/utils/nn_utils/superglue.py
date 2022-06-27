@@ -327,7 +327,7 @@ class SuperGlue(nn.Module):
             kpts0 = normalize_keypoints_3d(kpts0, data['image0_sz'][0])
             kpts1 = normalize_keypoints_3d(kpts1, data['image1_sz'][0])
         # Keypoint MLP encoder.
-        if len(desc0) > 0:
+        if desc0.numel() > 0:
             # Default: image + location information
             desc0 = desc0.float().transpose(1, 2)
             desc1 = desc1.float().transpose(1, 2)
@@ -355,7 +355,7 @@ class SuperGlue(nn.Module):
         scores = self.calculate_match_scores(data)
         indices0, _, mscores0, _ = self.process_scores_into_matches(scores)
 
-        matches_with_conf = [[i, int(m), score.cpu().numpy()] for i, (m, score) in enumerate(zip(indices0[0], mscores0[0]))]
+        matches_with_conf = [[i, int(m), score.detach().cpu().numpy()] for i, (m, score) in enumerate(zip(indices0[0], mscores0[0]))]
         return matches_with_conf
 
 
@@ -482,7 +482,7 @@ class SuperGlueUnpacker:
         scores0 = torch.ones((kpts0.shape[0], 1)).float()
         return desc0, kpts0, scores0
 
-    def unpack_from_locations(self, zxy0):
+    def unpack_from_leifer_template(self, zxy0):
         # Made for use with Leifer's neuropal templates
         kpts0 = torch.tensor(zxy0[:, :3]).float()
         scores0 = torch.ones((kpts0.shape[0], 1)).float()
@@ -540,10 +540,11 @@ class SuperGlueUnpacker:
         desc1, kpts1, scores1 = self.unpack_only_locations(t1)
         all_matches = self.get_gt_matches(t0, t1, use_gt_matches)
 
-        image0 = torch.tensor(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0))
+        image3d_sz = project_data.red_data.shape[1:]
+        image5d_sz = torch.tensor((1, 1) + image3d_sz)
         # Repack
         data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
-                    image0=image0, image1=image0,
+                    image0_sz=image5d_sz, image1_sz=image5d_sz,
                     scores0=scores0, scores1=scores1)
         return data, is_valid_pair
 
@@ -552,8 +553,8 @@ class SuperGlueUnpacker:
         is_valid_pair = True
 
         # Unpack, keeping the descriptions empty
-        desc0, kpts0, scores0 = self.unpack_from_locations(zxy_id0)
-        desc1, kpts1, scores1 = self.unpack_from_locations(zxy_id1)
+        desc0, kpts0, scores0 = self.unpack_from_leifer_template(zxy_id0)
+        desc1, kpts1, scores1 = self.unpack_from_leifer_template(zxy_id1)
 
         # Use my class to convert from a list of gt ids to a list of matches
         from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
@@ -561,10 +562,11 @@ class SuperGlueUnpacker:
         all_matches = torch.tensor(match_obj.matches_without_conf)
 
         # TODO
-        image0 = torch.tensor(np.expand_dims(np.zeros((2, 2), axis=0)))
+        image3d_sz = (1, 1, 1)  # Leifer is already approximately z-scored?
+        image5d_sz = torch.tensor((1, 1) + image3d_sz)
         # Repack
         data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
-                    image0=image0, image1=image0,
+                    image0_sz=image5d_sz, image1_sz=image5d_sz,
                     scores0=scores0, scores1=scores1)
         return data, is_valid_pair
 
