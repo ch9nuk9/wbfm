@@ -398,12 +398,7 @@ class ProjectData:
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
 
-        # TODO: do not hardcode
-        behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
-        behavior_fname = cfg.resolve_relative_path(behavior_fname)
-        if not os.path.exists(behavior_fname):
-            behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
-            behavior_fname = cfg.resolve_relative_path(behavior_fname)
+        behavior_fname = ProjectData.get_manual_behavior_annotation(cfg)
 
         zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
         excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
@@ -457,6 +452,26 @@ class ProjectData:
         cfg.logger.info(obj)
 
         return obj
+
+    @staticmethod
+    def get_manual_behavior_annotation(cfg):
+        try:
+            behavior_cfg = cfg.get_behavior_config()
+            behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
+        except FileNotFoundError:
+            # Old style project
+            pass
+
+        if behavior_fname is not None:
+            return behavior_fname
+
+        # Otherwise, check for other places I used to put it
+        behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
+        behavior_fname = cfg.resolve_relative_path(behavior_fname)
+        if not os.path.exists(behavior_fname):
+            behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
+            behavior_fname = cfg.resolve_relative_path(behavior_fname)
+        return behavior_fname
 
     @staticmethod
     def load_final_project_data_from_config(project_path: Union[str, os.PathLike, ModularProjectConfig],

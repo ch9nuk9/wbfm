@@ -187,6 +187,13 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = str(Path(self.project_dir).joinpath('preprocessing_config.yaml'))
         return ConfigFileWithProjectContext(fname)
 
+    def get_behavior_config(self):
+        fname = Path(self.project_dir).joinpath('behavior', 'behavior_config.yaml')
+        if not fname.exists():
+            self.logger.warning("Project does not have a behavior config file")
+            raise FileNotFoundError
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
+
     def get_traces_config(self):
         fname = Path(self.config['subfolder_configs']['traces'])
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
