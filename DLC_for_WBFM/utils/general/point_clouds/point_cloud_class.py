@@ -9,7 +9,7 @@ class PointCloudPair:
 
     pts0: np.ndarray
     pts1: np.ndarray
-    matches: np.ndarray
+    matches: np.ndarray = None
 
     confidence_threshold: float = 0.0
 

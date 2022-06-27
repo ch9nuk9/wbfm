@@ -65,10 +65,27 @@ def visualize_tracks(neurons0, neurons1, matches=None, trivial_matches=False, to
     else:
         to_draw = [pc_n0, pc_n1]
 
+    coords = build_coordinate_arrows()
+    to_draw.append(coords)
     if to_plot:
         o3d.visualization.draw_geometries(to_draw)
 
     return to_draw
+
+
+def build_coordinate_arrows(base=None):
+    if base is None:
+        base = np.array([-1, -1, -1])
+    import open3d as o3d
+    target_pts = base + np.array([[0, 0, 0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    target_colors = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    matches = [[0, 1], [0, 2], [0, 3]]
+    lines = o3d.geometry.LineSet(
+        points=o3d.utility.Vector3dVector(target_pts),
+        lines=o3d.utility.Vector2iVector(matches)
+    )
+    lines.colors = o3d.utility.Vector3dVector(target_colors)
+    return lines
 
 
 def build_pair_of_point_clouds(neurons0, neurons1):
@@ -93,7 +110,7 @@ def visualize_tracks_simple(pc0, pc1, matches):
     return line_set
 
 
-def visualize_tracks_two_matches(neurons0, neurons1, match0, match1, match2, offset=None):
+def visualize_tracks_two_matches(neurons0, neurons1, match0, match1, match2=None, offset=None):
     if offset is None:
         offset = np.array([0.001, 0, 0])
     import open3d as o3d
