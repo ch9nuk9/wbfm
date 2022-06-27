@@ -64,3 +64,14 @@ class PointCloudPair:
             pts0, pts1 = self.pts0, self.pts1
         from DLC_for_WBFM.utils.visualization.visualization_tracks import visualize_tracks
         visualize_tracks(pts0, pts1, matches=matches)
+
+
+def visualize_two_matches(match0: PointCloudPair, match1: PointCloudPair):
+    # Should probably just use: visualize_tracks_two_matches
+    import open3d as o3d
+    from DLC_for_WBFM.utils.visualization.visualization_tracks import visualize_tracks
+    to_draw1 = visualize_tracks(match0.pts0, match0.pts1, matches=match0.matches, to_plot=False)
+    to_draw2 = visualize_tracks(match1.pts0, match1.pts1, matches=match1.matches, to_plot=False)
+    to_draw1.extend(to_draw2)
+    o3d.visualization.draw_geometries(to_draw1)
+
