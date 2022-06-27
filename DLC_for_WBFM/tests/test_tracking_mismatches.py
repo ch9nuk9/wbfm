@@ -15,7 +15,7 @@ class TestTrackingMismatches(unittest.TestCase):
         pass
 
     def test_missing(self):
-        gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model = \
+        correct_matches, gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model = \
             get_mismatches(self.gt, self.model_missing)
 
         self.assertEqual(gt_matches_different_model, [])
@@ -24,7 +24,7 @@ class TestTrackingMismatches(unittest.TestCase):
         self.assertEqual(gt_matches_no_model, [[2, 2]])
 
     def test_extra(self):
-        gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model = \
+        correct_matches, gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model = \
             get_mismatches(self.gt, self.model_extra)
 
         self.assertEqual(gt_matches_different_model, [])
@@ -33,7 +33,7 @@ class TestTrackingMismatches(unittest.TestCase):
         self.assertEqual(gt_matches_no_model, [])
 
     def test_wrong(self):
-        gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model = \
+        correct_matches, gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model = \
             get_mismatches(self.gt, self.model_wrong)
 
         self.assertEqual(gt_matches_different_model, [[2, 2]])

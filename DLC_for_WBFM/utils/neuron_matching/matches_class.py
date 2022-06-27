@@ -160,23 +160,24 @@ class MatchesWithConfidence:
 
         def _cast_both(mat, do_numpy):
             i1_vec, i2_vec = _cast(mat[:, 0], do_numpy), _cast(mat[:, 1], do_numpy)
-            keep_vec = [(i1 != invalid_value) and (i2 != invalid_value) for i1, i2 in zip(i1_vec, i2_vec)]
+            _keep_vec = [(_i1 != invalid_value) and (_i2 != invalid_value) for _i1, _i2 in zip(i1_vec, i2_vec)]
             if minimum_confidence > 0.0:
-                keep_vec = [k and (conf > minimum_confidence) for k, conf in zip(keep_vec, matches_with_conf[:, 2])]
-            i1_out = [i1 for i1, keep in zip(i1_vec, keep_vec) if keep]
-            i2_out = [i2 for i2, keep in zip(i2_vec, keep_vec) if keep]
-            return i1_out, i2_out
+                _keep_vec = [k and (conf > minimum_confidence) for k, conf in zip(_keep_vec, mat[:, 2])]
+
+            i1_out = [_i1 for _i1, keep in zip(i1_vec, _keep_vec) if keep]
+            i2_out = [_i2 for _i2, keep in zip(i2_vec, _keep_vec) if keep]
+            return i1_out, i2_out, _keep_vec
 
         try:
-            i1, i2 = _cast_both(matches_with_conf, do_numpy=False)
+            i1, i2, keep_vec = _cast_both(matches_with_conf, do_numpy=False)
         except TypeError:
             try:
-                i1, i2 = _cast_both(matches_with_conf, do_numpy=True)
+                i1, i2, keep_vec = _cast_both(matches_with_conf, do_numpy=True)
             except TypeError:
                 matches_with_conf = np.array(matches_with_conf)
-                i1, i2 = _cast_both(matches_with_conf, do_numpy=True)
+                i1, i2, keep_vec = _cast_both(matches_with_conf, do_numpy=True)
         if confidence is None:
-            confidence = matches_with_conf[:, 2]
+            confidence = [c for c, keep in zip(matches_with_conf[:, 2], keep_vec) if keep]
         elif np.isscalar(confidence):
             confidence = confidence * np.ones(len(i1))
 
@@ -441,6 +442,7 @@ def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWith
     inverse_dict_of_model_matches = model_matches.get_mapping_1_to_0()
 
     model_matches_no_gt = []
+    correct_matches = []
     gt_matches_no_model = []
     gt_matches_different_model = []
     model_matches_different_gt = []
@@ -449,7 +451,7 @@ def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWith
         if gt_m in list_of_model_matches:
             if verbose >= 3:
                 print(f"{gt_m} in {list_of_model_matches}")
-            # Do not explicitly save correct matches
+            correct_matches.append(gt_m)
             continue
         elif gt_m[0] != inverse_dict_of_model_matches.get(gt_m[1], gt_m[0]):
             # The first time point had the wrong match
@@ -467,7 +469,7 @@ def get_mismatches(gt_matches: MatchesWithConfidence, model_matches: MatchesWith
         if model_m[0] not in dict_of_gt_matches:
             model_matches_no_gt.append(model_m)
 
-    return gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
+    return correct_matches, gt_matches_different_model, model_matches_different_gt, model_matches_no_gt, gt_matches_no_model
 
 
 def accuracy_of_matches_from_classes(gt_matches: MatchesWithConfidence, model_matches: MatchesWithConfidence):
