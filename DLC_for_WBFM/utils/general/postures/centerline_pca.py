@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -18,9 +19,9 @@ class WormFullVideoPosture:
     filename_x: str
     filename_y: str
 
-    curvature: pd.DataFrame = None
-    centerlineX: pd.DataFrame = None
-    centerlineY: pd.DataFrame = None
+    # curvature: pd.DataFrame = None
+    # centerlineX: pd.DataFrame = None
+    # centerlineY: pd.DataFrame = None
     pca_i_start: int = 10
     pca_i_end: int = -10
 
@@ -34,10 +35,22 @@ class WormFullVideoPosture:
 
         return pca_proj
 
-    def __post_init__(self):
-        self.centerlineX = pd.read_csv(self.filename_x, header=None)
-        self.centerlineY = pd.read_csv(self.filename_y, header=None)
-        self.curvature = pd.read_csv(self.filename_curvature, header=None)
+    @cached_property
+    def centerlineX(self):
+        return pd.read_csv(self.filename_x, header=None)
+
+    @cached_property
+    def centerlineY(self):
+        return pd.read_csv(self.filename_y, header=None)
+
+    @cached_property
+    def curvature(self):
+        return pd.read_csv(self.filename_curvature, header=None)
+
+    # def __post_init__(self):
+    #     self.centerlineX = pd.read_csv(self.filename_x, header=None)
+    #     self.centerlineY = pd.read_csv(self.filename_y, header=None)
+    #     self.curvature = pd.read_csv(self.filename_curvature, header=None)
 
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
@@ -77,11 +90,11 @@ class WormFullVideoPosture:
             if not file.is_file():
                 continue
             if file.name == 'skeleton_spline_K.csv':
-                filename_curvature = str(file.name)
+                filename_curvature = str(file)
             elif file.name == 'skeleton_spline_X_coords.csv':
-                filename_x = str(file.name)
+                filename_x = str(file)
             elif file.name == 'skeleton_spline_Y_coords.csv':
-                filename_y = str(file.name)
+                filename_y = str(file)
         all_files = [filename_curvature, filename_x, filename_y]
         if None in all_files:
             print(f"Did not find at least one file: {all_files}")
