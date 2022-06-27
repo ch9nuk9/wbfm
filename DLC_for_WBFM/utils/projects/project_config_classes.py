@@ -252,19 +252,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return folder_for_calibration
 
-    def get_behavior_from_red_fname(self):
+    def get_behavior_file_from_red_fname(self):
         """If the user did not set the behavior foldername, try to infer it from the red"""
-        red_fname = self.config['red_bigtiff_fname']
-        main_data_folder = Path(red_fname).parents[1]
-        # First, get the subfolder
-        for content in main_data_folder.iterdir():
-            if content.is_dir():
-                # UK spelling
-                if 'behaviour' in content.name:
-                    behavior_subfolder = main_data_folder.joinpath(content)
-                    break
-        else:
-            print(f"Found no behavior subfolder in {main_data_folder}, aborting")
+        behavior_subfolder, flag = self.get_behavior_parent_folder_from_red_fname()
+        if not flag:
             return None
         # Second, get the file itself
         for content in behavior_subfolder.iterdir():
@@ -278,6 +269,24 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             return None
 
         return behavior_fname, behavior_subfolder
+
+    def get_behavior_parent_folder_from_red_fname(self):
+        red_fname = self.config['red_bigtiff_fname']
+        main_data_folder = Path(red_fname).parents[1]
+        # First, get the subfolder
+        for content in main_data_folder.iterdir():
+            if content.is_dir():
+                # UK spelling
+                if 'behaviour' in content.name:
+                    behavior_subfolder = main_data_folder.joinpath(content)
+                    flag = True
+                    break
+        else:
+            print(f"Found no behavior subfolder in {main_data_folder}, aborting")
+            flag = False
+            behavior_subfolder = None
+        return behavior_subfolder, flag
+
 
 # def synchronize_segment_config(project_path: str, segment_cfg: dict) -> dict:
 #     project_cfg = load_config(project_path)

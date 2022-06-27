@@ -19,9 +19,6 @@ class WormFullVideoPosture:
     filename_x: str
     filename_y: str
 
-    # curvature: pd.DataFrame = None
-    # centerlineX: pd.DataFrame = None
-    # centerlineY: pd.DataFrame = None
     pca_i_start: int = 10
     pca_i_end: int = -10
 
@@ -47,11 +44,6 @@ class WormFullVideoPosture:
     def curvature(self):
         return pd.read_csv(self.filename_curvature, header=None)
 
-    # def __post_init__(self):
-    #     self.centerlineX = pd.read_csv(self.filename_x, header=None)
-    #     self.centerlineY = pd.read_csv(self.filename_y, header=None)
-    #     self.curvature = pd.read_csv(self.filename_curvature, header=None)
-
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
@@ -73,10 +65,8 @@ class WormFullVideoPosture:
         behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
         if behavior_fname is None:
             project_config.logger.info("behavior_fname not found; searching")
-            results = project_config.get_behavior_from_red_fname()
-            if results is not None:
-                behavior_fname, behavior_foldername = results
-            else:
+            behavior_subfolder, flag = project_config.get_behavior_parent_folder_from_red_fname()
+            if not flag:
                 project_config.logger.warning("behavior_fname search failed; aborting")
                 raise FileNotFoundError
         else:
