@@ -85,14 +85,8 @@ class WormFullVideoPosture:
         # The exact files may not be in the config, so try to find them
 
         # Before anything, load metadata
-        # TODO: in new config files, there should be a way to read this directly
-        preprocessing_cfg = project_config.get_preprocessing_config()
-        raw_number_of_planes = preprocessing_cfg.config['raw_number_of_planes']
-        was_flyback_saved = False
-        if not was_flyback_saved:
-            # Example: 23 saved fluorescence planes correspond to 24 behavior frames
-            raw_number_of_planes += 1
-        opt = dict(fps=raw_number_of_planes)
+        fps = get_behavior_fluorescence_fps_conversion(project_config)
+        opt = dict(fps=fps)
 
         # First, get the folder
         behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
@@ -178,6 +172,18 @@ class WormFullVideoPosture:
             return self.beh_annotation
         else:
             return self.beh_annotation.loc[range(0, len(self.beh_annotation), self.fps)]
+
+
+def get_behavior_fluorescence_fps_conversion(project_config):
+    # TODO: in new config files, there should be a way to read this directly
+    preprocessing_cfg = project_config.get_preprocessing_config()
+    raw_number_of_planes = preprocessing_cfg.config['raw_number_of_planes']
+    final_number_of_planes = project_config.config['dataset_params']['num_slices']
+    was_flyback_saved = final_number_of_planes == raw_number_of_planes  # True for older datasets
+    if not was_flyback_saved:
+        # Example: 23 saved fluorescence planes correspond to 24 behavior frames
+        raw_number_of_planes += 1
+    return raw_number_of_planes
 
 
 def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
