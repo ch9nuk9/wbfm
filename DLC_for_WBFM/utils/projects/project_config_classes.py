@@ -4,7 +4,7 @@ import os
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Tuple
 import pandas as pd
 import pprint
 
@@ -277,7 +277,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return behavior_fname, behavior_subfolder
 
-    def get_behavior_raw_parent_folder_from_red_fname(self):
+    def get_behavior_raw_parent_folder_from_red_fname(self) -> Tuple[Path, bool]:
         red_fname = self.config['red_bigtiff_fname']
         main_data_folder = Path(red_fname).parents[1]
         # First, get the subfolder
@@ -308,3 +308,32 @@ def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> Subfolde
     train_cfg.config['tracker_params']['external_detections'] = segment_cfg.unresolve_absolute_path(metadata_path)
 
     return train_cfg
+
+
+def update_path_to_behavior_in_config(cfg: ModularProjectConfig):
+    # Used to update old projects that were not initialized with a behavior folder
+    try:
+        _ = cfg.get_behavior_config()
+        print("Project already has a behavior config; update cannot be clearly automated")
+        return
+    except FileNotFoundError:
+        pass
+
+    # Then make a new folder, file, and fill it
+    fname = Path(cfg.project_dir).joinpath('behavior', 'behavior_config.yaml')
+    fname.parent.mkdir(exist_ok=False)
+    behavior_cfg = SubfolderConfigFile(self_path=str(fname), config={}, project_dir=cfg.project_dir, subfolder='behavior')
+
+    # Fill variable 1: Try to find behavior annotations
+    raw_behavior_foldername, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()
+    if not flag:
+        cfg.logger.warning("Could not find behavior foldername, so will create empty config file")
+    else:
+        annotated_behavior_csb = raw_behavior_foldername.joinpath('beh_annotation.csv')
+        if not annotated_behavior_csb.exists():
+            cfg.logger.warning(f"Could not find behavior file {annotated_behavior_csb}, so will create empty config file")
+        else:
+            behavior_cfg.config['manual_behavior_annotation'] = str(annotated_behavior_csb)
+
+    # After filling (or not), write to disk
+    behavior_cfg.update_self_on_disk()

@@ -28,11 +28,16 @@ def get_project_name(_config: dict) -> str:
 
 
 def edit_config(config_fname: typing.Union[str, pathlib.Path], edits: dict, DEBUG: bool = False) -> dict:
-    """Generic overwriting, based on DLC"""
+    """Generic overwriting, based on DLC. Will create new file if one isn't found"""
 
     if DEBUG:
         print(f"Editing config file at: {config_fname}")
-    cfg = load_config(config_fname)
+    if Path(config_fname).exists():
+        cfg = load_config(config_fname)
+    else:
+        cfg = {}
+        print(f"Config file not found, creating new one")
+
     if DEBUG:
         print(f"Initial config: {cfg}")
         print(f"Edits: {edits}")
