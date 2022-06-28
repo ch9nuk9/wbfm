@@ -40,5 +40,6 @@ def main(_config, _run):
                          [('heatmap', 'max_of_red')],
                          [('heatmap', 'max_of_ratio')],
                          [('heatmap', 'std_of_ratio')]]
+    base_layers = ['Red Data', 'Neuron IDs']
 
-    take_screenshot_using_project(project_data, additional_layers=additional_layers)
+    take_screenshot_using_project(project_data, base_layers=base_layers, additional_layers=additional_layers)

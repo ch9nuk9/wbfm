@@ -8,6 +8,8 @@ from tqdm.auto import tqdm
 from DLC_for_WBFM.gui.utils.utils_gui import change_viewer_time_point
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
 import napari
+
+from DLC_for_WBFM.utils.projects.utils_filenames import get_sequential_filename
 from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list, napari_labels_from_frames
 from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe, NapariPropertyHeatMapper
 
@@ -213,24 +215,21 @@ def take_screenshot_using_project(project_data, additional_layers, base_layers=N
     if base_layers is None:
         base_layers = ['Red data']
 
-    viewer = NapariLayerInitializer().add_layers_to_viewer(project_data, which_layers=base_layers,
-                                                           **kwargs)
-
+    viewer = NapariLayerInitializer().add_layers_to_viewer(project_data, which_layers=base_layers, **kwargs)
     for layer in tqdm(additional_layers):
         if not isinstance(layer, list):
             layer = [layer]
         NapariLayerInitializer().add_layers_to_viewer(project_data, viewer=viewer, which_layers=layer,
                                                       **kwargs)
-
         change_viewer_time_point(viewer, t_target=t_target)
 
+        # For the output name, assume I'm only adding one layer type over the base layer
         output_folder = project_data.project_config.get_visualization_dir()
-
-        # Assume I'm only adding one layer type over the base layer
         layer_name = layer[0]
         if isinstance(layer_name, tuple):
             layer_name = layer_name[1]
         fname = os.path.join(output_folder, f'{layer_name}.png')
+        fname = get_sequential_filename(fname)
         viewer.screenshot(path=fname)
 
         viewer.layers.remove(layer_name)

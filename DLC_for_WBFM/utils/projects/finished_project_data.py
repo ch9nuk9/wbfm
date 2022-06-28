@@ -540,9 +540,7 @@ class ProjectData:
 
         plt.savefig(out_fname)
 
-
-    def calculate_tracklets(self, neuron_name) -> \
-            Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
+    def calculate_tracklets(self, neuron_name) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
         """
         Calculates tracklets using the tracklet_annotator class
 
