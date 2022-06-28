@@ -173,6 +173,16 @@ class WormFullVideoPosture:
         else:
             return self.beh_annotation.loc[range(0, len(self.beh_annotation), self.fps)]
 
+    def __repr__(self):
+        return f"=======================================\n\
+Posture class with the following files:\n\
+============Centerline====================\n\
+filename_x:                 {self.filename_x is not None}\n\
+filename_y:                 {self.filename_y is not None}\n\
+filename_curvature:         {self.filename_curvature is not None}\n\
+============Annotations================\n\
+filename_beh_annotation:   {self.filename_beh_annotation is not None}\n"
+
 
 def get_behavior_fluorescence_fps_conversion(project_config):
     # TODO: in new config files, there should be a way to read this directly

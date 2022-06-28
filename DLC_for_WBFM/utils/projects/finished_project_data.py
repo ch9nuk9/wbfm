@@ -428,7 +428,7 @@ class ProjectData:
                 green_traces.replace(0, np.nan, inplace=True)
 
         obj.all_used_fnames.extend([red_dat_fname, green_dat_fname, red_traces_fname, green_traces_fname,
-                                    seg_fname_raw, seg_fname, behavior_fname])
+                                    seg_fname_raw, seg_fname])
         cfg.logger.info(f"Read all data from files: {obj.all_used_fnames}")
 
         background_per_pixel = preprocessing_settings.background_per_pixel
