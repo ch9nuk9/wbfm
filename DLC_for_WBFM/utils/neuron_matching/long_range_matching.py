@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.general.postures.centerline_pca import WormFullVideoPosture, WormReferencePosture
+from DLC_for_WBFM.utils.general.postures.centerline_classes import WormFullVideoPosture, WormReferencePosture
 from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df, empty_dataframe_like
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import calc_FramePair_from_Frames
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence

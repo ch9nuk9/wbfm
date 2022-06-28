@@ -7,7 +7,7 @@ import numpy as np
 import scipy.io
 from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from DLC_for_WBFM.utils.external.utils_pandas import cast_int_or_nan
-from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
+from DLC_for_WBFM.utils.general.postures.centerline_classes import shade_using_behavior
 from matplotlib import transforms
 from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm

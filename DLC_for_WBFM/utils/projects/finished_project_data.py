@@ -6,6 +6,7 @@ from pathlib import Path
 from DLC_for_WBFM.utils.external.utils_jupyter import executing_in_notebook
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
+from DLC_for_WBFM.utils.general.postures.centerline_classes import WormFullVideoPosture, shade_using_behavior
 from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence, get_mismatches
@@ -27,7 +28,6 @@ from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_ful
 from sklearn.neighbors import NearestNeighbors
 from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
-from DLC_for_WBFM.utils.visualization.visualization_behavior import shade_using_behavior
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
@@ -58,7 +58,7 @@ class ProjectData:
     green_traces: pd.DataFrame = None
 
     # For plotting and visualization
-    behavior_annotations: pd.DataFrame = None  # Allows coloring the traces (currently, done manually)
+    worm_posture_class: WormFullVideoPosture = None  # Allows coloring the traces (currently, done manually)
     background_per_pixel: float = None  # Simple version of background correction
     likelihood_thresh: float = None  # When plotting, plot gaps for low-confidence time points
 
@@ -398,7 +398,7 @@ class ProjectData:
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
 
-        behavior_reader = lambda: ProjectData.get_manual_behavior_annotation(cfg)
+        behavior_reader = lambda: WormFullVideoPosture.load_from_config(cfg)
         zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
 
         # Note: when running on the cluster the raw data isn't (for now) accessible
@@ -421,7 +421,7 @@ class ProjectData:
                 # TODO: don't open this as read-write by default
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_folder_or_zipstore).result()
-                behavior_annotations = ex.submit(behavior_reader).result()
+                worm_posture_class = ex.submit(behavior_reader).result()
 
             if red_traces is not None:
                 red_traces.replace(0, np.nan, inplace=True)
@@ -441,14 +441,11 @@ class ProjectData:
         obj.segmentation = segmentation
         obj.red_traces = red_traces
         obj.green_traces = green_traces
-        obj.behavior_annotations = behavior_annotations
+        obj.worm_posture_class = worm_posture_class
         obj.background_per_pixel = background_per_pixel
         obj.likelihood_thresh = likelihood_thresh
         cfg.logger.info(obj)
         return obj
-
-    @staticmethod
-
 
     @staticmethod
     def load_final_project_data_from_config(project_path: Union[str, os.PathLike, ModularProjectConfig],
@@ -656,10 +653,7 @@ class ProjectData:
         -------
 
         """
-        if self.behavior_annotations is None:
-            pass
-        else:
-            shade_using_behavior(self.behavior_annotations, ax, behaviors_to_ignore)
+        self.worm_posture_class.shade_using_behavior(ax=ax, behaviors_to_ignore=behaviors_to_ignore)
 
     def get_centroids_as_numpy(self, i_frame):
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
@@ -851,7 +845,6 @@ Found the following data files:\n\
 red_data:                 {self.red_data is not None}\n\
 green_data:               {self.green_data is not None}\n\
 ============Annotations================\n\
-behavior_annotations:     {self.behavior_annotations is not None}\n\
 manual_tracking:          {self.df_manual_tracking is not None}\n\
 ============Segmentation===============\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
