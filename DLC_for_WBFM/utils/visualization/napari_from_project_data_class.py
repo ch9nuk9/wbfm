@@ -95,7 +95,7 @@ class NapariLayerInitializer:
     @staticmethod
     def add_layers_to_viewer(project_data, viewer=None, which_layers: Union[str, List[str]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
-                             dask_for_segmentation=True):
+                             dask_for_segmentation=True, force_all_visible=False):
         if viewer is None:
             viewer = napari.Viewer(ndisplay=3)
         if which_layers == 'all':
@@ -113,30 +113,17 @@ class NapariLayerInitializer:
         else:
             clipping_list = []
 
-        # raw_chunk = project_data.red_data.chunks
-        # dask_chunk = list(raw_chunk).copy()
-        # dask_chunk[0] = 50
-
         if 'Red data' in which_layers:
-            # red_dask = da.from_zarr(project_data.red_data, chunk=dask_chunk)
             viewer.add_image(project_data.red_data, name="Red data", opacity=0.5, colormap='PiYG',
                              contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
-            # viewer.add_image(project_data.red_data, name="Red data", opacity=0.5, colormap='red',
-            #                  contrast_limits=[0, 200])
         if 'Green data' in which_layers:
-            # green_dask = da.from_zarr(project_data.green_data, chunk=dask_chunk)
             viewer.add_image(project_data.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
                              contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
-            # if dask_for_segmentation:
-            #     seg_array = da.from_zarr(project_data.raw_segmentation, chunk=dask_chunk)
-            # else:
-            # Wrapper as a stub (?) to be able to modify the layer without modifying on disk
-            # seg_array = zarr.array(project_data.raw_segmentation)
             seg_array = project_data.raw_segmentation
             viewer.add_labels(seg_array, name="Raw segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=False,
@@ -168,20 +155,6 @@ class NapariLayerInitializer:
             options['name'] = 'Intermediate global IDs'
             options['text']['color'] = 'green'
             options['visible'] = False
-            viewer.add_points(**options)
-
-        if 'Point Cloud' in which_layers:
-            # Note: performance is horrible here
-            raise NotImplementedError
-            def make_time_vector(zxy, i):
-                out = np.array([i]*zxy.shape[0])
-                out = np.expand_dims(out, axis=-1)
-                return out
-            pts_data = [project_data.get_centroids_as_numpy(i) for i in tqdm(range(project_data.num_frames), leave=False)]
-            pts_data = [np.hstack([make_time_vector(zxy, i), zxy]) for i, zxy in enumerate(pts_data) if len(zxy) > 0]
-            pts_data = np.vstack(pts_data)
-
-            options = dict(data=pts_data, name="Point Cloud", size=1, blending='opaque')
             viewer.add_points(**options)
 
         # Special layers from the heatmapper class
