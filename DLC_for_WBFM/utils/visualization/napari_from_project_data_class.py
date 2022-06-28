@@ -1,3 +1,4 @@
+import logging
 import os
 from dataclasses import dataclass
 from typing import Union, List
@@ -119,23 +120,28 @@ class NapariLayerInitializer:
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Green data' in which_layers:
-            viewer.add_image(project_data.green_data, name="Green data", opacity=0.5, colormap='green', visible=False,
+            visibility = force_all_visible
+            viewer.add_image(project_data.green_data, name="Green data", opacity=0.5, colormap='green',
+                             visible=visibility,
                              contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
+            visibility = force_all_visible
             seg_array = project_data.raw_segmentation
             viewer.add_labels(seg_array, name="Raw segmentation",
-                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=False,
+                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=visibility,
                               rendering='translucent')
         if 'Colored segmentation' in which_layers and project_data.segmentation is not None:
+            visibility = force_all_visible
             viewer.add_labels(project_data.segmentation, name="Colored segmentation",
-                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=False)
+                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
 
         # Add a text overlay
         if 'Neuron IDs' in which_layers:
             df = project_data.red_traces
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
+            options['visible'] = force_all_visible
             viewer.add_points(**options)
 
         if 'GT IDs' in which_layers:
@@ -147,6 +153,7 @@ class NapariLayerInitializer:
                                                           neuron_name_dict=neuron_name_dict)
             options['name'] = 'GT IDs'
             options['text']['color'] = 'red'
+            options['visible'] = force_all_visible
             viewer.add_points(**options)
 
         if 'Intermediate global IDs' in which_layers and project_data.intermediate_global_tracks is not None:
@@ -154,7 +161,7 @@ class NapariLayerInitializer:
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
             options['name'] = 'Intermediate global IDs'
             options['text']['color'] = 'green'
-            options['visible'] = False
+            options['visible'] = force_all_visible
             viewer.add_points(**options)
 
         # Special layers from the heatmapper class
@@ -188,12 +195,13 @@ def take_screenshot_using_project(project_data, additional_layers, base_layers=N
     if base_layers is None:
         base_layers = ['Red data']
 
-    viewer = NapariLayerInitializer().add_layers_to_viewer(project_data, which_layers=base_layers, **kwargs)
+    viewer = NapariLayerInitializer().add_layers_to_viewer(project_data, which_layers=base_layers,
+                                                           force_all_visible=True, **kwargs)
     for layer in tqdm(additional_layers):
         if not isinstance(layer, list):
             layer = [layer]
         NapariLayerInitializer().add_layers_to_viewer(project_data, viewer=viewer, which_layers=layer,
-                                                      **kwargs)
+                                                      force_all_visible=True, **kwargs)
         change_viewer_time_point(viewer, t_target=t_target)
 
         # For the output name, assume I'm only adding one layer type over the base layer
