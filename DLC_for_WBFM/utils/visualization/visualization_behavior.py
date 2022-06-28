@@ -1,6 +1,4 @@
 import logging
-from collections import defaultdict
-
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -9,12 +7,23 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
                          cmap=None,
                          DEBUG=False):
     """
-    Shades current plot using a 3-code behavioral annotation:
+    Two possible behavior annotations
+
+    Type one:
+        Shades current plot using a 3-code behavioral annotation:
         -1 - Invalid data (no shade)
         0 - FWD (no shade)
         1 - REV (gray)
         2 - Turn (red)
         3 - Quiescent (light blue)
+
+    Type two (automatic):
+        nan - Invalid data (no shade)
+        -1 - FWD (no shade)
+        0 - Turn (red)
+        1 - REV (gray)
+        [no quiescent for now]
+
     """
 
     if cmap is None:

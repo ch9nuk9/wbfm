@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 import numpy as np
@@ -15,9 +16,19 @@ from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectCon
 
 @dataclass
 class WormFullVideoPosture:
+    """
+    Class for everything to do with Behavior videos
+
+    Specifically collects centerline, curvature, and behavioral annotation information.
+    Implements basic pca visualization of the centerlines
+
+    Also knows the frame-rate conversion between the behavioral and fluorescence videos
+    """
+
     filename_curvature: str
     filename_x: str
     filename_y: str
+    filename_beh_annotation: str
 
     pca_i_start: int = 10
     pca_i_end: int = -10
@@ -43,6 +54,11 @@ class WormFullVideoPosture:
     @cached_property
     def curvature(self):
         return pd.read_csv(self.filename_curvature, header=None)
+
+    @cached_property
+    def beh_annotation(self):
+        """Name is shortened to avoid US-UK spelling confusion"""
+        return pd.read_csv(self.filename_beh_annotation, header=None)
 
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
@@ -72,7 +88,7 @@ class WormFullVideoPosture:
         else:
             behavior_subfolder = Path(behavior_fname).parent
 
-        # Second get the specific files
+        # Second get the centerline-specific files
         filename_curvature = None
         filename_x = None
         filename_y = None
@@ -87,10 +103,57 @@ class WormFullVideoPosture:
                 filename_y = str(file)
         all_files = [filename_curvature, filename_x, filename_y]
         if None in all_files:
-            print(f"Did not find at least one file: {all_files}")
-            raise FileNotFoundError
+            project_config.logger.warning(f"Did not find at least one centerline related file: {all_files}")
+            # raise FileNotFoundError
+
+        # Third, get the automatic behavior annotations
+        try:
+            filename_beh_annotation = get_manual_behavior_annotation_fname(project_config)
+            all_files.append(filename_beh_annotation)
+        except FileNotFoundError:
+            # Many old projects won't have this
+            project_config.logger.warning("Did not find behavioral annotations")
+            pass
 
         return WormFullVideoPosture(*all_files)
+
+
+def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
+    """First tries to read from the config file, and if that fails, goes searching"""
+    try:
+        behavior_cfg = cfg.get_behavior_config()
+        behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
+    except FileNotFoundError:
+        # Old style project
+        pass
+
+    if behavior_fname is not None:
+        return behavior_fname
+
+    # Otherwise, check for other places I used to put it
+    behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
+    behavior_fname = cfg.resolve_relative_path(behavior_fname)
+    if not os.path.exists(behavior_fname):
+        behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
+        behavior_fname = cfg.resolve_relative_path(behavior_fname)
+    if not os.path.exists(behavior_fname):
+        raise FileNotFoundError
+
+    return behavior_fname
+
+
+def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fname: str = None):
+    if behavior_fname is None:
+        behavior_fname = get_manual_behavior_annotation_fname(cfg)
+    if behavior_fname is not None:
+        if str(behavior_fname).endswith('.csv'):
+            behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
+        else:
+            behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
+    else:
+        behavior_annotations = None
+
+    return behavior_annotations
 
 
 @dataclass

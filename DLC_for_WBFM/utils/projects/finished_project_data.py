@@ -448,37 +448,7 @@ class ProjectData:
         return obj
 
     @staticmethod
-    def get_manual_behavior_annotation(cfg):
-        behavior_fname = ProjectData.get_manual_behavior_annotation_fname(cfg)
-        if behavior_fname is not None:
-            if str(behavior_fname).endswith('.csv'):
-                behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
-            else:
-                behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
-        else:
-            behavior_annotations = None
 
-        return behavior_annotations
-
-    @staticmethod
-    def get_manual_behavior_annotation_fname(cfg):
-        try:
-            behavior_cfg = cfg.get_behavior_config()
-            behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
-        except FileNotFoundError:
-            # Old style project
-            pass
-
-        if behavior_fname is not None:
-            return behavior_fname
-
-        # Otherwise, check for other places I used to put it
-        behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
-        behavior_fname = cfg.resolve_relative_path(behavior_fname)
-        if not os.path.exists(behavior_fname):
-            behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
-            behavior_fname = cfg.resolve_relative_path(behavior_fname)
-        return behavior_fname
 
     @staticmethod
     def load_final_project_data_from_config(project_path: Union[str, os.PathLike, ModularProjectConfig],
