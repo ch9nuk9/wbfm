@@ -32,7 +32,7 @@ class WormFullVideoPosture:
 
     # This will be true for old manual annotations
     beh_annotation_already_converted_to_fluorescence_fps: bool = False
-    beh_annotation_is_old_style: bool = False
+    beh_annotation_is_stable_style: bool = False
     _beh_annotation: pd.Series = None
 
     pca_i_start: int = 10
@@ -64,8 +64,11 @@ class WormFullVideoPosture:
     def beh_annotation(self):
         """Name is shortened to avoid US-UK spelling confusion"""
         if self._beh_annotation is None:
-            self._beh_annotation = pd.read_csv(self.filename_beh_annotation, header=None)
+            self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         return self._beh_annotation
+
+    def __post_init__(self):
+        self.fix_temporary_annotation_format()
 
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
@@ -119,10 +122,10 @@ class WormFullVideoPosture:
 
         # Third, get the automatic behavior annotations
         try:
-            filename_beh_annotation, is_old_style = get_manual_behavior_annotation_fname(project_config)
+            filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
             all_files.append(filename_beh_annotation)
-            opt = dict(beh_annotation_already_converted_to_fluorescence_fps=is_old_style,
-                       beh_annotation_is_old_style=is_old_style)
+            opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_stable_style,
+                       beh_annotation_is_stable_style=is_stable_style))
         except FileNotFoundError:
             # Many old projects won't have this
             project_config.logger.warning("Did not find behavioral annotations")
@@ -131,28 +134,29 @@ class WormFullVideoPosture:
         return WormFullVideoPosture(*all_files, **opt)
 
     def shade_using_behavior(self, **kwargs):
-        default_kwargs = dict(beh_annotation_is_old_style=self.beh_annotation_is_old_style)
-        new_kwargs = {**default_kwargs, **kwargs}
-        shade_using_behavior(self.beh_annotation, **new_kwargs)
+        """Takes care of fps conversion and new vs. old annotation format"""
+        bh = self.behavior_annotations_fluorescence_fps
+        shade_using_behavior(bh, **kwargs)
 
     def fix_temporary_annotation_format(self):
         """
         Temporary types:
             nan - Invalid data (no shade)
             -1 - FWD (no shade)
-            0 - Turn (red)
+            0 - Turn (unknown)
             1 - REV (gray)
             [no quiescent for now]
         Returns
         -------
 
         """
-
-        assert self.beh_annotation_is_old_style, "Annotations are already stable style"
+        if self.beh_annotation_is_stable_style:
+            print("Annotations are already stable style")
+            return self.beh_annotation
 
         # Define a lookup table from tmp to stable
         def lut(val):
-            _lut = {-1: 0, 0: 2, 1: 1}
+            _lut = {-1: 0, 0: -1, 1: 1}
             if not np.isscalar(val):
                 val = val[0]
             if np.isnan(val):
@@ -163,15 +167,23 @@ class WormFullVideoPosture:
         vec_lut = np.vectorize(lut)
 
         self._beh_annotation = pd.Series(np.squeeze(vec_lut(self.beh_annotation.to_numpy())))
-        self.beh_annotation_is_old_style = False
-        return self._beh_annotation
+        self.beh_annotation_is_stable_style = True
+        return self.beh_annotation
 
     @property
     def behavior_annotations_fluorescence_fps(self):
         if self.beh_annotation_already_converted_to_fluorescence_fps:
             return self.beh_annotation
         else:
-            return self.beh_annotation.loc[range(0, len(self.beh_annotation), self.fps)]
+            return self.beh_annotation.loc[self.subsample_indices]
+
+    @property
+    def curvature_fluorescence_fps(self):
+        return self.curvature.iloc[self.subsample_indices, :]
+
+    @property
+    def subsample_indices(self):
+        return range(0, len(self.beh_annotation), self.fps)
 
     def __repr__(self):
         return f"=======================================\n\
@@ -181,7 +193,7 @@ filename_x:                 {self.filename_x is not None}\n\
 filename_y:                 {self.filename_y is not None}\n\
 filename_curvature:         {self.filename_curvature is not None}\n\
 ============Annotations================\n\
-filename_beh_annotation:   {self.filename_beh_annotation is not None}\n"
+filename_beh_annotation:    {self.filename_beh_annotation is not None}\n"
 
 
 def get_behavior_fluorescence_fps_conversion(project_config):
@@ -189,7 +201,8 @@ def get_behavior_fluorescence_fps_conversion(project_config):
     preprocessing_cfg = project_config.get_preprocessing_config()
     raw_number_of_planes = preprocessing_cfg.config['raw_number_of_planes']
     final_number_of_planes = project_config.config['dataset_params']['num_slices']
-    was_flyback_saved = final_number_of_planes == raw_number_of_planes  # True for older datasets
+    # True for older datasets, i.e. I had to remove it in postprocessing
+    was_flyback_saved = final_number_of_planes != raw_number_of_planes
     if not was_flyback_saved:
         # Example: 23 saved fluorescence planes correspond to 24 behavior frames
         raw_number_of_planes += 1
@@ -198,7 +211,7 @@ def get_behavior_fluorescence_fps_conversion(project_config):
 
 def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     """First tries to read from the config file, and if that fails, goes searching"""
-    is_old_style = False
+    is_stable_style = False
     try:
         behavior_cfg = cfg.get_behavior_config()
         behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
@@ -207,10 +220,10 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
         behavior_fname = None
 
     if behavior_fname is not None:
-        return behavior_fname, is_old_style
+        return behavior_fname, is_stable_style
 
     # Otherwise, check for other places I used to put it
-    is_old_style = True
+    is_stable_style = True
     behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
     behavior_fname = cfg.resolve_relative_path(behavior_fname)
     if not os.path.exists(behavior_fname):
@@ -219,7 +232,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     if not os.path.exists(behavior_fname):
         raise FileNotFoundError
 
-    return behavior_fname, is_old_style
+    return behavior_fname, is_stable_style
 
 
 def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fname: str = None):
@@ -228,6 +241,9 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
     if behavior_fname is not None:
         if str(behavior_fname).endswith('.csv'):
             behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
+            if behavior_annotations.shape[1] > 1:
+                # Sometimes there is a messed up extra column
+                behavior_annotations = pd.Series(behavior_annotations.iloc[:, 0])
         else:
             behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
     else:
