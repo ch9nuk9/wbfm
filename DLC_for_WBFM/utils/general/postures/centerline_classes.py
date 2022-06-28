@@ -123,13 +123,13 @@ class WormFullVideoPosture:
         # Third, get the automatic behavior annotations
         try:
             filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
-            all_files.append(filename_beh_annotation)
             opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_stable_style,
                        beh_annotation_is_stable_style=is_stable_style))
         except FileNotFoundError:
             # Many old projects won't have this
             project_config.logger.warning("Did not find behavioral annotations")
-            pass
+            filename_beh_annotation = None
+        all_files.append(filename_beh_annotation)
 
         return WormFullVideoPosture(*all_files, **opt)
 
@@ -153,6 +153,8 @@ class WormFullVideoPosture:
         if self.beh_annotation_is_stable_style:
             print("Annotations are already stable style")
             return self.beh_annotation
+        if self.beh_annotation is None:
+            return None
 
         # Define a lookup table from tmp to stable
         def lut(val):
@@ -237,7 +239,11 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
 
 def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fname: str = None):
     if behavior_fname is None:
-        behavior_fname, is_old_style = get_manual_behavior_annotation_fname(cfg)
+        if cfg is not None:
+            behavior_fname, is_old_style = get_manual_behavior_annotation_fname(cfg)
+        else:
+            # Only None was passed
+            return None
     if behavior_fname is not None:
         if str(behavior_fname).endswith('.csv'):
             behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
