@@ -398,10 +398,8 @@ class ProjectData:
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
 
-        behavior_fname = ProjectData.get_manual_behavior_annotation(cfg)
-
+        behavior_reader = lambda: ProjectData.get_manual_behavior_annotation(cfg)
         zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
-        excel_reader = lambda fname: pd.read_excel(fname, sheet_name='behavior')['Annotation']
 
         # Note: when running on the cluster the raw data isn't (for now) accessible
         with safe_cd(cfg.project_dir):
@@ -420,13 +418,10 @@ class ProjectData:
                 green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader_folder_or_zipstore).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
-                # df_training_tracklets = ex.submit(read_if_exists, df_training_tracklets_fname).result()
-                # reindexed_masks_training = ex.submit(read_if_exists, reindexed_masks_training_fname, zarr_reader_folder_or_zipstore).result()
-
                 # TODO: don't open this as read-write by default
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_folder_or_zipstore).result()
-                behavior_annotations = ex.submit(read_if_exists, behavior_fname, excel_reader).result()
+                behavior_annotations = ex.submit(behavior_reader).result()
 
             if red_traces is not None:
                 red_traces.replace(0, np.nan, inplace=True)
@@ -450,11 +445,23 @@ class ProjectData:
         obj.background_per_pixel = background_per_pixel
         obj.likelihood_thresh = likelihood_thresh
         cfg.logger.info(obj)
-
         return obj
 
     @staticmethod
     def get_manual_behavior_annotation(cfg):
+        behavior_fname = ProjectData.get_manual_behavior_annotation_fname(cfg)
+        if behavior_fname is not None:
+            if str(behavior_fname).endswith('.csv'):
+                behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
+            else:
+                behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
+        else:
+            behavior_annotations = None
+
+        return behavior_annotations
+
+    @staticmethod
+    def get_manual_behavior_annotation_fname(cfg):
         try:
             behavior_cfg = cfg.get_behavior_config()
             behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
