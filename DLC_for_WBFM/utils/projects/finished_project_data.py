@@ -3,6 +3,8 @@ import logging
 from collections import defaultdict
 from pathlib import Path
 
+from matplotlib import pyplot as plt
+
 from DLC_for_WBFM.utils.external.utils_jupyter import executing_in_notebook
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
@@ -31,7 +33,7 @@ from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletA
 from segmentation.util.utils_metadata import DetectedNeurons
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
-    load_file_according_to_precedence, pandas_read_any_filetype
+    load_file_according_to_precedence, pandas_read_any_filetype, get_sequential_filename
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
 from backports.cached_property import cached_property
@@ -514,6 +516,30 @@ class ProjectData:
         )
         y = self._trace_plotter.calculate_traces(neuron_name)
         return self._trace_plotter.tspan, y
+
+    def plot_neuron_with_kymograph(self, neuron_name):
+        t, y = self.calculate_traces(channel_mode='ratio', calculation_mode='integration',
+                                     neuron_name=neuron_name)
+        df_kymo = self.worm_posture_class.curvature_fluorescence_fps
+
+        fig, axes = plt.subplots(nrows=2, figsize=(30, 10), sharex=True)
+        axes[0].imshow(df_kymo.T, origin="upper", cmap='seismic', extent=[0, df_kymo.shape[0], df_kymo.shape[1], 0],
+                       aspect='auto', vmin=-0.06, vmax=0.06)
+        axes[0].set_ylabel("Segment (0=nose)")
+        axes[1].plot(t, y)
+        axes[1].set_ylabel("Ratio (green/red)")
+        plt.xlabel("Time (frames)")
+        plt.xlim(0, self.num_frames)
+        self.shade_axis_using_behavior()
+
+    def save_fig_in_project(self, suffix=''):
+        out_fname = f'fig-{suffix}.png'
+        foldername = self.project_config.get_visualization_dir()
+        out_fname = os.path.join(foldername, out_fname)
+        out_fname = get_sequential_filename(out_fname)
+
+        plt.savefig(out_fname)
+
 
     def calculate_tracklets(self, neuron_name) -> \
             Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
