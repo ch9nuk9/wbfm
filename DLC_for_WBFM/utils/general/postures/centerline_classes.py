@@ -38,7 +38,7 @@ class WormFullVideoPosture:
     pca_i_start: int = 10
     pca_i_end: int = -10
 
-    fps: int = 32
+    fps: int = 32  # TODO: make sure this is synchronized with z_slices
 
     @cached_property
     def pca_projections(self):
@@ -84,6 +84,16 @@ class WormFullVideoPosture:
         # Get the relevant foldernames from a config file
         # The exact files may not be in the config, so try to find them
 
+        # Before anything, load metadata
+        # TODO: in new config files, there should be a way to read this directly
+        preprocessing_cfg = project_config.get_preprocessing_config()
+        raw_number_of_planes = preprocessing_cfg.config['raw_number_of_planes']
+        was_flyback_saved = False
+        if not was_flyback_saved:
+            # Example: 23 saved fluorescence planes correspond to 24 behavior frames
+            raw_number_of_planes += 1
+        opt = dict(fps=raw_number_of_planes)
+
         # First, get the folder
         behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
         if behavior_fname is None:
@@ -114,7 +124,6 @@ class WormFullVideoPosture:
             # raise FileNotFoundError
 
         # Third, get the automatic behavior annotations
-        opt = {}
         try:
             filename_beh_annotation, is_old_style = get_manual_behavior_annotation_fname(project_config)
             all_files.append(filename_beh_annotation)
@@ -163,11 +172,12 @@ class WormFullVideoPosture:
         self.beh_annotation_is_old_style = False
         return self._beh_annotation
 
-
     @property
     def behavior_annotations_fluorescence_fps(self):
         if self.beh_annotation_already_converted_to_fluorescence_fps:
             return self.beh_annotation
+        else:
+            return self.beh_annotation.loc[range(0, len(self.beh_annotation), self.fps)]
 
 
 def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
