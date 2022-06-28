@@ -197,12 +197,12 @@ def take_screenshot_using_project(project_data, additional_layers, base_layers=N
 
     viewer = NapariLayerInitializer().add_layers_to_viewer(project_data, which_layers=base_layers,
                                                            force_all_visible=True, **kwargs)
+    change_viewer_time_point(viewer, t_target=t_target)
     for layer in tqdm(additional_layers):
         if not isinstance(layer, list):
             layer = [layer]
         NapariLayerInitializer().add_layers_to_viewer(project_data, viewer=viewer, which_layers=layer,
                                                       force_all_visible=True, **kwargs)
-        change_viewer_time_point(viewer, t_target=t_target)
 
         # For the output name, assume I'm only adding one layer type over the base layer
         output_folder = project_data.project_config.get_visualization_dir()
