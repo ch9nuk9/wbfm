@@ -466,16 +466,12 @@ class SuperGlueUnpacker:
             t0 = self.t_template
             f0 = project_data.raw_frames[t0]
 
-            # Unpack
+            # Unpack and repack
             desc0, kpts0, scores0 = self.unpack_frame(f0)
-            image0 = np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0)
+            image3d_sz = project_data.red_data.shape[1:]
+            image5d_sz = torch.tensor((1, 1) + image3d_sz)
 
-            # Repack
-            data = dict(descriptors0=desc0, descriptors1=None,
-                        keypoints0=kpts0, keypoints1=None, all_matches=None,
-                        image0=image0, image1=image0,
-                        scores0=scores0, scores1=None)
-
+            data = self.pack_data_dict(None, desc0, None, image5d_sz, kpts0, None, scores0, None)
             self.data_template = data
 
     def unpack_frame(self, f0):
@@ -529,10 +525,15 @@ class SuperGlueUnpacker:
         # all_matches = torch.tensor(df_to_matches(df_gt, t0, t1))
 
         # Repack
+        data = self.pack_data_dict(all_matches, desc0, desc1, image5d_sz, kpts0, kpts1, scores0, scores1)
+        return data, is_valid_pair
+
+    @staticmethod
+    def pack_data_dict(all_matches, desc0, desc1, image5d_sz, kpts0, kpts1, scores0, scores1):
         data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
                     image0_sz=image5d_sz, image1_sz=image5d_sz,
                     scores0=scores0, scores1=scores1)
-        return data, is_valid_pair
+        return data
 
     def convert_frames_to_superglue_format_spatial_only(self, t0, t1, use_gt_matches=False):
         project_data = self.project_data
@@ -547,9 +548,7 @@ class SuperGlueUnpacker:
         image3d_sz = project_data.red_data.shape[1:]
         image5d_sz = torch.tensor((1, 1) + image3d_sz)
         # Repack
-        data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
-                    image0_sz=image5d_sz, image1_sz=image5d_sz,
-                    scores0=scores0, scores1=scores1)
+        data = self.pack_data_dict(all_matches, desc0, desc1, image5d_sz, kpts0, kpts1, scores0, scores1)
         return data, is_valid_pair
 
     def convert_leifer_lists_to_superglue_format_spatial_only(self, zxy_id0, zxy_id1):
@@ -569,9 +568,7 @@ class SuperGlueUnpacker:
         image3d_sz = (1, 1, 1)  # Leifer is already approximately z-scored?
         image5d_sz = torch.tensor((1, 1) + image3d_sz)
         # Repack
-        data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
-                    image0_sz=image5d_sz, image1_sz=image5d_sz,
-                    scores0=scores0, scores1=scores1)
+        data = self.pack_data_dict(all_matches, desc0, desc1, image5d_sz, kpts0, kpts1, scores0, scores1)
         return data, is_valid_pair
 
     def get_gt_matches(self, t0, t1, use_gt_matches):
