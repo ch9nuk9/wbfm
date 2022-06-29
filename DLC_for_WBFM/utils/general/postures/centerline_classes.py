@@ -97,10 +97,14 @@ class WormFullVideoPosture:
             project_config.logger.info("behavior_fname not found; searching")
             behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
             if not flag:
-                project_config.logger.warning("behavior_fname search failed; aborting")
-                raise FileNotFoundError
+                project_config.logger.warning("behavior_fname search failed; returning empty object")
+                behavior_subfolder = None
         else:
             behavior_subfolder = Path(behavior_fname).parent
+
+        if behavior_subfolder is None:
+            # No files found, but at least save the fps
+            return WormFullVideoPosture(**opt)
 
         # Second get the centerline-specific files
         filename_curvature = None
