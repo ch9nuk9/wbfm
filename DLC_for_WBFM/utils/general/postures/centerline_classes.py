@@ -25,10 +25,10 @@ class WormFullVideoPosture:
     Also knows the frame-rate conversion between the behavioral and fluorescence videos
     """
 
-    filename_curvature: str
-    filename_x: str
-    filename_y: str
-    filename_beh_annotation: str
+    filename_curvature: str = None
+    filename_x: str = None
+    filename_y: str = None
+    filename_beh_annotation: str = None
 
     # This will be true for old manual annotations
     beh_annotation_already_converted_to_fluorescence_fps: bool = False
