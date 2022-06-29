@@ -26,6 +26,7 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
         DEBUG, project_cfg)
     superglue_unpacker = SuperGlueUnpacker(project_data=project_data, t_template=t_template)
     tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
+    model = tracker.model  # Save for later initialization
     min_neurons_for_template = 50
 
     if not use_multiple_templates:
@@ -33,7 +34,7 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
     else:
         # Ensure the reference frames are actually good by checking they have a minimum number of neurons
         all_templates = generate_random_valid_template_frames(all_frames, min_neurons_for_template, num_frames,
-                                                              t_template)
+                                                              t_template, num_random_templates)
 
         project_cfg.logger.info(f"Using {num_random_templates} templates at t={all_templates}")
         # All subsequent dataframes will have their names mapped to this
@@ -41,7 +42,7 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
         all_dfs = [df_base]
         for i, t in enumerate(tqdm(all_templates[1:])):
             superglue_unpacker = SuperGlueUnpacker(project_data=project_data, t_template=t)
-            tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
+            tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker, model=model)
             df = track_using_template(all_frames, num_frames, project_data, tracker)
             df, _, _, _ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
             all_dfs.append(df)
