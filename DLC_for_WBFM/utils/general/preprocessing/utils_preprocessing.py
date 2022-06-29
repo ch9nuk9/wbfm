@@ -244,7 +244,11 @@ class PreprocessingSettings:
         preprocessing_settings = PreprocessingSettings._load_from_yaml(fname, do_background_subtraction)
         preprocessing_settings.cfg_preprocessing = cfg.get_preprocessing_config()
         if not preprocessing_settings.background_is_ready:
-            preprocessing_settings.find_background_files_from_raw_data_path(cfg)
+            try:
+                preprocessing_settings.find_background_files_from_raw_data_path(cfg)
+            except FileNotFoundError:
+                logging.warning("Did not find background; turning off background subtraction")
+                preprocessing_settings.do_background_subtraction = False
         return preprocessing_settings
 
     @cached_property
