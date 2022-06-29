@@ -11,7 +11,8 @@ def generator_random_template_times(num_frames, t_template):
             continue
 
 
-def generate_random_valid_template_frames(all_frames, min_neurons_for_template, num_frames, t_template):
+def generate_random_valid_template_frames(all_frames, min_neurons_for_template, num_frames, t_template,
+                                          num_random_templates):
     template_generator = generator_random_template_times(num_frames, t_template)
     all_templates = [t for t in template_generator if all_frames[t].num_neurons > min_neurons_for_template]
-    return all_templates
+    return all_templates[:num_random_templates]
