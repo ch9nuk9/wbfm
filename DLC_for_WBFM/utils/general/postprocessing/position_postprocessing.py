@@ -3,7 +3,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from ppca import PPCA
 from sklearn.preprocessing import StandardScaler
 
 from DLC_for_WBFM.utils.projects.utils_project import safe_cd
@@ -40,6 +39,8 @@ def impute_missing_values_using_config(tracking_config, DEBUG=False):
 
 
 def impute_missing_values_in_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    from ppca import PPCA
+
     # DLC uses zeros as "failed tracking"
     # Replace with nan and scale
     df.replace(0, np.NaN, inplace=True)
