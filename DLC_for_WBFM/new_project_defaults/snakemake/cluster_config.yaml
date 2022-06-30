@@ -6,6 +6,8 @@ __default__:
     nodes: 1
     cpus_per_task: 4
     mem: 64G
+    disk_mb: 8000
+    mem_mb: 8000
     output: log_snakemake_step-%j.out
 
 # Note: himem is not actually needed at the moment, but is usually more free for large jobs
