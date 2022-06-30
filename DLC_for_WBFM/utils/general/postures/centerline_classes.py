@@ -140,7 +140,8 @@ class WormFullVideoPosture:
     def shade_using_behavior(self, **kwargs):
         """Takes care of fps conversion and new vs. old annotation format"""
         bh = self.behavior_annotations_fluorescence_fps
-        shade_using_behavior(bh, **kwargs)
+        if bh is not None:
+            shade_using_behavior(bh, **kwargs)
 
     def fix_temporary_annotation_format(self):
         """
