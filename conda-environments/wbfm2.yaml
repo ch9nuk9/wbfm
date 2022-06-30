@@ -1,0 +1,49 @@
+# wbfm.yaml
+
+# Made by Charles Fieseler for intended use with:
+# fDNC
+#https://github.com/XinweiYu/fDNC_Neuron_ID
+#Please see AUTHORS for contributors.
+
+# update:  conda env update -f wbfm.yaml
+
+channels:
+  - conda-forge
+  - defaults
+  - pytorch-lts
+dependencies:
+  - python=3.7
+  - pip
+  - numpy
+  - pandas
+  - tqdm
+  - zarr
+  - scipy=1.2.1
+  - pytorch
+  - tifffile
+  - opencv=3.4.2
+  - matplotlib
+  - torchvision
+  - scikit-learn=0.24.2
+  - scikit-image=0.18.3
+  - networkx
+  - lmfit
+  - natsort
+  - pip:
+    - tifffile
+    - tables
+    - networkx
+    - tensorflow
+    - sacred
+    - napari[all]
+    - tables
+    - ruamel.yaml
+    - stardist
+    - hashfs
+    - tinydb==3.15.2
+    - tinydb-serialization
+    - pytorch-lightning
+    - openpyxl
+    - pytest
+    - ruptures
+    - backports.cached_property
