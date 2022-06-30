@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+
 import numpy as np
 
 # As of May 2022
@@ -7,7 +9,10 @@ CAMERA_ALIGNMENT_MATRIX = "/scratch/neurobiology/zimmer/Charles/repos/dlc_for_wb
 
 
 def get_camera_alignment_matrix():
-    return np.load(CAMERA_ALIGNMENT_MATRIX)
+    if Path(CAMERA_ALIGNMENT_MATRIX).exists():
+        return np.load(CAMERA_ALIGNMENT_MATRIX)
+    else:
+        return None
 
 
 def get_pretrained_network_path(num_neurons):

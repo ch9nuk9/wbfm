@@ -104,13 +104,13 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
 
     # Convert them to relative
     initial_fnames = {str(fname.relative_to(src)) for fname in initial_fnames}
-    if verbose >= 2:
+    if verbose >= 3:
         print(f"Found initial files: {initial_fnames}")
 
     # Also get the filenames of the target folder
     # target_fnames = get_abs_filenames_recursive(project_dir)
     target_fnames = list(Path(project_dir).rglob('**/*'))
-    if verbose >= 2:
+    if verbose >= 3:
         print(f"Found target files: {target_fnames}")
 
     # Check each target fname, and if it is not in the initial set, delete it
@@ -118,6 +118,8 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
         print("DRYRUN")
     for fname in target_fnames:
         if fname.is_dir():
+            if str(fname).endswith('.zarr'):
+                os.rmdir(fname)
             continue
         if str(fname.relative_to(project_dir)) in initial_fnames:
             if verbose >= 1:

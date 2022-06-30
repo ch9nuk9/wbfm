@@ -337,8 +337,12 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
                 single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
 
     if s.align_green_red_cameras:
-        single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, s.camera_alignment_matrix,
-                                                            hide_progress=False)
+        alignment_mat = s.camera_alignment_matrix
+        if alignment_mat is None:
+            logging.warning("Requested red-green alignment, but no matrix was found")
+        else:
+            single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, alignment_mat,
+                                                                hide_progress=False)
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
