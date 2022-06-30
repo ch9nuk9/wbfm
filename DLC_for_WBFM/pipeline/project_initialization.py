@@ -28,6 +28,7 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     abs_dir_name = get_sequential_filename(abs_dir_name)
     logger.info(f"Building new project at: {abs_dir_name}")
 
+    # Note: assumes that you are executing from the main DLC_for_WBFM folder
     src = 'new_project_defaults'
     copytree(src, abs_dir_name)
 

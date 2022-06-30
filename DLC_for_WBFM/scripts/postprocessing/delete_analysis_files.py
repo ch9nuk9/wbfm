@@ -1,0 +1,26 @@
+"""
+The top level function for producing dlc tracks in 3d
+
+EXPERIMENTAL
+"""
+
+# Experiment tracking
+import sacred
+from sacred import Experiment
+
+# main function
+from DLC_for_WBFM.utils.projects.utils_project import delete_all_analysis_files
+
+# Initialize sacred experiment
+ex = Experiment()
+ex.add_config(project_path=None, dryrun=True, DEBUG=False)
+
+
+@ex.automain
+def main(_config, _run):
+    sacred.commands.print_config(_run)
+
+    dryrun = _config['dryrun']
+    project_path = _config['project_path']
+
+    delete_all_analysis_files(project_path, dryrun=dryrun, verbose=2)
