@@ -279,6 +279,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_behavior_raw_parent_folder_from_red_fname(self) -> Tuple[Path, bool]:
         red_fname = self.config['red_bigtiff_fname']
+        if red_fname is None:
+            return None, False
         main_data_folder = Path(red_fname).parents[1]
         # First, get the subfolder
         for content in main_data_folder.iterdir():
