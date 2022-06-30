@@ -94,7 +94,6 @@ def main(_config, _run):
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
         video_fname = _config['out_fname_red']
         bbox_fname = _config['bounding_box_fname']
-        num_frames = _config['num_frames']
         calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames)
 
         segment_cfg = _config['segment_cfg']
