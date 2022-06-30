@@ -1,6 +1,7 @@
 import os
 import os.path as osp
 import pathlib
+import shutil
 import typing
 from contextlib import contextmanager
 from datetime import datetime
@@ -118,8 +119,6 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
         print("DRYRUN")
     for fname in target_fnames:
         if fname.is_dir():
-            if str(fname).endswith('.zarr'):
-                os.rmdir(fname)
             continue
         if str(fname.relative_to(project_dir)) in initial_fnames:
             if verbose >= 1:
@@ -128,6 +127,10 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
             print(f"Deleting {fname.relative_to(project_dir)}")
             if not dryrun:
                 os.remove(fname)
+
+    for fname in target_fnames:
+        if fname.is_dir() and str(fname).endswith('.zarr'):
+            shutil.rmtree(fname)
 
     # Also make sure any missing files are now present
     # for fname in initial_fnames:
