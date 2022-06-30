@@ -1,6 +1,6 @@
 
 # Global requirement
-project_dir: "/home/charles/dlc_stacks/worm1_for_students-retrack"
+project_dir: "/scratch/neurobiology/zimmer/path/to/this/project"
 code_path: "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
 
 # Step 0: preprocessing
