@@ -28,15 +28,22 @@ dependencies:
   - scikit-image=0.18.3
   - networkx
   - lmfit
+  - natsort
   - pip:
+    - tifffile
+    - tables
+    - networkx
+    - tensorflow
     - sacred
     - napari[all]
     - tables
     - ruamel.yaml
+    - stardist
     - hashfs
     - tinydb==3.15.2
     - tinydb-serialization
     - pytorch-lightning
     - openpyxl
+    - pytest
     - ruptures
     - backports.cached_property

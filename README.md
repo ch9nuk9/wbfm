@@ -15,11 +15,6 @@ If you just want to run the code, then you can use the pre-installed environment
 conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 ```
 
-Or:
-```
-conda activate /scratch/neurobiology/zimmer/.conda/envs/segmentation/
-```
-
 
 # Running a project: start from nothing
 
@@ -31,7 +26,7 @@ conda activate /scratch/neurobiology/zimmer/.conda/envs/segmentation/
 
 ## Full workflow
 
-All examples assume that you are in the main folder:
+Note: command line examples assume that you are in the main folder:
 ```commandline
 cd path/to/your/github/code/DLC_for_WBFM/
 ```
@@ -42,10 +37,10 @@ For reference, each command is in proper number order in DLC_for_WBFM/scripts
 
 Working examples to create a project are available for 
 [linux](DLC_for_WBFM/scripts/examples/0-create_new_project-linux-EXAMPLE.sh)
-and [windows](DLC_for_WBFM/scripts/examples/0-create_new_project-windows-EXAMPLE.sh)
+and [windows](DLC_for_WBFM/scripts/examples/0-create_new_project-windows-EXAMPLE.sh).
+Everything can be run on the command line.
 
-Currently, everything is designed to run on the command line.
-However, if your data is visible locally (mounted is okay), for the initial project creation you can use a gui:
+If your data is visible locally (mounted is okay), for the initial project creation you can use a gui:
 
 ```commandline
 python gui/create_project_gui.py
@@ -66,31 +61,34 @@ in the main project file: config.yaml
 
 ## Running full workflow using snakemake
 
+*IMPORTANT* - 
+If you changed the name of your project, you must update it in the snakemake/config.yaml file under 'project_dir'
+
 This code is designed in several different scripts, which can be running using two commands.
 The organization between these steps uses the workflow manager [snakemake](https://snakemake.readthedocs.io/en/stable/).
 Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
 If you are rerunning an old project, see the next section.
 
 Once a project is made, the analysis can be run in the following way:
-1. Activate the segmentation environment
+1. Activate the wbfm environment
 2. cd to the /snakemake folder within the project:
 ```commandline
 cd /path/to/your/project/snakemake
 ```
 3. Do a dry run to catch any errors in initialization:
 ```bash
-bash DRYRUN_segmentation.sh
+bash DRYRUN.sh
 ```
 4. If there are errors, there are two options:
    1. If this is not a new project, you might have to run steps one by one (see the next subsection).
    2. If this is a new project, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
 5. Run the relevant RUNME script, either cluster or local. Probably, you want the cluster version:
 ```bash
-bash RUNME_cluster_segmentation.sh
+bash RUNME_cluster.sh
 ```
-6. Wait for this to finish. Depending on scheduling, it could take 4-12 hours.
-7. Check the log files (they will be in the /snakemake folder) to make sure there were no errors
-8. Repeat steps 3-7 for the *_post_segmentation.sh DRYRUN and RUNME scripts
+6. Wait for this to finish. Depending on scheduling, it could take 12-48 hours.
+7. Check the log files (they will be in the /snakemake folder) to make sure there were no errors.
+Almost all errors will crash the program, but if you find one that doesn't, please file an issue!
 
 # Running a project: start from a previous project
 
