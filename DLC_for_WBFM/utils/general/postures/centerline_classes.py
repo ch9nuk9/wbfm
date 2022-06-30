@@ -179,6 +179,8 @@ class WormFullVideoPosture:
 
     @property
     def behavior_annotations_fluorescence_fps(self):
+        if self.beh_annotation is None:
+            return None
         if self.beh_annotation_already_converted_to_fluorescence_fps:
             return self.beh_annotation
         else:
