@@ -58,9 +58,12 @@ def bbox2ind(bbox):
 
 
 ## Optional main traces function
-def calculate_bounding_boxes_from_fnames(video_fname, bbox_fname):
+def calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames=None):
 
-    video_4d = zarr.open(video_fname)
+    if num_frames is None:
+        video_4d = zarr.open(video_fname)
+    else:
+        video_4d = zarr.open(video_fname)[:num_frames]
     all_bboxes = calculate_bounding_boxes_full_video(video_4d)
 
     with open(bbox_fname, 'wb') as f:

@@ -54,6 +54,7 @@ def main(_config, _run):
     cfg: ModularProjectConfig = _config['cfg']
     cfg.config['project_dir'] = _config['project_dir']
     cfg.config['project_path'] = _config['project_path']
+    num_frames = cfg.config['dataset_params']['num_frames']
     logger = cfg.logger
 
     with safe_cd(_config['project_dir']):
@@ -93,7 +94,8 @@ def main(_config, _run):
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
         video_fname = _config['out_fname_red']
         bbox_fname = _config['bounding_box_fname']
-        calculate_bounding_boxes_from_fnames(video_fname, bbox_fname)
+        num_frames = _config['num_frames']
+        calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames)
 
         segment_cfg = _config['segment_cfg']
         bbox_fname = segment_cfg.unresolve_absolute_path(bbox_fname)
