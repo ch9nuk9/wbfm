@@ -93,6 +93,8 @@ def safe_cd(newdir: typing.Union[str, pathlib.Path]) -> None:
 def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
     """Deletes all files produced by analysis, reverting a project to only the files present in a raw default project"""
 
+    assert project_path.endswith('.yaml'), "Must pass a valid config file"
+
     project_dir = Path(project_path).parent
     if verbose >= 1:
         print(f"Cleaning project {project_dir}")
