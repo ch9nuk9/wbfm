@@ -14,6 +14,8 @@ def get_bounding_box_via_gaussian_blurring(vol, raw_thresh=18, sigma=8):
 
     The threshold doesn't need to return a single connected object
 
+    If no objects are found (e.g. a tracking error), this returns None
+
     Parameters
     ----------
     vol - 3d image data (greyscale)
@@ -35,7 +37,11 @@ def get_bounding_box_via_gaussian_blurring(vol, raw_thresh=18, sigma=8):
     img_binary = (img_filter > thresh).astype(int)
 
     props = regionprops(img_binary)
-    bbox = props[0].bbox
+    try:
+        bbox = props[0].bbox
+    except IndexError:
+        # No objects were found
+        bbox = None
 
     return bbox
 
