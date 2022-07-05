@@ -57,7 +57,10 @@ def read_background(background_fname, num_frames, num_slices, preprocessing_sett
     background_video_list = []
     with tifffile.TiffFile(background_fname) as background_tiff:
         for i in tqdm(range(num_frames)):
-            background_volume = get_single_volume(background_tiff, i, num_slices, dtype='uint16')
+            try:
+                background_volume = get_single_volume(background_tiff, i, num_slices, dtype='uint16')
+            except IndexError:
+                break
             # Note: this will do rigid rotation
             background_volume = perform_preprocessing(background_volume, preprocessing_settings, i)
             background_video_list.append(background_volume)
@@ -185,7 +188,7 @@ class PreprocessingSettings:
         self.initialize_background()
 
     def load_background(self, background_fname):
-        num_frames = 50  # TODO
+        num_frames = 40  # TODO
         background_video_list = read_background(background_fname, num_frames, self.raw_number_of_planes,
                                                 preprocessing_settings=None)
         # Add a new truly constant background value, to keep anything from going negative
