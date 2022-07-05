@@ -4,12 +4,13 @@ StarDist functions for segmentation
 import numpy as np
 import skimage
 import stardist.models
-from stardist.models import Config3D, StarDistData3D, StarDist3D, StarDist2D
+from stardist.models import StarDist3D, StarDist2D
 import os
 from csbdeep.utils import Path, normalize
 
 
-def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) -> stardist.models.StarDist3D:
+def get_stardist_model(model_name: str = 'students_and_lukas_3d_zarr',
+                       folder: str = None, verbose: int = 0) -> stardist.models.StarDist3D:
     """
     Fetches the wanted StarDist model for segmenting images.
     Add new StarDist models as an alias below (incl. sd_options)
@@ -17,7 +18,9 @@ def get_stardist_model(model_name: str, folder: str = None, verbose: int = 0) ->
     Parameters
     ----------
     model_name : str
-        Name of the wanted model. See
+        Name of the wanted model. Valid models shortcuts (most modern=students_and_lukas_3d_zarr):
+        ['versatile', 'lukas', 'lukas_3d_zarr', 'students_and_lukas_3d_zarr', 'lukas_3d_zarr_25',
+                  'charlie', 'charlie_3d', 'charlie_3d_party']
     folder : str
         Path in which the stardist models are saved
     verbose : int
@@ -146,15 +149,15 @@ def segment_with_stardist_2d(vol: np.ndarray,
     return segmented_masks
 
 
-def segment_with_stardist_3d(vol, model=None, verbose=0) -> np.array:
+def segment_with_stardist_3d(volume: np.array, model: stardist.models.StarDist3D, verbose=0) -> np.array:
     """
     Segments a 3D volume using stardists 3D-segmentation.
     For now, only one self-trained 3D model is available.
 
     Parameters
     ----------
-    vol : 3D numpy array
-        3D array of volume to segment
+    volume : 3D numpy array (zxy)
+        3D array of volume to segment (should have a bounding box already applied)
     model : StarDist3D object
         StarDist3D model to be used for segmentation; default = Charlies first trained 3D model
     verbose : int
@@ -174,7 +177,7 @@ def segment_with_stardist_3d(vol, model=None, verbose=0) -> np.array:
     n_channel = 1
 
     # normalizing images (stardist function)
-    img = normalize(vol, 1, 99.8, axis=axis_norm)
+    img = normalize(volume, 1, 99.8, axis=axis_norm)
 
     # run the prediction
     labels, details = model.predict_instances(img)

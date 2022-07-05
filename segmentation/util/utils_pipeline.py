@@ -288,6 +288,25 @@ def _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mod
 def segment_and_save3d(i, i_volume, masks_zarr,
                        all_bounding_boxes,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
+    """
+    Segments a single volume using bounding boxes, and saves in an open zarr file
+
+    Parameters
+    ----------
+    i - the new index, which may be offset from the raw volume index
+    i_volume - the index in the original video
+    masks_zarr - the output class (zarr)
+    all_bounding_boxes - a dictionary of bounding boxes, indexed by i_volume
+    sd_model - stardist model object
+    verbose
+    video_dat - the raw video (zarr)
+    keras_lock - a lock object (optional)
+    read_lock
+
+    Returns
+    -------
+
+    """
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
     from segmentation.util.utils_model import segment_with_stardist_3d
     if keras_lock is None:
