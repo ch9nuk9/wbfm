@@ -83,6 +83,17 @@ class ReferenceFrame:
             self._raw_data = zarr_reader_folder_or_zipstore(self.video_fname)[self.frame_ind, ...]
         return self._raw_data
 
+    def get_uint8_data(self) -> np.ndarray:
+        raw_dat = self.get_raw_data()
+        if raw_dat.dtype == np.uint8:
+            dat = raw_dat
+        elif raw_dat.dtype == np.uint16:
+            # Assume it needs to be scaled
+            dat = (raw_dat * self.preprocessing_settings.alpha_red).astype('uint8')
+        else:
+            raise NotImplementedError(f"Datatype should be uint8 or uint16, found {raw_dat.dtype} instead")
+        return dat
+
     def detect_or_import_neurons(self, detected_neurons: DetectedNeurons) -> list:
         """
 
@@ -259,7 +270,8 @@ class ReferenceFrame:
         """
 
         z_depth = self.z_depth
-        im_3d = self.get_raw_data()
+        im_3d = self.get_uint8_data()
+
         if use_keypoint_locs:
             locs_zxy = self.keypoint_locs
         else:
@@ -275,7 +287,7 @@ class ReferenceFrame:
         if base_2d_encoder is None:
             base_2d_encoder = self.get_default_base_2d_encoder()
 
-        # TODO: should be much faster to loop per plane instead of per neuron
+        # enhance: should be much faster to loop per plane instead of per neuron
         # Loop per plane, getting all keypoints for this plane
         # for z in range(im_3d.shape[0]):
         #     # Slice band
@@ -410,7 +422,6 @@ def build_reference_frame_encoding(metadata=None, all_detected_neurons: Detected
     try:
         frame.detect_or_import_neurons(all_detected_neurons)
     except NoNeuronsError:
-        # TODO: does this cause later errors if there are no neurons?
         return frame
     frame.copy_neurons_to_keypoints()
 

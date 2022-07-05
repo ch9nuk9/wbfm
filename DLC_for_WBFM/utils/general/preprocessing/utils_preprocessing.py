@@ -222,7 +222,7 @@ class PreprocessingSettings:
             targeted_max_value = 200.0
 
         alpha = float(targeted_max_value / current_max_value)
-        logging.info(f"Calculated alpha={alpha} for mode {which_channel}")
+        logging.info(f"Calculated alpha={alpha} for channel {which_channel}")
 
         if which_channel == 'red':
             self.alpha_red = alpha
@@ -351,6 +351,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
         mini_max_size = s.mini_max_size
         single_volume_raw = ndi.maximum_filter(single_volume_raw, size=(mini_max_size, 1, 1))
 
+    # TODO: postpone this alpha calculation
     single_volume_raw = (single_volume_raw * alpha).astype(s.final_dtype)
 
     return single_volume_raw
