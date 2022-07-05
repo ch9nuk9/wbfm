@@ -107,8 +107,9 @@ class PreprocessingSettings:
 
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
-    final_dtype: str = 'uint8'
-    alpha: float = 0.15 # Deprecated
+    final_dtype: str = 'uint16'
+    uint8_only_for_opencv: bool = True
+    alpha: float = 0.15  # Deprecated
 
     alpha_red: float = None
     alpha_green: float = None
