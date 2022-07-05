@@ -9,6 +9,7 @@ channels:
   - conda-forge
   - defaults
   - pytorch-lts
+  - bioconda
 dependencies:
   - python=3.7
   - pip
@@ -29,6 +30,7 @@ dependencies:
   - networkx
   - lmfit
   - natsort
+  - snakemake
   - pip:
     - tifffile
     - tables
