@@ -21,7 +21,6 @@ from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectCon
 
 def build_tracklets_full_video(video_data, video_fname: str, start_volume: int = 0, num_frames: int = 10,
                                z_depth_neuron_encoding: float = 5.0,
-                               preprocessing_settings: PreprocessingSettings = PreprocessingSettings(),
                                frame_pair_options: FramePairOptions = None,
                                external_detections: str = None,
                                project_config: ModularProjectConfig = None,
@@ -34,12 +33,6 @@ def build_tracklets_full_video(video_data, video_fname: str, start_volume: int =
 
     New: uses and returns my class of features
     """
-    if preprocessing_settings is not None:
-        dtype = preprocessing_settings.initial_dtype
-        raise DeprecationWarning("Preprocessing on individual frames is deprecated")
-    else:
-        # TODO: better way to get datatype
-        dtype = 'uint8'
 
     # Build frames, then match them
     end_volume = start_volume + num_frames

@@ -74,8 +74,6 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
     logging.info(f"Producing per-volume ReferenceFrame objects")
     video_fname, tracker_params, _ = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
 
-    dtype = 'uint8'
-
     project_data = ProjectData.load_final_project_data_from_config(project_config,
                                                                    to_load_frames=only_calculate_desynced)
     video_data = project_data.red_data
