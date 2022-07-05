@@ -8,6 +8,8 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+
+from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair, FramePairOptions
 from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueUnpacker
 from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import PATH_TO_SUPERGLUE_TRACKLET_MODEL, \
@@ -163,7 +165,7 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     frame_pair_options = FramePairOptions.load_from_config_file(project_config, training_config)
     frame_pair_options.apply_tanh_to_confidence = False
     # pairwise_matches_params = project_config.get_frame_pair_options(training_config)
-    tracker_params['preprocessing_settings'] = None
+    tracker_params['preprocessing_settings'] = PreprocessingSettings.load_from_config(project_config)
 
     video_fname = project_config.config['preprocessed_red']
 

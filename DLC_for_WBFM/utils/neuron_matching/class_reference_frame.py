@@ -416,7 +416,7 @@ def build_reference_frame_encoding(metadata=None, all_detected_neurons: Detected
     if metadata is None:
         metadata = {}
 
-    frame = ReferenceFrame(**metadata, preprocessing_settings=None)
+    frame = ReferenceFrame(**metadata)
 
     # Build keypoints (in this case, neurons directly)
     try:

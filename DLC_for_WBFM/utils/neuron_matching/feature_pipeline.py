@@ -35,10 +35,12 @@ def build_tracklets_full_video(video_data, video_fname: str, start_volume: int =
     """
 
     # Build frames, then match them
+    preprocessing_settings = PreprocessingSettings.load_from_config(project_config)
     end_volume = start_volume + num_frames
     frame_range = list(range(start_volume, end_volume))
     all_frame_dict = calculate_frame_objects_full_video(video_data, external_detections, frame_range,
-                                                        video_fname, z_depth_neuron_encoding)
+                                                        video_fname, z_depth_neuron_encoding,
+                                                        preprocessing_settings=preprocessing_settings)
 
     try:
         if use_superglue:
@@ -69,6 +71,7 @@ def match_all_adjacent_frames(all_frame_dict, end_volume, frame_pair_options, st
 
 def calculate_frame_objects_full_video(video_data, external_detections, frame_range, video_fname,
                                        z_depth_neuron_encoding, encoder_opt=None, max_workers=8,
+                                       preprocessing_settings=None,
                                        logger=None, **kwargs):
     # Get initial volume; settings are same for all
     vol_shape = video_data[0, ...].shape
@@ -79,7 +82,8 @@ def calculate_frame_objects_full_video(video_data, external_detections, frame_ra
         metadata = {'frame_ind': frame_ind,
                     'vol_shape': vol_shape,
                     'video_fname': video_fname,
-                    'z_depth': z_depth_neuron_encoding}
+                    'z_depth': z_depth_neuron_encoding,
+                    'preprocessing_settings': preprocessing_settings}
         f = build_reference_frame_encoding(metadata=metadata, all_detected_neurons=all_detected_neurons,
                                            encoder_opt=encoder_opt)
         return f
