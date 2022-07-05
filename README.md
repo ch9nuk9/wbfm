@@ -15,8 +15,7 @@ If you just want to run the code, then you can use the pre-installed environment
 conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 ```
 
-
-# Running a project: start from nothing
+# BASIC: start a new project from nothing
 
 ## Preparation:
 
@@ -25,13 +24,6 @@ conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 3. 2 conda environments (see above for installation instructions, or use pre-installed versions on the cluster)
 
 ## Full workflow
-
-Note: command line examples assume that you are in the main folder:
-```commandline
-cd path/to/your/github/code/DLC_for_WBFM/
-```
-
-For reference, each command is in proper number order in DLC_for_WBFM/scripts
 
 ### Creating a project
 
@@ -46,7 +38,7 @@ If your data is visible locally (mounted is okay), for the initial project creat
 python gui/create_project_gui.py
 ```
 
-### *IMPORTANT*
+#### *IMPORTANT*
 
 The method of creating the project will determine the style of filepaths that are saved in the project.
 Thus, if you create and run the project on different operating systems, you will probably need to manually update the path to the raw data.
@@ -59,9 +51,26 @@ green_bigtiff_fname
 
 in the main project file: config.yaml
 
-## Running full workflow using snakemake
+In addition, if creating from a windows computer, you may need to use dos2unix to fix any files that you want to execute, specifically those referenced below:
+1. RUNME_*.sh
+2. DRYRUN.sh
 
-*IMPORTANT* - 
+### Checklist of most important parameters to change
+
+1. project_config.yaml
+   1. start_volume
+   2. num_frames
+   3. num_slices (after flyback removal)
+2. preprocessing_config.yaml
+   1. raw_number_of_planes (before any removal)
+   2. starting_plane (set 1 to remove a single plane)
+
+For all other settings, the defaults should work well.
+
+
+### Running the rest of the workflow
+
+#### *IMPORTANT*
 If you changed the name of your project, you must update it in the snakemake/config.yaml file under 'project_dir'
 
 This code is designed in several different scripts, which can be running using two commands.
@@ -81,7 +90,8 @@ bash DRYRUN.sh
 ```
 4. If there are errors, there are two options:
    1. If this is not a new project, you might have to run steps one by one (see the next subsection).
-   2. If this is a new project, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
+   2. If you changed the name of the project, read the *IMPORTANT* tip above 
+   3. If this is a new project, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
 5. Run the relevant RUNME script, either cluster or local. Probably, you want the cluster version:
 ```bash
 bash RUNME_cluster.sh
@@ -90,10 +100,13 @@ bash RUNME_cluster.sh
 7. Check the log files (they will be in the /snakemake folder) to make sure there were no errors.
 Almost all errors will crash the program, but if you find one that doesn't, please file an issue!
 
-# Running a project: start from a previous project
+# ADVANCED: start from an incomplete project
 
 Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
-Thus, you should run each step one by one.
+If you have simply not run all of the steps or there was a crash, then continue with the above section.
+However, if you are re-running analysis steps, then see below.
+
+In this case, you must run each step one by one.
 Note that you can check the current status of the project by moving to the project and running a script. Example:
 ```bash
 cd /path/to/your/project
@@ -131,6 +144,31 @@ Manual annotation and more detailed visualization:
 ```bash
 python gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
 ```
+
+
+# Summary of common problems
+
+### Changing folder names
+If you changed the name of your project, you must update it in the snakemake/config.yaml file under 'project_dir'
+
+### Raw data paths on Windows vs. cluster
+The method of creating the project will determine the style of filepaths that are saved in the project.
+Thus, if you create and run the project on different operating systems, you will probably need to manually update the path to the raw data.
+
+Specifically be aware of these variables:
+```yaml
+red_bigtiff_fname
+green_bigtiff_fname
+```
+
+in the main project file: config.yaml
+
+### Creating project from Windows
+
+In addition, if creating from a windows computer, you may need to use dos2unix to fix any files that you want to execute, specifically those referenced below:
+1. RUNME_*.sh
+2. DRYRUN.sh
+
 
 # More details
 
