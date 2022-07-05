@@ -19,6 +19,7 @@ dependencies:
     - sklearn
     - openpyxl
     - matplotlib
+    - sacred
     - zarr
     - open3d
     - ruamel.yaml
