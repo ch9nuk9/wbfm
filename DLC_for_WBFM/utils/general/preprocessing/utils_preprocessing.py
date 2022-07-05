@@ -103,7 +103,7 @@ class PreprocessingSettings:
     do_rigid_alignment: bool = False
 
     # Rigid alignment (green to red channel)
-    align_green_red_cameras: bool = True
+    align_green_red_cameras: bool = False
 
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this

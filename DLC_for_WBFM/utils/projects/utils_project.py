@@ -118,7 +118,7 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
 
     # Check each target fname, and if it is not in the initial set, delete it
     if dryrun:
-        print("DRYRUN")
+        print("DRYRUN (nothing actually deleted)")
     for fname in target_fnames:
         if fname.is_dir():
             continue
@@ -133,6 +133,9 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
     for fname in target_fnames:
         if fname.is_dir() and str(fname).endswith('.zarr'):
             shutil.rmtree(fname)
+
+    if dryrun:
+        print("DRYRUN (nothing actually deleted)")
 
     # Also make sure any missing files are now present
     # for fname in initial_fnames:
