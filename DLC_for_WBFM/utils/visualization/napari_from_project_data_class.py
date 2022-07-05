@@ -116,14 +116,12 @@ class NapariLayerInitializer:
 
         if 'Red data' in which_layers:
             viewer.add_image(project_data.red_data, name="Red data", opacity=0.5, colormap='PiYG',
-                             contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Green data' in which_layers:
             visibility = force_all_visible
             viewer.add_image(project_data.green_data, name="Green data", opacity=0.5, colormap='green',
                              visible=visibility,
-                             contrast_limits=[0, 200],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
         if 'Raw segmentation' in which_layers:
