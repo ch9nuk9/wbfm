@@ -296,6 +296,8 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     s = preprocessing_settings
     if s is None:
         return single_volume_raw
+    if s.final_dtype == 'uint8':
+        logging.warning("This dtype should be uint16, not uint8. For now, it is ignored")
 
     if which_channel == 'red':
         alpha = s.alpha_red
@@ -352,8 +354,9 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
         mini_max_size = s.mini_max_size
         single_volume_raw = ndi.maximum_filter(single_volume_raw, size=(mini_max_size, 1, 1))
 
-    # TODO: postpone this alpha calculation
-    single_volume_raw = (single_volume_raw * alpha).astype(s.final_dtype)
+    # Do not actually change datatype
+    if not s.uint8_only_for_opencv:
+        raise DeprecationWarning("uint8 should not be saved directly, but converted on demand for opencv")
 
     return single_volume_raw
 
