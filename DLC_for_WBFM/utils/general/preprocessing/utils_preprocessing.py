@@ -401,7 +401,9 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     chunk_sz = (1, num_slices,) + sz
     total_sz = (num_total_frames,) + chunk_sz[1:]
     store = zarr.DirectoryStore(path=out_fname)
-    preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype=p.final_dtype,
+    if p.final_dtype == np.uint8:
+        raise DeprecationWarning("uint16 should be saved directly")
+    preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype=p.initial_dtype,
                                   synchronizer=zarr.ThreadSynchronizer(),
                                   store=store)
     read_lock = threading.Lock()
