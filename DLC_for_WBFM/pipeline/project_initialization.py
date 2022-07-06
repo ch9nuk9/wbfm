@@ -56,7 +56,7 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
                                    DEBUG: bool = False) -> None:
     """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
 
-    out_fname, preprocessing_settings, project_dir, start_volume, verbose, video_fname = _unpack_config_for_data_subset(
+    out_fname, preprocessing_settings, project_dir, bigtiff_start_volume, verbose, video_fname = _unpack_config_for_data_subset(
         cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data,
         video_fname)
 
@@ -65,8 +65,9 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
                                                                  preprocessing_settings, None, which_channel,
                                                                  out_fname)
 
-    if not pad_to_align_with_original:
-        preprocessed_dat = preprocessed_dat[start_volume:, ...]
+    if not pad_to_align_with_original and bigtiff_start_volume > 0:
+        # i.e. remove the unpreprocessed data, creating an offset between the bigtiff and the zarr
+        preprocessed_dat = preprocessed_dat[bigtiff_start_volume:, ...]
 
     if verbose >= 1:
         cfg.logger.info(f"Writing array of size: {preprocessed_dat.shape}")
@@ -119,7 +120,12 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
             else:
                 video_fname = cfg.config['preprocessed_green']
         video_fname = resolve_mounted_path_in_current_os(video_fname)
-    start_volume = cfg.config['dataset_params']['start_volume']
+    start_volume = cfg.config['dataset_params'].get('bigtiff_start_volume', None)
+    if start_volume is None:
+        logging.warning("Did not find bigtiff_start_volume; is this an old style project?")
+        logging.warning("Using start volume of 0. If this is fine, then no changes are needed")
+        start_volume = 0
+        cfg.config['dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
     return out_fname, preprocessing_settings, project_dir, start_volume, verbose, video_fname
 
 
@@ -145,7 +151,7 @@ def crop_zarr_using_config(cfg: ModularProjectConfig):
     for field, name in zip(fields, new_fnames):
         cfg.config[field] = str(name)
     cfg.config['dataset_params']['start_volume'] = 0
-    cfg.config['dataset_params']['old_start_volume'] = start_volume
+    cfg.config['dataset_params']['bigtiff_start_volume'] = start_volume
 
     cfg.update_self_on_disk()
 

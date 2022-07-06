@@ -384,10 +384,10 @@ def preprocess_all_frames_using_config(DEBUG: bool, config: ModularProjectConfig
     else:
         p = preprocessing_settings
 
-    num_slices, num_total_frames, start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config.config,
-                                                                                                   verbose,
-                                                                                                   video_fname)
-    return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, start_volume, sz, video_fname, vid_opt,
+    num_slices, num_total_frames, bigtiff_start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config.config,
+                                                                                                           verbose,
+                                                                                                           video_fname)
+    return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, bigtiff_start_volume, sz, video_fname, vid_opt,
                                  which_frames, which_channel, out_fname)
 
 
@@ -432,11 +432,16 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
     return preprocessed_dat, vid_opt
 
 
-def _preprocess_all_frames_unpack_config(config, verbose, video_fname):
+def _preprocess_all_frames_unpack_config(config: dict, verbose, video_fname):
     sz, vid_opt = _get_video_options(config, video_fname)
     if verbose >= 1:
         print("Preprocessing data, this could take a while...")
-    start_volume = config['dataset_params']['start_volume']
+    start_volume = config['dataset_params'].get('bigtiff_start_volume', None)
+    if start_volume is None:
+        logging.warning("Did not find bigtiff_start_volume; is this an old style project?")
+        logging.warning("Using start volume of 0. If this is fine, then no changes are needed")
+        start_volume = 0
+        config['dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
     num_total_frames = start_volume + config['dataset_params']['num_frames']
     num_slices = config['dataset_params']['num_slices']
     return num_slices, num_total_frames, start_volume, sz, vid_opt
