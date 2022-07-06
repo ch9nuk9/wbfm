@@ -195,7 +195,14 @@ class PreprocessingSettings:
         # Add a new truly constant background value, to keep anything from going negative
         new_background = self.background_per_pixel
         # Get a single image, because that's the physical camera
-        background_video_mean = np.mean(np.mean(background_video_list, axis=0), axis=0) - new_background
+        background_video_mean = np.mean(np.mean(background_video_list, axis=0), axis=0)
+        min_background_val = np.min(background_video_mean)
+        if new_background > min_background_val:
+            logging.warning(f"Can't set new background value to requested {new_background}, "
+                            f"because some values would be negative. Using {min_background_val} instead")
+            new_background = min_background_val
+        background_video_mean -= new_background
+        background_video_mean = background_video_mean.astype(self.initial_dtype)
         logging.info(f"Loaded background with mean: {np.mean(background_video_mean)}")
 
         return background_video_mean
