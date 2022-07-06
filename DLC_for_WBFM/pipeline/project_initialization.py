@@ -69,7 +69,8 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
         # i.e. remove the unpreprocessed data, creating an offset between the bigtiff and the zarr
         preprocessed_dat = preprocessed_dat[bigtiff_start_volume:, ...]
         # Resave the video; otherwise the old data isn't actually removed
-        zarr.save_array(out_fname, preprocessed_dat, chunks=preprocessed_dat.chunks)
+        chunks = (1, ) + preprocessed_dat.shape[1:]
+        zarr.save_array(out_fname, preprocessed_dat, chunks=chunks)
         cfg.logger.info(f"Removing {bigtiff_start_volume} unprocessed volumes")
     cfg.logger.info(f"Writing array of size: {preprocessed_dat.shape}")
 
