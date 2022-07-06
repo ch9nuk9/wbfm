@@ -321,8 +321,6 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     if s.do_background_subtraction:
         try:
             single_volume_raw = single_volume_raw - background
-            # Note: not uint8 yet, so we need to scale the background default
-            single_volume_raw = np.maximum(single_volume_raw + s.background_per_pixel / alpha, 0)
         except ValueError:
             logging.warning(f"The background {background.shape} was not the correct shape {single_volume_raw.shape}")
             logging.warning("Setting 'do_background_subtraction' to False")
