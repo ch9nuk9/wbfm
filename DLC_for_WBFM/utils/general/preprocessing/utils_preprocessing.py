@@ -45,7 +45,7 @@ def background_subtract_single_channel(raw_fname, background_fname, num_frames, 
     background_subtracted = zarr.zeros_like(raw_data, store=store)
     # Loop so that not all is loaded in memory... should I use dask?
     for i, volume in enumerate(tqdm(raw_data)):
-        background_subtracted[i, ...] = np.array(np.maximum(volume - background_video_mean, 0), dtype=np.uint8)
+        background_subtracted[i, ...] = np.array(np.maximum(volume - background_video_mean, 0), dtype=volume.dtype)
         if DEBUG and i > 5:
             break
     # zarr.save_array(background_subtracted, fname_subtracted)
