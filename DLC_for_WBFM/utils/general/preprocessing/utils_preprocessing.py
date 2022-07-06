@@ -19,7 +19,7 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from DLC_for_WBFM.utils.neuron_matching.utils_rigid_alignment import filter_stack, align_stack_to_middle_slice, \
+from DLC_for_WBFM.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
     align_stack_using_previous_results, apply_alignment_matrix_to_stack
 from DLC_for_WBFM.utils.projects.paths_to_external_resources import get_camera_alignment_matrix
 from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
@@ -327,7 +327,8 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             s.do_background_subtraction = False
 
     if s.do_filtering:
-        single_volume_raw = filter_stack(single_volume_raw, s.filter_opt)
+        raise NotImplementedError
+        # single_volume_raw = filter_stack(single_volume_raw, s.filter_opt)
 
     if s.do_mirroring:
         single_volume_raw = np.flip(single_volume_raw, axis=-1)
