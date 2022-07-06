@@ -215,7 +215,7 @@ def generate_output_data_names(cfg):
 
     """
     fname = cfg.resolve_mounted_path_in_current_os('red_bigtiff_fname')
-    out_fname_red = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.name}_preprocessed.zarr")))
+    out_fname_red = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
     fname = cfg.resolve_mounted_path_in_current_os('green_bigtiff_fname')
-    out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.name}_preprocessed.zarr")))
+    out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
     return out_fname_red, out_fname_green
