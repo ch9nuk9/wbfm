@@ -68,9 +68,10 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
     if not pad_to_align_with_original and bigtiff_start_volume > 0:
         # i.e. remove the unpreprocessed data, creating an offset between the bigtiff and the zarr
         preprocessed_dat = preprocessed_dat[bigtiff_start_volume:, ...]
-
-    if verbose >= 1:
-        cfg.logger.info(f"Writing array of size: {preprocessed_dat.shape}")
+        # Resave the video; otherwise the old data isn't actually removed
+        zarr.save_array(out_fname, preprocessed_dat, chunks=preprocessed_dat.chunks)
+        cfg.logger.info(f"Removing {bigtiff_start_volume} unprocessed volumes")
+    cfg.logger.info(f"Writing array of size: {preprocessed_dat.shape}")
 
     if tiff_not_zarr:
         # Have to add a color channel to make format: TZCYX
