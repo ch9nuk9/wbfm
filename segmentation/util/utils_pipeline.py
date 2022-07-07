@@ -1,19 +1,19 @@
 import logging
 import os
 import threading
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
-from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
+from wbfm.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_filenames import add_name_suffix
+from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from numcodecs import blosc
 
 import segmentation.util.utils_postprocessing as post
 import numpy as np
 from tqdm import tqdm
 # preprocessing
-from DLC_for_WBFM.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
-from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import perform_preprocessing
+from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
+from wbfm.utils.general.preprocessing.utils_preprocessing import perform_preprocessing
 # metadata
 from segmentation.util.utils_config_files import _unpack_config_file
 from segmentation.util.utils_metadata import get_metadata_dictionary, calc_metadata_full_video
@@ -466,7 +466,7 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume, border_width_
         print("Postprocessing finished")
 
     if DEBUG:
-        from DLC_for_WBFM.utils.projects.utils_debugging import shelve_full_workspace
+        from wbfm.utils.projects.utils_debugging import shelve_full_workspace
         fname = 'stardist_2d_postprocessing.out'
         shelve_full_workspace(fname, list(dir()), locals())
 
