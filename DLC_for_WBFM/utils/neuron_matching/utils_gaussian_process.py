@@ -6,8 +6,8 @@ from sklearn.gaussian_process.kernels import RBF, DotProduct, ConstantKernel
 from sklearn.utils._testing import ignore_warnings
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.neuron_matching.utils_features import build_neuron_tree
-from DLC_for_WBFM.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
+from wbfm.utils.neuron_matching.utils_features import build_neuron_tree
+from wbfm.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
 
 
 def calc_matches_using_gaussian_process(n0_unmatched, n1_unmatched,

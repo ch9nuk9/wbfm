@@ -12,7 +12,7 @@ import sys
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QDialog
 
-from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
+from wbfm.gui.utils.file_dialog_widget import FileDialog
 
 
 class CreateProjectDialog(QDialog):

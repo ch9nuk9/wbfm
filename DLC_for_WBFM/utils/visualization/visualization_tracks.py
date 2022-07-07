@@ -5,8 +5,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.neuron_matching.utils_features import build_neuron_tree
-from DLC_for_WBFM.utils.neuron_matching.utils_keypoint_matching import get_indices_of_tracklet
+from wbfm.utils.neuron_matching.utils_features import build_neuron_tree
+from wbfm.utils.neuron_matching.utils_keypoint_matching import get_indices_of_tracklet
 
 
 def visualize_tracks(neurons0, neurons1, matches=None, trivial_matches=False, to_plot_failed_lines=False, to_plot=True):

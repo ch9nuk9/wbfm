@@ -2,10 +2,10 @@ import logging
 import os.path as osp
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
+from wbfm.utils.general.custom_errors import AnalysisOutOfOrderError
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.utils_project import safe_cd
 
 
 def _check_and_print(all_to_check, description, verbose):

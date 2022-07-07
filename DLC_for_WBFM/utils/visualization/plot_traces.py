@@ -5,15 +5,15 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
-from DLC_for_WBFM.utils.external.utils_pandas import cast_int_or_nan
-from DLC_for_WBFM.utils.general.postures.centerline_classes import shade_using_behavior
+from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
+from wbfm.utils.external.utils_pandas import cast_int_or_nan
+from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 from matplotlib import transforms
 from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.visualization.utils_plot_traces import build_trace_factory, check_default_names, set_big_font
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.visualization.utils_plot_traces import build_trace_factory, check_default_names, set_big_font
 
 
 ##

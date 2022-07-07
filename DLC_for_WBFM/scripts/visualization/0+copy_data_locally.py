@@ -10,9 +10,9 @@ import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 
-from DLC_for_WBFM.pipeline.project_initialization import write_data_subset_using_config
-from DLC_for_WBFM.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from wbfm.pipeline.project_initialization import write_data_subset_using_config
+from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
+from wbfm.utils.projects.utils_project import load_config, safe_cd
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

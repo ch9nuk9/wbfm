@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_from_matches
+from wbfm.utils.tracklets.utils_tracklets import build_tracklets_from_matches
 
 
 def detect_blobs(im1_raw):

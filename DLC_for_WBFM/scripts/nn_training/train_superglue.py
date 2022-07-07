@@ -5,11 +5,11 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
 import wandb
 
-from DLC_for_WBFM.utils.nn_utils.data_loading import NeuronImageFeaturesDataModuleFromMultipleProjects, \
+from wbfm.utils.nn_utils.data_loading import NeuronImageFeaturesDataModuleFromMultipleProjects, \
     load_data_with_ground_truth
-from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject, \
+from wbfm.utils.nn_utils.superglue import SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject, \
     SuperGlueModel
-from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import PATH_TO_SUPERGLUE_MODEL
+from wbfm.utils.nn_utils.worm_with_classifier import PATH_TO_SUPERGLUE_MODEL
 
 
 def main():
@@ -42,7 +42,7 @@ def main():
         wandb_logger.watch(model, log='all', log_freq=1)
 
         trainer.fit(model, train_loader)
-    out_folder = '/scratch/neurobiology/zimmer/Charles/repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints'
+    out_folder = '/scratch/neurobiology/zimmer/Charles/repos/dlc_for_wbfm/wbfm/nn_checkpoints'
     model_fname = os.path.join(out_folder, 'superglue_neurons_4_datasets_06_22.ckpt')
     trainer.save_checkpoint(model_fname)
 

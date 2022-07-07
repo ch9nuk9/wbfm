@@ -5,10 +5,10 @@ import pandas as pd
 from sklearn.linear_model import BayesianRidge
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.general.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, get_sequential_filename
+from wbfm.utils.general.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
+from wbfm.utils.projects.utils_filenames import read_if_exists, get_sequential_filename
 # Note: following must be present, even if pycharm cleans it
 # from sklearn.experimental import enable_iterative_imputer
 # from sklearn.impute import IterativeImputer

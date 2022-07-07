@@ -2,23 +2,23 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import fill_missing_indices_with_nan
-from DLC_for_WBFM.utils.neuron_matching.long_range_matching import _unpack_for_track_tracklet_matching, \
+from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
+from wbfm.utils.neuron_matching.long_range_matching import _unpack_for_track_tracklet_matching, \
     extend_tracks_using_global_tracking, greedy_matching_using_node_class, \
     combine_tracklets_using_matching, _save_graphs_and_combined_tracks
 
-from DLC_for_WBFM.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
+from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
     combine_dataframes_using_bipartite_matching
-from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueUnpacker
-from DLC_for_WBFM.utils.nn_utils.worm_with_classifier import _unpack_project_for_global_tracking, \
+from wbfm.utils.nn_utils.superglue import SuperGlueUnpacker
+from wbfm.utils.nn_utils.worm_with_classifier import _unpack_project_for_global_tracking, \
     WormWithSuperGlueClassifier, track_using_template, WormWithNeuronClassifier
-from DLC_for_WBFM.utils.general.postures.random_templates import generator_random_template_times, \
+from wbfm.utils.general.postures.random_templates import generator_random_template_times, \
     generate_random_valid_template_frames
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.tracklets.tracklet_class import TrackedWorm, DetectedTrackletsAndNeurons
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.tracklets.tracklet_class import TrackedWorm, DetectedTrackletsAndNeurons
+from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
 
 
 def track_using_superglue_using_config(project_cfg, DEBUG):

@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.external.utils_pandas import get_column_name_from_time_and_column_value
+from wbfm.utils.external.utils_pandas import get_column_name_from_time_and_column_value
 
 
 class TestTrackTrackletMatching(unittest.TestCase):

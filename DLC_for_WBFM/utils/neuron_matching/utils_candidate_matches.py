@@ -6,16 +6,16 @@ import pandas as pd
 from networkx.algorithms.community import k_clique_communities
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.general.utils_networkx import calc_bipartite_matches_using_networkx, build_digraph_from_matches, \
+from wbfm.utils.general.utils_networkx import calc_bipartite_matches_using_networkx, build_digraph_from_matches, \
     unpack_node_name, is_one_neuron_per_frame
-from DLC_for_WBFM.utils.neuron_matching.utils_matching import calc_bipartite_from_positions
+from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positions
 
 ##
 ## Convinience function
 ##
 from scipy.sparse import coo_matrix
 
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):

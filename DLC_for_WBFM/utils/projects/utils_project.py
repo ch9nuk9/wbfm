@@ -100,7 +100,7 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
         print(f"Cleaning project {project_dir}")
 
     # Get a list of all files that should be present, relative to the project directory
-    # Note: assumes that you are executing from the main DLC_for_WBFM folder
+    # Note: assumes that you are executing from the main wbfm folder
     src = 'new_project_defaults'
     initial_fnames = list(Path(src).rglob('**/*'))
     # initial_fnames = get_abs_filenames_recursive(src)

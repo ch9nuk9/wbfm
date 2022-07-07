@@ -4,9 +4,9 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.tests.global_vars_for_tests import project_path
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.tests.global_vars_for_tests import project_path
 import pytest
 
 
@@ -20,19 +20,19 @@ def _load_training_data() -> Tuple[object, ModularProjectConfig]:
 
 
 def test_pipeline_step_a():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.2a-build_frame_objects", package="DLC_for_WBFM")
+    mod = importlib.import_module("wbfm.scripts.2a-build_frame_objects", package="wbfm")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 
 
 def test_pipeline_step_b():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.2b-match_adjacent_volumes", package="DLC_for_WBFM")
+    mod = importlib.import_module("wbfm.scripts.2b-match_adjacent_volumes", package="wbfm")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 
 
 def test_pipeline_step_c():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.2c-postprocess_matches_to_tracklets", package="DLC_for_WBFM")
+    mod = importlib.import_module("wbfm.scripts.2c-postprocess_matches_to_tracklets", package="wbfm")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 

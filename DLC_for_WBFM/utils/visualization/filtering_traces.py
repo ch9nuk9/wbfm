@@ -1,9 +1,9 @@
 import logging
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_labels_from_frames
-from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
-from DLC_for_WBFM.utils.general.postures.centerline_classes import shade_using_behavior
+from wbfm.utils.visualization.napari_from_config import napari_labels_from_frames
+from wbfm.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
+from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 from scipy.spatial.distance import cdist
 
 

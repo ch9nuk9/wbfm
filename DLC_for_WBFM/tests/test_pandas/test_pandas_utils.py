@@ -2,10 +2,10 @@ import unittest
 
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.external.utils_pandas import to_sparse_multiindex, check_if_fully_sparse, \
+from wbfm.utils.external.utils_pandas import to_sparse_multiindex, check_if_fully_sparse, \
     get_times_of_conflicting_dataframes
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df, get_names_from_df
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
+from wbfm.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df, get_names_from_df
+from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
 
 
 class TestPaddedDataFrame(unittest.TestCase):

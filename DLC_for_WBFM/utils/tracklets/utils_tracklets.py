@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df, get_next_name_generator, \
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, get_next_name_generator, \
     split_single_sparse_tracklet, split_multiple_tracklets
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
-from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, \
+from wbfm.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
+from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, \
     int2name_using_mode
 
 
@@ -131,7 +131,7 @@ def build_tracklets_from_matches(all_neurons,
     See build_tracklets_from_classes() if using ReferenceFrame class
     """
 
-    from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
+    from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
     if type(all_neurons[0]) == ReferenceFrame:
         print("===============")
         print("Found type ReferenceFrame")

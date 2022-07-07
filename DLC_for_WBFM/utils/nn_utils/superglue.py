@@ -51,14 +51,14 @@ from scipy.optimize import linear_sum_assignment
 from torch import nn, optim
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_itertools import random_combination
-from DLC_for_WBFM.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
-from DLC_for_WBFM.utils.general.custom_errors import NoNeuronsError
-from DLC_for_WBFM.utils.general.distance_functions import dist2conf
-from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
-from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.nn_utils.data_loading import AbstractNeuronImageFeaturesFromProject
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.external.utils_itertools import random_combination
+from wbfm.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
+from wbfm.utils.general.custom_errors import NoNeuronsError
+from wbfm.utils.general.distance_functions import dist2conf
+from wbfm.utils.neuron_matching.class_frame_pair import FramePair
+from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
+from wbfm.utils.nn_utils.data_loading import AbstractNeuronImageFeaturesFromProject
+from wbfm.utils.projects.finished_project_data import ProjectData
 
 
 def MLP(channels: list, do_bn=True):
@@ -560,7 +560,7 @@ class SuperGlueUnpacker:
         desc1, kpts1, scores1 = self.unpack_from_leifer_template(zxy_id1)
 
         # Use my class to convert from a list of gt ids to a list of matches
-        from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
+        from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence
         match_obj = MatchesWithConfidence.matches_from_list_of_gt_ids(zxy_id0[:, 3], zxy_id1[:, 3])
         all_matches = torch.tensor(match_obj.matches_without_conf)
 

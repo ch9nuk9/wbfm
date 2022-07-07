@@ -8,11 +8,11 @@ from typing import Dict, Tuple
 import pandas as pd
 import pprint
 
-from DLC_for_WBFM.utils.general.utils_logging import setup_logger_object, setup_root_logger
-from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
-from DLC_for_WBFM.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
+from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
+from wbfm.utils.projects.physical_units import PhysicalUnitConversion
+from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename
-from DLC_for_WBFM.utils.projects.utils_project import load_config, edit_config, safe_cd
+from wbfm.utils.projects.utils_project import load_config, edit_config, safe_cd
 
 
 @dataclass

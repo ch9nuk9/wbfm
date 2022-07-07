@@ -5,14 +5,14 @@ from pathlib import Path
 
 from matplotlib import pyplot as plt
 
-from DLC_for_WBFM.utils.external.utils_jupyter import executing_in_notebook
-from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
-from DLC_for_WBFM.utils.general.postures.centerline_classes import WormFullVideoPosture, shade_using_behavior
-from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
-from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence, get_mismatches
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
+from wbfm.utils.external.utils_jupyter import executing_in_notebook
+from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
+from wbfm.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture, shade_using_behavior
+from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
+from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
+from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence, get_mismatches
+from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 import os
 from dataclasses import dataclass
 from typing import Tuple, Dict, Union, List
@@ -22,19 +22,19 @@ import pandas as pd
 import zarr
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
+from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
     get_column_name_from_time_and_column_value
-from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
-from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
+from wbfm.utils.neuron_matching.class_frame_pair import FramePair
+from wbfm.utils.projects.physical_units import PhysicalUnitConversion
+from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
 from sklearn.neighbors import NearestNeighbors
-from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
-from DLC_for_WBFM.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
+from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
+from wbfm.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
 from segmentation.util.utils_metadata import DetectedNeurons
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
+from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
     load_file_according_to_precedence, pandas_read_any_filetype, get_sequential_filename
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from wbfm.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
 from backports.cached_property import cached_property
 
@@ -742,7 +742,7 @@ class ProjectData:
         -------
 
         """
-        from DLC_for_WBFM.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
+        from wbfm.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
         v = NapariLayerInitializer.napari_of_single_match(self, pair, which_matches, this_match,
                                                           rigidly_align_volumetric_images, min_confidence)
         return v
@@ -801,7 +801,7 @@ class ProjectData:
         -------
 
         """
-        from DLC_for_WBFM.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
+        from wbfm.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
         v = NapariLayerInitializer.add_layers_to_viewer(self, viewer, which_layers,
                                                         to_remove_flyback, check_if_layers_exist,
                                                         dask_for_segmentation)

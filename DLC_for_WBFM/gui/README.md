@@ -18,9 +18,9 @@ Those will be described in the next major section.
 
 This command works with 4 assumptions:
 1. You are NOT on the cluster (this gui can only be run locally)
-2. You are in a terminal in this folder (/dlc_for_wbfm/DLC_for_WBFM/gui/)
+2. You are in a terminal in this folder (/dlc_for_wbfm/wbfm/gui/)
    1. Example command to get to this folder:
-   2. ```cd /dlc_for_wbfm/DLC_for_WBFM/gui/```
+   2. ```cd /dlc_for_wbfm/wbfm/gui/```
 3. You are in the proper conda environment
    1. Example command:
    2. ```conda activate gui_only```

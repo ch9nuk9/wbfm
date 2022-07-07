@@ -8,10 +8,10 @@ import pandas as pd
 import zarr
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
-from DLC_for_WBFM.utils.tracklets.training_data_from_tracklets import build_subset_df_from_tracklets
+from wbfm.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
+from wbfm.utils.tracklets.training_data_from_tracklets import build_subset_df_from_tracklets
 
 
 def extract_traces_of_training_data_from_config(project_cfg: SubfolderConfigFile,

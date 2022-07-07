@@ -8,14 +8,14 @@ import numpy as np
 import pandas as pd
 import zarr
 
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.custom_errors import NoMatchesError
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
-from DLC_for_WBFM.utils.projects.utils_filenames import pickle_load_binary
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.tracklets.training_data_from_tracklets import build_subset_df_from_tracklets, \
+from wbfm.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
+from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.tracklets.training_data_from_tracklets import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames, _unpack_config_training_data_conversion
 
 

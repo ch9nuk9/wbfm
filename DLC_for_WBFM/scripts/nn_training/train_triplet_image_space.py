@@ -3,16 +3,16 @@ import logging
 import os
 import numpy as np
 import torch.optim as optim
-from DLC_for_WBFM.utils.nn_utils.losses import ArcMarginProduct
-from DLC_for_WBFM.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.nn_utils.losses import ArcMarginProduct
+from wbfm.utils.projects.utils_filenames import get_sequential_filename
 from tqdm.auto import tqdm
 import torch.nn as nn
 import torch
-from DLC_for_WBFM.utils.nn_utils.data_loading import NeuronTripletDataset
+from wbfm.utils.nn_utils.data_loading import NeuronTripletDataset
 from torch.utils.data import DataLoader
 import pandas as pd
-from DLC_for_WBFM.utils.nn_utils.utils_fdnc.siamese import Siamese
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.nn_utils.utils_fdnc.siamese import Siamese
+from wbfm.utils.projects.finished_project_data import ProjectData
 import wandb
 from torch.utils.data import random_split
 

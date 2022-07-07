@@ -10,8 +10,8 @@ from sacred import Experiment
 from sacred import SETTINGS
 
 # main function
-from DLC_for_WBFM.gui.utils.manually_correct_training_data import create_manual_correction_gui
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from wbfm.gui.utils.manually_correct_training_data import create_manual_correction_gui
+from wbfm.utils.projects.utils_project import load_config, safe_cd
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

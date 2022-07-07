@@ -6,12 +6,12 @@ import pandas as pd
 from tqdm import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
-from DLC_for_WBFM.utils.external.utils_pandas import fill_missing_indices_with_nan
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.general.custom_errors import ParameterTooStringentError
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import add_empty_rows_to_correct_index
-from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_tracklet
+from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.custom_errors import ParameterTooStringentError
+from wbfm.utils.tracklets.utils_tracklets import add_empty_rows_to_correct_index
+from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
+from wbfm.utils.projects.utils_neuron_names import int2name_tracklet
 
 
 def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,

@@ -6,13 +6,13 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.gui.utils.utils_gui import change_viewer_time_point
-from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair
+from wbfm.gui.utils.utils_gui import change_viewer_time_point
+from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 import napari
 
-from DLC_for_WBFM.utils.projects.utils_filenames import get_sequential_filename
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list, napari_labels_from_frames
-from DLC_for_WBFM.utils.visualization.napari_utils import napari_labels_from_traces_dataframe, NapariPropertyHeatMapper
+from wbfm.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.visualization.napari_from_config import napari_tracks_from_match_list, napari_labels_from_frames
+from wbfm.utils.visualization.napari_utils import napari_labels_from_traces_dataframe, NapariPropertyHeatMapper
 
 
 @dataclass

@@ -1,7 +1,7 @@
 
 # Global requirement
 project_dir: "/scratch/neurobiology/zimmer/path/to/this/project"
-code_path: "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
+code_path: "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/scripts"
 
 # Step 0: preprocessing
 # Also produces uses raw data and produces a .zarr.zip, but that will NOT be within this project, so is not included

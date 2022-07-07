@@ -1,6 +1,6 @@
 import unittest
 
-from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
+from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence
 
 
 class TestMatchesWithConfidence(unittest.TestCase):

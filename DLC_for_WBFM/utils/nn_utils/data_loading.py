@@ -15,9 +15,9 @@ import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.utils_redo_steps import correct_tracks_dataframe_using_project
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df, get_names_of_columns_that_exist_at_t
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_redo_steps import correct_tracks_dataframe_using_project
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, get_names_of_columns_that_exist_at_t
+from wbfm.utils.projects.finished_project_data import ProjectData
 
 
 def get_bbox_data(i_tracklet, df, project_data, t_local=None, target_sz=np.array([8, 64, 64])):

@@ -2,10 +2,10 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sacred import Experiment
 
-from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NullModel
-from DLC_for_WBFM.utils.nn_utils.utils_testing import plot_accuracy, test_open_set_tracking
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
+from wbfm.utils.nn_utils.model_image_classifier import NullModel
+from wbfm.utils.nn_utils.utils_testing import plot_accuracy, test_open_set_tracking
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_filenames import add_name_suffix
 ex = Experiment()
 
 

@@ -9,14 +9,14 @@ import numpy as np
 import tifffile
 import zarr
 
-from DLC_for_WBFM.utils.external.utils_zarr import zip_raw_data_zarr
-from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings, \
+from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
+from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings, \
     preprocess_all_frames_using_config, background_subtract_single_channel
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
-from DLC_for_WBFM.utils.projects.utils_filenames import get_sequential_filename, resolve_mounted_path_in_current_os, \
+from wbfm.utils.projects.utils_filenames import get_sequential_filename, resolve_mounted_path_in_current_os, \
     add_name_suffix
-from DLC_for_WBFM.utils.projects.utils_project import get_project_name, edit_config, safe_cd
+from wbfm.utils.projects.utils_project import get_project_name, edit_config, safe_cd
 
 
 def build_project_structure_from_config(_config: dict, logger: logging.Logger) -> None:
@@ -28,7 +28,7 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     abs_dir_name = get_sequential_filename(abs_dir_name)
     logger.info(f"Building new project at: {abs_dir_name}")
 
-    # Note: assumes that you are executing from the main DLC_for_WBFM folder
+    # Note: assumes that you are executing from the main wbfm folder
     src = 'new_project_defaults'
     copytree(src, abs_dir_name)
 

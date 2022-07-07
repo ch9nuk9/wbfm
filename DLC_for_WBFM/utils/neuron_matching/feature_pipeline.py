@@ -4,14 +4,14 @@ from typing import Tuple, Dict
 from segmentation.util.utils_metadata import DetectedNeurons
 from tqdm import tqdm
 
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, NoNeuronsError
-from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
-from DLC_for_WBFM.utils.neuron_matching.class_frame_pair import FramePair, calc_FramePair_from_Frames, \
+from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
+from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
+from wbfm.utils.neuron_matching.class_frame_pair import FramePair, calc_FramePair_from_Frames, \
     FramePairOptions
-from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame, \
+from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame, \
     build_reference_frame_encoding
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 
 ##
@@ -44,7 +44,7 @@ def build_tracklets_full_video(video_data, video_fname: str, start_volume: int =
 
     try:
         if use_superglue:
-            from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import build_frame_pairs_using_superglue
+            from wbfm.utils.tracklets.tracklet_pipeline import build_frame_pairs_using_superglue
             project_data = ProjectData.load_final_project_data_from_config(project_config)
             project_data.raw_frames = all_frame_dict
             all_frame_pairs = build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data)

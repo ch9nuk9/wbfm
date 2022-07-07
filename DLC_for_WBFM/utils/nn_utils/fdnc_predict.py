@@ -6,21 +6,21 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, NoNeuronsError
-from DLC_for_WBFM.utils.general.utils_networkx import calc_bipartite_from_candidates
-from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
-from DLC_for_WBFM.utils.general.postprocessing.postprocessing_utils import matches_between_tracks, \
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
+from wbfm.utils.general.utils_networkx import calc_bipartite_from_candidates
+from wbfm.utils.projects.physical_units import PhysicalUnitConversion
+from wbfm.utils.general.postprocessing.postprocessing_utils import matches_between_tracks, \
     remove_outliers_to_combine_tracks
-from DLC_for_WBFM.utils.projects.utils_filenames import get_sequential_filename
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from wbfm.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.projects.utils_project import safe_cd
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, predict_label
 from tqdm.auto import tqdm
 import torch
 
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron
+from wbfm.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
+from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 
 default_package_path = "/scratch/neurobiology/zimmer/Charles/github_repos/fDNC_Neuron_ID"
 

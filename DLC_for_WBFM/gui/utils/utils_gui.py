@@ -4,8 +4,8 @@ import napari
 import numpy as np
 from PyQt5 import QtGui
 
-from DLC_for_WBFM.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d
-from DLC_for_WBFM.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume, \
+from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d
+from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume, \
     get_single_volume_specific_slices
 
 

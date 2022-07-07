@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.utils
 import torch.nn.functional as F
 import numpy as np
-from DLC_for_WBFM.utils.external.transformers import RectAxialEncoder
+from wbfm.utils.external.transformers import RectAxialEncoder
 from fDNC.src.model import PointTransFeat
 
 

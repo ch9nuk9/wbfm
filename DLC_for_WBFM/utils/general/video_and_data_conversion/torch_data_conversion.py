@@ -3,8 +3,8 @@ import os
 import numpy as np
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 
 def convert_all_matches_to_cpu_from_config(project_config: ModularProjectConfig):

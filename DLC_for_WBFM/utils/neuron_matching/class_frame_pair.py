@@ -6,20 +6,20 @@ import scipy.ndimage as ndi
 import cv2
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_tracks_from_match_list
+from wbfm.utils.visualization.napari_from_config import napari_tracks_from_match_list
 from napari.utils.transforms import Affine
 from segmentation.util.utils_metadata import DetectedNeurons
-from DLC_for_WBFM.utils.external.utils_cv2 import cast_matches_as_array
-from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
-from DLC_for_WBFM.utils.neuron_matching.utils_affine import calc_matches_using_affine_propagation
-from DLC_for_WBFM.utils.neuron_matching.utils_features import match_known_features, build_features_and_match_2volumes
-from DLC_for_WBFM.utils.neuron_matching.utils_gaussian_process import calc_matches_using_gaussian_process
-from DLC_for_WBFM.utils.general.utils_networkx import calc_bipartite_from_candidates
-from DLC_for_WBFM.utils.general.distance_functions import dist2conf
-from DLC_for_WBFM.utils.nn_utils.data_formatting import flatten_nested_list
-from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.external.utils_cv2 import cast_matches_as_array
+from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
+from wbfm.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
+from wbfm.utils.neuron_matching.utils_affine import calc_matches_using_affine_propagation
+from wbfm.utils.neuron_matching.utils_features import match_known_features, build_features_and_match_2volumes
+from wbfm.utils.neuron_matching.utils_gaussian_process import calc_matches_using_gaussian_process
+from wbfm.utils.general.utils_networkx import calc_bipartite_from_candidates
+from wbfm.utils.general.distance_functions import dist2conf
+from wbfm.utils.nn_utils.data_formatting import flatten_nested_list
+from wbfm.utils.projects.physical_units import PhysicalUnitConversion
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 
 @dataclass
@@ -65,7 +65,7 @@ class FramePairOptions:
     preprocess_using_global_rotation: bool = False
 
     def __post_init__(self):
-        from DLC_for_WBFM.utils.nn_utils.fdnc_predict import load_fdnc_options
+        from wbfm.utils.nn_utils.fdnc_predict import load_fdnc_options
         default_options = load_fdnc_options()
 
         if self.fdnc_options is None:

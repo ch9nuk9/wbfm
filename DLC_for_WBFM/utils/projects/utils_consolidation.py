@@ -3,8 +3,8 @@ import logging
 import pandas as pd
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.projects.finished_project_data import ProjectData
 
 
 def consolidate_tracklets_using_manual_annotation(project_data: ProjectData):

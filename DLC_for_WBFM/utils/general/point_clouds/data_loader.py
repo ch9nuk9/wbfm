@@ -1,6 +1,6 @@
 import numpy as np
-from DLC_for_WBFM.utils.external.centerline_utils import transform_neuron_point_cloud
-from DLC_for_WBFM.utils.general.postures import WormSinglePosture
+from wbfm.utils.external.centerline_utils import transform_neuron_point_cloud
+from wbfm.utils.general.postures import WormSinglePosture
 from tqdm.auto import tqdm
 import torch
 

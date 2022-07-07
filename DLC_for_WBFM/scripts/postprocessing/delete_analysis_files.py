@@ -9,7 +9,7 @@ import sacred
 from sacred import Experiment
 
 # main function
-from DLC_for_WBFM.utils.projects.utils_project import delete_all_analysis_files
+from wbfm.utils.projects.utils_project import delete_all_analysis_files
 
 # Initialize sacred experiment
 ex = Experiment()

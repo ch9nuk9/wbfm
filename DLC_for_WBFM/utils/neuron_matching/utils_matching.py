@@ -7,7 +7,7 @@ from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from sklearn.neighbors import NearestNeighbors
 
-from DLC_for_WBFM.utils.general.distance_functions import dist2conf, calc_confidence_from_distance_array_and_matches
+from wbfm.utils.general.distance_functions import dist2conf, calc_confidence_from_distance_array_and_matches
 
 
 def calc_nearest_neighbor_matches(zxy0: np.ndarray,

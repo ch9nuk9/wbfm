@@ -3,7 +3,7 @@ from sacred import Experiment
 from sacred import SETTINGS
 import cgitb
 cgitb.enable(format='text')
-from DLC_for_WBFM.pipeline.project_initialization import build_project_structure_from_config
+from wbfm.pipeline.project_initialization import build_project_structure_from_config
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

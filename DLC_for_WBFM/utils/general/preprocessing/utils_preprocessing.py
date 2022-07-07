@@ -18,14 +18,14 @@ from scipy import ndimage as ndi
 from tifffile import tifffile
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from DLC_for_WBFM.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
+from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
+from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
     align_stack_using_previous_results, apply_alignment_matrix_to_stack
-from DLC_for_WBFM.utils.projects.paths_to_external_resources import get_camera_alignment_matrix
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
-from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
-from DLC_for_WBFM.utils.projects.utils_project import edit_config
-from DLC_for_WBFM.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume
+from wbfm.utils.projects.paths_to_external_resources import get_camera_alignment_matrix
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
+from wbfm.utils.projects.utils_filenames import add_name_suffix
+from wbfm.utils.projects.utils_project import edit_config
+from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume
 
 
 def background_subtract_single_channel(raw_fname, background_fname, num_frames, num_slices, preprocessing_settings,

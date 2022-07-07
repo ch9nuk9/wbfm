@@ -2,9 +2,9 @@ import unittest
 
 import numpy as np
 import pandas as pd
-from DLC_for_WBFM.utils.external.utils_pandas import check_if_fully_sparse, to_sparse_multiindex
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
+from wbfm.utils.external.utils_pandas import check_if_fully_sparse, to_sparse_multiindex
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
 
 
 class TestTrackletSplitting(unittest.TestCase):

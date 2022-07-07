@@ -6,13 +6,13 @@ from matplotlib import pyplot as plt
 from scipy import stats
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
+from wbfm.utils.external.utils_cv2 import get_keypoints_from_3dseg
 
 
 ##
 ## First, extract features and match
 ##
-from DLC_for_WBFM.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.general.custom_errors import NoMatchesError
 
 
 def convert_to_grayscale(im1):

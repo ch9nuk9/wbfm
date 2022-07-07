@@ -1,6 +1,6 @@
 import argparse
 
-from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer_from_config
+from wbfm.gui.utils.napari_trace_explorer import napari_trace_explorer_from_config
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')

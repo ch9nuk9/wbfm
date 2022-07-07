@@ -23,7 +23,7 @@ do
     esac
 done
 
-CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/utils/nn_utils/train.py"
+CMD="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/utils/nn_utils/train.py"
 DATA_PATH="/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID/Data"
 OUTPUT_PATH="/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID/fDNC/model/cluster"
 

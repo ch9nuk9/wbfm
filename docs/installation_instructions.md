@@ -11,7 +11,7 @@ https://github.com/Zimmer-lab/protocols/tree/master/computational/zimmer_lab_cod
 ### Get the code
 
 Download or clone these repositories:
-1. DLC_for_WBFM (this repo): https://github.com/Zimmer-lab/dlc_for_wbfm
+1. wbfm (this repo): https://github.com/Zimmer-lab/dlc_for_wbfm
 2. Segmentation: https://github.com/Zimmer-lab/segmentation
 3. fDNC (leifer paper): https://github.com/Charles-Fieseler-Vienna/fDNC_Neuron_ID
 
@@ -31,7 +31,7 @@ conda activate /scratch/zimmer/.conda/envs/wbfm
 #### Installing new environments
 
 Note: if you are just using the GUI, then you can use a simplified environment.
-Detailed instructions can be found in the [README](DLC_for_WBFM/gui/README.md) file under the gui section
+Detailed instructions can be found in the [README](wbfm/gui/README.md) file under the gui section
 
 For this project, two separate environments are currently needed.
 This is due to versioning interactions between opencv and tensorflow within deeplabcut and stardist. 
@@ -45,7 +45,7 @@ Do `conda activate segmentation` and install the local code in the following way
 
 1. cd to the segmentation repository
 2. run: `pip install -e .`
-3. Repeat steps 1-2 for the other repository, DLC_for_WBFM
+3. Repeat steps 1-2 for the other repository, wbfm
 4. Repeat steps 1-3 for the other environment
 
 #### Summary of installations

@@ -10,10 +10,10 @@ from sacred import Experiment
 from sacred.observers import TinyDbObserver
 
 # main function
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.visualization.napari_from_project_data_class import take_screenshot_using_project
-from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_using_project
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.visualization.napari_from_project_data_class import take_screenshot_using_project
+from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 
 # Initialize sacred experiment
 ex = Experiment()

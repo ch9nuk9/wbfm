@@ -5,17 +5,17 @@ To be used with Niklas' Stardist-based segmentation package
 """
 
 import os
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from wbfm.utils.projects.utils_project import safe_cd
 # Experiment tracking
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
-from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 from segmentation.util.utils_pipeline import segment_video_using_config_2d, segment_video_using_config_3d
 
-from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 import cgitb
 cgitb.enable(format='text')
 

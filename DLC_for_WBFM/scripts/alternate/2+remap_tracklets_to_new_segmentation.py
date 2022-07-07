@@ -4,8 +4,8 @@ import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
-from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.projects.utils_redo_steps import remap_tracklets_to_new_segmentation_using_config
+from wbfm.utils.external.monkeypatch_json import using_monkeypatch
+from wbfm.utils.projects.utils_redo_steps import remap_tracklets_to_new_segmentation_using_config
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 

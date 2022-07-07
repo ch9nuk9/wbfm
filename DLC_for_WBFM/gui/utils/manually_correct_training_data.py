@@ -7,11 +7,11 @@ import pandas as pd
 import zarr
 from PyQt5 import QtWidgets
 
-from DLC_for_WBFM.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.tracklets.training_data_from_tracklets import get_or_recalculate_which_frames
+from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
+from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.tracklets.training_data_from_tracklets import get_or_recalculate_which_frames
 
 
 class manual_annotation_widget(QtWidgets.QWidget):

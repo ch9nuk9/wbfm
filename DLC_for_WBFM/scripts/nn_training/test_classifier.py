@@ -7,12 +7,12 @@ import sacred
 import torch
 from matplotlib import pyplot as plt
 
-from DLC_for_WBFM.utils.nn_utils.utils_testing import test_trained_classifier, plot_accuracy, \
+from wbfm.utils.nn_utils.utils_testing import test_trained_classifier, plot_accuracy, \
     test_trained_embedding_matcher, test_open_set_tracking
-from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
-from DLC_for_WBFM.utils.nn_utils.data_loading import NeuronImageFeaturesDataModule, FullVolumeNeuronImageFeaturesDataset
-from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_filenames import add_name_suffix
+from wbfm.utils.nn_utils.data_loading import NeuronImageFeaturesDataModule, FullVolumeNeuronImageFeaturesDataset
+from wbfm.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
+from wbfm.utils.projects.finished_project_data import ProjectData
 from sacred import Experiment
 
 # !wandb login

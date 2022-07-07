@@ -26,7 +26,7 @@ import json
 from pathlib import Path
 
 import numpy as np
-from DLC_for_WBFM.utils.nn_utils.augmentation import PointCloudAugmentationDINO
+from wbfm.utils.nn_utils.augmentation import PointCloudAugmentationDINO
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn

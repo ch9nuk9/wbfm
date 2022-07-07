@@ -2,14 +2,14 @@ from collections import defaultdict
 
 import numpy as np
 
-from DLC_for_WBFM.utils.general.postprocessing.utils_metadata import region_props_all_volumes, \
+from wbfm.utils.general.postprocessing.utils_metadata import region_props_all_volumes, \
     _convert_nested_dict_to_dataframe
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
-from DLC_for_WBFM.utils.traces.traces_pipeline import _unpack_configs_for_traces, match_segmentation_and_tracks, \
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
+from wbfm.utils.traces.traces_pipeline import _unpack_configs_for_traces, match_segmentation_and_tracks, \
     _unpack_configs_for_extraction, _save_traces_as_hdf_and_update_configs
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.visualization.utils_segmentation import _unpack_config_reindexing, reindex_segmentation
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.visualization.utils_segmentation import _unpack_config_reindexing, reindex_segmentation
 
 
 def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,

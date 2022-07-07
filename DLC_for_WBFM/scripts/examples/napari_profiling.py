@@ -2,8 +2,8 @@ import cProfile
 
 import napari
 
-from DLC_for_WBFM.gui.utils.utils_gui import change_viewer_time_point
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from wbfm.gui.utils.utils_gui import change_viewer_time_point
+from wbfm.utils.projects.finished_project_data import ProjectData
 
 
 def basic_time_changes(viewer):

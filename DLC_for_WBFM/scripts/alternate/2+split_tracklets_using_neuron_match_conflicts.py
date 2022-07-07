@@ -4,9 +4,9 @@ import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
-from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.tracklets.tracklet_pipeline import split_tracklets_using_change_detection, \
+from wbfm.utils.external.monkeypatch_json import using_monkeypatch
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.tracklets.tracklet_pipeline import split_tracklets_using_change_detection, \
     split_tracklets_using_neuron_match_conflicts
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False

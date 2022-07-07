@@ -6,9 +6,9 @@ import pandas as pd
 from backports import cached_property
 from matplotlib import pyplot as plt
 
-from DLC_for_WBFM.utils.external.utils_pandas import cast_int_or_nan
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
+from wbfm.utils.external.utils_pandas import cast_int_or_nan
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 
 def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,

@@ -11,7 +11,7 @@ from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
 
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 
 @dataclass

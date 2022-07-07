@@ -3,7 +3,7 @@ import pytest
 
 
 def test_core_package_imports():
-    print("import DLC_for_WBFM")
+    print("import wbfm")
 
     print("import scipy")
 

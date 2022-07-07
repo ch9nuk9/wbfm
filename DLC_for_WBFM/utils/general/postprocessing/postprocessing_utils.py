@@ -10,11 +10,11 @@ import numpy as np
 import pandas as pd
 import tifffile
 
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
-from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesWithConfidence
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence
 from scipy import ndimage as ndi
 
-from DLC_for_WBFM.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d, get_crop_coords
+from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d, get_crop_coords
 
 ##
 ## Background subtraction

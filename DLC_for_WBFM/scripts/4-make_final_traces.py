@@ -8,21 +8,21 @@ import os
 
 import sacred
 
-from DLC_for_WBFM.utils.external.utils_zarr import zip_raw_data_zarr
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.visualization.plot_traces import make_grid_plot_using_project
+from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 from sacred import Experiment
 from sacred import SETTINGS
 # main function
 from sacred.observers import TinyDbObserver
-from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.projects.utils_project_status import check_all_needed_data_for_step
+from wbfm.utils.external.monkeypatch_json import using_monkeypatch
+from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 
-from DLC_for_WBFM.pipeline.traces import match_segmentation_and_tracks_using_config, extract_traces_using_config, \
+from wbfm.pipeline.traces import match_segmentation_and_tracks_using_config, extract_traces_using_config, \
     reindex_segmentation_using_config
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext, \
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext, \
     SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from wbfm.utils.projects.utils_project import safe_cd
 import cgitb
 cgitb.enable(format='text')
 

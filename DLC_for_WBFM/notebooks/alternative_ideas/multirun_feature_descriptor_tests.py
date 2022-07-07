@@ -2,7 +2,7 @@ import prefect
 from prefect import task, Flow, Parameter, unmapped
 from prefect.run_configs import LocalRun
 from prefect.executors import LocalDaskExecutor
-from DLC_for_WBFM.notebooks.alternative_ideas.opencv_feature_descriptor_accuracy_alternative import test_feature_encoder
+from wbfm.notebooks.alternative_ideas.opencv_feature_descriptor_accuracy_alternative import test_feature_encoder
 
 
 @task

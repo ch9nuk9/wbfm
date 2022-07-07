@@ -7,12 +7,12 @@ import torch
 from scipy.optimize import linear_sum_assignment
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
-from DLC_for_WBFM.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
+from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
+from wbfm.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
+from wbfm.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
+from wbfm.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
-model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/nn_checkpoints/"
+model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
 # PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
 PATH_TO_MODEL = os.path.join(model_dir, "superglue_neurons_4_datasets_adjacent_remove_nonmoving_05_11.ckpt")
 # PATH_TO_MODEL = os.path.join(model_dir, "classifier_36_neurons.ckpt")

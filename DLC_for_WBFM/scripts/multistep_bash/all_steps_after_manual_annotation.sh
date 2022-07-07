@@ -16,7 +16,7 @@ done
 #source /home/charles/anaconda3/etc/profile.d/conda.sh
 #conda init bash
 
-CODE_PATH="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
+CODE_PATH="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/scripts"
 SUFFIX="with project_path=$project_path"
 
 if [ "$is_dry_run" ]; then

@@ -6,7 +6,7 @@ import pandas as pd
 ##
 ## Reading DeepLabCut
 ##
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def xy_from_dlc_dat(fname, which_neuron=0, num_frames=100):

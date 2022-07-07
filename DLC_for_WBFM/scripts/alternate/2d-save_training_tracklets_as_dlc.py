@@ -9,12 +9,12 @@ from datetime import date
 import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
-from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.external.monkeypatch_json import using_monkeypatch
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 from sacred import SETTINGS
 
-from DLC_for_WBFM.utils.tracklets.training_data_from_tracklets import save_training_data_as_dlc_format
+from wbfm.utils.tracklets.training_data_from_tracklets import save_training_data_as_dlc_format
 
 SETTINGS.CAPTURE_MODE = 'sys' # Capture stdout
 

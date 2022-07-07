@@ -1,6 +1,6 @@
 import argparse
 
-from DLC_for_WBFM.utils.projects.utils_project_status import print_sacred_log
+from wbfm.utils.projects.utils_project_status import print_sacred_log
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Print current project status')

@@ -28,8 +28,8 @@ conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 ### Creating a project
 
 Working examples to create a project are available for 
-[linux](DLC_for_WBFM/scripts/examples/0-create_new_project-linux-EXAMPLE.sh)
-and [windows](DLC_for_WBFM/scripts/examples/0-create_new_project-windows-EXAMPLE.sh).
+[linux](wbfm/scripts/examples/0-create_new_project-linux-EXAMPLE.sh)
+and [windows](wbfm/scripts/examples/0-create_new_project-windows-EXAMPLE.sh).
 Everything can be run on the command line.
 
 If your data is visible locally (mounted is okay), for the initial project creation you can use a gui:

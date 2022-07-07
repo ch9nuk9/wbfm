@@ -6,7 +6,7 @@ import sacred
 from sacred import Experiment
 
 # main function
-from DLC_for_WBFM.utils.projects.utils_data_subsets import segment_local_data_subset
+from wbfm.utils.projects.utils_data_subsets import segment_local_data_subset
 
 # Initialize sacred experiment
 ex = Experiment()

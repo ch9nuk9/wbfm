@@ -7,10 +7,10 @@ import torch
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
 
-from DLC_for_WBFM.utils.projects.utils_filenames import get_sequential_filename
-from DLC_for_WBFM.utils.nn_utils.data_loading import NeuronImageFeaturesDataModule
-from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.nn_utils.data_loading import NeuronImageFeaturesDataModule
+from wbfm.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
+from wbfm.utils.projects.finished_project_data import ProjectData
 import wandb
 from sacred import Experiment
 

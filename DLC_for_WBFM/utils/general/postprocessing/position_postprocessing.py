@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from wbfm.utils.projects.utils_project import safe_cd
 
 
 def impute_missing_values_using_config(tracking_config, DEBUG=False):

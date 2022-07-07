@@ -1,8 +1,8 @@
 import numpy as np
 
-from DLC_for_WBFM.utils.neuron_matching.utils_detection import build_point_clouds_for_volume, \
+from wbfm.utils.neuron_matching.utils_detection import build_point_clouds_for_volume, \
     build_correspondence_icp, get_centroids_from_df
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_from_matches
+from wbfm.utils.tracklets.utils_tracklets import build_tracklets_from_matches
 
 
 def detect_neurons_using_ICP(dat,

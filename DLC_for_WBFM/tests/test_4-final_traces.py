@@ -1,10 +1,10 @@
 import importlib
-from DLC_for_WBFM.tests.global_vars_for_tests import project_path
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
+from wbfm.tests.global_vars_for_tests import project_path
+from wbfm.utils.projects.finished_project_data import ProjectData
 
 
 def test_pipeline_step_a():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.4-make_final_traces", package="DLC_for_WBFM")
+    mod = importlib.import_module("wbfm.scripts.4-make_final_traces", package="wbfm")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 

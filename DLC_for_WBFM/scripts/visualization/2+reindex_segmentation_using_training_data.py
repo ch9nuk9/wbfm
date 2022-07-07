@@ -9,10 +9,10 @@ import sacred
 from sacred import Experiment
 
 # main function
-from DLC_for_WBFM.utils.projects.utils_project import load_config, safe_cd
+from wbfm.utils.projects.utils_project import load_config, safe_cd
 # Initialize sacred experiment
-from DLC_for_WBFM.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.visualization.utils_segmentation import reindex_segmentation_only_training_data
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 ex = Experiment()
 # Add single variable so that the cfg() function works

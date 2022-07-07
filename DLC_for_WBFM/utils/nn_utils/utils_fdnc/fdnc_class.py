@@ -3,10 +3,10 @@ from dataclasses import dataclass
 import numpy as np
 from fDNC.src.DNC_predict import predict_matches, filter_matches
 
-from DLC_for_WBFM.utils.general.custom_errors import NoNeuronsError
-from DLC_for_WBFM.utils.nn_utils.fdnc_predict import load_fdnc_template, load_fdnc_options
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.physical_units import PhysicalUnitConversion
+from wbfm.utils.general.custom_errors import NoNeuronsError
+from wbfm.utils.nn_utils.fdnc_predict import load_fdnc_template, load_fdnc_options
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 
 
 @dataclass
@@ -74,7 +74,7 @@ class fDNCTracker:
     def visualize_matches_open3d(self, pts, matches=None):
         if matches is None:
             matches = self.predict_matches_from_points(pts)
-        from DLC_for_WBFM.utils.visualization.visualization_tracks import visualize_tracks
+        from wbfm.utils.visualization.visualization_tracks import visualize_tracks
         visualize_tracks(self.template, pts, matches=matches)
 
         return matches

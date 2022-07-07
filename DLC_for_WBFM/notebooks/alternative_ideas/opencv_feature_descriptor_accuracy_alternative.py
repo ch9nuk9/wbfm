@@ -4,11 +4,11 @@ import sacred
 from matplotlib import pyplot as plt
 from sacred import Experiment
 
-from DLC_for_WBFM.utils.neuron_matching.feature_pipeline import calculate_frame_objects_full_video
-from DLC_for_WBFM.utils.nn_utils.model_image_classifier import NullModel
-from DLC_for_WBFM.utils.nn_utils.utils_testing import plot_accuracy, test_open_set_tracking
-from DLC_for_WBFM.utils.projects.finished_project_data import ProjectData
-from DLC_for_WBFM.utils.projects.utils_filenames import add_name_suffix
+from wbfm.utils.neuron_matching.feature_pipeline import calculate_frame_objects_full_video
+from wbfm.utils.nn_utils.model_image_classifier import NullModel
+from wbfm.utils.nn_utils.utils_testing import plot_accuracy, test_open_set_tracking
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_filenames import add_name_suffix
 ex = Experiment()
 ex.add_config(encoder_type='baseline', DEBUG=False)
 

@@ -2,8 +2,8 @@ import importlib
 from typing import Tuple
 
 import pandas as pd
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.tests.global_vars_for_tests import project_path
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.tests.global_vars_for_tests import project_path
 
 
 def _load_tracks() -> Tuple[object, ModularProjectConfig]:
@@ -16,13 +16,13 @@ def _load_tracks() -> Tuple[object, ModularProjectConfig]:
 
 
 def test_pipeline_step_a():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.3a-track_using_superglue", package="DLC_for_WBFM")
+    mod = importlib.import_module("wbfm.scripts.3a-track_using_superglue", package="wbfm")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 
 
 def test_pipeline_step_b():
-    mod = importlib.import_module("DLC_for_WBFM.scripts.3b-match_tracklets_and_tracks", package="DLC_for_WBFM")
+    mod = importlib.import_module("wbfm.scripts.3b-match_tracklets_and_tracks", package="wbfm")
     config_updates = {'project_path': project_path, 'DEBUG': False}
     mod.ex.run(config_updates=config_updates)
 

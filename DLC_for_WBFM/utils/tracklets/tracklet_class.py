@@ -9,24 +9,24 @@ import numpy as np
 import pandas as pd
 import sklearn
 
-from DLC_for_WBFM.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df, PaddedDataFrame, \
+from wbfm.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df, PaddedDataFrame, \
     get_names_from_df
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import OneClassSVM
 from tqdm.auto import tqdm
 
-from DLC_for_WBFM.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, \
+from wbfm.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, \
     get_names_of_conflicting_dataframes, get_times_of_conflicting_dataframes, get_column_name_from_time_and_column_value
-from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError, DataSynchronizationError
-from DLC_for_WBFM.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
-from DLC_for_WBFM.utils.projects.utils_filenames import lexigraphically_sort
-from DLC_for_WBFM.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
+from wbfm.utils.general.custom_errors import AnalysisOutOfOrderError, DataSynchronizationError
+from wbfm.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
+from wbfm.utils.projects.utils_filenames import lexigraphically_sort
+from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
-from DLC_for_WBFM.utils.tracklets.training_data_from_tracklets import translate_training_names_to_raw_names
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_next_name_tracklet_or_neuron
+from wbfm.utils.tracklets.training_data_from_tracklets import translate_training_names_to_raw_names
+from wbfm.utils.tracklets.utils_tracklets import get_next_name_tracklet_or_neuron
 
 
 @dataclass

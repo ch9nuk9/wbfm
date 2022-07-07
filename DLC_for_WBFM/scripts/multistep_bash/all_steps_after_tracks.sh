@@ -17,7 +17,7 @@ done
 #conda activate my_env
 
 
-CODE_PATH="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/DLC_for_WBFM/scripts"
+CODE_PATH="/scratch/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/scripts"
 SUFFIX="with project_path=$project_path"
 
 if [ "$is_dry_run" ]; then

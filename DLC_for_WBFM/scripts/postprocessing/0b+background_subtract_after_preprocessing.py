@@ -9,17 +9,17 @@ from pathlib import Path
 # Experiment tracking
 import sacred
 
-from DLC_for_WBFM.utils.external.utils_zarr import zip_raw_data_zarr
-from DLC_for_WBFM.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames
+from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
+from wbfm.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames
 from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
-from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
+from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 
-from DLC_for_WBFM.pipeline.project_initialization import write_data_subset_using_config, zip_zarr_using_config, \
+from wbfm.pipeline.project_initialization import write_data_subset_using_config, zip_zarr_using_config, \
     subtract_background_using_config
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.utils_project import safe_cd
 import cgitb
 cgitb.enable(format='text')
 

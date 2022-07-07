@@ -5,13 +5,13 @@ import cv2
 import numpy as np
 import zarr
 from tqdm.auto import tqdm
-from DLC_for_WBFM.utils.external.utils_cv2 import get_keypoints_from_3dseg
-from DLC_for_WBFM.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from DLC_for_WBFM.utils.general.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
+from wbfm.utils.external.utils_cv2 import get_keypoints_from_3dseg
+from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
+from wbfm.utils.general.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
     AnalysisOutOfOrderError, DeprecationError, NoNeuronsError
-from DLC_for_WBFM.utils.neuron_matching.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
+from wbfm.utils.neuron_matching.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints
-from DLC_for_WBFM.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
+from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from segmentation.util.utils_metadata import DetectedNeurons
 
 ##
@@ -109,7 +109,7 @@ class ReferenceFrame:
 
         if detected_neurons is None:
             raise DeprecationError("Detection of neurons within this class is deprecated")
-            # from DLC_for_WBFM.utils.neuron_matching.legacy_neuron_detection import detect_neurons_using_ICP
+            # from wbfm.utils.neuron_matching.legacy_neuron_detection import detect_neurons_using_ICP
             # neuron_locs, _, _, _ = detect_neurons_using_ICP(dat,
             #                                                 num_slices=num_slices,
             #                                                 alpha=1.0,

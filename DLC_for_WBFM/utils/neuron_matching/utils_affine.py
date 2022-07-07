@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
-from DLC_for_WBFM.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from DLC_for_WBFM.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
+from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
+from wbfm.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
 
 
 def propagate_via_affine_model(which_neuron: int,

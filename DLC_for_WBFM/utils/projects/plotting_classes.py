@@ -10,18 +10,18 @@ import napari
 import numpy as np
 import pandas as pd
 import zarr
-from DLC_for_WBFM.utils.external.utils_pandas import cast_int_or_nan
+from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
 
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
+from wbfm.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_sparse_dataframe
-from DLC_for_WBFM.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
+from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
 from segmentation.util.utils_postprocessing import split_neuron_interactive
-from DLC_for_WBFM.gui.utils.utils_gui import build_tracks_from_dataframe
-from DLC_for_WBFM.utils.projects.project_config_classes import SubfolderConfigFile
-from DLC_for_WBFM.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
-from DLC_for_WBFM.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
+from wbfm.gui.utils.utils_gui import build_tracks_from_dataframe
+from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
+from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
+from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
 
 
@@ -224,7 +224,7 @@ class TrackletAndSegmentationAnnotator:
         self.logger.debug(f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
     def initialize_gt_model_mismatches(self, project_data):
-        from DLC_for_WBFM.utils.projects.finished_project_data import calc_all_mismatches_between_ground_truth_and_pairs
+        from wbfm.utils.projects.finished_project_data import calc_all_mismatches_between_ground_truth_and_pairs
         self.gt_mismatches = calc_all_mismatches_between_ground_truth_and_pairs(project_data, minimum_confidence=0.7)
 
     @property

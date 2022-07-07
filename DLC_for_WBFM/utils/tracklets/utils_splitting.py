@@ -3,7 +3,7 @@ import ruptures as rpt
 from matplotlib import pyplot as plt
 from ruptures.exceptions import BadSegmentationParameters
 
-from DLC_for_WBFM.utils.general.custom_errors import AnalysisOutOfOrderError
+from wbfm.utils.general.custom_errors import AnalysisOutOfOrderError
 
 
 class TrackletSplitter:

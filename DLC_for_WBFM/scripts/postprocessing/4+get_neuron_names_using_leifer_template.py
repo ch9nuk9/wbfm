@@ -4,13 +4,13 @@ The top level function for producing dlc tracks in 3d
 
 # Experiment tracking
 import sacred
-from DLC_for_WBFM.utils.nn_utils.fdnc_predict import get_putative_names_from_config
+from wbfm.utils.nn_utils.fdnc_predict import get_putative_names_from_config
 from sacred import Experiment
 
 # main function
 from sacred.observers import TinyDbObserver
-from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.external.monkeypatch_json import using_monkeypatch
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 # Initialize sacred experiment
 ex = Experiment()

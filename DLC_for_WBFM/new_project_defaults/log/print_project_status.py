@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.utils.projects.utils_project_status import print_project_status
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.utils_project_status import print_project_status
 
 # Assume we are running from the /log subfolder within a project
 project_path = Path(__file__).resolve().parents[1]

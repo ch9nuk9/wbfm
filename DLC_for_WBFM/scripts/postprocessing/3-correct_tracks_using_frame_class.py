@@ -2,10 +2,10 @@
 import sacred
 from sacred import Experiment
 from sacred import SETTINGS
-from DLC_for_WBFM.utils.external.monkeypatch_json import using_monkeypatch
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.external.monkeypatch_json import using_monkeypatch
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 import cgitb
-from DLC_for_WBFM.utils.projects.utils_redo_steps import correct_tracks_dataframe_using_frame_class
+from wbfm.utils.projects.utils_redo_steps import correct_tracks_dataframe_using_frame_class
 
 cgitb.enable(format='text')
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False

@@ -14,18 +14,18 @@ from pathlib import Path
 
 import napari
 import zarr
-from DLC_for_WBFM.gui.utils.napari_trace_explorer import napari_trace_explorer
+from wbfm.gui.utils.napari_trace_explorer import napari_trace_explorer
 from PyQt5 import QtCore, QtWidgets
 
-from DLC_for_WBFM.gui.utils.utils_gui import add_fps_printer
-from DLC_for_WBFM.utils.projects.project_config_classes import ModularProjectConfig
-from DLC_for_WBFM.gui.create_project_gui import CreateProjectDialog
-from DLC_for_WBFM.gui.utils.file_dialog_widget import FileDialog
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
-from DLC_for_WBFM.utils.projects.utils_project_status import check_segmentation, check_tracking, \
+from wbfm.gui.utils.utils_gui import add_fps_printer
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.gui.create_project_gui import CreateProjectDialog
+from wbfm.gui.utils.file_dialog_widget import FileDialog
+from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.projects.utils_project_status import check_segmentation, check_tracking, \
     check_traces, check_training_final
-from DLC_for_WBFM.utils.visualization.napari_from_config import napari_of_full_data
-from DLC_for_WBFM.utils.projects.finished_project_data import napari_of_training_data, ProjectData
+from wbfm.utils.visualization.napari_from_config import napari_of_full_data
+from wbfm.utils.projects.finished_project_data import napari_of_training_data, ProjectData
 from backports.cached_property import cached_property
 
 
@@ -194,36 +194,36 @@ class UiMainWindow(object):
     def do_segmentation(self):
         # Runs in a new process
         print("Running step 1")
-        mod = importlib.import_module("DLC_for_WBFM.scripts.1-segment_video", package="DLC_for_WBFM")
+        mod = importlib.import_module("wbfm.scripts.1-segment_video", package="wbfm")
         config_updates = {'project_path': self.project_file, 'DEBUG': False}
         mod.ex.run(config_updates=config_updates)
 
     def do_tracklet_generation(self):
         # Runs in a new process
         print("Running step 2")
-        mod = importlib.import_module("DLC_for_WBFM.scripts.2-produce_training_data", package="DLC_for_WBFM")
+        mod = importlib.import_module("wbfm.scripts.2-produce_training_data", package="wbfm")
         config_updates = {'project_path': self.project_file, 'DEBUG': False}
         mod.ex.run(config_updates=config_updates)
 
     def do_dlc_training_and_tracking(self):
         # Runs in a new process
         print("Running step 3a")
-        mod = importlib.import_module("DLC_for_WBFM.scripts.3a-initialize_dlc_stack", package="DLC_for_WBFM")
+        mod = importlib.import_module("wbfm.scripts.3a-initialize_dlc_stack", package="wbfm")
         config_updates = {'project_path': self.project_file, 'DEBUG': False}
         mod.ex.run(config_updates=config_updates)
 
         print("Running step 3b")
-        mod = importlib.import_module("DLC_for_WBFM.scripts.3b-train_all_dlc_networks", package="DLC_for_WBFM")
+        mod = importlib.import_module("wbfm.scripts.3b-train_all_dlc_networks", package="wbfm")
         mod.ex.run(config_updates=config_updates)
 
         print("Running step 3c")
-        mod = importlib.import_module("DLC_for_WBFM.scripts.3c-make_full_tracks", package="DLC_for_WBFM")
+        mod = importlib.import_module("wbfm.scripts.3c-make_full_tracks", package="wbfm")
         mod.ex.run(config_updates=config_updates)
 
     def do_final_traces(self):
         # Runs in a new process
         print("Running step 4")
-        mod = importlib.import_module("DLC_for_WBFM.scripts.4-make_full_traces", package="DLC_for_WBFM")
+        mod = importlib.import_module("wbfm.scripts.4-make_full_traces", package="wbfm")
         config_updates = {'project_path': self.project_file, 'DEBUG': False}
         mod.ex.run(config_updates=config_updates)
 

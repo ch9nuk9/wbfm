@@ -3,7 +3,7 @@ import napari
 import numpy as np
 import zarr
 
-from DLC_for_WBFM.utils.projects.utils_project import safe_cd
+from wbfm.utils.projects.utils_project import safe_cd
 
 
 def napari_of_full_data(project_dir):
