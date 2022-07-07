@@ -21,7 +21,7 @@ conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 
 1. Red channel (tracking) in a single bigtiff file
 2. Green channel (signal) in a single bigtiff file
-3. 2 conda environments (see above for installation instructions, or use pre-installed versions on the cluster)
+3. 1 conda environment (see above for installation instructions, or use pre-installed versions on the cluster)
 
 ## Full workflow
 
@@ -40,8 +40,10 @@ python gui/create_project_gui.py
 
 #### *IMPORTANT*
 
-The method of creating the project will determine the style of filepaths that are saved in the project.
+The method of creating the project (gui or command line) will determine the style of filepaths that are saved in the project.
 Thus, if you create and run the project on different operating systems, you will probably need to manually update the path to the raw data.
+
+Example: Create the project on Windows, but run it on the cluster (Linux).
 
 Specifically be aware of these variables:
 ```yaml
@@ -58,7 +60,7 @@ In addition, if creating from a windows computer, you may need to use dos2unix t
 ### Checklist of most important parameters to change
 
 1. project_config.yaml
-   1. start_volume
+   1. start_volume_bigtiff
    2. num_frames
    3. num_slices (after flyback removal)
 2. preprocessing_config.yaml
@@ -67,13 +69,13 @@ In addition, if creating from a windows computer, you may need to use dos2unix t
 
 For all other settings, the defaults should work well.
 
-
-### Running the rest of the workflow
-
 #### *IMPORTANT*
 If you changed the name of your project, you must update it in the snakemake/config.yaml file under 'project_dir'
 
-This code is designed in several different scripts, which can be running using two commands.
+
+### Running the rest of the workflow
+
+This code is designed in several different scripts, which can be running using a single command.
 The organization between these steps uses the workflow manager [snakemake](https://snakemake.readthedocs.io/en/stable/).
 Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
 If you are rerunning an old project, see the next section.
@@ -88,7 +90,7 @@ cd /path/to/your/project/snakemake
 ```bash
 bash DRYRUN.sh
 ```
-4. If there are errors, there are two options:
+4. If there are errors, there are three possibilities:
    1. If this is not a new project, you might have to run steps one by one (see the next subsection).
    2. If you changed the name of the project, read the *IMPORTANT* tip above 
    3. If this is a new project, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
