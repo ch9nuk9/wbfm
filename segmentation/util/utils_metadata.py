@@ -9,8 +9,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
-from DLC_for_WBFM.utils.general.postprocessing.utils_metadata import regionprops_one_volume_one_channel
-from DLC_for_WBFM.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
+from wbfm.utils.general.postprocessing.utils_metadata import regionprops_one_volume_one_channel
+from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 import numpy as np
 import pandas as pd

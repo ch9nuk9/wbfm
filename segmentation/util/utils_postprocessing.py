@@ -11,8 +11,8 @@ import scipy
 import skimage
 from scipy.optimize import curve_fit
 
-from DLC_for_WBFM.utils.general.utils_networkx import calc_bipartite_from_candidates
-from DLC_for_WBFM.utils.tracklets.utils_tracklets import build_tracklets_dfs
+from wbfm.utils.general.utils_networkx import calc_bipartite_from_candidates
+from wbfm.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from scipy.signal import find_peaks
 from skimage.measure import regionprops
 
