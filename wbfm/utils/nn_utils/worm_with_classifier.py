@@ -13,18 +13,16 @@ from wbfm.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
 from wbfm.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
 model_dir = "/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
-# PATH_TO_MODEL = os.path.join(model_dir, "classifier_127_partial_neurons.ckpt")
+local_model_dir = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
 PATH_TO_MODEL = os.path.join(model_dir, "superglue_neurons_4_datasets_adjacent_remove_nonmoving_05_11.ckpt")
-# PATH_TO_MODEL = os.path.join(model_dir, "classifier_36_neurons.ckpt")
-# PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_62_partial_neurons_1000training.ckpt")
-# PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir, "superglue_107_partial_neurons_3299training_adjacent.ckpt")
 
 # Update: 4/20/2022 - multiple datasets
-# PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_neurons_3_datasets_04_19.ckpt")
 PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_neurons_4_datasets_05_10.ckpt")
-# PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir, "superglue_neurons_3_datasets_adjacent_04_20.ckpt")
 PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir,
                                                 "superglue_neurons_3_datasets_adjacent_remove_nonmoving_04_27.ckpt")
+LOCAL_PATH_TO_SUPERGLUE_MODEL = os.path.join(local_model_dir, "superglue_neurons_4_datasets_05_10.ckpt")
+LOCAL_PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(local_model_dir,
+                                                      "superglue_neurons_3_datasets_adjacent_remove_nonmoving_04_27.ckpt")
 
 
 if not os.path.exists(PATH_TO_MODEL):
@@ -53,7 +51,11 @@ class WormWithNeuronClassifier:
 
     def __post_init__(self):
         if self.path_to_model is None:
-            self.path_to_model = PATH_TO_MODEL
+            if os.path.exists(PATH_TO_MODEL):
+                self.path_to_model = PATH_TO_MODEL
+            else:
+                raise FileNotFoundError(PATH_TO_MODEL)
+
         if self.hparams is None:
             self.hparams = HPARAMS
         if self.model is None:
@@ -110,7 +112,13 @@ class WormWithSuperGlueClassifier:
 
     def __post_init__(self):
         if self.path_to_model is None:
-            self.path_to_model = PATH_TO_SUPERGLUE_MODEL
+            if os.path.exists(PATH_TO_SUPERGLUE_MODEL):
+                self.path_to_model = PATH_TO_SUPERGLUE_MODEL
+            elif os.path.exists(LOCAL_PATH_TO_SUPERGLUE_MODEL):
+                self.path_to_model = LOCAL_PATH_TO_SUPERGLUE_MODEL
+                logging.warning("Did not find cluster path to model, using local path")
+            else:
+                raise FileNotFoundError(PATH_TO_SUPERGLUE_MODEL)
         if self.model is None:
             self.model = SuperGlueModel.load_from_checkpoint(checkpoint_path=self.path_to_model)
         self.model.eval()
