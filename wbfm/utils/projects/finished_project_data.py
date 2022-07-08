@@ -834,17 +834,21 @@ class ProjectData:
     def finished_neuron_names(self) -> List[str]:
         """
         Uses df_manual_tracking to get a list of the neuron names that have been fully corrected
+
+        The manual annotation file is expected to be a .csv in the following format:
+        Neuron ID, Finished?
+        neuron_001, False
+        neuron_002, True
+        ...
+
+        Extra columns are not a problem, but extra rows are
         """
         df_manual_tracking = self.df_manual_tracking
         if df_manual_tracking is None:
             return []
 
         try:
-            neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name]
-            if neurons_finished_mask.dtype != bool:
-                self.logger.warning("Found non-boolean entries in manual annotation column; this may be a data error: "
-                                    f"{np.unique(neurons_finished_mask)}")
-                neurons_finished_mask = neurons_finished_mask.astype(bool)
+            neurons_finished_mask = self._check_format_and_unpack(df_manual_tracking)
             neurons_that_are_finished = list(df_manual_tracking[neurons_finished_mask]['Neuron ID'])
 
             # Filter to make sure they are the proper format
@@ -859,6 +863,17 @@ class ProjectData:
             neurons_that_are_finished = []
 
         return neurons_that_are_finished
+
+    def _check_format_and_unpack(self, df_manual_tracking):
+        neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name]
+        if neurons_finished_mask.dtype != bool:
+            self.logger.warning("Found non-boolean entries in manual annotation column; this may be a data error: "
+                                f"{np.unique(neurons_finished_mask)}")
+            neurons_finished_mask = neurons_finished_mask.astype(bool)
+        if 'Neuron ID' not in df_manual_tracking[neurons_finished_mask]:
+            self.logger.warning("Did not find expected column name ('Neuron ID') for the neuron ids... "
+                                "check the formatting of the manual annotation file")
+        return neurons_finished_mask
 
     def __repr__(self):
         return f"=======================================\n\
