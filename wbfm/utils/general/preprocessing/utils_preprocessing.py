@@ -90,7 +90,7 @@ class PreprocessingSettings:
 
     background_red: np.ndarray = None
     background_green: np.ndarray = None
-    background_per_pixel: int = 100
+    background_per_pixel: int = 80
 
     # Mini max
     do_mini_max_projection: bool = False
