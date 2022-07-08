@@ -267,13 +267,29 @@ def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int,
     return masks_zarr
 
 
-def _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode='w-'):
-    """Creates a new zarr file of the correct file, or, if it already exists, check for a stopping point"""
+def _create_or_continue_zarr(output_fname, num_frames, num_slices, x_sz, y_sz, mode='w-'):
+    """
+    Creates a new zarr file of the correct file, or, if it already exists, check for a stopping point
+
+    Parameters
+    ----------
+    output_fname - path to new file; will crash if that file exists
+    num_frames
+    num_slices
+    x_sz
+    y_sz
+    mode
+
+    Returns
+    -------
+    Initialized (with zeros) zarr array
+
+    """
     sz = (num_frames, num_slices, x_sz, y_sz)
     chunks = (1, num_slices, x_sz, y_sz)
-    print(f"Opening zarr at: {mask_fname}")
+    print(f"Opening zarr at: {output_fname}")
     try:
-        masks_zarr = zarr.open(mask_fname, mode=mode,
+        masks_zarr = zarr.open(output_fname, mode=mode,
                                shape=sz, chunks=chunks, dtype=np.uint16,
                                fill_value=0,
                                synchronizer=zarr.ThreadSynchronizer())
