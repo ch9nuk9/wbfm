@@ -119,7 +119,7 @@ You can directly run the python scripts, or, most likely, run them using sbatch 
 
 ### Running single steps on the cluster (sbatch)
 
-Once the project is created, each step can be run via sbatch using:
+Once the project is created, each step can be run via sbatch using this command in the scripts/cluster folder:
 
 ```commandline
 sbatch single_step_dispatcher.sbatch -s 1 -t /scratch/neurobiology/zimmer/Charles/dlc_stacks/worm10-gui_test/project_config.yaml
