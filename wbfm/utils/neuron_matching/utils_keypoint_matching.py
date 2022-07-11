@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import cdist
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from wbfm.utils.general.utils_networkx import calc_bipartite_matches_using_networkx
 

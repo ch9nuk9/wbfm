@@ -6,7 +6,7 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 import zarr
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from wbfm.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
 from wbfm.utils.projects.finished_project_data import ProjectData

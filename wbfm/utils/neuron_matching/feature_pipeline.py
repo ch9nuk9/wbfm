@@ -2,7 +2,7 @@ import concurrent.futures
 from typing import Tuple, Dict
 
 from segmentation.util.utils_metadata import DetectedNeurons
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings

@@ -2,7 +2,7 @@
 # See originals in: Y:\shared_projects\notebooks\LukasNotebooks
 import cv2
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 ##
 ## Utilities

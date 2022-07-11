@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan

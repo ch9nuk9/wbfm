@@ -5,7 +5,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 from skimage import measure
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from wbfm.utils.projects.utils_neuron_names import int2name_using_mode
 
