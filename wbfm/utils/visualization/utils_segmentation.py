@@ -7,7 +7,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import zarr
+from skimage.measure import regionprops
 
+from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.general.custom_errors import NoMatchesError
 from tqdm.auto import tqdm
@@ -322,3 +324,28 @@ def reindex_segmentation_only_training_data(cfg: ModularProjectConfig,
         new_masks[i, ...] = lut[masks[i_volume, ...]]
 
     # Automatically saves
+
+
+def extract_list_of_pixel_values_from_config(project_path: str):
+    # Format:
+    # Dict of dict of list; calculate using regionprops
+    project_data = ProjectData.load_final_project_data_from_config(project_path)
+
+    dict_of_dict_of_vals = {}
+
+    for t in tqdm(range(project_data.num_frames)):
+        vol, masks = project_data.red_data[t], project_data.segmentation[t]
+        dict_for_this_time = {}
+
+        props = regionprops(masks, intensity_image=vol)
+
+        for prop in props:
+            vol_of_values = prop['intensity_image']
+            label = prop['label']
+            dict_for_this_time[label] = vol_of_values[vol_of_values > 0]
+
+        dict_of_dict_of_vals[t] = dict_for_this_time
+
+    # Save
+    fname = os.path.join('visualization', 'pixel_values_all_neurons.pickle')
+    project_data.project_config.pickle_data_in_local_project(dict_of_dict_of_vals, fname)
