@@ -349,3 +349,5 @@ def extract_list_of_pixel_values_from_config(project_path: str):
     # Save
     fname = os.path.join('visualization', 'pixel_values_all_neurons.pickle')
     project_data.project_config.pickle_data_in_local_project(dict_of_dict_of_vals, fname)
+
+    return dict_of_dict_of_vals
