@@ -13,7 +13,7 @@ def remove_outliers_via_rolling_mean(y: pd.DataFrame, window: int, outlier_thres
     error = np.abs(y - y_filt)
     if outlier_threshold is None:
         # TODO: not working very well
-        outlier_threshold = 5*error.std() + error.mean()
+        outlier_threshold = 2*error.std() + error.mean()
         print(f"Calculated error threshold at {outlier_threshold}")
         # logging.info(f"Calculated error threshold at {outlier_threshold}")
     is_outlier = error > outlier_threshold
