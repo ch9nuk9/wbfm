@@ -53,7 +53,10 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel):
             except KeyError:
                 y_raw = df_tmp[i]['brightness']
                 vol = df_tmp[i]['volume']
-            return y_raw - background_per_pixel * vol
+            y = y_raw - background_per_pixel * vol
+            if any(y < 0):
+                logging.warning(f"Found negative trace value; check background_per_pixel value ({background_per_pixel})")
+            return y
     # elif calculation_mode == 'max':
     #     def calc_single_trace(i, df_tmp):
     #         y_raw = df_tmp[i]['all_values']
@@ -67,7 +70,10 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel):
             except KeyError:
                 y_raw = df_tmp[i]['brightness']
                 vol = df_tmp[i]['volume']
-            return y_raw / vol - background_per_pixel
+            y = y_raw / vol - background_per_pixel
+            if any(y < 0):
+                logging.warning(f"Found negative trace value; check background_per_pixel value ({background_per_pixel})")
+            return y
     # elif calculation_mode == 'quantile90':
     #     def calc_single_trace(i, df_tmp):
     #         y_raw = df_tmp[i]['all_values']
