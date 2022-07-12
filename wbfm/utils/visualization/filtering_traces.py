@@ -8,11 +8,12 @@ from scipy.spatial.distance import cdist
 
 
 def remove_outliers_via_rolling_mean(y: pd.DataFrame, window: int, outlier_threshold=None):
+    # In practice very sensitive to exact threshold value, which only really works for the ratio
     y_filt = y.rolling(window, min_periods=1, center=True).mean()
     error = np.abs(y - y_filt)
     if outlier_threshold is None:
         # TODO: not working very well
-        outlier_threshold = 10*error.var() + error.mean()
+        outlier_threshold = 5*error.std() + error.mean()
         print(f"Calculated error threshold at {outlier_threshold}")
         # logging.info(f"Calculated error threshold at {outlier_threshold}")
     is_outlier = error > outlier_threshold
