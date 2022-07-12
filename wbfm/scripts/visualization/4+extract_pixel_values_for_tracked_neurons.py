@@ -16,6 +16,11 @@ ex = Experiment()
 ex.add_config(project_path=None)
 
 
+@ex.config
+def cfg(project_path, DEBUG):
+    pass
+
+
 @ex.automain
 def main(_config, _run):
     sacred.commands.print_config(_run)
