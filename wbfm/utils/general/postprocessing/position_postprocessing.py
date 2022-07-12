@@ -36,7 +36,7 @@ def impute_missing_values_using_config(tracking_config, DEBUG=False):
     df_imputed.to_csv(Path(out_fname).with_suffix('.csv'))
 
 
-def impute_missing_values_in_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+def impute_missing_values_in_dataframe(df: pd.DataFrame, d=None) -> pd.DataFrame:
     from ppca import PPCA
 
     # DLC uses zeros as "failed tracking"
@@ -48,7 +48,7 @@ def impute_missing_values_in_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     dat_normalized = scaler.transform(df_dat)
     # Actually impute
     ppca = PPCA()
-    ppca.fit(data=dat_normalized, d=10, verbose=False)
+    ppca.fit(data=dat_normalized, d=d, verbose=False)
     dat_imputed = scaler.inverse_transform(ppca.data)
     df_imputed = pd.DataFrame(data=dat_imputed, columns=df.columns)
     return df_imputed

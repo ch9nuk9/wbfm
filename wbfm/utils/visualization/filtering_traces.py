@@ -7,14 +7,15 @@ from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 from scipy.spatial.distance import cdist
 
 
-def remove_outliers_via_rolling_mean(y: pd.DataFrame, window: int, outlier_threshold=None):
+def remove_outliers_via_rolling_mean(y: pd.DataFrame, window: int, outlier_threshold=None, verbose=0):
     # In practice very sensitive to exact threshold value, which only really works for the ratio
     y_filt = y.rolling(window, min_periods=1, center=True).mean()
     error = np.abs(y - y_filt)
     if outlier_threshold is None:
         # TODO: not working very well
         outlier_threshold = 2*error.std() + error.mean()
-        print(f"Calculated error threshold at {outlier_threshold}")
+        if verbose >= 1:
+            print(f"Calculated error threshold at {outlier_threshold}")
         # logging.info(f"Calculated error threshold at {outlier_threshold}")
     is_outlier = error > outlier_threshold
     y[is_outlier] = np.nan
@@ -36,8 +37,8 @@ def remove_outliers_large_diff(y: pd.DataFrame, outlier_threshold=None):
     return y
 
 
-def filter_rolling_mean(y: pd.DataFrame, window: int = 7):
-    return y.rolling(window, min_periods=3).mean()
+def filter_rolling_mean(y: pd.DataFrame, window: int = 9):
+    return y.rolling(window, min_periods=1).mean()
 
 
 def filter_linear_interpolation(y: pd.DataFrame, window=15):
