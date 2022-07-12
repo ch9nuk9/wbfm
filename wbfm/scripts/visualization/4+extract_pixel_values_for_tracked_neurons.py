@@ -10,15 +10,14 @@ from sacred import Experiment
 from wbfm.utils.visualization.utils_segmentation import extract_list_of_pixel_values_from_config
 
 # Initialize sacred experiment
-
 ex = Experiment()
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None)
+ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
 def cfg(project_path, DEBUG):
-    pass
+    print(project_path)
 
 
 @ex.automain

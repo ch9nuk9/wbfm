@@ -3,26 +3,21 @@ The top level function for getting final traces from 3d tracks and neuron masks
 """
 
 # Experiment tracking
-import logging
 import os
-
 import sacred
-
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 from sacred import Experiment
 from sacred import SETTINGS
 # main function
-from sacred.observers import TinyDbObserver
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
-
 from wbfm.pipeline.traces import match_segmentation_and_tracks_using_config, extract_traces_using_config, \
     reindex_segmentation_using_config
-from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext, \
-    SubfolderConfigFile
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from wbfm.utils.projects.utils_project import safe_cd
+
 import cgitb
 cgitb.enable(format='text')
 
@@ -45,7 +40,6 @@ def cfg(project_path, DEBUG):
     tracking_cfg = cfg.get_tracking_config()
     traces_cfg = cfg.get_traces_config()
 
-    # use_training = tracking_cfg.config['leifer_params']['use_multiple_templates']
     check_all_needed_data_for_step(cfg, 4, training_data_required=False)
 
     if not DEBUG:
@@ -55,7 +49,7 @@ def cfg(project_path, DEBUG):
 
 
 @ex.automain
-def make_full_tracks(_config, _run):
+def main(_config, _run):
     sacred.commands.print_config(_run)
 
     DEBUG = _config['DEBUG']
