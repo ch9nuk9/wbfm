@@ -13,6 +13,7 @@ import zarr
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
 
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_sparse_dataframe
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
@@ -106,7 +107,6 @@ class TracePlotter:
         if self.remove_outliers:
             y = remove_outliers_via_rolling_mean(y, window=9)
 
-        # TODO: set up enum
         if self.filter_mode == "rolling_mean":
             y = filter_rolling_mean(y, window=5)
         elif self.filter_mode == "linear_interpolation":
@@ -117,6 +117,23 @@ class TracePlotter:
             logging.warning(f"Unrecognized filter mode: {self.filter_mode}")
 
         return y
+
+    def calculate_traces_full_dataframe(self, min_percent_nonzero=None):
+        """Uses saved options to calculate the traces for all neurons"""
+
+        if min_percent_nonzero is not None:
+            thresh = min_percent_nonzero * self.red_traces.shape[0]
+            df = self.red_traces.dropna(axis=1, thresh=thresh, inplace=False)
+            names = get_names_from_df(df)
+        else:
+            names = get_names_from_df(self.red_traces)
+
+        trace_dict = {}
+        for name in names:
+            trace_dict[name] = self.calculate_traces(name)
+
+        df_traces = pd.DataFrame(trace_dict)
+        return df_traces
 
 
 @dataclass

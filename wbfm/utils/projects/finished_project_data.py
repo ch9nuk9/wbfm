@@ -502,7 +502,6 @@ class ProjectData:
         time (as vector), y (as vector)
 
         """
-        # Todo: don't recreate object every time
         self._trace_plotter = TracePlotter(
             self.red_traces,
             self.green_traces,
