@@ -1,4 +1,7 @@
 """
+Usage:
+
+python path/to/this/script/4+extract_pixel_values_for_tracked_neurons.py with project_path=/path/to/your/project.yaml
 """
 
 # Experiment tracking
