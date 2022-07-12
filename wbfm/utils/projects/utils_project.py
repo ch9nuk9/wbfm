@@ -103,6 +103,9 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
     # Note: assumes that you are executing from the main wbfm folder
     src = 'new_project_defaults'
     initial_fnames = list(Path(src).rglob('**/*'))
+    if len(initial_fnames) == 0:
+        print("Found no initial files, probably running this from the wrong directory")
+        raise FileNotFoundError
     # initial_fnames = get_abs_filenames_recursive(src)
 
     # Convert them to relative
