@@ -21,9 +21,11 @@ PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_neurons_5_datasets_
 PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir,
                                                 "superglue_neurons_5_datasets_adjacent_07_11_uint16.ckpt")
 
+LOCAL_PATH_TO_SUPERGLUE_MODEL = ""
+LOCAL_PATH_TO_SUPERGLUE_TRACKLET_MODEL = ""
 
-if not os.path.exists(PATH_TO_MODEL):
-    logging.warning(f"Did not find default model at {PATH_TO_MODEL}, is everything mounted correctly?")
+if not os.path.exists(PATH_TO_SUPERGLUE_MODEL):
+    logging.warning(f"Did not find default model at {PATH_TO_SUPERGLUE_MODEL}, is everything mounted correctly?")
 
 # TODO: also save hyperparameters (doesn't work in jupyter notebooks)
 HPARAMS = dict(num_classes=127)
