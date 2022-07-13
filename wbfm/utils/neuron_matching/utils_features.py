@@ -529,7 +529,7 @@ def match_centroids_using_tree(neurons0,
 
 def build_features_and_match_2volumes(dat0, dat1,
                                       verbose=1, start_plane=10,
-                                      detect_keypoints=True,
+                                      detect_new_keypoints=True,
                                       kp0=None,
                                       kp1=None,
                                       sz=31.0,
@@ -558,7 +558,7 @@ def build_features_and_match_2volumes(dat0, dat1,
             continue
         im0 = np.squeeze(dat0[i, ...])
         im1 = np.squeeze(dat1[i, ...])
-        if detect_keypoints:
+        if detect_new_keypoints:
             # keypoints0, _, keypoints1, _ = detect_features(im1, im2, num_features_per_plane)
             keypoints0, keypoints1, matches = detect_features_and_match(im0, im1, num_features_per_plane,
                                                                         matches_to_keep, use_GMS)

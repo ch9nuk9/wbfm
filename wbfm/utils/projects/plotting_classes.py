@@ -62,12 +62,18 @@ class TracePlotter:
         -------
 
         """
-        assert (self.channel_mode in ['green', 'red', 'ratio']), f"Unknown channel mode {self.channel_mode}"
+        assert (self.channel_mode in ['green', 'red', 'ratio', 'df_over_f_10', 'ratio_df_over_f_10']), \
+            f"Unknown channel mode {self.channel_mode}"
 
         if self.verbose >= 3:
             print(f"Calculating {self.channel_mode} trace for {neuron_name} for {self.calculation_mode} mode")
 
+        # Define convenience functions
         calc_single_trace = trace_from_dataframe_factory(self.calculation_mode, self.background_per_pixel)
+
+        def calc_single_df_over_f(i, _df):
+            _y = calc_single_trace(i, _df)
+            return _y / np.nanquantile(_y, 0.2)
 
         # How to combine channels, or which channel to choose
         if self.calculation_mode == 'likelihood':
@@ -77,20 +83,30 @@ class TracePlotter:
             def calc_y(i):
                 return calc_single_trace(i, df)
 
-        elif self.channel_mode in ['red', 'green']:
+        elif self.channel_mode in ['red', 'green', 'df_over_f_10']:
             if self.channel_mode == 'red':
                 df = self.red_traces
             else:
                 df = self.green_traces
 
-            def calc_y(i):
-                return calc_single_trace(i, df)
-        elif self.channel_mode == 'ratio':
+            if self.channel_mode in ['red', 'green']:
+                def calc_y(i):
+                    return calc_single_trace(i, df)
+            else:
+                def calc_y(i):
+                    return calc_single_trace(i, df)
+
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_10']:
             df_red = self.red_traces
             df_green = self.green_traces
 
-            def calc_y(i):
-                return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
+            if self.channel_mode == 'ratio':
+                def calc_y(i):
+                    return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
+            else:
+                def calc_y(i):
+                    return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
+
         else:
             raise ValueError("Unknown calculation or channel mode")
 
@@ -118,15 +134,19 @@ class TracePlotter:
 
         return y
 
-    def calculate_traces_full_dataframe(self, min_percent_nonzero=None):
+    def calculate_traces_full_dataframe(self, min_percent_nonzero=None, df=None, names=None):
         """Uses saved options to calculate the traces for all neurons"""
 
-        if min_percent_nonzero is not None:
-            thresh = min_percent_nonzero * self.red_traces.shape[0]
-            df = self.red_traces.dropna(axis=1, thresh=thresh, inplace=False)
-            names = get_names_from_df(df)
-        else:
-            names = get_names_from_df(self.red_traces)
+        if names is None:
+            if df is None:
+                if min_percent_nonzero is not None:
+                    thresh = min_percent_nonzero * self.red_traces.shape[0]
+                    df = self.red_traces.dropna(axis=1, thresh=thresh, inplace=False)
+                    names = get_names_from_df(df)
+                else:
+                    names = get_names_from_df(self.red_traces)
+            else:
+                names = get_names_from_df(df)
 
         trace_dict = {}
         for name in names:

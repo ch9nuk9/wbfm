@@ -562,7 +562,8 @@ class FramePair:
         # Generate keypoints and match per slice
         frame0, frame1 = self.frame0, self.frame1
         # New: dat0 may be rigidly rotated to align with dat1
-        dat0, dat1 = self.dat0_preprocessed, self.dat1
+        # dat0, dat1 = self.dat0_preprocessed, self.dat1
+        dat0, dat1 = frame0.get_uint8_data(), frame1.get_uint8_data()
         # Transpose because opencv needs it
         dat0 = np.transpose(dat0, axes=(0, 2, 1))
         dat1 = np.transpose(dat1, axes=(0, 2, 1))
