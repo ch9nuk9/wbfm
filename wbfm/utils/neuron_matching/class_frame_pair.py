@@ -588,9 +588,11 @@ class FramePair:
             frame0.keypoints = all_kp0
             frame1.keypoints = all_kp1
             # kp_matches = recursive_cast_matches_as_array(kp_matches, all_match_offsets, gamma=1.0)
-            kp_matches = [(i, i, 1.0) for i in range(len(kp0_locs))]
+            kp_matches = [(i, i, 1.0) for i in range(len(frame0.keypoint_locs))]
             self.keypoint_matches = kp_matches
-            # Then match using distance from neuron position to keypoint cloud
+        else:
+            self.keypoint_matches = self.feature_matches
+        # Then match using distance from neuron position to keypoint cloud
         options = {'all_feature_matches': self.keypoint_matches,
                    'min_matches': min_matches,
                    'allow_z_change': allow_z_change,
