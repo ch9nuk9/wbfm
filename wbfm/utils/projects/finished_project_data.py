@@ -280,6 +280,13 @@ class ProjectData:
                                            dataframe_output_filename=self.df_all_tracklets_fname,
                                            use_custom_padded_dataframe=self.use_custom_padded_dataframe)
 
+    @cached_property
+    def tracked_worm_class(self):
+        """Class that connects tracklets and final neurons using global tracking"""
+        tracking_cfg = self.project_config.get_tracking_config()
+        fname = tracking_cfg.resolve_relative_path('raw/worm_obj.pickle', prepend_subfolder=True)
+        return pickle_load_binary(fname)
+
     @property
     def logger(self) -> logging.Logger:
         return self.project_config.logger
@@ -489,7 +496,7 @@ class ProjectData:
 
         Parameters
         ----------
-        channel_mode - red, green, or ratio
+        channel_mode - red, green, ratio, df_over_f_10, ratio_df_over_f_10, linear_model
         calculation_mode - integration (raw sum of pixels), volume, mean, z, likelihood (from the tracks dataframe)
         neuron_name - example: 'neuron_001'
         remove_outliers - try to remove spiking outliers
