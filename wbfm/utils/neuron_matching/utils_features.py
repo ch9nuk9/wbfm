@@ -530,8 +530,8 @@ def match_centroids_using_tree(neurons0,
 def build_features_and_match_2volumes(dat0, dat1,
                                       verbose=1, start_plane=10,
                                       detect_new_keypoints=True,
-                                      kp0=None,
-                                      kp1=None,
+                                      kp0_zxy=None,
+                                      kp1_zxy=None,
                                       sz=31.0,
                                       num_features_per_plane=1000,
                                       matches_to_keep=0.5,
@@ -565,8 +565,9 @@ def build_features_and_match_2volumes(dat0, dat1,
             if len(matches) == 0:
                 continue
         else:
-            kp0_cv2 = get_keypoints_from_3dseg(kp0, i, sz=sz)
-            kp1_cv2 = get_keypoints_from_3dseg(kp1, i, sz=sz)
+            assert kp0_zxy is not None, 'Must pass old keypoints if detect_new_keypoints=False'
+            kp0_cv2 = get_keypoints_from_3dseg(kp0_zxy, i, sz=sz)
+            kp1_cv2 = get_keypoints_from_3dseg(kp1_zxy, i, sz=sz)
             keypoints0, keypoints1, matches = match_using_known_keypoints(im0, kp0_cv2, im1, kp1_cv2, 1000)
         locs0, locs1 = extract_location_of_matches(matches, keypoints0, keypoints1)
 

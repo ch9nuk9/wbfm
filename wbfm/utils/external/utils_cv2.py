@@ -4,12 +4,12 @@ import cv2
 import numpy as np
 
 
-def get_keypoints_from_3dseg(kp0, i=None, sz=31.0, neuron_height=None):
+def get_keypoints_from_3dseg(kp0_zxy, i=None, sz=31.0, neuron_height=None):
     """Translate numpy array to cv2.Keypoints, based off one slice
 
     Parameters
     ----------
-    kp0 : array-like
+    kp0_zxy : array-like
         Original 3d positions
     i : int
         current slice
@@ -27,7 +27,7 @@ def get_keypoints_from_3dseg(kp0, i=None, sz=31.0, neuron_height=None):
 
     """
     kp_cv2 = []
-    for z, x, y in kp0:
+    for z, x, y in kp0_zxy:
         if i is None or abs(z - i) < neuron_height:
             kp_cv2.append(cv2.KeyPoint(y, x, sz))
 

@@ -39,6 +39,7 @@ class FramePairOptions:
     min_matches: int = 20
     allow_z_change: bool = False
     affine_num_candidates: int = 1
+    affine_generate_additional_keypoints: bool = False
 
     # Third: gaussian process method
     add_gp_to_candidates: bool = False
@@ -547,7 +548,8 @@ class FramePair:
                        use_GMS=obj.affine_matches_to_keep,
                        min_matches=obj.min_matches,
                        allow_z_change=obj.allow_z_change,
-                       num_candidates=obj.affine_num_candidates)
+                       num_candidates=obj.affine_num_candidates,
+                       generate_additional_keypoints=obj.affine_generate_additional_keypoints)
             try:
                 self._match_using_local_affine(**opt)
             except NoMatchesError:
@@ -560,32 +562,36 @@ class FramePair:
                                   use_GMS,
                                   min_matches,
                                   allow_z_change,
-                                  num_candidates):
-        # Generate keypoints and match per slice
+                                  num_candidates,
+                                  generate_additional_keypoints):
         frame0, frame1 = self.frame0, self.frame1
-        # New: dat0 may be rigidly rotated to align with dat1
-        # dat0, dat1 = self.dat0_preprocessed, self.dat1
-        dat0, dat1 = frame0.get_uint8_data(), frame1.get_uint8_data()
-        # Transpose because opencv needs it
-        dat0 = np.transpose(dat0, axes=(0, 2, 1))
-        dat1 = np.transpose(dat1, axes=(0, 2, 1))
-        opt = dict(start_plane=start_plane,
-                   num_features_per_plane=num_features_per_plane,
-                   matches_to_keep=matches_to_keep,
-                   use_GMS=use_GMS,
-                   detect_new_keypoints=False)
-        kp0_locs, kp1_locs, all_kp0, all_kp1, kp_matches, all_match_offsets = \
-            build_features_and_match_2volumes(dat0, dat1, **opt)
-        # Save intermediate data in objects
-        frame0.keypoint_locs = kp0_locs
-        frame1.keypoint_locs = kp1_locs
-        frame0.keypoints = all_kp0
-        frame1.keypoints = all_kp1
-        # kp_matches = recursive_cast_matches_as_array(kp_matches, all_match_offsets, gamma=1.0)
-        kp_matches = [(i, i, 1.0) for i in range(len(kp0_locs))]
-        self.keypoint_matches = kp_matches
-        # Then match using distance from neuron position to keypoint cloud
-        options = {'all_feature_matches': kp_matches,
+        if generate_additional_keypoints:
+            # Generate keypoints and match per slice
+            # New: dat0 may be rigidly rotated to align with dat1
+            # dat0, dat1 = self.dat0_preprocessed, self.dat1
+            dat0, dat1 = frame0.get_uint8_data(), frame1.get_uint8_data()
+            # Transpose because opencv needs it
+            dat0 = np.transpose(dat0, axes=(0, 2, 1))
+            dat1 = np.transpose(dat1, axes=(0, 2, 1))
+            opt = dict(start_plane=start_plane,
+                       num_features_per_plane=num_features_per_plane,
+                       matches_to_keep=matches_to_keep,
+                       use_GMS=use_GMS,
+                       detect_new_keypoints=False,
+                       kp0_zxy=self.frame0.keypoint_locs,
+                       kp1_zxy=self.frame1.keypoint_locs)
+            kp0_locs, kp1_locs, all_kp0, all_kp1, kp_matches, all_match_offsets = \
+                build_features_and_match_2volumes(dat0, dat1, **opt)
+            # Save intermediate data in objects
+            frame0.keypoint_locs = kp0_locs
+            frame1.keypoint_locs = kp1_locs
+            frame0.keypoints = all_kp0
+            frame1.keypoints = all_kp1
+            # kp_matches = recursive_cast_matches_as_array(kp_matches, all_match_offsets, gamma=1.0)
+            kp_matches = [(i, i, 1.0) for i in range(len(kp0_locs))]
+            self.keypoint_matches = kp_matches
+            # Then match using distance from neuron position to keypoint cloud
+        options = {'all_feature_matches': self.keypoint_matches,
                    'min_matches': min_matches,
                    'allow_z_change': allow_z_change,
                    'num_candidates': num_candidates}
