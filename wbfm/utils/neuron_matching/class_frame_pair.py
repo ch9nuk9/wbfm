@@ -198,11 +198,13 @@ class FramePair:
         if dat0 is None:
             _ = self.dat0
         else:
-            self._dat0 = dat0
+            # self._dat0 = dat0
+            self.frame0._raw_data = dat0
         if dat1 is None:
             _ = self.dat1
         else:
-            self._dat1 = dat1
+            # self._dat1 = dat1
+            self.frame1._raw_data = dat1
 
     def preprocess_data(self, force_rotation=False):
         """Preprocesses the volumetric data, if applicable options are True"""
@@ -570,7 +572,8 @@ class FramePair:
         opt = dict(start_plane=start_plane,
                    num_features_per_plane=num_features_per_plane,
                    matches_to_keep=matches_to_keep,
-                   use_GMS=use_GMS)
+                   use_GMS=use_GMS,
+                   detect_new_keypoints=False)
         kp0_locs, kp1_locs, all_kp0, all_kp1, kp_matches, all_match_offsets = \
             build_features_and_match_2volumes(dat0, dat1, **opt)
         # Save intermediate data in objects
