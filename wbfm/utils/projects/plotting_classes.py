@@ -54,6 +54,10 @@ class TracePlotter:
         """
         First step when plotting, with the mode saved as a class variable
 
+        For extending with new calculation modes, make a function with the signature:
+            y = f(neuron_name, df_traces)
+        Where df_traces is, for example, project_data.red_traces
+
         Parameters
         ----------
         neuron_name
@@ -68,22 +72,29 @@ class TracePlotter:
         if self.verbose >= 3:
             print(f"Calculating {self.channel_mode} trace for {neuron_name} for {self.calculation_mode} mode")
 
-        # Define convenience functions
+        ##
+        ## Function for getting a single time series (with preprocessing)
+        ##
+        # Format: y = f(neuron_name, traces_dataframe)
         calc_single_trace = trace_from_dataframe_factory(self.calculation_mode, self.background_per_pixel)
 
         def calc_single_df_over_f(i, _df):
             _y = calc_single_trace(i, _df)
             return _y / np.nanquantile(_y, 0.2)
 
+        ##
+        ## Function for getting final y value from above functions
+        ##
         # How to combine channels, or which channel to choose
         if self.calculation_mode == 'likelihood':
-            # Uses a different dataframe
+            # First: use the tracks dataframe, not the traces ones
             df = self.final_tracks
 
             def calc_y(i):
                 return calc_single_trace(i, df)
 
         elif self.channel_mode in ['red', 'green', 'df_over_f_10']:
+            # Second: use a single traces dataframe (red OR green)
             if self.channel_mode == 'red':
                 df = self.red_traces
             else:
@@ -96,7 +107,8 @@ class TracePlotter:
                 def calc_y(i):
                     return calc_single_trace(i, df)
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_10']:
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_10', 'NEW_METHOD']:
+            # Third: use both traces dataframes (red AND green)
             df_red = self.red_traces
             df_green = self.green_traces
 
@@ -112,6 +124,9 @@ class TracePlotter:
 
         y = calc_y(neuron_name)
 
+        ##
+        ## Other postprocessing
+        ##
         # Then remove outliers and / or filter
         if self.min_confidence is not None:
             low_confidence = self.final_tracks[neuron_name]['likelihood'] < self.min_confidence
