@@ -59,6 +59,7 @@ class TracePlotter:
         For extending with new calculation modes, make a function with the signature:
             y = f(neuron_name, df_traces)
         Where df_traces is, for example, project_data.red_traces
+        and y is a pd.Series
 
         Parameters
         ----------
@@ -68,7 +69,7 @@ class TracePlotter:
         -------
 
         """
-        assert (self.channel_mode in ['green', 'red', 'ratio', 'df_over_f_10', 'ratio_df_over_f_10',"linear_model"]), \
+        assert (self.channel_mode in ['green', 'red', 'ratio', 'df_over_f_10', 'ratio_df_over_f_10', "linear_model"]), \
             f"Unknown channel mode {self.channel_mode}"
 
         if self.verbose >= 3:
@@ -153,8 +154,8 @@ class TracePlotter:
                     while len(y_result_including_na) < num_timepoints:
                         y_result_including_na.append(np.nan)
 
-                    return np.array(y_result_including_na)
-
+                    return pd.Series(y_result_including_na)
+                    # return np.array(y_result_including_na)
 
         else:
             raise ValueError("Unknown calculation or channel mode")
