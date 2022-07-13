@@ -17,12 +17,9 @@ local_model_dir = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/nn_checkpo
 PATH_TO_MODEL = os.path.join(model_dir, "superglue_neurons_4_datasets_adjacent_remove_nonmoving_05_11.ckpt")
 
 # Update: 4/20/2022 - multiple datasets
-PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_neurons_4_datasets_05_10.ckpt")
+PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_neurons_5_datasets_07_08_uint16.ckpt")
 PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir,
-                                                "superglue_neurons_3_datasets_adjacent_remove_nonmoving_04_27.ckpt")
-LOCAL_PATH_TO_SUPERGLUE_MODEL = os.path.join(local_model_dir, "superglue_neurons_5_datasets_07_08_uint16.ckpt")
-LOCAL_PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(local_model_dir,
-                                                      "superglue_neurons_5_datasets_adjacent_07_11_uint16.ckpt")
+                                                "superglue_neurons_5_datasets_adjacent_07_11_uint16.ckpt")
 
 
 if not os.path.exists(PATH_TO_MODEL):
