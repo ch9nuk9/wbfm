@@ -9,6 +9,7 @@ from copy import deepcopy
 import napari
 import numpy as np
 import pandas as pd
+import sklearn
 import zarr
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
@@ -24,6 +25,7 @@ from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
+from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 
 
 @dataclass
@@ -66,7 +68,7 @@ class TracePlotter:
         -------
 
         """
-        assert (self.channel_mode in ['green', 'red', 'ratio', 'df_over_f_10', 'ratio_df_over_f_10']), \
+        assert (self.channel_mode in ['green', 'red', 'ratio', 'df_over_f_10', 'ratio_df_over_f_10',"linear_model"]), \
             f"Unknown channel mode {self.channel_mode}"
 
         if self.verbose >= 3:
@@ -107,7 +109,7 @@ class TracePlotter:
                 def calc_y(i):
                     return calc_single_trace(i, df)
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_10', 'NEW_METHOD']:
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_10', 'linear_model']:
             # Third: use both traces dataframes (red AND green)
             df_red = self.red_traces
             df_green = self.green_traces
@@ -118,6 +120,41 @@ class TracePlotter:
             else:
                 def calc_y(i):
                     return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
+
+            if self.channel_mode == "linear_model":
+                def calc_y(_neuron_name):
+
+                    red = df_red[_neuron_name]["intensity_image"]
+                    green = df_green[_neuron_name]["intensity_image"]
+                    vol = df_red[_neuron_name]["area"]
+                    num_timepoints = len(green)
+                    t = range(num_timepoints)
+                    valid_indices = np.logical_not(np.isnan(red))
+
+                    # remove nas and z score
+                    y_lm = green[valid_indices]
+                    red_lm = red[valid_indices]
+                    red_lm = (red_lm - np.mean(red_lm)) / np.std(red_lm)
+                    vol_lm = vol[valid_indices]
+                    vol_lm = (vol_lm - np.mean(vol_lm)) / np.std(vol_lm)
+                    t_lm = np.array(t)[valid_indices]
+                    X_lm = np.array([vol_lm, red_lm, t_lm])
+                    X_lm = np.c_[X_lm.T]
+
+                    # create model
+                    model = sklearn.linear_model.LinearRegression()
+                    model.fit(X_lm, y_lm)
+                    x_pred = model.predict(X_lm)
+                    y_result_missing_na = y_lm - x_pred
+
+                    # Align output and input formats
+                    y_result_including_na = list(fill_missing_indices_with_nan(
+                        pd.DataFrame(y_result_missing_na))[0]["intensity_image"])
+                    while len(y_result_including_na) < num_timepoints:
+                        y_result_including_na.append(np.nan)
+
+                    return np.array(y_result_including_na)
+
 
         else:
             raise ValueError("Unknown calculation or channel mode")
@@ -173,7 +210,6 @@ class TracePlotter:
 
 @dataclass
 class TrackletAndSegmentationAnnotator:
-
     df_tracklet_obj: DetectedTrackletsAndNeurons
     global2tracklet: Dict[str, List[str]]
     segmentation_metadata: DetectedNeurons
@@ -273,7 +309,8 @@ class TrackletAndSegmentationAnnotator:
         if self.indices_of_original_neurons is None:
             self.indices_of_original_neurons = []
 
-        self.logger.debug(f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
+        self.logger.debug(
+            f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
     def initialize_gt_model_mismatches(self, project_data):
         from wbfm.utils.projects.finished_project_data import calc_all_mismatches_between_ground_truth_and_pairs
@@ -542,7 +579,8 @@ class TrackletAndSegmentationAnnotator:
             these_names = self.global2tracklet[self.current_neuron]
             self.logger.debug(f"Initial tracklets for {self.current_neuron}: {these_names}")
             self.logger.debug(f"Previous manually added tracklets: {self.manual_global2tracklet_names[neuron_name]}")
-            self.logger.debug(f"Previous manually removed tracklets: {self.manual_global2tracklet_removals[neuron_name]}")
+            self.logger.debug(
+                f"Previous manually removed tracklets: {self.manual_global2tracklet_removals[neuron_name]}")
             self.logger.debug(f"Currently selected (not yet added) tracklet: {self.current_tracklet_name}")
 
     def save_manual_matches_to_disk_dispatch(self):
