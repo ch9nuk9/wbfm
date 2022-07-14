@@ -666,7 +666,7 @@ class TrackedWorm:
         tracklet_names = neuron.get_raw_tracklet_names(minimum_confidence=minimum_confidence)
         num_lines = len(tracklet_names)
 
-        plt.figure(figsize=(45, 5))
+        fig = plt.figure(figsize=(45, 5))
         num_skipped = 0
         all_annotations = []
         for i, (t, name) in enumerate(tqdm(zip(tracklet_list, tracklet_names))):
@@ -709,6 +709,8 @@ class TrackedWorm:
             from adjustText import adjust_text
             print("Adjusting annotations to not overlap...")
             adjust_text(all_annotations, only_move={'points': 'y', 'text': 'y', 'objects': 'y'})
+
+        return fig
 
     def compose_global_neuron_and_tracklet_graph(self) -> MatchesAsGraph:
         return nx.compose_all([neuron.neuron2tracklets for neuron in self.global_name_to_neuron.values()])
