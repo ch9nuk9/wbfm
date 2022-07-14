@@ -283,6 +283,7 @@ class ProjectData:
     @cached_property
     def tracked_worm_class(self):
         """Class that connects tracklets and final neurons using global tracking"""
+        self.logger.warning("Loading tracked worm object for the first time, may take a while")
         tracking_cfg = self.project_config.get_tracking_config()
         fname = tracking_cfg.resolve_relative_path('raw/worm_obj.pickle', prepend_subfolder=True)
         return pickle_load_binary(fname)
