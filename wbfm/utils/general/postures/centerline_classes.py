@@ -208,8 +208,8 @@ filename_beh_annotation:    {self.filename_beh_annotation is not None}\n"
 def get_behavior_fluorescence_fps_conversion(project_config):
     # TODO: in new config files, there should be a way to read this directly
     preprocessing_cfg = project_config.get_preprocessing_config()
-    raw_number_of_planes = preprocessing_cfg.config['raw_number_of_planes']
     final_number_of_planes = project_config.config['dataset_params']['num_slices']
+    raw_number_of_planes = preprocessing_cfg.config.get('raw_number_of_planes', final_number_of_planes)
     # True for older datasets, i.e. I had to remove it in postprocessing
     was_flyback_saved = final_number_of_planes != raw_number_of_planes
     if not was_flyback_saved:

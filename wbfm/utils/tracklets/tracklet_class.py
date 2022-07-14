@@ -661,7 +661,6 @@ class TrackedWorm:
                                   diff_percentage=False, minimum_confidence=0.0, adjust_annotations=False):
         tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,
                                                                                                 minimum_confidence)
-        # tracklet_list = self.get_tracklets_for_neuron(neuron_name)
         neuron = self.global_name_to_neuron[neuron_name]
         tracklet_names = neuron.get_raw_tracklet_names(minimum_confidence=minimum_confidence)
         num_lines = len(tracklet_names)
@@ -680,9 +679,7 @@ class TrackedWorm:
             y = t[plot_field]
             if diff_percentage:
                 y = y.diff() / y
-                # err
             line = plt.plot(y)
-            plt.ylabel(plot_field)
 
             if with_names or with_confidence:
                 x0 = y.first_valid_index()
@@ -709,6 +706,8 @@ class TrackedWorm:
             from adjustText import adjust_text
             print("Adjusting annotations to not overlap...")
             adjust_text(all_annotations, only_move={'points': 'y', 'text': 'y', 'objects': 'y'})
+
+        plt.ylabel(plot_field)
 
         return fig
 

@@ -83,10 +83,13 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
     all_t_zxy = all_t_zxy[1:, :]  # Remove dummy starter point
     properties['label'] = [p for p, good in zip(properties['label'], to_keep[1:]) if good]
     # Additionally remove invalid names
-    to_keep = np.array([not np.isnan(p) for p in properties['label']])
-    all_t_zxy = all_t_zxy[to_keep, :]
-    properties['label'] = [cast_int_or_nan(p) for p, good in zip(properties['label'], to_keep) if good]
-
+    try:
+        to_keep = np.array([not np.isnan(p) for p in properties['label']])
+        all_t_zxy = all_t_zxy[to_keep, :]
+        properties['label'] = [cast_int_or_nan(p) for p, good in zip(properties['label'], to_keep) if good]
+    except TypeError:
+        # Then the user is passing a non-int custom name, so just skip this
+        pass
     # More info on text: https://github.com/napari/napari/blob/main/examples/add_points_with_text.py
     options = {'data': all_t_zxy, 'face_color': 'transparent', 'edge_color': 'transparent',
                'text': {'text': 'label'},  # Can add color or size here
