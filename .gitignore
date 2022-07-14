@@ -40,3 +40,5 @@ wbfm/new_project_defaults/snakemake/.snakemake/
 /wbfm/scratch/*
 /wbfm/**/lightning_logs/*
 /wbfm/**/wandb/*
+/DLC_for_WBFM/*
+*.log
