@@ -170,12 +170,16 @@ class WormFullVideoPosture:
                 return -1
             else:
                 return _lut[val]
+        try:
+            vec_lut = np.vectorize(lut)
 
-        vec_lut = np.vectorize(lut)
-
-        self._beh_annotation = pd.Series(np.squeeze(vec_lut(self.beh_annotation.to_numpy())))
-        self.beh_annotation_is_stable_style = True
-        return self.beh_annotation
+            self._beh_annotation = pd.Series(np.squeeze(vec_lut(self.beh_annotation.to_numpy())))
+            self.beh_annotation_is_stable_style = True
+            return self.beh_annotation
+        except KeyError:
+            logging.warning("Could not correct behavior annotations; returning them as they are")
+            self.beh_annotation_is_stable_style = True
+            return self.beh_annotation
 
     @property
     def behavior_annotations_fluorescence_fps(self):
@@ -226,7 +230,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
         behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
         if not Path(behavior_fname).is_absolute():
             # Assume it is in this project's behavior folder
-            behavior_fname = behavior_cfg.resolve_relative_path_from_config('manual_behavior_annotation')
+            behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname, prepend_subfolder=True)
     except FileNotFoundError:
         # Old style project
         behavior_fname = None
