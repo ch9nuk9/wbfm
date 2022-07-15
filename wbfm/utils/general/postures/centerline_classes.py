@@ -224,6 +224,9 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     try:
         behavior_cfg = cfg.get_behavior_config()
         behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
+        if not Path(behavior_fname).is_absolute():
+            # Assume it is in this project's behavior folder
+            behavior_fname = behavior_cfg.resolve_relative_path_from_config('manual_behavior_annotation')
     except FileNotFoundError:
         # Old style project
         behavior_fname = None
