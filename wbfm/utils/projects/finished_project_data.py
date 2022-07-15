@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError
-from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture, shade_using_behavior
+from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence, get_mismatches

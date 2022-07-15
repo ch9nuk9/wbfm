@@ -231,6 +231,9 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
         if not Path(behavior_fname).is_absolute():
             # Assume it is in this project's behavior folder
             behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname, prepend_subfolder=True)
+            if str(behavior_fname).endswith('.xlsx'):
+                # This means the user probably did it by hand... but is a fragile check
+                is_stable_style = True
     except FileNotFoundError:
         # Old style project
         behavior_fname = None
@@ -265,7 +268,11 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
                 # Sometimes there is a messed up extra column
                 behavior_annotations = pd.Series(behavior_annotations.iloc[:, 0])
         else:
-            behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
+            try:
+                behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
+            except (PermissionError, FileNotFoundError):
+                logging.warning("Permission or File error; do you have the excel sheet open elsewhere?")
+                behavior_annotations = None
     else:
         behavior_annotations = None
 
