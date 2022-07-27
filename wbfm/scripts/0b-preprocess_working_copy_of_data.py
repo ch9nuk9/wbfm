@@ -57,13 +57,20 @@ def main(_config, _run):
     num_frames = cfg.config['dataset_params']['num_frames']
     logger = cfg.logger
 
+    red_btf_fname = _config['out_fname_red']
+    green_btf_fname = _config['out_fname_green']
+
     with safe_cd(_config['project_dir']):
 
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
 
-        options['out_fname'] = _config['out_fname_red']
+        # Very first: calculate the alignment between the red and green channels (camera misalignment)
+        # TODO: is doing the alignment in this order okay?
+        preprocessing_settings.calculate_warp_mat_from_btf_files(red_btf_fname, green_btf_fname)
+
+        # Second: within-stack alignment using the red channel, which will be saved to disk
+        options['out_fname'] = red_btf_fname
         options['save_fname_in_red_not_green'] = True
-        # The preprocessing will be calculated based off the red channel, and will be saved to disk
         # Location: same as the preprocessed red channel (possibly not the bigtiff)
         red_name = Path(options['out_fname'])
         fname = red_name.parent / (red_name.stem + "_preprocessed.pickle")
@@ -78,9 +85,9 @@ def main(_config, _run):
             write_data_subset_using_config(cfg, preprocessing_settings=preprocessing_settings,
                                            which_channel='red', **options)
 
-        # Now the green channel will read the artifact as saved above
+        # Now the green channel will read the warp matrices per-stack as saved above
         logger.info("Preprocessing green...")
-        options['out_fname'] = _config['out_fname_green']
+        options['out_fname'] = green_btf_fname
         options['save_fname_in_red_not_green'] = False
         preprocessing_settings.to_use_previous_warp_matrices = True
         if cfg.config['dataset_params']['red_and_green_mirrored']:
@@ -92,7 +99,7 @@ def main(_config, _run):
         preprocessing_settings.save_all_warp_matrices()
 
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
-        video_fname = _config['out_fname_red']
+        video_fname = red_btf_fname
         bbox_fname = _config['bounding_box_fname']
         calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames)
 

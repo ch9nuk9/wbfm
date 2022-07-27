@@ -20,8 +20,8 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
-    align_stack_using_previous_results, apply_alignment_matrix_to_stack
-from wbfm.utils.projects.paths_to_external_resources import get_camera_alignment_matrix
+    align_stack_using_previous_results, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
+from wbfm.utils.projects.paths_to_external_resources import get_precalculated_camera_alignment_matrix
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from wbfm.utils.projects.utils_filenames import add_name_suffix
 from wbfm.utils.projects.utils_project import edit_config
@@ -104,6 +104,7 @@ class PreprocessingSettings:
 
     # Rigid alignment (green to red channel)
     align_green_red_cameras: bool = False
+    _camera_alignment_matrix: np.array = None
 
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
@@ -264,8 +265,53 @@ class PreprocessingSettings:
 
     @cached_property
     def camera_alignment_matrix(self):
-        warp_mat = get_camera_alignment_matrix()
+        warp_mat = self.calculate_warp_mat_from_data()
+        warp_mat = None
+        # warp_mat = get_precalculated_camera_alignment_matrix()
         return warp_mat
+
+    def calculate_warp_mat_from_data(self, red_data, green_data):
+        # Get representative volumes (in theory) and max project
+        tspan = np.arange(10, red_data.shape[0], 250, dtype=int)
+        red_vol_subset = np.array([np.max(red_data[t], axis=0) for t in tspan])
+        green_vol_subset = np.array([np.max(green_data[t], axis=0) for t in tspan])
+
+        # Calculate (average over above volumes)
+        warp_mat = calculate_alignment_matrix_two_stacks(red_vol_subset, green_vol_subset,
+                                                         use_only_first_pair=False)
+
+        # Save in this object
+        self._camera_alignment_matrix = warp_mat
+
+    def calculate_warp_mat_from_btf_files(self, red_btf_fname, green_btf_fname):
+        # Will just take as many volumes as it can (this object doesn't know the number of frames present)
+        tspan = np.arange(10, 3000, 250, dtype=int)
+
+        red_vol_subset, green_vol_subset = [], []
+
+        with tifffile.TiffFile(red_btf_fname) as vid_stream:
+            for t in tspan:
+                try:
+                    red_vol_subset.append(self.get_single_volume(vid_stream, t))
+                except IndexError:
+                    break
+
+        with tifffile.TiffFile(green_btf_fname) as vid_stream:
+            for t in tspan:
+                try:
+                    green_vol_subset.append(self.get_single_volume(vid_stream, t))
+                except IndexError:
+                    break
+
+        red_vol_subset = np.array([np.max(dat, axis=0) for dat in red_vol_subset])
+        green_vol_subset = np.array([np.max(dat, axis=0) for dat in green_vol_subset])
+
+        # Calculate (average over above volumes)
+        warp_mat = calculate_alignment_matrix_two_stacks(red_vol_subset, green_vol_subset,
+                                                         use_only_first_pair=False)
+
+        # Save in this object
+        self._camera_alignment_matrix = warp_mat
 
     def write_to_yaml(self, fname):
         edit_config(fname, dataclasses.asdict(self))

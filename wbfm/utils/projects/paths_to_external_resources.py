@@ -8,7 +8,7 @@ CAMERA_ALIGNMENT_MATRIX = "/scratch/neurobiology/zimmer/Charles/repos/dlc_for_wb
                           "warp_mat_green_to_red_2022-04-09.npy"
 
 
-def get_camera_alignment_matrix():
+def get_precalculated_camera_alignment_matrix():
     if Path(CAMERA_ALIGNMENT_MATRIX).exists():
         return np.load(CAMERA_ALIGNMENT_MATRIX)
     else:
