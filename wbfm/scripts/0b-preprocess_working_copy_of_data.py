@@ -65,8 +65,10 @@ def main(_config, _run):
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
 
         # Very first: calculate the alignment between the red and green channels (camera misalignment)
-        # TODO: is doing the alignment in this order okay?
         preprocessing_settings.calculate_warp_mat_from_btf_files(red_btf_fname, green_btf_fname)
+        green_name = Path(green_btf_fname)
+        fname = green_name.parent / (green_name.stem + "_camera_alignment.pickle")
+        preprocessing_settings.path_to_camera_alignment_matrix = fname
 
         # Second: within-stack alignment using the red channel, which will be saved to disk
         options['out_fname'] = red_btf_fname
@@ -85,7 +87,7 @@ def main(_config, _run):
             write_data_subset_using_config(cfg, preprocessing_settings=preprocessing_settings,
                                            which_channel='red', **options)
 
-        # Now the green channel will read the warp matrices per-stack as saved above
+        # Third the green channel will read the warp matrices per-volume (step 2) and between cameras (step 1)
         logger.info("Preprocessing green...")
         options['out_fname'] = green_btf_fname
         options['save_fname_in_red_not_green'] = False
@@ -95,7 +97,7 @@ def main(_config, _run):
         write_data_subset_using_config(cfg, preprocessing_settings=preprocessing_settings,
                                        which_channel='green', **options)
 
-        # Save the warp matrices to disk if needed further
+        # Save the warp matrices (camera and per-volume) to disk if needed further
         preprocessing_settings.save_all_warp_matrices()
 
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)

@@ -105,6 +105,7 @@ class PreprocessingSettings:
     # Rigid alignment (green to red channel)
     align_green_red_cameras: bool = False
     _camera_alignment_matrix: np.array = None
+    path_to_camera_alignment_matrix: str = None
 
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
@@ -263,12 +264,14 @@ class PreprocessingSettings:
                 preprocessing_settings.do_background_subtraction = False
         return preprocessing_settings
 
-    @cached_property
+    @property
     def camera_alignment_matrix(self):
-        warp_mat = self.calculate_warp_mat_from_data()
-        warp_mat = None
+        if self._camera_alignment_matrix is None:
+            # TODO: load from disk
+            return None
+        else:
+            return self._camera_alignment_matrix
         # warp_mat = get_precalculated_camera_alignment_matrix()
-        return warp_mat
 
     def calculate_warp_mat_from_data(self, red_data, green_data):
         # Get representative volumes (in theory) and max project
@@ -319,6 +322,8 @@ class PreprocessingSettings:
     def save_all_warp_matrices(self):
         with open(self.path_to_previous_warp_matrices, 'wb') as f:
             pickle.dump(self.all_warp_matrices, f)
+        with open(self.path_to_camera_alignment_matrix, 'wb') as f:
+            pickle.dump(self.camera_alignment_matrix, f)
 
     def load_all_warp_matrices(self):
         """
@@ -394,7 +399,8 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             if len(warp_matrices_dict) > 0:
                 single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
 
-    if s.align_green_red_cameras:
+    if s.align_green_red_cameras and which_channel == 'green':
+        # Matrix should be precalculated
         alignment_mat = s.camera_alignment_matrix
         if alignment_mat is None:
             logging.warning("Requested red-green alignment, but no matrix was found")
