@@ -139,20 +139,28 @@ def align_stack_to_middle_slice(stack_to_align, hide_progress=True):
     return stack_aligned, warp_matrices
 
 
-def calculate_alignment_matrix_two_stacks(stack_template, stack_rotated, hide_progress=True):
+def calculate_alignment_matrix_two_stacks(stack_template, stack_rotated, hide_progress=True,
+                                          use_only_first_pair=True):
     """
     Takes two z stacks (format: ZXY) and rigidly aligns plane, returning only the warp matrices
+
     """
-    # Settings for the actual warping
-    sz = stack_template[0].shape
-    sz = (sz[1], sz[0])
-    warp_matrices = {}  # (i_prev, i_next) -> matrix
+    warp_matrices = []
 
     warp_mat = np.identity(3)[0:2, :]
-    for im0, im1 in tqdm(zip(stack_template, stack_rotated), disable=hide_progress):
+    for i, (im0, im1) in enumerate(tqdm(zip(stack_template, stack_rotated), disable=hide_progress)):
         warp_mat = calc_warp_ECC(im0, im1, termination_eps=1e-6, warp_mode=cv2.MOTION_AFFINE)
-        break
-    return warp_mat
+        if use_only_first_pair:
+            break
+        else:
+            warp_matrices.append(warp_mat)
+
+    if use_only_first_pair:
+        final_warp_mat = warp_mat
+    else:
+        final_warp_mat = np.mean(np.array(warp_matrices), axis=0)
+
+    return final_warp_mat
 
 
 def apply_alignment_matrix_to_stack(stack_to_align, warp_mat, hide_progress=True):
@@ -165,9 +173,9 @@ def apply_alignment_matrix_to_stack(stack_to_align, warp_mat, hide_progress=True
     flags = cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
     stack_aligned = np.empty_like(stack_to_align)
 
-    for i in enumerate(tqdm(range(stack_to_align.shape[0]), disable=hide_progress, leave=False)):
-        img = stack_to_align[i, ...]
-        stack_aligned[i, ...] = cv2.warpAffine(img, warp_mat, sz, flags=flags)
+    for i_final, i_initial in enumerate(tqdm(range(stack_to_align.shape[0]), disable=hide_progress, leave=False)):
+        img = stack_to_align[i_initial, ...]
+        stack_aligned[i_final, ...] = cv2.warpAffine(img, warp_mat, sz, flags=flags)
 
     return stack_aligned
 
