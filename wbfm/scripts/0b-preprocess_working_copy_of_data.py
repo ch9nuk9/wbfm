@@ -57,8 +57,10 @@ def main(_config, _run):
     num_frames = cfg.config['dataset_params']['num_frames']
     logger = cfg.logger
 
-    red_btf_fname = _config['out_fname_red']
-    green_btf_fname = _config['out_fname_green']
+    red_output_fname = _config['out_fname_red']
+    green_output_fname = _config['out_fname_green']
+    red_btf_fname = cfg.config['red_bigtiff_fname']
+    green_btf_fname = cfg.config['green_bigtiff_fname']
 
     with safe_cd(_config['project_dir']):
 
@@ -66,12 +68,12 @@ def main(_config, _run):
 
         # Very first: calculate the alignment between the red and green channels (camera misalignment)
         preprocessing_settings.calculate_warp_mat_from_btf_files(red_btf_fname, green_btf_fname)
-        green_name = Path(green_btf_fname)
+        green_name = Path(green_output_fname)
         fname = green_name.parent / (green_name.stem + "_camera_alignment.pickle")
         preprocessing_settings.path_to_camera_alignment_matrix = fname
 
         # Second: within-stack alignment using the red channel, which will be saved to disk
-        options['out_fname'] = red_btf_fname
+        options['out_fname'] = red_output_fname
         options['save_fname_in_red_not_green'] = True
         # Location: same as the preprocessed red channel (possibly not the bigtiff)
         red_name = Path(options['out_fname'])
@@ -89,7 +91,7 @@ def main(_config, _run):
 
         # Third the green channel will read the warp matrices per-volume (step 2) and between cameras (step 1)
         logger.info("Preprocessing green...")
-        options['out_fname'] = green_btf_fname
+        options['out_fname'] = green_output_fname
         options['save_fname_in_red_not_green'] = False
         preprocessing_settings.to_use_previous_warp_matrices = True
         if cfg.config['dataset_params']['red_and_green_mirrored']:
@@ -101,7 +103,7 @@ def main(_config, _run):
         preprocessing_settings.save_all_warp_matrices()
 
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
-        video_fname = red_btf_fname
+        video_fname = red_output_fname
         bbox_fname = _config['bounding_box_fname']
         calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames)
 
