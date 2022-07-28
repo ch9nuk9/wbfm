@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -333,6 +334,12 @@ class WormReferencePosture:
 
 @dataclass
 class WormSinglePosture:
+    """
+    Class for more detailed analysis of the posture at a single time point
+
+    See also WormFullVideoPosture
+    """
+
     neuron_zxy: np.ndarray
     centerline: np.ndarray
 
@@ -343,7 +350,17 @@ class WormSinglePosture:
         self.centerline_neighbors = NearestNeighbors(n_neighbors=2).fit(self.centerline)
         self.neuron_neighbors = NearestNeighbors(n_neighbors=5).fit(self.neuron_zxy)
 
-    def get_closest_centerline_point(self, anchor_pt):
+    def get_closest_centerline_point(self, anchor_pt: Union[np.array, list]):
+        """
+
+        Parameters
+        ----------
+        anchor_pt - zxy of the desired point
+
+        Returns
+        -------
+
+        """
         n_neighbors = 1
         closest_centerline_dist, closest_centerline_ind = self.centerline_neighbors.kneighbors(
             anchor_pt[1:].reshape(1, -1), n_neighbors)
