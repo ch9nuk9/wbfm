@@ -125,8 +125,10 @@ Once the project is created, each step can be run via sbatch using this command 
 sbatch single_step_dispatcher.sbatch -s 1 -t /scratch/neurobiology/zimmer/Charles/dlc_stacks/worm10-gui_test/project_config.yaml
 ```
 
-where '-s' is a shortcut for the step to run (1, 2a, 2b, 2c, 3a, 3b, 4) and '-t' is a path to the project config file.
+where '-s' is a shortcut for the step to run (0b, 1, 2a, 2b, 2c, 3a, 3b, 4) and '-t' is a path to the project config file.
 
+Note: there may also be some alternative (not main pipeline steps), for example '4-alt' which just re-extracts the traces and makes the grid plots.
+This is useful for example if different preprocessing is applied to the videos (but the segmentation and tracking are unchanged).
 
 # Summary of GUIs
 

@@ -39,6 +39,7 @@ CMD_DICT["2c"]="2c-postprocess_matches_to_tracklets.py"
 CMD_DICT["3a"]="3a-track_using_superglue.py"
 CMD_DICT["3b"]="3b-match_tracklets_and_tracks_using_neuron_initialization.py"
 CMD_DICT["4"]="4-make_final_traces.py"
+CMD_DICT["4-alt"]="alternate/4c-extract_full_traces.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
 FULL_CMD="python $CMD with project_path=$project_path"
