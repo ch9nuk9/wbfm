@@ -196,7 +196,8 @@ class WormFullVideoPosture:
 
     @property
     def subsample_indices(self):
-        return range(0, len(self.beh_annotation), self.fps)
+        # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
+        return range(0, len(self.curvature), self.fps)
 
     def __repr__(self):
         return f"=======================================\n\
