@@ -28,6 +28,7 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
     tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
     model = tracker.model  # Save for later initialization
     min_neurons_for_template = 50
+    all_dfs = []
 
     if not use_multiple_templates:
         df_final = track_using_template(all_frames, num_frames, project_data, tracker)
@@ -52,8 +53,17 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
 
     # Save
     out_fname = '3-tracking/postprocessing/df_tracks_superglue.h5'
-    tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True)
+    out_fname = tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True,
+                                                      make_sequential_filename=True)
+    out_fname = tracking_cfg.unresolve_absolute_path(out_fname)
     tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
+
+    # Also save the intermediate dataframes
+    if use_multiple_templates:
+        out_fname = '3-tracking/postprocessing/df_tracks_embedding_template-0.h5'
+        for df in all_dfs:
+            out_fname = tracking_cfg.h5_data_in_local_project(df, out_fname, also_save_csv=False,
+                                                              make_sequential_filename=True)
 
     tracking_cfg.update_self_on_disk()
 
@@ -62,11 +72,15 @@ def track_using_embedding_using_config(project_cfg, DEBUG):
     all_frames, num_frames, num_random_templates, project_data, t_template, tracking_cfg, use_multiple_templates = _unpack_project_for_global_tracking(
         DEBUG, project_cfg)
 
+    min_neurons_for_template = 100
+
+    all_dfs = []
     if not use_multiple_templates:
         tracker = WormWithNeuronClassifier(template_frame=all_frames[t_template])
         df_final = track_using_template(all_frames, num_frames, project_data, tracker)
     else:
-        all_templates = generator_random_template_times(num_frames, num_random_templates, t_template)
+        all_templates = generate_random_valid_template_frames(all_frames, min_neurons_for_template,
+                                                              num_frames, num_random_templates, t_template)
         # All subsequent dataframes will have their names mapped to this
         t = all_templates[0]
         tracker = WormWithNeuronClassifier(template_frame=all_frames[t])
@@ -83,8 +97,17 @@ def track_using_embedding_using_config(project_cfg, DEBUG):
 
     # Save
     out_fname = '3-tracking/postprocessing/df_tracks_embedding.h5'
-    tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True)
+    out_fname = tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True,
+                                                      make_sequential_filename=True)
+    out_fname = tracking_cfg.unresolve_absolute_path(out_fname)
     tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
+
+    # Also save the intermediate dataframes
+    if use_multiple_templates:
+        out_fname = '3-tracking/postprocessing/df_tracks_embedding_template-0.h5'
+        for df in all_dfs:
+            out_fname = tracking_cfg.h5_data_in_local_project(df, out_fname, also_save_csv=False,
+                                                              make_sequential_filename=True)
 
     tracking_cfg.update_self_on_disk()
 
