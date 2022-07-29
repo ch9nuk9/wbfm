@@ -28,7 +28,7 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
     tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
     model = tracker.model  # Save for later initialization
     min_neurons_for_template = 50
-    all_dfs = []
+    all_dfs_raw = []
 
     if not use_multiple_templates:
         df_final = track_using_template(all_frames, num_frames, project_data, tracker)
@@ -40,16 +40,18 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
         project_cfg.logger.info(f"Using {num_random_templates} templates at t={all_templates}")
         # All subsequent dataframes will have their names mapped to this
         df_base = track_using_template(all_frames, num_frames, project_data, tracker)
-        all_dfs = [df_base]
+        all_dfs_names_aligned = [df_base]
+        all_dfs_raw = [df_base]
         for i, t in enumerate(tqdm(all_templates[1:])):
             superglue_unpacker = SuperGlueUnpacker(project_data=project_data, t_template=t)
             tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker, model=model)
             df = track_using_template(all_frames, num_frames, project_data, tracker)
-            df, _, _, _ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
-            all_dfs.append(df)
+            df_name_aligned, _, _, _ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
+            all_dfs_names_aligned.append(df_name_aligned)
+            all_dfs_raw.append(df)
 
         tracking_cfg.config['t_templates'] = all_templates
-        df_final = combine_dataframes_using_bipartite_matching(all_dfs)
+        df_final = combine_dataframes_using_bipartite_matching(all_dfs_names_aligned)
 
     # Save
     out_fname = '3-tracking/postprocessing/df_tracks_superglue.h5'
@@ -60,8 +62,8 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
 
     # Also save the intermediate dataframes
     if use_multiple_templates:
-        out_fname = '3-tracking/postprocessing/df_tracks_embedding_template-0.h5'
-        for df in all_dfs:
+        out_fname = '3-tracking/postprocessing/df_tracks_superglue_template-0.h5'
+        for df in all_dfs_raw:
             out_fname = tracking_cfg.h5_data_in_local_project(df, out_fname, also_save_csv=False,
                                                               make_sequential_filename=True)
 
