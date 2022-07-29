@@ -60,7 +60,7 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
 
     # Also save the intermediate dataframes
     if use_multiple_templates:
-        out_fname = '3-tracking/postprocessing/df_tracks_embedding_template-0.h5'
+        out_fname = '3-tracking/postprocessing/df_tracks_superglue_template-0.h5'
         for df in all_dfs:
             out_fname = tracking_cfg.h5_data_in_local_project(df, out_fname, also_save_csv=False,
                                                               make_sequential_filename=True)
