@@ -171,12 +171,19 @@ class DetectedNeurons:
             self._volumes_cache[i_volume] = self.segmentation_metadata[i_volume]['neuron_volume']
         return self._volumes_cache[i_volume]
 
-    def get_normalized_intensity(self, i_volume: int, background_per_pixel=14, is_relative_index=False):
+    def intensity_background_subtracted(self, i_volume: int, background_per_pixel=14, is_relative_index=False):
         if is_relative_index:
             i_volume = self.correct_relative_index(i_volume)
         y = self.get_all_brightnesses(i_volume)
         vol = self.get_all_volumes(i_volume)
         return y - background_per_pixel*vol
+
+    def intensity_mean_over_volume(self, i_volume: int, is_relative_index=False):
+        if is_relative_index:
+            i_volume = self.correct_relative_index(i_volume)
+        y = self.get_all_brightnesses(i_volume)
+        vol = self.get_all_volumes(i_volume)
+        return y / vol
 
     def correct_relative_index(self, i):
         return self.which_frames[i]
