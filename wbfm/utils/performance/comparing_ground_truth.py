@@ -120,6 +120,7 @@ def calc_all_dist(df1, df2):
 
 
 def calc_accuracy(all_dist, dist_tol=1e-2):
+    # Due to nan values, num_matches + num_mismatches != num_total
     num_matches = len(np.where(all_dist < dist_tol)[0])
     num_mismatches = len(np.where(all_dist > dist_tol)[0])
     num_nan_total = len(np.where(np.isnan(all_dist))[0])
@@ -188,16 +189,11 @@ def plot_histogram_at_likelihood_thresh(df1, df2, likelihood_thresh):
 
 
 def calculate_accuracy_from_dataframes(df_gt: pd.DataFrame, df2_filter: pd.DataFrame) -> pd.DataFrame:
-    coords = ['z', 'x', 'y']
-    # tracked_names = [int2name_neuron(i) for i in TRACKED_IND]
     tracked_names = get_names_from_df(df_gt)
-    all_dist_dict = {}
-    all_total1 = {}
-    all_total2 = {}
-    for name in tqdm(tracked_names, leave=False):
-        this_df_gt, this_df2 = df_gt[name][coords].copy(), df2_filter[name][coords].copy()
-        all_dist_dict[name], all_total1[name], all_total2[name], _ = calc_all_dist(this_df_gt, this_df2)
-    num_t = this_df_gt.shape[0]
+
+    all_dist_dict, all_total1, all_total2 = calculate_distance_pair_of_dataframes(df_gt, df2_filter)
+
+    num_t = df_gt.shape[0]
     all_acc_dict = defaultdict(list)
     for name in tqdm(tracked_names, leave=False):
         matches, mismatches, nan = calc_accuracy(all_dist_dict[name])
@@ -208,3 +204,58 @@ def calculate_accuracy_from_dataframes(df_gt: pd.DataFrame, df2_filter: pd.DataF
         all_acc_dict['nan_in_fdnc'].append((num_t - num_total2) / num_t)
     df_all_acc = pd.DataFrame(all_acc_dict, index=tracked_names)
     return df_all_acc
+
+
+def calculate_distance_pair_of_dataframes(df_gt, df2_filter):
+    # Calculate distance between neuron positions in two dataframes with the SAME COLUMN NAMES
+    coords = ['z', 'x', 'y']
+    tracked_names = get_names_from_df(df_gt)
+    all_dist_dict = {}
+    all_total1 = {}
+    all_total2 = {}
+    for name in tqdm(tracked_names, leave=False):
+        this_df_gt, this_df2 = df_gt[name][coords].copy(), df2_filter[name][coords].copy()
+        all_dist_dict[name], all_total1[name], all_total2[name], _ = calc_all_dist(this_df_gt, this_df2)
+    return all_dist_dict, all_total1, all_total2
+
+
+def calculate_confidence_of_mismatches(df_gt: pd.DataFrame, df2_filter: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns all confidence values, instead of summary statistics (see: calculate_accuracy_from_dataframes)
+
+    Returns an extended dataframe df2_filter, which has added columns ('is_correct') corresponding to correctness:
+        0 - mismatch
+        1 - match
+        2 - ground truth was nan
+
+    Parameters
+    ----------
+    df_gt
+    df2_filter
+
+    Returns
+    -------
+
+    """
+    tracked_names = get_names_from_df(df_gt)
+
+    all_dist_dict, all_total1, all_total2 = calculate_distance_pair_of_dataframes(df_gt, df2_filter)
+
+    df2_with_classes = df2_filter.copy()
+
+    dist_tol = 1e-2
+    num_t = df2_filter.shape[0]
+    for name in tqdm(tracked_names, leave=False):
+        this_dist = all_dist_dict[name]
+
+        # ind_matches = np.where(this_dist < dist_tol)[0]
+        ind_mismatches = np.where(this_dist > dist_tol)[0]
+        ind_nan = np.where(np.isnan(this_dist))[0]
+
+        new_col = np.ones(num_t, dtype=int)
+        new_col[ind_mismatches] = 0
+        new_col[ind_nan] = 2
+
+        df2_with_classes.loc[:, (name, 'is_correct')] = new_col
+
+    return df2_with_classes.copy()  # To defragment
