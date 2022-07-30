@@ -169,30 +169,11 @@ def calculate_column_of_differences(df_gt, df_test,
 ## Plotting
 ##
 
+
 def plot_histogram_at_likelihood_thresh(df1, df2, likelihood_thresh):
     """Assumes that the neurons have the same name; see rename_columns_using_matching"""
     df2_filter = filter_dataframe_using_likelihood(df2, likelihood_thresh)
-    coords = ['z', 'x', 'y']
-    tracked_names = [int2name_neuron(i) for i in TRACKED_IND]
-
-    all_dist_dict = {}
-    all_total1 = {}
-    all_total2 = {}
-    for name in tqdm(tracked_names, leave=False):
-        df1, df2 = df1[name][coords].copy(), df2_filter[name][coords].copy()
-        all_dist_dict[name], all_total1[name], all_total2[name], _ = calc_all_dist(df1, df2)
-
-    num_t = df1.shape[0]
-    all_acc_dict = defaultdict(list)
-    for name in tqdm(tracked_names, leave=False):
-        matches, mismatches, nan = calc_accuracy(all_dist_dict[name])
-        num_total1, num_total2 = all_total1[name], all_total2[name]
-        all_acc_dict['matches'].append(matches / num_t)
-        all_acc_dict['matches_to_gt_nonnan'].append(matches / num_total1)
-        all_acc_dict['mismatches'].append(mismatches / num_t)
-        all_acc_dict['nan_in_fdnc'].append((num_t - num_total2) / num_t)
-
-    df_all_acc = pd.DataFrame(all_acc_dict, index=tracked_names)
+    df_all_acc = calculate_accuracy_from_dataframes(df1, df2_filter)
 
     dat = [df_all_acc['matches_to_gt_nonnan'], df_all_acc['mismatches'], df_all_acc['nan_in_fdnc']]
 
@@ -204,3 +185,26 @@ def plot_histogram_at_likelihood_thresh(df1, df2, likelihood_thresh):
     plt.title(f"Likelihood threshold: {likelihood_thresh}")
 
     return dat
+
+
+def calculate_accuracy_from_dataframes(df_gt: pd.DataFrame, df2_filter: pd.DataFrame) -> pd.DataFrame:
+    coords = ['z', 'x', 'y']
+    # tracked_names = [int2name_neuron(i) for i in TRACKED_IND]
+    tracked_names = get_names_from_df(df_gt)
+    all_dist_dict = {}
+    all_total1 = {}
+    all_total2 = {}
+    for name in tqdm(tracked_names, leave=False):
+        this_df_gt, this_df2 = df_gt[name][coords].copy(), df2_filter[name][coords].copy()
+        all_dist_dict[name], all_total1[name], all_total2[name], _ = calc_all_dist(this_df_gt, this_df2)
+    num_t = this_df_gt.shape[0]
+    all_acc_dict = defaultdict(list)
+    for name in tqdm(tracked_names, leave=False):
+        matches, mismatches, nan = calc_accuracy(all_dist_dict[name])
+        num_total1, num_total2 = all_total1[name], all_total2[name]
+        all_acc_dict['matches'].append(matches / num_t)
+        all_acc_dict['matches_to_gt_nonnan'].append(matches / num_total1)
+        all_acc_dict['mismatches'].append(mismatches / num_t)
+        all_acc_dict['nan_in_fdnc'].append((num_t - num_total2) / num_t)
+    df_all_acc = pd.DataFrame(all_acc_dict, index=tracked_names)
+    return df_all_acc
