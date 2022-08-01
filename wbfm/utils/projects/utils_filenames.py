@@ -19,7 +19,7 @@ def check_exists(abs_path, allow_overwrite):
             raise FileExistsError
 
 
-def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
+def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 1) -> str:
     """
     Removes windows-specific mounted drive names (Y:, D:, etc.) and replaces them with the networked system equivalent
 
@@ -27,12 +27,26 @@ def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
 
     Note: This is specific to the Zimmer lab, as of 23.06.2021 (at the IMP)
     """
-    is_abs = PurePosixPath(path).is_absolute() or PureWindowsPath(path).is_absolute()
+    is_abs = PurePosixPath(raw_path).is_absolute() or PureWindowsPath(raw_path).is_absolute()
     if not is_abs:
-        return path
+        return raw_path
 
     if verbose >= 1:
-        print(f"Checking path {path} on os {os.name}...")
+        print(f"Checking path {raw_path} on os {os.name}...")
+
+    is_linux = "ix" in os.name.lower()
+    is_windows = os.name.lower() == "windows" or os.name.lower() == "nt"
+
+    # Check for silly things
+    if os.path.exists(raw_path):
+        return raw_path
+
+    # Check for unreachable local drives
+    local_drives = ['C:', 'D:']
+    if is_linux:
+        for drive in local_drives:
+            if raw_path.startswith(drive):
+                raise FileNotFoundError("File mounted to local drive; network system can't find it")
 
     # Swap mounted drive locations
     # UPDATE REGULARLY
@@ -42,32 +56,32 @@ def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
         'S:': "/scratch"
     }
 
+    # Loop through drive name matches, and test each one
+    path = None
     for win_drive, linux_drive in mounted_drive_dict.items():
-        is_linux = "ix" in os.name.lower()
-        is_windows_style = path.startswith(win_drive)
-        is_windows = os.name.lower() == "windows" or os.name.lower() == "nt"
-        is_linux_style = path.startswith(linux_drive)
+        is_windows_style = raw_path.startswith(win_drive)
+        is_linux_style = raw_path.startswith(linux_drive)
 
         if is_linux and is_windows_style:
-            path = path.replace(win_drive, linux_drive)
+            path = raw_path.replace(win_drive, linux_drive)
             path = str(Path(path).resolve())
-        if is_windows and is_linux_style:
-            path = path.replace(linux_drive, win_drive)
+        elif is_windows and is_linux_style:
+            path = raw_path.replace(linux_drive, win_drive)
             path = str(Path(path).resolve())
-
-        if os.path.exists(path):
-            # For example on windows, tries Z: and if not found, tries S:
+        else:
+            # No os mismatch, so this function can't work
             break
 
-    # Check for unreachable local drives
-    local_drives = ['C:', 'D:']
-    if "ix" in os.name.lower():
-        for drive in local_drives:
-            if path.startswith(drive):
-                raise FileNotFoundError("File mounted to local drive; network system can't find it")
+        if path and os.path.exists(path):
+            # For example on windows, tries Z: and if not found, tries S:
+            if verbose >= 1:
+                print(f"Successfully resolved path to {path}")
+            break
+    else:
+        path = raw_path
+        if verbose >= 1:
+            print(f"Did not successfully resolve path; returning raw {raw_path}")
 
-    if verbose >= 1:
-        print(f"Resolved path to {path}")
     return path
 
 
