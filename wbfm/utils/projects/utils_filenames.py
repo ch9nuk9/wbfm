@@ -57,20 +57,17 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 1) -> str:
     }
 
     # Loop through drive name matches, and test each one
-    path = None
     for win_drive, linux_drive in mounted_drive_dict.items():
         is_windows_style = raw_path.startswith(win_drive)
         is_linux_style = raw_path.startswith(linux_drive)
 
+        path = None
         if is_linux and is_windows_style:
             path = raw_path.replace(win_drive, linux_drive)
             path = str(Path(path).resolve())
         elif is_windows and is_linux_style:
             path = raw_path.replace(linux_drive, win_drive)
             path = str(Path(path).resolve())
-        else:
-            # No os mismatch, so this function can't work
-            break
 
         if path and os.path.exists(path):
             # For example on windows, tries Z: and if not found, tries S:
