@@ -82,6 +82,8 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 1) -> str:
         if verbose >= 1:
             print(f"Did not successfully resolve path; returning raw {raw_path}")
 
+    assert path is not None
+
     return path
 
 
