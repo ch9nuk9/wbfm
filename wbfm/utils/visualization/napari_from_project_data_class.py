@@ -188,7 +188,35 @@ class NapariLayerInitializer:
         return viewer
 
 
-def take_screenshot_using_project(project_data, additional_layers, base_layers=None, t_target=None, **kwargs):
+def take_screenshot_using_project(project_data, additional_layers: List[list], base_layers=None, t_target=None, **kwargs):
+    """
+    Example:
+    additional_layers = [[('heatmap', 'count_nonnan')],
+                         [('heatmap', 'std_of_green')],
+                         [('heatmap', 'std_of_red')],
+                         [('heatmap', 'max_of_green')],
+                         [('heatmap', 'max_of_red')],
+                         [('heatmap', 'max_of_ratio')],
+                         [('heatmap', 'std_of_ratio')]]
+    base_layers = ['Red data', 'Neuron IDs']
+
+    take_screenshot_using_project(project_data, base_layers=base_layers, additional_layers=additional_layers)
+
+
+    See NapariLayerInitializer().add_layers_to_viewer for valid layer names
+
+    Parameters
+    ----------
+    project_data
+    additional_layers
+    base_layers
+    t_target
+    kwargs
+
+    Returns
+    -------
+
+    """
     if t_target is None:
         tracking_cfg = project_data.project_config.get_tracking_config()
         t_target = tracking_cfg.config['final_3d_tracks']['template_time_point']
