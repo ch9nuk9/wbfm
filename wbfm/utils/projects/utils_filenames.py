@@ -38,7 +38,8 @@ def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
     # UPDATE REGULARLY
     mounted_drive_dict = {
         'Y:': "/groups/zimmer",
-        'Z:': "/scratch"
+        'Z:': "/scratch",
+        'S:': "/scratch"
     }
 
     for win_drive, linux_drive in mounted_drive_dict.items():
@@ -53,6 +54,10 @@ def resolve_mounted_path_in_current_os(path: str, verbose: int = 1) -> str:
         if is_windows and is_linux_style:
             path = path.replace(linux_drive, win_drive)
             path = str(Path(path).resolve())
+
+        if os.path.exists(path):
+            # For example on windows, tries Z: and if not found, tries S:
+            break
 
     # Check for unreachable local drives
     local_drives = ['C:', 'D:']

@@ -92,13 +92,16 @@ class WormFullVideoPosture:
         fps = get_behavior_fluorescence_fps_conversion(project_config)
         opt = dict(fps=fps)
 
-        # First, get the folder
+        # First, get the folder that contains all behavior information
+        # Try 1: read from config file
         behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
         if behavior_fname is None:
+            # Try 2: look in the parent folder of the red raw data
             project_config.logger.info("behavior_fname not found; searching")
             behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
             if not flag:
                 project_config.logger.warning("behavior_fname search failed; returning empty object")
+                project_config.logger.warning("This means all calculations with curvature (kymograph) will fail!")
                 behavior_subfolder = None
         else:
             behavior_subfolder = Path(behavior_fname).parent
