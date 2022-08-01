@@ -314,14 +314,23 @@ class SuperGlue(nn.Module):
         return indices0, indices1, mscores0, mscores1
 
     def calculate_match_scores(self, data):
+        mdesc0, mdesc1 = self.embed_descriptors_and_keypoints(data)
+        # Compute matching descriptor distance.
+        scores = torch.einsum('bdn,bdm->bnm', mdesc0, mdesc1)
+        scores = scores / self.config['descriptor_dim'] ** .5
+        # Run the optimal transport.
+        scores = log_optimal_transport(
+            scores, self.bin_score,
+            iters=self.config['sinkhorn_iterations'])
+        return scores
+
+    def embed_descriptors_and_keypoints(self, data):
         desc0, desc1 = data['descriptors0'], data['descriptors1']
         kpts0, kpts1 = data['keypoints0'].float(), data['keypoints1'].float()
-
         # Batch is 0
         batch_sz = data['scores0'].shape[0]
         kpts0 = torch.reshape(kpts0, (batch_sz, 1, -1, 3))  # NEW: 3d
         kpts1 = torch.reshape(kpts1, (batch_sz, 1, -1, 3))
-
         if self.to_normalize_keypoints:
             # Keypoint normalization.
             kpts0 = normalize_keypoints_3d(kpts0, data['image0_sz'][0])
@@ -337,19 +346,11 @@ class SuperGlue(nn.Module):
             # Then only encode the spatial components
             desc0 = self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
             desc1 = self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
-
         # Multi-layer Transformer network.
         desc0, desc1 = self.gnn(desc0, desc1)
         # Final MLP projection.
         mdesc0, mdesc1 = self.final_proj(desc0), self.final_proj(desc1)
-        # Compute matching descriptor distance.
-        scores = torch.einsum('bdn,bdm->bnm', mdesc0, mdesc1)
-        scores = scores / self.config['descriptor_dim'] ** .5
-        # Run the optimal transport.
-        scores = log_optimal_transport(
-            scores, self.bin_score,
-            iters=self.config['sinkhorn_iterations'])
-        return scores
+        return mdesc0, mdesc1
 
     def match_and_output_list(self, data):
         scores = self.calculate_match_scores(data)
