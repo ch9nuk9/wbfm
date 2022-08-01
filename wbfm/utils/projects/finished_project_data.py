@@ -387,8 +387,8 @@ class ProjectData:
         obj.all_used_fnames = []
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg, do_background_subtraction=False)
 
-        red_dat_fname = cfg.resolve_mounted_path_in_current_os('preprocessed_red')
-        green_dat_fname = cfg.resolve_mounted_path_in_current_os('preprocessed_green')
+        red_dat_fname = str(cfg.resolve_mounted_path_in_current_os('preprocessed_red'))
+        green_dat_fname = str(cfg.resolve_mounted_path_in_current_os('preprocessed_green'))
         red_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['red'])
         green_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['green'])
 
