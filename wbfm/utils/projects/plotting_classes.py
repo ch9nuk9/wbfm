@@ -124,6 +124,7 @@ class TracePlotter:
 
             if self.channel_mode == "linear_model":
                 def calc_y(_neuron_name):
+                    # Predict green from time, volume, and red
 
                     red = df_red[_neuron_name]["intensity_image"]
                     green = df_green[_neuron_name]["intensity_image"]
