@@ -45,9 +45,10 @@ class WormFullVideoPosture:
     def __post_init__(self):
         self.fix_temporary_annotation_format()
 
-        self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature)
-        self.filename_x = resolve_mounted_path_in_current_os(self.filename_x)
-        self.filename_y = resolve_mounted_path_in_current_os(self.filename_y)
+        if self.filename_curvature is not None:
+            self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature)
+            self.filename_x = resolve_mounted_path_in_current_os(self.filename_x)
+            self.filename_y = resolve_mounted_path_in_current_os(self.filename_y)
 
     @cached_property
     def pca_projections(self):
