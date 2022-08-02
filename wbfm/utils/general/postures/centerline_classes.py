@@ -13,6 +13,7 @@ from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
 
 
 @dataclass
@@ -41,6 +42,13 @@ class WormFullVideoPosture:
 
     fps: int = 32  # TODO: make sure this is synchronized with z_slices
 
+    def __post_init__(self):
+        self.fix_temporary_annotation_format()
+
+        self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature)
+        self.filename_x = resolve_mounted_path_in_current_os(self.filename_x)
+        self.filename_y = resolve_mounted_path_in_current_os(self.filename_y)
+
     @cached_property
     def pca_projections(self):
         pca = PCA(n_components=3, whiten=True)
@@ -67,9 +75,6 @@ class WormFullVideoPosture:
         if self._beh_annotation is None:
             self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         return self._beh_annotation
-
-    def __post_init__(self):
-        self.fix_temporary_annotation_format()
 
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
