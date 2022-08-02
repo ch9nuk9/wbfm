@@ -882,6 +882,10 @@ class ProjectData:
                                 "check the formatting of the manual annotation file")
         return neurons_finished_mask
 
+    @property
+    def shortened_name(self):
+        return str(Path(self.project_dir).name)
+
     def __repr__(self):
         return f"=======================================\n\
 Project data for directory:\n\
