@@ -226,6 +226,21 @@ class WormFullVideoPosture:
     def stage_position_fluorescence_fps(self):
         return self.stage_position.iloc[self.subsample_indices, :]
 
+    @cached_property
+    def worm_speed(self):
+        df = self.stage_position
+        speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
+
+        tdelta = df.index[1] - df.index[0]  # units = nanoseconds
+        tdelta_s = tdelta.delta / 1e9
+        speed_mm_per_s = speed / tdelta_s
+
+        return speed_mm_per_s
+
+    @property
+    def worm_speed_smoothed(self):
+        return pd.Series(self.worm_speed).rolling(window=100).mean()
+
     @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
