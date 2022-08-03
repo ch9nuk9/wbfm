@@ -43,7 +43,7 @@ class WormFullVideoPosture:
     pca_i_start: int = 10
     pca_i_end: int = -10
 
-    fps: int = 32  # TODO: make sure this is synchronized with z_slices
+    frames_per_volume: int = 32  # TODO: make sure this is synchronized with z_slices
 
     def __post_init__(self):
         self.fix_temporary_annotation_format()
@@ -84,7 +84,9 @@ class WormFullVideoPosture:
 
     @cached_property
     def stage_position(self):
-        return pd.read_csv(self.filename_table_position)
+        df = pd.read_csv(self.filename_table_position, index_col='time')
+        df.index = pd.DatetimeIndex(df.index)
+        return df
 
     @property
     def beh_annotation(self):
@@ -101,8 +103,8 @@ class WormFullVideoPosture:
         plt.colorbar()
 
     def get_centerline_for_time(self, t):
-        c_x = self.centerlineX.iloc[t * self.fps]
-        c_y = self.centerlineY.iloc[t * self.fps]
+        c_x = self.centerlineX.iloc[t * self.frames_per_volume]
+        c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
     @staticmethod
@@ -111,8 +113,8 @@ class WormFullVideoPosture:
         # The exact files may not be in the config, so try to find them
 
         # Before anything, load metadata
-        fps = get_behavior_fluorescence_fps_conversion(project_config)
-        opt = dict(fps=fps)
+        frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
+        opt = dict(frames_per_volume=frames_per_volume)
 
         # First, get the folder that contains all behavior information
         # Try 1: read from config file
@@ -221,9 +223,13 @@ class WormFullVideoPosture:
         return self.curvature.iloc[self.subsample_indices, :]
 
     @property
+    def stage_position_fluorescence_fps(self):
+        return self.stage_position.iloc[self.subsample_indices, :]
+
+    @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
-        return range(0, len(self.curvature), self.fps)
+        return range(0, len(self.curvature), self.frames_per_volume)
 
     def __repr__(self):
         return f"=======================================\n\
