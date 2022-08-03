@@ -26,6 +26,7 @@ from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
     get_column_name_from_time_and_column_value
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
 from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
@@ -523,6 +524,27 @@ class ProjectData:
         )
         y = self._trace_plotter.calculate_traces(neuron_name)
         return self._trace_plotter.tspan, y
+
+    @property
+    def default_traces(self):
+        """
+        Uses the currently recommended 'best' settings:
+
+        """
+        opt = dict(
+            channel_mode='linear_model',
+            calculation_mode='integration',
+            remove_outliers=True
+        )
+
+        neuron_names = get_names_from_df(self.green_traces)
+        # Initialize the object
+        _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
+        trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
+
+        df = pd.DataFrame(trace_dict)
+
+        return df
 
     def plot_neuron_with_kymograph(self, neuron_name):
         t, y = self.calculate_traces(channel_mode='ratio', calculation_mode='integration',
