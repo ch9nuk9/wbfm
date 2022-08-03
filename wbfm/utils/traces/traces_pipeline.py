@@ -98,18 +98,13 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
         )
 
 
-def _unpack_configs_for_traces(project_cfg, segment_cfg, track_cfg):
+def _unpack_configs_for_traces(project_cfg, track_cfg):
     # Settings
     max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
     params_start_volume = project_cfg.config['dataset_params']['start_volume']
     num_frames = project_cfg.config['dataset_params']['num_frames']
-    final_tracks_fname = track_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
-    green_fname = project_cfg.config['preprocessed_green']
-    red_fname = project_cfg.config['preprocessed_red']
 
-    final_tracks: pd.DataFrame = pd.read_hdf(final_tracks_fname)
-
-    return final_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume
+    return max_dist, num_frames, params_start_volume
 
 
 def _unpack_configs_for_extraction(project_cfg, traces_cfg):
