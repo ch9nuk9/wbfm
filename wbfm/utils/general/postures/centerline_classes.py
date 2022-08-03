@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 from pathlib import Path
@@ -32,6 +33,8 @@ class WormFullVideoPosture:
     filename_y: str = None
     filename_beh_annotation: str = None
 
+    filename_table_position: str = None
+
     # This will be true for old manual annotations
     beh_annotation_already_converted_to_fluorescence_fps: bool = False
     beh_annotation_is_stable_style: bool = False
@@ -49,6 +52,15 @@ class WormFullVideoPosture:
             self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature)
             self.filename_x = resolve_mounted_path_in_current_os(self.filename_x)
             self.filename_y = resolve_mounted_path_in_current_os(self.filename_y)
+
+        if self.filename_table_position is None and self.filename_curvature is not None:
+            # Try to find in the parent folder
+            main_folder = Path(self.filename_curvature).parents[1]
+            fnames = [fn for fn in glob.glob(os.path.join(main_folder, '*TablePosRecord.txt'))]
+            if len(fnames) != 1:
+                logging.warning(f"Did not find stage position file in {main_folder}")
+            else:
+                self.filename_table_position = fnames[0]
 
     @cached_property
     def pca_projections(self):
@@ -69,6 +81,10 @@ class WormFullVideoPosture:
     @cached_property
     def curvature(self):
         return pd.read_csv(self.filename_curvature, header=None)
+
+    @cached_property
+    def stage_position(self):
+        return pd.read_csv(self.filename_table_position)
 
     @property
     def beh_annotation(self):
