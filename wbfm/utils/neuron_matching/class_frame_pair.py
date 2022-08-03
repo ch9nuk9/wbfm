@@ -189,9 +189,12 @@ class FramePair:
         return np.array(vec_field), pts0, pts1
 
     def check_both_frames_valid(self):
-        """For now, just check the number of neurons detected in the frames"""
+        """
+        For now, just check the number of neurons detected in the frames.
+        Note that if only one neuron is detected, it will lead to size errors
+        """
         is_valid = True
-        if self.num_possible_matches == 0 or np.isnan(self.num_possible_matches):
+        if self.num_possible_matches <= 1 or np.isnan(self.num_possible_matches):
             is_valid = False
         return is_valid
 
