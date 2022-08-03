@@ -525,10 +525,16 @@ class ProjectData:
         y = self._trace_plotter.calculate_traces(neuron_name)
         return self._trace_plotter.tspan, y
 
-    @property
-    def default_traces(self):
+    def calc_default_traces(self, min_nonnan=0.75):
         """
         Uses the currently recommended 'best' settings:
+        opt = dict(
+            channel_mode='linear_model',
+            calculation_mode='integration',
+            remove_outliers=True
+        )
+
+        Also drops neurons with too few nonnan points, in this case 75%
 
         """
         opt = dict(
@@ -537,12 +543,15 @@ class ProjectData:
             remove_outliers=True
         )
 
+        if isinstance(min_nonnan, float):
+            min_nonnan = int(min_nonnan * self.num_frames)
+
         neuron_names = get_names_from_df(self.green_traces)
         # Initialize the object
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
         trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
 
-        df = pd.DataFrame(trace_dict)
+        df = pd.DataFrame(trace_dict).dropna(axis=1, thresh=min_nonnan)
 
         return df
 
