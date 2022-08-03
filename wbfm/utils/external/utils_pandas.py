@@ -253,7 +253,7 @@ def fill_missing_indices_with_nan(df: pd.DataFrame, expected_max_t=None) -> Tupl
 
     current_max_t = df.shape[0] + num_added
     if expected_max_t is not None and current_max_t != expected_max_t:
-        end_indices = pd.Index(range(current_max_t + 1, expected_max_t))
+        end_indices = pd.Index(range(current_max_t, expected_max_t))
         df_nan_at_end = pd.DataFrame(index=end_indices, columns=df.columns)
         dfs_to_add.append(df_nan_at_end)
         num_added += df_nan_at_end.shape[0]
