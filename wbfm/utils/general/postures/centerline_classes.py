@@ -238,8 +238,18 @@ class WormFullVideoPosture:
         return speed_mm_per_s
 
     @property
+    def worm_speed_fluorescence_fps(self):
+        return self.worm_speed[self.subsample_indices]
+
+    @property
     def worm_speed_smoothed(self):
-        return pd.Series(self.worm_speed).rolling(window=100).mean()
+        window = 50
+        return pd.Series(self.worm_speed).rolling(window=window, center=True).mean()
+
+    @property
+    def worm_speed_smoothed_fluorescence_fps(self):
+        window = 5
+        return pd.Series(self.worm_speed_fluorescence_fps).rolling(window=window, center=True).mean()
 
     @property
     def subsample_indices(self):
