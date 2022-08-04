@@ -325,6 +325,12 @@ class SuperGlue(nn.Module):
         return scores
 
     def embed_descriptors_and_keypoints(self, data):
+        mdesc0, mdesc1, *rest = self.embed_descriptors_and_keypoints_debug(data)
+        return mdesc0, mdesc1
+
+    def embed_descriptors_and_keypoints_debug(self, data):
+        # Returns all intermediate results for debugging
+
         desc0, desc1 = data['descriptors0'], data['descriptors1']
         kpts0, kpts1 = data['keypoints0'].float(), data['keypoints1'].float()
         # Batch is 0
@@ -340,17 +346,17 @@ class SuperGlue(nn.Module):
             # Default: image + location information
             desc0 = desc0.float().transpose(1, 2)
             desc1 = desc1.float().transpose(1, 2)
-            desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
-            desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
+            kp_desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
+            kp_desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
         else:
             # Then only encode the spatial components
-            desc0 = self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
-            desc1 = self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
+            kp_desc0 = self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
+            kp_desc1 = self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
         # Multi-layer Transformer network.
-        desc0, desc1 = self.gnn(desc0, desc1)
+        gnn_desc0, gnn_desc1 = self.gnn(kp_desc0, kp_desc1)
         # Final MLP projection.
-        mdesc0, mdesc1 = self.final_proj(desc0), self.final_proj(desc1)
-        return mdesc0, mdesc1
+        mdesc0, mdesc1 = self.final_proj(gnn_desc0), self.final_proj(gnn_desc1)
+        return mdesc0, mdesc1, gnn_desc0, gnn_desc1, kp_desc0, kp_desc1, desc0, desc1
 
     def match_and_output_list(self, data):
         scores = self.calculate_match_scores(data)
