@@ -281,14 +281,19 @@ class WormTsneTracker:
         """
 
         all_start_volumes = self.all_start_volumes
-        if self.verbose >= 1:
-            print(f"Starting clustering of {len(all_start_volumes)} windows of length {self.n_volumes_per_window}")
 
         # Track a disjoint set of points for stitching, i.e. "global" tracking
+        if self.verbose >= 1:
+            print(f"Initial non-local clustering...")
+        # Increase settings for this
+        self.n_clusters_per_window *= 4
         with pd.option_context('mode.chained_assignment', None):
             df_global, _ = self.multicluster_single_window(vol_ind=self.global_vol_ind)
+        self.n_clusters_per_window = int(self.n_clusters_per_window / 4)
 
         # Track each window
+        if self.verbose >= 1:
+            print(f"Clustering {len(all_start_volumes)} windows of length {self.n_volumes_per_window}...")
         all_dfs = []
         for start_volume in tqdm(all_start_volumes):
             with pd.option_context('mode.chained_assignment', None):
