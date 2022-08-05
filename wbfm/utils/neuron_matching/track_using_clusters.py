@@ -82,6 +82,9 @@ class WormTsneTracker:
         if self.tracker_stride is None:
             self.tracker_stride = int(0.5 * self.n_volumes_per_window)
 
+        if self.verbose >= 1:
+            print("Successfully initialized!")
+
     @staticmethod
     def load_from_config(project_config, svd_components=50):
         project_data = ProjectData.load_final_project_data_from_config(project_config)
@@ -91,6 +94,7 @@ class WormTsneTracker:
         unpacker = SuperGlueUnpacker(project_data, 10)
         tracker_old = WormWithSuperGlueClassifier(superglue_unpacker=unpacker)
 
+        print("Embedding all neurons in feature space...")
         X = []
         linear_ind_to_local = []
         offset = 0
