@@ -57,11 +57,22 @@ class WormTsneTracker:
     X_svd: np.array
     linear_ind_to_local: list
 
+    opt_tsne: dict = None
+    opt_db: dict = None
+
     n_clusters_per_window: int = 10
     n_volumes_per_window: int = 100
     tracker_stride: int = 25
 
     verbose: int = 1
+
+    def __post_init__(self):
+        # TODO: parameter search of these options
+        self.opt_tsne = dict(n_components=2, perplexity=10, early_exaggeration=200, force_magnify_iters=500)
+        self.opt_db = dict(min_cluster_size=int(0.6*self.n_volumes_per_window),
+                           min_samples=int(0.1*self.n_volumes_per_window),
+                           max_cluster_size=int(1.1*self.n_volumes_per_window),
+                           cluster_selection_method='leaf')
 
     @property
     def num_frames(self):
@@ -123,8 +134,8 @@ class WormTsneTracker:
         n_vols = self.n_volumes_per_window
 
         # Options
-        opt_tsne = dict(n_components=2, perplexity=10, early_exaggeration=200, force_magnify_iters=500)
-        opt_db = dict(min_cluster_size=60, min_samples=10, max_cluster_size=110, cluster_selection_method='leaf')
+        opt_tsne = self.opt_tsne
+        opt_db = self.opt_db
 
         # Get this window of data
         vol_ind = np.arange(start_volume, start_volume + n_vols)
