@@ -241,7 +241,7 @@ def _split_tracklets_and_reinitialize_worm(_initialize_worm, df_global_tracks, d
     return df_tracklets, df_tracklets_split, worm_obj
 
 
-def track_using_clusters_using_config(project_config: ModularProjectConfig):
+def track_using_clusters_using_config(project_config: ModularProjectConfig, DEBUG=False):
     """
     Uses tsne + hdbscan clusters on neuron feature space as a tracker
 
