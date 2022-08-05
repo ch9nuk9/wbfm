@@ -22,7 +22,7 @@ def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
 
-    check_all_needed_data_for_step(cfg, 3)
+    check_all_needed_data_for_step(cfg, 2)
 
     if not DEBUG:
         using_monkeypatch()
