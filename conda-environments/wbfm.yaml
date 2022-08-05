@@ -31,6 +31,7 @@ dependencies:
   - lmfit
   - natsort
   - snakemake
+  - tsnecuda
   - pip:
     - tifffile
     - tables
@@ -55,3 +56,4 @@ dependencies:
     - torchvision==0.11.1
     - wandb
     - seaborn
+    - hdbscan
