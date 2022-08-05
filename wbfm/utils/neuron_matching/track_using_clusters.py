@@ -65,6 +65,8 @@ class WormTsneTracker:
     n_volumes_per_window: int = 120
     tracker_stride: int = None
 
+    global_vol_ind: np.array = None
+
     opt_tsne: dict = None
     opt_db: dict = None
     svd_components: int = 50
@@ -78,6 +80,8 @@ class WormTsneTracker:
                            min_samples=int(0.1*self.n_volumes_per_window),
                            max_cluster_size=int(1.1*self.n_volumes_per_window),
                            cluster_selection_method='leaf')
+
+        self.global_vol_ind = np.linspace(0, self.num_frames, self.n_volumes_per_window, dtype=int, endpoint=False)
 
         if self.tracker_stride is None:
             self.tracker_stride = int(0.5 * self.n_volumes_per_window)
@@ -124,10 +128,11 @@ class WormTsneTracker:
         all_start_volumes.append(self.num_frames - self.n_volumes_per_window - 1)
         return all_start_volumes
 
-    def cluster_obj2dataframe(self, db_svd, start_volume, vol_ind: list=None):
+    def cluster_obj2dataframe(self, db_svd, start_volume: int = None, vol_ind: list = None):
         # Associate cluster label ids to a (time, local ind) tuple
         # i.e. build a dict
-        # Note: the dict key should be a tuple of (neuron_name, 'raw_neuron_ind_in_list'), because we want it to be a multilevel dataframe
+        # Note: the dict key should be a tuple of (neuron_name, 'raw_neuron_ind_in_list'),
+        #   because we want it to be a multilevel dataframe
 
         linear_ind_to_local = self.linear_ind_to_local
         n_vols = self.n_volumes_per_window
@@ -148,10 +153,10 @@ class WormTsneTracker:
         else:
             def get_next_time(_i_current_time, _tmp):
                 return _i_current_time + 1, vol_ind[_i_current_time + 1]
-            i_current_time, current_time = get_next_time(i_current_time, None)
+            current_time = vol_ind[i_current_time]
 
             def get_empty_col():
-                tmp = np.empty(np.max(vol_ind))
+                tmp = np.empty(np.max(vol_ind) + 1)
                 tmp[:] = np.nan
                 return tmp
 
@@ -180,7 +185,10 @@ class WormTsneTracker:
                     # print(f"Multiple assignments found for {this_neuron_name} at t={current_time}")
 
             if len(current_global_ind) == 0:
-                i_current_time, current_time = get_next_time(i_current_time, current_time)
+                try:
+                    i_current_time, current_time = get_next_time(i_current_time, current_time)
+                except IndexError:
+                    break
                 # current_time += 1
                 current_global_ind = list(linear_ind_to_local[current_time].copy())
                 current_local_ind = 0
@@ -211,12 +219,13 @@ class WormTsneTracker:
 
         return db_svd, Y_tsne_svd
 
-    def multicluster_single_window(self, start_volume=0):
+    def multicluster_single_window(self, start_volume=0, vol_ind=None):
         """
         Cluster one window n times, and then combine for consistency
 
         Parameters
         ----------
+        vol_ind
         start_volume
 
         Returns
@@ -229,35 +238,36 @@ class WormTsneTracker:
         all_raw_dfs = []
         all_tsnes = []
         for _ in tqdm(range(num_clusters), leave=False):
-            db_svd, Y_tsne_svd = self.cluster_single_window(start_volume)
-            df = self.cluster_obj2dataframe(db_svd, start_volume)
+            db_svd, Y_tsne_svd = self.cluster_single_window(start_volume, vol_ind)
+            df = self.cluster_obj2dataframe(db_svd, start_volume, vol_ind)
             all_raw_dfs.append(df)
             all_tsnes.append(Y_tsne_svd)  # TODO: check kl divergence of tsne?
 
         # Choose a base dataframe and rename all to that one
         # For now, combine as we go so that the matching gets the benefit of any overlaps (but is slower)
         # TODO: for now just choosing the one with the most neurons
-        # i_most = np.argmax([df.shape[1] for df in all_raw_dfs])
-        # df_base = all_raw_dfs[i_most]
-        # all_dfs = [df_base]
-        # for i, df in enumerate(all_raw_dfs):
-        #     if i == i_most:
-        #         continue
-        #     df_renamed, *_ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
-        #     all_dfs.append(df_renamed)
-        df_previous = all_raw_dfs[0]
-        for df in all_raw_dfs[1:]:
-            df_renamed, *_ = rename_columns_using_matching(df_previous, df, try_to_fix_inf=True)
-            # df_next = combine_dataframes_using_mode([df_previous, df_renamed])
-            df_next = combine_dataframes_using_bipartite_matching([df_previous, df_renamed])
-            df_previous = df_next
-        df_combined = df_previous
+        i_most = np.argmax([df.shape[1] for df in all_raw_dfs])
+        df_base = all_raw_dfs[i_most]
+        all_dfs = [df_base]
+        for i, df in enumerate(all_raw_dfs):
+            if i == i_most:
+                continue
+            df_renamed, *_ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
+            all_dfs.append(df_renamed)
+        # df_previous = all_raw_dfs[0]
+        # for df in all_raw_dfs[1:]:
+        #     df_renamed, *_ = rename_columns_using_matching(df_previous, df, try_to_fix_inf=True)
+        #     # df_next = combine_dataframes_using_mode([df_previous, df_renamed])
+        #     df_next = combine_dataframes_using_bipartite_matching([df_previous, df_renamed])
+        #     df_previous = df_next
+        # df_combined = df_previous
 
         # Combine to one dataframe
-        # if len(all_dfs) > 1:
-        #     df_combined = combine_dataframes_using_mode(all_dfs)
-        # else:
-        #     df_combined = all_dfs[0]
+        if len(all_dfs) > 1:
+            # df_combined = combine_dataframes_using_mode(all_dfs)
+            df_combined = combine_dataframes_using_bipartite_matching(all_dfs)
+        else:
+            df_combined = all_dfs[0]
 
         return df_combined, all_raw_dfs
 
@@ -274,6 +284,10 @@ class WormTsneTracker:
         if self.verbose >= 1:
             print(f"Starting clustering of {len(all_start_volumes)} windows of length {self.n_volumes_per_window}")
 
+        # Track a disjoint set of points for stitching, i.e. "global" tracking
+        with pd.option_context('mode.chained_assignment', None):
+            df_global, _ = self.multicluster_single_window(vol_ind=self.global_vol_ind)
+
         # Track each window
         all_dfs = []
         for start_volume in tqdm(all_start_volumes):
@@ -282,19 +296,19 @@ class WormTsneTracker:
                 df_window, _ = self.multicluster_single_window(start_volume)
             all_dfs.append(df_window)
 
-        # Make them all the right shape, then iteratively rename them
+        # Make them all the right shape, then iteratively rename them to the "global" dataframe
         if self.verbose >= 1:
             print(f"Combining all dataframes to common namespace")
         all_dfs = [fill_missing_indices_with_nan(df, expected_max_t=self.num_frames)[0] for df in all_dfs]
-        df_base = all_dfs[0]
-        all_dfs_renamed = [df_base]
+        df_global = fill_missing_indices_with_nan(df_global, expected_max_t=self.num_frames)[0]
+        all_dfs_renamed = [df_global]
         for df in tqdm(all_dfs[1:]):
-            df_renamed, *_ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
+            df_renamed, *_ = rename_columns_using_matching(df_global, df, try_to_fix_inf=True)
             all_dfs_renamed.append(df_renamed)
 
         # Finally, combine
         df_combined = combine_dataframes_using_mode(all_dfs_renamed)
 
-        # Reweight confidence
+        # Reweight confidence?
 
         return df_combined, all_dfs
