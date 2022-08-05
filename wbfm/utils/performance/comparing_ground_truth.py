@@ -210,6 +210,12 @@ def calculate_accuracy_from_dataframes(df_gt: pd.DataFrame, df2_filter: pd.DataF
     num_t = df_gt.shape[0]
     all_acc_dict = defaultdict(list)
     for name in tqdm(tracked_names, leave=False):
+        if name not in all_dist_dict:
+            all_acc_dict['matches'].append(np.nan)
+            all_acc_dict['matches_to_gt_nonnan'].append(np.nan)
+            all_acc_dict['mismatches'].append(np.nan)
+            all_acc_dict['nan_in_fdnc'].append(np.nan)
+            continue
         matches, mismatches, nan = calc_accuracy(all_dist_dict[name])
         num_total1, num_total2 = all_total1[name], all_total2[name]
         all_acc_dict['matches'].append(matches / num_t)
@@ -224,10 +230,12 @@ def calculate_distance_pair_of_dataframes(df_gt, df2_filter, column_names):
     # Calculate distance between neuron positions in two dataframes with the SAME COLUMN NAMES
 
     tracked_names = get_names_from_df(df_gt)
-    all_dist_dict = {}
-    all_total1 = {}
-    all_total2 = {}
+    all_dist_dict = defaultdict(int)
+    all_total1 = defaultdict(int)
+    all_total2 = defaultdict(int)
     for name in tqdm(tracked_names, leave=False):
+        if name not in df2_filter:
+            continue
         this_df_gt, this_df2 = df_gt[name][column_names].copy(), df2_filter[name][column_names].copy()
         all_dist_dict[name], all_total1[name], all_total2[name], _ = calc_all_dist(this_df_gt, this_df2)
     return all_dist_dict, all_total1, all_total2
