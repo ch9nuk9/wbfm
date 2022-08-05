@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from sklearn.decomposition import TruncatedSVD
 from tqdm.auto import tqdm
 from tsnecuda import TSNE
 from hdbscan import HDBSCAN
@@ -13,6 +14,9 @@ from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_us
 
 import matplotlib
 
+from wbfm.utils.nn_utils.superglue import SuperGlueUnpacker
+from wbfm.utils.nn_utils.worm_with_classifier import WormWithSuperGlueClassifier
+from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 
 
@@ -57,12 +61,13 @@ class WormTsneTracker:
     X_svd: np.array
     linear_ind_to_local: list
 
-    opt_tsne: dict = None
-    opt_db: dict = None
-
     n_clusters_per_window: int = 5
     n_volumes_per_window: int = 120
     tracker_stride: int = None
+
+    opt_tsne: dict = None
+    opt_db: dict = None
+    svd_components: int = 50
 
     verbose: int = 1
 
@@ -74,7 +79,36 @@ class WormTsneTracker:
                            max_cluster_size=int(1.1*self.n_volumes_per_window),
                            cluster_selection_method='leaf')
 
-        self.tracker_stride = int(0.5 * self.n_volumes_per_window)
+        if self.tracker_stride is None:
+            self.tracker_stride = int(0.5 * self.n_volumes_per_window)
+
+    @staticmethod
+    def load_from_config(project_config, svd_components=50):
+        project_data = ProjectData.load_final_project_data_from_config(project_config)
+
+        # Use old tracker just as a feature-space embedder
+        frames_old = project_data.raw_frames
+        unpacker = SuperGlueUnpacker(project_data, 10)
+        tracker_old = WormWithSuperGlueClassifier(superglue_unpacker=unpacker)
+
+        X = []
+        linear_ind_to_local = []
+        offset = 0
+        for i in tqdm(range(project_data.num_frames)):
+            this_frame = frames_old[i]
+            this_frame_embedding = tracker_old.embed_target_frame(this_frame)
+            this_x = this_frame_embedding.squeeze().cpu().numpy().T
+            X.append(this_x)
+
+            linear_ind_to_local.append(offset + np.arange(this_x.shape[0]))
+            offset += this_x.shape[0]
+
+        X = np.vstack(X).astype(float)
+        alg = TruncatedSVD(n_components=svd_components)
+        X_svd = alg.fit_transform(X)
+
+        obj = WormTsneTracker(X_svd, linear_ind_to_local, svd_components=svd_components)
+        return obj
 
     @property
     def num_frames(self):
@@ -116,6 +150,7 @@ class WormTsneTracker:
                     cluster_dict[key] = tmp
 
                 if np.isnan(cluster_dict[key][current_time]):
+                    # This is a numpy array
                     cluster_dict[key][current_time] = current_local_ind
                 else:
                     # TODO: For now, just ignore the second assignment
@@ -210,7 +245,9 @@ class WormTsneTracker:
         # Track each window
         all_dfs = []
         for start_volume in tqdm(all_start_volumes):
-            df_window, _ = self.multicluster_single_window(start_volume)
+            with pd.option_context('mode.chained_assignment', None):
+                # Fix incorrect warning
+                df_window, _ = self.multicluster_single_window(start_volume)
             all_dfs.append(df_window)
 
         # Make them all the right shape, then iteratively rename them
