@@ -1,6 +1,7 @@
 import logging
 from typing import Tuple
 
+import numba
 import numpy as np
 import scipy.special
 from scipy.optimize import linear_sum_assignment
@@ -93,10 +94,12 @@ def calc_bipartite_from_positions(xyz0: np.ndarray, xyz1: np.ndarray,
 
     """
     # ENHANCE: use sparse distance matrix: https://stackoverflow.com/questions/52366421/how-to-do-n-d-distance-and-nearest-neighbor-calculations-on-numpy-arrays
-    cost_matrix = cdist(np.array(xyz0), np.array(xyz1), 'euclidean')
     if max_dist is None:
         max_dist = 1e6
-    if try_to_fix_inf:
+
+    if not try_to_fix_inf:
+        cost_matrix = cdist(np.array(xyz0), np.array(xyz1), 'euclidean')
+    else:
         # Scipy can't deal with np.inf, so we want to maximize, not minimize
         # (And set impossible values to 0.0)
         # inv_cost_matrix = gamma / (cost_matrix + 1e-6)
@@ -109,7 +112,10 @@ def calc_bipartite_from_positions(xyz0: np.ndarray, xyz1: np.ndarray,
         #     raise ValueError
 
         # Slower, so don't use by default
-        cost_matrix = cdist(np.array(xyz0), np.array(xyz1), lambda u, v: np.sqrt(np.nansum((u - v) ** 2)))
+        @numba.jit(nopython=True)
+        def nandist(u, v):
+            return np.sqrt(np.nansum((u - v) ** 2))
+        cost_matrix = cdist(np.array(xyz0), np.array(xyz1), nandist)
 
     try:
         matches = linear_sum_assignment(cost_matrix)
