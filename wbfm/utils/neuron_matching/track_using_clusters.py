@@ -6,6 +6,8 @@ from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 from tsnecuda import TSNE
 from hdbscan import HDBSCAN
+
+from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
     combine_dataframes_using_mode
 
@@ -57,6 +59,17 @@ class WormTsneTracker:
 
     n_clusters_per_window: int = 10
     n_volumes_per_window: int = 100
+    tracker_stride: int = 25
+
+    verbose: int = 1
+
+    @property
+    def num_frames(self):
+        return len(self.linear_ind_to_local)
+
+    @property
+    def all_start_volumes(self):
+        return np.arange(0, self.num_frames - self.n_volumes_per_window, step=self.tracker_stride)
 
     def cluster_obj2dataframe(self, db_svd, start_volume):
         # Associate cluster label ids to a (time, local ind) tuple
@@ -72,7 +85,7 @@ class WormTsneTracker:
         current_global_ind = list(linear_ind_to_local[current_time].copy())
         current_local_ind = 0
 
-        for i, label in enumerate(tqdm(db_svd.labels_)):
+        for i, label in enumerate(db_svd.labels_):
             global_ind = current_global_ind.pop(0)
 
             if label == -1:
@@ -139,21 +152,65 @@ class WormTsneTracker:
         num_clusters = self.n_clusters_per_window
 
         # Get all iterations
-        df_base = None
-        all_dfs = []
+        all_raw_dfs = []
         all_tsnes = []
         for _ in tqdm(range(num_clusters), leave=False):
             db_svd, Y_tsne_svd = self.cluster_single_window(start_volume)
             df = self.cluster_obj2dataframe(db_svd, start_volume)
-
-            if df_base is None:
-                df_base = df
-            else:
-                df = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
-
-            all_dfs.append(df)
+            all_raw_dfs.append(df)
             all_tsnes.append(Y_tsne_svd)  # TODO: check kl divergence of tsne?
 
+        # Choose a base dataframe and rename all to that one
+        # TODO: for now just choosing the one with the most neurons
+        i_most = np.argmax([df.shape[1] for df in all_raw_dfs])
+        df_base = all_raw_dfs[i_most]
+        all_dfs = [df_base]
+        for i, df in enumerate(all_raw_dfs):
+            if i == i_most:
+                continue
+            df_renamed, *_ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
+            all_dfs.append(df_renamed)
+
         # Combine to one dataframe
-        df_combined = combine_dataframes_using_mode(all_dfs)
-        return df_combined
+        if len(all_dfs) > 1:
+            df_combined = combine_dataframes_using_mode(all_dfs)
+        else:
+            df_combined = all_dfs[0]
+
+        return df_combined, all_raw_dfs
+
+    def track_using_overlapping_windows(self):
+        """
+        Clusters one window, then moves by self.tracker_stride, clusters again, and combines in sequence
+
+        Returns
+        -------
+
+        """
+
+        all_start_volumes = self.all_start_volumes
+        if self.verbose >= 1:
+            print(f"Starting clustering of {len(all_start_volumes)} windows of length {self.n_volumes_per_window}")
+
+        # Track each window
+        all_dfs = []
+        for start_volume in tqdm(all_start_volumes):
+            df_window, _ = self.multicluster_single_window(start_volume)
+            all_dfs.append(df_window)
+
+        # Make them all the right shape, then iteratively rename them
+        if self.verbose >= 1:
+            print(f"Combining all dataframes to common namespace")
+        all_dfs = [fill_missing_indices_with_nan(df, expected_max_t=self.num_frames)[0] for df in all_dfs]
+        df_base = all_dfs[0]
+        all_dfs_renamed = [df_base]
+        for df in tqdm(all_dfs[1:]):
+            df_renamed, *_ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
+            all_dfs_renamed.append(df_renamed)
+
+        # Finally, combine
+        df_combined = combine_dataframes_using_mode(all_dfs_renamed)
+
+        # Reweight confidence
+
+        return df_combined, all_dfs
