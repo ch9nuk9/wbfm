@@ -60,9 +60,9 @@ class WormTsneTracker:
     opt_tsne: dict = None
     opt_db: dict = None
 
-    n_clusters_per_window: int = 10
-    n_volumes_per_window: int = 100
-    tracker_stride: int = 25
+    n_clusters_per_window: int = 5
+    n_volumes_per_window: int = 120
+    tracker_stride: int = None
 
     verbose: int = 1
 
@@ -74,13 +74,17 @@ class WormTsneTracker:
                            max_cluster_size=int(1.1*self.n_volumes_per_window),
                            cluster_selection_method='leaf')
 
+        self.tracker_stride = int(0.5 * self.n_volumes_per_window)
+
     @property
     def num_frames(self):
         return len(self.linear_ind_to_local)
 
     @property
     def all_start_volumes(self):
-        return np.arange(0, self.num_frames - self.n_volumes_per_window, step=self.tracker_stride)
+        all_start_volumes = list(np.arange(0, self.num_frames - self.n_volumes_per_window, step=self.tracker_stride))
+        all_start_volumes.append(self.num_frames - self.n_volumes_per_window - 1)
+        return all_start_volumes
 
     def cluster_obj2dataframe(self, db_svd, start_volume):
         # Associate cluster label ids to a (time, local ind) tuple
