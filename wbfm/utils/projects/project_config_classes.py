@@ -294,7 +294,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         for content in main_data_folder.iterdir():
             if content.is_dir():
                 # UK spelling
-                if 'behaviour' in content.name:
+                if 'behaviour' in content.name or 'BH' in content.name:
                     behavior_subfolder = main_data_folder.joinpath(content)
                     flag = True
                     break

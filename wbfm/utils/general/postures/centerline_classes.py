@@ -12,9 +12,11 @@ from skimage import transform
 from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
+from tqdm.auto import tqdm
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 @dataclass
@@ -264,7 +266,9 @@ filename_x:                 {self.filename_x is not None}\n\
 filename_y:                 {self.filename_y is not None}\n\
 filename_curvature:         {self.filename_curvature is not None}\n\
 ============Annotations================\n\
-filename_beh_annotation:    {self.filename_beh_annotation is not None}\n"
+filename_beh_annotation:    {self.filename_beh_annotation is not None}\n\
+============Stage Position================\n\
+filename_table_position:    {self.filename_table_position is not None}\n"
 
 
 def get_behavior_fluorescence_fps_conversion(project_config):
@@ -286,7 +290,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     try:
         behavior_cfg = cfg.get_behavior_config()
         behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
-        if not Path(behavior_fname).is_absolute():
+        if behavior_fname is not None and not Path(behavior_fname).is_absolute():
             # Assume it is in this project's behavior folder
             behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname, prepend_subfolder=True)
             if str(behavior_fname).endswith('.xlsx'):
@@ -525,3 +529,31 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
             ax.axvspan(block_start, block_end, alpha=0.9, color=color)
 
         block_start = block_end + 1
+
+
+def calc_pairwise_corr_of_dataframes(df_traces, df_speed):
+    """
+    Columns are data, rows are time
+
+    Do not need to be the same length. Can contain nans
+
+    Parameters
+    ----------
+    df_traces
+    df_speed
+
+    Returns
+    -------
+
+    """
+    neuron_names = get_names_from_df(df_traces)
+    corr = {name: df_speed.corrwith(df_traces[name]) for name in neuron_names}
+    return pd.DataFrame(corr)
+
+
+def _smooth(dat, window):
+    return pd.Series(dat).rolling(window, center=True).mean().to_numpy()
+
+
+def smooth_mat(dat, window_vec):
+    return pd.DataFrame(np.vstack([_smooth(dat, window) for window in window_vec]).T)
