@@ -105,6 +105,7 @@ class NapariPropertyHeatMapper:
 
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
+    curvature_fluorescence_fps: pd.DataFrame = pd.DataFrame([np.nan])
 
     @property
     def names(self):
@@ -133,6 +134,21 @@ class NapariPropertyHeatMapper:
         tmp2 = self.green_traces.loc[:, (slice(None), 'area')]
         tmp2.columns = self.names
         return tmp1 / tmp2
+
+
+    def corrcoef_kymo(self):
+        if self.curvature_fluorescence_fps.isnull().values.all():
+            return [np.nan]
+
+        if not self.curvature_fluorescence_fps.isnull().values.all():
+            corrcoefs = []
+            for neuron in self.names:
+                vector = np.abs(np.corrcoef(self.curvature_fluorescence_fps.assign(
+                    neuron_to_test=self.red_traces[neuron]["intensity_image"]).dropna(axis="rows").T)[100, :99])
+                c = np.max(vector)
+                corrcoefs.append(c)
+            val_to_plot = corrcoefs
+            return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
     def count_nonnan(self) -> Dict[int, float]:
         num_nonnan = self.df_labels.count()
