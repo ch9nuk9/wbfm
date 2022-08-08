@@ -144,10 +144,22 @@ class WormWithSuperGlueClassifier:
                                                                                                     use_gt_matches=False)
             if is_valid_frame:
                 data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
-                mdesc0, _ = self.model.superglue.embed_descriptors_and_keypoints(data)
+                _, mdesc = self.model.superglue.embed_descriptors_and_keypoints(data)
             else:
-                mdesc0 = None
-        return mdesc0
+                mdesc = None
+        return mdesc
+
+    def embed_target_frame_debug(self, target_frame: ReferenceFrame):
+        """For debugging: no matching, just returns the features"""
+        with torch.no_grad():
+            data, is_valid_frame = self.superglue_unpacker.convert_single_frame_to_superglue_format(target_frame,
+                                                                                                    use_gt_matches=False)
+            if is_valid_frame:
+                data = self.superglue_unpacker.expand_all_data(data, device=self.model.device)
+                out = self.model.superglue.embed_descriptors_and_keypoints_debug(data)
+            else:
+                out = None
+        return out
 
     def match_two_time_points(self, t0: int, t1: int):
         with torch.no_grad():

@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 from pathlib import Path
@@ -11,8 +12,11 @@ from skimage import transform
 from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
+from tqdm.auto import tqdm
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 @dataclass
@@ -31,6 +35,8 @@ class WormFullVideoPosture:
     filename_y: str = None
     filename_beh_annotation: str = None
 
+    filename_table_position: str = None
+
     # This will be true for old manual annotations
     beh_annotation_already_converted_to_fluorescence_fps: bool = False
     beh_annotation_is_stable_style: bool = False
@@ -39,7 +45,24 @@ class WormFullVideoPosture:
     pca_i_start: int = 10
     pca_i_end: int = -10
 
-    fps: int = 32  # TODO: make sure this is synchronized with z_slices
+    frames_per_volume: int = 32  # TODO: make sure this is synchronized with z_slices
+
+    def __post_init__(self):
+        self.fix_temporary_annotation_format()
+
+        if self.filename_curvature is not None:
+            self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature)
+            self.filename_x = resolve_mounted_path_in_current_os(self.filename_x)
+            self.filename_y = resolve_mounted_path_in_current_os(self.filename_y)
+
+        if self.filename_table_position is None and self.filename_curvature is not None:
+            # Try to find in the parent folder
+            main_folder = Path(self.filename_curvature).parents[1]
+            fnames = [fn for fn in glob.glob(os.path.join(main_folder, '*TablePosRecord.txt'))]
+            if len(fnames) != 1:
+                logging.warning(f"Did not find stage position file in {main_folder}")
+            else:
+                self.filename_table_position = fnames[0]
 
     @cached_property
     def pca_projections(self):
@@ -61,15 +84,18 @@ class WormFullVideoPosture:
     def curvature(self):
         return pd.read_csv(self.filename_curvature, header=None)
 
+    @cached_property
+    def stage_position(self):
+        df = pd.read_csv(self.filename_table_position, index_col='time')
+        df.index = pd.DatetimeIndex(df.index)
+        return df
+
     @property
     def beh_annotation(self):
         """Name is shortened to avoid US-UK spelling confusion"""
         if self._beh_annotation is None:
             self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         return self._beh_annotation
-
-    def __post_init__(self):
-        self.fix_temporary_annotation_format()
 
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
@@ -79,8 +105,8 @@ class WormFullVideoPosture:
         plt.colorbar()
 
     def get_centerline_for_time(self, t):
-        c_x = self.centerlineX.iloc[t * self.fps]
-        c_y = self.centerlineY.iloc[t * self.fps]
+        c_x = self.centerlineX.iloc[t * self.frames_per_volume]
+        c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
     @staticmethod
@@ -89,8 +115,8 @@ class WormFullVideoPosture:
         # The exact files may not be in the config, so try to find them
 
         # Before anything, load metadata
-        fps = get_behavior_fluorescence_fps_conversion(project_config)
-        opt = dict(fps=fps)
+        frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
+        opt = dict(frames_per_volume=frames_per_volume)
 
         # First, get the folder that contains all behavior information
         # Try 1: read from config file
@@ -199,9 +225,38 @@ class WormFullVideoPosture:
         return self.curvature.iloc[self.subsample_indices, :]
 
     @property
+    def stage_position_fluorescence_fps(self):
+        return self.stage_position.iloc[self.subsample_indices, :]
+
+    @cached_property
+    def worm_speed(self):
+        df = self.stage_position
+        speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
+
+        tdelta = df.index[1] - df.index[0]  # units = nanoseconds
+        tdelta_s = tdelta.delta / 1e9
+        speed_mm_per_s = speed / tdelta_s
+
+        return speed_mm_per_s
+
+    @property
+    def worm_speed_fluorescence_fps(self):
+        return self.worm_speed[self.subsample_indices]
+
+    @property
+    def worm_speed_smoothed(self):
+        window = 50
+        return pd.Series(self.worm_speed).rolling(window=window, center=True).mean()
+
+    @property
+    def worm_speed_smoothed_fluorescence_fps(self):
+        window = 5
+        return pd.Series(self.worm_speed_fluorescence_fps).rolling(window=window, center=True).mean()
+
+    @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
-        return range(0, len(self.curvature), self.fps)
+        return range(0, len(self.curvature), self.frames_per_volume)
 
     def __repr__(self):
         return f"=======================================\n\
@@ -211,7 +266,9 @@ filename_x:                 {self.filename_x is not None}\n\
 filename_y:                 {self.filename_y is not None}\n\
 filename_curvature:         {self.filename_curvature is not None}\n\
 ============Annotations================\n\
-filename_beh_annotation:    {self.filename_beh_annotation is not None}\n"
+filename_beh_annotation:    {self.filename_beh_annotation is not None}\n\
+============Stage Position================\n\
+filename_table_position:    {self.filename_table_position is not None}\n"
 
 
 def get_behavior_fluorescence_fps_conversion(project_config):
@@ -233,7 +290,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     try:
         behavior_cfg = cfg.get_behavior_config()
         behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
-        if not Path(behavior_fname).is_absolute():
+        if behavior_fname is not None and not Path(behavior_fname).is_absolute():
             # Assume it is in this project's behavior folder
             behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname, prepend_subfolder=True)
             if str(behavior_fname).endswith('.xlsx'):
@@ -472,3 +529,56 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
             ax.axvspan(block_start, block_end, alpha=0.9, color=color)
 
         block_start = block_end + 1
+
+
+def calc_pairwise_corr_of_dataframes(df_traces, df_speed):
+    """
+    Columns are data, rows are time
+
+    Do not need to be the same length. Can contain nans
+
+    Parameters
+    ----------
+    df_traces
+    df_speed
+
+    Returns
+    -------
+
+    """
+    neuron_names = get_names_from_df(df_traces)
+    corr = {name: df_speed.corrwith(df_traces[name]) for name in neuron_names}
+    return pd.DataFrame(corr)
+
+
+def _smooth(dat, window):
+    return pd.Series(dat).rolling(window, center=True).mean().to_numpy()
+
+
+def smooth_mat(dat, window_vec):
+    return pd.DataFrame(np.vstack([_smooth(dat, window) for window in window_vec]).T)
+
+
+def plot_highest_correlations(df_traces, df_speed):
+    df_corr = calc_pairwise_corr_of_dataframes(df_traces, df_speed)
+
+    def _plot(max_vals, max_names):
+        for max_val, (i, max_name) in zip(max_vals, max_names.iteritems()):
+            plt.figure()
+            # plt.plot(df_speed[i] / np.max(df_speed[i]), label='Normalized speed')
+            plt.plot(df_speed[i], label='Speed')
+            plt.plot(df_traces[max_name] / np.max(df_traces[max_name]), label='Normalized trace')
+            plt.title(f"Corr = {max_val} for {max_name}")
+            plt.ylabel("Speed (mm/s) or amplitude")
+            plt.xlabel("Frames")
+            plt.legend()
+
+    # Positive then negative correlation
+    max_names = df_corr.idxmax(axis=1)
+    max_vals = df_corr.max(axis=1)
+    _plot(max_vals, max_names)
+
+    min_names = df_corr.idxmin(axis=1)
+    min_vals = df_corr.min(axis=1)
+    _plot(min_vals, min_names)
+

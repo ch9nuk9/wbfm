@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.general.postprocessing.position_postprocessing import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
@@ -26,6 +27,7 @@ from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
     get_column_name_from_time_and_column_value
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
 from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
@@ -524,6 +526,44 @@ class ProjectData:
         y = self._trace_plotter.calculate_traces(neuron_name)
         return self._trace_plotter.tspan, y
 
+    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False):
+        """
+        Uses the currently recommended 'best' settings:
+        opt = dict(
+            channel_mode='linear_model',
+            calculation_mode='integration',
+            remove_outliers=True
+        )
+
+        Also drops neurons with too few nonnan points, in this case 75%
+
+        if interpolate_nan is True, then additionally (after dropping empty neurons and removing outliers):
+            1. Filter
+            2. PPCA to fill in all gaps
+
+        """
+        opt = dict(
+            channel_mode='linear_model',
+            calculation_mode='integration',
+            remove_outliers=True
+        )
+
+        if isinstance(min_nonnan, float):
+            min_nonnan = int(min_nonnan * self.num_frames)
+
+        neuron_names = get_names_from_df(self.green_traces)
+        # Initialize the object
+        _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
+        trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
+
+        df = pd.DataFrame(trace_dict).dropna(axis=1, thresh=min_nonnan)
+
+        if interpolate_nan:
+            df_filtered = df.rolling(window=3, center=True, min_periods=1).mean()  # Removes size-1 holes
+            df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
+
+        return df
+
     def plot_neuron_with_kymograph(self, neuron_name):
         t, y = self.calculate_traces(channel_mode='ratio', calculation_mode='integration',
                                      neuron_name=neuron_name)
@@ -881,6 +921,10 @@ class ProjectData:
             self.logger.warning("Did not find expected column name ('Neuron ID') for the neuron ids... "
                                 "check the formatting of the manual annotation file")
         return neurons_finished_mask
+
+    @property
+    def shortened_name(self):
+        return str(Path(self.project_dir).name)
 
     def __repr__(self):
         return f"=======================================\n\

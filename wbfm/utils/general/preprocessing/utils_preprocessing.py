@@ -160,8 +160,9 @@ class PreprocessingSettings:
 
         for subfolder in folder_for_background.iterdir():
 
-            subfolder_is_ch0 = ('background_Ch0' in subfolder.name) or ('background-channel-0' in subfolder.name)
-            subfolder_is_ch1 = ('background_Ch1' in subfolder.name) or ('background-channel-1' in subfolder.name)
+            n = subfolder.name
+            subfolder_is_ch0 = ('background' in n and '_Ch0' in n) or ('background-channel-0' in n)
+            subfolder_is_ch1 = ('background' in n and '_Ch1' in n) or ('background-channel-1' in n)
 
             if subfolder.is_dir() and subfolder_is_ch0:
                 # Red channel
@@ -183,6 +184,8 @@ class PreprocessingSettings:
                     raise FileNotFoundError(f"Could not find green background file within {folder_for_background}")
 
         # Also update the preprocessing file on disk
+        if not self.background_fname_red or not self.background_fname_green:
+            raise FileNotFoundError(f"{self.background_fname_red} and {self.background_fname_green}")
         self.cfg_preprocessing.config['background_fname_red'] = self.background_fname_red
         self.cfg_preprocessing.config['background_fname_green'] = self.background_fname_green
         self.cfg_preprocessing.update_self_on_disk()

@@ -314,14 +314,29 @@ class SuperGlue(nn.Module):
         return indices0, indices1, mscores0, mscores1
 
     def calculate_match_scores(self, data):
+        mdesc0, mdesc1 = self.embed_descriptors_and_keypoints(data)
+        # Compute matching descriptor distance.
+        scores = torch.einsum('bdn,bdm->bnm', mdesc0, mdesc1)
+        scores = scores / self.config['descriptor_dim'] ** .5
+        # Run the optimal transport.
+        scores = log_optimal_transport(
+            scores, self.bin_score,
+            iters=self.config['sinkhorn_iterations'])
+        return scores
+
+    def embed_descriptors_and_keypoints(self, data):
+        mdesc0, mdesc1, *rest = self.embed_descriptors_and_keypoints_debug(data)
+        return mdesc0, mdesc1
+
+    def embed_descriptors_and_keypoints_debug(self, data):
+        # Returns all intermediate results for debugging
+
         desc0, desc1 = data['descriptors0'], data['descriptors1']
         kpts0, kpts1 = data['keypoints0'].float(), data['keypoints1'].float()
-
         # Batch is 0
         batch_sz = data['scores0'].shape[0]
         kpts0 = torch.reshape(kpts0, (batch_sz, 1, -1, 3))  # NEW: 3d
         kpts1 = torch.reshape(kpts1, (batch_sz, 1, -1, 3))
-
         if self.to_normalize_keypoints:
             # Keypoint normalization.
             kpts0 = normalize_keypoints_3d(kpts0, data['image0_sz'][0])
@@ -331,25 +346,17 @@ class SuperGlue(nn.Module):
             # Default: image + location information
             desc0 = desc0.float().transpose(1, 2)
             desc1 = desc1.float().transpose(1, 2)
-            desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
-            desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
+            kp_desc0 = desc0 + self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
+            kp_desc1 = desc1 + self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
         else:
             # Then only encode the spatial components
-            desc0 = self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
-            desc1 = self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
-
+            kp_desc0 = self.kenc(kpts0, torch.transpose(data['scores0'], 1, 2))
+            kp_desc1 = self.kenc(kpts1, torch.transpose(data['scores1'], 1, 2))
         # Multi-layer Transformer network.
-        desc0, desc1 = self.gnn(desc0, desc1)
+        gnn_desc0, gnn_desc1 = self.gnn(kp_desc0, kp_desc1)
         # Final MLP projection.
-        mdesc0, mdesc1 = self.final_proj(desc0), self.final_proj(desc1)
-        # Compute matching descriptor distance.
-        scores = torch.einsum('bdn,bdm->bnm', mdesc0, mdesc1)
-        scores = scores / self.config['descriptor_dim'] ** .5
-        # Run the optimal transport.
-        scores = log_optimal_transport(
-            scores, self.bin_score,
-            iters=self.config['sinkhorn_iterations'])
-        return scores
+        mdesc0, mdesc1 = self.final_proj(gnn_desc0), self.final_proj(gnn_desc1)
+        return mdesc0, mdesc1, gnn_desc0, gnn_desc1, kp_desc0, kp_desc1, desc0, desc1
 
     def match_and_output_list(self, data):
         scores = self.calculate_match_scores(data)
@@ -580,6 +587,18 @@ class SuperGlueUnpacker:
         return all_matches
 
     def convert_single_frame_to_superglue_format(self, f1: ReferenceFrame, use_gt_matches=False):
+        """
+        Converts a single target frame AND the template frame into a superglue pair
+
+        Parameters
+        ----------
+        f1
+        use_gt_matches
+
+        Returns
+        -------
+
+        """
         is_valid_frame = f1.num_neurons > 1
         if is_valid_frame:
             data = self.data_template.copy()

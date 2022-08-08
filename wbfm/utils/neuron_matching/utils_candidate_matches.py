@@ -258,7 +258,7 @@ def combine_dataframes_using_mode(all_dfs, column='raw_neuron_ind_in_list'):
 
     new_df = all_dfs[0].copy()
 
-    for neuron_name in tqdm(names):
+    for neuron_name in tqdm(names, leave=False):
 
         dfs_containing_this_neuron = [df for df in all_dfs if neuron_name in df]
         df_tmp_names = [f'df_{i}' for i in range(len(dfs_containing_this_neuron))]

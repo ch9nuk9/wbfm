@@ -1,0 +1,319 @@
+from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+from sklearn.decomposition import TruncatedSVD
+from tqdm.auto import tqdm
+from tsnecuda import TSNE
+from hdbscan import HDBSCAN
+
+from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
+from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
+    combine_dataframes_using_mode, combine_dataframes_using_bipartite_matching
+
+import matplotlib
+
+from wbfm.utils.nn_utils.superglue import SuperGlueUnpacker
+from wbfm.utils.nn_utils.worm_with_classifier import WormWithSuperGlueClassifier
+from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_neuron_names import int2name_neuron
+
+
+def plot_clusters(db, Y, class_labels=True):
+    plt.figure(figsize=(15, 15))
+
+    labels = db.labels_
+    # core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+    # core_samples_mask[db.core_sample_indices_] = True
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    n_noise_ = list(labels).count(-1)
+
+    # Black removed and is used for noise instead.
+    unique_labels = set(labels)
+    # colors = [plt.cm.Set1(each) for each in np.linspace(0, 1, len(unique_labels))]
+    colors = matplotlib.colors.ListedColormap(np.random.rand(256, 3)).colors
+    for k, col in zip(unique_labels, colors):
+        if k == -1:
+            # Black used for noise.
+            col = [0, 0, 0, 1]
+
+        class_member_mask = labels == k
+        xy = Y[class_member_mask]
+        plt.plot(
+            xy[:, 0],
+            xy[:, 1],
+            "o",
+            markerfacecolor=tuple(col),
+            markeredgecolor="k",
+            markersize=14,
+        )
+
+        if class_labels:
+            plt.annotate(f'{k}', np.mean(xy, axis=0), fontsize=24)
+
+    plt.title("Estimated number of clusters: %d" % n_clusters_)
+    plt.show()
+
+
+@dataclass
+class WormTsneTracker:
+    X_svd: np.array
+    linear_ind_to_local: list
+
+    n_clusters_per_window: int = 5
+    n_volumes_per_window: int = 120
+    tracker_stride: int = None
+
+    global_vol_ind: np.array = None
+
+    opt_tsne: dict = None
+    opt_db: dict = None
+    svd_components: int = 50
+
+    verbose: int = 1
+
+    def __post_init__(self):
+        # TODO: parameter search of these options
+        self.opt_tsne = dict(n_components=2, perplexity=10, early_exaggeration=200, force_magnify_iters=500)
+        self.opt_db = dict(min_cluster_size=int(0.6*self.n_volumes_per_window),
+                           min_samples=int(0.1*self.n_volumes_per_window),
+                           max_cluster_size=int(1.1*self.n_volumes_per_window),
+                           cluster_selection_method='leaf')
+
+        self.global_vol_ind = np.linspace(0, self.num_frames, self.n_volumes_per_window, dtype=int, endpoint=False)
+
+        if self.tracker_stride is None:
+            self.tracker_stride = int(0.5 * self.n_volumes_per_window)
+
+        if self.verbose >= 1:
+            print("Successfully initialized!")
+
+    @staticmethod
+    def load_from_config(project_config, svd_components=50):
+        project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_frames=True)
+
+        # Use old tracker just as a feature-space embedder
+        frames_old = project_data.raw_frames
+        unpacker = SuperGlueUnpacker(project_data, 10)
+        tracker_old = WormWithSuperGlueClassifier(superglue_unpacker=unpacker)
+
+        print("Embedding all neurons in feature space...")
+        X = []
+        linear_ind_to_local = []
+        offset = 0
+        for i in tqdm(range(project_data.num_frames)):
+            this_frame = frames_old[i]
+            this_frame_embedding = tracker_old.embed_target_frame(this_frame)
+            this_x = this_frame_embedding.squeeze().cpu().numpy().T
+            X.append(this_x)
+
+            linear_ind_to_local.append(offset + np.arange(this_x.shape[0]))
+            offset += this_x.shape[0]
+
+        X = np.vstack(X).astype(float)
+        alg = TruncatedSVD(n_components=svd_components)
+        X_svd = alg.fit_transform(X)
+
+        obj = WormTsneTracker(X_svd, linear_ind_to_local, svd_components=svd_components)
+        return obj
+
+    @property
+    def num_frames(self):
+        return len(self.linear_ind_to_local)
+
+    @property
+    def all_start_volumes(self):
+        all_start_volumes = list(np.arange(0, self.num_frames - self.n_volumes_per_window, step=self.tracker_stride))
+        all_start_volumes.append(self.num_frames - self.n_volumes_per_window - 1)
+        return all_start_volumes
+
+    def cluster_obj2dataframe(self, db_svd, start_volume: int = None, vol_ind: list = None):
+        # Associate cluster label ids to a (time, local ind) tuple
+        # i.e. build a dict
+        # Note: the dict key should be a tuple of (neuron_name, 'raw_neuron_ind_in_list'),
+        #   because we want it to be a multilevel dataframe
+
+        linear_ind_to_local = self.linear_ind_to_local
+        n_vols = self.n_volumes_per_window
+
+        cluster_dict = {}
+        # Assume the labels are in sequential order
+        i_current_time = 0
+        if vol_ind is None:
+            current_time = start_volume
+
+            def get_next_time(_i_current_time, _current_time):
+                return _i_current_time + 1, _current_time + 1
+
+            def get_empty_col():
+                tmp = np.empty(n_vols + start_volume)
+                tmp[:] = np.nan
+                return tmp
+        else:
+            def get_next_time(_i_current_time, _tmp):
+                return _i_current_time + 1, vol_ind[_i_current_time + 1]
+            current_time = vol_ind[i_current_time]
+
+            def get_empty_col():
+                tmp = np.empty(np.max(vol_ind) + 1)
+                tmp[:] = np.nan
+                return tmp
+
+        current_global_ind = list(linear_ind_to_local[current_time].copy())
+        current_local_ind = 0
+
+        for i, label in enumerate(db_svd.labels_):
+            global_ind = current_global_ind.pop(0)
+
+            if label == -1:
+                # Still want to pop above
+                pass
+            else:
+                this_neuron_name = int2name_neuron(label + 1)
+                key = (this_neuron_name, 'raw_neuron_ind_in_list')
+
+                if key not in cluster_dict:
+                    cluster_dict[key] = get_empty_col()
+
+                if np.isnan(cluster_dict[key][current_time]):
+                    # This is a numpy array
+                    cluster_dict[key][current_time] = current_local_ind
+                else:
+                    # TODO: For now, just ignore the second assignment
+                    pass
+                    # print(f"Multiple assignments found for {this_neuron_name} at t={current_time}")
+
+            if len(current_global_ind) == 0:
+                try:
+                    i_current_time, current_time = get_next_time(i_current_time, current_time)
+                except IndexError:
+                    break
+                # current_time += 1
+                current_global_ind = list(linear_ind_to_local[current_time].copy())
+                current_local_ind = 0
+            else:
+                current_local_ind += 1
+        df_cluster = pd.DataFrame(cluster_dict)
+        return df_cluster
+
+    def cluster_single_window(self, start_volume=0, vol_ind=None):
+        # Unpack
+        linear_ind_to_local = self.linear_ind_to_local
+
+        # Options
+        opt_tsne = self.opt_tsne
+        opt_db = self.opt_db
+
+        # Get this window of data
+        if vol_ind is None:
+            n_vols = self.n_volumes_per_window
+            vol_ind = np.arange(start_volume, start_volume + n_vols)
+        linear_ind = np.hstack([linear_ind_to_local[i] for i in vol_ind])
+        X = self.X_svd[linear_ind, :]
+
+        # tsne + cluster
+        tsne = TSNE(**opt_tsne)
+        Y_tsne_svd = tsne.fit_transform(X)
+        db_svd = HDBSCAN(**opt_db).fit(Y_tsne_svd)
+
+        return db_svd, Y_tsne_svd
+
+    def multicluster_single_window(self, start_volume=0, vol_ind=None):
+        """
+        Cluster one window n times, and then combine for consistency
+
+        Parameters
+        ----------
+        vol_ind
+        start_volume
+
+        Returns
+        -------
+
+        """
+        num_clusters = self.n_clusters_per_window
+
+        # Get all iterations
+        all_raw_dfs = []
+        all_tsnes = []
+        for _ in tqdm(range(num_clusters), leave=False):
+            db_svd, Y_tsne_svd = self.cluster_single_window(start_volume, vol_ind)
+            df = self.cluster_obj2dataframe(db_svd, start_volume, vol_ind)
+            all_raw_dfs.append(df)
+            all_tsnes.append(Y_tsne_svd)  # TODO: check kl divergence of tsne?
+
+        # Choose a base dataframe and rename all to that one
+        # For now, combine as we go so that the matching gets the benefit of any overlaps (but is slower)
+        # TODO: for now just choosing the one with the most neurons
+        i_most = np.argmax([df.shape[1] for df in all_raw_dfs])
+        df_base = all_raw_dfs[i_most]
+        all_dfs = [df_base]
+        for i, df in enumerate(all_raw_dfs):
+            if i == i_most:
+                continue
+            df_renamed, *_ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
+            all_dfs.append(df_renamed)
+        # df_previous = all_raw_dfs[0]
+        # for df in all_raw_dfs[1:]:
+        #     df_renamed, *_ = rename_columns_using_matching(df_previous, df, try_to_fix_inf=True)
+        #     # df_next = combine_dataframes_using_mode([df_previous, df_renamed])
+        #     df_next = combine_dataframes_using_bipartite_matching([df_previous, df_renamed])
+        #     df_previous = df_next
+        # df_combined = df_previous
+
+        # Combine to one dataframe
+        if len(all_dfs) > 1:
+            # df_combined = combine_dataframes_using_mode(all_dfs)
+            df_combined = combine_dataframes_using_bipartite_matching(all_dfs)
+        else:
+            df_combined = all_dfs[0]
+
+        return df_combined, all_raw_dfs
+
+    def track_using_overlapping_windows(self):
+        """
+        Clusters one window, then moves by self.tracker_stride, clusters again, and combines in sequence
+
+        Returns
+        -------
+
+        """
+
+        all_start_volumes = self.all_start_volumes
+
+        # Track a disjoint set of points for stitching, i.e. "global" tracking
+        if self.verbose >= 1:
+            print(f"Initial non-local clustering...")
+        # Increase settings for this
+        self.n_clusters_per_window *= 4
+        with pd.option_context('mode.chained_assignment', None):
+            df_global, _ = self.multicluster_single_window(vol_ind=self.global_vol_ind)
+        self.n_clusters_per_window = int(self.n_clusters_per_window / 4)
+
+        # Track each window
+        if self.verbose >= 1:
+            print(f"Clustering {len(all_start_volumes)} windows of length {self.n_volumes_per_window}...")
+        all_dfs = []
+        for start_volume in tqdm(all_start_volumes):
+            with pd.option_context('mode.chained_assignment', None):
+                # Fix incorrect warning
+                df_window, _ = self.multicluster_single_window(start_volume)
+            all_dfs.append(df_window)
+
+        # Make them all the right shape, then iteratively rename them to the "global" dataframe
+        if self.verbose >= 1:
+            print(f"Combining all dataframes to common namespace")
+        all_dfs = [fill_missing_indices_with_nan(df, expected_max_t=self.num_frames)[0] for df in all_dfs]
+        df_global = fill_missing_indices_with_nan(df_global, expected_max_t=self.num_frames)[0]
+        all_dfs_renamed = [df_global]
+        for df in tqdm(all_dfs[1:]):
+            df_renamed, *_ = rename_columns_using_matching(df_global, df, try_to_fix_inf=True)
+            all_dfs_renamed.append(df_renamed)
+
+        # Finally, combine
+        df_combined = combine_dataframes_using_mode(all_dfs_renamed)
+
+        # Reweight confidence?
+
+        return df_combined, all_dfs

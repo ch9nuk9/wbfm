@@ -24,10 +24,10 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
 
     Get both red and green traces for each neuron
     """
-    final_tracks, green_fname, red_fname, max_dist, num_frames, params_start_volume = _unpack_configs_for_traces(
-        project_cfg, segment_cfg, track_cfg)
+    max_dist, num_frames, params_start_volume = _unpack_configs_for_traces(project_cfg, track_cfg)
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    final_tracks = project_data.final_tracks
 
     # Match -> Reindex raw segmentation -> Get traces
     final_neuron_names = get_names_from_df(final_tracks)
