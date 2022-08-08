@@ -557,3 +557,28 @@ def _smooth(dat, window):
 
 def smooth_mat(dat, window_vec):
     return pd.DataFrame(np.vstack([_smooth(dat, window) for window in window_vec]).T)
+
+
+def plot_highest_correlations(df_traces, df_speed):
+    df_corr = calc_pairwise_corr_of_dataframes(df_traces, df_speed)
+
+    def _plot(max_vals, max_names):
+        for max_val, (i, max_name) in zip(max_vals, max_names.iteritems()):
+            plt.figure()
+            # plt.plot(df_speed[i] / np.max(df_speed[i]), label='Normalized speed')
+            plt.plot(df_speed[i], label='Speed')
+            plt.plot(df_traces[max_name] / np.max(df_traces[max_name]), label='Normalized trace')
+            plt.title(f"Corr = {max_val} for {max_name}")
+            plt.ylabel("Speed (mm/s) or amplitude")
+            plt.xlabel("Frames")
+            plt.legend()
+
+    # Positive then negative correlation
+    max_names = df_corr.idxmax(axis=1)
+    max_vals = df_corr.max(axis=1)
+    _plot(max_vals, max_names)
+
+    min_names = df_corr.idxmin(axis=1)
+    min_vals = df_corr.min(axis=1)
+    _plot(min_vals, min_names)
+

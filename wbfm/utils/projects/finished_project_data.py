@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.general.postprocessing.position_postprocessing import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
@@ -525,7 +526,7 @@ class ProjectData:
         y = self._trace_plotter.calculate_traces(neuron_name)
         return self._trace_plotter.tspan, y
 
-    def calc_default_traces(self, min_nonnan=0.75):
+    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False):
         """
         Uses the currently recommended 'best' settings:
         opt = dict(
@@ -535,6 +536,10 @@ class ProjectData:
         )
 
         Also drops neurons with too few nonnan points, in this case 75%
+
+        if interpolate_nan is True, then additionally (after dropping empty neurons and removing outliers):
+            1. Filter
+            2. PPCA to fill in all gaps
 
         """
         opt = dict(
@@ -552,6 +557,10 @@ class ProjectData:
         trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
 
         df = pd.DataFrame(trace_dict).dropna(axis=1, thresh=min_nonnan)
+
+        if interpolate_nan:
+            df_filtered = df.rolling(window=3, center=True, min_periods=1).mean()  # Removes size-1 holes
+            df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
 
         return df
 
