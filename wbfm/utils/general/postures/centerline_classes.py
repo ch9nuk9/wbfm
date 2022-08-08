@@ -51,9 +51,9 @@ class WormFullVideoPosture:
         self.fix_temporary_annotation_format()
 
         if self.filename_curvature is not None:
-            self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature)
-            self.filename_x = resolve_mounted_path_in_current_os(self.filename_x)
-            self.filename_y = resolve_mounted_path_in_current_os(self.filename_y)
+            self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature, verbose=0)
+            self.filename_x = resolve_mounted_path_in_current_os(self.filename_x, verbose=0)
+            self.filename_y = resolve_mounted_path_in_current_os(self.filename_y, verbose=0)
 
         if self.filename_table_position is None and self.filename_curvature is not None:
             # Try to find in the parent folder
