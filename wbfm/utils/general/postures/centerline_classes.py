@@ -15,7 +15,7 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
+from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -74,15 +74,15 @@ class WormFullVideoPosture:
 
     @cached_property
     def centerlineX(self):
-        return pd.read_csv(self.filename_x, header=None)
+        return read_if_exists(self.filename_x, reader=pd.read_csv, header=None)
 
     @cached_property
     def centerlineY(self):
-        return pd.read_csv(self.filename_y, header=None)
+        return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
     @cached_property
     def curvature(self):
-        return pd.read_csv(self.filename_curvature, header=None)
+        return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
 
     @cached_property
     def stage_position(self):
@@ -222,7 +222,10 @@ class WormFullVideoPosture:
 
     @property
     def curvature_fluorescence_fps(self):
-        return self.curvature.iloc[self.subsample_indices, :]
+        if self.curvature:
+            return self.curvature.iloc[self.subsample_indices, :]
+        else:
+            return None
 
     @property
     def stage_position_fluorescence_fps(self):
