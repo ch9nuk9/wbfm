@@ -54,6 +54,12 @@ green_bigtiff_fname
 
 in the main project file: config.yaml
 
+AND
+```yaml
+project_dir
+```
+in a subfolder: snakemake/config.yaml
+
 In addition, if creating from a windows computer, you may need to use dos2unix to fix any files that you want to execute, specifically those referenced below:
 1. RUNME_*.sh
 2. DRYRUN.sh
@@ -61,7 +67,7 @@ In addition, if creating from a windows computer, you may need to use dos2unix t
 ### Checklist of most important parameters to change
 
 1. project_config.yaml
-   1. start_volume_bigtiff
+   1. bigtiff_start_volume
    2. num_frames
    3. num_slices (after flyback removal)
 2. preprocessing_config.yaml
@@ -71,7 +77,8 @@ In addition, if creating from a windows computer, you may need to use dos2unix t
 For all other settings, the defaults should work well.
 
 #### *IMPORTANT*
-If you changed the name of your project, you must update it in the snakemake/config.yaml file under 'project_dir'
+If you changed the name of your project or you changed operating systems, you must
+update the 'project_dir' variable in the snakemake/config.yaml file
 
 
 ### Running the rest of the workflow
