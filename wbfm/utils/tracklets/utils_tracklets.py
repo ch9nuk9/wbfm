@@ -703,7 +703,7 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
         name_gen = get_next_name_generator(df_tracklets, name_mode)
     all_new_names = []
 
-    for name in tqdm(all_names):
+    for name in tqdm(all_names, leave=False):
         these_splits = split_list_dict.get(name, [])
         this_tracklet = df_tracklets[[name]]
         if len(these_splits) >= 1:
