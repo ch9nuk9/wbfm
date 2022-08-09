@@ -19,7 +19,7 @@ def check_exists(abs_path, allow_overwrite):
             raise FileExistsError
 
 
-def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 1) -> str:
+def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
     """
     Removes windows-specific mounted drive names (Y:, D:, etc.) and replaces them with the networked system equivalent
 

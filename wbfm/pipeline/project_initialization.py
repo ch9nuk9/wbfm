@@ -121,7 +121,7 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
                 video_fname = cfg.config['green_bigtiff_fname']
             else:
                 video_fname = cfg.config['preprocessed_green']
-        video_fname = resolve_mounted_path_in_current_os(video_fname)
+        video_fname = resolve_mounted_path_in_current_os(video_fname, verbose=0)
     start_volume = cfg.config['dataset_params'].get('bigtiff_start_volume', None)
     if start_volume is None:
         logging.warning("Did not find bigtiff_start_volume; is this an old style project?")
