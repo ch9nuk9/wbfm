@@ -381,7 +381,7 @@ def save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volu
     metadata[i_volume] = meta_df
 
 
-def perform_post_processing_2d(mask_array: np.ndarray, img_volume, border_width_to_remove, to_remove_border=True,
+def perform_post_processing_2d(mask_array: np.ndarray, img_volume: np.ndarray, border_width_to_remove, to_remove_border=True,
                                upper_length_threshold=12, lower_length_threshold=3,
                                to_remove_dim_slices=False,
                                stitch_via_watershed=False,
@@ -573,63 +573,3 @@ def _only_postprocess2d(i, i_volume, masks_zarr, opt_postprocessing,
                                              verbose=verbose - 1)
     with read_lock:
         save_volume_using_bbox(all_bounding_boxes, final_masks, i_volume, i_volume, masks_zarr)
-
-
-def perform_post_processing_3d(stitched_masks, img_volume, border_width_to_remove, to_remove_border=True,
-                               upper_length_threshold=12, lower_length_threshold=3, split_using_centroids_not_brightness=False, verbose=0):
-    """
-    Performs post-processing of segmented masks. Includes: splitting long masks, removing large areas,
-    removing short masks as well as removing artefacts close to the border
-
-    Parameters
-    ----------
-    stitched_masks
-        array of segmented masks
-    img_volume : 3D numpy array
-        array of original image with brightness values
-    border_width_to_remove : int
-        within that distance to border, artefacts/masks will be removed
-    to_remove_border : boolean
-        if true, a certain width
-    upper_length_threshold : int
-        masks longer than this will be (tried to) split
-    lower_length_threshold : int
-        masks shorter than this will be removed
-    verbose : int
-        flag for print statements. Increasing by 1, increases depth by 1
-
-    Returns
-    -------
-    labels : 3D numpy array
-        3D array of processed masks
-    """
-
-    stitched_masks = post.remove_large_areas(stitched_masks)
-    neuron_lengths = post.get_neuron_lengths_dict(stitched_masks)
-
-    # calculate brightnesses and their global Z-plane
-    brightnesses, neuron_planes, neuron_centroids = post.calc_brightness(img_volume, stitched_masks, verbose=verbose - 1)
-    # split too long neurons
-    split_masks, split_lengths, split_brightnesses, current_global_neuron, split_neuron_planes = \
-        post.split_long_neurons(stitched_masks,
-                                neuron_lengths,
-                                brightnesses,
-                                neuron_centroids,
-                                len(neuron_lengths),
-                                upper_length_threshold,
-                                neuron_planes,
-                                split_using_centroids_not_brightness,
-                                verbose=verbose - 1)
-
-    # remove short neurons
-    final_masks, final_neuron_lengths, final_brightness, final_neuron_planes, removed_neurons_list = \
-        post.remove_short_neurons(split_masks,
-                                  split_lengths,
-                                  lower_length_threshold,
-                                  split_brightnesses,
-                                  split_neuron_planes)
-
-    if to_remove_border is True:
-        final_masks = post.remove_border(final_masks, border_width_to_remove)
-
-    return final_masks

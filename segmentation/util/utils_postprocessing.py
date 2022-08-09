@@ -20,7 +20,7 @@ from segmentation.util.util_curve_fitting import calculate_multi_gaussian_fits, 
     calc_split_point_from_gaussians, plot_gaussians, _plot_just_data
 
 
-def remove_large_areas(arr, threshold=1000, verbose=0):
+def remove_large_areas(arr: np.ndarray, threshold=1000, verbose=0):
     """
     Iterates overs planes of array and removes areas, which are larger than 'threshold'.
     May take in a 2D or 3D array.
@@ -40,12 +40,11 @@ def remove_large_areas(arr, threshold=1000, verbose=0):
     arr : 2D or 3D numpy array
         array with removed areas. Same shape as input
     """
-    global new_arr
     if verbose >= 1:
         print('Removing large areas in all planes')
 
+    new_arr = arr.copy()
     if len(arr.shape) > 2:
-        new_arr = arr.copy()
         for i, plane in enumerate(arr):
             for u in np.unique(plane):
                 if u == 0:
@@ -79,7 +78,7 @@ def remove_dim_slices(masks, img_volume, thresh_factor=1.1, verbose=0):
     return masks
 
 
-def bipartite_stitching(array_3d, num_slices=0, verbose=0):
+def bipartite_stitching(array_3d: np.ndarray, num_slices=0, verbose=0) -> Tuple[np.ndarray, tuple]:
     """
     The function tries to connect segmented masks of adjacent planes, which overlap when planes are projected
     onto each other. The goal is a 3D array with a unique ID for every neuron.
@@ -133,8 +132,9 @@ def bipartite_stitching(array_3d, num_slices=0, verbose=0):
 
     # renaming all found neurons in array; in a sorted manner
     sorted_stitched_array = rename_stitched_array(array_3d, clust_df)
+    out = (clust_df, all_matches)
 
-    return sorted_stitched_array, (clust_df, all_matches)
+    return sorted_stitched_array, out
 
 
 def stitch_via_watershed(seg_dat, red_dat, sigma=1, verbose=0):
@@ -176,7 +176,7 @@ def stitch_via_watershed(seg_dat, red_dat, sigma=1, verbose=0):
     return labels
 
 
-def create_matches_list(slice_1, slice_2, min_overlap=5, verbose=0):
+def create_matches_list(slice_1, slice_2, min_overlap=5, verbose=0) -> list:
     """
     Creates a list of lists with all matches between slice_1 and slice_2. A match is counted, when a neuron mask on
     slice 1 overlaps with another neuron mask on slice_2 by at least 1 pixel!
@@ -371,7 +371,7 @@ def OLD_calc_brightness(original_array, stitched_masks, neuron_lengths=None, ver
     return brightness_dict, brightness_planes
 
 
-def calc_brightness(original_array, stitched_masks, verbose=0):
+def calc_brightness(original_array: np.ndarray, stitched_masks, verbose=0) -> Tuple[dict, dict, dict]:
     """
     Calculates the average brightness of each mask per plane in an array given the original image
     and the mask lengths.
