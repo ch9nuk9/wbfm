@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
+from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, get_next_name_generator
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -68,10 +69,17 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
                 f"Found {sum(idx_duplicated)} duplicated indices in neuron {neuron}; keeping first instances")
             joined_tracklet = joined_tracklet[~idx_duplicated]
 
-        # Then resplit this single tracklet based on z_threshold
-        # TODO: also gaps?
+        # Then resplit this single tracklet based on z_threshold and gaps (nan)
         df_diff = joined_tracklet[[(new_tracklet_name, 'z')]].diff().abs()
         split_list_dict = {new_tracklet_name: list(np.where(df_diff > z_threshold)[0])}
+        block_starts, _ = get_contiguous_blocks_from_column(joined_tracklet[(new_tracklet_name, 'z')])
+        if len(block_starts) > 0 and block_starts[0] == 0:
+            block_starts = block_starts[1:]
+        if len(block_starts) > 0:
+            split_list_dict[new_tracklet_name].extend(block_starts)
+            split_list_dict[new_tracklet_name].sort()
+
+        # Actually split
         df_split, _, name_mapping = split_all_tracklets_at_once(joined_tracklet, split_list_dict, name_gen=name_gen)
         if len(name_mapping) == 0:
             new_neuron2tracklets[neuron] = [new_tracklet_name]  # Unsplit
