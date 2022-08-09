@@ -78,7 +78,8 @@ For all other settings, the defaults should work well.
 
 #### *IMPORTANT*
 If you changed the name of your project or you changed operating systems, you must
-update the 'project_dir' variable in the snakemake/config.yaml file
+update the 'project_dir' variable in the snakemake/config.yaml file.
+This variable should be matched to the operating system you are running on, for example starting with 'S:' for windows or '/' for linux (cluster).
 
 
 ### Running the rest of the workflow

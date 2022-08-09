@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
+from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, fill_missing_indices_with_nan
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, get_next_name_generator
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -14,7 +14,8 @@ from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
 
 def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
                                        correct_only_finished_neurons=False,
-                                       z_threshold=2):
+                                       z_threshold=2,
+                                       DEBUG=False):
     """
     Consolidates tracklets in all (or only finished) neurons into one large tracklet
 
@@ -22,6 +23,7 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
 
     Parameters
     ----------
+    DEBUG
     project_config
     correct_only_finished_neurons
     z_threshold
@@ -33,6 +35,7 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
     project_data = ProjectData.load_final_project_data_from_config(project_config)
 
     df_all_tracklets = project_data.df_all_tracklets
+    num_time_points = df_all_tracklets.shape[0]
     unmatched_tracklet_names = get_names_from_df(df_all_tracklets)
 
     print(f"Original number of unique tracklets: {len(unmatched_tracklet_names)}")
@@ -69,6 +72,10 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
                 f"Found {sum(idx_duplicated)} duplicated indices in neuron {neuron}; keeping first instances")
             joined_tracklet = joined_tracklet[~idx_duplicated]
 
+        # Make sure it is correctly indexed
+        joined_tracklet.sort_index(inplace=True)
+        joined_tracklet, num_added = fill_missing_indices_with_nan(joined_tracklet, expected_max_t=num_time_points)
+
         # Then resplit this single tracklet based on z_threshold and gaps (nan)
         df_diff = joined_tracklet[[(new_tracklet_name, 'z')]].diff().abs()
         split_list_dict = {new_tracklet_name: list(np.where(df_diff > z_threshold)[0])}
@@ -78,6 +85,9 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
         if len(block_starts) > 0:
             split_list_dict[new_tracklet_name].extend(block_starts)
             split_list_dict[new_tracklet_name].sort()
+        if DEBUG:
+            print(f"Splitting {new_tracklet_name} at {split_list_dict[new_tracklet_name]}, ({block_starts} from nan)")
+            print(joined_tracklet)
 
         # Actually split
         df_split, _, name_mapping = split_all_tracklets_at_once(joined_tracklet, split_list_dict, name_gen=name_gen)
@@ -87,6 +97,9 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
             new_neuron2tracklets[neuron] = name_mapping[new_tracklet_name]  # List of split names
 
         consolidated_tracklets.append(df_split)
+
+        if DEBUG:
+            break
 
     # Get remaining, unmatched tracklets
     df_unmatched = df_all_tracklets.loc[:, unmatched_tracklet_names]
@@ -98,19 +111,20 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
     print(f"Consolidated number of unique tracklets: {len(final_tracklet_names)}")
 
     # Save data
-    output_df_fname = os.path.join("3-tracking", "postprocessing", "df_tracklets_consolidated.pickle")
-    output_df_fname = track_cfg.pickle_data_in_local_project(df_new,
-                                                             relative_path=output_df_fname,
-                                                             make_sequential_filename=True,
-                                                             custom_writer=pd.to_pickle)
-    output_neuron2tracklets_fname = os.path.join("3-tracking", "postprocessing", "global2tracklets_consolidated.pickle")
-    output_neuron2tracklets_fname = track_cfg.pickle_data_in_local_project(new_neuron2tracklets,
-                                                                           relative_path=output_neuron2tracklets_fname,
-                                                                           make_sequential_filename=True)
+    if not DEBUG:
+        output_df_fname = os.path.join("3-tracking", "postprocessing", "df_tracklets_consolidated.pickle")
+        output_df_fname = track_cfg.pickle_data_in_local_project(df_new,
+                                                                 relative_path=output_df_fname,
+                                                                 make_sequential_filename=True,
+                                                                 custom_writer=pd.to_pickle)
+        output_neuron2tracklets_fname = os.path.join("3-tracking", "postprocessing", "global2tracklets_consolidated.pickle")
+        output_neuron2tracklets_fname = track_cfg.pickle_data_in_local_project(new_neuron2tracklets,
+                                                                               relative_path=output_neuron2tracklets_fname,
+                                                                               make_sequential_filename=True)
 
-    # Update config and filepaths
-    output_neuron2tracklets_fname = track_cfg.unresolve_absolute_path(output_neuron2tracklets_fname)
-    track_cfg.config['manual_correction_global2tracklet_fname'] = output_neuron2tracklets_fname
-    output_df_fname = track_cfg.unresolve_absolute_path(output_df_fname)
-    track_cfg.config['manual_correction_tracklets_df_fname'] = output_df_fname
-    track_cfg.update_self_on_disk()
+        # Update config and filepaths
+        output_neuron2tracklets_fname = track_cfg.unresolve_absolute_path(output_neuron2tracklets_fname)
+        track_cfg.config['manual_correction_global2tracklet_fname'] = output_neuron2tracklets_fname
+        output_df_fname = track_cfg.unresolve_absolute_path(output_df_fname)
+        track_cfg.config['manual_correction_tracklets_df_fname'] = output_df_fname
+        track_cfg.update_self_on_disk()
