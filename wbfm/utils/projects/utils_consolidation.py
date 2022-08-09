@@ -88,6 +88,8 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
                                                                            make_sequential_filename=True)
 
     # Update config and filepaths
+    output_neuron2tracklets_fname = track_cfg.unresolve_absolute_path(output_neuron2tracklets_fname)
     track_cfg.config['manual_correction_global2tracklet_fname'] = output_neuron2tracklets_fname
+    output_df_fname = track_cfg.unresolve_absolute_path(output_df_fname)
     track_cfg.config['manual_correction_tracklets_df_fname'] = output_df_fname
     track_cfg.update_self_on_disk()
