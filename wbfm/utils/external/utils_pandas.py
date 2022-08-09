@@ -168,7 +168,7 @@ def get_contiguous_blocks_from_column(tracklet: pd.Series) -> Tuple[list, list]:
     block_ends = []
 
     for i in change_ind:
-        if np.isnan(tracklet[i]):
+        if np.isnan(tracklet.iat[i]):
             if i > 0:
                 # Diff always has a value here, but it can only be a start, not an end
                 block_ends.append(i)
