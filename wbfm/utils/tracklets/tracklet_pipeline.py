@@ -347,29 +347,34 @@ def split_tracklets_using_neuron_match_conflicts(project_cfg: ModularProjectConf
 
 def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
                                            keep_new_tracklet_matches=False,
-                                           update_only_finished_neurons=False, DEBUG=False):
+                                           update_only_finished_neurons=False,
+                                           use_original_tracklets=False, DEBUG=False):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_tracklets=True)
-
-    # Unpack
-    # df_tracklets = project_data.df_all_tracklets
-    # Get the tracklets directly from step 2
     training_cfg = project_cfg.get_training_config()
     tracking_cfg = project_cfg.get_tracking_config()
-    fname = training_cfg.resolve_relative_path_from_config('df_3d_tracklets')
-    df_tracklets = pd.read_pickle(fname)
+
+    # Unpack
+    if use_original_tracklets:
+        # Get the tracklets directly from step 2
+        fname = training_cfg.resolve_relative_path_from_config('df_3d_tracklets')
+        df_tracklets = pd.read_pickle(fname)
+    else:
+        df_tracklets = project_data.df_all_tracklets
+
     df_gt = project_data.final_tracks
     sanity_checks_on_dataframes(df_gt, df_tracklets)
 
     if update_only_finished_neurons:
         neurons_that_are_finished = project_data.finished_neuron_names
     else:
-        logging.info("Assuming partially tracked neurons are correct")
+        project_data.logger.info("Assuming partially tracked neurons are correct")
         neurons_that_are_finished = None
 
     # Delete conflicting tracklets, then concat
+    # If step 3c has been run, this should do nothing?
     df_tracklets_no_conflict, _, _ = delete_tracklets_using_ground_truth(df_gt, df_tracklets,
-                                                                   gt_names=neurons_that_are_finished,
-                                                                   DEBUG=DEBUG)
+                                                                         gt_names=neurons_that_are_finished,
+                                                                         DEBUG=DEBUG)
 
     if neurons_that_are_finished is not None:
         df_to_concat = df_gt.loc[:, neurons_that_are_finished]
@@ -380,10 +385,10 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     gtneuron2tracklets = {name: new_name for name, new_name in zip(neuron_names, name_gen)}
     df_to_concat = df_to_concat.rename(mapper=gtneuron2tracklets, axis=1)
 
-    logging.info("Large pandas concat, may take a while...")
+    project_data.logger.info("Large pandas concat, may take a while...")
     df_including_tracks = pd.concat([df_tracklets_no_conflict, df_to_concat], axis=1)
 
-    logging.info("Splitting non-contiguous tracklets using custom dataframe class")
+    project_data.logger.info("Splitting non-contiguous tracklets using custom dataframe class")
     df_padded = PaddedDataFrame.construct_from_basic_dataframe(df_including_tracks, name_mode='tracklet',
                                                                initial_empty_cols=10000)
     df_split, name_mapping = df_padded.split_all_tracklets_using_mode(split_mode='gap', verbose=0)
