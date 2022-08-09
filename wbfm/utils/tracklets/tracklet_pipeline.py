@@ -349,6 +349,23 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
                                            keep_new_tracklet_matches=False,
                                            update_only_finished_neurons=False,
                                            use_original_tracklets=False, DEBUG=False):
+    """
+    Overwrites tracklet database using a smaller number of ground truth tracks
+
+    Note: deletes any tracklet matches from neurons that don't have any ground truth
+
+    Parameters
+    ----------
+    project_cfg
+    keep_new_tracklet_matches
+    update_only_finished_neurons
+    use_original_tracklets
+    DEBUG
+
+    Returns
+    -------
+
+    """
     project_data = ProjectData.load_final_project_data_from_config(project_cfg, to_load_tracklets=True)
     training_cfg = project_cfg.get_training_config()
     tracking_cfg = project_cfg.get_tracking_config()
