@@ -35,6 +35,7 @@ Everything can be run on the command line.
 If your data is visible locally (mounted is okay), for the initial project creation you can use a gui:
 
 ```commandline
+cd /path/to/this/code/wbfm
 python gui/create_project_gui.py
 ```
 
@@ -98,7 +99,7 @@ bash DRYRUN.sh
 ```bash
 bash RUNME_cluster.sh
 ```
-6. Wait for this to finish. Depending on scheduling, it could take 12-48 hours.
+6. This will run ALL steps. It will print a lot of green-colored text, and the current analysis step will be written near the top, for example: 'rule: preprocessing'. Depending on how busy the cluster is, it could take 12-48 hours for all steps.
 7. Check the log files (they will be in the /snakemake folder) to make sure there were no errors.
 Almost all errors will crash the program, but if you find one that doesn't, please file an issue!
 
