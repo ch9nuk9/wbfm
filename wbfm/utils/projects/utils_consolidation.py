@@ -1,25 +1,29 @@
 import logging
 import os
 
+import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, get_next_name_generator
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
 
 
 def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
-                                       correct_only_finished_neurons=False):
+                                       correct_only_finished_neurons=False,
+                                       z_threshold=2):
     """
     Consolidates tracklets in all (or only finished) neurons into one large tracklet
 
-    TODO: Optionally resplit the tracklets if there is a gap
+    Resplit the tracklet if the change in z is above z_threshold
 
     Parameters
     ----------
     project_config
     correct_only_finished_neurons
+    z_threshold
 
     Returns
     -------
@@ -51,7 +55,6 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
         [unmatched_tracklet_names.remove(n) for n in these_tracklets_names]
 
         new_tracklet_name = next(name_gen)
-        new_neuron2tracklets[neuron] = [new_tracklet_name]  # Only one match
 
         # Add new name in one line:
         # https://stackoverflow.com/questions/40225683/how-to-simply-add-a-column-level-to-a-pandas-dataframe
@@ -65,7 +68,17 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
                 f"Found {sum(idx_duplicated)} duplicated indices in neuron {neuron}; keeping first instances")
             joined_tracklet = joined_tracklet[~idx_duplicated]
 
-        consolidated_tracklets.append(joined_tracklet)
+        # Then resplit this single tracklet based on z_threshold
+        # TODO: also gaps?
+        df_diff = joined_tracklet[[(new_tracklet_name, 'z')]].diff().abs()
+        split_list_dict = {new_tracklet_name: list(np.where(df_diff > z_threshold)[0])}
+        df_split, _, name_mapping = split_all_tracklets_at_once(joined_tracklet, split_list_dict, name_gen=name_gen)
+        if len(name_mapping) == 0:
+            new_neuron2tracklets[neuron] = [new_tracklet_name]  # Unsplit
+        else:
+            new_neuron2tracklets[neuron] = name_mapping[new_tracklet_name]  # List of split names
+
+        consolidated_tracklets.append(df_split)
 
     # Get remaining, unmatched tracklets
     df_unmatched = df_all_tracklets.loc[:, unmatched_tracklet_names]

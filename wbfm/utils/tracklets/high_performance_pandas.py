@@ -169,7 +169,6 @@ class PaddedDataFrame(pd.DataFrame):
         all_names = get_names_from_df(self)
         name_mapping = defaultdict(set)
         df_working_copy = self
-        # df_working_copy = self.new_like_self()
 
         for original_name in tqdm(all_names):
             name_mapping[original_name].add(original_name)
@@ -514,6 +513,7 @@ def split_single_sparse_tracklet(i_split, this_tracklet: pd.DataFrame):
 
 
 def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
+    """Splits tracklet into multiple pieces, each with the same name as the original"""
     if hasattr(this_tracklet, 'sparse'):
         this_tracklet = this_tracklet.sparse.to_dense()
 
