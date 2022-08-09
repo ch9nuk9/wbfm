@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, get_next_name_generator
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 
@@ -38,6 +38,10 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
     else:
         neuron_names = get_names_from_df(project_data.final_tracks)
 
+    # Generate names for new tracklets that don't conflict with the old ones
+    name_gen = get_next_name_generator(df_all_tracklets)
+    new_neuron2tracklets = dict()
+
     global2tracklet = project_data.global2tracklet
     # Build list of new consolidated tracklets
     consolidated_tracklets = []
@@ -46,9 +50,11 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
         these_tracklets = [df_all_tracklets[n].dropna(axis=0) for n in these_tracklets_names]
         [unmatched_tracklet_names.remove(n) for n in these_tracklets_names]
 
-        new_tracklet_name = these_tracklets_names[0]
+        new_tracklet_name = name_gen()
+        new_neuron2tracklets[neuron] = [new_tracklet_name]  # Only one match
 
-        # Add new name in one line: https://stackoverflow.com/questions/40225683/how-to-simply-add-a-column-level-to-a-pandas-dataframe
+        # Add new name in one line:
+        # https://stackoverflow.com/questions/40225683/how-to-simply-add-a-column-level-to-a-pandas-dataframe
         joined_tracklet = pd.concat(these_tracklets, axis=0)
         joined_tracklet.columns = pd.MultiIndex.from_product([[new_tracklet_name], joined_tracklet.columns])
 
@@ -70,9 +76,18 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
     final_tracklet_names = get_names_from_df(df_new)
     print(f"Consolidated number of unique tracklets: {len(final_tracklet_names)}")
 
+    # Save data
     output_df_fname = os.path.join("3-tracking", "postprocessing", "df_tracklets_consolidated.pickle")
-    output_df_fname = track_cfg.pickle_data_in_local_project(df_new, relative_path=output_df_fname,
+    output_df_fname = track_cfg.pickle_data_in_local_project(df_new,
+                                                             relative_path=output_df_fname,
                                                              make_sequential_filename=True,
                                                              custom_writer=pd.to_pickle)
+    output_neuron2tracklets_fname = os.path.join("3-tracking", "postprocessing", "global2tracklets_consolidated.pickle")
+    output_neuron2tracklets_fname = track_cfg.pickle_data_in_local_project(new_neuron2tracklets,
+                                                                           relative_path=output_neuron2tracklets_fname,
+                                                                           make_sequential_filename=True)
+
+    # Update config and filepaths
+    track_cfg.config['manual_correction_global2tracklet_fname'] = output_neuron2tracklets_fname
     track_cfg.config['manual_correction_tracklets_df_fname'] = output_df_fname
     track_cfg.update_self_on_disk()
