@@ -1,4 +1,5 @@
 import logging
+import os
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -69,7 +70,9 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
     final_tracklet_names = get_names_from_df(df_new)
     print(f"Consolidated number of unique tracklets: {len(final_tracklet_names)}")
 
-    output_df_fname = "df_tracklets_consolidated.pickle"
-    output_df_fname = track_cfg.pickle_data_in_local_project(df_new, output_df_fname=output_df_fname, custom_writer=pd.to_pickle)
+    output_df_fname = os.path.join("3-tracking", "postprocessing", "df_tracklets_consolidated.pickle")
+    output_df_fname = track_cfg.pickle_data_in_local_project(df_new, relative_path=output_df_fname,
+                                                             make_sequential_filename=True,
+                                                             custom_writer=pd.to_pickle)
     track_cfg.config['manual_correction_tracklets_df_fname'] = output_df_fname
     track_cfg.update_self_on_disk()
