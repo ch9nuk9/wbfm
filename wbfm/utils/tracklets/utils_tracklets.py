@@ -679,7 +679,7 @@ def split_single_tracklet(i_split, this_tracklet: pd.DataFrame):
 
 
 def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dict,
-                                include_unsplit=True, name_mode='tracklet', name_gen=None):
+                                include_unsplit=True, name_mode='tracklet', name_gen=None, verbose=0):
     """
     Takes a dataframe (should be sparse) and a dictionary with lists of times to split each tracklet
 
@@ -731,8 +731,9 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
     # Also have to remove the old names, i.e. remove the top level of the hierarchy
     all_new_tracklets = [t[get_names_from_df(t)[0]] for t in all_new_tracklets]
 
-    logging.info("Concatenating final dataframe, may take a minute")
-    logging.info(f"Split {len(all_names)} tracklets to {len(all_new_tracklets)} tracklets")
+    if verbose >= 1:
+        logging.info("Concatenating final dataframe, may take a minute")
+        logging.info(f"Split {len(all_names)} tracklets to {len(all_new_tracklets)} tracklets")
     df_final = pd.concat(all_new_tracklets, axis=1, keys=all_new_names)
     return df_final, all_new_tracklets, name_mapping
 
