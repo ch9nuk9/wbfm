@@ -39,7 +39,7 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
         neuron_names = get_names_from_df(project_data.final_tracks)
 
     # Generate names for new tracklets that don't conflict with the old ones
-    name_gen = get_next_name_generator(df_all_tracklets)
+    name_gen = get_next_name_generator(df_all_tracklets, name_mode='tracklet')
     new_neuron2tracklets = dict()
 
     global2tracklet = project_data.global2tracklet
@@ -50,7 +50,7 @@ def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
         these_tracklets = [df_all_tracklets[n].dropna(axis=0) for n in these_tracklets_names]
         [unmatched_tracklet_names.remove(n) for n in these_tracklets_names]
 
-        new_tracklet_name = name_gen()
+        new_tracklet_name = next(name_gen)
         new_neuron2tracklets[neuron] = [new_tracklet_name]  # Only one match
 
         # Add new name in one line:

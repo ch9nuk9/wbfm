@@ -480,8 +480,11 @@ def check_if_heterogenous_columns(df, verbose=1, raise_error=False):
     return None
 
 
-def get_next_name_generator(df, name_mode='tracklet'):
-    """See get_next_name_tracklet_or_neuron; this is just a generator version for doing many"""
+def get_next_name_generator(df, name_mode):
+    """See get_next_name_tracklet_or_neuron; this is just a generator version for doing many
+
+    name_mode should be 'tracklet' or 'neuron'; see int2name_using_mode
+    """
     all_names = get_names_from_df(df)
     max_int = name2int_neuron_and_tracklet(all_names[-1])
     # Really want to make sure we are after all other names

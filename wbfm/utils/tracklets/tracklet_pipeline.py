@@ -398,7 +398,7 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
     else:
         df_to_concat = df_gt
     neuron_names = get_names_from_df(df_to_concat)
-    name_gen = get_next_name_generator(df_tracklets_no_conflict)
+    name_gen = get_next_name_generator(df_tracklets_no_conflict, name_mode='tracklet')
     gtneuron2tracklets = {name: new_name for name, new_name in zip(neuron_names, name_gen)}
     df_to_concat = df_to_concat.rename(mapper=gtneuron2tracklets, axis=1)
 
