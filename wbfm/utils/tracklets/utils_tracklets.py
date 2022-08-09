@@ -683,6 +683,9 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
     """
     Takes a dataframe (should be sparse) and a dictionary with lists of times to split each tracklet
 
+    split_list_dict should have format:
+        split_list_dict[tracklet_name] = list_of_times
+
     Performs one large concatenation at the end
     """
     # See: split_using_dict_of_points
@@ -695,35 +698,41 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
     else:
         all_names = list(split_list_dict.keys())
 
+    name_mapping = {}
+    name_gen = get_next_name_generator(df_tracklets, name_mode)
+    all_new_names = []
+
     for name in tqdm(all_names):
         these_splits = split_list_dict.get(name, [])
         this_tracklet = df_tracklets[[name]]
         if len(these_splits) >= 1:
             new_tracklets_list = split_multiple_tracklets(this_tracklet, these_splits)
             all_new_tracklets.extend(new_tracklets_list)
+            # Also generate new names, and save them in a mapping
+            these_new_tracklet_names = [n for _, n in zip(range(len(new_tracklets_list)), name_gen)]
+            name_mapping[name] = these_new_tracklet_names
+            all_new_names.extend(these_new_tracklet_names)
         elif include_unsplit:
             all_unsplit_tracklets.append(this_tracklet)
 
     # Generate new tracklet names, keeping the old ones
     old_names = [get_names_from_df(t)[0] for t in all_unsplit_tracklets]
-    name_gen = get_next_name_generator(df_tracklets, name_mode)
-    new_names = [name for _, name in zip(range(len(all_new_tracklets)), name_gen)]
+    # name_gen = get_next_name_generator(df_tracklets, name_mode)
+    # new_names = [name for _, name in zip(range(len(all_new_tracklets)), name_gen)]
 
-    name_mapping = {}
-    # name_mapping = defaultdict(list)
     # for old_name in old_names:
     #
     # name_mapping = {old_name: name for old_name, name in zip(old_names, name_gen)}
 
     all_new_tracklets.extend(all_unsplit_tracklets)
-    new_names.extend(old_names)
+    all_new_names.extend(old_names)
 
     # Also have to remove the old names, i.e. remove the top level of the hierarchy
     all_new_tracklets = [t[get_names_from_df(t)[0]] for t in all_new_tracklets]
 
     logging.info("Concatenating final dataframe, may take a minute")
     logging.info(f"Split {len(all_names)} tracklets to {len(all_new_tracklets)} tracklets")
-    df_final = pd.concat(all_new_tracklets, axis=1, keys=new_names)
+    df_final = pd.concat(all_new_tracklets, axis=1, keys=all_new_names)
     return df_final, all_new_tracklets, name_mapping
 
 
