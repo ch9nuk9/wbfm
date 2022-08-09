@@ -16,7 +16,7 @@ from sacred import Experiment
 
 # !wandb login
 
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 ex.add_config(project_path=None, max_epochs=30, DEBUG=False)
 
 

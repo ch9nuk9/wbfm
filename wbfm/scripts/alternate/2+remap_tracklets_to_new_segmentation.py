@@ -10,7 +10,7 @@ from wbfm.utils.projects.utils_redo_steps import remap_tracklets_to_new_segmenta
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 ex.add_config(project_path=None, new_segmentation_suffix=None, path_to_new_segmentation=None, path_to_new_metadata=None, DEBUG=False)
 
 

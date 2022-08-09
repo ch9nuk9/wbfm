@@ -12,7 +12,7 @@ from sacred import Experiment
 from wbfm.utils.projects.utils_project import delete_all_analysis_files
 
 # Initialize sacred experiment
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 ex.add_config(project_path=None, dryrun=True, DEBUG=False)
 
 

@@ -7,7 +7,7 @@ from wbfm.pipeline.project_initialization import build_project_structure_from_co
 
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 ex.add_config('new_project_defaults/project_config.yaml')
 
 

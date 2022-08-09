@@ -21,7 +21,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 ex.add_config(project_path=None, to_zip_zarr_using_7z=True, DEBUG=False)
 
 

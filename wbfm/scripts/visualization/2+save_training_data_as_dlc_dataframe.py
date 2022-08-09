@@ -12,7 +12,7 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.tracklets.training_data_from_tracklets import save_training_data_as_dlc_format
 
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
 ex.add_config(project_path=None, DEBUG=False)
 

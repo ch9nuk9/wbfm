@@ -8,7 +8,7 @@ from sacred import Experiment
 from wbfm.utils.visualization.utils_segmentation import extract_list_of_pixel_values_from_config
 
 # Initialize sacred experiment
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
 ex.add_config(project_path=None, DEBUG=False)
 

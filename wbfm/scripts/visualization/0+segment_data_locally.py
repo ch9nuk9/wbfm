@@ -9,7 +9,7 @@ from sacred import Experiment
 from wbfm.utils.projects.utils_data_subsets import segment_local_data_subset
 
 # Initialize sacred experiment
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 ex.add_config(project_path=None, out_fname=None)
 
 

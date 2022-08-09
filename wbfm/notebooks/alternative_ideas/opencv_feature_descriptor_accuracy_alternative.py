@@ -9,7 +9,7 @@ from wbfm.utils.nn_utils.model_image_classifier import NullModel
 from wbfm.utils.nn_utils.utils_testing import plot_accuracy, test_open_set_tracking
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_filenames import add_name_suffix
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 ex.add_config(encoder_type='baseline', DEBUG=False)
 
 

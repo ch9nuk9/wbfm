@@ -14,7 +14,7 @@ from wbfm.utils.projects.utils_project import safe_cd
 # Initialize sacred experiment
 from wbfm.utils.tracklets.training_data_from_tracklets import alt_save_all_tracklets_as_dlc_format
 
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
 ex.add_config(project_path=None, min_length=10)
 
