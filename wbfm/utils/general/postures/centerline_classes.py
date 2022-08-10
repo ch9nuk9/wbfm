@@ -222,7 +222,7 @@ class WormFullVideoPosture:
 
     @property
     def curvature_fluorescence_fps(self):
-        if self.curvature:
+        if self.curvature is not None:
             return self.curvature.iloc[self.subsample_indices, :]
         else:
             return None
