@@ -1,6 +1,6 @@
 import concurrent.futures
 from typing import Tuple, Dict
-
+import numpy as np
 from segmentation.util.utils_metadata import DetectedNeurons
 from tqdm.auto import tqdm
 
