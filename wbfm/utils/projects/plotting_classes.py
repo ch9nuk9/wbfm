@@ -133,6 +133,12 @@ class TracePlotter:
                     t = range(num_timepoints)
                     valid_indices = np.logical_not(np.isnan(red))
 
+                    # This is important for test videos that are very short
+                    if valid_indices.value_counts()[True] <= 4:
+                        y_empty = green.copy()
+                        y_empty[:] = np.nan
+                        return y_empty
+
                     # remove nas and z score
                     y_lm = green[valid_indices]
                     red_lm = red[valid_indices]
@@ -150,13 +156,11 @@ class TracePlotter:
                     y_result_missing_na = y_lm - x_pred
 
                     # Align output and input formats
-                    y_result_including_na = list(fill_missing_indices_with_nan(
-                        pd.DataFrame(y_result_missing_na))[0]["intensity_image"])
-                    while len(y_result_including_na) < num_timepoints:
-                        y_result_including_na.append(np.nan)
+                    y_including_na = fill_missing_indices_with_nan(pd.DataFrame(y_result_missing_na),
+                                                                   expected_max_t=num_timepoints)[0]
+                    y_result_including_na = pd.Series(list(y_including_na["intensity_image"]))
 
-                    return pd.Series(y_result_including_na)
-                    # return np.array(y_result_including_na)
+                    return y_result_including_na
 
         else:
             raise ValueError("Unknown calculation or channel mode")
