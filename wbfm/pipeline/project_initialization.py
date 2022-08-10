@@ -167,8 +167,6 @@ def zip_zarr_using_config(project_cfg: ModularProjectConfig):
     project_cfg.config['preprocessed_green'] = str(project_cfg.unresolve_absolute_path(out_fname_green_7z))
     project_cfg.update_self_on_disk()
 
-    project_cfg.resolve_relative_path_from_config()
-
 
 def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing=True, DEBUG=False):
     """
