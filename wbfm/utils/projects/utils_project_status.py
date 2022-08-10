@@ -8,7 +8,7 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd
 
 
-def _check_and_print(all_to_check, description, verbose):
+def _check_and_print(all_to_check: list, description: str, verbose: int):
     all_exist = all(map(osp.exists, all_to_check))
     if verbose >= 1:
         if all_exist:
@@ -142,7 +142,7 @@ def check_traces(project_config: ModularProjectConfig, verbose=0):
             file_names = ['all_matches.pickle', 'green_traces.h5', 'red_traces.h5']
             # file_names = ['reindexed_masks.zarr.zip', 'all_matches.pickle', 'green_traces.h5', 'red_traces.h5']
             make_full_name = lambda file: traces_cfg.resolve_relative_path(file, prepend_subfolder=True)
-            all_to_check = map(make_full_name, file_names)
+            all_to_check = list(map(make_full_name, file_names))
             all_exist = _check_and_print(all_to_check, 'traces', verbose)
 
             return all_exist
