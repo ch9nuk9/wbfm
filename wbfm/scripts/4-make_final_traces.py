@@ -83,7 +83,7 @@ def main(_config, _run):
         extract_traces_using_config(project_cfg, traces_cfg, name_mode='neuron', DEBUG=DEBUG)
 
         # By default make some visualizations
-        # Note: reloads the project data
+        # Note: reloads the project data to properly read the new trace h5 files
         project_cfg.logger.info("Making default grid plots")
         proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
         make_grid_plot_using_project(proj_dat, channel_mode='all', calculation_mode='integration')
