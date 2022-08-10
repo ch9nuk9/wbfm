@@ -102,7 +102,7 @@ cd /path/to/your/project/snakemake
 ```bash
 bash DRYRUN.sh
 ```
-4. If there are errors, there are three possibilities:
+4. If there are errors, there are three easy possibilities:
    1. If this is not a new project, you might have to run steps one by one (see the next subsection).
    2. If you changed the name of the project, read the *IMPORTANT* tip above
    3. If you get a permission issue, read the *IMPORTANT* tip above
@@ -111,7 +111,10 @@ bash DRYRUN.sh
 ```bash
 bash RUNME_cluster.sh
 ```
-6. If you get errors, see step 4. If it works, this will run ALL steps. It will print a lot of green-colored text, and the current analysis step will be written near the top, for example: 'rule: preprocessing'. Depending on how busy the cluster is, it could take 6-24 hours / 1000 volumes.
+6. This will run ALL steps in sequence.
+   1. Note: you can't close the terminal! You may need to use a long-term terminal program like tmux or screen.
+   2. If you get errors, see step 4.
+   3. It will print a lot of green-colored text, and the current analysis step will be written near the top, for example: 'rule: preprocessing'. Depending on how busy the cluster is, it could take 6-24 hours / 1000 volumes.
 7. Check the log files (they will be in the /snakemake folder) to make sure there were no errors.
 Almost all errors will crash the program (display a lot of red text), but if you find one that doesn't, please file an issue!
 8. If the program crashes and you fix the problem, then you should be able to start again from step 3 (DRYRUN). This should rerun only the steps that failed and after, not the steps that succeeded. 
