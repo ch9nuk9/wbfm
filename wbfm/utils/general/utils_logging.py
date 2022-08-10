@@ -28,12 +28,13 @@ def setup_logger_object(log_filename, actually_set_up_file=True):
         # Assume we are reading someone else's project, so we shouldn't need a log
         pass
 
-    if len(logger.handlers) >= 1:
-        # Assume it has already been set up, so only set up the file handler
-        pass
-    else:
+    # Check if the console logger has already been set up, and don't duplicate
+    if all([isinstance(h, logging.FileHandler) for h in logger.handlers]):
         ch = _get_console_handler()
         logger.addHandler(ch)
+    else:
+        # Assume it has already been set up, so only set up the file handler
+        pass
 
     logger.propagate = False
     logger.info(f"Set up logger with name: {log_name}")
