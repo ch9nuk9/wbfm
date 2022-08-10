@@ -64,6 +64,9 @@ In addition, if creating from a windows computer, you may need to use dos2unix t
 1. RUNME_*.sh
 2. DRYRUN.sh
 
+Finally, due to changes in the cluster you may get a permission error when importing skimage.
+This should be fixable with one line; check the file RUNME_cluster.sh for more information.
+
 ### Checklist of most important parameters to change
 
 1. project_config.yaml
@@ -101,15 +104,17 @@ bash DRYRUN.sh
 ```
 4. If there are errors, there are three possibilities:
    1. If this is not a new project, you might have to run steps one by one (see the next subsection).
-   2. If you changed the name of the project, read the *IMPORTANT* tip above 
-   3. If this is a new project, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
+   2. If you changed the name of the project, read the *IMPORTANT* tip above
+   3. If you get a permission issue, read the *IMPORTANT* tip above
+   4. If you still have a problem, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
 5. Run the relevant RUNME script, either cluster or local. Probably, you want the cluster version:
 ```bash
 bash RUNME_cluster.sh
 ```
-6. This will run ALL steps. It will print a lot of green-colored text, and the current analysis step will be written near the top, for example: 'rule: preprocessing'. Depending on how busy the cluster is, it could take 12-48 hours for all steps.
+6. If you get errors, see step 4. If it works, this will run ALL steps. It will print a lot of green-colored text, and the current analysis step will be written near the top, for example: 'rule: preprocessing'. Depending on how busy the cluster is, it could take 6-24 hours / 1000 volumes.
 7. Check the log files (they will be in the /snakemake folder) to make sure there were no errors.
-Almost all errors will crash the program, but if you find one that doesn't, please file an issue!
+Almost all errors will crash the program (display a lot of red text), but if you find one that doesn't, please file an issue!
+8. If the program crashes and you fix the problem, then you should be able to start again from step 3 (DRYRUN). This should rerun only the steps that failed and after, not the steps that succeeded. 
 
 # ADVANCED: start from an incomplete project
 
