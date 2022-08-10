@@ -115,12 +115,12 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
             if not use_preprocessed_data:
                 video_fname = cfg.config['red_bigtiff_fname']
             else:
-                video_fname = cfg.config['preprocessed_red']
+                video_fname = cfg.resolve_relative_path_from_config('preprocessed_red')
         else:
             if not use_preprocessed_data:
                 video_fname = cfg.config['green_bigtiff_fname']
             else:
-                video_fname = cfg.config['preprocessed_green']
+                video_fname = cfg.resolve_relative_path_from_config('preprocessed_green')
         video_fname = resolve_mounted_path_in_current_os(video_fname, verbose=0)
     start_volume = cfg.config['dataset_params'].get('bigtiff_start_volume', None)
     if start_volume is None:
@@ -163,9 +163,11 @@ def zip_zarr_using_config(project_cfg: ModularProjectConfig):
     out_fname_red_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_red'], verbose=1)
     out_fname_green_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_green'], verbose=1)
 
-    project_cfg.config['preprocessed_red'] = str(out_fname_red_7z)
-    project_cfg.config['preprocessed_green'] = str(out_fname_green_7z)
+    project_cfg.config['preprocessed_red'] = str(project_cfg.unresolve_absolute_path(out_fname_red_7z))
+    project_cfg.config['preprocessed_green'] = str(project_cfg.unresolve_absolute_path(out_fname_green_7z))
     project_cfg.update_self_on_disk()
+
+    project_cfg.resolve_relative_path_from_config()
 
 
 def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing=True, DEBUG=False):

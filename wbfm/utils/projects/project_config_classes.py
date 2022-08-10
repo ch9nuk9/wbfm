@@ -62,15 +62,15 @@ class ConfigFileWithProjectContext:
         val = self.config.get(key, None)
         return self.resolve_relative_path(val)
 
-    def resolve_relative_path(self, val: str) -> str:
-        if val is None:
-            return None
+    def resolve_relative_path(self, val: str) -> Optional[str]:
+        if val is None or Path(val).is_absolute():
+            return val
         relative_path = Path(self.project_dir).joinpath(val)
         return str(relative_path.resolve())
 
-    def unresolve_absolute_path(self, val: str) -> str:
+    def unresolve_absolute_path(self, val: str) -> Optional[str]:
         if val is None:
-            return None
+            return val
         # NOTE: is_relative_to() only works for python >= 3.9
         # if Path(val).is_relative_to(self.project_dir):
         try:

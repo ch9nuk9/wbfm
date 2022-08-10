@@ -38,7 +38,7 @@ def test_feature_encoder(encoder_type='baseline', encoder_kwargs=None, DEBUG=Fal
         num_frames = project_data.num_frames
     start_volume = 0
     end_volume = num_frames
-    video_fname = project_data.project_config.config['preprocessed_red']
+    video_fname = project_data.project_config.resolve_relative_path_from_config('preprocessed_red')
     z_depth_neuron_encoding = 3
     # Define new encoder
 
