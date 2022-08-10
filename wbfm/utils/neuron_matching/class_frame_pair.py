@@ -199,15 +199,14 @@ class FramePair:
         return is_valid
 
     def load_raw_data(self, dat0=None, dat1=None):
+        """Loads raw data into subclasses (Reference Frames)"""
         if dat0 is None:
             _ = self.dat0
         else:
-            # self._dat0 = dat0
             self.frame0._raw_data = dat0
         if dat1 is None:
             _ = self.dat1
         else:
-            # self._dat1 = dat1
             self.frame1._raw_data = dat1
 
     def preprocess_data(self, force_rotation=False):
