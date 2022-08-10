@@ -70,6 +70,17 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
 
     See new_project_defaults/2-training_data/training_data_config.yaml
     See also partial_track_video_using_config()
+
+    Parameters
+    ----------
+    project_config
+    training_config
+    only_calculate_desynced
+    DEBUG
+
+    Returns
+    -------
+
     """
     logging.info(f"Producing per-volume ReferenceFrame objects")
     video_fname, tracker_params, _ = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
@@ -90,6 +101,7 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
             return
     all_new_frames = calculate_frame_objects_full_video(video_data, video_fname=video_fname, frame_range=frame_range,
                                                         **tracker_params)
+    # Optionally include frames that were calculated before (can be empty)
     if not only_calculate_desynced:
         all_frame_dict = all_new_frames
     else:

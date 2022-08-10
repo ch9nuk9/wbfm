@@ -83,7 +83,8 @@ def calculate_frame_objects_full_video(video_data, external_detections, frame_ra
                     'vol_shape': vol_shape,
                     'video_fname': video_fname,
                     'z_depth': z_depth_neuron_encoding,
-                    'preprocessing_settings': preprocessing_settings}
+                    'preprocessing_settings': preprocessing_settings,
+                    '_raw_data': np.array(video_data[frame_ind, ...])}
         f = build_reference_frame_encoding(metadata=metadata, all_detected_neurons=all_detected_neurons,
                                            encoder_opt=encoder_opt)
         return f
