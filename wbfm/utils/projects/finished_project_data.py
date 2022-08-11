@@ -526,6 +526,10 @@ class ProjectData:
         y = self._trace_plotter.calculate_traces(neuron_name)
         return self._trace_plotter.tspan, y
 
+    @property
+    def neuron_names(self):
+        return get_names_from_df(self.red_traces)
+
     def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False):
         """
         Uses the currently recommended 'best' settings:
@@ -551,7 +555,7 @@ class ProjectData:
         if isinstance(min_nonnan, float):
             min_nonnan = int(min_nonnan * self.num_frames)
 
-        neuron_names = get_names_from_df(self.green_traces)
+        neuron_names = self.neuron_names
         # Initialize the object
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
         trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}

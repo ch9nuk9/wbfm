@@ -166,7 +166,8 @@ class NapariLayerInitializer:
 
         # Special layers from the heatmapper class
         for layer_tuple in which_layers:
-            num_frames = project_data.red_traces["neuron_001"].shape[0]
+            test_neuron = project_data.neuron_names[0]
+            num_frames = project_data.red_traces[test_neuron].shape[0]
             if project_data.worm_posture_class.curvature_fluorescence_fps is not None:
                 curvature = project_data.worm_posture_class.curvature_fluorescence_fps.iloc[0:num_frames]
             else:
