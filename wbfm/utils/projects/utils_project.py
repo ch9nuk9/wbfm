@@ -139,6 +139,7 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
 
     if dryrun:
         print("DRYRUN (nothing actually deleted)")
+        print("If you want to really delete things, then use 'dryrun=False' in the command line")
 
     # Also make sure any missing files are now present
     # for fname in initial_fnames:
