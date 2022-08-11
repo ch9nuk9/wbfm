@@ -13,8 +13,7 @@ from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_us
 from wbfm.utils.nn_utils.superglue import SuperGlueUnpacker
 from wbfm.utils.nn_utils.worm_with_classifier import _unpack_project_for_global_tracking, \
     WormWithSuperGlueClassifier, track_using_template, WormWithNeuronClassifier
-from wbfm.utils.general.postures.random_templates import generator_random_template_times, \
-    generate_random_valid_template_frames
+from wbfm.utils.general.postures.random_templates import generate_random_valid_template_frames
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd
@@ -208,7 +207,8 @@ def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig
     final_matching_no_conflict = greedy_matching_using_node_class(no_conflict_neuron_graph, node_class_to_match=1)
     df_new = combine_tracklets_using_matching(df_tracklets, final_matching_no_conflict)
 
-    df_final, num_added = fill_missing_indices_with_nan(df_new)
+    num_frames = df_global_tracks.shape[0]
+    df_final, num_added = fill_missing_indices_with_nan(df_new, expected_max_t=num_frames)
     if num_added > 0:
         logger.warning(f"Some time points {num_added} are completely empty of tracklets, and are added as nan")
 
