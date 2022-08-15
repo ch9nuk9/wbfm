@@ -37,3 +37,6 @@ path_to_previous_warp_matrices: null  # This file may not exist, and will be wri
 do_background_subtraction: true
 background_fname_red: null
 background_fname_green: null
+
+reset_background: true
+reset_background_per_pixel: 75

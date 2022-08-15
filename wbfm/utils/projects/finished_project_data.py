@@ -443,7 +443,7 @@ class ProjectData:
                                     seg_fname_raw, seg_fname])
         cfg.logger.debug(f"Read all data from files: {obj.all_used_fnames}")
 
-        background_per_pixel = preprocessing_settings.background_per_pixel
+        background_per_pixel = preprocessing_settings.reset_background_per_pixel
         likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']
 
         # Return a full object
