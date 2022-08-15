@@ -1,10 +1,6 @@
 import logging
 import numpy as np
 import pandas as pd
-from wbfm.utils.visualization.napari_from_config import napari_labels_from_frames
-from wbfm.utils.visualization.napari_utils import napari_labels_from_traces_dataframe
-from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
-from scipy.spatial.distance import cdist
 
 from wbfm.utils.visualization.utils_plot_traces import detrend_exponential_lmfit
 
