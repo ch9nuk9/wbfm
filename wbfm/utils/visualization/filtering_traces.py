@@ -47,10 +47,10 @@ def filter_linear_interpolation(y: pd.DataFrame, window=15):
     return y.interpolate(method='linear', limit=window, limit_direction='both')
 
 
-def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_correct):
+def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_correct) -> callable:
     # Way to process a single dataframe
     if calculation_mode == 'integration':
-        def calc_single_trace(i, df_tmp):
+        def calc_single_trace(i, df_tmp) -> pd.Series:
             try:
                 y_raw = df_tmp[i]['intensity_image']
                 vol = df_tmp[i]['area']
@@ -59,7 +59,7 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
                 vol = df_tmp[i]['volume']
             y = y_raw - background_per_pixel * vol
             if bleach_correct:
-                y, _ = detrend_exponential_lmfit(y)
+                y = pd.Series(detrend_exponential_lmfit(y)[0])
             if any(y < 0):
                 logging.warning(f"Found negative trace value; check background_per_pixel value ({background_per_pixel})")
             return y
@@ -69,7 +69,7 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
     #         f = lambda x: np.max(x, initial=np.nan)
     #         return y_raw.apply(f) - background_per_pixel
     elif calculation_mode == 'mean':
-        def calc_single_trace(i, df_tmp):
+        def calc_single_trace(i, df_tmp) -> pd.Series:
             try:
                 y_raw = df_tmp[i]['intensity_image']
                 vol = df_tmp[i]['area']
@@ -90,21 +90,21 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
     #         f = lambda x: np.quantile(x, initial=np.nan)
     #         return np.quantile(y_raw, 0.5) - self.background_per_pixel
     elif calculation_mode == 'volume':
-        def calc_single_trace(i, df_tmp):
+        def calc_single_trace(i, df_tmp) -> pd.Series:
             try:
                 y_raw = df_tmp[i]['area']
             except KeyError:
                 y_raw = df_tmp[i]['volume']
             return y_raw
     elif calculation_mode == 'z':
-        def calc_single_trace(i, df_tmp):
+        def calc_single_trace(i, df_tmp) -> pd.Series:
             try:
                 y_raw = df_tmp[i]['z']
             except KeyError:
                 y_raw = df_tmp[i]['z_dlc']
             return y_raw
     elif calculation_mode == 'likelihood':
-        def calc_single_trace(i, df_tmp):
+        def calc_single_trace(i, df_tmp) -> pd.Series:
             y_raw = df_tmp[i]['likelihood']
             return y_raw
     else:

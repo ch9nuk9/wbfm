@@ -85,13 +85,13 @@ class TracePlotter:
                                                          self.bleach_correct)
 
         if not self.bleach_correct:
-            def calc_single_df_over_f(i, _df):
+            def calc_single_df_over_f(i, _df) -> pd.Series:
                 _y = calc_single_trace(i, _df)
                 return _y / np.nanquantile(_y, 0.2)
         else:
-            def calc_single_df_over_f(i, _df):
+            def calc_single_df_over_f(i, _df) -> pd.Series:
                 _y = calc_single_trace(i, _df)
-                _y, _ = detrend_exponential_lmfit(_y)
+                _y, _ = pd.Series(detrend_exponential_lmfit(_y))
                 return _y / np.nanquantile(_y, 0.2)
 
         ##
@@ -102,7 +102,7 @@ class TracePlotter:
             # First: use the tracks dataframe, not the traces ones
             df = self.final_tracks
 
-            def calc_y(i):
+            def calc_y(i) -> pd.Series:
                 return calc_single_trace(i, df)
 
         elif self.channel_mode in ['red', 'green', 'df_over_f_10']:
@@ -113,10 +113,10 @@ class TracePlotter:
                 df = self.green_traces
 
             if self.channel_mode in ['red', 'green']:
-                def calc_y(i):
+                def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df)
             else:
-                def calc_y(i):
+                def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df)
 
         elif self.channel_mode in ['ratio', 'ratio_df_over_f_10', 'linear_model']:
@@ -125,14 +125,14 @@ class TracePlotter:
             df_green = self.green_traces
 
             if self.channel_mode == 'ratio':
-                def calc_y(i):
+                def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
             else:
-                def calc_y(i):
+                def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
 
             if self.channel_mode == "linear_model":
-                def calc_y(_neuron_name):
+                def calc_y(_neuron_name) -> pd.Series:
                     # Predict green from time, volume, and red
                     # Also add x and y
 
