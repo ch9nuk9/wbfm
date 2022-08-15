@@ -46,6 +46,7 @@ class WormFullVideoPosture:
     pca_i_start: int = 10
     pca_i_end: int = -10
 
+    bigtiff_start_volume: int = 0
     frames_per_volume: int = 32  # TODO: make sure this is synchronized with z_slices
 
     def __post_init__(self):
@@ -117,7 +118,9 @@ class WormFullVideoPosture:
 
         # Before anything, load metadata
         frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
-        opt = dict(frames_per_volume=frames_per_volume)
+        bigtiff_start_volume = project_config.config['dataset_params']['bigtiff_start_volume']
+        opt = dict(frames_per_volume=frames_per_volume,
+                   bigtiff_start_volume=bigtiff_start_volume)
 
         # First, get the folder that contains all behavior information
         # Try 1: read from config file
@@ -275,7 +278,7 @@ class WormFullVideoPosture:
     @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
-        return range(0, len(self.curvature), self.frames_per_volume)
+        return range(self.bigtiff_start_volume*self.frames_per_volume, len(self.curvature), self.frames_per_volume)
 
     def __repr__(self):
         return f"=======================================\n\
