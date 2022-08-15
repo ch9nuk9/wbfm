@@ -18,7 +18,7 @@ for f in "$folder_of_projects"/*; do
         echo "Checking folder: $f"
 
         for f_config in "$f"/*; do
-            if [ -f "$f_config" ] && [ "$f_config" = "project_config.yaml" ]; then
+            if [ -f "$f_config" ] && [ "${f_config##*/}" = "project_config.yaml" ]; then
                 if [ "$is_dry_run" ]; then
                     echo "Dispatching on config file: $f_config"
                 else
