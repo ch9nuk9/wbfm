@@ -15,7 +15,11 @@ If you just want to run the code, then you can use the pre-installed environment
 conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 ```
 
-# BASIC: start a new project from nothing
+For more detail, see:
+[detailed installation instructions](docs/installation_instructions.md)
+
+
+# Recommended: start a new project from nothing
 
 ## Preparation:
 
@@ -30,7 +34,7 @@ conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 Working examples to create a project are available for 
 [linux](wbfm/scripts/examples/0-create_new_project-linux-EXAMPLE.sh)
 and [windows](wbfm/scripts/examples/0-create_new_project-windows-EXAMPLE.sh).
-Everything can be run on the command line.
+Recommended: run these commands on the command line.
 
 If your data is visible locally (mounted is okay), for the initial project creation you can use a gui:
 
@@ -119,57 +123,36 @@ bash RUNME_cluster.sh
 Almost all errors will crash the program (display a lot of red text), but if you find one that doesn't, please file an issue!
 8. If the program crashes and you fix the problem, then you should be able to start again from step 3 (DRYRUN). This should rerun only the steps that failed and after, not the steps that succeeded. 
 
-# ADVANCED: start from an incomplete project
+Note: at any point you can look at the output of the pipeline using the GUIs described below.
 
-Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
-If you have simply not run all of the steps or there was a crash, then continue with the above section.
-However, if you are re-running analysis steps, then see below.
+### Advanced: running steps within an incomplete project
 
-In this case, you must run each step one by one. Example:
-
-```bash
-cd /path/to/this/repo/wbfm
-python scripts/4-make_final_traces.py with project_path=/path/to/your/project/project_config.yaml
-```
-
-Note that you can check the current status of the project by moving to the project and running a script. Example:
-```bash
-cd /path/to/your/project
-python log/print_project_status.py
-```
-
-You can directly run the python scripts, or, most likely, run them using sbatch using the following syntax.
-
-### Running single steps on the cluster (sbatch)
-
-Once the project is created, each step can be run via sbatch using this command in the scripts/cluster folder:
-
-```commandline
-sbatch single_step_dispatcher.sbatch -s 1 -t /scratch/neurobiology/zimmer/Charles/dlc_stacks/worm10-gui_test/project_config.yaml
-```
-
-where '-s' is a shortcut for the step to run (0b, 1, 2a, 2b, 2c, 3a, 3b, 4) and '-t' is a path to the project config file.
-
-Note: there may also be some alternative (not main pipeline steps), for example '4-alt' which just re-extracts the traces and makes the grid plots.
-This is useful for example if different preprocessing is applied to the videos (but the segmentation and tracking are unchanged).
+See [detailed pipeline steps](docs/detailed_pipeline_steps.md)
 
 # Summary of GUIs
 
-Initial creation of project:
+All guis are in the folder: /folder_of_this_README/wbfm/gui/example.py
+
+1. Initial creation of project. 
+See sections above on carefully checking paths:
 ```bash
-python gui/create_project_gui.py --project_path PATH-TO-YOUR-PROJECT
+python wbfm/gui/create_project_gui.py
 ```
 
-Visualization of most steps in the analysis is also possible, and they can be accessed via the progress gui:
-
+2. Visualization of most steps in the analysis is also possible, and they can be accessed via the progress gui. This also tells you which steps are completed:
 ```bash
-python gui/progress_gui.py --project_path PATH-TO-YOUR-PROJECT
+python wbfm/gui/progress_gui.py
+```
+Or, if you know the project already:
+```bash
+python wbfm/gui/progress_gui.py --project_path PATH-TO-YOUR-PROJECT
 ```
 
-Manual annotation and more detailed visualization:
+3. Manual annotation and more detailed visualization. 
+Note, this can take minutes to load:
 
 ```bash
-python gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
+python wbfm/gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
 ```
 
 

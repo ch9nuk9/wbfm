@@ -1,5 +1,41 @@
 # More details on each step
 
+## ADVANCED: running steps within an incomplete project
+
+Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
+If you have simply not run all of the steps or there was a crash, then continue with the above section.
+However, if you are re-running analysis steps, then see below.
+
+In this case, you must run each step one by one. Example:
+
+```bash
+cd /path/to/this/repo/wbfm
+python scripts/4-make_final_traces.py with project_path=/path/to/your/project/project_config.yaml
+```
+
+Note that you can check the current status of the project by moving to the project and running a script. Example:
+```bash
+cd /path/to/your/project
+python log/print_project_status.py
+```
+
+You can directly run the python scripts, or, most likely, run them using sbatch using the following syntax.
+
+### Running single steps on the cluster (sbatch)
+
+Once the project is created, each step can be run via sbatch using this command in the scripts/cluster folder:
+
+```commandline
+sbatch single_step_dispatcher.sbatch -s 1 -t /scratch/neurobiology/zimmer/Charles/dlc_stacks/worm10-gui_test/project_config.yaml
+```
+
+where '-s' is a shortcut for the step to run (0b, 1, 2a, 2b, 2c, 3a, 3b, 4) and '-t' is a path to the project config file.
+
+Note: there may also be some alternative (not main pipeline steps), for example '4-alt' which just re-extracts the traces and makes the grid plots.
+This is useful for example if different preprocessing is applied to the videos (but the segmentation and tracking are unchanged).
+
+
+
 ### Creating a project: command-line details
 
 Command:
