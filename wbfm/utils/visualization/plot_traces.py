@@ -54,8 +54,10 @@ def make_grid_plot_using_project(project_data: ProjectData,
                    color_using_behavior=color_using_behavior)
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
-        # Also try to remove outliers
+        # Also try to remove outliers and filter
         opt['remove_outliers'] = True
+        make_grid_plot_using_project(channel_mode='linear_model', **opt)
+        opt['filter_mode'] = 'rolling_mean'
         make_grid_plot_using_project(channel_mode='linear_model', **opt)
         return
     if neuron_names_to_plot is not None:
@@ -77,10 +79,12 @@ def make_grid_plot_using_project(project_data: ProjectData,
     # Save final figure
     if to_save:
         if neuron_names_to_plot is None:
+            prefix = f"{channel_mode}_{calculation_mode}"
             if remove_outliers:
-                fname = f"{channel_mode}_{calculation_mode}_outliers_removed_grid_plot.png"
-            else:
-                fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
+                prefix = f"{prefix}_outliers_removed"
+            if filter_mode != "no_filtering":
+                prefix = f"{prefix}_{filter_mode}"
+            fname = f"{prefix}_grid_plot.png"
         else:
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
         traces_cfg = project_data.project_config.get_traces_config()
