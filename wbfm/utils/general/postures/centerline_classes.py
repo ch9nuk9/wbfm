@@ -247,6 +247,16 @@ class WormFullVideoPosture:
         return self.worm_speed[self.subsample_indices]
 
     @property
+    def worm_speed_fluorescence_fps_signed(self):
+        """Just sets the speed to be negative when the behavior is annotated as reversal"""
+        speed = self.worm_speed[self.subsample_indices]
+        rev_ind = self.behavior_annotations_fluorescence_fps == 1
+        velocity = speed.copy()
+        velocity[rev_ind] *= -1
+
+        return velocity
+
+    @property
     def worm_speed_smoothed(self):
         window = 50
         return pd.Series(self.worm_speed).rolling(window=window, center=True).mean()
