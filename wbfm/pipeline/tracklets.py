@@ -6,7 +6,9 @@ from wbfm.utils.neuron_matching.feature_pipeline import build_tracklets_full_vid
     calculate_frame_objects_full_video
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
+from wbfm.utils.projects.utils_consolidation import consolidate_tracklets, save_consolidated_tracklets
 from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.tracklet_pipeline import _unpack_config_frame2frame_matches, _save_matches_and_frames, \
     build_frame_pairs_using_superglue, _unpack_config_for_tracklets, postprocess_matches_to_tracklets, \
     filter_tracklets_using_volume, save_all_tracklets
@@ -164,3 +166,49 @@ def postprocess_matches_to_tracklets_using_config(project_config: ModularProject
         training_config.pickle_data_in_local_project(split_times, out_fname)
 
     save_all_tracklets(df_custom_format, df_multi_index_format, training_config)
+
+
+def consolidate_tracklets_using_config(project_config: ModularProjectConfig,
+                                       correct_only_finished_neurons=False,
+                                       z_threshold=2,
+                                       DEBUG=False):
+    """
+    Consolidates tracklets in all (or only finished) neurons into one large tracklet
+
+    Resplit the tracklet if the change in z is above z_threshold
+
+    Parameters
+    ----------
+    DEBUG
+    project_config
+    correct_only_finished_neurons
+    z_threshold
+
+    Returns
+    -------
+
+    """
+    project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_tracklets=True)
+
+    df_all_tracklets = project_data.df_all_tracklets
+    num_time_points = df_all_tracklets.shape[0]
+    unmatched_tracklet_names = get_names_from_df(df_all_tracklets)
+
+    project_data.logger.info(f"Original number of unique tracklets: {len(unmatched_tracklet_names)}")
+    track_cfg = project_data.project_config.get_tracking_config()
+    global2tracklet = project_data.global2tracklet
+
+    if correct_only_finished_neurons:
+        neuron_names = project_data.get_list_of_finished_neurons()
+    else:
+        neuron_names = get_names_from_df(project_data.final_tracks)
+
+    df_new, new_neuron2tracklets = consolidate_tracklets(df_all_tracklets, global2tracklet, neuron_names,
+                                                         num_time_points, unmatched_tracklet_names, z_threshold, DEBUG)
+
+    final_tracklet_names = get_names_from_df(df_new)
+    project_data.logger.info(f"Consolidated number of unique tracklets: {len(final_tracklet_names)}")
+
+    # Save data
+    if not DEBUG:
+        save_consolidated_tracklets(df_new, new_neuron2tracklets, track_cfg)

@@ -5,7 +5,7 @@ from sacred import SETTINGS
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 import cgitb
-from wbfm.utils.projects.utils_consolidation import consolidate_tracklets_using_config
+from wbfm.pipeline.tracklets import consolidate_tracklets_using_config
 
 cgitb.enable(format='text')
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False

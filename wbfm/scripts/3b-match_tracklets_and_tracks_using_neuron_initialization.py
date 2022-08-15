@@ -7,7 +7,7 @@ import sacred
 from sacred import Experiment
 
 # main function
-
+from wbfm.pipeline.tracklets import consolidate_tracklets_using_config
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 from wbfm.pipeline.tracking import match_tracks_and_tracklets_using_config
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
@@ -38,3 +38,7 @@ def combine_tracks(_config, _run, _log):
 
     DEBUG = _config['DEBUG']
     match_tracks_and_tracklets_using_config(cfg, DEBUG=DEBUG)
+
+    training_cfg = cfg.get_training_config()
+    z_threshold = training_cfg.config['pairwise_matching_params']['z_threshold']
+    consolidate_tracklets_using_config(cfg, z_threshold=z_threshold, DEBUG=DEBUG)
