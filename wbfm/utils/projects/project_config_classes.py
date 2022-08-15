@@ -293,7 +293,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         # First, get the subfolder
         for content in main_data_folder.iterdir():
             if content.is_dir():
-                # UK spelling
+                # Ulises uses UK spelling
                 if 'behaviour' in content.name or 'BH' in content.name:
                     behavior_subfolder = main_data_folder.joinpath(content)
                     flag = True

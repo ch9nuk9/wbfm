@@ -289,6 +289,8 @@ def get_behavior_fluorescence_fps_conversion(project_config):
 
 def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     """First tries to read from the config file, and if that fails, goes searching"""
+
+    # Initial checks are all in project local folders
     is_stable_style = False
     try:
         behavior_cfg = cfg.get_behavior_config()
@@ -314,7 +316,20 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
         behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
         behavior_fname = cfg.resolve_relative_path(behavior_fname)
     if not os.path.exists(behavior_fname):
-        raise FileNotFoundError
+        behavior_fname = None
+    if behavior_fname is not None:
+        return behavior_fname, is_stable_style
+
+    # Final checks are all in raw behavior data folders, implying they are not the stable style
+    is_stable_style = False
+    raw_behavior_folder, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()
+    if not flag:
+        return behavior_fname, is_stable_style
+
+    behavior_fname = "beh_annotation.csv"
+    behavior_fname = os.path.join(raw_behavior_folder, behavior_fname)
+    if not os.path.exists(behavior_fname):
+        behavior_fname = None
 
     return behavior_fname, is_stable_style
 
