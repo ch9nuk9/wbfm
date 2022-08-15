@@ -9,7 +9,7 @@ from scipy.spatial.distance import cdist
 from wbfm.utils.visualization.utils_plot_traces import detrend_exponential_lmfit
 
 
-def remove_outliers_via_rolling_mean(y: pd.DataFrame, window: int, outlier_threshold=None, verbose=0):
+def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshold=None, verbose=0):
     # In practice very sensitive to exact threshold value, which only really works for the ratio
     y_filt = y.rolling(window, min_periods=1, center=True).mean()
     error = np.abs(y - y_filt)

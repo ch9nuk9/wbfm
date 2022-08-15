@@ -94,7 +94,7 @@ def detrend_exponential_lmfit(y_with_nan):
 
     """
 
-    mod = ExponentialModel(nan_policy='omit')
+    mod = ExponentialModel()
     ind = np.where(~np.isnan(y_with_nan))[0]
     x = np.squeeze(StandardScaler(copy=False).fit_transform(ind.reshape(-1, 1)))
     y = y_with_nan[ind]
