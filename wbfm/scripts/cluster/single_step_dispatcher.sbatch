@@ -13,6 +13,7 @@
 pwd; hostname; date
 
 # Necessary because the default home directory is not writable from the cluster
+# UPDATE: as of August 2022 this is not necessary
 #export HOME="/scratch/neurobiology/zimmer/Charles"
 
 # Get all user flags
@@ -29,27 +30,18 @@ done
 # Unpack the flag into an actual command
 CMD_DIR="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/scripts"
 
-declare -A CMD_DICT
-CMD_DICT["0b"]="0b-preprocess_working_copy_of_data.py"
-CMD_DICT["1"]="1-segment_video.py"
-CMD_DICT["2a"]="2a-build_frame_objects.py"
-CMD_DICT["2b"]="2b-match_adjacent_volumes.py"
-CMD_DICT["2c"]="2c-postprocess_matches_to_tracklets.py"
-CMD_DICT["3a"]="3a-track_using_superglue.py"
-CMD_DICT["3b"]="3b-match_tracklets_and_tracks_using_neuron_initialization.py"
-CMD_DICT["4"]="4-make_final_traces.py"
-CMD_DICT["4-alt"]="alternate/4c-extract_full_traces.py"
+source "$(dirname "$0")"/utils/dict_of_sbatch_commands.sh
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
 FULL_CMD="python $CMD with project_path=$project_path"
 
 echo "Running step $step_reference using full command:"
-echo $FULL_CMD
+echo "$FULL_CMD"
 
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $FULL_CMD"
 else
-  python $CMD with project_path="$project_path"
+  python "$CMD" with project_path="$project_path"
 fi
 
 date
