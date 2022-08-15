@@ -6,6 +6,8 @@ from wbfm.utils.visualization.napari_utils import napari_labels_from_traces_data
 from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 from scipy.spatial.distance import cdist
 
+from wbfm.utils.visualization.utils_plot_traces import detrend_exponential_lmfit
+
 
 def remove_outliers_via_rolling_mean(y: pd.DataFrame, window: int, outlier_threshold=None, verbose=0):
     # In practice very sensitive to exact threshold value, which only really works for the ratio
@@ -45,7 +47,7 @@ def filter_linear_interpolation(y: pd.DataFrame, window=15):
     return y.interpolate(method='linear', limit=window, limit_direction='both')
 
 
-def trace_from_dataframe_factory(calculation_mode, background_per_pixel):
+def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_correct):
     # Way to process a single dataframe
     if calculation_mode == 'integration':
         def calc_single_trace(i, df_tmp):
@@ -56,6 +58,8 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel):
                 y_raw = df_tmp[i]['brightness']
                 vol = df_tmp[i]['volume']
             y = y_raw - background_per_pixel * vol
+            if bleach_correct:
+                y, _ = detrend_exponential_lmfit(y)
             if any(y < 0):
                 logging.warning(f"Found negative trace value; check background_per_pixel value ({background_per_pixel})")
             return y

@@ -1,12 +1,9 @@
 import logging
-import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
-from lmfit.models import ExponentialModel
-from sklearn.preprocessing import StandardScaler
 
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
@@ -16,7 +13,7 @@ from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.visualization.utils_plot_traces import build_trace_factory, check_default_names, set_big_font
+from wbfm.utils.visualization.utils_plot_traces import check_default_names
 
 
 ##
@@ -30,6 +27,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  filter_mode: str = 'no_filtering',
                                  color_using_behavior=True,
                                  remove_outliers=False,
+                                 bleach_correct=True,
                                  to_save=True):
     """
 
@@ -54,7 +52,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
         all_modes = ['red', 'green', 'ratio', 'linear_model']
         opt = dict(project_data=project_data,
                    calculation_mode=calculation_mode,
-                   color_using_behavior=color_using_behavior)
+                   color_using_behavior=color_using_behavior,
+                   bleach_correct=bleach_correct)
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         # Also try to remove outliers and filter
@@ -75,7 +74,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     # Build functions to make a single subplot
     options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
-               'remove_outliers': remove_outliers}
+               'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct}
     get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
@@ -191,39 +190,6 @@ def make_grid_plot_from_callables(get_data_func: callable,
         if color_using_behavior:
             shade_plot_func(ax)
 
-
-##
-## Functions for use with data from 'extract_all_traces'
-##
-
-def visualize_traces_with_reference(all_traces,
-                                    reference_ind, reference_name,
-                                    all_names=None,
-                                    to_normalize=True,
-                                    to_save=False):
-    """
-    Plot all neurons on a reference, given by reference_ind
-    """
-    all_names = check_default_names(all_names, len(all_traces))
-
-    reference_trace = all_traces[reference_ind]
-
-    for i, t_dict in enumerate(all_traces):
-        if i == reference_ind:
-            continue
-        # Plot looped trace and reference
-        ax1, ax2 = visualize_mcherry_and_gcamp(reference_trace, reference_name,
-                                               make_new_title=False,
-                                               to_normalize=to_normalize)
-        visualize_mcherry_and_gcamp(t_dict, all_names[i],
-                                    make_new_fig=False,
-                                    make_new_title=False,
-                                    ax1=ax1, ax2=ax2,
-                                    to_normalize=to_normalize)
-        if to_save:
-            plt.savefig(f'traces_{all_names[i]}_ref_{reference_name}')
-
-
 ##
 ## Generally plotting
 ##
@@ -294,65 +260,3 @@ def get_measurement_channel(t_dict):
     except KeyError:
         dat = t_dict['green']
     return dat
-
-
-def detrend_exponential(y_with_nan):
-    """
-    Bleach correction via simple exponential fit, subtraction, and re-adding the mean
-
-    Uses np.polyfit on np.log(y), with errors weighted back to the data space. See:
-
-    https://stackoverflow.com/questions/3433486/how-to-do-exponential-and-logarithmic-curve-fitting-in-python-i-found-only-poly
-
-    Parameters
-    ----------
-    y_with_nan
-
-    Returns
-    -------
-
-    """
-
-    ind = np.where(~np.isnan(y_with_nan))[0]
-    t = np.squeeze(StandardScaler(copy=False).fit_transform(ind.reshape(-1, 1)))
-    y = y_with_nan[ind]
-    y_log = np.log(y)
-
-    fit_vars = np.polyfit(t, y_log, 1)#, w=np.sqrt(y))
-
-    # Subtract in the original data space
-    y_fit = np.exp(fit_vars[0]) * np.exp(t*fit_vars[1])
-    y_corrected = y - y_fit + np.mean(y)
-
-    return ind, y_corrected
-
-
-def detrend_exponential_lmfit(y_with_nan):
-    """
-    Bleach correction via simple exponential fit, subtraction, and re-adding the mean
-
-    Uses np.polyfit on np.log(y), with errors weighted back to the data space. See:
-
-    https://stackoverflow.com/questions/3433486/how-to-do-exponential-and-logarithmic-curve-fitting-in-python-i-found-only-poly
-
-    Parameters
-    ----------
-    y_with_nan
-
-    Returns
-    -------
-
-    """
-
-    mod = ExponentialModel(nan_policy='omit')
-    ind = np.where(~np.isnan(y_with_nan))[0]
-    x = np.squeeze(StandardScaler(copy=False).fit_transform(ind.reshape(-1, 1)))
-    y = y_with_nan[ind]
-
-    pars = mod.guess(y, x=x)
-    out = mod.fit(y, pars, x=x)
-    y_fit = out.eval(x=x)
-
-    y_corrected = y - y_fit + np.nanmean(y)
-
-    return y_corrected, y_fit

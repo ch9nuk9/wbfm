@@ -26,6 +26,7 @@ from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_bina
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
+from wbfm.utils.visualization.utils_plot_traces import detrend_exponential_lmfit
 
 
 @dataclass
@@ -41,6 +42,7 @@ class TracePlotter:
 
     remove_outliers: bool = False
     filter_mode: str = 'no_filtering'
+    bleach_correct: bool = True
     min_confidence: float = None
     background_per_pixel: float = None
 
@@ -79,11 +81,19 @@ class TracePlotter:
         ## Function for getting a single time series (with preprocessing)
         ##
         # Format: y = f(neuron_name, traces_dataframe)
-        calc_single_trace = trace_from_dataframe_factory(self.calculation_mode, self.background_per_pixel)
+        calc_single_trace = trace_from_dataframe_factory(self.calculation_mode, self.background_per_pixel,
+                                                         self.bleach_correct)
 
-        def calc_single_df_over_f(i, _df):
-            _y = calc_single_trace(i, _df)
-            return _y / np.nanquantile(_y, 0.2)
+        if not self.bleach_correct:
+            def calc_single_df_over_f(i, _df):
+                _y = calc_single_trace(i, _df)
+                return _y / np.nanquantile(_y, 0.2)
+        else:
+            def calc_single_df_over_f(i, _df):
+                _y = calc_single_trace(i, _df)
+                _y, _ = detrend_exponential_lmfit(_y)
+                return _y / np.nanquantile(_y, 0.2)
+            print("Bleach corrected")
 
         ##
         ## Function for getting final y value from above functions

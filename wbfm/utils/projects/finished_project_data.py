@@ -491,6 +491,7 @@ class ProjectData:
                          neuron_name: str,
                          remove_outliers: bool = False,
                          filter_mode: str = 'no_filtering',
+                         bleach_correct: bool = True,
                          min_confidence: float = None) -> Tuple[list, list]:
         """
         Uses TracePlotter class to calculate traces
@@ -516,12 +517,13 @@ class ProjectData:
             self.red_traces,
             self.green_traces,
             self.final_tracks,
-            channel_mode,
-            calculation_mode,
-            remove_outliers,
-            filter_mode,
-            min_confidence,
-            self.background_per_pixel
+            channel_mode=channel_mode,
+            calculation_mode=calculation_mode,
+            remove_outliers=remove_outliers,
+            filter_mode=filter_mode,
+            bleach_correct=bleach_correct,
+            min_confidence=min_confidence,
+            background_per_pixel=self.background_per_pixel
         )
         y = self._trace_plotter.calculate_traces(neuron_name)
         return self._trace_plotter.tspan, y

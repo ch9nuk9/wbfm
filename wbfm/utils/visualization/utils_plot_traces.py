@@ -1,4 +1,7 @@
+import numpy as np
 import pandas as pd
+from lmfit.models import ExponentialModel
+from sklearn.preprocessing import StandardScaler
 
 
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
@@ -41,3 +44,69 @@ def set_big_font(size=22):
     font = {'weight': 'bold',
             'size': size}
     matplotlib.rc('font', **font)
+
+
+def detrend_exponential(y_with_nan):
+    """
+    Bleach correction via simple exponential fit, subtraction, and re-adding the mean
+
+    Uses np.polyfit on np.log(y), with errors weighted back to the data space. See:
+
+    https://stackoverflow.com/questions/3433486/how-to-do-exponential-and-logarithmic-curve-fitting-in-python-i-found-only-poly
+
+    Parameters
+    ----------
+    y_with_nan
+
+    Returns
+    -------
+
+    """
+
+    ind = np.where(~np.isnan(y_with_nan))[0]
+    t = np.squeeze(StandardScaler(copy=False).fit_transform(ind.reshape(-1, 1)))
+    y = y_with_nan[ind]
+    y_log = np.log(y)
+
+    fit_vars = np.polyfit(t, y_log, 1)#, w=np.sqrt(y))
+
+    # Subtract in the original data space
+    y_fit = np.exp(fit_vars[0]) * np.exp(t*fit_vars[1])
+    y_corrected = y - y_fit + np.mean(y)
+
+    return ind, y_corrected
+
+
+def detrend_exponential_lmfit(y_with_nan):
+    """
+    Bleach correction via simple exponential fit, subtraction, and re-adding the mean
+
+    Uses np.polyfit on np.log(y), with errors weighted back to the data space. See:
+
+    https://stackoverflow.com/questions/3433486/how-to-do-exponential-and-logarithmic-curve-fitting-in-python-i-found-only-poly
+
+    Parameters
+    ----------
+    y_with_nan
+
+    Returns
+    -------
+
+    """
+
+    mod = ExponentialModel(nan_policy='omit')
+    ind = np.where(~np.isnan(y_with_nan))[0]
+    x = np.squeeze(StandardScaler(copy=False).fit_transform(ind.reshape(-1, 1)))
+    y = y_with_nan[ind]
+
+    pars = mod.guess(y, x=x)
+    out = mod.fit(y, pars, x=x)
+    y_fit = out.eval(x=x)
+
+    y_corrected = y - y_fit + np.nanmean(y)
+
+    y_corrected_with_nan = np.empty_like(y_with_nan)
+    y_corrected_with_nan[:] = np.nan
+    y_corrected_with_nan[ind] = y_corrected
+
+    return y_corrected_with_nan, y_fit
