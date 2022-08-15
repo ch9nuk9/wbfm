@@ -9,6 +9,12 @@ self_path: 4-traces/traces_config.yaml
 
 reindexed_masks: 4-traces/reindexed_masks.zarr
 
+all_matches: 4-traces/all_matches.pickle
+
+#########################
+# Parameters
+#########################
+
 traces:
   min_confidence: 0.8  # Matching the segmentation and the tracks; should have very high confidence
   red: null
@@ -17,8 +23,8 @@ traces:
     - dummy0
     - dummy1
 
-all_matches: 4-traces/all_matches.pickle
-
-# For final display
+#########################
+# Parameters (visualization)
+#########################
 visualization:
   likelihood_thresh: 0.0
