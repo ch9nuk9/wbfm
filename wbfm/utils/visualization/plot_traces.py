@@ -26,7 +26,27 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  neuron_names_to_plot: list = None,
                                  filter_mode: str = 'no_filtering',
                                  color_using_behavior=True,
+                                 remove_outliers=False,
                                  to_save=True):
+    """
+
+    See project_data.calculate_traces for details on the arguments, and TracePlotter for even more detail
+
+    Parameters
+    ----------
+    project_data
+    channel_mode
+    calculation_mode
+    neuron_names_to_plot
+    filter_mode
+    color_using_behavior
+    remove_outliers
+    to_save
+
+    Returns
+    -------
+
+    """
     if channel_mode == 'all':
         all_modes = ['red', 'green', 'ratio', 'linear_model']
         opt = dict(project_data=project_data,
@@ -34,6 +54,9 @@ def make_grid_plot_using_project(project_data: ProjectData,
                    color_using_behavior=color_using_behavior)
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
+        # Also try to remove outliers
+        opt['remove_outliers'] = True
+        make_grid_plot_using_project(channel_mode='linear_model', **opt)
         return
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
@@ -43,7 +66,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
     neuron_names.sort()
 
     # Build functions to make a single subplot
-    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode}
+    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
+               'remove_outliers': remove_outliers}
     get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
@@ -53,7 +77,10 @@ def make_grid_plot_using_project(project_data: ProjectData,
     # Save final figure
     if to_save:
         if neuron_names_to_plot is None:
-            fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
+            if remove_outliers:
+                fname = f"{channel_mode}_{calculation_mode}_outliers_removed_grid_plot.png"
+            else:
+                fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
         else:
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
         traces_cfg = project_data.project_config.get_traces_config()
