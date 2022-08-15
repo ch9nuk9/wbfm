@@ -20,7 +20,7 @@ for f in "$folder_of_projects"/*; do
         for f_config in "$f"/*; do
             if [ -f "$f_config" ] && [ "${f_config##*/}" = "project_config.yaml" ]; then
                 if [ "$is_dry_run" ]; then
-                    echo "Dispatching on config file: $f_config"
+                    echo "DRYRUN: Dispatching on config file: $f_config"
                 else
                     sbatch ./single_step_dispatcher.sbatch -s "$step_reference" -t "$f_config"
                 fi
