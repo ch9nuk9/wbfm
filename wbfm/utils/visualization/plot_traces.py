@@ -5,6 +5,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
+from lmfit.models import ExponentialModel
+from sklearn.preprocessing import StandardScaler
+
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
@@ -55,10 +58,13 @@ def make_grid_plot_using_project(project_data: ProjectData,
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         # Also try to remove outliers and filter
+        all_modes = ['ratio', 'linear_model']
         opt['remove_outliers'] = True
-        make_grid_plot_using_project(channel_mode='linear_model', **opt)
+        for mode in all_modes:
+            make_grid_plot_using_project(channel_mode=mode, **opt)
         opt['filter_mode'] = 'rolling_mean'
-        make_grid_plot_using_project(channel_mode='linear_model', **opt)
+        for mode in all_modes:
+            make_grid_plot_using_project(channel_mode=mode, **opt)
         return
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
@@ -476,3 +482,65 @@ def get_measurement_channel(t_dict):
 #     # print(np.count_nonzero(this_prob < threshold))
 #
 #     return dat
+
+
+def detrend_exponential(y_with_nan):
+    """
+    Bleach correction via simple exponential fit, subtraction, and re-adding the mean
+
+    Uses np.polyfit on np.log(y), with errors weighted back to the data space. See:
+
+    https://stackoverflow.com/questions/3433486/how-to-do-exponential-and-logarithmic-curve-fitting-in-python-i-found-only-poly
+
+    Parameters
+    ----------
+    y_with_nan
+
+    Returns
+    -------
+
+    """
+
+    ind = np.where(~np.isnan(y_with_nan))[0]
+    t = np.squeeze(StandardScaler(copy=False).fit_transform(ind.reshape(-1, 1)))
+    y = y_with_nan[ind]
+    y_log = np.log(y)
+
+    fit_vars = np.polyfit(t, y_log, 1)#, w=np.sqrt(y))
+
+    # Subtract in the original data space
+    y_fit = np.exp(fit_vars[0]) * np.exp(t*fit_vars[1])
+    y_corrected = y - y_fit + np.mean(y)
+
+    return ind, y_corrected
+
+
+def detrend_exponential_lmfit(y_with_nan):
+    """
+    Bleach correction via simple exponential fit, subtraction, and re-adding the mean
+
+    Uses np.polyfit on np.log(y), with errors weighted back to the data space. See:
+
+    https://stackoverflow.com/questions/3433486/how-to-do-exponential-and-logarithmic-curve-fitting-in-python-i-found-only-poly
+
+    Parameters
+    ----------
+    y_with_nan
+
+    Returns
+    -------
+
+    """
+
+    mod = ExponentialModel(nan_policy='omit')
+    ind = np.where(~np.isnan(y_with_nan))[0]
+    x = np.squeeze(StandardScaler(copy=False).fit_transform(ind.reshape(-1, 1)))
+    y = y_with_nan[ind]
+
+    pars = mod.guess(y, x=x)
+    out = mod.fit(y, pars, x=x)
+    y_fit = out.eval(x=x)
+
+    y_corrected = y - y_fit + np.nanmean(y)
+
+    return y_corrected, y_fit
