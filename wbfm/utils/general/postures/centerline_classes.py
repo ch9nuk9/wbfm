@@ -1,3 +1,4 @@
+import copy
 import glob
 import logging
 import os
@@ -251,7 +252,7 @@ class WormFullVideoPosture:
         """Just sets the speed to be negative when the behavior is annotated as reversal"""
         speed = self.worm_speed[self.subsample_indices]
         rev_ind = self.behavior_annotations_fluorescence_fps == 1
-        velocity = speed.copy()
+        velocity = copy.copy(speed)
         velocity[rev_ind] *= -1
 
         return velocity
@@ -265,6 +266,11 @@ class WormFullVideoPosture:
     def worm_speed_smoothed_fluorescence_fps(self):
         window = 5
         return pd.Series(self.worm_speed_fluorescence_fps).rolling(window=window, center=True).mean()
+
+    @property
+    def leifer_curvature_from_kymograph(self):
+        # Signed average over segments 10 to 90
+        return self.curvature_fluorescence_fps.loc[:, 5:90].mean(axis=1)
 
     @property
     def subsample_indices(self):
