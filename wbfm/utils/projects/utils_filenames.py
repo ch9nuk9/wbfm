@@ -90,7 +90,7 @@ def read_if_exists(filename, reader=pd.read_hdf, **kwargs):
     elif os.path.exists(filename):
         return reader(filename, **kwargs)
     else:
-        logging.warning(f"Did not find file {filename}")
+        logging.debug(f"Did not find file {filename}")
         return None
 
 
@@ -105,7 +105,7 @@ def pandas_read_any_filetype(filename):
         else:
             raise NotImplementedError
     else:
-        logging.warning(f"Did not find file {filename}")
+        logging.debug(f"Did not find file {filename}")
         return None
 
 
@@ -138,15 +138,15 @@ def load_file_according_to_precedence(fname_precedence: list,
 
         if fname is not None and Path(fname).exists():
             data = this_reader(fname)
-            print(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
-            print(f"Read data from: {fname}")
+            logging.debug(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
+            logging.debug(f"Read data from: {fname}")
             if key != most_recent_modified_key:
-                logging.warning(f"Not using most recently modified file (mode {most_recent_modified_key})")
+                logging.debug(f"Not using most recently modified file (mode {most_recent_modified_key})")
             else:
-                logging.info(f"Using most recently modified file")
+                logging.debug(f"Using most recently modified file")
             break
     else:
-        logging.info(f"Found no files of possibilities: {possible_fnames}")
+        logging.debug(f"Found no files of possibilities: {possible_fnames}")
         data = None
         fname = None
     return data, fname

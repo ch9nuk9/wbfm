@@ -248,7 +248,7 @@ class ProjectData:
                 df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
             else:
                 self.logger.info("Found sparse matrix")
-        self.logger.info("Finished loading tracklets")
+        self.logger.debug("Finished loading tracklets")
 
         return df_all_tracklets
 
@@ -380,7 +380,7 @@ class ProjectData:
         if initialization_kwargs is None:
             initialization_kwargs = {}
         else:
-            cfg.logger.info(f"Initialized project with custom settings: {initialization_kwargs}")
+            cfg.logger.debug(f"Initialized project with custom settings: {initialization_kwargs}")
 
         obj = ProjectData(project_dir, cfg)
         for k, v in initialization_kwargs.items():
@@ -416,7 +416,7 @@ class ProjectData:
         # Note: when running on the cluster the raw data isn't (for now) accessible
         with safe_cd(cfg.project_dir):
 
-            cfg.logger.info("Starting threads to read data...")
+            cfg.logger.debug("Starting threads to read data...")
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
                     ex.submit(obj.load_tracklet_related_properties)
@@ -441,7 +441,7 @@ class ProjectData:
 
         obj.all_used_fnames.extend([red_dat_fname, green_dat_fname, red_traces_fname, green_traces_fname,
                                     seg_fname_raw, seg_fname])
-        cfg.logger.info(f"Read all data from files: {obj.all_used_fnames}")
+        cfg.logger.debug(f"Read all data from files: {obj.all_used_fnames}")
 
         background_per_pixel = preprocessing_settings.background_per_pixel
         likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']

@@ -191,7 +191,7 @@ class NapariLayerInitializer:
             _layer.color = prop_dict
             _layer.color_mode = 'direct'
 
-        project_data.logger.info(f"Finished adding layers {which_layers}")
+        project_data.logger.debug(f"Finished adding layers {which_layers}")
 
         return viewer
 

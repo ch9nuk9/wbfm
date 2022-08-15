@@ -237,7 +237,8 @@ class DetectedTrackletsAndNeurons:
                                                                                    name_mode='tracklet',
                                                                                    initial_empty_cols=10000)
         else:
-            print("Using basic dataframe")
+            pass
+            # print("Using basic dataframe")
 
     def setup_interactivity(self):
         subcolumn_to_check = 'raw_segmentation_id'

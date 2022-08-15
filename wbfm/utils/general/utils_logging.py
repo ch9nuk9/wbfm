@@ -17,7 +17,7 @@ def setup_logger_object(log_filename, actually_set_up_file=True):
     # Set up file handler
     try:
         if actually_set_up_file:
-            log_filename = get_sequential_filename(log_filename)
+            log_filename = get_sequential_filename(log_filename, verbose=0)
             print(f"Setting up log at: {log_filename}")
             fh = logging.FileHandler(log_filename)
             fh.setLevel(logging.DEBUG)
