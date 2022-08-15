@@ -93,7 +93,6 @@ class TracePlotter:
                 _y = calc_single_trace(i, _df)
                 _y, _ = detrend_exponential_lmfit(_y)
                 return _y / np.nanquantile(_y, 0.2)
-            print("Bleach corrected")
 
         ##
         ## Function for getting final y value from above functions
