@@ -5,7 +5,6 @@
 task_name: test
 experimenter: Charlie
 
-project_dir: null # For new project
 project_path: null # For reference afterwards
 
 ###################
@@ -17,8 +16,6 @@ green_bigtiff_fname: null
 
 red_background_fname: null
 green_background_fname: null
-
-preprocessing_config: 'preprocessing_config.yaml'
 
 preprocessed_red: null
 preprocessed_green: null
@@ -42,6 +39,8 @@ physical_units:
 ###################
 # Project status and steps
 ###################
+
+preprocessing_config: 'preprocessing_config.yaml'
 
 subfolder_configs:
   # Copy from external_libraries package

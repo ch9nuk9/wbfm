@@ -93,7 +93,7 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
 def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr,
                                    use_preprocessed_data, video_fname):
     verbose = cfg.config['verbose']
-    project_dir = cfg.config['project_dir']
+    project_dir = cfg.project_dir
     # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
     if use_preprocessed_data:
         preprocessing_settings = None
