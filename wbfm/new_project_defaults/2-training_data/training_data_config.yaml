@@ -7,11 +7,13 @@ self_path: 2-training_data/training_data_config.yaml # for programmatic updating
 # Tracking settings
 #########################
 
+# Parameters for tracklet neural network
 tracker_params: # OPTIMIZE
 #  num_frames: 100  # Uncomment this if you want a different number from the main project!
   z_depth_neuron_encoding: 3.0
   external_detections: null # Will be synchronized with segmentation
 
+# Parameters for additional methods of matching
 pairwise_matching_params:
   add_affine_to_candidates: true
   affine_num_candidates: 1
@@ -26,16 +28,21 @@ pairwise_matching_params:
   preprocess_using_global_rotation: false
   use_superglue: true
 
+# Parameters for postprocessing tracklets, i.e. splitting them
 postprocessing_params:
   min_length_to_save: 5
   volume_percent_threshold: 0.4 # Max allowed change between time points
 
-df_training_3d_tracks: 2-training_data/training_data_tracks.pickle
+# Output filenames
 df_3d_tracklets: 2-training_data/all_tracklets.pickle
+
+#########################
+# DEPRECATED
+#########################
+df_training_3d_tracks: 2-training_data/training_data_tracks.pickle
 reindexed_masks: 2-training_data/reindexed_masks.zarr
 reindexed_metadata: 2-training_data/reindexed_metadata.pickle
 
-# Which frames have enough tracklets to be used as templates later
 training_data_3d:
-  num_training_frames: 5 # CHANGE ME; trade-off between number of neurons and number of frames
+  num_training_frames: 5 # trade-off between number of neurons and number of frames
   which_frames: null # To be calculated
