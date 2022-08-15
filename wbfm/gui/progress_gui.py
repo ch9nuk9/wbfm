@@ -23,7 +23,7 @@ from wbfm.gui.create_project_gui import CreateProjectDialog
 from wbfm.gui.utils.file_dialog_widget import FileDialog
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.projects.utils_project_status import check_segmentation, check_tracking, \
-    check_traces, check_training_final
+    check_traces, check_training_final, check_training_only_tracklets
 from wbfm.utils.visualization.napari_from_config import napari_of_full_data
 from wbfm.utils.projects.finished_project_data import napari_of_training_data, ProjectData
 from backports.cached_property import cached_property
@@ -51,11 +51,6 @@ class UiMainWindow(object):
         self.verticalLayout.setObjectName("verticalLayout")
 
         # Top
-        self.createProjectButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.createProjectButton.setObjectName("createButton")
-        self.createProjectButton.clicked.connect(self.create_new_project)
-        self.verticalLayout.addWidget(self.createProjectButton)
-
         self.loadProjectButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.loadProjectButton.setObjectName("loadButton")
         self.loadProjectButton.clicked.connect(self.load_project_file)
@@ -129,26 +124,8 @@ class UiMainWindow(object):
         self.tracesVisButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.tracesVisButton.setObjectName("pushButton_5")
         self.tracesVisButton.clicked.connect(self.open_traces_gui)
-        self.tracesVisButton.setToolTip('Visualize traces of neurons 1-by-1')
+        self.tracesVisButton.setToolTip('For more info, see trace_explorer.py')
         self.gridLayout.addWidget(self.tracesVisButton, 4, 2, 1, 1)
-
-        # Do step buttons
-        self.segmentationButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.segmentationButton.setObjectName("pushButton_6")
-        self.segmentationButton.clicked.connect(self.do_segmentation)
-        self.gridLayout.addWidget(self.segmentationButton, 1, 3, 1, 1)
-        self.trainingButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.trainingButton.setObjectName("pushButton_7")
-        self.trainingButton.clicked.connect(self.do_tracklet_generation)
-        self.gridLayout.addWidget(self.trainingButton, 2, 3, 1, 1)
-        self.trackingButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.trackingButton.setObjectName("pushButton_8")
-        self.trackingButton.clicked.connect(self.do_dlc_training_and_tracking)
-        self.gridLayout.addWidget(self.trackingButton, 3, 3, 1, 1)
-        self.tracesButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.tracesButton.setObjectName("pushButton_9")
-        self.tracesButton.clicked.connect(self.do_final_traces)
-        self.gridLayout.addWidget(self.tracesButton, 4, 3, 1, 1)
 
         self.verticalLayout.addLayout(self.gridLayout)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -168,76 +145,32 @@ class UiMainWindow(object):
         self.project_dir = None
         self.project_file = project_path
 
+        # Deactivate not working buttons
+        self.trainingVisButton.setEnabled(False)
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.createProjectButton.setText(_translate("MainWindow", "TODO - Create Project"))
         self.loadProjectButton.setText(_translate("MainWindow", "Load Project"))
-        self.checkButton.setText(_translate("MainWindow", "Check Project Status"))
-        self.label_4.setText(_translate("MainWindow", "Do"))
-        self.label_7.setText(_translate("MainWindow", "3. Tracking"))
-        self.label_6.setText(_translate("MainWindow", "2. Training data"))
-        self.label_3.setText(_translate("MainWindow", "Visualize"))
+        self.checkButton.setText(_translate("MainWindow", "Update Project Status"))
+
         self.label_5.setText(_translate("MainWindow", "1. Segmentation"))
+        self.label_6.setText(_translate("MainWindow", "2. Training data"))
+        self.label_7.setText(_translate("MainWindow", "3. Tracking"))
+        self.label_8.setText(_translate("MainWindow", "4. Traces"))
+
+        self.label_3.setText(_translate("MainWindow", "Visualize"))
         self.label.setText(_translate("MainWindow", "Step"))
         self.label_2.setText(_translate("MainWindow", "Status"))
-        self.label_8.setText(_translate("MainWindow", "4. Traces"))
-        self.segVisButton.setText(_translate("MainWindow", "SegVis"))
+
+        self.segVisButton.setText(_translate("MainWindow", "SegmentationVis"))
         self.trainingVisButton.setText(_translate("MainWindow", "TrainingVis"))
-        self.trackingVisButton.setText(_translate("MainWindow", "TrackingVis"))
-        self.tracesVisButton.setText(_translate("MainWindow", "TracesVis"))
-        self.segmentationButton.setText(_translate("MainWindow", "Segment"))
-        self.trainingButton.setText(_translate("MainWindow", "Make Training data"))
-        self.trackingButton.setText(_translate("MainWindow", "Track"))
-        self.tracesButton.setText(_translate("MainWindow", "Make Traces"))
-
-    def do_segmentation(self):
-        # Runs in a new process
-        print("Running step 1")
-        mod = importlib.import_module("wbfm.scripts.1-segment_video", package="wbfm")
-        config_updates = {'project_path': self.project_file, 'DEBUG': False}
-        mod.ex.run(config_updates=config_updates)
-
-    def do_tracklet_generation(self):
-        # Runs in a new process
-        print("Running step 2")
-        mod = importlib.import_module("wbfm.scripts.2-produce_training_data", package="wbfm")
-        config_updates = {'project_path': self.project_file, 'DEBUG': False}
-        mod.ex.run(config_updates=config_updates)
-
-    def do_dlc_training_and_tracking(self):
-        # Runs in a new process
-        print("Running step 3a")
-        mod = importlib.import_module("wbfm.scripts.3a-initialize_dlc_stack", package="wbfm")
-        config_updates = {'project_path': self.project_file, 'DEBUG': False}
-        mod.ex.run(config_updates=config_updates)
-
-        print("Running step 3b")
-        mod = importlib.import_module("wbfm.scripts.3b-train_all_dlc_networks", package="wbfm")
-        mod.ex.run(config_updates=config_updates)
-
-        print("Running step 3c")
-        mod = importlib.import_module("wbfm.scripts.3c-make_full_tracks", package="wbfm")
-        mod.ex.run(config_updates=config_updates)
-
-    def do_final_traces(self):
-        # Runs in a new process
-        print("Running step 4")
-        mod = importlib.import_module("wbfm.scripts.4-make_full_traces", package="wbfm")
-        config_updates = {'project_path': self.project_file, 'DEBUG': False}
-        mod.ex.run(config_updates=config_updates)
+        self.trackingVisButton.setText(_translate("MainWindow", "IntermediateTrackingVis"))
+        self.tracesVisButton.setText(_translate("MainWindow", "FullTrackingVis"))
 
     def load_project_file(self):
         ex = FileDialog()
         self.project_file = ex.fileName
-
-    def create_new_project(self):
-        # Opens new GUI dialog box
-        self.ex = CreateProjectDialog()
-        # self.ex.setWindowModality(QtCore.Qt.ApplicationModal)
-        self.ex.exec()
-
-        self.project_file = os.path.join(self.ex.project_foldername, "project_config.yaml")
 
     @property
     def project_file(self):
@@ -248,38 +181,18 @@ class UiMainWindow(object):
         if value is None:
             return
 
-        is_valid = self.check_valid_project(value)
-        if is_valid:
-            self.is_loaded = True
-            self._project_file = value
-            print(f"Loading project: {self.project_file}")
-            self.project_dir = Path(value).parent
-            with safe_cd(self.project_dir):
-                self._load_config_files(value)
-            self.check_project_status()
-        else:
-            print(f"Project {value} is not a valid project")
+        self.is_loaded = True
+        self._project_file = value
+        print(f"Loading project: {self.project_file}")
+        self.project_dir = Path(value).parent
+        with safe_cd(self.project_dir):
+            self._load_config_files(value)
+        self.check_project_status()
 
     @cached_property
     def project_data(self):
         return ProjectData.load_final_project_data_from_config(self.project_file,
                                                                to_load_segmentation_metadata=True)
-
-    @property
-    def preprocessed_red(self):
-        return self.project_data.red_data
-
-    @property
-    def preprocessed_green(self):
-        return self.project_data.green_data
-
-    @property
-    def segment_zarr(self):
-        return self.project_data.raw_segmentation
-
-    def check_valid_project(self, value):
-        # TODO
-        return os.path.exists(value)
 
     def check_project_status(self):
         seg_status = check_segmentation(self.cfg)
@@ -287,20 +200,17 @@ class UiMainWindow(object):
             self.segmentationProgress.setValue(100)
         else:
             self.segmentationProgress.setValue(0)
-        training_status = check_training_final(self.cfg)
-        # print(f"training: {training_status}")
+        training_status = check_training_only_tracklets(self.cfg)
         if training_status:
             self.trainingProgress.setValue(100)
         else:
             self.trainingProgress.setValue(0)
         tracking_status = check_tracking(self.cfg)
-        # print(f"tracking_status: {tracking_status}")
         if tracking_status:
             self.trackingProgress.setValue(100)
         else:
             self.trackingProgress.setValue(0)
         traces_status = check_traces(self.cfg)
-        # print(f"traces_status: {traces_status}")
         if traces_status:
             self.tracesProgress.setValue(100)
         else:
@@ -309,9 +219,6 @@ class UiMainWindow(object):
     def _load_config_files(self, project_path):
         cfg = ModularProjectConfig(project_path)
         self.cfg = cfg
-        self.segment_cfg = cfg.get_segmentation_config()
-        self.tracking_cfg = cfg.get_tracking_config()
-        self.traces_cfg = cfg.get_traces_config()
 
     def napari_for_masks(self):
         """Open napari window for segmentation before tracking"""
@@ -327,21 +234,17 @@ class UiMainWindow(object):
         which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Intermediate global IDs']
         self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
         self.viewer.show()
-        # self.viewer = napari_of_full_data(self.project_dir)[0]
-        # self.viewer.add_image(self.preprocessed_red)
 
     def napari_for_masks_training(self):
         """Open napari window for segmentation for just the training data"""
+        raise NotImplementedError
         self.viewer, _, _ = napari_of_training_data(self.cfg)
 
     def open_traces_gui(self):
-        # Build object that has all the data
-        project_data = self.project_data
-        # project_data = ProjectData.load_final_project_data_from_config(self.project_file,
-        #                                                                to_load_tracklets=True,
-        #                                                                to_load_segmentation_metadata=True)
-        ui, viewer = napari_trace_explorer(project_data, to_print_fps=True)
-        self.viewer = viewer
+        self.viewer = napari.Viewer(ndisplay=3)
+        which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
+                        'Neuron IDs', 'Intermediate global IDs']
+        self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
         self.viewer.show()
 
 
