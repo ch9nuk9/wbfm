@@ -13,6 +13,8 @@ from ruamel.yaml import YAML
 #####################
 # Filename utils
 #####################
+from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
+
 
 def get_project_name(_config: dict) -> str:
     # Use current time
@@ -104,13 +106,11 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
         print(f"Cleaning project {project_dir}")
 
     # Get a list of all files that should be present, relative to the project directory
-    # Note: assumes that you are executing from the main wbfm folder
-    src = 'new_project_defaults'
+    src = get_location_of_new_project_defaults()
     initial_fnames = list(Path(src).rglob('**/*'))
     if len(initial_fnames) == 0:
         print("Found no initial files, probably running this from the wrong directory")
         raise FileNotFoundError
-    # initial_fnames = get_abs_filenames_recursive(src)
 
     # Convert them to relative
     initial_fnames = {str(fname.relative_to(src)) for fname in initial_fnames}
@@ -118,7 +118,6 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
         print(f"Found initial files: {initial_fnames}")
 
     # Also get the filenames of the target folder
-    # target_fnames = get_abs_filenames_recursive(project_dir)
     target_fnames = list(Path(project_dir).rglob('**/*'))
     if verbose >= 3:
         print(f"Found target files: {target_fnames}")
@@ -144,7 +143,3 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
     if dryrun:
         print("DRYRUN (nothing actually deleted)")
         print("If you want to really delete things, then use 'dryrun=False' in the command line")
-
-    # Also make sure any missing files are now present
-    # for fname in initial_fnames:
-    #     target_fname = Path(fname).relative_to()
