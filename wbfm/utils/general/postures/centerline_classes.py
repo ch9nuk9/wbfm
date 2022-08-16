@@ -240,7 +240,8 @@ class WormFullVideoPosture:
         df = self.stage_position
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
-        tdelta = df.index[1] - df.index[0]  # units = nanoseconds
+        # tdelta = df.index[1] - df.index[0]  # units = nanoseconds
+        tdelta = pd.Series(self.stage_position.index).diff().mean()
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
 
