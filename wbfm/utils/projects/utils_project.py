@@ -19,7 +19,11 @@ def get_project_name(_config: dict) -> str:
     project_name = datetime.now().strftime("%Y_%m_%d")
     exp = _config['experimenter']
     task = _config['task_name']
-    project_name = f"{exp}-{task}-" + project_name
+    if task is not None and task != '':
+        project_name = f"{exp}-{task}-" + project_name
+    else:
+        project_name = f"{exp}-" + project_name
+
     return project_name
 
 
