@@ -249,3 +249,31 @@ def get_location_of_new_project_defaults():
     parent_folder = Path(get_location_of_installed_project())
     target_folder = parent_folder.joinpath('wbfm').joinpath('new_project_defaults').resolve()
     return str(target_folder)
+
+
+def get_bigtiff_fname_from_folder(folder_fname, channel_to_check=0):
+    fname = None
+    str_pattern = f'_Ch{channel_to_check}bigtiff.btf'
+    for item in Path(folder_fname).iterdir():
+        if str(item).endswith(str_pattern):
+            fname = str(item)
+            break
+    else:
+        logging.warning(f"Did not find pattern {str_pattern} in folder {folder_fname}")
+    return fname
+
+
+def get_both_bigtiff_fnames_from_parent_folder(parent_data_folder):
+    green_bigtiff_fname, red_bigtiff_fname = None, None
+    for subfolder in Path(parent_data_folder).iterdir():
+        if subfolder.is_file():
+            continue
+        if subfolder.name.endswith('_Ch0'):
+            green_bigtiff_fname = get_bigtiff_fname_from_folder(subfolder, 0)
+        if subfolder.name.endswith('_Ch1'):
+            red_bigtiff_fname = get_bigtiff_fname_from_folder(subfolder, 1)
+
+    if green_bigtiff_fname is None or red_bigtiff_fname is None:
+        logging.warning(f"Did not find one of: {(green_bigtiff_fname, red_bigtiff_fname)}")
+
+    return green_bigtiff_fname, red_bigtiff_fname

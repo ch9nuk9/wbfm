@@ -17,8 +17,8 @@ from ruamel.yaml import YAML
 def get_project_name(_config: dict) -> str:
     # Use current time
     project_name = datetime.now().strftime("%Y_%m_%d")
-    exp = _config['experimenter']
-    task = _config['task_name']
+    exp = _config.get('experimenter', '')
+    task = _config.get('task_name', '')
     if task is not None and task != '':
         project_name = f"{exp}-{task}-" + project_name
     else:

@@ -15,7 +15,8 @@ from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSe
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 from wbfm.utils.projects.utils_filenames import get_sequential_filename, resolve_mounted_path_in_current_os, \
-    add_name_suffix, get_location_of_new_project_defaults
+    add_name_suffix, get_location_of_new_project_defaults, get_bigtiff_fname_from_folder, \
+    get_both_bigtiff_fnames_from_parent_folder
 from wbfm.utils.projects.utils_project import get_project_name, edit_config, safe_cd
 
 
@@ -28,6 +29,27 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     abs_dir_name = get_sequential_filename(abs_dir_name)
     logger.info(f"Building new project at: {abs_dir_name}")
 
+    # If the user just passed the parent raw data folder, then convert that into green and red
+    parent_data_folder = _config.get('parent_data_folder', None)
+    green_bigtiff_fname, red_bigtiff_fname = \
+        _config.get('green_bigtiff_fname', None), _config.get('red_bigtiff_fname', None)
+    if parent_data_folder is not None:
+        green_bigtiff_fname, red_bigtiff_fname = get_both_bigtiff_fnames_from_parent_folder(parent_data_folder)
+
+    if green_bigtiff_fname is None and _config.get('green_bigtiff_fname', None) is None:
+        search_failed = True
+    elif red_bigtiff_fname is None and _config.get('red_bigtiff_fname', None) is None:
+        search_failed = True
+    else:
+        search_failed = False
+
+    if search_failed:
+        logging.warning(f"Failed to find bigtiff files in folder {parent_data_folder}")
+        raise FileNotFoundError("Must pass either a) bigtiff data file directly, or b) proper parent folder")
+    else:
+        _config['red_bigtiff_fname'] = red_bigtiff_fname
+        _config['green_bigtiff_fname'] = green_bigtiff_fname
+
     # Uses the pip installed package location
     src = get_location_of_new_project_defaults()
     copytree(src, abs_dir_name)
@@ -36,6 +58,7 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     dest_fname = 'project_config.yaml'
     project_fname = osp.join(abs_dir_name, dest_fname)
     project_fname = Path(project_fname).resolve()
+
     edit_config(str(project_fname), _config)
 
     # Also update the snakemake file with the project directory
