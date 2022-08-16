@@ -7,6 +7,7 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
+from pip._internal.commands.show import search_packages_info
 
 from wbfm.utils.general.custom_errors import UnknownValueError
 
@@ -237,3 +238,14 @@ def generate_output_data_names(cfg):
     fname = cfg.resolve_mounted_path_in_current_os('green_bigtiff_fname')
     out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
     return out_fname_red, out_fname_green
+
+
+def get_location_of_installed_project():
+    package_info = next(search_packages_info(['wbfm']))
+    return package_info.location
+
+
+def get_location_of_new_project_defaults():
+    parent_folder = Path(get_location_of_installed_project())
+    target_folder = parent_folder.joinpath('wbfm').joinpath('new_project_defaults').resolve()
+    return str(target_folder)

@@ -15,7 +15,7 @@ from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSe
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 from wbfm.utils.projects.utils_filenames import get_sequential_filename, resolve_mounted_path_in_current_os, \
-    add_name_suffix
+    add_name_suffix, get_location_of_new_project_defaults
 from wbfm.utils.projects.utils_project import get_project_name, edit_config, safe_cd
 
 
@@ -28,8 +28,8 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     abs_dir_name = get_sequential_filename(abs_dir_name)
     logger.info(f"Building new project at: {abs_dir_name}")
 
-    # Note: assumes that you are executing from the main wbfm folder
-    src = 'new_project_defaults'
+    # Uses the pip installed package location
+    src = get_location_of_new_project_defaults()
     copytree(src, abs_dir_name)
 
     # Update the copied project config with the new dest folder
