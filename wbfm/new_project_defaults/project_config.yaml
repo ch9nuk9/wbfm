@@ -2,7 +2,7 @@
 # Do not edit!
 # NOTE: these comments will be deleted when moving to a new project!
 
-task_name: 
+task_name:
 experimenter: Charlie
 
 project_path: null # For reference afterwards
@@ -27,7 +27,7 @@ dataset_params:
   num_frames: 3300 # CHANGE ME
   fps: 6.9
   # In z
-  num_slices: 23 # CHANGE ME; after removal of flyback (see preprocessing)
+  num_slices: 22 # CHANGE ME; after removal of flyback (see preprocessing)
   # As of January 2022
   red_and_green_mirrored: False
 
