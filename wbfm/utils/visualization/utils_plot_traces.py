@@ -99,14 +99,18 @@ def detrend_exponential_lmfit(y_with_nan):
     x = ind
     y = y_with_nan[ind]
 
-    pars = mod.guess(y, x=x)
-    out = mod.fit(y, pars, x=x)
-    y_fit = out.eval(x=x)
+    try:
+        pars = mod.guess(y, x=x)
+        out = mod.fit(y, pars, x=x)
+        y_fit = out.eval(x=x)
 
-    y_corrected = y - y_fit + np.nanmean(y)
+        y_corrected = y - y_fit + np.nanmean(y)
 
-    y_corrected_with_nan = np.empty_like(y_with_nan)
-    y_corrected_with_nan[:] = np.nan
-    y_corrected_with_nan[ind] = y_corrected
+        y_corrected_with_nan = np.empty_like(y_with_nan)
+        y_corrected_with_nan[:] = np.nan
+        y_corrected_with_nan[ind] = y_corrected
+    except TypeError:
+        # Occurs when there are too few input points
+        y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
 
     return y_corrected_with_nan, y_fit
