@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from lmfit.models import ExponentialModel
+from lmfit.models import ExponentialModel, ConstantModel
 from sklearn.preprocessing import StandardScaler
 
 
@@ -94,17 +94,18 @@ def detrend_exponential_lmfit(y_with_nan):
 
     """
 
-    mod = ExponentialModel()
+    exp_mod = ExponentialModel(prefix='exp_')
     ind = np.where(~np.isnan(y_with_nan))[0]
     x = ind
     y = y_with_nan[ind]
 
     try:
-        pars = mod.guess(y, x=x)
-        out = mod.fit(y, pars, x=x)
-        y_fit = out.eval(x=x)
+        pars = exp_mod.guess(y, x=x)
+        out = exp_mod.fit(y, pars, x=x)
 
-        y_corrected = y - y_fit + np.nanmean(y)
+        comps = out.eval_components(x=x)
+        y_fit = comps['exp_']
+        y_corrected = y / y_fit
 
         y_corrected_with_nan = np.empty_like(y_with_nan)
         y_corrected_with_nan[:] = np.nan
@@ -113,4 +114,4 @@ def detrend_exponential_lmfit(y_with_nan):
         # Occurs when there are too few input points
         y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
 
-    return y_corrected_with_nan, y_fit
+    return y_corrected_with_nan, (y_fit, out)
