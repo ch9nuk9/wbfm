@@ -49,8 +49,8 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
     # Check for previously produced intermediate products
     raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
                                                       prepend_subfolder=True)
-    if os.path.exists(raw_fname):
-        raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
+    # if os.path.exists(raw_fname):
+    #     raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
     # Load the previous step
     all_frame_dict = project_data.raw_frames

@@ -34,8 +34,8 @@ def build_frames_and_adjacent_matches_using_config(project_config: ModularProjec
     video_data = project_data.red_data
     raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
                                                       prepend_subfolder=True)
-    if os.path.exists(raw_fname):
-        raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
+    # if os.path.exists(raw_fname):
+    #     raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
     # Intermediate products: pairwise matches between frames
     video_fname, tracker_params, frame_pair_options = _unpack_config_frame2frame_matches(
