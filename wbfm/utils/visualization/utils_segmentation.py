@@ -338,31 +338,23 @@ def extract_list_of_pixel_values_from_config(project_path: str):
         vol_red, masks = project_data.red_data[t], project_data.segmentation[t]
         vol_green = project_data.green_data[t]
 
-
         dict_for_this_time_red = {}
-
         dict_for_this_time_green = {}
 
-
         props_red = regionprops(masks, intensity_image=vol_red)
-
         props_green = regionprops(masks, intensity_image=vol_green)
-
 
         for prop in props_red:
             vol_of_values = prop['intensity_image']
             label = prop['label']
             dict_for_this_time_red[label] = vol_of_values[vol_of_values > 0]
 
-
         for prop in props_green:
             vol_of_values = prop['intensity_image']
             label = prop['label']
             dict_for_this_time_green[label] = vol_of_values[vol_of_values > 0]
 
-
         dict_of_dict_of_vals_red[t] = dict_for_this_time_red
-
         dict_of_dict_of_vals_green[t] = dict_for_this_time_green
 
     # Save
@@ -372,8 +364,4 @@ def extract_list_of_pixel_values_from_config(project_path: str):
     fname_green = os.path.join('visualization', 'pixel_values_all_neurons_green.pickle')
     project_data.project_config.pickle_data_in_local_project(dict_of_dict_of_vals_green, fname_green)
 
-
-
-    return dict_of_dict_of_vals_red, dict_for_this_time_green
-
-
+    return dict_of_dict_of_vals_red, dict_of_dict_of_vals_green
