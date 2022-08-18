@@ -111,8 +111,16 @@ def detrend_exponential_lmfit(y_with_nan):
         y_corrected_with_nan = np.empty_like(y_with_nan)
         y_corrected_with_nan[:] = np.nan
         y_corrected_with_nan[ind] = y_corrected
+        flag = True
+
     except TypeError:
         # Occurs when there are too few input points
         y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
+        flag = False
 
-    return y_corrected_with_nan, (y_fit, out)
+    if not out.errorbars or 0 in y_fit:
+        # Crude measurement of bad convergence, even if it didn't error out
+        y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
+        flag = False
+
+    return y_corrected_with_nan, (y_fit, out, flag)
