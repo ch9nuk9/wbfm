@@ -68,7 +68,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
     else:
-        neuron_names = list(set(project_data.green_traces.columns.get_level_values(0)))
+        neuron_names = project_data.neuron_names
     # Guess a good shape for subplots
     neuron_names.sort()
 
@@ -148,6 +148,7 @@ def save_grid_plot(out_fname):
 def make_grid_plot_from_callables(get_data_func: callable,
                                   neuron_names: list,
                                   shade_plot_func: callable,
+                                  values_of_background_shading: list = None,
                                   color_using_behavior: bool = True,
                                   logger: logging.Logger = None):
     """
@@ -158,6 +159,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
     get_data_func - function that accepts a neuron name and returns a tuple of (t, y)
     neuron_names - list of neurons to plot
     shade_plot_func - function that accepts an axis object and shades the plot
+    values_of_background_shading - list of colors to shade the background, e.g. correlation to a behavioral variable
+    color_using_behavior - whether to use the shade_plot_func
     logger
 
     Example:
@@ -168,6 +171,14 @@ def make_grid_plot_from_callables(get_data_func: callable,
     -------
 
     """
+    # Set up the colormap of the background, if any
+    if values_of_background_shading is not None:
+        lower = values_of_background_shading.min()
+        upper = values_of_background_shading.max()
+        colors = plt.cm.PiYG((values_of_background_shading-lower)/(upper-lower))
+    else:
+        colors = []
+
     # Loop through neurons and plot
     num_neurons = len(neuron_names)
     num_columns = 5
@@ -175,7 +186,10 @@ def make_grid_plot_from_callables(get_data_func: callable,
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
     fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 15), sharex=True, sharey=False)
-    for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
+    # for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
+    for i in tqdm(range(len(neuron_names))):
+
+        ax, neuron_name = fig.axes[i], neuron_names[i]
 
         t, y = get_data_func(neuron_name)
         ax.plot(t, y, label=neuron_name)
@@ -189,6 +203,11 @@ def make_grid_plot_from_callables(get_data_func: callable,
         ax.set_axis_off()
         if color_using_behavior:
             shade_plot_func(ax)
+
+        if values_of_background_shading is not None:
+            color, val = colors[i], values_of_background_shading[i]
+            ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
+            ax.set_title(f"Shaded value: {val:0.2f}")
 
 ##
 ## Generally plotting
