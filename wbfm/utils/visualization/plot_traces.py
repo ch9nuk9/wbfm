@@ -83,23 +83,25 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     # Correlate to a behavioral variable
     valid_behavioral_shadings = ['absolute_speed', 'speed', 'curvature']
-    values_of_background_shading = np.array([])
+    background_shading_value_func = None
     if behavioral_correlation_shading is None:
-        values_of_background_shading = np.array([])
+        pass
     elif behavioral_correlation_shading == 'absolute_speed':
-        values_of_background_shading = np.array([])
+        y = project_data.worm_posture_class.worm_speed_fluorescence_fps
+        background_shading_value_func = lambda X: np.corrcoef(X, y)[0, 1]
     elif behavioral_correlation_shading == 'speed':
-        values_of_background_shading = np.array([])
+        y = project_data.worm_posture_class.worm_speed_fluorescence_fps_signed
+        background_shading_value_func = lambda X: np.corrcoef(X, y)[0, 1]
     elif behavioral_correlation_shading == 'curvature':
-        values_of_background_shading = np.array([])
-
+        y = project_data.worm_posture_class.leifer_curvature_from_kymograph
+        background_shading_value_func = lambda X: np.corrcoef(X, y)[0, 1]
     else:
         assert behavioral_correlation_shading in valid_behavioral_shadings, \
             f"Must pass None or one of: {valid_behavioral_shadings}"
 
     make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
                                   color_using_behavior=color_using_behavior,
-                                  values_of_background_shading=values_of_background_shading, logger=logger)
+                                  background_shading_value_func=background_shading_value_func, logger=logger)
 
     # Save final figure
     if to_save:
