@@ -82,22 +82,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
     logger = project_data.logger
 
     # Correlate to a behavioral variable
-    valid_behavioral_shadings = ['absolute_speed', 'speed', 'curvature']
-    background_shading_value_func = None
-    if behavioral_correlation_shading is None:
-        pass
-    elif behavioral_correlation_shading == 'absolute_speed':
-        y = project_data.worm_posture_class.worm_speed_fluorescence_fps
-        background_shading_value_func = lambda X: np.corrcoef(X, y)[0, 1]
-    elif behavioral_correlation_shading == 'speed':
-        y = project_data.worm_posture_class.worm_speed_fluorescence_fps_signed
-        background_shading_value_func = lambda X: np.corrcoef(X, y)[0, 1]
-    elif behavioral_correlation_shading == 'curvature':
-        y = project_data.worm_posture_class.leifer_curvature_from_kymograph
-        background_shading_value_func = lambda X: np.corrcoef(X, y)[0, 1]
-    else:
-        assert behavioral_correlation_shading in valid_behavioral_shadings, \
-            f"Must pass None or one of: {valid_behavioral_shadings}"
+    background_shading_value_func = factory_correlate_trace_to_behavior_variable(project_data,
+                                                                                 behavioral_correlation_shading)
 
     make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
                                   color_using_behavior=color_using_behavior,
@@ -118,6 +104,27 @@ def make_grid_plot_using_project(project_data: ProjectData,
         out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
         save_grid_plot(out_fname)
+
+
+def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading):
+    valid_behavioral_shadings = ['absolute_speed', 'speed', 'curvature']
+    if behavioral_correlation_shading is None:
+        pass
+    elif behavioral_correlation_shading == 'absolute_speed':
+        y = project_data.worm_posture_class.worm_speed_fluorescence_fps
+    elif behavioral_correlation_shading == 'speed':
+        y = project_data.worm_posture_class.worm_speed_fluorescence_fps_signed
+    elif behavioral_correlation_shading == 'curvature':
+        y = project_data.worm_posture_class.leifer_curvature_from_kymograph
+    else:
+        assert behavioral_correlation_shading in valid_behavioral_shadings, \
+            f"Must pass None or one of: {valid_behavioral_shadings}"
+
+    def background_shading_value_func(X):
+        ind = np.where(~np.isnan(X))[0]
+        return np.corrcoef(X[ind], y[:len(X)][ind])[0, 1]
+
+    return background_shading_value_func
 
 
 def make_grid_plot_from_leifer_file(fname: str,
@@ -216,7 +223,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
-    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 15), sharex=True, sharey=False)
+    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 25), sharex=True, sharey=False)
     # for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
     for i in tqdm(range(len(neuron_names))):
 
