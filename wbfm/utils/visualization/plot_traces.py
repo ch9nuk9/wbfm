@@ -79,7 +79,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
 
-    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func, color_using_behavior, logger)
+    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                  color_using_behavior=color_using_behavior, logger=logger)
 
     # Save final figure
     if to_save:
@@ -125,7 +126,8 @@ def make_grid_plot_from_leifer_file(fname: str,
     shade_plot_func = lambda axis: shade_using_behavior(ethogram, axis, cmap=ethogram_cmap)
     logger = logging.getLogger()
 
-    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func, color_using_behavior, logger)
+    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                  color_using_behavior=color_using_behavior, logger=logger)
 
     # Save final figure
     out_fname = f"leifer_{channel_mode}_grid_plot.png"
