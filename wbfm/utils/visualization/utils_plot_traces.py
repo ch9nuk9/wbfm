@@ -98,6 +98,7 @@ def detrend_exponential_lmfit(y_with_nan):
     ind = np.where(~np.isnan(y_with_nan))[0]
     x = ind
     y = y_with_nan[ind]
+    out = None
 
     try:
         pars = exp_mod.guess(y, x=x)
