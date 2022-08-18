@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from matplotlib.colors import TwoSlopeNorm
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -150,7 +151,7 @@ def save_grid_plot(out_fname):
 def make_grid_plot_from_callables(get_data_func: callable,
                                   neuron_names: list,
                                   shade_plot_func: callable,
-                                  values_of_background_shading: list = None,
+                                  values_of_background_shading: np.ndarray = None,
                                   color_using_behavior: bool = True,
                                   logger: logging.Logger = None):
     """
@@ -175,9 +176,12 @@ def make_grid_plot_from_callables(get_data_func: callable,
     """
     # Set up the colormap of the background, if any
     if values_of_background_shading is not None:
-        lower = values_of_background_shading.min()
-        upper = values_of_background_shading.max()
-        colors = plt.cm.PiYG((values_of_background_shading-lower)/(upper-lower))
+        # From: https://stackoverflow.com/questions/59638155/how-to-set-0-to-white-at-a-uneven-color-ramp
+        norm = TwoSlopeNorm(vcenter=0)
+        norm.autoscale(values_of_background_shading)
+        values_normalized = norm(values_of_background_shading)
+        colors = plt.cm.PiYG(values_normalized)
+
     else:
         colors = []
 
