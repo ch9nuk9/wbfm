@@ -29,6 +29,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  color_using_behavior=True,
                                  remove_outliers=False,
                                  bleach_correct=True,
+                                 behavioral_correlation_shading=None,
                                  to_save=True):
     """
 
@@ -66,11 +67,11 @@ def make_grid_plot_using_project(project_data: ProjectData,
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         return
+
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
     else:
         neuron_names = project_data.neuron_names
-    # Guess a good shape for subplots
     neuron_names.sort()
 
     # Build functions to make a single subplot
@@ -80,8 +81,25 @@ def make_grid_plot_using_project(project_data: ProjectData,
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
 
+    # Correlate to a behavioral variable
+    valid_behavioral_shadings = ['absolute_speed', 'speed', 'curvature']
+    values_of_background_shading = np.array([])
+    if behavioral_correlation_shading is None:
+        values_of_background_shading = np.array([])
+    elif behavioral_correlation_shading == 'absolute_speed':
+        values_of_background_shading = np.array([])
+    elif behavioral_correlation_shading == 'speed':
+        values_of_background_shading = np.array([])
+    elif behavioral_correlation_shading == 'curvature':
+        values_of_background_shading = np.array([])
+
+    else:
+        assert behavioral_correlation_shading in valid_behavioral_shadings, \
+            f"Must pass None or one of: {valid_behavioral_shadings}"
+
     make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
-                                  color_using_behavior=color_using_behavior, logger=logger)
+                                  color_using_behavior=color_using_behavior,
+                                  values_of_background_shading=values_of_background_shading, logger=logger)
 
     # Save final figure
     if to_save:
@@ -151,7 +169,7 @@ def save_grid_plot(out_fname):
 def make_grid_plot_from_callables(get_data_func: callable,
                                   neuron_names: list,
                                   shade_plot_func: callable,
-                                  values_of_background_shading: np.ndarray = None,
+                                  background_shading_value_func: callable = None,
                                   color_using_behavior: bool = True,
                                   logger: logging.Logger = None):
     """
@@ -162,7 +180,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
     get_data_func - function that accepts a neuron name and returns a tuple of (t, y)
     neuron_names - list of neurons to plot
     shade_plot_func - function that accepts an axis object and shades the plot
-    values_of_background_shading - list of colors to shade the background, e.g. correlation to a behavioral variable
+    background_shading_value_func - function to get a value to shade the background, e.g. correlation to behavior
     color_using_behavior - whether to use the shade_plot_func
     logger
 
@@ -175,11 +193,16 @@ def make_grid_plot_from_callables(get_data_func: callable,
 
     """
     # Set up the colormap of the background, if any
-    if values_of_background_shading is not None:
+    if background_shading_value_func is not None:
         # From: https://stackoverflow.com/questions/59638155/how-to-set-0-to-white-at-a-uneven-color-ramp
+
+        # First get all the traces, so that the entire cmap can be scaled
+        all_y = [get_data_func(name)[1] for name in neuron_names]
+        all_vals = [background_shading_value_func(y) for y in all_y]
+
         norm = TwoSlopeNorm(vcenter=0)
-        norm.autoscale(values_of_background_shading)
-        values_normalized = norm(values_of_background_shading)
+        norm.autoscale(all_vals)
+        values_normalized = norm(all_vals)
         colors = plt.cm.PiYG(values_normalized)
 
     else:
@@ -210,8 +233,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
         if color_using_behavior:
             shade_plot_func(ax)
 
-        if values_of_background_shading is not None:
-            color, val = colors[i], values_of_background_shading[i]
+        if background_shading_value_func is not None:
+            color, val = colors[i], background_shading_value_func(y)
             ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
             ax.set_title(f"Shaded value: {val:0.2f}")
 
