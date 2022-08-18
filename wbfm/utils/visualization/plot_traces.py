@@ -214,8 +214,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
         all_y = [get_data_func(name)[1] for name in neuron_names]
         all_vals = [background_shading_value_func(y) for y in all_y]
 
-        norm = TwoSlopeNorm(vcenter=0)
-        norm.autoscale(all_vals)
+        norm = TwoSlopeNorm(vmin=np.nanmin(all_vals), vcenter=0, vmax=np.nanmax(all_vals))
+        # norm.autoscale(all_vals)
         values_normalized = norm(all_vals)
         colors = plt.cm.PiYG(values_normalized)
 
