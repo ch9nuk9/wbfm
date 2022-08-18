@@ -14,6 +14,7 @@ from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.utils_plot_traces import check_default_names
 
 
@@ -30,6 +31,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  remove_outliers=False,
                                  bleach_correct=True,
                                  behavioral_correlation_shading=None,
+                                 min_nonnan=None,
                                  to_save=True):
     """
 
@@ -71,7 +73,10 @@ def make_grid_plot_using_project(project_data: ProjectData,
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
     else:
-        neuron_names = project_data.neuron_names
+        if isinstance(min_nonnan, float):
+            neuron_names = project_data.well_tracked_neuron_names(min_nonnan)
+        else:
+            neuron_names = project_data.neuron_names
     neuron_names.sort()
 
     # Build functions to make a single subplot
