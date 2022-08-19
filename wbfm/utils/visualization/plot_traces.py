@@ -113,7 +113,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
         save_grid_plot(out_fname)
 
 
-def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading: str) -> Optional[callable]:
+def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading: str) \
+        -> Optional[callable]:
     valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature']
     posture_class = project_data.worm_posture_class
     y = None
