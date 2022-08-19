@@ -118,7 +118,7 @@ def detrend_exponential_lmfit(y_with_nan):
         y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
         flag = False
 
-    if not out.errorbars or 0 in y_fit:
+    if out is None or not out.errorbars or 0 in y_fit:
         # Crude measurement of bad convergence, even if it didn't error out
         y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
         flag = False
