@@ -1,5 +1,7 @@
 import logging
 from pathlib import Path
+from typing import Optional
+
 from matplotlib.colors import TwoSlopeNorm
 
 import matplotlib.pyplot as plt
@@ -111,19 +113,34 @@ def make_grid_plot_using_project(project_data: ProjectData,
         save_grid_plot(out_fname)
 
 
-def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading):
-    valid_behavioral_shadings = ['absolute_speed', 'speed', 'curvature']
+def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading: str) -> Optional[callable]:
+    valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature']
+    posture_class = project_data.worm_posture_class
+    y = None
     if behavioral_correlation_shading is None:
-        return None
+        y = None
     elif behavioral_correlation_shading == 'absolute_speed':
-        y = project_data.worm_posture_class.worm_speed_fluorescence_fps
+        y = posture_class.worm_speed_fluorescence_fps
     elif behavioral_correlation_shading == 'speed':
-        y = project_data.worm_posture_class.worm_speed_fluorescence_fps_signed
+        y = posture_class.worm_speed_fluorescence_fps_signed
+    elif behavioral_correlation_shading == 'positive_speed':
+        y = posture_class.worm_speed_fluorescence_fps_signed
+        if posture_class.beh_annotation is not None:
+            reversal_ind = posture_class.beh_annotation == 1
+            y[reversal_ind] = 0
+    elif behavioral_correlation_shading == 'negative_speed':
+        y = posture_class.worm_speed_fluorescence_fps_signed
+        if posture_class.beh_annotation is not None:
+            forward_ind = posture_class.beh_annotation == 0
+            y[forward_ind] = 0
     elif behavioral_correlation_shading == 'curvature':
-        y = project_data.worm_posture_class.leifer_curvature_from_kymograph
+        y = posture_class.leifer_curvature_from_kymograph
     else:
         assert behavioral_correlation_shading in valid_behavioral_shadings, \
             f"Must pass None or one of: {valid_behavioral_shadings}"
+
+    if y is None:
+        return None
 
     def background_shading_value_func(X):
         ind = np.where(~np.isnan(X))[0]
