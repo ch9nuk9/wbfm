@@ -6,6 +6,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Optional, List
 
+import numba
 import numpy as np
 import pandas as pd
 from pytorch_lightning import LightningDataModule
@@ -76,37 +77,40 @@ def get_bbox_data_for_volume(project_data, t, target_sz=np.array([8, 64, 64])):
     props = regionprops(this_seg)
 
     all_dat, all_bbox = [], []
-    this_red = project_data.red_data
-    sz = this_red.shape
+    this_red = np.array(project_data.red_data[t, ...])
+    sz = project_data.red_data.shape
 
-    for p in tqdm(props):
+    for p in props:
         bbox = p.bbox
         # Expand to get the neighborhood
 
-        z0 = np.clip(bbox[0] - int(target_sz[0]/4), a_min=0, a_max=sz[1])
-        z1 = np.clip(bbox[3] + int(target_sz[0]/4), a_min=0, a_max=sz[1])
-        if z1 - z0 > target_sz[0]:
-            z1 = z0 + target_sz[0]
-        x0 = np.clip(bbox[1] - int(target_sz[1]/2), a_min=0, a_max=sz[2])
-        x1 = np.clip(bbox[4] + int(target_sz[1]/2), a_min=0, a_max=sz[2])
-        if x1 - x0 > target_sz[1]:
-            x1 = x0 + target_sz[1]
-        y0 = np.clip(bbox[2] - int(target_sz[2]/2), a_min=0, a_max=sz[3])
-        y1 = np.clip(bbox[5] + int(target_sz[2]/2), a_min=0, a_max=sz[3])
-        if y1 - y0 > target_sz[2]:
-            y1 = y0 + target_sz[2]
+        dat = get_3d_crop_using_bbox(bbox, sz, target_sz, this_red)
 
-        dat = this_red[t, z0:z1, x0:x1, y0:y1]
-
-        # Pad, if needed, to the beginning
-        diff_sz = np.clip(target_sz - np.array(dat.shape), a_min=0, a_max=np.max(target_sz))
-        pad_sz = list(zip(diff_sz, np.zeros(len(diff_sz), dtype=int)))
-        dat = np.pad(dat, pad_sz)
-
-        all_dat.append(dat)
+        all_dat.append(dat) # TODO: preallocate
         all_bbox.append(bbox)
 
     return all_dat, all_bbox
+
+
+def get_3d_crop_using_bbox(bbox, sz, target_sz, this_red):
+    z0 = np.clip(bbox[0] - int(target_sz[0] / 4), a_min=0, a_max=sz[1])
+    z1 = np.clip(bbox[3] + int(target_sz[0] / 4), a_min=0, a_max=sz[1])
+    if z1 - z0 > target_sz[0]:
+        z1 = z0 + target_sz[0]
+    x0 = np.clip(bbox[1] - int(target_sz[1] / 2), a_min=0, a_max=sz[2])
+    x1 = np.clip(bbox[4] + int(target_sz[1] / 2), a_min=0, a_max=sz[2])
+    if x1 - x0 > target_sz[1]:
+        x1 = x0 + target_sz[1]
+    y0 = np.clip(bbox[2] - int(target_sz[2] / 2), a_min=0, a_max=sz[3])
+    y1 = np.clip(bbox[5] + int(target_sz[2] / 2), a_min=0, a_max=sz[3])
+    if y1 - y0 > target_sz[2]:
+        y1 = y0 + target_sz[2]
+    dat = this_red[z0:z1, x0:x1, y0:y1]
+    # Pad, if needed, to the beginning
+    diff_sz = np.clip(target_sz - np.array(dat.shape), a_min=0, a_max=np.max(target_sz))
+    pad_sz = list(zip(diff_sz, np.zeros(len(diff_sz), dtype=int)))
+    dat = np.pad(dat, pad_sz)
+    return dat
 
 
 # MAX_TRACKLET = df.shape[0]
