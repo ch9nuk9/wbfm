@@ -114,7 +114,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
 def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading):
     valid_behavioral_shadings = ['absolute_speed', 'speed', 'curvature']
     if behavioral_correlation_shading is None:
-        pass
+        return None
     elif behavioral_correlation_shading == 'absolute_speed':
         y = project_data.worm_posture_class.worm_speed_fluorescence_fps
     elif behavioral_correlation_shading == 'speed':
