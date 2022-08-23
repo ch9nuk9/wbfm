@@ -55,26 +55,24 @@ class BarlowTwins3d(nn.Module):
     def forward(self, y1, y2):
         # Shape of z: neurons x features
         # Because neurons=batch for me, I need to switch the below evaluation
-        z1 = self.embed(y1)
-        z2 = self.embed(y2)
-
-        # empirical cross-correlation matrix
-        z1_norm = (z1 - torch.mean(z1, dim=0)) / torch.std(z1, dim=0)
-        z2_norm = (z2 - torch.mean(z2, dim=0)) / torch.std(z2, dim=0)
-
-        this_batch_sz = z1.shape[0]
-        c = torch.matmul(z1_norm.T, z2_norm) / this_batch_sz
+        c = self.calculate_correlation_matrix(y1, y2)
         # c = self.bn(z1) @ self.bn(z2).T
         # c = self.bn(z1).T @ self.bn(z2)
-
-        # sum the cross-correlation matrix between all gpus
-        # c.div_(self.args.batch_size)
-        # torch.distributed.all_reduce(c)
 
         on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
         off_diag = off_diagonal(c).pow_(2).sum()
         loss = on_diag + self.args.lambd * off_diag
         return loss
+
+    def calculate_correlation_matrix(self, y1, y2):
+        z1 = self.embed(y1)
+        z2 = self.embed(y2)
+        # empirical cross-correlation matrix
+        z1_norm = (z1 - z1.mean(0)) / z1.std(0)
+        z2_norm = (z2 - z2.mean(0)) / z2.std(0)
+        this_batch_sz = z1.shape[0]
+        c = torch.matmul(z1_norm.T, z2_norm) / this_batch_sz  # D x D (feature space)
+        return c
 
 
 class LARS(optim.Optimizer):
@@ -121,19 +119,21 @@ class LARS(optim.Optimizer):
 class Transform:
     def __init__(self):
         self.transform = tio.transforms.Compose([
-            tio.RandomFlip(axes=(1, 2), p=0.5),  # Do not flip z
-            tio.RandomBlur(p=1.0),
-            # tio.RandomMotion(translation=1, p=1.0),
+            tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
+            tio.RandomBlur(p=0.1),
+            tio.RandomMotion(translation=0, degrees=180, p=1.0),
             tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.5),
+            tio.RandomNoise(p=0.5),
             # transforms.ToTensor(),
             # transforms.Normalize(mean=[0.485, 0.456, 0.406],
             #                      std=[0.229, 0.224, 0.225])
         ])
         self.transform_prime = transforms.Compose([
-            tio.RandomFlip(axes=(1, 2), p=0.5),  # Do not flip z
-            tio.RandomBlur(p=0.1),
-            # tio.RandomMotion(translation=1, p=0.1),
+            # tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
+            # tio.RandomBlur(p=0.0),
+            tio.RandomMotion(translation=0, degrees=180, p=0.5),
             tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.1),
+            tio.RandomNoise(p=0.1),
             # transforms.ToTensor(),
             # transforms.Normalize(mean=[0.485, 0.456, 0.406],
             #                      std=[0.229, 0.224, 0.225])
