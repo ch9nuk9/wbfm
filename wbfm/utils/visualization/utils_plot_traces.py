@@ -153,18 +153,33 @@ def detrend_exponential_lmfit_give_indices(y_full, ind_iter):
 
     return y_corrected_with_nan, (y_fit, out)
 
-def detrend_exponential_iter(trace,thres=0.01,low_quantile=0.15,high_quantile=0.85):
-    #low/high_quantile: how many percent of the data should be excluded at bottom/top
+
+def detrend_exponential_iter(trace, max_iters=100, convergence_threshold=0.01,
+                             low_quantile=0.15, high_quantile=0.85):
+    """
+    low/high_quantile: how many percent of the data should be excluded at bottom/top
+
+    Parameters
+    ----------
+    trace
+    convergence_threshold - stop if L2 norm changes by less than this
+    low_quantile - per iteration, remove this bottom percentile
+    high_quantile - per iteration, remove this bottom percentile
+
+    Returns
+    -------
+
+    """
     y_full = trace
     ind_iter = np.where(~np.isnan(y_full))[0]
     y_fit = np.array([0]*len(ind_iter))
-    y_fit_last = np.array([10000]*len(ind_iter))
     num_iter = 0
 
-    while scipy.spatial.distance.euclidean(y_fit,y_fit_last) > thres:
-        y_detrend = detrend_exponential_lmfit_give_indices(y_full,ind_iter)[0]
+    for _ in range(max_iters):
+        y_detrend = detrend_exponential_lmfit_give_indices(y_full, ind_iter)[0]
         y_fit_last = y_fit
-        y_fit = detrend_exponential_lmfit_give_indices(y_full,ind_iter)[1][0]
-        ind_iter = np.where(np.logical_and(np.nanquantile(y_detrend,low_quantile) < y_detrend , y_detrend < np.nanquantile(y_detrend,high_quantile)))[0]
-        num_iter +=1
+        y_fit = detrend_exponential_lmfit_give_indices(y_full, ind_iter)[1][0]
+        ind_iter = np.where(np.logical_and(np.nanquantile(y_detrend, low_quantile) < y_detrend, y_detrend < np.nanquantile(y_detrend,high_quantile)))[0]
+        if scipy.spatial.distance.euclidean(y_fit, y_fit_last) <= convergence_threshold:
+            break
     return y_detrend, num_iter
