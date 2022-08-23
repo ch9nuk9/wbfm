@@ -118,7 +118,7 @@ class WormFullVideoPosture:
 
         # Before anything, load metadata
         frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
-        bigtiff_start_volume = project_config.config['dataset_params']['bigtiff_start_volume']
+        bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
         opt = dict(frames_per_volume=frames_per_volume,
                    bigtiff_start_volume=bigtiff_start_volume)
 
