@@ -165,6 +165,7 @@ class NapariPropertyHeatMapper:
         if red == False:
             val_to_plot = np.array(corrcoefs_green)
 
+
         return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
 

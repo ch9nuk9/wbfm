@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from lmfit.models import ExponentialModel, ConstantModel
 from sklearn.preprocessing import StandardScaler
+import scipy
 
 
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
@@ -124,3 +125,46 @@ def detrend_exponential_lmfit(y_with_nan):
         flag = False
 
     return y_corrected_with_nan, (y_fit, out, flag)
+
+
+def detrend_exponential_lmfit_give_indices(y_full, ind_iter):
+    y = y_full[ind_iter]
+    ind_remove_nan = np.where(~np.isnan(y_full))[0]
+    y_no_nan = y_full[ind_remove_nan]
+    x = ind_iter
+
+    exp_mod = ExponentialModel(prefix='exp_')
+    out = None
+
+    try:
+        pars = exp_mod.guess(y, x=x)
+        out = exp_mod.fit(y, pars, x=x)
+
+        comps = out.eval_components(x=ind_remove_nan)
+        y_fit = comps['exp_']
+        y_corrected = y_no_nan / y_fit
+
+        y_corrected_with_nan = np.empty_like(y_full)
+        y_corrected_with_nan[:] = np.nan
+        y_corrected_with_nan[ind_remove_nan] = y_corrected
+    except TypeError:
+        # Occurs when there are too few input points
+        y_corrected_with_nan, y_fit = y_full, y_full
+
+    return y_corrected_with_nan, (y_fit, out)
+
+def detrend_exponential_iter(trace,thres=0.01,low_quantile=0.15,high_quantile=0.85):
+    #low/high_quantile: how many percent of the data should be excluded at bottom/top
+    y_full = trace
+    ind_iter = np.where(~np.isnan(y_full))[0]
+    y_fit = np.array([0]*len(ind_iter))
+    y_fit_last = np.array([10000]*len(ind_iter))
+    num_iter = 0
+
+    while scipy.spatial.distance.euclidean(y_fit,y_fit_last) > thres:
+        y_detrend = detrend_exponential_lmfit_give_indices(y_full,ind_iter)[0]
+        y_fit_last = y_fit
+        y_fit = detrend_exponential_lmfit_give_indices(y_full,ind_iter)[1][0]
+        ind_iter = np.where(np.logical_and(np.nanquantile(y_detrend,low_quantile) < y_detrend , y_detrend < np.nanquantile(y_detrend,high_quantile)))[0]
+        num_iter +=1
+    return y_detrend, num_iter
