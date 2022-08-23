@@ -135,7 +135,6 @@ class NapariPropertyHeatMapper:
         tmp2.columns = self.names
         return tmp1 / tmp2
 
-
     def corrcoef_kymo(self):
         if self.curvature_fluorescence_fps.isnull().values.all():
             return [np.nan]
@@ -165,9 +164,7 @@ class NapariPropertyHeatMapper:
         if red == False:
             val_to_plot = np.array(corrcoefs_green)
 
-
         return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
-
 
     def count_nonnan(self) -> Dict[int, float]:
         num_nonnan = self.df_labels.count()
