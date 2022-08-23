@@ -1,5 +1,6 @@
-import gc
+# From: http://proceedings.mlr.press/v139/zbontar21a/zbontar21a.pdf
 
+import gc
 import numpy as np
 import torch
 from torch import nn, optim
@@ -24,13 +25,13 @@ def off_diagonal(x):
 
 
 class BarlowTwins3d(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, backbone=Siamese, **backbone_kwargs):
         super().__init__()
         self.args = args
 
         # embedding_dim = 32
         embedding_dim = 2048
-        self.backbone = Siamese(embedding_dim=embedding_dim)
+        self.backbone = backbone(embedding_dim=embedding_dim, **backbone_kwargs)
         self.backbone.fc = nn.Identity()
 
         # projector
@@ -39,7 +40,7 @@ class BarlowTwins3d(nn.Module):
         for i in range(len(sizes) - 2):
             layers.append(nn.Linear(sizes[i], sizes[i + 1], bias=False))
             # layers.append(nn.BatchNorm1d(sizes[i + 1], track_running_stats=False))
-            # layers.append(nn.BatchNorm1d(sizes[i + 1]))
+            layers.append(nn.BatchNorm1d(sizes[i + 1]))
             layers.append(nn.ReLU(inplace=True))
         layers.append(nn.Linear(sizes[-2], sizes[-1], bias=False))
         self.projector = nn.Sequential(*layers)
@@ -78,7 +79,6 @@ class LARS(optim.Optimizer):
                         eta=eta, weight_decay_filter=weight_decay_filter,
                         lars_adaptation_filter=lars_adaptation_filter)
         super().__init__(params, defaults)
-
 
     def exclude_bias_and_norm(self, p):
         return p.ndim == 1
