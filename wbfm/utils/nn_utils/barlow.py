@@ -47,7 +47,7 @@ class BarlowTwins3d(nn.Module):
 
         # normalization layer for the representations z1 and z2
         # self.bn = nn.BatchNorm1d(sizes[-1], affine=False)
-        self.bn = nn.Identity()
+        # self.bn = nn.Identity()
 
     def embed(self, _y):
         return self.projector(self.backbone(_y))
@@ -59,7 +59,12 @@ class BarlowTwins3d(nn.Module):
         z2 = self.embed(y2)
 
         # empirical cross-correlation matrix
-        c = self.bn(z1) @ self.bn(z2).T
+        z1_norm = (z1 - torch.mean(z1, dim=0)) / torch.std(z1, dim=0)
+        z2_norm = (z2 - torch.mean(z2, dim=0)) / torch.std(z2, dim=0)
+
+        this_batch_sz = z1.shape[0]
+        c = torch.matmul(z1_norm.T, z2_norm) / this_batch_sz
+        # c = self.bn(z1) @ self.bn(z2).T
         # c = self.bn(z1).T @ self.bn(z2)
 
         # sum the cross-correlation matrix between all gpus
