@@ -1,3 +1,5 @@
+import gc
+
 import numpy as np
 import torch
 from torch import nn, optim
@@ -25,24 +27,29 @@ class BarlowTwins3d(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.backbone = Siamese(embedding_dim=2048)
+
+        # embedding_dim = 32
+        embedding_dim = 2048
+        self.backbone = Siamese(embedding_dim=embedding_dim)
         self.backbone.fc = nn.Identity()
 
         # projector
-        sizes = [2048] + list(map(int, args.projector.split('-')))
+        sizes = [embedding_dim] + list(map(int, args.projector.split('-')))
         layers = []
         for i in range(len(sizes) - 2):
             layers.append(nn.Linear(sizes[i], sizes[i + 1], bias=False))
-            layers.append(nn.BatchNorm1d(sizes[i + 1]))
+            # layers.append(nn.BatchNorm1d(sizes[i + 1], track_running_stats=False))
+            # layers.append(nn.BatchNorm1d(sizes[i + 1]))
             layers.append(nn.ReLU(inplace=True))
         layers.append(nn.Linear(sizes[-2], sizes[-1], bias=False))
         self.projector = nn.Sequential(*layers)
 
         # normalization layer for the representations z1 and z2
-        self.bn = nn.BatchNorm1d(sizes[-1], affine=False)
+        # self.bn = nn.BatchNorm1d(sizes[-1], affine=False)
+        self.bn = nn.Identity()
 
-    def embed(self, y1):
-        return self.projector(self.backbone(y1))
+    def embed(self, _y):
+        return self.projector(self.backbone(_y))
 
     def forward(self, y1, y2):
         # Shape of z: neurons x features
@@ -144,7 +151,9 @@ class NeuronImageDataset(Dataset):
         self.augmentor = Transform()
 
     def __getitem__(self, idx):
-        crops = torch.unsqueeze(self.all_volume_crops[idx], 0)
+        _idx = self.idx_biggest_to_smallest()[idx]
+
+        crops = torch.unsqueeze(self.all_volume_crops[_idx], 0)
         # Assume batch=1
         y1, y2 = self.augmentor(torch.squeeze(crops))
 
@@ -154,6 +163,13 @@ class NeuronImageDataset(Dataset):
         # n = nn.InstanceNorm3d(sz, affine=False)
 
         return y1, y2
+
+    def idx_biggest_to_smallest(self):
+        # With variable batch sizes, must to largest first for memory reasons:
+        # https://discuss.pytorch.org/t/how-to-debug-causes-of-gpu-memory-leaks/6741/11
+        all_shapes = np.array([crop.shape[0] for crop in self.all_volume_crops])
+        idx_sorted = np.argsort(-all_shapes)
+        return idx_sorted
 
     def __len__(self):
         return len(self.all_volume_crops)
@@ -184,12 +200,11 @@ class NeuronCropImageDataModule(LightningDataModule):
             vol_dat = np.stack(vol_dat, 0)
             list_of_neurons_of_volumes.append(vol_dat)
 
-        alldata = NeuronImageDataset(list_of_neurons_of_volumes)
+        alldata = self.base_dataset_class(list_of_neurons_of_volumes)
 
         self.list_of_neurons_of_volumes = list_of_neurons_of_volumes
 
         # transform and split
-
         train_fraction = int(len(alldata) * self.train_fraction)
         val_fraction = int(len(alldata) * self.val_fraction)
         splits = [train_fraction, val_fraction, len(alldata) - train_fraction - val_fraction]
@@ -226,3 +241,12 @@ def adjust_learning_rate(args, optimizer, loader, step):
         lr = base_lr * q + end_lr * (1 - q)
     optimizer.param_groups[0]['lr'] = lr * args.learning_rate_weights
     optimizer.param_groups[1]['lr'] = lr * args.learning_rate_biases
+
+
+def print_all_on_gpu():
+    for obj in gc.get_objects():
+        try:
+            if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                print(type(obj), obj.size())
+        except:
+            pass
