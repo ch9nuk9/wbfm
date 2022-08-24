@@ -85,7 +85,7 @@ def get_bbox_data_for_volume(project_data, t, target_sz=np.array([8, 64, 64])):
         bbox = p.bbox
         # Expand to get the neighborhood
 
-        dat = get_3d_crop_using_bbox(bbox, sz, target_sz, this_red)
+        dat, _ = get_3d_crop_using_bbox(bbox, sz, target_sz, this_red)
 
         all_dat.append(dat) # TODO: preallocate
         all_bbox.append(bbox)
@@ -126,7 +126,7 @@ def get_bbox_data_for_volume_only_labeled(project_data, t, target_sz=np.array([8
             continue
         
         this_name = seg2name[this_label]
-        dat = get_3d_crop_using_bbox(bbox, sz, target_sz, this_red)
+        dat, _ = get_3d_crop_using_bbox(bbox, sz, target_sz, this_red)
 
         all_dat_dict[this_name] = dat
 
@@ -134,16 +134,19 @@ def get_bbox_data_for_volume_only_labeled(project_data, t, target_sz=np.array([8
 
 
 def get_3d_crop_using_bbox(bbox, sz, target_sz, this_red):
-    z0 = np.clip(bbox[0] - int(target_sz[0] / 4), a_min=0, a_max=sz[1])
-    z1 = np.clip(bbox[3] + int(target_sz[0] / 4), a_min=0, a_max=sz[1])
+    z_mean = int((bbox[0] + bbox[3]) / 2)
+    z0 = np.clip(z_mean - int(target_sz[0] / 2), a_min=0, a_max=sz[1])
+    z1 = np.clip(z_mean + int(target_sz[0] / 2), a_min=0, a_max=sz[1])
     if z1 - z0 > target_sz[0]:
         z1 = z0 + target_sz[0]
-    x0 = np.clip(bbox[1] - int(target_sz[1] / 2), a_min=0, a_max=sz[2])
-    x1 = np.clip(bbox[4] + int(target_sz[1] / 2), a_min=0, a_max=sz[2])
+    x_mean = int((bbox[1] + bbox[4]) / 2)
+    x0 = np.clip(x_mean - int(target_sz[1] / 2), a_min=0, a_max=sz[2])
+    x1 = np.clip(x_mean + int(target_sz[1] / 2), a_min=0, a_max=sz[2])
     if x1 - x0 > target_sz[1]:
         x1 = x0 + target_sz[1]
-    y0 = np.clip(bbox[2] - int(target_sz[2] / 2), a_min=0, a_max=sz[3])
-    y1 = np.clip(bbox[5] + int(target_sz[2] / 2), a_min=0, a_max=sz[3])
+    y_mean = int((bbox[2] + bbox[5]) / 2)
+    y0 = np.clip(y_mean - int(target_sz[2] / 2), a_min=0, a_max=sz[3])
+    y1 = np.clip(y_mean + int(target_sz[2] / 2), a_min=0, a_max=sz[3])
     if y1 - y0 > target_sz[2]:
         y1 = y0 + target_sz[2]
     dat = this_red[z0:z1, x0:x1, y0:y1]
@@ -151,7 +154,8 @@ def get_3d_crop_using_bbox(bbox, sz, target_sz, this_red):
     diff_sz = np.clip(target_sz - np.array(dat.shape), a_min=0, a_max=np.max(target_sz))
     pad_sz = list(zip(diff_sz, np.zeros(len(diff_sz), dtype=int)))
     dat = np.pad(dat, pad_sz)
-    return dat
+    new_bbox = [z0, x0, y0, z1, x1, y1]
+    return dat, new_bbox
 
 
 # MAX_TRACKLET = df.shape[0]
