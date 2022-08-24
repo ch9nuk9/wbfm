@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Tuple, List
+from typing import Tuple, List, Union
 
 import numpy as np
 import pandas as pd
@@ -140,8 +140,10 @@ def to_sparse_multiindex(df: pd.DataFrame, new_columns=None):
     return df
 
 
-def cast_int_or_nan(i):
+def cast_int_or_nan(i: Union[list, int]):
     """Cast as integer, but do not crash if np.nan"""
+    if isinstance(i, (list, pd.Series)):
+        return [cast_int_or_nan(_i) for _i in i]
     if np.isnan(i):
         return i
     else:
