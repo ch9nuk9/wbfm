@@ -120,9 +120,14 @@ class Abstract3DEncoder(nn.Module):
         # Final conv should have
         self.projection = nn.Sequential(nn.Linear(int(crop_sz.prod()/8), embedding_dim), nn.Sigmoid())
 
+        self.embedding_dim = embedding_dim
         # for m in self.modules():
         #     if isinstance(m, nn.Conv3d):
         #         nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='leaky_relu')
+
+    # def get_output_shape(self):
+    #     linear_layer = next(self.backbone.projection.children())
+    #     return linear_layer.weight.shape[-1]
 
     def forward(self, x):
         for encoder in self.encoders:
@@ -157,3 +162,33 @@ class ResidualEncoder3D(Abstract3DEncoder):
                                                 conv_padding=conv_padding,
                                                 embedding_dim=embedding_dim,
                                                 **kwargs)
+
+
+class ResidualClassifier3D(Abstract3DEncoder):
+    """
+    Same as ResidualEncoder3D, but adds a classification layer
+    """
+
+    def __init__(self, num_categories, in_channels, crop_sz, f_maps=64, layer_order='gcr',
+                 num_groups=8, num_levels=5, conv_padding=1, embedding_dim=2048, **kwargs):
+        super(ResidualClassifier3D, self).__init__(in_channels=in_channels,
+                                                   basic_module=ExtResNetBlock,
+                                                   crop_sz=crop_sz,
+                                                   f_maps=f_maps,
+                                                   layer_order=layer_order,
+                                                   num_groups=num_groups,
+                                                   num_levels=num_levels,
+                                                   conv_padding=conv_padding,
+                                                   embedding_dim=embedding_dim,
+                                                   **kwargs)
+
+        # Only classify one at a time, in principle
+        self.classifier = nn.Sequential(
+            nn.Linear(embedding_dim, num_categories),
+            nn.Softmax()
+        )
+
+    def forward(self, x):
+        x = super().forward(x)
+        return self.classifier(x)
+

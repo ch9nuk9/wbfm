@@ -16,6 +16,7 @@ import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from tqdm.auto import tqdm
 
+from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.projects.utils_redo_steps import correct_tracks_dataframe_using_project
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, get_names_of_columns_that_exist_at_t
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -90,6 +91,46 @@ def get_bbox_data_for_volume(project_data, t, target_sz=np.array([8, 64, 64])):
         all_bbox.append(bbox)
 
     return all_dat, all_bbox
+
+
+def get_bbox_data_for_volume_only_labeled(project_data, t, target_sz=np.array([8, 64, 64]), which_neurons=None):
+    """
+    Like get_bbox_data_for_volume, but only returns objects that have an ID in the final tracks
+    Instead of returning a list of arrays, returns a dict indexed by the string name as found in project_data
+    """
+    if which_neurons is None:
+        which_neurons = project_data.finished_neuron_names
+    if which_neurons is None:
+        logging.warning("Found no explicitly tracked neurons, assuming all are correct")
+        which_neurons = project_data.neuron_names
+
+    # Get the tracked mask indices, with a mapping from their neuron name
+    name2seg = dict(project_data.final_tracks.loc[t, (slice(None), 'raw_segmentation_id')].droplevel(1))
+    seg2name = {}
+    for k, v in name2seg.items():
+        seg2name[cast_int_or_nan(v)] = k
+    tracked_segs = set(seg2name.keys())
+
+    # Get a bbox for all neurons in 3d, but skip the untracked mask indices
+    this_seg = project_data.raw_segmentation[t, ...]
+    props = regionprops(this_seg)
+
+    all_dat_dict = {}
+    this_red = np.array(project_data.red_data[t, ...])
+    sz = project_data.red_data.shape
+
+    for p in props:
+        bbox = p.bbox
+        this_label = p.label
+        if this_label not in tracked_segs:
+            continue
+        
+        this_name = seg2name[this_label]
+        dat = get_3d_crop_using_bbox(bbox, sz, target_sz, this_red)
+
+        all_dat_dict[this_name] = dat
+
+    return all_dat_dict, seg2name, which_neurons
 
 
 def get_3d_crop_using_bbox(bbox, sz, target_sz, this_red):

@@ -8,7 +8,7 @@ import torchio as tio
 import torchvision.transforms as transforms
 from pytorch_lightning.core.datamodule import LightningDataModule
 from tqdm.auto import tqdm
-from wbfm.utils.nn_utils.data_loading import get_bbox_data_for_volume
+from wbfm.utils.nn_utils.data_loading import get_bbox_data_for_volume, get_bbox_data_for_volume_only_labeled
 from torch.utils.data.dataset import random_split
 from torch.utils.data import Dataset
 from typing import Optional
@@ -142,15 +142,40 @@ class Transform:
     def __call__(self, x):
         y1 = self.transform(x)
         y2 = self.transform_prime(x)
-
-        sz = y1.shape[0]
-        n = nn.InstanceNorm3d(sz, affine=False)
-        y1 = n(y1)
-        y2 = n(y2)
         return y1, y2
 
 
-class NeuronImageDataset(Dataset):
+class NeuronImageWithGTDataset(Dataset):
+    def __init__(self, list_of_neurons_of_volumes, list_of_ids_of_volumes, which_neurons):
+        self.all_volume_crops = [torch.as_tensor(this_vol.astype(float), dtype=torch.float32) for this_vol in
+                                 list_of_neurons_of_volumes]
+        self.list_of_ids_of_volumes = list_of_ids_of_volumes
+        self.which_neurons = which_neurons
+
+    def __getitem__(self, idx):
+        x = torch.unsqueeze(self.all_volume_crops[idx], 0)
+        gt_id = self.list_of_ids_of_volumes[idx]
+        sz = x.shape[0]
+        n = nn.InstanceNorm3d(sz, affine=False)  # Todo: set this to a global mean and std
+        x = n(x)
+        return x, gt_id
+
+    def __len__(self):
+        return len(self.all_volume_crops)
+
+    @staticmethod
+    def load_from_project(project_data, num_frames):
+        list_of_neurons_of_volumes, list_of_ids_of_volumes = [], []
+        for t in tqdm(range(num_frames)):
+            all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, t)
+            keys = list(all_dat_dict.keys())  # Need to enforce ordering?
+            # print(all_seg_dict)
+            list_of_ids_of_volumes.append(keys)  # strings
+            list_of_neurons_of_volumes.append(np.stack([all_dat_dict[k] for k in keys], 0))
+        return NeuronImageWithGTDataset(list_of_neurons_of_volumes, list_of_ids_of_volumes, which_neurons)
+
+
+class NeuronAugmentedImagePairDataset(Dataset):
     def __init__(self, list_of_neurons_of_volumes):
         self.all_volume_crops = [torch.from_numpy(this_vol.astype(float)) for this_vol in list_of_neurons_of_volumes]
         self.augmentor = Transform()
@@ -163,9 +188,10 @@ class NeuronImageDataset(Dataset):
         y1, y2 = self.augmentor(torch.squeeze(crops))
 
         # Normalize; different batch each time
-        # Transpose to set the neurons in a volume equal to the batch size (changes per volume)
-        # sz = y1.shape[0]
-        # n = nn.InstanceNorm3d(sz, affine=False)
+        sz = y1.shape[0]  # Todo: set this to a global mean and std
+        n = nn.InstanceNorm3d(sz, affine=False)
+        y1 = n(y1)
+        y2 = n(y2)
 
         return y1, y2
 
@@ -184,7 +210,7 @@ class NeuronCropImageDataModule(LightningDataModule):
     """Return neurons and their labels, e.g. for a classifier"""
 
     def __init__(self, batch_size=8, project_data=None, num_frames=100,
-                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=NeuronImageDataset,
+                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=NeuronAugmentedImagePairDataset,
                  crop_kwargs=None):
         super().__init__()
         if crop_kwargs is None:
@@ -199,12 +225,11 @@ class NeuronCropImageDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         # Get data, then build torch classes
-        list_of_neurons_of_volumes = []
-        for t in tqdm(range(self.num_frames)):
-            vol_dat, _ = get_bbox_data_for_volume(self.project_data, t, **self.crop_kwargs)
-            vol_dat = np.stack(vol_dat, 0)
-            list_of_neurons_of_volumes.append(vol_dat)
+        frames = self.num_frames
+        project_data = self.project_data
+        crop_kwargs = self.crop_kwargs
 
+        list_of_neurons_of_volumes = get_crops_from_project(crop_kwargs, frames, project_data)
         alldata = self.base_dataset_class(list_of_neurons_of_volumes)
 
         self.list_of_neurons_of_volumes = list_of_neurons_of_volumes
@@ -255,3 +280,12 @@ def print_all_on_gpu():
                 print(type(obj), obj.size())
         except:
             pass
+
+
+def get_crops_from_project(crop_kwargs, frames, project_data):
+    list_of_neurons_of_volumes = []
+    for t in tqdm(range(frames)):
+        vol_dat, _ = get_bbox_data_for_volume(project_data, t, **crop_kwargs)
+        vol_dat = np.stack(vol_dat, 0)
+        list_of_neurons_of_volumes.append(vol_dat)
+    return list_of_neurons_of_volumes
