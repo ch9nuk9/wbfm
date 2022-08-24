@@ -336,7 +336,10 @@ class TrackletAndSegmentationAnnotator:
 
     def initialize_gt_model_mismatches(self, project_data):
         from wbfm.utils.projects.finished_project_data import calc_all_mismatches_between_ground_truth_and_pairs
-        self.gt_mismatches = calc_all_mismatches_between_ground_truth_and_pairs(project_data, minimum_confidence=0.7)
+        try:
+            self.gt_mismatches = calc_all_mismatches_between_ground_truth_and_pairs(project_data, minimum_confidence=0.7)
+        except ModuleNotFoundError:
+            pass
 
     @property
     def combined_global2tracklet_dict(self):
