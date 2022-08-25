@@ -25,6 +25,7 @@ segmentation:
 
 match_frame_pairs:
     partition: gpu
+    gpus_per_node: 1
     time: 12:00:00
 
 build_frame_objects:
@@ -36,6 +37,7 @@ postprocess_matches_to_tracklets:
 
 tracking:
     partition: gpu
+    gpus_per_node: 1
     time: 12:00:00
 
 combine_tracking_and_tracklets:
