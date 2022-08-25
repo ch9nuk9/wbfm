@@ -122,7 +122,7 @@ class Transform:
             tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
             tio.RandomBlur(p=0.1),
             tio.RandomMotion(translation=0, degrees=180, p=1.0),
-            tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.5),
+            # tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.5),
             tio.RandomNoise(p=0.5),
             # transforms.ToTensor(),
             # transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -132,7 +132,7 @@ class Transform:
             # tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
             # tio.RandomBlur(p=0.0),
             tio.RandomMotion(translation=0, degrees=180, p=0.5),
-            tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.1),
+            # tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.1),
             tio.RandomNoise(p=0.1),
             # transforms.ToTensor(),
             # transforms.Normalize(mean=[0.485, 0.456, 0.406],
