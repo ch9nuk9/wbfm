@@ -532,6 +532,13 @@ class ProjectData:
     def neuron_names(self):
         return get_names_from_df(self.red_traces)
 
+    def well_tracked_neuron_names(self, min_nonnan=0.5):
+
+        min_nonnan = int(min_nonnan * self.num_frames)
+        df_tmp = self.red_traces.dropna(axis=1, thresh=min_nonnan)
+        neuron_names = get_names_from_df(df_tmp)
+        return neuron_names
+
     def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False):
         """
         Uses the currently recommended 'best' settings:
@@ -565,7 +572,7 @@ class ProjectData:
         df = pd.DataFrame(trace_dict).dropna(axis=1, thresh=min_nonnan)
 
         if interpolate_nan:
-            df_filtered = df.rolling(window=3, center=True, min_periods=1).mean()  # Removes size-1 holes
+            df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
             df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
 
         return df

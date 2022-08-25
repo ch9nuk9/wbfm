@@ -1,5 +1,8 @@
 import logging
 from pathlib import Path
+from typing import Optional
+
+from matplotlib.colors import TwoSlopeNorm
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +16,7 @@ from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.utils_plot_traces import check_default_names
 
 
@@ -28,6 +32,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  color_using_behavior=True,
                                  remove_outliers=False,
                                  bleach_correct=True,
+                                 behavioral_correlation_shading=None,
+                                 min_nonnan=None,
                                  to_save=True):
     """
 
@@ -65,11 +71,14 @@ def make_grid_plot_using_project(project_data: ProjectData,
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         return
+
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
     else:
-        neuron_names = list(set(project_data.green_traces.columns.get_level_values(0)))
-    # Guess a good shape for subplots
+        if isinstance(min_nonnan, float):
+            neuron_names = project_data.well_tracked_neuron_names(min_nonnan)
+        else:
+            neuron_names = project_data.neuron_names
     neuron_names.sort()
 
     # Build functions to make a single subplot
@@ -79,7 +88,13 @@ def make_grid_plot_using_project(project_data: ProjectData,
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
 
-    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func, color_using_behavior, logger)
+    # Correlate to a behavioral variable
+    background_shading_value_func = factory_correlate_trace_to_behavior_variable(project_data,
+                                                                                 behavioral_correlation_shading)
+
+    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                  color_using_behavior=color_using_behavior,
+                                  background_shading_value_func=background_shading_value_func, logger=logger)
 
     # Save final figure
     if to_save:
@@ -96,6 +111,43 @@ def make_grid_plot_using_project(project_data: ProjectData,
         out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
         save_grid_plot(out_fname)
+
+
+def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading: str) \
+        -> Optional[callable]:
+    valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature']
+    posture_class = project_data.worm_posture_class
+    y = None
+    if behavioral_correlation_shading is None:
+        y = None
+    elif behavioral_correlation_shading == 'absolute_speed':
+        y = posture_class.worm_speed_fluorescence_fps
+    elif behavioral_correlation_shading == 'speed':
+        y = posture_class.worm_speed_fluorescence_fps_signed
+    elif behavioral_correlation_shading == 'positive_speed':
+        y = posture_class.worm_speed_fluorescence_fps_signed
+        if posture_class.beh_annotation is not None:
+            reversal_ind = posture_class.beh_annotation == 1
+            y[reversal_ind] = 0
+    elif behavioral_correlation_shading == 'negative_speed':
+        y = posture_class.worm_speed_fluorescence_fps_signed
+        if posture_class.beh_annotation is not None:
+            forward_ind = posture_class.beh_annotation == 0
+            y[forward_ind] = 0
+    elif behavioral_correlation_shading == 'curvature':
+        y = posture_class.leifer_curvature_from_kymograph
+    else:
+        assert behavioral_correlation_shading in valid_behavioral_shadings, \
+            f"Must pass None or one of: {valid_behavioral_shadings}"
+
+    if y is None:
+        return None
+
+    def background_shading_value_func(X):
+        ind = np.where(~np.isnan(X))[0]
+        return np.corrcoef(X[ind], y[:len(X)][ind])[0, 1]
+
+    return background_shading_value_func
 
 
 def make_grid_plot_from_leifer_file(fname: str,
@@ -125,7 +177,8 @@ def make_grid_plot_from_leifer_file(fname: str,
     shade_plot_func = lambda axis: shade_using_behavior(ethogram, axis, cmap=ethogram_cmap)
     logger = logging.getLogger()
 
-    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func, color_using_behavior, logger)
+    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                  color_using_behavior=color_using_behavior, logger=logger)
 
     # Save final figure
     out_fname = f"leifer_{channel_mode}_grid_plot.png"
@@ -148,6 +201,7 @@ def save_grid_plot(out_fname):
 def make_grid_plot_from_callables(get_data_func: callable,
                                   neuron_names: list,
                                   shade_plot_func: callable,
+                                  background_shading_value_func: callable = None,
                                   color_using_behavior: bool = True,
                                   logger: logging.Logger = None):
     """
@@ -158,6 +212,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
     get_data_func - function that accepts a neuron name and returns a tuple of (t, y)
     neuron_names - list of neurons to plot
     shade_plot_func - function that accepts an axis object and shades the plot
+    background_shading_value_func - function to get a value to shade the background, e.g. correlation to behavior
+    color_using_behavior - whether to use the shade_plot_func
     logger
 
     Example:
@@ -168,14 +224,33 @@ def make_grid_plot_from_callables(get_data_func: callable,
     -------
 
     """
+    # Set up the colormap of the background, if any
+    if background_shading_value_func is not None:
+        # From: https://stackoverflow.com/questions/59638155/how-to-set-0-to-white-at-a-uneven-color-ramp
+
+        # First get all the traces, so that the entire cmap can be scaled
+        all_y = [get_data_func(name)[1] for name in neuron_names]
+        all_vals = [background_shading_value_func(y) for y in all_y]
+
+        norm = TwoSlopeNorm(vmin=np.nanmin(all_vals), vcenter=0, vmax=np.nanmax(all_vals))
+        # norm.autoscale(all_vals)
+        values_normalized = norm(all_vals)
+        colors = plt.cm.PiYG(values_normalized)
+
+    else:
+        colors = []
+
     # Loop through neurons and plot
     num_neurons = len(neuron_names)
     num_columns = 5
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
-    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 15), sharex=True, sharey=False)
-    for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
+    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 25), sharex=True, sharey=False)
+    # for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
+    for i in tqdm(range(len(neuron_names))):
+
+        ax, neuron_name = fig.axes[i], neuron_names[i]
 
         t, y = get_data_func(neuron_name)
         ax.plot(t, y, label=neuron_name)
@@ -189,6 +264,11 @@ def make_grid_plot_from_callables(get_data_func: callable,
         ax.set_axis_off()
         if color_using_behavior:
             shade_plot_func(ax)
+
+        if background_shading_value_func is not None:
+            color, val = colors[i], background_shading_value_func(y)
+            ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
+            ax.set_title(f"Shaded value: {val:0.2f}")
 
 ##
 ## Generally plotting

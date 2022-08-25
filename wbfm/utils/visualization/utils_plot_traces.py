@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
-from lmfit.models import ExponentialModel
+from lmfit.models import ExponentialModel, ConstantModel
 from sklearn.preprocessing import StandardScaler
+import scipy
 
 
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
@@ -77,7 +78,7 @@ def detrend_exponential(y_with_nan):
     return ind, y_corrected
 
 
-def detrend_exponential_lmfit(y_with_nan):
+def detrend_exponential_lmfit(y_with_nan, x=None):
     """
     Bleach correction via simple exponential fit, subtraction, and re-adding the mean
 
@@ -87,6 +88,7 @@ def detrend_exponential_lmfit(y_with_nan):
 
     Parameters
     ----------
+    x
     y_with_nan
 
     Returns
@@ -94,23 +96,93 @@ def detrend_exponential_lmfit(y_with_nan):
 
     """
 
-    mod = ExponentialModel()
+    exp_mod = ExponentialModel(prefix='exp_')
     ind = np.where(~np.isnan(y_with_nan))[0]
-    x = ind
+    if x is None:
+        x = ind
+    else:
+        x = x[ind]
     y = y_with_nan[ind]
+    out = None
 
     try:
-        pars = mod.guess(y, x=x)
-        out = mod.fit(y, pars, x=x)
-        y_fit = out.eval(x=x)
+        pars = exp_mod.guess(y, x=x)
+        out = exp_mod.fit(y, pars, x=x)
 
-        y_corrected = y - y_fit + np.nanmean(y)
+        comps = out.eval_components(x=x)
+        y_fit = comps['exp_']
+        y_corrected = y / y_fit
 
         y_corrected_with_nan = np.empty_like(y_with_nan)
         y_corrected_with_nan[:] = np.nan
         y_corrected_with_nan[ind] = y_corrected
+        flag = True
+
     except TypeError:
         # Occurs when there are too few input points
         y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
+        flag = False
 
-    return y_corrected_with_nan, y_fit
+    if out is None or not out.errorbars or 0 in y_fit:
+        # Crude measurement of bad convergence, even if it didn't error out
+        y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
+        flag = False
+
+    return y_corrected_with_nan, (y_fit, out, flag)
+
+
+def detrend_exponential_lmfit_give_indices(y_full, ind_iter):
+    y = y_full[ind_iter]
+    ind_remove_nan = np.where(~np.isnan(y_full))[0]
+    y_no_nan = y_full[ind_remove_nan]
+    x = ind_iter
+
+    exp_mod = ExponentialModel(prefix='exp_')
+    out = None
+
+    try:
+        pars = exp_mod.guess(y, x=x)
+        out = exp_mod.fit(y, pars, x=x)
+
+        comps = out.eval_components(x=ind_remove_nan)
+        y_fit = comps['exp_']
+        y_corrected = y_no_nan / y_fit
+
+        y_corrected_with_nan = np.empty_like(y_full)
+        y_corrected_with_nan[:] = np.nan
+        y_corrected_with_nan[ind_remove_nan] = y_corrected
+    except TypeError:
+        # Occurs when there are too few input points
+        y_corrected_with_nan, y_fit = y_full, y_full
+
+    return y_corrected_with_nan, (y_fit, out)
+
+
+def detrend_exponential_iter(trace, max_iters=100, convergence_threshold=0.01,
+                             low_quantile=0.15, high_quantile=0.85):
+    """
+    low/high_quantile: how many percent of the data should be excluded at bottom/top
+
+    Parameters
+    ----------
+    trace
+    convergence_threshold - stop if L2 norm changes by less than this
+    low_quantile - per iteration, remove this bottom percentile
+    high_quantile - per iteration, remove this bottom percentile
+
+    Returns
+    -------
+
+    """
+    y_full = trace
+    ind_iter = np.where(~np.isnan(y_full))[0]
+    y_fit = np.array([0]*len(ind_iter))
+
+    for num_iter in range(max_iters):
+        y_detrend = detrend_exponential_lmfit_give_indices(y_full, ind_iter)[0]
+        y_fit_last = y_fit
+        y_fit = detrend_exponential_lmfit_give_indices(y_full, ind_iter)[1][0]
+        ind_iter = np.where(np.logical_and(np.nanquantile(y_detrend, low_quantile) < y_detrend, y_detrend < np.nanquantile(y_detrend,high_quantile)))[0]
+        if scipy.spatial.distance.euclidean(y_fit, y_fit_last) <= convergence_threshold:
+            break
+    return y_detrend, num_iter

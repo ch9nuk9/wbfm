@@ -84,9 +84,8 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
         video_fname)
 
     with safe_cd(project_dir):
-        preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg, verbose, video_fname,
-                                                                 preprocessing_settings, None, which_channel,
-                                                                 out_fname)
+        preprocessed_dat, _ = preprocess_all_frames_using_config(cfg, video_fname, preprocessing_settings, None,
+                                                                 which_channel, out_fname, verbose, DEBUG)
 
     if not pad_to_align_with_original and bigtiff_start_volume > 0:
         # i.e. remove the unpreprocessed data, creating an offset between the bigtiff and the zarr

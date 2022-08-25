@@ -426,10 +426,10 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     return single_volume_raw
 
 
-def preprocess_all_frames_using_config(DEBUG: bool, config: ModularProjectConfig, verbose: int, video_fname: str,
-                                       preprocessing_settings: PreprocessingSettings = None,
-                                       which_frames: list = None, which_channel: str = None,
-                                       out_fname: str = None) -> Tuple[zarr.Array, dict]:
+def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname: str,
+                                       preprocessing_settings: PreprocessingSettings = None, which_frames: list = None,
+                                       which_channel: str = None, out_fname: str = None, verbose: int = 0,
+                                       DEBUG: bool = False) -> Tuple[zarr.Array, dict]:
     """
     Preprocesses all frames that will be analyzed as per config
 

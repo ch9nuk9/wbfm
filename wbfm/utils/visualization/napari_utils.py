@@ -9,6 +9,8 @@ from matplotlib import pyplot as plt
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
+from wbfm.utils.visualization.utils_plot_traces import detrend_exponential_iter
+from sklearn.linear_model import LinearRegression()
 
 
 def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
@@ -135,7 +137,6 @@ class NapariPropertyHeatMapper:
         tmp2.columns = self.names
         return tmp1 / tmp2
 
-
     def corrcoef_kymo(self):
         if self.curvature_fluorescence_fps.isnull().values.all():
             return [np.nan]
@@ -149,6 +150,36 @@ class NapariPropertyHeatMapper:
                 corrcoefs.append(c)
             val_to_plot = corrcoefs
             return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+
+    def anchor_corr_red(self,anchor="neuron_028"):
+        corrcoefs = []
+        anchor_trace_raw = detrend_exponential_iter(self.red_traces[anchor]["intensity_image"])[0]
+        for neuron in self.names:
+            try:
+                neuron_trace_raw = detrend_exponential_iter(self.red_traces[neuron]["intensity_image"])[0]
+                remove_nan = np.logical_and(np.invert(np.isnan(anchor_trace_raw)),
+                                            np.invert(np.isnan(neuron_trace_raw)))
+                anchor_trace = anchor_trace_raw[remove_nan]
+                neuron_trace = neuron_trace_raw[remove_nan]
+                vol_anchor = self.red_traces[anchor]["area"][remove_nan]
+                vol_neuron = self.red_traces[neuron]["area"][remove_nan]
+
+                model_anchor = LinearRegression()
+                model_anchor.fit(np.array(vol_anchor).reshape(-1, 1), anchor_trace)
+                anchor_trace_corrected = anchor_trace - model_anchor.predict(np.array(vol_anchor).reshape(-1, 1))
+
+                model_neuron = LinearRegression()
+                model_neuron.fit(np.array(vol_neuron).reshape(-1, 1), neuron_trace)
+                neuron_trace_corrected = neuron_trace - model_neuron.predict(np.array(vol_neuron).reshape(-1, 1))
+
+                corrcoefs.append(np.corrcoef(anchor_trace_corrected, neuron_trace_corrected)[0][1])
+            except ValueError:
+                print(neuron, "skiped")
+                corrcoefs.append(0)
+
+            val_to_plot = np.array(corrcoefs)
+
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
     def count_nonnan(self) -> Dict[int, float]:
         num_nonnan = self.df_labels.count()
