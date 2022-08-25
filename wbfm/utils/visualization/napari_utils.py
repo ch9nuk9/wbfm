@@ -150,20 +150,27 @@ class NapariPropertyHeatMapper:
             val_to_plot = corrcoefs
             return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
-    def anchor_corr(self,anchor,red=False):
-        corrcoefs_green = []
-        corrcoefs_red = []
+    def anchor_corr_red(self,anchor="neuron_028"):
+        corrcoefs = []
+        anchor_trace = self.red_traces[anchor]["intensity_image"]
         for neuron in self.names:
-            corrcoefs_green.append(np.corrcoef(self.green_traces[anchor]["intensity_image"],
-                                               self.green_traces[neuron]["intensity_image"]))
-            corrcoefs_red.append(np.corrcoef(self.red_traces[anchor]["intensity_image"],
-                                             self.red_traces[neuron]["intensity_image"]))
+            neuron_trace = self.red_traces[neuron]["intensity_image"]
+            remove_nan = np.logical_and(np.invert(np.isnan(anchor_trace)), np.invert(np.isnan(neuron_trace)))
+            corrcoefs.append(np.corrcoef(anchor_trace[remove_nan],neuron_trace[remove_nan])[0][1])
 
-        if red == True:
-            val_to_plot = np.array(corrcoefs_red)
+            val_to_plot = np.array(corrcoefs)
 
-        if red == False:
-            val_to_plot = np.array(corrcoefs_green)
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+
+    def anchor_corr_green(self,anchor="neuron_028"):
+        corrcoefs = []
+        anchor_trace = self.green_traces[anchor]["intensity_image"]
+        for neuron in self.names:
+            neuron_trace = self.green_traces[neuron]["intensity_image"]
+            remove_nan = np.logical_and(np.invert(np.isnan(anchor_trace)), np.invert(np.isnan(neuron_trace)))
+            corrcoefs.append(np.corrcoef(anchor_trace[remove_nan],neuron_trace[remove_nan])[0][1])
+
+            val_to_plot = np.array(corrcoefs)
 
         return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 

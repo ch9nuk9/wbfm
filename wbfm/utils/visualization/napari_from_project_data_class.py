@@ -165,7 +165,11 @@ class NapariLayerInitializer:
             viewer.add_points(**options)
 
         # Special layers from the heatmapper class
-        heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces,curvature_fluorescence_fps = project_data.worm_posture_class.curvature_fluorescence_fps.iloc[0:project_data.red_traces["neuron_001"].shape[0],])
+        try:
+            heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces,curvature_fluorescence_fps = project_data.worm_posture_class.curvature_fluorescence_fps.iloc[0:project_data.red_traces["neuron_001"].shape[0],])
+        except Exception as exc:
+            print(exc)
+            heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces)
         for layer_tuple in which_layers:
             if not isinstance(layer_tuple, tuple):
                 continue
