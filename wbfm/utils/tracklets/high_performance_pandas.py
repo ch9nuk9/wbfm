@@ -169,7 +169,6 @@ class PaddedDataFrame(pd.DataFrame):
         all_names = get_names_from_df(self)
         name_mapping = defaultdict(set)
         df_working_copy = self
-        # df_working_copy = self.new_like_self()
 
         for original_name in tqdm(all_names):
             name_mapping[original_name].add(original_name)
@@ -480,8 +479,11 @@ def check_if_heterogenous_columns(df, verbose=1, raise_error=False):
     return None
 
 
-def get_next_name_generator(df, name_mode='tracklet'):
-    """See get_next_name_tracklet_or_neuron; this is just a generator version for doing many"""
+def get_next_name_generator(df, name_mode):
+    """See get_next_name_tracklet_or_neuron; this is just a generator version for doing many
+
+    name_mode should be 'tracklet' or 'neuron'; see int2name_using_mode
+    """
     all_names = get_names_from_df(df)
     max_int = name2int_neuron_and_tracklet(all_names[-1])
     # Really want to make sure we are after all other names
@@ -511,6 +513,7 @@ def split_single_sparse_tracklet(i_split, this_tracklet: pd.DataFrame):
 
 
 def split_multiple_tracklets(this_tracklet: pd.DataFrame, split_list: list):
+    """Splits tracklet into multiple pieces, each with the same name as the original"""
     if hasattr(this_tracklet, 'sparse'):
         this_tracklet = this_tracklet.sparse.to_dense()
 

@@ -248,7 +248,7 @@ class ProjectData:
                 df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
             else:
                 self.logger.info("Found sparse matrix")
-        self.logger.info("Finished loading tracklets")
+        self.logger.debug("Finished loading tracklets")
 
         return df_all_tracklets
 
@@ -380,7 +380,7 @@ class ProjectData:
         if initialization_kwargs is None:
             initialization_kwargs = {}
         else:
-            cfg.logger.info(f"Initialized project with custom settings: {initialization_kwargs}")
+            cfg.logger.debug(f"Initialized project with custom settings: {initialization_kwargs}")
 
         obj = ProjectData(project_dir, cfg)
         for k, v in initialization_kwargs.items():
@@ -416,7 +416,7 @@ class ProjectData:
         # Note: when running on the cluster the raw data isn't (for now) accessible
         with safe_cd(cfg.project_dir):
 
-            cfg.logger.info("Starting threads to read data...")
+            cfg.logger.debug("Starting threads to read data...")
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
                     ex.submit(obj.load_tracklet_related_properties)
@@ -441,9 +441,9 @@ class ProjectData:
 
         obj.all_used_fnames.extend([red_dat_fname, green_dat_fname, red_traces_fname, green_traces_fname,
                                     seg_fname_raw, seg_fname])
-        cfg.logger.info(f"Read all data from files: {obj.all_used_fnames}")
+        cfg.logger.debug(f"Read all data from files: {obj.all_used_fnames}")
 
-        background_per_pixel = preprocessing_settings.background_per_pixel
+        background_per_pixel = preprocessing_settings.reset_background_per_pixel
         likelihood_thresh = traces_cfg.config['visualization']['likelihood_thresh']
 
         # Return a full object
@@ -491,6 +491,7 @@ class ProjectData:
                          neuron_name: str,
                          remove_outliers: bool = False,
                          filter_mode: str = 'no_filtering',
+                         bleach_correct: bool = True,
                          min_confidence: float = None) -> Tuple[list, list]:
         """
         Uses TracePlotter class to calculate traces
@@ -516,15 +517,27 @@ class ProjectData:
             self.red_traces,
             self.green_traces,
             self.final_tracks,
-            channel_mode,
-            calculation_mode,
-            remove_outliers,
-            filter_mode,
-            min_confidence,
-            self.background_per_pixel
+            channel_mode=channel_mode,
+            calculation_mode=calculation_mode,
+            remove_outliers=remove_outliers,
+            filter_mode=filter_mode,
+            bleach_correct=bleach_correct,
+            min_confidence=min_confidence,
+            background_per_pixel=self.background_per_pixel
         )
         y = self._trace_plotter.calculate_traces(neuron_name)
         return self._trace_plotter.tspan, y
+
+    @property
+    def neuron_names(self):
+        return get_names_from_df(self.red_traces)
+
+    def well_tracked_neuron_names(self, min_nonnan=0.5):
+
+        min_nonnan = int(min_nonnan * self.num_frames)
+        df_tmp = self.red_traces.dropna(axis=1, thresh=min_nonnan)
+        neuron_names = get_names_from_df(df_tmp)
+        return neuron_names
 
     def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False):
         """
@@ -551,7 +564,7 @@ class ProjectData:
         if isinstance(min_nonnan, float):
             min_nonnan = int(min_nonnan * self.num_frames)
 
-        neuron_names = get_names_from_df(self.green_traces)
+        neuron_names = self.neuron_names
         # Initialize the object
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
         trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
@@ -559,7 +572,7 @@ class ProjectData:
         df = pd.DataFrame(trace_dict).dropna(axis=1, thresh=min_nonnan)
 
         if interpolate_nan:
-            df_filtered = df.rolling(window=3, center=True, min_periods=1).mean()  # Removes size-1 holes
+            df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
             df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
 
         return df

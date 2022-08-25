@@ -16,7 +16,7 @@ from wbfm.utils.visualization.napari_from_project_data_class import take_screens
 from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 
 # Initialize sacred experiment
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
 ex.add_config(project_path=None)
 

@@ -15,7 +15,7 @@ from wbfm.utils.general.postprocessing.position_postprocessing import impute_mis
 from wbfm.utils.projects.utils_project import load_config, safe_cd
 
 # Initialize sacred experiment
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
 ex.add_config(project_path=None, filter_mode='arima', DEBUG=False)
 

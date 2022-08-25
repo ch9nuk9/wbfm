@@ -20,7 +20,7 @@ cgitb.enable(format='text')
 SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
 ex.add_config(project_path=None, DEBUG=False)
 

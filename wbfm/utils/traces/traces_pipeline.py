@@ -39,17 +39,16 @@ def _save_traces_as_hdf_and_update_configs(final_neuron_names: list,
     # Save traces (red and green) and neuron names
     # csv doesn't work well when some entries are lists
     red_fname = Path('4-traces').joinpath('red_traces.h5')
-    df_red.to_hdf(str(red_fname), "df_with_missing")
+    traces_cfg.h5_data_in_local_project(df_red, str(red_fname))
 
     green_fname = Path('4-traces').joinpath('green_traces.h5')
-    df_green.to_hdf(str(green_fname), "df_with_missing")
+    traces_cfg.h5_data_in_local_project(df_green, str(green_fname))
 
     # Save the output filenames
     traces_cfg.config['traces']['green'] = str(green_fname)
     traces_cfg.config['traces']['red'] = str(red_fname)
     traces_cfg.config['traces']['neuron_names'] = final_neuron_names
     traces_cfg.update_self_on_disk()
-    # edit_config(traces_cfg.config['self_path'], traces_cfg)
 
 
 def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,

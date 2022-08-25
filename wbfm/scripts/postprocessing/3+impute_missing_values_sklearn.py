@@ -12,7 +12,7 @@ from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 # Initialize sacred experiment
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 ex.add_config(project_path=None, DEBUG=False)
 
 

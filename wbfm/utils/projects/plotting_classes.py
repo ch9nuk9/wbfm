@@ -26,6 +26,7 @@ from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_bina
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
+from wbfm.utils.visualization.utils_plot_traces import detrend_exponential_lmfit
 
 
 @dataclass
@@ -41,6 +42,7 @@ class TracePlotter:
 
     remove_outliers: bool = False
     filter_mode: str = 'no_filtering'
+    bleach_correct: bool = True
     min_confidence: float = None
     background_per_pixel: float = None
 
@@ -79,11 +81,18 @@ class TracePlotter:
         ## Function for getting a single time series (with preprocessing)
         ##
         # Format: y = f(neuron_name, traces_dataframe)
-        calc_single_trace = trace_from_dataframe_factory(self.calculation_mode, self.background_per_pixel)
+        calc_single_trace = trace_from_dataframe_factory(self.calculation_mode, self.background_per_pixel,
+                                                         self.bleach_correct)
 
-        def calc_single_df_over_f(i, _df):
-            _y = calc_single_trace(i, _df)
-            return _y / np.nanquantile(_y, 0.2)
+        if not self.bleach_correct:
+            def calc_single_df_over_f(i, _df) -> pd.Series:
+                _y = calc_single_trace(i, _df)
+                return _y / np.nanquantile(_y, 0.2)
+        else:
+            def calc_single_df_over_f(i, _df) -> pd.Series:
+                _y = calc_single_trace(i, _df)
+                _y, _ = pd.Series(detrend_exponential_lmfit(_y))
+                return _y / np.nanquantile(_y, 0.2)
 
         ##
         ## Function for getting final y value from above functions
@@ -93,7 +102,7 @@ class TracePlotter:
             # First: use the tracks dataframe, not the traces ones
             df = self.final_tracks
 
-            def calc_y(i):
+            def calc_y(i) -> pd.Series:
                 return calc_single_trace(i, df)
 
         elif self.channel_mode in ['red', 'green', 'df_over_f_10']:
@@ -104,10 +113,10 @@ class TracePlotter:
                 df = self.green_traces
 
             if self.channel_mode in ['red', 'green']:
-                def calc_y(i):
+                def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df)
             else:
-                def calc_y(i):
+                def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df)
 
         elif self.channel_mode in ['ratio', 'ratio_df_over_f_10', 'linear_model']:
@@ -116,47 +125,58 @@ class TracePlotter:
             df_green = self.green_traces
 
             if self.channel_mode == 'ratio':
-                def calc_y(i):
+                def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
             else:
-                def calc_y(i):
+                def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
 
             if self.channel_mode == "linear_model":
-                def calc_y(_neuron_name):
+                def calc_y(_neuron_name) -> pd.Series:
                     # Predict green from time, volume, and red
+                    # Also add x and y
 
                     red = df_red[_neuron_name]["intensity_image"]
                     green = df_green[_neuron_name]["intensity_image"]
                     vol = df_red[_neuron_name]["area"]
+                    x = df_red[_neuron_name]["x"]
+                    y = df_red[_neuron_name]["y"]
                     num_timepoints = len(green)
                     t = range(num_timepoints)
                     valid_indices = np.logical_not(np.isnan(red))
 
+                    # This is important for test videos that are very short
+                    if valid_indices.value_counts()[True] <= 4:
+                        y_empty = green.copy()
+                        y_empty[:] = np.nan
+                        return y_empty
+
                     # remove nas and z score
-                    y_lm = green[valid_indices]
-                    red_lm = red[valid_indices]
-                    red_lm = (red_lm - np.mean(red_lm)) / np.std(red_lm)
-                    vol_lm = vol[valid_indices]
-                    vol_lm = (vol_lm - np.mean(vol_lm)) / np.std(vol_lm)
-                    t_lm = np.array(t)[valid_indices]
-                    X_lm = np.array([vol_lm, red_lm, t_lm])
-                    X_lm = np.c_[X_lm.T]
+                    def _z_score(_x):
+                        _x = np.array(_x)[valid_indices]
+                        return (_x - np.mean(_x)) / np.std(_x)
+
+                    green_trace = green[valid_indices]
+                    red_lm = _z_score(red)
+                    vol_lm = _z_score(vol)
+                    x_lm = _z_score(x)
+                    y_lm = _z_score(y)
+                    t_lm = _z_score(t)
+                    predictor_matrix = np.array([vol_lm, red_lm, t_lm, x_lm, y_lm])
+                    predictor_matrix = np.c_[predictor_matrix.T]
 
                     # create model
                     model = sklearn.linear_model.LinearRegression()
-                    model.fit(X_lm, y_lm)
-                    x_pred = model.predict(X_lm)
-                    y_result_missing_na = y_lm - x_pred
+                    model.fit(predictor_matrix, green_trace)
+                    green_predicted = model.predict(predictor_matrix)
+                    y_result_missing_na = green_trace - green_predicted
 
                     # Align output and input formats
-                    y_result_including_na = list(fill_missing_indices_with_nan(
-                        pd.DataFrame(y_result_missing_na))[0]["intensity_image"])
-                    while len(y_result_including_na) < num_timepoints:
-                        y_result_including_na.append(np.nan)
+                    y_including_na = fill_missing_indices_with_nan(pd.DataFrame(y_result_missing_na),
+                                                                   expected_max_t=num_timepoints)[0]
+                    y_result_including_na = pd.Series(list(y_including_na["intensity_image"]))
 
-                    return pd.Series(y_result_including_na)
-                    # return np.array(y_result_including_na)
+                    return y_result_including_na
 
         else:
             raise ValueError("Unknown calculation or channel mode")
@@ -316,7 +336,10 @@ class TrackletAndSegmentationAnnotator:
 
     def initialize_gt_model_mismatches(self, project_data):
         from wbfm.utils.projects.finished_project_data import calc_all_mismatches_between_ground_truth_and_pairs
-        self.gt_mismatches = calc_all_mismatches_between_ground_truth_and_pairs(project_data, minimum_confidence=0.7)
+        try:
+            self.gt_mismatches = calc_all_mismatches_between_ground_truth_and_pairs(project_data, minimum_confidence=0.7)
+        except ModuleNotFoundError:
+            pass
 
     @property
     def combined_global2tracklet_dict(self):

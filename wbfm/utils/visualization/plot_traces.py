@@ -1,10 +1,13 @@
 import logging
-import os
 from pathlib import Path
+from typing import Optional
+
+from matplotlib.colors import TwoSlopeNorm
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
+
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
@@ -13,7 +16,8 @@ from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.visualization.utils_plot_traces import build_trace_factory, check_default_names, set_big_font
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.visualization.utils_plot_traces import check_default_names
 
 
 ##
@@ -26,40 +30,124 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  neuron_names_to_plot: list = None,
                                  filter_mode: str = 'no_filtering',
                                  color_using_behavior=True,
+                                 remove_outliers=False,
+                                 bleach_correct=True,
+                                 behavioral_correlation_shading=None,
+                                 min_nonnan=None,
                                  to_save=True):
+    """
+
+    See project_data.calculate_traces for details on the arguments, and TracePlotter for even more detail
+
+    Parameters
+    ----------
+    project_data
+    channel_mode
+    calculation_mode
+    neuron_names_to_plot
+    filter_mode
+    color_using_behavior
+    remove_outliers
+    to_save
+
+    Returns
+    -------
+
+    """
     if channel_mode == 'all':
         all_modes = ['red', 'green', 'ratio', 'linear_model']
         opt = dict(project_data=project_data,
                    calculation_mode=calculation_mode,
-                   color_using_behavior=color_using_behavior)
+                   color_using_behavior=color_using_behavior,
+                   bleach_correct=bleach_correct)
+        for mode in all_modes:
+            make_grid_plot_using_project(channel_mode=mode, **opt)
+        # Also try to remove outliers and filter
+        all_modes = ['ratio', 'linear_model']
+        opt['remove_outliers'] = True
+        for mode in all_modes:
+            make_grid_plot_using_project(channel_mode=mode, **opt)
+        opt['filter_mode'] = 'rolling_mean'
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         return
+
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
     else:
-        neuron_names = list(set(project_data.green_traces.columns.get_level_values(0)))
-    # Guess a good shape for subplots
+        if isinstance(min_nonnan, float):
+            neuron_names = project_data.well_tracked_neuron_names(min_nonnan)
+        else:
+            neuron_names = project_data.neuron_names
     neuron_names.sort()
 
     # Build functions to make a single subplot
-    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode}
+    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
+               'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct}
     get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
 
-    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func, color_using_behavior, logger)
+    # Correlate to a behavioral variable
+    background_shading_value_func = factory_correlate_trace_to_behavior_variable(project_data,
+                                                                                 behavioral_correlation_shading)
+
+    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                  color_using_behavior=color_using_behavior,
+                                  background_shading_value_func=background_shading_value_func, logger=logger)
 
     # Save final figure
     if to_save:
         if neuron_names_to_plot is None:
-            fname = f"{channel_mode}_{calculation_mode}_grid_plot.png"
+            prefix = f"{channel_mode}_{calculation_mode}"
+            if remove_outliers:
+                prefix = f"{prefix}_outliers_removed"
+            if filter_mode != "no_filtering":
+                prefix = f"{prefix}_{filter_mode}"
+            fname = f"{prefix}_grid_plot.png"
         else:
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
         traces_cfg = project_data.project_config.get_traces_config()
         out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
         save_grid_plot(out_fname)
+
+
+def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading: str) \
+        -> Optional[callable]:
+    valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature']
+    posture_class = project_data.worm_posture_class
+    y = None
+    if behavioral_correlation_shading is None:
+        y = None
+    elif behavioral_correlation_shading == 'absolute_speed':
+        y = posture_class.worm_speed_fluorescence_fps
+    elif behavioral_correlation_shading == 'speed':
+        y = posture_class.worm_speed_fluorescence_fps_signed
+    elif behavioral_correlation_shading == 'positive_speed':
+        y = posture_class.worm_speed_fluorescence_fps_signed
+        if posture_class.beh_annotation is not None:
+            reversal_ind = posture_class.beh_annotation == 1
+            y[reversal_ind] = 0
+    elif behavioral_correlation_shading == 'negative_speed':
+        y = posture_class.worm_speed_fluorescence_fps_signed
+        if posture_class.beh_annotation is not None:
+            forward_ind = posture_class.beh_annotation == 0
+            y[forward_ind] = 0
+    elif behavioral_correlation_shading == 'curvature':
+        y = posture_class.leifer_curvature_from_kymograph
+    else:
+        assert behavioral_correlation_shading in valid_behavioral_shadings, \
+            f"Must pass None or one of: {valid_behavioral_shadings}"
+
+    if y is None:
+        return None
+
+    def background_shading_value_func(X):
+        ind = np.where(~np.isnan(X))[0]
+        return np.corrcoef(X[ind], y[:len(X)][ind])[0, 1]
+
+    return background_shading_value_func
 
 
 def make_grid_plot_from_leifer_file(fname: str,
@@ -89,7 +177,8 @@ def make_grid_plot_from_leifer_file(fname: str,
     shade_plot_func = lambda axis: shade_using_behavior(ethogram, axis, cmap=ethogram_cmap)
     logger = logging.getLogger()
 
-    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func, color_using_behavior, logger)
+    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                  color_using_behavior=color_using_behavior, logger=logger)
 
     # Save final figure
     out_fname = f"leifer_{channel_mode}_grid_plot.png"
@@ -112,6 +201,7 @@ def save_grid_plot(out_fname):
 def make_grid_plot_from_callables(get_data_func: callable,
                                   neuron_names: list,
                                   shade_plot_func: callable,
+                                  background_shading_value_func: callable = None,
                                   color_using_behavior: bool = True,
                                   logger: logging.Logger = None):
     """
@@ -122,6 +212,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
     get_data_func - function that accepts a neuron name and returns a tuple of (t, y)
     neuron_names - list of neurons to plot
     shade_plot_func - function that accepts an axis object and shades the plot
+    background_shading_value_func - function to get a value to shade the background, e.g. correlation to behavior
+    color_using_behavior - whether to use the shade_plot_func
     logger
 
     Example:
@@ -132,14 +224,33 @@ def make_grid_plot_from_callables(get_data_func: callable,
     -------
 
     """
+    # Set up the colormap of the background, if any
+    if background_shading_value_func is not None:
+        # From: https://stackoverflow.com/questions/59638155/how-to-set-0-to-white-at-a-uneven-color-ramp
+
+        # First get all the traces, so that the entire cmap can be scaled
+        all_y = [get_data_func(name)[1] for name in neuron_names]
+        all_vals = [background_shading_value_func(y) for y in all_y]
+
+        norm = TwoSlopeNorm(vmin=np.nanmin(all_vals), vcenter=0, vmax=np.nanmax(all_vals))
+        # norm.autoscale(all_vals)
+        values_normalized = norm(all_vals)
+        colors = plt.cm.PiYG(values_normalized)
+
+    else:
+        colors = []
+
     # Loop through neurons and plot
     num_neurons = len(neuron_names)
     num_columns = 5
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
-    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 15), sharex=True, sharey=False)
-    for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
+    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 25), sharex=True, sharey=False)
+    # for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
+    for i in tqdm(range(len(neuron_names))):
+
+        ax, neuron_name = fig.axes[i], neuron_names[i]
 
         t, y = get_data_func(neuron_name)
         ax.plot(t, y, label=neuron_name)
@@ -154,215 +265,15 @@ def make_grid_plot_from_callables(get_data_func: callable,
         if color_using_behavior:
             shade_plot_func(ax)
 
-
-def OLD_make_grid_plot_from_project(traces_config,
-                                    trace_mode=None, do_df_over_f0=False, smoothing_func=None,
-                                    color_using_behavior=True,
-                                    background_per_pixel=15):
-    """
-    Should be run within a project folder
-    """
-
-    assert (trace_mode in ['green', 'red', 'ratio']), f"Unknown trace mode {trace_mode}"
-
-    base_trace_fname = Path(traces_config['traces']['red'])
-
-    # Read in the data
-    if smoothing_func is None:
-        smoothing_func = lambda x: x
-        smoothing_str = ""
-    else:
-        smoothing_str = "smoothing"
-
-    get_y_raw, neuron_names = build_trace_factory(base_trace_fname, trace_mode, smoothing_func, background_per_pixel)
-
-    # Define df / f0 postprocessing (normalizing) step
-    if do_df_over_f0:
-        def get_y(i):
-            y_raw = get_y_raw(i)
-            return y_raw / np.nanquantile(y_raw, 0.1)
-    else:
-        get_y = get_y_raw
-
-    # Guess a good shape for subplots
-    neuron_names.sort()
-
-    num_neurons = len(neuron_names)
-    num_columns = 4
-    num_rows = num_neurons // num_columns + 1
-    print(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
-
-    # Get axes
-    # xlim = [0, max([len(df[i]) for i in neuron_names])]
-    # ylim = [0, max([max(df[i]['brightness']/df[i]['volume']) for i in neuron_names])]
-
-    # Loop through neurons and plot
-    fig, axes = plt.subplots(num_rows, num_columns, figsize=(45, 15), sharex=True, sharey=False)
-
-    for ax, i_neuron in tqdm(zip(fig.axes, neuron_names)):
-        y = get_y(i_neuron)
-        ax.plot(y, label=i_neuron)
-        # ax.set_xlim(xlim)
-        # ax.set_ylim(ylim)
-
-        ax.set_title(i_neuron, {'fontsize': 28}, y=0.7)
-        # ax.legend()
-        ax.set_frame_on(False)
-        ax.set_axis_off()
-
-    # Save final figure
-    plt.subplots_adjust(left=0,
-                        bottom=0,
-                        right=1,
-                        top=1,
-                        wspace=0.0,
-                        hspace=0.0)
-
-    out_fname = base_trace_fname.with_name(f"{smoothing_str}_{trace_mode}_grid_plot.png")
-    plt.savefig(out_fname, bbox_inches='tight', pad_inches=0)
-
-
-##
-## Functions for use with data from 'extract_all_traces'
-##
-
-def visualize_traces_with_reference(all_traces,
-                                    reference_ind, reference_name,
-                                    all_names=None,
-                                    to_normalize=True,
-                                    to_save=False):
-    """
-    Plot all neurons on a reference, given by reference_ind
-    """
-    all_names = check_default_names(all_names, len(all_traces))
-
-    reference_trace = all_traces[reference_ind]
-
-    for i, t_dict in enumerate(all_traces):
-        if i == reference_ind:
-            continue
-        # Plot looped trace and reference
-        ax1, ax2 = visualize_mcherry_and_gcamp(reference_trace, reference_name,
-                                               make_new_title=False,
-                                               to_normalize=to_normalize)
-        visualize_mcherry_and_gcamp(t_dict, all_names[i],
-                                    make_new_fig=False,
-                                    make_new_title=False,
-                                    ax1=ax1, ax2=ax2,
-                                    to_normalize=to_normalize)
-        if to_save:
-            plt.savefig(f'traces_{all_names[i]}_ref_{reference_name}')
-
-
-def visualize_mcherry_and_gcamp(t_dict,
-                                name,
-                                which_neuron,
-                                make_new_fig=True,
-                                make_new_title=True,
-                                ax1=None,
-                                ax2=None,
-                                to_normalize=False,
-                                preprocess_func=None):
-    """
-    NOTE: preprocess_func is nonfunctional
-    """
-    if make_new_fig:
-        plt.figure(figsize=(35, 5))  # , fontsize=12)
-
-    if make_new_fig:
-        ax1 = plt.subplot(121)
-    dat = get_tracking_channel(t_dict)
-    if to_normalize:
-        dat = dat / np.max(np.array(dat))
-    if make_new_title:
-        ax1.plot(dat)
-        plt.title(f'Red channel for neuron {name}')
-    else:
-        ax1.plot(dat, label=f'Red channel for neuron {name}')
-        ax1.legend()
-
-    if make_new_fig:
-        ax2 = plt.subplot(122)
-    dat = get_measurement_channel(t_dict)
-    if to_normalize:
-        dat = dat / np.max(np.array(dat))
-    if make_new_title:
-        ax2.plot(dat)
-        plt.title(f'Green channel for neuron {name}')
-    else:
-        ax2.plot(dat, label=f'Green channel for neuron {name}')
-        ax2.legend()
-
-    set_big_font()
-
-    return ax1, ax2
-
-
-def visualize_ratio(t_dict,
-                    name,
-                    which_neuron,
-                    tspan=None,
-                    background=[0, 0],
-                    ylim=[0, 1],
-                    preprocess_func=None):
-    """
-    Divides the green by the red channel to produce a normalized time series
-        Optionally subtracts a background value
-    """
-    plt.figure(figsize=(35, 5))
-
-    red = get_tracking_channel(t_dict)
-    green = get_measurement_channel(t_dict)
-
-    if preprocess_func is not None:
-        red = preprocess_func(red, which_neuron)
-        green = preprocess_func(green, which_neuron)
-
-    dat = (green - background[0]) / (red - background[1])
-    if tspan is None:
-        plt.plot(dat)
-    else:
-        plt.plot(tspan, dat)
-    plt.xlabel('Seconds')
-    plt.ylim(ylim)
-    plt.title(f"Ratiometric for neuron {name}")
-
-
-def visualize_all_traces(all_traces,
-                         all_names=None,
-                         plot_subfunction=visualize_mcherry_and_gcamp,
-                         preprocess_func=None,
-                         to_save=False):
-    """
-    Plots all neurons in a struct using a subfunction with the following API:
-        plot_subfunction(t_dict,
-                         which_neuron=i,
-                         name=all_names[i],
-                         preprocess_func=preprocess_func)
-    """
-    all_names = check_default_names(all_names, len(all_traces))
-
-    for i, t_dict in enumerate(all_traces):
-        plot_subfunction(t_dict,
-                         which_neuron=i,
-                         name=all_names[i],
-                         preprocess_func=preprocess_func)
-        if to_save:
-            plt.savefig(f'traces_{all_names[i]}')
-
+        if background_shading_value_func is not None:
+            color, val = colors[i], background_shading_value_func(y)
+            ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
+            ax.set_title(f"Shaded value: {val:0.2f}")
 
 ##
 ## Generally plotting
 ##
 
-
-# def plot2d_with_max(dat, t, max_ind, max_vals, vmin=100, vmax=400):
-#     plt.imshow(dat[:,:,0,t], vmin=vmin, vmax=vmax)
-#     plt.colorbar()
-#     x, y = max_ind[t,1], max_ind[t,0]
-#     if z == max_ind[t,2]:
-#         plt.scatter(x, y, marker='x', c='r')
-#     plt.title(f"Max for t={t} is {max_vals[t]} xy={x},{y}")
 
 def plot3d_with_max(dat, z, t, max_ind, vmin=100, vmax=400):
     plt.imshow(dat[:, :, z, t], vmin=vmin, vmax=vmax)
@@ -429,19 +340,3 @@ def get_measurement_channel(t_dict):
     except KeyError:
         dat = t_dict['green']
     return dat
-
-# def nan_tracking_failures(config,
-#                           dat,
-#                           which_neuron,
-#                           threshold=0.9):
-#     c = load_config(config)
-#
-#     _, this_prob = xy_from_dlc_dat(c.tracking.annotation_fname,
-#                                    which_neuron,
-#                                    c.preprocessing.num_frames)
-#
-#     bad_vals = np.array(this_prob) < threshold
-#     dat[bad_vals] = np.nan
-#     # print(np.count_nonzero(this_prob < threshold))
-#
-#     return dat

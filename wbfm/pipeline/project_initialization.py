@@ -15,7 +15,8 @@ from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSe
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 from wbfm.utils.projects.utils_filenames import get_sequential_filename, resolve_mounted_path_in_current_os, \
-    add_name_suffix
+    add_name_suffix, get_location_of_new_project_defaults, get_bigtiff_fname_from_folder, \
+    get_both_bigtiff_fnames_from_parent_folder
 from wbfm.utils.projects.utils_project import get_project_name, edit_config, safe_cd
 
 
@@ -28,14 +29,36 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     abs_dir_name = get_sequential_filename(abs_dir_name)
     logger.info(f"Building new project at: {abs_dir_name}")
 
-    # Note: assumes that you are executing from the main wbfm folder
-    src = 'new_project_defaults'
+    # If the user just passed the parent raw data folder, then convert that into green and red
+    parent_data_folder = _config.get('parent_data_folder', None)
+    green_bigtiff_fname, red_bigtiff_fname = \
+        _config.get('green_bigtiff_fname', None), _config.get('red_bigtiff_fname', None)
+    if parent_data_folder is not None:
+        green_bigtiff_fname, red_bigtiff_fname = get_both_bigtiff_fnames_from_parent_folder(parent_data_folder)
+
+    if green_bigtiff_fname is None and _config.get('green_bigtiff_fname', None) is None:
+        search_failed = True
+    elif red_bigtiff_fname is None and _config.get('red_bigtiff_fname', None) is None:
+        search_failed = True
+    else:
+        search_failed = False
+
+    if search_failed:
+        logging.warning(f"Failed to find bigtiff files in folder {parent_data_folder}")
+        raise FileNotFoundError("Must pass either a) bigtiff data file directly, or b) proper parent folder")
+    else:
+        _config['red_bigtiff_fname'] = red_bigtiff_fname
+        _config['green_bigtiff_fname'] = green_bigtiff_fname
+
+    # Uses the pip installed package location
+    src = get_location_of_new_project_defaults()
     copytree(src, abs_dir_name)
 
     # Update the copied project config with the new dest folder
     dest_fname = 'project_config.yaml'
     project_fname = osp.join(abs_dir_name, dest_fname)
     project_fname = Path(project_fname).resolve()
+
     edit_config(str(project_fname), _config)
 
     # Also update the snakemake file with the project directory
@@ -61,9 +84,8 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
         video_fname)
 
     with safe_cd(project_dir):
-        preprocessed_dat, _ = preprocess_all_frames_using_config(DEBUG, cfg, verbose, video_fname,
-                                                                 preprocessing_settings, None, which_channel,
-                                                                 out_fname)
+        preprocessed_dat, _ = preprocess_all_frames_using_config(cfg, video_fname, preprocessing_settings, None,
+                                                                 which_channel, out_fname, verbose, DEBUG)
 
     if not pad_to_align_with_original and bigtiff_start_volume > 0:
         # i.e. remove the unpreprocessed data, creating an offset between the bigtiff and the zarr
@@ -93,7 +115,7 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
 def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr,
                                    use_preprocessed_data, video_fname):
     verbose = cfg.config['verbose']
-    project_dir = cfg.config['project_dir']
+    project_dir = cfg.project_dir
     # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
     if use_preprocessed_data:
         preprocessing_settings = None
@@ -115,13 +137,13 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
             if not use_preprocessed_data:
                 video_fname = cfg.config['red_bigtiff_fname']
             else:
-                video_fname = cfg.config['preprocessed_red']
+                video_fname = cfg.resolve_relative_path_from_config('preprocessed_red')
         else:
             if not use_preprocessed_data:
                 video_fname = cfg.config['green_bigtiff_fname']
             else:
-                video_fname = cfg.config['preprocessed_green']
-        video_fname = resolve_mounted_path_in_current_os(video_fname)
+                video_fname = cfg.resolve_relative_path_from_config('preprocessed_green')
+        video_fname = resolve_mounted_path_in_current_os(video_fname, verbose=0)
     start_volume = cfg.config['dataset_params'].get('bigtiff_start_volume', None)
     if start_volume is None:
         logging.warning("Did not find bigtiff_start_volume; is this an old style project?")
@@ -163,8 +185,8 @@ def zip_zarr_using_config(project_cfg: ModularProjectConfig):
     out_fname_red_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_red'], verbose=1)
     out_fname_green_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_green'], verbose=1)
 
-    project_cfg.config['preprocessed_red'] = str(out_fname_red_7z)
-    project_cfg.config['preprocessed_green'] = str(out_fname_green_7z)
+    project_cfg.config['preprocessed_red'] = str(project_cfg.unresolve_absolute_path(out_fname_red_7z))
+    project_cfg.config['preprocessed_green'] = str(project_cfg.unresolve_absolute_path(out_fname_green_7z))
     project_cfg.update_self_on_disk()
 
 

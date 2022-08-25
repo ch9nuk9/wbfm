@@ -25,7 +25,7 @@ from sacred import SETTINGS
 SETTINGS.CAPTURE_MODE = 'sys' # Capture stdout
 
 # Initialize sacred experiment
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
 ex.add_config(project_path=None, allow_raw_artifact_reuse=False, DEBUG=False)
 

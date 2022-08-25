@@ -35,7 +35,7 @@ def background_subtract_single_channel(raw_fname, background_fname, num_frames, 
     background_video_list = read_background(background_fname, num_frames, num_slices,
                                             preprocessing_settings)
     # Add a new truly constant background value, to keep anything from going negative
-    new_background = preprocessing_settings.background_per_pixel
+    new_background = preprocessing_settings.reset_background_per_pixel
     # Get a single image, because that's the physical camera
     background_video_mean = np.mean(np.mean(background_video_list, axis=0), axis=0) - new_background
     # Don't try to modify the data as read; it is read-only
@@ -90,7 +90,8 @@ class PreprocessingSettings:
 
     background_red: np.ndarray = None
     background_green: np.ndarray = None
-    background_per_pixel: int = 100
+    reset_background: bool = True
+    reset_background_per_pixel: int = 75
 
     # Mini max
     do_mini_max_projection: bool = False
@@ -198,15 +199,18 @@ class PreprocessingSettings:
         background_video_list = read_background(background_fname, num_frames, self.raw_number_of_planes,
                                                 preprocessing_settings=None)
         # Add a new truly constant background value, to keep anything from going negative
-        new_background = self.background_per_pixel
+        new_background = self.reset_background_per_pixel
         # Get a single image, because that's the physical camera
         background_video_mean = np.mean(np.mean(background_video_list, axis=0), axis=0)
-        min_background_val = np.min(background_video_mean)
-        if new_background > min_background_val:
-            logging.warning(f"Can't set new background value to requested {new_background}, "
-                            f"because some values would be negative. Using {min_background_val} instead")
-            new_background = min_background_val
-        background_video_mean -= new_background
+        if self.reset_background:
+            min_background_val = np.min(background_video_mean)
+            if new_background > min_background_val:
+                logging.warning(f"Can't set new background value to requested {new_background}, "
+                                f"because some values would be negative. Using {min_background_val} instead")
+                new_background = min_background_val
+
+            background_video_mean -= new_background
+
         background_video_mean = background_video_mean.astype(self.initial_dtype)
         logging.info(f"Loaded background with mean: {np.mean(background_video_mean)}")
 
@@ -422,10 +426,10 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     return single_volume_raw
 
 
-def preprocess_all_frames_using_config(DEBUG: bool, config: ModularProjectConfig, verbose: int, video_fname: str,
-                                       preprocessing_settings: PreprocessingSettings = None,
-                                       which_frames: list = None, which_channel: str = None,
-                                       out_fname: str = None) -> Tuple[zarr.Array, dict]:
+def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname: str,
+                                       preprocessing_settings: PreprocessingSettings = None, which_frames: list = None,
+                                       which_channel: str = None, out_fname: str = None, verbose: int = 0,
+                                       DEBUG: bool = False) -> Tuple[zarr.Array, dict]:
     """
     Preprocesses all frames that will be analyzed as per config
 

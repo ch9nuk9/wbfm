@@ -15,7 +15,11 @@ If you just want to run the code, then you can use the pre-installed environment
 conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 ```
 
-# BASIC: start a new project from nothing
+For more detail, see:
+[detailed installation instructions](docs/installation_instructions.md)
+
+
+# Recommended: start a new project from nothing
 
 ## Preparation:
 
@@ -30,11 +34,12 @@ conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 Working examples to create a project are available for 
 [linux](wbfm/scripts/examples/0-create_new_project-linux-EXAMPLE.sh)
 and [windows](wbfm/scripts/examples/0-create_new_project-windows-EXAMPLE.sh).
-Everything can be run on the command line.
+Recommended: run these commands on the command line.
 
 If your data is visible locally (mounted is okay), for the initial project creation you can use a gui:
 
 ```commandline
+cd /path/to/this/code/wbfm
 python gui/create_project_gui.py
 ```
 
@@ -53,14 +58,23 @@ green_bigtiff_fname
 
 in the main project file: config.yaml
 
+AND
+```yaml
+project_dir
+```
+in a subfolder: snakemake/config.yaml
+
 In addition, if creating from a windows computer, you may need to use dos2unix to fix any files that you want to execute, specifically those referenced below:
 1. RUNME_*.sh
 2. DRYRUN.sh
 
+Finally, due to changes in the cluster you may get a permission error when importing skimage.
+This should be fixable with one line; check the file RUNME_cluster.sh for more information.
+
 ### Checklist of most important parameters to change
 
 1. project_config.yaml
-   1. start_volume_bigtiff
+   1. bigtiff_start_volume
    2. num_frames
    3. num_slices (after flyback removal)
 2. preprocessing_config.yaml
@@ -70,7 +84,9 @@ In addition, if creating from a windows computer, you may need to use dos2unix t
 For all other settings, the defaults should work well.
 
 #### *IMPORTANT*
-If you changed the name of your project, you must update it in the snakemake/config.yaml file under 'project_dir'
+If you changed the name of your project or you changed operating systems, you must
+update the 'project_dir' variable in the snakemake/config.yaml file.
+This variable should be matched to the operating system you are running on, for example starting with 'S:' for windows or '/' for linux (cluster).
 
 
 ### Running the rest of the workflow
@@ -90,63 +106,53 @@ cd /path/to/your/project/snakemake
 ```bash
 bash DRYRUN.sh
 ```
-4. If there are errors, there are three possibilities:
+4. If there are errors, there are three easy possibilities:
    1. If this is not a new project, you might have to run steps one by one (see the next subsection).
-   2. If you changed the name of the project, read the *IMPORTANT* tip above 
-   3. If this is a new project, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
+   2. If you changed the name of the project, read the *IMPORTANT* tip above
+   3. If you get a permission issue, read the *IMPORTANT* tip above
+   4. If you still have a problem, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
 5. Run the relevant RUNME script, either cluster or local. Probably, you want the cluster version:
 ```bash
 bash RUNME_cluster.sh
 ```
-6. Wait for this to finish. Depending on scheduling, it could take 12-48 hours.
+6. This will run ALL steps in sequence.
+   1. Note: you can't close the terminal! You may need to use a long-term terminal program like tmux or screen.
+   2. If you get errors, see step 4.
+   3. It will print a lot of green-colored text, and the current analysis step will be written near the top, for example: 'rule: preprocessing'. Depending on how busy the cluster is, it could take 6-24 hours / 1000 volumes.
 7. Check the log files (they will be in the /snakemake folder) to make sure there were no errors.
-Almost all errors will crash the program, but if you find one that doesn't, please file an issue!
+Almost all errors will crash the program (display a lot of red text), but if you find one that doesn't, please file an issue!
+8. If the program crashes and you fix the problem, then you should be able to start again from step 3 (DRYRUN). This should rerun only the steps that failed and after, not the steps that succeeded. 
 
-# ADVANCED: start from an incomplete project
+Note: at any point you can look at the output of the pipeline using the GUIs described below.
 
-Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
-If you have simply not run all of the steps or there was a crash, then continue with the above section.
-However, if you are re-running analysis steps, then see below.
+### Advanced: running steps within an incomplete project
 
-In this case, you must run each step one by one.
-Note that you can check the current status of the project by moving to the project and running a script. Example:
-```bash
-cd /path/to/your/project
-python log/print_project_status.py
-```
-
-You can directly run the python scripts, or, most likely, run them using sbatch using the following syntax.
-
-### Running single steps on the cluster (sbatch)
-
-Once the project is created, each step can be run via sbatch using this command in the scripts/cluster folder:
-
-```commandline
-sbatch single_step_dispatcher.sbatch -s 1 -t /scratch/neurobiology/zimmer/Charles/dlc_stacks/worm10-gui_test/project_config.yaml
-```
-
-where '-s' is a shortcut for the step to run (0b, 1, 2a, 2b, 2c, 3a, 3b, 4) and '-t' is a path to the project config file.
-
-Note: there may also be some alternative (not main pipeline steps), for example '4-alt' which just re-extracts the traces and makes the grid plots.
-This is useful for example if different preprocessing is applied to the videos (but the segmentation and tracking are unchanged).
+See [detailed pipeline steps](docs/detailed_pipeline_steps.md)
 
 # Summary of GUIs
 
-Initial creation of project:
+All guis are in the folder: /folder_of_this_README/wbfm/gui/example.py
+
+1. Initial creation of project. 
+See sections above on carefully checking paths:
 ```bash
-python gui/create_project_gui.py --project_path PATH-TO-YOUR-PROJECT
+python wbfm/gui/create_project_gui.py
 ```
 
-Visualization of most steps in the analysis is also possible, and they can be accessed via the progress gui:
-
+2. Visualization of most steps in the analysis is also possible, and they can be accessed via the progress gui. This also tells you which steps are completed:
 ```bash
-python gui/progress_gui.py --project_path PATH-TO-YOUR-PROJECT
+python wbfm/gui/progress_gui.py
+```
+Or, if you know the project already:
+```bash
+python wbfm/gui/progress_gui.py --project_path PATH-TO-YOUR-PROJECT
 ```
 
-Manual annotation and more detailed visualization:
+3. Manual annotation and more detailed visualization. 
+Note, this can take minutes to load:
 
 ```bash
-python gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
+python wbfm/gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
 ```
 
 

@@ -2,23 +2,23 @@
 # Do not edit!
 # NOTE: these comments will be deleted when moving to a new project!
 
-task_name: test
+task_name:
 experimenter: Charlie
 
-project_dir: null # For new project
+project_dir: null # Not used after initial creation
 project_path: null # For reference afterwards
 
 ###################
 # Data
 ###################
+parent_data_folder: null
+
 behavior_bigtiff_fname: null
 red_bigtiff_fname: null
 green_bigtiff_fname: null
 
 red_background_fname: null
 green_background_fname: null
-
-preprocessing_config: 'preprocessing_config.yaml'
 
 preprocessed_red: null
 preprocessed_green: null
@@ -30,7 +30,7 @@ dataset_params:
   num_frames: 3300 # CHANGE ME
   fps: 6.9
   # In z
-  num_slices: 23 # CHANGE ME; after removal of flyback (see preprocessing)
+  num_slices: 22 # CHANGE ME; after removal of flyback (see preprocessing)
   # As of January 2022
   red_and_green_mirrored: False
 
@@ -42,6 +42,8 @@ physical_units:
 ###################
 # Project status and steps
 ###################
+
+preprocessing_config: 'preprocessing_config.yaml'
 
 subfolder_configs:
   # Copy from external_libraries package

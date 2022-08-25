@@ -1,3 +1,4 @@
+import copy
 import glob
 import logging
 import os
@@ -15,7 +16,7 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os
+from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -45,15 +46,16 @@ class WormFullVideoPosture:
     pca_i_start: int = 10
     pca_i_end: int = -10
 
+    bigtiff_start_volume: int = 0
     frames_per_volume: int = 32  # TODO: make sure this is synchronized with z_slices
 
     def __post_init__(self):
         self.fix_temporary_annotation_format()
 
         if self.filename_curvature is not None:
-            self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature)
-            self.filename_x = resolve_mounted_path_in_current_os(self.filename_x)
-            self.filename_y = resolve_mounted_path_in_current_os(self.filename_y)
+            self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature, verbose=0)
+            self.filename_x = resolve_mounted_path_in_current_os(self.filename_x, verbose=0)
+            self.filename_y = resolve_mounted_path_in_current_os(self.filename_y, verbose=0)
 
         if self.filename_table_position is None and self.filename_curvature is not None:
             # Try to find in the parent folder
@@ -74,15 +76,15 @@ class WormFullVideoPosture:
 
     @cached_property
     def centerlineX(self):
-        return pd.read_csv(self.filename_x, header=None)
+        return read_if_exists(self.filename_x, reader=pd.read_csv, header=None)
 
     @cached_property
     def centerlineY(self):
-        return pd.read_csv(self.filename_y, header=None)
+        return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
     @cached_property
     def curvature(self):
-        return pd.read_csv(self.filename_curvature, header=None)
+        return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
 
     @cached_property
     def stage_position(self):
@@ -116,14 +118,16 @@ class WormFullVideoPosture:
 
         # Before anything, load metadata
         frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
-        opt = dict(frames_per_volume=frames_per_volume)
+        bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
+        opt = dict(frames_per_volume=frames_per_volume,
+                   bigtiff_start_volume=bigtiff_start_volume)
 
         # First, get the folder that contains all behavior information
         # Try 1: read from config file
         behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
         if behavior_fname is None:
             # Try 2: look in the parent folder of the red raw data
-            project_config.logger.info("behavior_fname not found; searching")
+            project_config.logger.debug("behavior_fname not found; searching")
             behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
             if not flag:
                 project_config.logger.warning("behavior_fname search failed; returning empty object")
@@ -222,7 +226,10 @@ class WormFullVideoPosture:
 
     @property
     def curvature_fluorescence_fps(self):
-        return self.curvature.iloc[self.subsample_indices, :]
+        if self.curvature is not None:
+            return self.curvature.iloc[self.subsample_indices, :]
+        else:
+            return None
 
     @property
     def stage_position_fluorescence_fps(self):
@@ -233,7 +240,8 @@ class WormFullVideoPosture:
         df = self.stage_position
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
-        tdelta = df.index[1] - df.index[0]  # units = nanoseconds
+        # tdelta = df.index[1] - df.index[0]  # units = nanoseconds
+        tdelta = pd.Series(self.stage_position.index).diff().mean()
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
 
@@ -242,6 +250,16 @@ class WormFullVideoPosture:
     @property
     def worm_speed_fluorescence_fps(self):
         return self.worm_speed[self.subsample_indices]
+
+    @property
+    def worm_speed_fluorescence_fps_signed(self):
+        """Just sets the speed to be negative when the behavior is annotated as reversal"""
+        speed = self.worm_speed[self.subsample_indices]
+        rev_ind = self.behavior_annotations_fluorescence_fps == 1
+        velocity = copy.copy(speed)
+        velocity[rev_ind] *= -1
+
+        return velocity
 
     @property
     def worm_speed_smoothed(self):
@@ -254,9 +272,14 @@ class WormFullVideoPosture:
         return pd.Series(self.worm_speed_fluorescence_fps).rolling(window=window, center=True).mean()
 
     @property
+    def leifer_curvature_from_kymograph(self):
+        # Signed average over segments 10 to 90
+        return self.curvature_fluorescence_fps.loc[:, 5:90].mean(axis=1)
+
+    @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
-        return range(0, len(self.curvature), self.frames_per_volume)
+        return range(self.bigtiff_start_volume*self.frames_per_volume, len(self.curvature), self.frames_per_volume)
 
     def __repr__(self):
         return f"=======================================\n\
@@ -279,13 +302,16 @@ def get_behavior_fluorescence_fps_conversion(project_config):
     # True for older datasets, i.e. I had to remove it in postprocessing
     was_flyback_saved = final_number_of_planes != raw_number_of_planes
     if not was_flyback_saved:
-        # Example: 23 saved fluorescence planes correspond to 24 behavior frames
-        raw_number_of_planes += 1
+        # Example: 22 saved fluorescence planes correspond to 24 behavior frames
+        # UPDATE: as of August 2022, we remove 2 flyback planes
+        raw_number_of_planes += 2
     return raw_number_of_planes
 
 
 def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     """First tries to read from the config file, and if that fails, goes searching"""
+
+    # Initial checks are all in project local folders
     is_stable_style = False
     try:
         behavior_cfg = cfg.get_behavior_config()
@@ -311,7 +337,20 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
         behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
         behavior_fname = cfg.resolve_relative_path(behavior_fname)
     if not os.path.exists(behavior_fname):
-        raise FileNotFoundError
+        behavior_fname = None
+    if behavior_fname is not None:
+        return behavior_fname, is_stable_style
+
+    # Final checks are all in raw behavior data folders, implying they are not the stable style
+    is_stable_style = False
+    raw_behavior_folder, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()
+    if not flag:
+        return behavior_fname, is_stable_style
+
+    behavior_fname = "beh_annotation.csv"
+    behavior_fname = os.path.join(raw_behavior_folder, behavior_fname)
+    if not os.path.exists(behavior_fname):
+        behavior_fname = None
 
     return behavior_fname, is_stable_style
 

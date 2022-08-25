@@ -6,6 +6,7 @@ OPT="sbatch -t {cluster.time} -p {cluster.partition} --cpus-per-task {cluster.cp
 NUM_JOBS_TO_SUBMIT=2
 
 # Needs writable cache
-export HOME="/scratch/neurobiology/zimmer"
+# As of 8/2022 your home folder at /home/user should be writable from the cluster, but this may be temporary
+# export HOME="/scratch/neurobiology/zimmer/YOUR/USER"
 
 snakemake -s pipeline.smk --latency-wait 60 --cluster "$OPT" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT

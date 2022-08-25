@@ -241,7 +241,7 @@ def create_manual_correction_gui(cfg: ModularProjectConfig,
             df_initial_annotations = pd.read_hdf(initial_annotation_name)
 
         # Import raw data
-        fname = cfg.config['preprocessed_red']
+        fname = cfg.resolve_relative_path_from_config('preprocessed_red')
         red_data = zarr.open(fname)
 
     print("Finished loading data, starting napari...")

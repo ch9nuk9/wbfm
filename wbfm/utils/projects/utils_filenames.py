@@ -7,6 +7,7 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
+from pip._internal.commands.show import search_packages_info
 
 from wbfm.utils.general.custom_errors import UnknownValueError
 
@@ -19,7 +20,7 @@ def check_exists(abs_path, allow_overwrite):
             raise FileExistsError
 
 
-def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 1) -> str:
+def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
     """
     Removes windows-specific mounted drive names (Y:, D:, etc.) and replaces them with the networked system equivalent
 
@@ -84,13 +85,13 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 1) -> str:
     return path
 
 
-def read_if_exists(filename, reader=pd.read_hdf):
+def read_if_exists(filename, reader=pd.read_hdf, **kwargs):
     if filename is None:
         return None
     elif os.path.exists(filename):
-        return reader(filename)
+        return reader(filename, **kwargs)
     else:
-        logging.warning(f"Did not find file {filename}")
+        logging.debug(f"Did not find file {filename}")
         return None
 
 
@@ -105,7 +106,7 @@ def pandas_read_any_filetype(filename):
         else:
             raise NotImplementedError
     else:
-        logging.warning(f"Did not find file {filename}")
+        logging.debug(f"Did not find file {filename}")
         return None
 
 
@@ -138,15 +139,15 @@ def load_file_according_to_precedence(fname_precedence: list,
 
         if fname is not None and Path(fname).exists():
             data = this_reader(fname)
-            print(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
-            print(f"Read data from: {fname}")
+            logging.debug(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
+            logging.debug(f"Read data from: {fname}")
             if key != most_recent_modified_key:
-                logging.warning(f"Not using most recently modified file (mode {most_recent_modified_key})")
+                logging.debug(f"Not using most recently modified file (mode {most_recent_modified_key})")
             else:
-                logging.info(f"Using most recently modified file")
+                logging.debug(f"Using most recently modified file")
             break
     else:
-        logging.info(f"Found no files of possibilities: {possible_fnames}")
+        logging.debug(f"Found no files of possibilities: {possible_fnames}")
         data = None
         fname = None
     return data, fname
@@ -237,3 +238,42 @@ def generate_output_data_names(cfg):
     fname = cfg.resolve_mounted_path_in_current_os('green_bigtiff_fname')
     out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
     return out_fname_red, out_fname_green
+
+
+def get_location_of_installed_project():
+    package_info = next(search_packages_info(['wbfm']))
+    return package_info.location
+
+
+def get_location_of_new_project_defaults():
+    parent_folder = Path(get_location_of_installed_project())
+    target_folder = parent_folder.joinpath('wbfm').joinpath('new_project_defaults').resolve()
+    return str(target_folder)
+
+
+def get_bigtiff_fname_from_folder(folder_fname, channel_to_check=0):
+    fname = None
+    str_pattern = f'_Ch{channel_to_check}bigtiff.btf'
+    for item in Path(folder_fname).iterdir():
+        if str(item).endswith(str_pattern):
+            fname = str(item)
+            break
+    else:
+        logging.warning(f"Did not find pattern {str_pattern} in folder {folder_fname}")
+    return fname
+
+
+def get_both_bigtiff_fnames_from_parent_folder(parent_data_folder):
+    green_bigtiff_fname, red_bigtiff_fname = None, None
+    for subfolder in Path(parent_data_folder).iterdir():
+        if subfolder.is_file():
+            continue
+        if subfolder.name.endswith('_Ch0'):
+            green_bigtiff_fname = get_bigtiff_fname_from_folder(subfolder, 0)
+        if subfolder.name.endswith('_Ch1'):
+            red_bigtiff_fname = get_bigtiff_fname_from_folder(subfolder, 1)
+
+    if green_bigtiff_fname is None or red_bigtiff_fname is None:
+        logging.warning(f"Did not find one of: {(green_bigtiff_fname, red_bigtiff_fname)}")
+
+    return green_bigtiff_fname, red_bigtiff_fname

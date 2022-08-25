@@ -1,11 +1,14 @@
 
-self_path: 1-segmentation/segment_config.yaml # for programmatic updating
-
-# Project definitions
-segmentation_type: 3d
-
-# External preprocessing: bounding boxes
+###################
+# Preprocessing
+###################
 bbox_fname: null
+
+###################
+# Parameters
+###################
+self_path: 1-segmentation/segment_config.yaml
+segmentation_type: 3d
 
 # Segmentation
 segmentation_params:
@@ -22,7 +25,9 @@ postprocessing_params:
   also_split_using_centroids: true
   min_separation: 4 # Designed for a total z height of ~32 planes
 
+###################
 # Output
+###################
 output_folder: 1-segmentation # Only used for initial writing
 output_masks: 1-segmentation/masks.zarr
 output_metadata: 1-segmentation/metadata.pickle

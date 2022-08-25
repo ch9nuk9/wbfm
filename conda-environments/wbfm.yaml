@@ -21,7 +21,6 @@ dependencies:
   - torchaudio
   - cudatoolkit=10.0.130
   - cudnn=7.6.5
-  - tifffile
   - opencv=3.4.2
   - matplotlib
   - torchvision

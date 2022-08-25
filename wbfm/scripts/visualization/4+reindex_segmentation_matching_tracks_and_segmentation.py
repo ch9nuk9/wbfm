@@ -10,7 +10,7 @@ from wbfm.pipeline.traces import reindex_segmentation_using_config
 
 # Initialize sacred experiment
 
-ex = Experiment()
+ex = Experiment(save_git_info=False)
 ex.add_config(project_path=None, out_fname=None, DEBUG=False)
 
 

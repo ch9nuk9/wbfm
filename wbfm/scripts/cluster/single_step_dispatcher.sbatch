@@ -13,6 +13,7 @@
 pwd; hostname; date
 
 # Necessary because the default home directory is not writable from the cluster
+# UPDATE: as of August 2022 this is not necessary
 #export HOME="/scratch/neurobiology/zimmer/Charles"
 
 # Get all user flags
@@ -44,12 +45,12 @@ CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
 FULL_CMD="python $CMD with project_path=$project_path"
 
 echo "Running step $step_reference using full command:"
-echo $FULL_CMD
+echo "$FULL_CMD"
 
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $FULL_CMD"
 else
-  python $CMD with project_path="$project_path"
+  python "$CMD" with project_path="$project_path"
 fi
 
 date

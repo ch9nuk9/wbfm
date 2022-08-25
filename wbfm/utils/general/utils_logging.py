@@ -17,8 +17,8 @@ def setup_logger_object(log_filename, actually_set_up_file=True):
     # Set up file handler
     try:
         if actually_set_up_file:
-            log_filename = get_sequential_filename(log_filename)
-            print(f"Setting up log at: {log_filename}")
+            log_filename = get_sequential_filename(log_filename, verbose=0)
+            logger.info(f"Setting up log at: {log_filename}")
             fh = logging.FileHandler(log_filename)
             fh.setLevel(logging.DEBUG)
             formatter = logging.Formatter(fmt='%(asctime)s %(name)-12s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M')
@@ -28,15 +28,16 @@ def setup_logger_object(log_filename, actually_set_up_file=True):
         # Assume we are reading someone else's project, so we shouldn't need a log
         pass
 
-    if len(logger.handlers) >= 1:
-        # Assume it has already been set up, so only set up the file handler
-        pass
-    else:
+    # Check if the console logger has already been set up, and don't duplicate
+    if all([isinstance(h, logging.FileHandler) for h in logger.handlers]):
         ch = _get_console_handler()
         logger.addHandler(ch)
+    else:
+        # Assume it has already been set up, so only set up the file handler
+        pass
 
     logger.propagate = False
-    logger.info(f"Set up logger with name: {log_name}")
+    # logger.info(f"Set up logger with name: {log_name}")
 
     return logger
 
