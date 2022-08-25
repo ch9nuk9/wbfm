@@ -118,31 +118,43 @@ class LARS(optim.Optimizer):
 
 class Transform:
     def __init__(self):
+        self.final_normalization = tio.RescaleIntensity(percentiles=(5, 100))
+
         self.transform = tio.transforms.Compose([
             tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
             tio.RandomBlur(p=0.1),
-            tio.RandomMotion(translation=0, degrees=180, p=1.0),
+            tio.RandomAffine(degrees=(180, 0, 0), p=1.0),  # Also allows scaling
+            # tio.RandomMotion(translation=1, degrees=90, p=1.0),
             # tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.5),
             tio.RandomNoise(p=0.5),
+            # tio.ZNormalization()
+            self.final_normalization
             # transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406],
-            #                      std=[0.229, 0.224, 0.225])
+            # transforms.Normalize(mean=[0, 0.485, 0.456, 0.406],
+            #                      std=[1, 0.229, 0.224, 0.225])
         ])
         self.transform_prime = transforms.Compose([
             # tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
             # tio.RandomBlur(p=0.0),
-            tio.RandomMotion(translation=0, degrees=180, p=0.5),
+            tio.RandomAffine(degrees=(180, 0, 0), p=0.1),  # Also allows scaling
             # tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.1),
             tio.RandomNoise(p=0.1),
+            # tio.ZNormalization()
+            self.final_normalization
             # transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406],
-            #                      std=[0.229, 0.224, 0.225])
+            # transforms.Normalize(mean=[0, 0.485, 0.456, 0.406],
+            #                      std=[1, 0.229, 0.224, 0.225])
         ])
 
     def __call__(self, x):
+        # print(x.shape)
         y1 = self.transform(x)
         y2 = self.transform_prime(x)
         return y1, y2
+
+    def normalize(self, img):
+        return self.final_normalization(img)
+
 
 
 class NeuronImageWithGTDataset(Dataset):
@@ -155,19 +167,20 @@ class NeuronImageWithGTDataset(Dataset):
     def __getitem__(self, idx):
         x = torch.unsqueeze(self.all_volume_crops[idx], 0)
         gt_id = self.list_of_ids_of_volumes[idx]
-        sz = x.shape[0]
-        n = nn.InstanceNorm3d(sz, affine=False)  # Todo: set this to a global mean and std
-        x = n(x)
+        # sz = x.shape[0]
+        # n = nn.InstanceNorm3d(sz, affine=False)  # Todo: set this to a global mean and std
+        # x = n(x)
         return x, gt_id
 
     def __len__(self):
         return len(self.all_volume_crops)
 
     @staticmethod
-    def load_from_project(project_data, num_frames):
+    def load_from_project(project_data, num_frames, target_sz):
         list_of_neurons_of_volumes, list_of_ids_of_volumes = [], []
         for t in tqdm(range(num_frames)):
-            all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, t)
+            all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, t,
+                                                                                              target_sz=target_sz)
             keys = list(all_dat_dict.keys())  # Need to enforce ordering?
             # print(all_seg_dict)
             list_of_ids_of_volumes.append(keys)  # strings
@@ -188,10 +201,10 @@ class NeuronAugmentedImagePairDataset(Dataset):
         y1, y2 = self.augmentor(torch.squeeze(crops))
 
         # Normalize; different batch each time
-        sz = y1.shape[0]  # Todo: set this to a global mean and std
-        n = nn.InstanceNorm3d(sz, affine=False)
-        y1 = n(y1)
-        y2 = n(y2)
+        # sz = y1.shape[0]  # Todo: set this to a global mean and std
+        # n = nn.InstanceNorm3d(sz, affine=False)
+        # y1 = n(y1)
+        # y2 = n(y2)
 
         return y1, y2
 
