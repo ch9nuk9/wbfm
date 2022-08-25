@@ -9,7 +9,8 @@ if __name__ == "__main__":
     sz = (10000, 10000)
     X = torch.rand(*sz, device=device)
 
-    Y = torch.matmul(X.T, X)
+    for _ in range(50):
+        Y = torch.matmul(X.T, X)
+        print("Mean value: ", Y.mean())
 
-    print("Mean value: ", Y.mean())
     print("Finished calculations")
