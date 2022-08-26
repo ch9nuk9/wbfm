@@ -8,7 +8,7 @@ class PhysicalUnitConversion:
 
     zimmer_fluroscence_um_per_pixel_xy: float = 0.325
     zimmer_behavior_um_per_pixel_xy: float = 2.4
-    zimmer_um_per_pixel_z: float = 1.0
+    zimmer_um_per_pixel_z: float = 1.5
 
     leifer_um_per_unit: float = 84
 
