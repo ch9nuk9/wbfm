@@ -23,7 +23,10 @@ from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 def plot_clusters(db, Y, class_labels=True):
     plt.figure(figsize=(15, 15))
 
-    labels = db.labels_
+    if isinstance(db, np.ndarray):
+        labels = db
+    else:
+        labels = db.labels_
     # core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
     # core_samples_mask[db.core_sample_indices_] = True
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
