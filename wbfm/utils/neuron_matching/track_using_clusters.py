@@ -62,7 +62,7 @@ def plot_clusters(db, Y, class_labels=True):
 @dataclass
 class WormTsneTracker:
     X_svd: np.array
-    linear_ind_to_local: list
+    time_index_to_linear_feature_indices: list
 
     n_clusters_per_window: int = 5
     n_volumes_per_window: int = 120
@@ -70,6 +70,7 @@ class WormTsneTracker:
 
     global_vol_ind: np.array = None
 
+    cluster_directly_on_svd_space: bool = False  # i.e. do not use tsne
     opt_tsne: dict = None
     opt_db: dict = None
     svd_components: int = 50
@@ -93,7 +94,7 @@ class WormTsneTracker:
             print("Successfully initialized!")
 
     @staticmethod
-    def load_from_config(project_config, svd_components=50):
+    def load_from_config(project_config, svd_components=50, ):
         project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_frames=True)
 
         # Use old tracker just as a feature-space embedder
@@ -123,7 +124,7 @@ class WormTsneTracker:
 
     @property
     def num_frames(self):
-        return len(self.linear_ind_to_local)
+        return len(self.time_index_to_linear_feature_indices)
 
     @property
     def all_start_volumes(self):
@@ -137,7 +138,7 @@ class WormTsneTracker:
         # Note: the dict key should be a tuple of (neuron_name, 'raw_neuron_ind_in_list'),
         #   because we want it to be a multilevel dataframe
 
-        linear_ind_to_local = self.linear_ind_to_local
+        linear_ind_to_local = self.time_index_to_linear_feature_indices
         n_vols = self.n_volumes_per_window
 
         cluster_dict = {}
@@ -200,9 +201,9 @@ class WormTsneTracker:
         df_cluster = pd.DataFrame(cluster_dict)
         return df_cluster
 
-    def cluster_single_window(self, start_volume=0, vol_ind=None):
+    def cluster_single_window(self, start_volume=0, vol_ind=None, verbose=0):
         # Unpack
-        linear_ind_to_local = self.linear_ind_to_local
+        time_index_to_linear_feature_indices = self.time_index_to_linear_feature_indices
 
         # Options
         opt_tsne = self.opt_tsne
@@ -212,17 +213,25 @@ class WormTsneTracker:
         if vol_ind is None:
             n_vols = self.n_volumes_per_window
             vol_ind = np.arange(start_volume, start_volume + n_vols)
-        linear_ind = np.hstack([linear_ind_to_local[i] for i in vol_ind])
+        linear_ind = np.hstack([time_index_to_linear_feature_indices[i] for i in vol_ind])
         X = self.X_svd[linear_ind, :]
 
         # tsne + cluster
-        tsne = TSNE(**opt_tsne)
-        Y_tsne_svd = tsne.fit_transform(X)
-        db_svd = HDBSCAN(**opt_db).fit(Y_tsne_svd)
+        if verbose >= 1:
+            print(f"Clustering. Using svd space directly: {self.cluster_directly_on_svd_space}")
+            print(f"Input data size: {X.shape}")
+        # err
+        if self.cluster_directly_on_svd_space:
+            tsne = TSNE(**opt_tsne)
+            Y_tsne_svd = tsne.fit_transform(X)
+            db_svd = HDBSCAN(**opt_db).fit(Y_tsne_svd)
+        else:
+            Y_tsne_svd = X
+            db_svd = HDBSCAN(**opt_db).fit(Y_tsne_svd)
 
         return db_svd, Y_tsne_svd
 
-    def multicluster_single_window(self, start_volume=0, vol_ind=None):
+    def multicluster_single_window(self, start_volume=0, vol_ind=None, verbose=0):
         """
         Cluster one window n times, and then combine for consistency
 
@@ -241,7 +250,7 @@ class WormTsneTracker:
         all_raw_dfs = []
         all_tsnes = []
         for _ in tqdm(range(num_clusters), leave=False):
-            db_svd, Y_tsne_svd = self.cluster_single_window(start_volume, vol_ind)
+            db_svd, Y_tsne_svd = self.cluster_single_window(start_volume, vol_ind, verbose=verbose-1)
             df = self.cluster_obj2dataframe(db_svd, start_volume, vol_ind)
             all_raw_dfs.append(df)
             all_tsnes.append(Y_tsne_svd)  # TODO: check kl divergence of tsne?
@@ -290,8 +299,8 @@ class WormTsneTracker:
             print(f"Initial non-local clustering...")
         # Increase settings for this
         self.n_clusters_per_window *= 4
-        with pd.option_context('mode.chained_assignment', None):
-            df_global, _ = self.multicluster_single_window(vol_ind=self.global_vol_ind)
+        with pd.option_context('mode.chained_assignment', None):  # Ignore a fake warning
+            df_global, _ = self.multicluster_single_window(vol_ind=self.global_vol_ind, verbose=self.verbose)
         self.n_clusters_per_window = int(self.n_clusters_per_window / 4)
 
         # Track each window
