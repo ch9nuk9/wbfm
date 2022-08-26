@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 
 import numpy as np
@@ -22,6 +23,10 @@ from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 
 def plot_clusters(db, Y, class_labels=True):
     plt.figure(figsize=(15, 15))
+
+    if Y.shape[1] > 2:
+        logging.warning("Data passed was not 2 dimensional (did you mean to run tsne?). For now, taking top 2")
+        Y = Y[:, :2]
 
     if isinstance(db, np.ndarray):
         labels = db
@@ -63,6 +68,7 @@ def plot_clusters(db, Y, class_labels=True):
 class WormTsneTracker:
     X_svd: np.array
     time_index_to_linear_feature_indices: list
+    linear_ind_to_raw_neuron_ind: list = None
 
     n_clusters_per_window: int = 5
     n_volumes_per_window: int = 120
@@ -182,6 +188,11 @@ class WormTsneTracker:
 
                 if np.isnan(cluster_dict[key][current_time]):
                     # This is a numpy array
+                    if self.linear_ind_to_raw_neuron_ind is not None:
+                        current_local_ind = self.linear_ind_to_raw_neuron_ind[global_ind]
+                    else:
+                        # Then we assume the data is in time ordering
+                        pass
                     cluster_dict[key][current_time] = current_local_ind
                 else:
                     # TODO: For now, just ignore the second assignment
@@ -220,7 +231,6 @@ class WormTsneTracker:
         if verbose >= 1:
             print(f"Clustering. Using svd space directly: {self.cluster_directly_on_svd_space}")
             print(f"Input data size: {X.shape}")
-        # err
         if self.cluster_directly_on_svd_space:
             tsne = TSNE(**opt_tsne)
             Y_tsne_svd = tsne.fit_transform(X)
@@ -231,7 +241,7 @@ class WormTsneTracker:
 
         return db_svd, Y_tsne_svd
 
-    def multicluster_single_window(self, start_volume=0, vol_ind=None, verbose=0):
+    def multicluster_single_window(self, start_volume=0, vol_ind=None, to_plot=False, verbose=0):
         """
         Cluster one window n times, and then combine for consistency
 
@@ -252,6 +262,8 @@ class WormTsneTracker:
         for _ in tqdm(range(num_clusters), leave=False):
             db_svd, Y_tsne_svd = self.cluster_single_window(start_volume, vol_ind, verbose=verbose-1)
             df = self.cluster_obj2dataframe(db_svd, start_volume, vol_ind)
+            if to_plot:
+                plot_clusters(db_svd, Y_tsne_svd)
             all_raw_dfs.append(df)
             all_tsnes.append(Y_tsne_svd)  # TODO: check kl divergence of tsne?
 
