@@ -313,13 +313,6 @@ class WormTsneTracker:
                 continue
             df_renamed, *_ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
             all_dfs.append(df_renamed)
-        # df_previous = all_raw_dfs[0]
-        # for df in all_raw_dfs[1:]:
-        #     df_renamed, *_ = rename_columns_using_matching(df_previous, df, try_to_fix_inf=True)
-        #     # df_next = combine_dataframes_using_mode([df_previous, df_renamed])
-        #     df_next = combine_dataframes_using_bipartite_matching([df_previous, df_renamed])
-        #     df_previous = df_next
-        # df_combined = df_previous
 
         # Combine to one dataframe
         if len(all_dfs) > 1:
