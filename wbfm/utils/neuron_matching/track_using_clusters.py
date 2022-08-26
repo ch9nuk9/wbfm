@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from sklearn.decomposition import TruncatedSVD
 from tqdm.auto import tqdm
@@ -144,7 +145,7 @@ class WormTsneTracker:
         # Note: the dict key should be a tuple of (neuron_name, 'raw_neuron_ind_in_list'),
         #   because we want it to be a multilevel dataframe
 
-        linear_ind_to_local = self.time_index_to_linear_feature_indices
+        time_index_to_linear_feature_indices = self.time_index_to_linear_feature_indices
         n_vols = self.n_volumes_per_window
 
         cluster_dict = {}
@@ -170,47 +171,77 @@ class WormTsneTracker:
                 tmp[:] = np.nan
                 return tmp
 
-        current_global_ind = list(linear_ind_to_local[current_time].copy())
+        current_global_ind = list(time_index_to_linear_feature_indices[current_time].copy())
         current_local_ind = 0
 
-        for i, label in enumerate(db_svd.labels_):
-            global_ind = current_global_ind.pop(0)
+        if self.linear_ind_to_raw_neuron_ind is not None:
+            all_linear_ind = self.get_linear_indices_from_time(start_volume, time_index_to_linear_feature_indices,
+                                                               vol_ind)
+            for i, label in enumerate(db_svd.labels_):
+                # Determine neuron name based on class
+                if label == -1:
+                    continue
+                else:
+                    this_neuron_name = int2name_neuron(label + 1)
+                    key = (this_neuron_name, 'raw_neuron_ind_in_list')
 
-            if label == -1:
-                # Still want to pop above
-                pass
-            else:
-                this_neuron_name = int2name_neuron(label + 1)
-                key = (this_neuron_name, 'raw_neuron_ind_in_list')
-
+                # Initialize dataframe dict
                 if key not in cluster_dict:
                     cluster_dict[key] = get_empty_col()
 
-                if np.isnan(cluster_dict[key][current_time]):
-                    # This is a numpy array
-                    if self.linear_ind_to_raw_neuron_ind is not None:
-                        current_local_ind = self.linear_ind_to_raw_neuron_ind[global_ind]
-                    else:
-                        # Then we assume the data is in time ordering
-                        pass
-                    cluster_dict[key][current_time] = current_local_ind
-                else:
-                    # TODO: For now, just ignore the second assignment
-                    pass
-                    # print(f"Multiple assignments found for {this_neuron_name} at t={current_time}")
+                # Get the linear data index of this labeled point
+                linear_index = all_linear_ind[i]
 
-            if len(current_global_ind) == 0:
-                try:
-                    i_current_time, current_time = get_next_time(i_current_time, current_time)
-                except IndexError:
-                    break
-                # current_time += 1
-                current_global_ind = list(linear_ind_to_local[current_time].copy())
-                current_local_ind = 0
-            else:
-                current_local_ind += 1
+                # Convert that to a time and a local segmentation
+                time_in_video = self.dict_linear_index_to_time[linear_index]
+                raw_neuron_ind_in_list = self.linear_ind_to_raw_neuron_ind[linear_index]
+
+                # Save in the dataframe dict
+                cluster_dict[key][time_in_video] = raw_neuron_ind_in_list
+
+        else:
+            logging.warning("Assumes the data is in time order")
+            for i, label in enumerate(db_svd.labels_):
+                global_ind = current_global_ind.pop(0)
+
+                if label == -1:
+                    # Still want to pop above
+                    pass
+                else:
+                    this_neuron_name = int2name_neuron(label + 1)
+                    key = (this_neuron_name, 'raw_neuron_ind_in_list')
+
+                    if key not in cluster_dict:
+                        cluster_dict[key] = get_empty_col()
+
+                    if np.isnan(cluster_dict[key][current_time]):
+                        # This is a numpy array
+                        cluster_dict[key][current_time] = current_local_ind
+                    else:
+                        # TODO: For now, just ignore the second assignment
+                        pass
+                        # print(f"Multiple assignments found for {this_neuron_name} at t={current_time}")
+
+                if len(current_global_ind) == 0:
+                    try:
+                        i_current_time, current_time = get_next_time(i_current_time, current_time)
+                    except IndexError:
+                        break
+                    # current_time += 1
+                    current_global_ind = list(time_index_to_linear_feature_indices[current_time].copy())
+                    current_local_ind = 0
+                else:
+                    current_local_ind += 1
         df_cluster = pd.DataFrame(cluster_dict)
         return df_cluster
+
+    @cached_property
+    def dict_linear_index_to_time(self):
+        dict_linear_index_to_time = {}
+        for t, ind_this_time in enumerate(self.time_index_to_linear_feature_indices):
+            for i in ind_this_time:
+                dict_linear_index_to_time[i] = t
+        return dict_linear_index_to_time
 
     def cluster_single_window(self, start_volume=0, vol_ind=None, verbose=0):
         # Unpack
@@ -221,10 +252,7 @@ class WormTsneTracker:
         opt_db = self.opt_db
 
         # Get this window of data
-        if vol_ind is None:
-            n_vols = self.n_volumes_per_window
-            vol_ind = np.arange(start_volume, start_volume + n_vols)
-        linear_ind = np.hstack([time_index_to_linear_feature_indices[i] for i in vol_ind])
+        linear_ind = self.get_linear_indices_from_time(start_volume, time_index_to_linear_feature_indices, vol_ind)
         X = self.X_svd[linear_ind, :]
 
         # tsne + cluster
@@ -240,6 +268,13 @@ class WormTsneTracker:
             db_svd = HDBSCAN(**opt_db).fit(Y_tsne_svd)
 
         return db_svd, Y_tsne_svd
+
+    def get_linear_indices_from_time(self, start_volume, time_index_to_linear_feature_indices, vol_ind):
+        if vol_ind is None:
+            n_vols = self.n_volumes_per_window
+            vol_ind = np.arange(start_volume, start_volume + n_vols)
+        linear_ind = np.hstack([time_index_to_linear_feature_indices[i] for i in vol_ind])
+        return linear_ind
 
     def multicluster_single_window(self, start_volume=0, vol_ind=None, to_plot=False, verbose=0):
         """
@@ -336,6 +371,8 @@ class WormTsneTracker:
             all_dfs_renamed.append(df_renamed)
 
         # Finally, combine
+        if self.verbose >= 1:
+            print("Combining final dataframes...")
         df_combined = combine_dataframes_using_mode(all_dfs_renamed)
 
         # Reweight confidence?
