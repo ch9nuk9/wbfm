@@ -54,14 +54,25 @@ class BarlowTwins3d(nn.Module):
 
     def forward(self, y1, y2):
         # Shape of z: neurons x features
-        # Because neurons=batch for me, I need to switch the below evaluation
-        c = self.calculate_correlation_matrix(y1, y2)
-        # c = self.bn(z1) @ self.bn(z2).T
-        # c = self.bn(z1).T @ self.bn(z2)
+        if self.args.train_both_correlations:
+            c = self.calculate_correlation_matrix(y1, y2)
+            on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
+            off_diag = off_diagonal(c).pow_(2).sum()
+            loss = on_diag + self.args.lambd * off_diag
+        else:
+            c_features, c_objects = self.calculate_both_correlation_matrices(y1, y2)
+            # Original loss
+            on_diag = torch.diagonal(c_features).add_(-1).pow_(2).sum()
+            off_diag = off_diagonal(c_features).pow_(2).sum()
+            loss_features = on_diag + self.args.lambd * off_diag
 
-        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
-        off_diag = off_diagonal(c).pow_(2).sum()
-        loss = on_diag + self.args.lambd * off_diag
+            # New object loss; use same lambd and additional lambd_obj
+            on_diag = torch.diagonal(c_objects).add_(-1).pow_(2).sum()
+            off_diag = off_diagonal(c_objects).pow_(2).sum()
+            loss_objects = on_diag + self.args.lambd * off_diag
+
+            loss = loss_features + self.args.lambd_obj*loss_objects
+
         return loss
 
     def calculate_correlation_matrix(self, y1, y2):
@@ -73,6 +84,23 @@ class BarlowTwins3d(nn.Module):
         this_batch_sz = z1.shape[0]
         c = torch.matmul(z1_norm.T, z2_norm) / this_batch_sz  # D x D (feature space)
         return c
+
+    def calculate_both_correlation_matrices(self, y1, y2):
+        z1 = self.embed(y1)
+        z2 = self.embed(y2)
+        # empirical cross-correlation matrix
+        z1_norm = (z1 - z1.mean(0)) / z1.std(0)
+        z2_norm = (z2 - z2.mean(0)) / z2.std(0)
+        this_batch_sz = z1.shape[0]
+        c_features = torch.matmul(z1_norm.T, z2_norm) / this_batch_sz  # D x D (feature space)
+
+        # empirical cross-correlation matrix
+        z1_norm = (z1 - z1.mean(1)) / z1.std(1)
+        z2_norm = (z2 - z2.mean(1)) / z2.std(1)
+        this_num_features = z1.shape[1]
+        c_objects = torch.matmul(z1_norm, z2_norm.T) / this_num_features  # N x N (object space)
+
+        return c_features, c_objects
 
 
 class LARS(optim.Optimizer):
@@ -121,7 +149,7 @@ class Transform:
         self.final_normalization = tio.RescaleIntensity(percentiles=(5, 100))
 
         self.transform = tio.transforms.Compose([
-            tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
+            # tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
             tio.RandomBlur(p=0.1),
             tio.RandomAffine(degrees=(180, 0, 0), p=1.0),  # Also allows scaling
             # tio.RandomMotion(translation=1, degrees=90, p=1.0),
@@ -154,7 +182,6 @@ class Transform:
 
     def normalize(self, img):
         return self.final_normalization(img)
-
 
 
 class NeuronImageWithGTDataset(Dataset):
