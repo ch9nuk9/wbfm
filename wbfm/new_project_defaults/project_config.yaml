@@ -3,7 +3,7 @@
 # NOTE: these comments will be deleted when moving to a new project!
 
 task_name:
-experimenter: Charlie
+experimenter:
 
 project_dir: null # Not used after initial creation
 project_path: null # For reference afterwards
