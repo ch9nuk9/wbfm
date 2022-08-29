@@ -55,7 +55,7 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     full_video = Image.open(red_bigtiff_fname)
     num_2d_frames = full_video.n_frames
     num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
-    _config['num_frames'] = num_volumes
+    _config['dataset_params']['num_frames'] = num_volumes
 
     # Uses the pip installed package location
     src = get_location_of_new_project_defaults()
