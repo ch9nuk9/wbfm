@@ -26,6 +26,14 @@ def cfg(red_bigtiff_fname, green_bigtiff_fname, parent_data_folder):
 
 @ex.automain
 def main(_config, _run, _log):
+    """
+    Example:
+    python 0a-create_new_project.py with
+        parent_data_folder='/scratch/neurobiology/zimmer/ulises/wbfm/20220824/data/ZIM2319_worm2'
+        project_dir='/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms'
+        task_name=gfp
+        experimenter=C
+    """
     sacred.commands.print_config(_run)
 
     build_project_structure_from_config(_config, _log)

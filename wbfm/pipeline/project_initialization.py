@@ -8,6 +8,7 @@ from shutil import copytree
 import numpy as np
 import tifffile
 import zarr
+from PIL.Image import Image
 
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings, \
@@ -49,6 +50,13 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     else:
         _config['red_bigtiff_fname'] = red_bigtiff_fname
         _config['green_bigtiff_fname'] = green_bigtiff_fname
+
+    # Check the number of total frames in the video, and update the parameter
+    # Note: requires correct value of num_slices
+    full_video = Image.open(red_bigtiff_fname)
+    num_2d_frames = full_video.n_frames
+    num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
+    _config['num_frames'] = num_volumes
 
     # Uses the pip installed package location
     src = get_location_of_new_project_defaults()
