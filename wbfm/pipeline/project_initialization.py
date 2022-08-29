@@ -53,6 +53,7 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
 
     # Check the number of total frames in the video, and update the parameter
     # Note: requires correct value of num_slices
+    logging.info("Detecting number of total frames in the video, may take ~30 seconds")
     full_video = Image.open(red_bigtiff_fname)
     num_2d_frames = full_video.n_frames
     num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
