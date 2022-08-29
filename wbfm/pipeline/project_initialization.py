@@ -4,12 +4,10 @@ import os
 from os import path as osp
 from pathlib import Path
 from shutil import copytree
-
 import numpy as np
 import tifffile
 import zarr
-from PIL.Image import Image
-
+from PIL import Image
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings, \
     preprocess_all_frames_using_config, background_subtract_single_channel
