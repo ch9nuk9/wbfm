@@ -1,5 +1,5 @@
 # From: http://proceedings.mlr.press/v139/zbontar21a/zbontar21a.pdf
-
+import concurrent.futures
 import gc
 import numpy as np
 import torch
@@ -185,36 +185,58 @@ class Transform:
 
 
 class NeuronImageWithGTDataset(Dataset):
-    def __init__(self, list_of_neurons_of_volumes, list_of_ids_of_volumes, which_neurons):
-        self.all_volume_crops = [torch.as_tensor(this_vol.astype(float), dtype=torch.float32) for this_vol in
-                                 list_of_neurons_of_volumes]
-        self.list_of_ids_of_volumes = list_of_ids_of_volumes
+    def __init__(self, dict_of_neurons_of_volumes, dict_of_ids_of_volumes, which_neurons):
+        # Same normalization as the Transform used to train
+        # Note: that was applied to crops, not full volumes
+        t = tio.RescaleIntensity(percentiles=(5, 100))
+
+        self.dict_all_volume_crops = {i: t(torch.as_tensor(this_vol.astype(float), dtype=torch.float32)) for i, this_vol in
+                                      dict_of_neurons_of_volumes.items()}
+        self.dict_of_ids_of_volumes = dict_of_ids_of_volumes
         self.which_neurons = which_neurons
 
     def __getitem__(self, idx):
-        x = torch.unsqueeze(self.all_volume_crops[idx], 0)
-        gt_id = self.list_of_ids_of_volumes[idx]
-        # sz = x.shape[0]
-        # n = nn.InstanceNorm3d(sz, affine=False)  # Todo: set this to a global mean and std
-        # x = n(x)
+        x = torch.unsqueeze(self.dict_all_volume_crops[idx], 0)
+        gt_id = self.dict_of_ids_of_volumes[idx]
         return x, gt_id
 
     def __len__(self):
-        return len(self.all_volume_crops)
+        return len(self.dict_all_volume_crops)
 
     @staticmethod
     def load_from_project(project_data, num_frames, target_sz):
         if num_frames is None:
             num_frames = project_data.num_frames
 
-        list_of_neurons_of_volumes, list_of_ids_of_volumes = [], []
-        for t in tqdm(range(num_frames)):
-            all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, t,
+        dict_of_neurons_of_volumes, dict_of_ids_of_volumes = {}, {}
+        # list_of_neurons_of_volumes, list_of_ids_of_volumes = [], []
+
+        def parallel_func(_t):
+            all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, _t,
                                                                                               target_sz=target_sz)
             keys = list(all_dat_dict.keys())  # Need to enforce ordering?
-            list_of_ids_of_volumes.append(keys)  # strings
-            list_of_neurons_of_volumes.append(np.stack([all_dat_dict[k] for k in keys], 0))
-        return NeuronImageWithGTDataset(list_of_neurons_of_volumes, list_of_ids_of_volumes, which_neurons)
+            dict_of_neurons_of_volumes[_t] = keys  # strings
+            dict_of_ids_of_volumes[_t] = np.stack([all_dat_dict[k] for k in keys], 0)
+
+            return which_neurons
+
+        which_neurons = parallel_func(0)
+
+        with tqdm(total=num_frames-1) as pbar:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+                futures = {executor.submit(parallel_func, i): i for i in list(range(num_frames))[1:]}
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+                    pbar.update(1)
+
+        # for t in tqdm(range(num_frames)):
+        #     all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, t,
+        #                                                                                       target_sz=target_sz)
+        #     keys = list(all_dat_dict.keys())  # Need to enforce ordering?
+        #     list_of_ids_of_volumes.append(keys)  # strings
+        #     list_of_neurons_of_volumes.append(np.stack([all_dat_dict[k] for k in keys], 0))
+        # return NeuronImageWithGTDataset(list_of_neurons_of_volumes, list_of_ids_of_volumes, which_neurons)
+        return NeuronImageWithGTDataset(dict_of_neurons_of_volumes, dict_of_ids_of_volumes, which_neurons)
 
 
 class NeuronAugmentedImagePairDataset(Dataset):

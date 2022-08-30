@@ -267,7 +267,7 @@ class WormTsneTracker:
             Y_tsne_svd = X
             db_svd = HDBSCAN(**opt_db).fit(Y_tsne_svd)
 
-        return db_svd, Y_tsne_svd
+        return db_svd, Y_tsne_svd, linear_ind
 
     def get_linear_indices_from_time(self, start_volume, time_index_to_linear_feature_indices, vol_ind):
         if vol_ind is None:
@@ -294,13 +294,17 @@ class WormTsneTracker:
         # Get all iterations
         all_raw_dfs = []
         all_tsnes = []
+        all_clusters = []
+        all_ind = []
         for _ in tqdm(range(num_clusters), leave=False):
-            db_svd, Y_tsne_svd = self.cluster_single_window(start_volume, vol_ind, verbose=verbose-1)
+            db_svd, Y_tsne_svd, linear_ind = self.cluster_single_window(start_volume, vol_ind, verbose=verbose-1)
             df = self.cluster_obj2dataframe(db_svd, start_volume, vol_ind)
             if to_plot:
                 plot_clusters(db_svd, Y_tsne_svd)
             all_raw_dfs.append(df)
-            all_tsnes.append(Y_tsne_svd)  # TODO: check kl divergence of tsne?
+            all_tsnes.append(Y_tsne_svd)
+            all_clusters.append(db_svd)
+            all_ind.append(linear_ind)
 
         # Choose a base dataframe and rename all to that one
         # For now, combine as we go so that the matching gets the benefit of any overlaps (but is slower)
@@ -321,7 +325,7 @@ class WormTsneTracker:
         else:
             df_combined = all_dfs[0]
 
-        return df_combined, all_raw_dfs
+        return df_combined, (all_raw_dfs, all_clusters, all_tsnes, all_ind)
 
     def track_using_overlapping_windows(self):
         """
