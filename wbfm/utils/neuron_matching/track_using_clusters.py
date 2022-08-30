@@ -68,8 +68,8 @@ def plot_clusters(db, Y, class_labels=True):
 @dataclass
 class WormTsneTracker:
     X_svd: np.array
-    time_index_to_linear_feature_indices: list
-    linear_ind_to_raw_neuron_ind: list = None
+    time_index_to_linear_feature_indices: dict
+    linear_ind_to_raw_neuron_ind: dict = None
 
     n_clusters_per_window: int = 5
     n_volumes_per_window: int = 120
@@ -238,7 +238,7 @@ class WormTsneTracker:
     @cached_property
     def dict_linear_index_to_time(self):
         dict_linear_index_to_time = {}
-        for t, ind_this_time in enumerate(self.time_index_to_linear_feature_indices):
+        for t, ind_this_time in self.time_index_to_linear_feature_indices.items():
             for i in ind_this_time:
                 dict_linear_index_to_time[i] = t
         return dict_linear_index_to_time

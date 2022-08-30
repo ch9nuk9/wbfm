@@ -196,6 +196,8 @@ class NeuronImageWithGTDataset(Dataset):
         self.which_neurons = which_neurons
 
     def __getitem__(self, idx):
+        if idx not in self.dict_of_ids_of_volumes:
+            raise IndexError   # Make basic looping work with pytorch
         x = torch.unsqueeze(self.dict_all_volume_crops[idx], 0)
         gt_id = self.dict_of_ids_of_volumes[idx]
         return x, gt_id
