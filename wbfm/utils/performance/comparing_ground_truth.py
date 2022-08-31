@@ -2,13 +2,17 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+import torch
 from fDNC.src.DNC_predict import filter_matches
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 import seaborn as sns
 
+from wbfm.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
 from wbfm.utils.general.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
-from wbfm.utils.projects.utils_neuron_names import int2name_neuron
+from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positions, calc_nearest_neighbor_matches
+from wbfm.utils.nn_utils.superglue import SuperGlue
+from wbfm.utils.nn_utils.worm_with_classifier import WormWithNeuronClassifier
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -283,3 +287,110 @@ def calculate_confidence_of_mismatches(df_gt: pd.DataFrame, df2_filter: pd.DataF
         df2_with_classes.loc[:, (name, 'is_correct')] = new_col
 
     return df2_with_classes.copy()  # To defragment
+
+
+# Specific tests for tracklets
+def test_baseline_and_new_matcher_on_vgg_features(project_data, t0=0, t1=1):
+    """
+    Extracts vgg features as saved in two Frame classes, and compares 3 ways of matching:
+    1. Superglue postprocessing (what I'm doing)
+    2. Bipartite matching directly on the feature space
+    3. Greedy matching directly on the feature space
+    """
+    f0 = project_data.raw_frames[t0]
+    f1 = project_data.raw_frames[t1]
+    df_gt = project_data.get_final_tracks_only_finished_neurons()[0]
+
+    # Unpack
+    desc0 = torch.tensor(f0.all_features).float()
+    desc1 = torch.tensor(f1.all_features).float()
+
+    # For now, remove z
+    # kpts0 = torch.tensor(f0.neuron_locs)[:, 1:].float()
+    # kpts1 = torch.tensor(f1.neuron_locs)[:, 1:].float()
+    kpts0 = torch.tensor(f0.neuron_locs).float()
+    kpts1 = torch.tensor(f1.neuron_locs).float()
+
+    scores0 = torch.ones((kpts0.shape[0], 1)).float()
+    scores1 = torch.ones((kpts1.shape[0], 1)).float()
+
+    image0 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0), axis=0)
+    image1 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t1]), axis=0), axis=0)
+
+    all_matches = torch.unsqueeze(torch.tensor(df_to_matches(df_gt, t0, t1)), dim=0)
+
+    # Repack
+    data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
+                image0=image0, image1=image1,
+                scores0=scores0, scores1=scores1)
+
+    model = SuperGlue(config=dict(descriptor_dim=840, match_threshold=0.0))
+
+    out = model(data)
+    new_matches = [[i, m0] for i, m0 in enumerate(out['matches0'].detach().numpy())]
+    baseline_matches, conf, _ = calc_bipartite_from_positions(desc0, desc1)
+    baseline_matches2, conf = calc_nearest_neighbor_matches(desc0, desc1, max_dist=1000.0)
+
+    # Accuracy
+    acc_new = accuracy_of_matches(all_matches, new_matches)
+    acc_baseline_bipartite = accuracy_of_matches(all_matches, baseline_matches)
+    acc_baseline_greedy = accuracy_of_matches(all_matches, baseline_matches2)
+
+    return acc_new, acc_baseline_bipartite, acc_baseline_greedy
+
+
+def test_baseline_and_new_matcher_on_embeddings(project_data, t0=0, t1=1):
+    """
+    Same as test_baseline_and_new_matcher_on_vgg_features, but uses the Superglue feature space instead of VGG
+
+    Parameters
+    ----------
+    project_data
+    t0
+    t1
+
+    Returns
+    -------
+
+    """
+    f0 = project_data.raw_frames[t0]
+    f1 = project_data.raw_frames[t1]
+    df_gt = project_data.get_final_tracks_only_finished_neurons()[0]
+
+    # Unpack
+    tracker = WormWithNeuronClassifier(f0)
+
+    kpts0 = torch.tensor(f0.neuron_locs).float()
+    kpts1 = torch.tensor(f1.neuron_locs).float()
+
+    scores0 = torch.ones((kpts0.shape[0], 1)).float()
+    scores1 = torch.ones((kpts1.shape[0], 1)).float()
+
+    image0 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t0]), axis=0), axis=0)
+    image1 = np.expand_dims(np.expand_dims(np.zeros_like(project_data.red_data[t1]), axis=0), axis=0)
+
+    all_matches = torch.unsqueeze(torch.tensor(df_to_matches(df_gt, t0, t1)), dim=0)
+
+    # Repack
+
+    with torch.no_grad():
+        desc0_embed = tracker.embedding_template.detach()
+        desc1_embed = tracker.embed_target_frame(f1).detach()
+
+    data = dict(descriptors0=desc0_embed, descriptors1=desc1_embed, keypoints0=kpts0, keypoints1=kpts1,
+                all_matches=all_matches,
+                image0=image0, image1=image1,
+                scores0=scores0, scores1=scores1)
+    model = SuperGlue(config=dict(descriptor_dim=120, match_threshold=0.0))
+
+    out = model(data)
+    new_matches = [[i, m0] for i, m0 in enumerate(out['matches0'].detach().numpy())]
+    baseline_matches, conf, _ = calc_bipartite_from_positions(desc0_embed, desc1_embed)
+    baseline_matches2, conf = calc_nearest_neighbor_matches(desc0_embed, desc1_embed, max_dist=1000.0)
+
+    # Accuracy
+    acc_new = accuracy_of_matches(all_matches, new_matches)
+    acc_baseline_bipartite = accuracy_of_matches(all_matches, baseline_matches)
+    acc_baseline_greedy = accuracy_of_matches(all_matches, baseline_matches2)
+
+    return acc_new, acc_baseline_bipartite, acc_baseline_greedy
