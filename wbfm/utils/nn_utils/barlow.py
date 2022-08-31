@@ -29,8 +29,7 @@ class BarlowTwins3d(nn.Module):
         super().__init__()
         self.args = args
 
-        # embedding_dim = 32
-        embedding_dim = 2048
+        embedding_dim = args.embedding_dim
         self.backbone = backbone(embedding_dim=embedding_dim, **backbone_kwargs)
         self.backbone.fc = nn.Identity()
 
