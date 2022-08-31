@@ -9,6 +9,7 @@ from sklearn.decomposition import TruncatedSVD
 from tqdm.auto import tqdm
 from tsnecuda import TSNE
 from hdbscan import HDBSCAN
+import hdbscan
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
@@ -85,6 +86,7 @@ class WormTsneTracker:
     # Saving info after the tracking is done
     df_global: pd.DataFrame = None
     global_clusterer: HDBSCAN = None
+    df_final: pd.DataFrame = None
 
     verbose: int = 1
 
@@ -379,17 +381,46 @@ class WormTsneTracker:
             print("Combining final dataframes...")
         df_combined = combine_dataframes_using_mode(all_dfs_renamed)
 
+        self.df_final = df_combined
         # Reweight confidence?
 
         return df_combined, all_dfs
 
+    def track_using_global_clusterer(self):
+        if self.global_clusterer is None:
+            self.build_global_clusterer()
+
+        # Get indices to loop through, both time and linear data matrix
+        vol_ind, linear_ind = [], []
+        for i in range(self.num_frames):
+            if i not in self.global_vol_ind:
+                vol_ind.append(i)
+                linear_ind.extend(self.time_index_to_linear_feature_indices[i])
+
+        # Cluster using pre-trained clusters
+        X = self.X_svd[linear_ind, :]
+        test_labels, strengths = hdbscan.approximate_predict(self.global_clusterer, X)
+        df_cluster = self.cluster_obj2dataframe(test_labels, vol_ind=vol_ind)
+
+        # Combine without renaming
+        df_combined = self.df_global.combine_first(df_cluster)
+
+        self.df_final = df_combined
+        return df_combined
+
     def build_global_clusterer(self):
         if self.verbose >= 1:
             print(f"Initial non-local clustering...")
+        # Only do one clustering, because that's all we will save
+        n_clusters_per_window = self.n_clusters_per_window
+        self.n_clusters_per_window = 1
         with pd.option_context('mode.chained_assignment', None):  # Ignore a fake warning
             df_global, (all_raw_dfs, all_clusters, all_tsnes, all_ind) = \
                 self.multicluster_single_window(vol_ind=self.global_vol_ind, verbose=self.verbose)
         df_global, _ = fill_missing_indices_with_nan(df_global, expected_max_t=self.num_frames)
+        self.n_clusters_per_window = n_clusters_per_window
+
         self.df_global = df_global
         self.global_clusterer = all_clusters[0]
+
         return df_global
