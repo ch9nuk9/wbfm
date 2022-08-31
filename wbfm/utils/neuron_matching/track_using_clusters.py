@@ -414,6 +414,7 @@ class WormTsneTracker:
         # Only do one clustering, because that's all we will save
         n_clusters_per_window = self.n_clusters_per_window
         self.n_clusters_per_window = 1
+        self.opt_db['prediction_data'] = True
         with pd.option_context('mode.chained_assignment', None):  # Ignore a fake warning
             df_global, (all_raw_dfs, all_clusters, all_tsnes, all_ind) = \
                 self.multicluster_single_window(vol_ind=self.global_vol_ind, verbose=self.verbose)
