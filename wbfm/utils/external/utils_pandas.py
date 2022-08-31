@@ -216,7 +216,10 @@ def accuracy_of_matches(gt_matches, new_matches, null_value=-1, allow_unknown=Tr
     tp = 0
     fp = 0
     unknown = 0
-    gt_dict = dict(gt_matches)
+    try:
+        gt_dict = dict(np.array(gt_matches))
+    except ValueError:
+        gt_dict = dict(np.array(gt_matches[0]))
     for m in new_matches:
         gt_val = gt_dict.get(m[0], None)
         if allow_unknown and gt_val is None:

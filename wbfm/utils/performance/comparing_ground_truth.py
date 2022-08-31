@@ -290,8 +290,12 @@ def calculate_confidence_of_mismatches(df_gt: pd.DataFrame, df2_filter: pd.DataF
 
 
 # Specific tests for tracklets
-def test_baseline_and_new_matcher_on_vgg_features(project_data, t0=0, t1=1):
+def test_baseline_and_new_matcher_on_vgg_features(project_data, desc0=None, desc1=None, t0=0, t1=1,
+                                                  calculate_superglue_matches=True):
     """
+
+    Optional: directly pass a custom feature space
+
     Extracts vgg features as saved in two Frame classes, and compares 3 ways of matching:
     1. Superglue postprocessing (what I'm doing)
     2. Bipartite matching directly on the feature space
@@ -302,8 +306,12 @@ def test_baseline_and_new_matcher_on_vgg_features(project_data, t0=0, t1=1):
     df_gt = project_data.get_final_tracks_only_finished_neurons()[0]
 
     # Unpack
-    desc0 = torch.tensor(f0.all_features).float()
-    desc1 = torch.tensor(f1.all_features).float()
+    if desc0 is None:
+        desc0 = f0.all_features
+    if desc1 is None:
+        desc1 = f1.all_features
+    desc0 = torch.tensor(desc0).float()
+    desc1 = torch.tensor(desc1).float()
 
     # For now, remove z
     # kpts0 = torch.tensor(f0.neuron_locs)[:, 1:].float()
@@ -320,23 +328,46 @@ def test_baseline_and_new_matcher_on_vgg_features(project_data, t0=0, t1=1):
     all_matches = torch.unsqueeze(torch.tensor(df_to_matches(df_gt, t0, t1)), dim=0)
 
     # Repack
-    data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
-                image0=image0, image1=image1,
-                scores0=scores0, scores1=scores1)
+    if calculate_superglue_matches:
+        data = dict(descriptors0=desc0, descriptors1=desc1, keypoints0=kpts0, keypoints1=kpts1, all_matches=all_matches,
+                    image0=image0, image1=image1,
+                    scores0=scores0, scores1=scores1)
 
-    model = SuperGlue(config=dict(descriptor_dim=840, match_threshold=0.0))
+        model = SuperGlue(config=dict(descriptor_dim=desc0.shape[1], match_threshold=0.0))
 
-    out = model(data)
-    new_matches = [[i, m0] for i, m0 in enumerate(out['matches0'].detach().numpy())]
+        out = model(data)
+        new_matches = [[i, m0] for i, m0 in enumerate(out['matches0'].detach().numpy())]
+        acc_pipeline = accuracy_of_matches(all_matches, new_matches)
+    else:
+        # Use the matches from the object as already calculated
+        new_matches = project_data.raw_matches[(t0, t1)].final_matches
+        acc_pipeline = accuracy_of_matches(all_matches, new_matches)
+
+    acc_baseline_bipartite, acc_baseline_greedy = test_baseline_feature_space_matchers(desc0, desc1, all_matches)
+
+    return acc_pipeline, acc_baseline_bipartite, acc_baseline_greedy
+
+
+def test_baseline_feature_space_matchers(project_data, t0, t1):
+    f0 = project_data.raw_frames[t0]
+    f1 = project_data.raw_frames[t1]
+    df_gt = project_data.get_final_tracks_only_finished_neurons()[0]
+
+    desc0 = f0.all_features
+    desc1 = f1.all_features
+    desc0 = torch.tensor(desc0).float()
+    desc1 = torch.tensor(desc1).float()
+
+    all_matches = torch.unsqueeze(torch.tensor(df_to_matches(df_gt, t0, t1)), dim=0)
+
     baseline_matches, conf, _ = calc_bipartite_from_positions(desc0, desc1)
     baseline_matches2, conf = calc_nearest_neighbor_matches(desc0, desc1, max_dist=1000.0)
 
     # Accuracy
-    acc_new = accuracy_of_matches(all_matches, new_matches)
     acc_baseline_bipartite = accuracy_of_matches(all_matches, baseline_matches)
     acc_baseline_greedy = accuracy_of_matches(all_matches, baseline_matches2)
 
-    return acc_new, acc_baseline_bipartite, acc_baseline_greedy
+    return acc_baseline_bipartite, acc_baseline_greedy
 
 
 def test_baseline_and_new_matcher_on_embeddings(project_data, t0=0, t1=1):
