@@ -13,7 +13,7 @@ from torch.utils.data.dataset import random_split
 from torch.utils.data import Dataset
 from typing import Optional
 from torch.utils.data.dataloader import DataLoader
-from wbfm.utils.nn_utils.utils_fdnc.siamese import Siamese
+from wbfm.utils.nn_utils.siamese import Siamese
 import math
 
 
