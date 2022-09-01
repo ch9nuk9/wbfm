@@ -76,8 +76,6 @@ class WormTsneTracker:
     n_volumes_per_window: int = 120
     tracker_stride: int = None
 
-    global_vol_ind: np.array = None
-
     cluster_directly_on_svd_space: bool = True  # i.e. do not use tsne
     opt_tsne: dict = None
     opt_db: dict = None
@@ -85,7 +83,7 @@ class WormTsneTracker:
 
     # Saving info after the tracking is done
     df_global: pd.DataFrame = None
-    global_clusterer: HDBSCAN = None
+    global_clusterer: callable = None
     df_final: pd.DataFrame = None
 
     verbose: int = 1
