@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from wbfm.utils.visualization.utils_plot_traces import detrend_exponential_lmfit
+from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 
 
 def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshold=None, verbose=0):

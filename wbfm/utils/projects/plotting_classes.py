@@ -26,7 +26,7 @@ from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_bina
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
-from wbfm.utils.visualization.utils_plot_traces import detrend_exponential_lmfit
+from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 
 
 @dataclass
