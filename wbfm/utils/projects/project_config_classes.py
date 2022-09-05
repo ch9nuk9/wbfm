@@ -347,3 +347,61 @@ def update_path_to_behavior_in_config(cfg: ModularProjectConfig):
 
     # After filling (or not), write to disk
     behavior_cfg.update_self_on_disk()
+
+
+def rename_variable_in_config(project_path: str, vars_to_rename: dict):
+    """
+    Renames variables, especially for updating variable names
+
+    Overwrites the config file on disk
+
+    Parameters
+    ----------
+    project_path
+    vars_to_rename - nested dict with following levels
+        key0 = project_config name (None is main level)
+            (project, preprocessing, segmentation, training, tracking, traces)
+        key1 = Variable name. Can be nested. If this isn't found, then skip
+        key2 = If vars_to_rename[key0][key1] is not a dict, then this is the new variable name
+            else, then recurse
+
+    Returns
+    -------
+
+    """
+
+    cfg = ModularProjectConfig(project_path)
+
+    def _update_config_value(_file_key, _cfg_to_update0, _new_name0, _old_name0):
+        if _cfg_to_update0 is None:
+            return
+
+        if isinstance(_new_name0, dict):
+            for _old_name1, _new_name1 in _new_name0.items():
+                _cfg_to_update1 = _cfg_to_update0.get(_old_name1, None)
+                _update_config_value(_file_key, _cfg_to_update1, _new_name0, _old_name0)
+            return
+
+        if _old_name0 not in _cfg_to_update0:
+            msg = f"{_old_name0} not found in config {_file_key}, skipping"
+            logging.warning(msg)
+        else:
+            new_val = _cfg_to_update0[_old_name0]
+            if _new_name0 in _cfg_to_update0:
+                msg = f"New name {_new_name0} already found in config {_file_key}!"
+                raise NotImplementedError(msg)
+            _cfg_to_update0[_new_name0] = new_val
+        return _cfg_to_update0
+
+    for file_key, vars_dict in vars_to_rename.items():
+        if file_key == 'project':
+            loaded_cfg = cfg
+        else:
+            # Note: this creates coupling with the naming convention...
+            load_function_name = f'get_{file_key}_config'
+            loaded_cfg = getattr(cfg, load_function_name)
+
+        for old_name0, new_name0 in vars_dict.items():
+            _cfg_to_update = loaded_cfg.config
+            _update_config_value(file_key, _cfg_to_update, new_name0, old_name0)
+        loaded_cfg.update_self_on_disk()

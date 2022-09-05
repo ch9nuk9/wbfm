@@ -8,12 +8,12 @@ from datetime import datetime
 from pathlib import Path
 
 from ruamel.yaml import YAML
+from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
 
 
 #####################
 # Filename utils
 #####################
-from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
 
 
 def get_project_name(_config: dict) -> str:
