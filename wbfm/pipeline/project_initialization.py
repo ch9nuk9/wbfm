@@ -4,11 +4,10 @@ import os
 from os import path as osp
 from pathlib import Path
 from shutil import copytree
-
 import numpy as np
 import tifffile
 import zarr
-
+from PIL import Image
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings, \
     preprocess_all_frames_using_config, background_subtract_single_channel
@@ -50,6 +49,14 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
         _config['red_bigtiff_fname'] = red_bigtiff_fname
         _config['green_bigtiff_fname'] = green_bigtiff_fname
 
+    # Check the number of total frames in the video, and update the parameter
+    # Note: requires correct value of num_slices
+    logging.info("Detecting number of total frames in the video, may take ~30 seconds")
+    full_video = Image.open(red_bigtiff_fname)
+    num_2d_frames = full_video.n_frames
+    num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
+    _config['dataset_params']['num_frames'] = int(num_volumes)
+
     # Uses the pip installed package location
     src = get_location_of_new_project_defaults()
     copytree(src, abs_dir_name)
@@ -84,8 +91,8 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
         video_fname)
 
     with safe_cd(project_dir):
-        preprocessed_dat, _ = preprocess_all_frames_using_config(cfg, video_fname, preprocessing_settings, None,
-                                                                 which_channel, out_fname, verbose, DEBUG)
+        preprocessed_dat = preprocess_all_frames_using_config(cfg, video_fname, preprocessing_settings, None,
+                                                              which_channel, out_fname, verbose, DEBUG)
 
     if not pad_to_align_with_original and bigtiff_start_volume > 0:
         # i.e. remove the unpreprocessed data, creating an offset between the bigtiff and the zarr

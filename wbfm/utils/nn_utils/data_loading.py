@@ -86,7 +86,7 @@ def get_bbox_data_for_volume(project_data, t, target_sz=np.array([8, 64, 64])):
         # Expand to get the neighborhood
 
         dat, _ = get_3d_crop_using_bbox(bbox, sz, target_sz, this_red)
-        all_dat.append(dat) # TODO: preallocate
+        all_dat.append(dat)  # TODO: preallocate
         all_bbox.append(bbox)
 
     return all_dat, all_bbox
