@@ -556,7 +556,7 @@ class ProjectData:
 
         """
         opt = dict(
-            channel_mode='linear_model',
+            channel_mode='ratio',
             calculation_mode='integration',
             remove_outliers=True
         )
