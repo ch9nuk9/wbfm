@@ -500,7 +500,7 @@ class ProjectData:
 
         Parameters
         ----------
-        channel_mode - red, green, ratio, df_over_f_10, ratio_df_over_f_10, linear_model
+        channel_mode - red, green, ratio, df_over_f_20, ratio_df_over_f_20, linear_model
         calculation_mode - integration (raw sum of pixels), volume, mean, z, likelihood (from the tracks dataframe)
         neuron_name - example: 'neuron_001'
         remove_outliers - try to remove spiking outliers

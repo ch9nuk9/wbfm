@@ -54,7 +54,7 @@ class TracePlotter:
         if self.tspan is None:
             self.tspan = list(range(self.red_traces.shape[0]))
 
-    def calculate_traces(self, neuron_name: str):
+    def calculate_traces(self, neuron_name: str) -> pd.Series:
         """
         First step when plotting, with the mode saved as a class variable
 
@@ -71,7 +71,7 @@ class TracePlotter:
         -------
 
         """
-        assert (self.channel_mode in ['green', 'red', 'ratio', 'df_over_f_10', 'ratio_df_over_f_10', "linear_model"]), \
+        assert (self.channel_mode in ['green', 'red', 'ratio', 'df_over_f_20', 'ratio_df_over_f_20', "linear_model"]), \
             f"Unknown channel mode {self.channel_mode}"
 
         if self.verbose >= 3:
@@ -87,12 +87,12 @@ class TracePlotter:
         if not self.bleach_correct:
             def calc_single_df_over_f(i, _df) -> pd.Series:
                 _y = calc_single_trace(i, _df)
-                return _y / np.nanquantile(_y, 0.2)
+                return pd.Series(_y / np.nanquantile(_y, 0.2))
         else:
             def calc_single_df_over_f(i, _df) -> pd.Series:
                 _y = calc_single_trace(i, _df)
                 _y, _ = pd.Series(detrend_exponential_lmfit(_y))
-                return _y / np.nanquantile(_y, 0.2)
+                return pd.Series(_y / np.nanquantile(_y, 0.2))
 
         ##
         ## Function for getting final y value from above functions
@@ -105,7 +105,7 @@ class TracePlotter:
             def calc_y(i) -> pd.Series:
                 return calc_single_trace(i, df)
 
-        elif self.channel_mode in ['red', 'green', 'df_over_f_10']:
+        elif self.channel_mode in ['red', 'green', 'df_over_f_20']:
             # Second: use a single traces dataframe (red OR green)
             if self.channel_mode == 'red':
                 df = self.red_traces
@@ -115,11 +115,11 @@ class TracePlotter:
             if self.channel_mode in ['red', 'green']:
                 def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df)
-            elif self.channel_mode == 'df_over_f_10':
+            elif self.channel_mode == 'df_over_f_20':
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df)
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_10', 'linear_model']:
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'linear_model']:
             # Third: use both traces dataframes (red AND green)
             df_red = self.red_traces
             df_green = self.green_traces
@@ -128,7 +128,7 @@ class TracePlotter:
                 def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
 
-            elif self.channel_mode == 'ratio_df_over_f_10':
+            elif self.channel_mode == 'ratio_df_over_f_20':
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
 
