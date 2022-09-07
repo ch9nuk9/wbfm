@@ -67,7 +67,7 @@ def main(_config, _run):
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
 
         # Very first: calculate the alignment between the red and green channels (camera misalignment)
-        preprocessing_settings.calculate_warp_mat_from_btf_files(red_btf_fname, green_btf_fname)
+        preprocessing_settings.calculate_warp_mat_from_dot_overlay(cfg)
         green_name = Path(green_output_fname)
         fname = green_name.parent / (green_name.stem + "_camera_alignment.pickle")
         preprocessing_settings.path_to_camera_alignment_matrix = fname

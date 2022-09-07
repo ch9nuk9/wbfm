@@ -264,6 +264,35 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return folder_for_calibration
 
+    def get_folder_with_alignment(self):
+        folder_for_entire_day = self.get_folder_with_calibration_for_day()
+        folder_for_alignment = folder_for_entire_day.joinpath('alignment')
+        if not folder_for_alignment.exists():
+            raise FileNotFoundError(f"Could not find alignment folder {folder_for_alignment}")
+
+        return folder_for_alignment
+
+    def get_red_and_green_alignment_bigtiffs(self) -> Tuple[Optional[str], Optional[str]]:
+        folder_for_alignment = self.get_folder_with_alignment()
+
+        def _extract_btf(subfolder):
+            btf_fname = None
+            for file in subfolder.iterdir():
+                if file.name.endswith('btf'):
+                    btf_fname = file.name
+            return btf_fname
+
+        red_btf_fname, green_btf_fname = None, None
+        for subfolder in folder_for_alignment.iterdir():
+            if subfolder.is_dir():
+                if subfolder.name.endswith('alignment_Ch0'):
+                    red_btf_fname = _extract_btf(subfolder)
+                elif subfolder.name.endswith('alignment_Ch1'):
+                    green_btf_fname = _extract_btf(subfolder)
+
+        return red_btf_fname, green_btf_fname
+
+
     def get_behavior_raw_file_from_red_fname(self):
         """If the user did not set the behavior foldername, try to infer it from the red"""
         behavior_subfolder, flag = self.get_behavior_raw_parent_folder_from_red_fname()

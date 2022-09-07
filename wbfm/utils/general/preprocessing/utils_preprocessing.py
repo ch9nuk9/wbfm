@@ -280,6 +280,22 @@ class PreprocessingSettings:
             return self._camera_alignment_matrix
         # warp_mat = get_precalculated_camera_alignment_matrix()
 
+    def calculate_warp_mat_from_dot_overlay(self, project_config):
+        # Find calibration videos, if present
+        red_btf_fname, green_btf_fname = project_config.get_red_and_green_alignment_bigtiffs()
+        if red_btf_fname is None or green_btf_fname is None:
+            raise NotImplementedError("Tried to calculate alignment from dot overlay, but it wasn't found.")
+            # self.calculate_warp_mat_from_data(project_data.red_data, project_data.green_data)
+            # return
+
+        green_align = tifffile.imread(green_btf_fname)
+        red_align = tifffile.imread(red_btf_fname)
+
+        warp_mat = calculate_alignment_matrix_two_stacks(red_align, green_align)
+
+        # Save in this object
+        self._camera_alignment_matrix = warp_mat
+
     def calculate_warp_mat_from_data(self, red_data, green_data):
         # Get representative volumes (in theory) and max project
         tspan = np.arange(10, red_data.shape[0], 250, dtype=int)
