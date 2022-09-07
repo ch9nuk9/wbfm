@@ -80,7 +80,8 @@ def detrend_exponential_lmfit(y_with_nan, x=None):
 
     if out is None or not out.errorbars or 0 in y_fit:
         # Crude measurement of bad convergence, even if it didn't error out
-        y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
+        # Note: divide by mean to keep the magnitude similar to other bleach corrected traces
+        y_corrected_with_nan, y_fit = y_with_nan / np.mean(y_with_nan), np.mean(y_with_nan) * np.ones_like(y_with_nan)
         flag = False
 
     return y_corrected_with_nan, (y_fit, out, flag)
@@ -139,7 +140,10 @@ def detrend_exponential_iter(trace, max_iters=100, convergence_threshold=0.01,
         y_detrend = detrend_exponential_lmfit_give_indices(y_full, ind_iter)[0]
         y_fit_last = y_fit
         y_fit = detrend_exponential_lmfit_give_indices(y_full, ind_iter)[1][0]
-        ind_iter = np.where(np.logical_and(np.nanquantile(y_detrend, low_quantile) < y_detrend, y_detrend < np.nanquantile(y_detrend,high_quantile)))[0]
+
+        ind_not_too_small = np.nanquantile(y_detrend, low_quantile) < y_detrend
+        ind_not_too_large = y_detrend < np.nanquantile(y_detrend, high_quantile)
+        ind_iter = np.where(np.logical_and(ind_not_too_small, ind_not_too_large))[0]
         if scipy.spatial.distance.euclidean(y_fit, y_fit_last) <= convergence_threshold:
             break
     return y_detrend, num_iter
