@@ -115,9 +115,9 @@ class TracePlotter:
             if self.channel_mode in ['red', 'green']:
                 def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df)
-            else:
+            elif self.channel_mode == 'df_over_f_10':
                 def calc_y(i) -> pd.Series:
-                    return calc_single_trace(i, df)
+                    return calc_single_df_over_f(i, df)
 
         elif self.channel_mode in ['ratio', 'ratio_df_over_f_10', 'linear_model']:
             # Third: use both traces dataframes (red AND green)
@@ -127,11 +127,12 @@ class TracePlotter:
             if self.channel_mode == 'ratio':
                 def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
-            else:
+
+            elif self.channel_mode == 'ratio_df_over_f_10':
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
 
-            if self.channel_mode == "linear_model":
+            elif self.channel_mode == "linear_model":
                 def calc_y(_neuron_name) -> pd.Series:
                     # Predict green from time, volume, and red
                     # Also add x and y
