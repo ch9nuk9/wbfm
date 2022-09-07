@@ -539,7 +539,7 @@ class ProjectData:
         neuron_names = get_names_from_df(df_tmp)
         return neuron_names
 
-    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False):
+    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False, **kwargs):
         """
         Uses the currently recommended 'best' settings:
         opt = dict(
@@ -560,6 +560,7 @@ class ProjectData:
             calculation_mode='integration',
             remove_outliers=True
         )
+        opt.update(kwargs)
 
         if isinstance(min_nonnan, float):
             min_nonnan = int(min_nonnan * self.num_frames)
