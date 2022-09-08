@@ -1114,13 +1114,18 @@ def zero_out_borders_using_config(project_config: ModularProjectConfig):
 
     new_seg_fname = get_sequential_filename(old_seg_fname)
     new_masks = zarr.zeros_like(old_masks, store=new_seg_fname)
+    # new_masks = zarr.open(new_seg_fname, mode='a',
+    #                       shape=old_masks.shape, chunks=old_masks.chunks, dtype=np.uint16,
+    #                       fill_value=0,
+    #                       synchronizer=zarr.ThreadSynchronizer())
 
     with tqdm(total=num_frames) as pbar:
         def parallel_func(i):
             labels = old_masks[i]
             labels_bd = find_boundaries(labels, connectivity=2, mode='outer', background=0)
-            this_mask = new_masks[i]
+            this_mask = labels.copy()
             this_mask[labels_bd] = 0
+            new_masks[i] = this_mask
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
             futures = {executor.submit(parallel_func, i): i for i in range(num_frames)}
@@ -1132,4 +1137,4 @@ def zero_out_borders_using_config(project_config: ModularProjectConfig):
     segment_cfg.config.update(updates)
 
     segment_cfg.update_self_on_disk()
-    segment_cfg.logger.info(f'Done with segmentation postprocessing! Mask data saved at {new_masks}')
+    segment_cfg.logger.info(f'Done with segmentation postprocessing! Mask data saved at {new_seg_fname}')
