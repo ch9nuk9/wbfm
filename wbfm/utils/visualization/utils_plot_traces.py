@@ -1,4 +1,7 @@
+import numpy as np
 import pandas as pd
+import sklearn
+from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 
 
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
@@ -41,3 +44,45 @@ def set_big_font(size=22):
     font = {'weight': 'bold',
             'size': size}
     matplotlib.rc('font', **font)
+
+
+def correct_trace_using_linear_model(df_red, df_green, _neuron_name=None, predictor_names=None):
+    # Predict green from time, volume, and red
+    if predictor_names is None:
+        predictor_names = ["intensity_image", "area", "x", "y"]
+    if _neuron_name is not None:
+        df_green = df_green[_neuron_name]
+        df_red = df_red[_neuron_name]
+    green = df_green["intensity_image"]
+    # Also add x and y
+    predictor_vars = [df_red[name] for name in predictor_names]
+
+    num_timepoints = len(green)
+    predictor_vars.append(range(num_timepoints))
+    valid_indices = np.logical_not(np.isnan(green))
+    # This is important for test videos that are very short
+    if valid_indices.value_counts()[True] <= 4:
+        y_result_including_na = green.copy()
+        y_result_including_na[:] = np.nan
+    else:
+
+        # remove nas and z score
+        def _z_score(_x):
+            _x = np.array(_x)[valid_indices]
+            return (_x - np.mean(_x)) / np.std(_x)
+
+        green_trace = green[valid_indices]
+        predictor_matrix = np.array([_z_score(var) for var in predictor_vars])
+        predictor_matrix = np.c_[predictor_matrix.T]
+
+        # create model
+        model = sklearn.linear_model.LinearRegression()
+        model.fit(predictor_matrix, green_trace)
+        green_predicted = model.predict(predictor_matrix)
+        y_result_missing_na = green_trace - green_predicted
+
+        # Align output and input formats
+        y_including_na = fill_missing_indices_with_nan(pd.DataFrame(y_result_missing_na),
+                                                       expected_max_t=num_timepoints)[0]
+        y_result_including_na = pd.Series(list(y_including_na["intensity_image"]))
+    return y_result_including_na

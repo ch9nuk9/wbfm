@@ -134,50 +134,11 @@ class TracePlotter:
 
             elif self.channel_mode == "linear_model":
                 def calc_y(_neuron_name) -> pd.Series:
-                    # Predict green from time, volume, and red
-                    # Also add x and y
-
-                    red = df_red[_neuron_name]["intensity_image"]
-                    green = df_green[_neuron_name]["intensity_image"]
-                    vol = df_red[_neuron_name]["area"]
-                    x = df_red[_neuron_name]["x"]
-                    y = df_red[_neuron_name]["y"]
-                    num_timepoints = len(green)
-                    t = range(num_timepoints)
-                    valid_indices = np.logical_not(np.isnan(red))
-
-                    # This is important for test videos that are very short
-                    if valid_indices.value_counts()[True] <= 4:
-                        y_empty = green.copy()
-                        y_empty[:] = np.nan
-                        return y_empty
-
-                    # remove nas and z score
-                    def _z_score(_x):
-                        _x = np.array(_x)[valid_indices]
-                        return (_x - np.mean(_x)) / np.std(_x)
-
-                    green_trace = green[valid_indices]
-                    red_lm = _z_score(red)
-                    vol_lm = _z_score(vol)
-                    x_lm = _z_score(x)
-                    y_lm = _z_score(y)
-                    t_lm = _z_score(t)
-                    predictor_matrix = np.array([vol_lm, red_lm, t_lm, x_lm, y_lm])
-                    predictor_matrix = np.c_[predictor_matrix.T]
-
-                    # create model
-                    model = sklearn.linear_model.LinearRegression()
-                    model.fit(predictor_matrix, green_trace)
-                    green_predicted = model.predict(predictor_matrix)
-                    y_result_missing_na = green_trace - green_predicted
-
-                    # Align output and input formats
-                    y_including_na = fill_missing_indices_with_nan(pd.DataFrame(y_result_missing_na),
-                                                                   expected_max_t=num_timepoints)[0]
-                    y_result_including_na = pd.Series(list(y_including_na["intensity_image"]))
+                    _neuron_name
+                    y_result_including_na = correct_trace_using_linear_model(df_red, df_green, _neuron_name)
 
                     return y_result_including_na
+
 
         else:
             raise ValueError("Unknown calculation or channel mode")
