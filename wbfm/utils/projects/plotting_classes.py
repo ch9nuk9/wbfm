@@ -5,11 +5,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Union, Dict, Tuple
 from copy import deepcopy
-
 import napari
 import numpy as np
 import pandas as pd
-import sklearn
 import zarr
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
@@ -25,7 +23,6 @@ from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
-from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
@@ -135,11 +132,9 @@ class TracePlotter:
 
             elif self.channel_mode == "linear_model":
                 def calc_y(_neuron_name) -> pd.Series:
-                    _neuron_name
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, _neuron_name)
 
                     return y_result_including_na
-
 
         else:
             raise ValueError("Unknown calculation or channel mode")
