@@ -33,8 +33,27 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
     if Path(tracker_fname).exists():
         project_config.logger.info("Found already saved tracker, loading...")
         tracker = pickle_load_binary(tracker_fname)
+
     else:
-        tracker = None
+        # Next try: load metadata
+        embedding_fname = os.path.join(results_subfolder_full, 'embedding.zarr')
+        if Path(embedding_fname).exists():
+            X = pickle_load_binary(embedding_fname)
+
+            fname = os.path.join(results_subfolder_full, 'time_index_to_linear_feature_indices.zarr')
+            time_index_to_linear_feature_indices = pickle_load_binary(fname)
+            fname = os.path.join(results_subfolder_full, 'linear_ind_to_raw_neuron_ind.zarr')
+            linear_ind_to_raw_neuron_ind = pickle_load_binary(fname)
+
+            opt = dict(time_index_to_linear_feature_indices=time_index_to_linear_feature_indices,
+                       svd_components=50,
+                       cluster_directly_on_svd_space=True,
+                       n_clusters_per_window=3,
+                       n_volumes_per_window=120,
+                       linear_ind_to_raw_neuron_ind=linear_ind_to_raw_neuron_ind)
+            tracker = WormTsneTracker(X, **opt)
+        else:
+            tracker = None
 
     #
     if tracker is None:
