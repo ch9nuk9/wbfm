@@ -4,6 +4,7 @@ StarDist functions for segmentation
 import numpy as np
 import skimage
 import stardist.models
+from skimage.segmentation import find_boundaries
 from stardist.models import StarDist3D, StarDist2D
 import os
 from csbdeep.utils import Path, normalize
@@ -139,7 +140,7 @@ def segment_with_stardist_2d(vol: np.ndarray,
         if zero_out_borders:
             # Postprocess to add separation between labels
             # From: watershed.py in 3DeeCellTracker
-            labels_bd = skimage.segmentation.find_boundaries(labels, connectivity=2, mode='outer', background=0)
+            labels_bd = find_boundaries(labels, connectivity=2, mode='outer', background=0)
 
             boundary[idx, :, :] = labels_bd
 

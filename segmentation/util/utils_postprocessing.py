@@ -1,17 +1,22 @@
 """
 Postprocessing functions for segmentation pipeline
 """
+import concurrent
 import logging
 from typing import List, Tuple, Union
-
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import scipy
+import zarr
+from skimage.segmentation import find_boundaries
+from tqdm.auto import tqdm
 import skimage
 from scipy.optimize import curve_fit
-
+from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.utils_networkx import calc_bipartite_from_candidates
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.utils_filenames import get_sequential_filename
 from wbfm.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from scipy.signal import find_peaks
 from skimage.measure import regionprops
@@ -1085,3 +1090,46 @@ def get_split_point_from_centroids(sum_of_grads, threshold=4):
         return ind
     else:
         return None
+
+
+def zero_out_borders_using_config(project_config: ModularProjectConfig):
+    """
+    Modifies the segmentation to remove all boundaries (touching masks)
+
+    Same effect as setting 'zero_out_borders' in the initial segmentation config file
+
+    Parameters
+    ----------
+    project_config
+
+    Returns
+    -------
+
+    """
+
+    segment_cfg = project_config.get_segmentation_config()
+    old_seg_fname = segment_cfg.resolve_relative_path_from_config('output_masks')
+    old_masks = zarr_reader_folder_or_zipstore(old_seg_fname)
+    num_frames = old_masks.shape[0]
+
+    new_seg_fname = get_sequential_filename(old_seg_fname)
+    new_masks = zarr.zeros_like(old_masks, store=new_seg_fname)
+
+    with tqdm(total=num_frames) as pbar:
+        def parallel_func(i):
+            labels = old_masks[i]
+            labels_bd = find_boundaries(labels, connectivity=2, mode='outer', background=0)
+            this_mask = new_masks[i]
+            this_mask[labels_bd] = 0
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in range(num_frames)}
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+                pbar.update(1)
+
+    updates = {'output_masks': new_seg_fname}
+    segment_cfg.config.update(updates)
+
+    segment_cfg.update_self_on_disk()
+    segment_cfg.logger.info(f'Done with segmentation postprocessing! Mask data saved at {new_masks}')
