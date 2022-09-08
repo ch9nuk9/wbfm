@@ -14,6 +14,7 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
+from wbfm.utils.neuron_matching.track_using_clusters import WormTsneTracker
 
 
 def track_using_barlow_from_config(project_config: ModularProjectConfig,
@@ -34,11 +35,9 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
         tracker = pickle_load_binary(tracker_fname)
     else:
         tracker = None
-        # raise NotImplementedError
 
     #
     if tracker is None:
-        from wbfm.utils.neuron_matching.track_using_clusters import WormTsneTracker
         # Initialize the model
         # See: barlow_twins_evaluate_scratch
         folder_fname = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/nn_ideas/'
@@ -59,9 +58,11 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
         X_svd = alg.fit_transform(X)
 
         # Save embeddings and trackers
-        opt = dict(time_index_to_linear_feature_indices, svd_components=svd_components,
+        opt = dict(time_index_to_linear_feature_indices=time_index_to_linear_feature_indices,
+                   svd_components=svd_components,
                    cluster_directly_on_svd_space=True,
-                   n_clusters_per_window=3, n_volumes_per_window=120,
+                   n_clusters_per_window=3,
+                   n_volumes_per_window=120,
                    linear_ind_to_raw_neuron_ind=linear_ind_to_raw_neuron_ind)
         tracker = WormTsneTracker(X_svd, **opt)
         tracker_no_svd = WormTsneTracker(X, **opt)
@@ -103,6 +104,7 @@ def plot_relative_accuracy(df_combined, results_subfolder, project_data):
 
 
 def embed_using_barlow(gpu, model, project_data, target_sz):
+    project_data.project_config.logger.info("Embedding using Barlow model")
     from wbfm.utils.nn_utils.barlow import NeuronImageWithGTDataset
     num_frames = project_data.num_frames - 1
     dataset = NeuronImageWithGTDataset.load_from_project(project_data, num_frames, target_sz)

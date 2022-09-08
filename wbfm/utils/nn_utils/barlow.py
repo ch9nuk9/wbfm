@@ -206,11 +206,11 @@ class NeuronImageWithGTDataset(Dataset):
 
     @staticmethod
     def load_from_project(project_data, num_frames, target_sz):
+        project_data.project_config.logger.info("Loading dataset from project")
         if num_frames is None:
             num_frames = project_data.num_frames
 
         dict_of_neurons_of_volumes, dict_of_ids_of_volumes = {}, {}
-        # list_of_neurons_of_volumes, list_of_ids_of_volumes = [], []
 
         def parallel_func(_t):
             all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, _t,
@@ -229,13 +229,6 @@ class NeuronImageWithGTDataset(Dataset):
                     future.result()
                     pbar.update(1)
 
-        # for t in tqdm(range(num_frames)):
-        #     all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, t,
-        #                                                                                       target_sz=target_sz)
-        #     keys = list(all_dat_dict.keys())  # Need to enforce ordering?
-        #     list_of_ids_of_volumes.append(keys)  # strings
-        #     list_of_neurons_of_volumes.append(np.stack([all_dat_dict[k] for k in keys], 0))
-        # return NeuronImageWithGTDataset(list_of_neurons_of_volumes, list_of_ids_of_volumes, which_neurons)
         return NeuronImageWithGTDataset(dict_of_neurons_of_volumes, dict_of_ids_of_volumes, which_neurons)
 
 
