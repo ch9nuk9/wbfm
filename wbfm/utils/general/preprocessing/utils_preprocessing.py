@@ -309,8 +309,12 @@ class PreprocessingSettings:
         # Save in this object
         self._camera_alignment_matrix = warp_mat
 
-    def calculate_warp_mat_from_btf_files(self, red_btf_fname, green_btf_fname):
+    def calculate_warp_mat_from_btf_files(self, project_config):
         # Will just take as many volumes as it can (this object doesn't know the number of frames present)
+
+        red_btf_fname = project_config.config['red_bigtiff_fname']
+        green_btf_fname = project_config.config['green_bigtiff_fname']
+
         tspan = np.arange(10, 3000, 250, dtype=int)
 
         red_vol_subset, green_vol_subset = [], []

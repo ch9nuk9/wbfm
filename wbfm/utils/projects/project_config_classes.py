@@ -279,7 +279,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             btf_fname = None
             for file in subfolder.iterdir():
                 if file.name.endswith('btf'):
-                    btf_fname = file.name
+                    btf_fname = str(file)
             return btf_fname
 
         red_btf_fname, green_btf_fname = None, None
@@ -291,7 +291,6 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     green_btf_fname = _extract_btf(subfolder)
 
         return red_btf_fname, green_btf_fname
-
 
     def get_behavior_raw_file_from_red_fname(self):
         """If the user did not set the behavior foldername, try to infer it from the red"""
