@@ -1133,7 +1133,7 @@ def zero_out_borders_using_config(project_config: ModularProjectConfig):
                 future.result()
                 pbar.update(1)
 
-    updates = {'output_masks': new_seg_fname}
+    updates = {'output_masks': segment_cfg.unresolve_absolute_path(new_seg_fname)}
     segment_cfg.config.update(updates)
 
     segment_cfg.update_self_on_disk()
