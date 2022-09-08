@@ -11,8 +11,6 @@ import seaborn as sns
 from wbfm.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
 from wbfm.utils.general.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
 from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positions, calc_nearest_neighbor_matches
-from wbfm.utils.nn_utils.superglue import SuperGlue
-from wbfm.utils.nn_utils.worm_with_classifier import WormWithNeuronClassifier
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -301,6 +299,7 @@ def test_baseline_and_new_matcher_on_vgg_features(project_data, desc0=None, desc
     2. Bipartite matching directly on the feature space
     3. Greedy matching directly on the feature space
     """
+    from wbfm.utils.nn_utils.superglue import SuperGlue
     f0 = project_data.raw_frames[t0]
     f1 = project_data.raw_frames[t1]
     df_gt = project_data.get_final_tracks_only_finished_neurons()[0]
@@ -384,6 +383,8 @@ def test_baseline_and_new_matcher_on_embeddings(project_data, t0=0, t1=1):
     -------
 
     """
+    from wbfm.utils.nn_utils.superglue import SuperGlue
+    from wbfm.utils.nn_utils.worm_with_classifier import WormWithNeuronClassifier
     f0 = project_data.raw_frames[t0]
     f1 = project_data.raw_frames[t1]
     df_gt = project_data.get_final_tracks_only_finished_neurons()[0]
