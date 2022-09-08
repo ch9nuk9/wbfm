@@ -1,5 +1,6 @@
 import numpy as np
 import scipy
+import sklearn
 from lmfit.models import ExponentialModel
 from sklearn.preprocessing import StandardScaler
 
@@ -147,3 +148,56 @@ def detrend_exponential_iter(trace, max_iters=100, convergence_threshold=0.01,
         if scipy.spatial.distance.euclidean(y_fit, y_fit_last) <= convergence_threshold:
             break
     return y_detrend, num_iter
+
+
+def full_lm_with_windowed_regression_vol(project_data, neuron, window_size=5):
+    """" gives back corrected trace for the selected neuron
+    calculates alpha for every timepoint considering all neighbours with distance < window size"""
+
+
+    num_timepoints = project_data.red_traces.shape[0]
+
+    green = np.array(project_data.green_traces[neuron]["intensity_image"])
+    vol = np.array(project_data.green_traces[neuron]["area"])
+    red = np.array(project_data.red_traces[neuron]["intensity_image"])
+    remove_nan = np.logical_and(np.invert(np.isnan(green)), np.invert(np.isnan(vol)))
+    green = green[remove_nan]
+    vol = vol[remove_nan]
+    red = red[remove_nan]
+
+    alpha_green = []
+    for i in range(window_size, len(red) - window_size - 1):
+        y = green[i - window_size:i + window_size]
+        x = vol[i - window_size:i + window_size].reshape(-1, 1)
+        model = sklearn.linear_model.LinearRegression(fit_intercept=False)
+        model.fit(x, y)
+        alpha_green.append(model.coef_)
+
+    alpha_red = []
+    for i in range(window_size, len(red) - window_size - 1):
+        y = red[window_size:len(red) - window_size - 1]
+        x = vol[window_size:len(red) - window_size - 1].reshape(-1, 1)
+        model = sklearn.linear_model.LinearRegression(fit_intercept=False)
+        model.fit(x, y)
+        alpha_red.append(model.coef_)
+
+    red_corrected = red[window_size:len(red) - window_size - 1] - np.array(alpha_red).flatten() * vol[window_size:len(
+        red) - window_size - 1]
+    green_corrected = green[window_size:len(red) - window_size - 1] - np.array(alpha_green).flatten() * vol[
+                                                                                                        window_size:len(
+                                                                                                            red) - window_size - 1]
+
+    vol = project_data.red_traces[neuron]["area"][remove_nan][window_size:len(red) - window_size - 1]
+    x = project_data.red_traces[neuron]["x"][remove_nan][window_size:len(red) - window_size - 1]
+    y = project_data.red_traces[neuron]["y"][remove_nan][window_size:len(red) - window_size - 1]
+    z = project_data.red_traces[neuron]["z"][remove_nan][window_size:len(red) - window_size - 1]
+    t = np.array(range(num_timepoints))[remove_nan][window_size:len(red) - window_size - 1]
+    X = [red_corrected, vol, x, y, z, t]
+
+    X = np.c_[np.array(X).T]
+    model = sklearn.linear_model.LinearRegression()
+    model.fit(X, green_corrected)
+    x_pred = model.predict(X)
+
+    res = green_corrected - x_pred
+    return res
