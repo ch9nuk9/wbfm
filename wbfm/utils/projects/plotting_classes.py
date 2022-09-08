@@ -27,6 +27,7 @@ from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_facto
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
+from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
 
 @dataclass
