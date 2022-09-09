@@ -1,3 +1,4 @@
+import tensorflow
 import os
 from collections import defaultdict
 from pathlib import Path
@@ -38,11 +39,12 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
         # Next try: load metadata
         embedding_fname = os.path.join(results_subfolder_full, 'embedding.zarr')
         if Path(embedding_fname).exists():
-            X = pickle_load_binary(embedding_fname)
+            project_config.logger.info("Found already saved embedding files, loading...")
+            X = np.array(zarr.open(embedding_fname))
 
-            fname = os.path.join(results_subfolder_full, 'time_index_to_linear_feature_indices.zarr')
+            fname = os.path.join(results_subfolder_full, 'time_index_to_linear_feature_indices.pickle')
             time_index_to_linear_feature_indices = pickle_load_binary(fname)
-            fname = os.path.join(results_subfolder_full, 'linear_ind_to_raw_neuron_ind.zarr')
+            fname = os.path.join(results_subfolder_full, 'linear_ind_to_raw_neuron_ind.pickle')
             linear_ind_to_raw_neuron_ind = pickle_load_binary(fname)
 
             opt = dict(time_index_to_linear_feature_indices=time_index_to_linear_feature_indices,
@@ -100,7 +102,7 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
         plot_relative_accuracy(df_combined, results_subfolder, project_data)
 
 
-def plot_relative_accuracy(df_combined, results_subfolder, project_data):
+def plot_relative_accuracy(df_combined, results_subfolder, project_data, to_save=True):
     num_frames = df_combined.shape[0] - 1
     df_base = project_data.get_final_tracks_only_finished_neurons()[0].loc[:num_frames, :]
     df_cluster_renamed, matches, conf, name_mapping = rename_columns_using_matching(df_base, df_combined,
@@ -117,9 +119,13 @@ def plot_relative_accuracy(df_combined, results_subfolder, project_data):
     plt.plot(df_all_acc_original.index, df_all_acc_original['matches_to_gt_nonnan'], label='Old tracker')
     plt.plot(df_all_acc.index, df_all_acc['matches_to_gt_nonnan'], label='Unsupervised tracker')
     plt.title(f"Tracking accuracy (mean={np.mean(df_all_acc['matches_to_gt_nonnan'])}")
+    plt.legend()
     plt.tight_layout()
-    fname = os.path.join(results_subfolder, f'accuracy.png')
-    plt.savefig(fname)
+
+    if to_save:
+        fname = os.path.join(results_subfolder, f'accuracy.png')
+        fname = project_data.project_config.resolve_relative_path(fname)
+        plt.savefig(fname)
 
 
 def embed_using_barlow(gpu, model, project_data, target_sz):
