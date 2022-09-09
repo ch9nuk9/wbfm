@@ -56,7 +56,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     """
     if channel_mode == 'all':
-        all_modes = ['red', 'green', 'ratio', 'linear_model']
+        all_modes = ['red', 'green', 'dr_over_r_20', 'ratio', 'linear_model']
         opt = dict(project_data=project_data,
                    calculation_mode=calculation_mode,
                    color_using_behavior=color_using_behavior,
@@ -64,7 +64,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         # Also try to remove outliers and filter
-        all_modes = ['ratio', 'linear_model']
+        all_modes = ['ratio', 'dr_over_r_20', 'linear_model']
         opt['remove_outliers'] = True
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)

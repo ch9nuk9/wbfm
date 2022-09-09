@@ -69,7 +69,8 @@ class TracePlotter:
         -------
 
         """
-        assert (self.channel_mode in ['green', 'red', 'ratio', 'df_over_f_20', 'ratio_df_over_f_20', "linear_model"]), \
+        assert (self.channel_mode in ['green', 'red', 'ratio', 'linear_model',
+                                      'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20']), \
             f"Unknown channel mode {self.channel_mode}"
 
         if self.verbose >= 3:
@@ -117,7 +118,7 @@ class TracePlotter:
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df)
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'linear_model']:
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'linear_model']:
             # Third: use both traces dataframes (red AND green)
             df_red = self.red_traces
             df_green = self.green_traces
@@ -130,11 +131,17 @@ class TracePlotter:
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
 
-            elif self.channel_mode == "linear_model":
+            elif self.channel_mode == 'linear_model':
                 def calc_y(_neuron_name) -> pd.Series:
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, _neuron_name)
-
                     return y_result_including_na
+
+            elif self.channel_mode == 'dr_over_r_20':
+                def calc_y(i) -> pd.Series:
+                    ratio = calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
+                    dr_over_r = ratio / np.nanquantile(ratio, 0.2)
+                    return pd.Series(dr_over_r)
+                pass
 
         else:
             raise ValueError("Unknown calculation or channel mode")
