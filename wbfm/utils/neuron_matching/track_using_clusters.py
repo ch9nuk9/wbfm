@@ -10,6 +10,7 @@ from tqdm.auto import tqdm
 from tsnecuda import TSNE
 from hdbscan import HDBSCAN
 import hdbscan
+import matplotlib.patheffects as PathEffects
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
@@ -60,7 +61,8 @@ def plot_clusters(db, Y, class_labels=True):
         )
 
         if class_labels:
-            plt.annotate(f'{k}', np.mean(xy, axis=0), fontsize=24)
+            text = plt.annotate(f'{k}', np.mean(xy, axis=0), fontsize=32, color='black')
+            text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='w')])
 
     plt.title("Estimated number of clusters: %d" % n_clusters_)
     plt.show()
