@@ -25,7 +25,7 @@ from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 
 
 def plot_clusters(db, Y, class_labels=True):
-    plt.figure(figsize=(15, 15))
+    fig = plt.figure(figsize=(10, 10), dpi=300)
 
     if Y.shape[1] > 2:
         logging.warning("Data passed was not 2 dimensional (did you mean to run tsne?). For now, taking top 2")
@@ -65,7 +65,10 @@ def plot_clusters(db, Y, class_labels=True):
             text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='w')])
 
     plt.title("Estimated number of clusters: %d" % n_clusters_)
+    plt.tight_layout()
     plt.show()
+
+    return fig
 
 
 @dataclass
