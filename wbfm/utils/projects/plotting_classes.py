@@ -86,12 +86,14 @@ class TracePlotter:
         if not self.bleach_correct:
             def calc_single_df_over_f(i, _df) -> pd.Series:
                 _y = calc_single_trace(i, _df)
-                return pd.Series(_y / np.nanquantile(_y, 0.2))
+                y0 = np.nanquantile(_y, 0.2)
+                return pd.Series((_y-y0) / y0)
         else:
             def calc_single_df_over_f(i, _df) -> pd.Series:
                 _y = calc_single_trace(i, _df)
                 _y, _ = pd.Series(detrend_exponential_lmfit(_y))
-                return pd.Series(_y / np.nanquantile(_y, 0.2))
+                y0 = np.nanquantile(_y, 0.2)
+                return pd.Series((_y-y0) / y0)
 
         ##
         ## Function for getting final y value from above functions
@@ -139,7 +141,8 @@ class TracePlotter:
             elif self.channel_mode == 'dr_over_r_20':
                 def calc_y(i) -> pd.Series:
                     ratio = calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
-                    dr_over_r = ratio / np.nanquantile(ratio, 0.2)
+                    r0 = np.nanquantile(ratio, 0.2)
+                    dr_over_r = (ratio - r0) / r0
                     return pd.Series(dr_over_r)
                 pass
 
