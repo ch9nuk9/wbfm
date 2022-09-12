@@ -133,6 +133,21 @@ def get_bbox_data_for_volume_only_labeled(project_data, t, target_sz=np.array([8
 
 
 def get_3d_crop_using_bbox(bbox, sz, target_sz, this_red):
+    """
+    A real bbox does not need to be passed. Alternative is just the centroid in this 6-value format format:
+        zxyzxy
+
+    Parameters
+    ----------
+    bbox
+    sz - size of full video (4d)
+    target_sz - size of output crop (3d)
+    this_red - array of video. Must be slice-indexable
+
+    Returns
+    -------
+
+    """
     z_mean = int((bbox[0] + bbox[3]) / 2)
     z0 = np.clip(z_mean - int(target_sz[0] / 2), a_min=0, a_max=sz[1])
     z1 = np.clip(z_mean + int(target_sz[0] / 2), a_min=0, a_max=sz[1])
