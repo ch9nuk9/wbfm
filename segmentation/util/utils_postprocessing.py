@@ -9,6 +9,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import scipy
 import zarr
+from skimage.morphology import erosion
 from skimage.segmentation import find_boundaries
 from tqdm.auto import tqdm
 import skimage
@@ -1096,7 +1097,7 @@ def zero_out_borders_using_config(project_config: ModularProjectConfig):
     """
     Modifies the segmentation to remove all boundaries (touching masks)
 
-    Same effect as setting 'zero_out_borders' in the initial segmentation config file
+    Same effect as setting 'zero_out_borders' and 'do_full_erosion' in the initial segmentation config file
 
     Parameters
     ----------
@@ -1111,6 +1112,7 @@ def zero_out_borders_using_config(project_config: ModularProjectConfig):
     old_seg_fname = segment_cfg.resolve_relative_path_from_config('output_masks')
     old_masks = zarr_reader_folder_or_zipstore(old_seg_fname)
     num_frames = old_masks.shape[0]
+    do_full_erosion = segment_cfg.config['segmentation_params'].get('full_erosion', False)
 
     new_seg_fname = get_sequential_filename(old_seg_fname)
     new_masks = zarr.zeros_like(old_masks, store=new_seg_fname)
@@ -1121,9 +1123,11 @@ def zero_out_borders_using_config(project_config: ModularProjectConfig):
 
     with tqdm(total=num_frames) as pbar:
         def parallel_func(i):
-            labels = old_masks[i]
+            labels = old_masks[i].copy()
+            if do_full_erosion:
+                labels = erosion(labels)
             labels_bd = find_boundaries(labels, connectivity=2, mode='outer', background=0)
-            this_mask = labels.copy()
+            this_mask = labels
             this_mask[labels_bd] = 0
             new_masks[i] = this_mask
 
