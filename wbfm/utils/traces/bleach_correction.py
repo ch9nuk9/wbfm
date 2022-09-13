@@ -74,7 +74,7 @@ def detrend_exponential_lmfit(y_with_nan, x=None):
         y_corrected_with_nan[ind] = y_corrected
         flag = True
 
-    except TypeError:
+    except (TypeError, ValueError):
         # Occurs when there are too few input points
         y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
         flag = False
