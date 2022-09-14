@@ -4,6 +4,7 @@ import dataclasses
 import logging
 import pickle
 import threading
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
@@ -283,7 +284,7 @@ class PreprocessingSettings:
 
     def calculate_warp_mat_from_dot_overlay(self, project_config):
         # Find calibration videos, if present
-        red_btf_fname, green_btf_fname = project_config.get_red_and_green_alignment_bigtiffs()
+        red_btf_fname, green_btf_fname = project_config.get_red_and_green_dot_alignment_bigtiffs()
         if red_btf_fname is None or green_btf_fname is None:
             raise NotImplementedError("Tried to calculate alignment from dot overlay, but it wasn't found.")
             # self.calculate_warp_mat_from_data(project_data.red_data, project_data.green_data)
@@ -292,6 +293,34 @@ class PreprocessingSettings:
         green_align = tifffile.imread(green_btf_fname)
         red_align = tifffile.imread(red_btf_fname)
 
+        warp_mat = calculate_alignment_matrix_two_stacks(red_align, green_align)
+
+        # Save in this object
+        self._camera_alignment_matrix = warp_mat
+
+    def calculate_warp_mat_from_grid_overlay(self, project_config):
+        # Find calibration videos, if present
+        red_btf_fnames, green_btf_fnames = project_config.get_red_and_green_grid_alignment_bigtiffs()
+        if red_btf_fnames is None or green_btf_fnames is None:
+            raise NotImplementedError("Tried to calculate alignment from dot overlay, but it wasn't found.")
+
+        red_align = None
+        # The num_slices shouldn't matter too
+        tiff_opt = dict(which_vol=0, num_slices=22, dtype='uint16')
+        for fname in red_btf_fnames:
+            if red_align is None:
+                red_align = get_single_volume(fname, **tiff_opt)
+            else:
+                red_align += get_single_volume(fname, **tiff_opt)
+
+        green_align = None
+        for fname in green_btf_fnames:
+            if green_align is None:
+                green_align = get_single_volume(fname, **tiff_opt)
+            else:
+                green_align += get_single_volume(fname, **tiff_opt)
+
+        # print(red_align.shape)
         warp_mat = calculate_alignment_matrix_two_stacks(red_align, green_align)
 
         # Save in this object

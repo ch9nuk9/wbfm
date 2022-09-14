@@ -4,7 +4,9 @@ import os
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List
+
+import numpy as np
 import pandas as pd
 import pprint
 
@@ -272,25 +274,72 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return folder_for_alignment
 
-    def get_red_and_green_alignment_bigtiffs(self) -> Tuple[Optional[str], Optional[str]]:
+    def get_red_and_green_dot_alignment_bigtiffs(self) -> Tuple[Optional[str], Optional[str]]:
         folder_for_alignment = self.get_folder_with_alignment()
-
-        def _extract_btf(subfolder):
-            btf_fname = None
-            for file in subfolder.iterdir():
-                if file.name.endswith('btf'):
-                    btf_fname = str(file)
-            return btf_fname
 
         red_btf_fname, green_btf_fname = None, None
         for subfolder in folder_for_alignment.iterdir():
             if subfolder.is_dir():
                 if subfolder.name.endswith('alignment_Ch0'):
-                    red_btf_fname = _extract_btf(subfolder)
+                    red_btf_fname = self._extract_btf_from_folder(subfolder)
                 elif subfolder.name.endswith('alignment_Ch1'):
-                    green_btf_fname = _extract_btf(subfolder)
+                    green_btf_fname = self._extract_btf_from_folder(subfolder)
 
         return red_btf_fname, green_btf_fname
+
+    def get_red_and_green_grid_alignment_bigtiffs(self) -> Tuple[List[str], List[str]]:
+        """
+        Find bigtiffs for the grid pattern, for alignment. Expects 5 files, all with the pattern:
+        {date}_alignment-3D-{location}_{channel}
+        Example: /scratch/neurobiology/zimmer/ulises/wbfm/20220913/2022-09-13_11-55_alignment-3D-TopLeft_Ch0
+
+        The locations are:
+        center, TopLeft, TopRight, BottomRight, BottomLeft
+
+        Returns a list of filenames, in this order
+
+        """
+        # Note: this will probably change in the future
+        folder_for_entire_day = self.get_folder_with_calibration_for_day()
+        folder_for_alignment = folder_for_entire_day.parent
+
+        red_btf_fname, green_btf_fname = {}, {}
+        prefix_list = ['center', 'TopLeft', 'TopRight', 'BottomRight', 'BottomLeft']
+
+        for subfolder in folder_for_alignment.iterdir():
+            if subfolder.is_dir():
+                if subfolder.name.endswith('_Ch0'):
+                    this_fname = self._extract_btf_from_folder(subfolder, allow_ome_tif=True)
+                    try:
+                        this_key = prefix_list[np.where([p in subfolder.name for p in prefix_list])[0][0]]
+                        red_btf_fname[this_key] = this_fname
+                    except IndexError:
+                        # Not one of the ones we care about
+                        pass
+                elif subfolder.name.endswith('_Ch1'):
+                    this_fname = self._extract_btf_from_folder(subfolder, allow_ome_tif=True)
+                    try:
+                        this_key = prefix_list[np.where([p in subfolder.name for p in prefix_list])[0][0]]
+                        green_btf_fname[this_key] = this_fname
+                    except IndexError:
+                        # Not one of the ones we care about
+                        pass
+
+        red_btf_fname = [red_btf_fname[k] for k in prefix_list if red_btf_fname[k] is not None]
+        green_btf_fname = [green_btf_fname[k] for k in prefix_list if green_btf_fname[k] is not None]
+        if len(red_btf_fname) < len(prefix_list):
+            logging.warning(f"Expected 5 alignment files, but only found {len(red_btf_fname)} : {red_btf_fname}")
+        return red_btf_fname, green_btf_fname
+
+    @staticmethod
+    def _extract_btf_from_folder(subfolder, allow_ome_tif=False):
+        btf_fname = None
+        for file in subfolder.iterdir():
+            if file.name.endswith('btf'):
+                btf_fname = str(file)
+            elif allow_ome_tif and file.name.endswith('ome.tif'):
+                btf_fname = str(file)
+        return btf_fname
 
     def get_behavior_raw_file_from_red_fname(self):
         """If the user did not set the behavior foldername, try to infer it from the red"""
