@@ -46,19 +46,25 @@ def set_big_font(size=22):
     matplotlib.rc('font', **font)
 
 
-def correct_trace_using_linear_model(df_red, df_green, _neuron_name=None, predictor_names=None):
+def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predictor_names=None):
     # Predict green from time, volume, and red
     if predictor_names is None:
-        predictor_names = ["intensity_image", "area", "x", "y"]
-    if _neuron_name is not None:
-        df_green = df_green[_neuron_name]
-        df_red = df_red[_neuron_name]
+        predictor_names = ["t", "intensity_image", "area", "x", "y"]
+    if neuron_name is not None:
+        df_green = df_green[neuron_name]
+        df_red = df_red[neuron_name]
     green = df_green["intensity_image"]
     # Also add x and y
+    if 't' in predictor_names:
+        include_t = True
+        predictor_names.remove('t')
+    else:
+        include_t = False
     predictor_vars = [df_red[name] for name in predictor_names]
 
     num_timepoints = len(green)
-    predictor_vars.append(range(num_timepoints))
+    if include_t:
+        predictor_vars.append(range(num_timepoints))
     valid_indices = np.logical_not(np.isnan(green))
     # This is important for test videos that are very short
     if valid_indices.value_counts()[True] <= 4:
