@@ -265,7 +265,7 @@ def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int,
     return masks_zarr
 
 
-def _create_or_continue_zarr(output_fname, num_frames, num_slices, x_sz, y_sz, mode='w-'):
+def _create_or_continue_zarr(output_fname, num_frames, num_slices, x_sz, y_sz, mode='w'):
     """
     Creates a new zarr file of the correct file, or, if it already exists, check for a stopping point
 
