@@ -144,13 +144,12 @@ def align_stack_to_middle_slice(stack_to_align, hide_progress=True):
 
 
 def calculate_alignment_matrix_two_stacks(stack_template, stack_rotated, hide_progress=True,
-                                          use_only_first_pair=True):
+                                          use_only_first_pair=True, gauss_filt_sigma=2.5):
     """
     Takes two z stacks (format: ZXY) and rigidly aligns plane, returning only the warp matrices
 
     """
     warp_matrices = []
-    gauss_filt_sigma = 2.5
 
     warp_mat = np.identity(3)[0:2, :]
     for i, (im0, im1) in enumerate(tqdm(zip(stack_template, stack_rotated), disable=hide_progress)):

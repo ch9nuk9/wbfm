@@ -107,6 +107,7 @@ class PreprocessingSettings:
     align_green_red_cameras: bool = False
     _camera_alignment_matrix: np.array = None
     path_to_camera_alignment_matrix: str = None
+    gauss_filt_sigma: float = None
 
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
