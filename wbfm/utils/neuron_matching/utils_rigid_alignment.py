@@ -53,7 +53,8 @@ def get_warp_mat(im_prev, im_next, warp_mat):
 
 def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
                   termination_eps=2e-2,
-                  number_of_iterations=10000):
+                  number_of_iterations=10000,
+                  gauss_filt_sigma=None):
     # prefilter Images, helps to correlate
     # for best performance a filter which keeps good features to align should be used.
     # for example: with strong differences in brightnes but identical edges an edge dector can be used to filter.
@@ -88,6 +89,9 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
     # Run the ECC algorithm. The results are stored in warp_matrix.
     # Depends on version of cv2
     try:
+        if gauss_filt_sigma is not None:
+            kernel_sz = (5, 5)
+            im1_gray = cv2.GaussianBlur(im1_gray.astype('float32'), kernel_sz, gauss_filt_sigma)
         (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix,
                                                  warp_mode, criteria, None)
     except TypeError:
@@ -146,10 +150,12 @@ def calculate_alignment_matrix_two_stacks(stack_template, stack_rotated, hide_pr
 
     """
     warp_matrices = []
+    gauss_filt_sigma = 2.5
 
     warp_mat = np.identity(3)[0:2, :]
     for i, (im0, im1) in enumerate(tqdm(zip(stack_template, stack_rotated), disable=hide_progress)):
-        warp_mat = calc_warp_ECC(im0, im1, termination_eps=1e-6, warp_mode=cv2.MOTION_AFFINE)
+        warp_mat = calc_warp_ECC(im0, im1, termination_eps=1e-6, warp_mode=cv2.MOTION_AFFINE,
+                                 gauss_filt_sigma=gauss_filt_sigma)
         if use_only_first_pair:
             break
         else:
