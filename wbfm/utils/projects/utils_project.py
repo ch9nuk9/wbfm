@@ -8,12 +8,12 @@ from datetime import datetime
 from pathlib import Path
 
 from ruamel.yaml import YAML
+from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
 
 
 #####################
 # Filename utils
 #####################
-from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
 
 
 def get_project_name(_config: dict) -> str:
@@ -22,8 +22,8 @@ def get_project_name(_config: dict) -> str:
     exp = _config.get('experimenter', '')
     task = _config.get('task_name', '')
     if task is not None and task != '':
-        project_name = f"{exp}-{task}-" + project_name
-    else:
+        project_name = f"{task}-" + project_name
+    if exp is not None and exp != '':
         project_name = f"{exp}-" + project_name
 
     return project_name

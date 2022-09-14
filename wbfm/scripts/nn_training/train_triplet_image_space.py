@@ -11,7 +11,7 @@ import torch
 from wbfm.utils.nn_utils.data_loading import NeuronTripletDataset
 from torch.utils.data import DataLoader
 import pandas as pd
-from wbfm.utils.nn_utils.utils_fdnc.siamese import Siamese
+from wbfm.utils.nn_utils.siamese import Siamese
 from wbfm.utils.projects.finished_project_data import ProjectData
 import wandb
 from torch.utils.data import random_split

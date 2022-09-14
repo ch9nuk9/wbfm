@@ -191,7 +191,8 @@ def get_sequential_filename(fname: str, verbose=1) -> str:
         candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
         while Path(candidate_fname).exists():
             i += 1
-            new_base_fname = new_base_fname[:-2].strip('-')
+            str_len = len(str(i)) + 1
+            new_base_fname = new_base_fname[:-str_len].strip('-')
             new_base_fname = f"{new_base_fname}-{i}"
             candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
             if verbose >= 2:

@@ -280,6 +280,22 @@ class PreprocessingSettings:
             return self._camera_alignment_matrix
         # warp_mat = get_precalculated_camera_alignment_matrix()
 
+    def calculate_warp_mat_from_dot_overlay(self, project_config):
+        # Find calibration videos, if present
+        red_btf_fname, green_btf_fname = project_config.get_red_and_green_alignment_bigtiffs()
+        if red_btf_fname is None or green_btf_fname is None:
+            raise NotImplementedError("Tried to calculate alignment from dot overlay, but it wasn't found.")
+            # self.calculate_warp_mat_from_data(project_data.red_data, project_data.green_data)
+            # return
+
+        green_align = tifffile.imread(green_btf_fname)
+        red_align = tifffile.imread(red_btf_fname)
+
+        warp_mat = calculate_alignment_matrix_two_stacks(red_align, green_align)
+
+        # Save in this object
+        self._camera_alignment_matrix = warp_mat
+
     def calculate_warp_mat_from_data(self, red_data, green_data):
         # Get representative volumes (in theory) and max project
         tspan = np.arange(10, red_data.shape[0], 250, dtype=int)
@@ -293,8 +309,12 @@ class PreprocessingSettings:
         # Save in this object
         self._camera_alignment_matrix = warp_mat
 
-    def calculate_warp_mat_from_btf_files(self, red_btf_fname, green_btf_fname):
+    def calculate_warp_mat_from_btf_files(self, project_config):
         # Will just take as many volumes as it can (this object doesn't know the number of frames present)
+
+        red_btf_fname = project_config.config['red_bigtiff_fname']
+        green_btf_fname = project_config.config['green_bigtiff_fname']
+
         tspan = np.arange(10, 3000, 250, dtype=int)
 
         red_vol_subset, green_vol_subset = [], []
@@ -444,15 +464,15 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname
     else:
         p = preprocessing_settings
 
-    num_slices, num_total_frames, bigtiff_start_volume, sz, vid_opt = _preprocess_all_frames_unpack_config(config.config,
-                                                                                                           verbose,
-                                                                                                           video_fname)
-    return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, bigtiff_start_volume, sz, video_fname, vid_opt,
+    num_slices, num_total_frames, bigtiff_start_volume, sz = _preprocess_all_frames_unpack_config(config.config,
+                                                                                                  verbose,
+                                                                                                  video_fname)
+    return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, bigtiff_start_volume, sz, video_fname,
                                  which_frames, which_channel, out_fname)
 
 
 def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p: PreprocessingSettings,
-                          start_volume: int, sz: Tuple, video_fname: str, vid_opt: dict,
+                          start_volume: int, sz: Tuple, video_fname: str,
                           which_frames: list, which_channel: str, out_fname: str) -> Tuple[zarr.Array, dict]:
     import tifffile
     if DEBUG:
@@ -489,11 +509,11 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
                     future.result()
                     pbar.update(1)
 
-    return preprocessed_dat, vid_opt
+    return preprocessed_dat
 
 
 def _preprocess_all_frames_unpack_config(config: dict, verbose, video_fname):
-    sz, vid_opt = _get_video_options(config, video_fname)
+    sz = _get_video_options(config, video_fname)
     if verbose >= 1:
         print("Preprocessing data, this could take a while...")
     start_volume = config['dataset_params'].get('bigtiff_start_volume', None)
@@ -504,7 +524,7 @@ def _preprocess_all_frames_unpack_config(config: dict, verbose, video_fname):
         config['dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
     num_total_frames = start_volume + config['dataset_params']['num_frames']
     num_slices = config['dataset_params']['num_slices']
-    return num_slices, num_total_frames, start_volume, sz, vid_opt
+    return num_slices, num_total_frames, start_volume, sz
 
 
 def _get_video_options(config, video_fname):
@@ -516,13 +536,13 @@ def _get_video_options(config, video_fname):
         sz = zarr.open(video_fname).shape[2:]
     else:
         raise FileNotFoundError("Must pass .zarr or .tif or .btf file")
-    vid_opt = {'fps': config['dataset_params']['fps'],
-               'frame_height': sz[0],
-               'frame_width': sz[1],
-               'is_color': False}
-    if 'training_data_2d' in config:
-        vid_opt['is_color'] = config['training_data_2d'].get('is_color', False)
-    return sz, vid_opt
+    # vid_opt = {'fps': config['dataset_params']['fps'],
+    #            'frame_height': sz[0],
+    #            'frame_width': sz[1],
+    #            'is_color': False}
+    # if 'training_data_2d' in config:
+    #     vid_opt['is_color'] = config['training_data_2d'].get('is_color', False)
+    return sz
 
 
 def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock=None):

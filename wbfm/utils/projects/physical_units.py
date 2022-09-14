@@ -8,7 +8,7 @@ class PhysicalUnitConversion:
 
     zimmer_fluroscence_um_per_pixel_xy: float = 0.325
     zimmer_behavior_um_per_pixel_xy: float = 2.4
-    zimmer_um_per_pixel_z: float = 1.0
+    zimmer_um_per_pixel_z: float = 1.5
 
     leifer_um_per_unit: float = 84
 
@@ -17,6 +17,18 @@ class PhysicalUnitConversion:
         return self.zimmer_um_per_pixel_z / self.zimmer_fluroscence_um_per_pixel_xy
 
     def zimmer2physical_fluorescence(self, vol0_zxy: np.ndarray) -> np.ndarray:
+        """
+        Assumes that z is the 0th dimension, and x/y are 1, 2
+
+        Parameters
+        ----------
+        vol0_zxy - shape is N x 3, where N=number of neurons (or objects)
+
+        Returns
+        -------
+        zxy_in_phyical - shape is same as input
+
+        """
         # xy, then z
         xy_in_um = vol0_zxy[:, [1, 2]] * self.zimmer_fluroscence_um_per_pixel_xy
         xy_in_physical = xy_in_um

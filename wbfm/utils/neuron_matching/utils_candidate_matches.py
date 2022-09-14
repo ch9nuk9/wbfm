@@ -253,10 +253,9 @@ def combine_dataframes_using_max_of_column(df0, df1, column='likelihood'):
     return new_df
 
 
-def combine_dataframes_using_mode(all_dfs, column='raw_neuron_ind_in_list'):
-    names = get_names_from_df(all_dfs[0])
-
-    new_df = all_dfs[0].copy()
+def combine_dataframes_using_mode(all_dfs, column='raw_neuron_ind_in_list', i_base=0):
+    names = get_names_from_df(all_dfs[i_base])
+    new_df = all_dfs[i_base].copy()
 
     for neuron_name in tqdm(names, leave=False):
 
@@ -282,14 +281,14 @@ def combine_dataframes_using_mode(all_dfs, column='raw_neuron_ind_in_list'):
     return new_df
 
 
-def combine_dataframes_using_bipartite_matching(all_dfs, column='raw_neuron_ind_in_list'):
+def combine_dataframes_using_bipartite_matching(all_dfs, column='raw_neuron_ind_in_list', i_base=0):
     """
     Combines a list of dataframes using time-slice bipartite matching. Does not use likelihood, but simple voting
 
     Note that the names must be aligned (as best they can be), probably using rename_columns_using_matching
     """
-    names = get_names_from_df(all_dfs[0])
-    new_df = all_dfs[0].copy()
+    names = get_names_from_df(all_dfs[i_base])
+    new_df = all_dfs[i_base].copy()
 
     graphs_all_times = defaultdict(nx.Graph)
     for i, neuron_name in enumerate(tqdm(names)):
@@ -321,3 +320,20 @@ def combine_dataframes_using_bipartite_matching(all_dfs, column='raw_neuron_ind_
             new_df.loc[t, (name, column)] = ind
 
     return new_df
+
+
+def combine_and_rename_multiple_dataframes(all_raw_dfs, i_base):
+    df_base = all_raw_dfs[i_base]
+    all_dfs = [df_base]
+    for i, df in enumerate(all_raw_dfs):
+        if i == i_base:
+            continue
+        df_renamed, *_ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
+        all_dfs.append(df_renamed)
+    # Combine to one dataframe
+    if len(all_dfs) > 1:
+        # df_combined = combine_dataframes_using_mode(all_dfs)
+        df_combined = combine_dataframes_using_bipartite_matching(all_dfs)
+    else:
+        df_combined = all_dfs[0]
+    return df_combined

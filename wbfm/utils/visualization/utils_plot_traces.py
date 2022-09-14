@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
-from lmfit.models import ExponentialModel, ConstantModel
-from sklearn.preprocessing import StandardScaler
-import scipy
+import sklearn
+from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 
 
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
@@ -47,142 +46,43 @@ def set_big_font(size=22):
     matplotlib.rc('font', **font)
 
 
-def detrend_exponential(y_with_nan):
-    """
-    Bleach correction via simple exponential fit, subtraction, and re-adding the mean
+def correct_trace_using_linear_model(df_red, df_green, _neuron_name=None, predictor_names=None):
+    # Predict green from time, volume, and red
+    if predictor_names is None:
+        predictor_names = ["intensity_image", "area", "x", "y"]
+    if _neuron_name is not None:
+        df_green = df_green[_neuron_name]
+        df_red = df_red[_neuron_name]
+    green = df_green["intensity_image"]
+    # Also add x and y
+    predictor_vars = [df_red[name] for name in predictor_names]
 
-    Uses np.polyfit on np.log(y), with errors weighted back to the data space. See:
-
-    https://stackoverflow.com/questions/3433486/how-to-do-exponential-and-logarithmic-curve-fitting-in-python-i-found-only-poly
-
-    Parameters
-    ----------
-    y_with_nan
-
-    Returns
-    -------
-
-    """
-
-    ind = np.where(~np.isnan(y_with_nan))[0]
-    t = np.squeeze(StandardScaler(copy=False).fit_transform(ind.reshape(-1, 1)))
-    y = y_with_nan[ind]
-    y_log = np.log(y)
-
-    fit_vars = np.polyfit(t, y_log, 1)#, w=np.sqrt(y))
-
-    # Subtract in the original data space
-    y_fit = np.exp(fit_vars[0]) * np.exp(t*fit_vars[1])
-    y_corrected = y - y_fit + np.mean(y)
-
-    return ind, y_corrected
-
-
-def detrend_exponential_lmfit(y_with_nan, x=None):
-    """
-    Bleach correction via simple exponential fit, subtraction, and re-adding the mean
-
-    Uses np.polyfit on np.log(y), with errors weighted back to the data space. See:
-
-    https://stackoverflow.com/questions/3433486/how-to-do-exponential-and-logarithmic-curve-fitting-in-python-i-found-only-poly
-
-    Parameters
-    ----------
-    x
-    y_with_nan
-
-    Returns
-    -------
-
-    """
-
-    exp_mod = ExponentialModel(prefix='exp_')
-    ind = np.where(~np.isnan(y_with_nan))[0]
-    if x is None:
-        x = ind
+    num_timepoints = len(green)
+    predictor_vars.append(range(num_timepoints))
+    valid_indices = np.logical_not(np.isnan(green))
+    # This is important for test videos that are very short
+    if valid_indices.value_counts()[True] <= 4:
+        y_result_including_na = green.copy()
+        y_result_including_na[:] = np.nan
     else:
-        x = x[ind]
-    y = y_with_nan[ind]
-    out = None
 
-    try:
-        pars = exp_mod.guess(y, x=x)
-        out = exp_mod.fit(y, pars, x=x)
+        # remove nas and z score
+        def _z_score(_x):
+            _x = np.array(_x)[valid_indices]
+            return (_x - np.mean(_x)) / np.std(_x)
 
-        comps = out.eval_components(x=x)
-        y_fit = comps['exp_']
-        y_corrected = y / y_fit
+        green_trace = green[valid_indices]
+        predictor_matrix = np.array([_z_score(var) for var in predictor_vars])
+        predictor_matrix = np.c_[predictor_matrix.T]
 
-        y_corrected_with_nan = np.empty_like(y_with_nan)
-        y_corrected_with_nan[:] = np.nan
-        y_corrected_with_nan[ind] = y_corrected
-        flag = True
+        # create model
+        model = sklearn.linear_model.LinearRegression()
+        model.fit(predictor_matrix, green_trace)
+        green_predicted = model.predict(predictor_matrix)
+        y_result_missing_na = green_trace - green_predicted
 
-    except TypeError:
-        # Occurs when there are too few input points
-        y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
-        flag = False
-
-    if out is None or not out.errorbars or 0 in y_fit:
-        # Crude measurement of bad convergence, even if it didn't error out
-        y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
-        flag = False
-
-    return y_corrected_with_nan, (y_fit, out, flag)
-
-
-def detrend_exponential_lmfit_give_indices(y_full, ind_iter):
-    y = y_full[ind_iter]
-    ind_remove_nan = np.where(~np.isnan(y_full))[0]
-    y_no_nan = y_full[ind_remove_nan]
-    x = ind_iter
-
-    exp_mod = ExponentialModel(prefix='exp_')
-    out = None
-
-    try:
-        pars = exp_mod.guess(y, x=x)
-        out = exp_mod.fit(y, pars, x=x)
-
-        comps = out.eval_components(x=ind_remove_nan)
-        y_fit = comps['exp_']
-        y_corrected = y_no_nan / y_fit
-
-        y_corrected_with_nan = np.empty_like(y_full)
-        y_corrected_with_nan[:] = np.nan
-        y_corrected_with_nan[ind_remove_nan] = y_corrected
-    except TypeError:
-        # Occurs when there are too few input points
-        y_corrected_with_nan, y_fit = y_full, y_full
-
-    return y_corrected_with_nan, (y_fit, out)
-
-
-def detrend_exponential_iter(trace, max_iters=100, convergence_threshold=0.01,
-                             low_quantile=0.15, high_quantile=0.85):
-    """
-    low/high_quantile: how many percent of the data should be excluded at bottom/top
-
-    Parameters
-    ----------
-    trace
-    convergence_threshold - stop if L2 norm changes by less than this
-    low_quantile - per iteration, remove this bottom percentile
-    high_quantile - per iteration, remove this bottom percentile
-
-    Returns
-    -------
-
-    """
-    y_full = trace
-    ind_iter = np.where(~np.isnan(y_full))[0]
-    y_fit = np.array([0]*len(ind_iter))
-
-    for num_iter in range(max_iters):
-        y_detrend = detrend_exponential_lmfit_give_indices(y_full, ind_iter)[0]
-        y_fit_last = y_fit
-        y_fit = detrend_exponential_lmfit_give_indices(y_full, ind_iter)[1][0]
-        ind_iter = np.where(np.logical_and(np.nanquantile(y_detrend, low_quantile) < y_detrend, y_detrend < np.nanquantile(y_detrend,high_quantile)))[0]
-        if scipy.spatial.distance.euclidean(y_fit, y_fit_last) <= convergence_threshold:
-            break
-    return y_detrend, num_iter
+        # Align output and input formats
+        y_including_na = fill_missing_indices_with_nan(pd.DataFrame(y_result_missing_na),
+                                                       expected_max_t=num_timepoints)[0]
+        y_result_including_na = pd.Series(list(y_including_na["intensity_image"]))
+    return y_result_including_na

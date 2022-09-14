@@ -185,3 +185,5 @@ In addition, if creating from a windows computer, you may need to use dos2unix t
 See [detailed pipeline steps](docs/detailed_pipeline_steps.md)
 
 See [detailed installation instructions](docs/installation_instructions.md)
+
+If you would like to contribute, see [how to contribute](docs/how_to_contribute.md)

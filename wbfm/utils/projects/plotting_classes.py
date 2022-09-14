@@ -5,11 +5,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Union, Dict, Tuple
 from copy import deepcopy
-
 import napari
 import numpy as np
 import pandas as pd
-import sklearn
 import zarr
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
@@ -25,8 +23,8 @@ from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
-from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
-from wbfm.utils.visualization.utils_plot_traces import detrend_exponential_lmfit
+from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
+from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
 
 @dataclass
@@ -54,7 +52,7 @@ class TracePlotter:
         if self.tspan is None:
             self.tspan = list(range(self.red_traces.shape[0]))
 
-    def calculate_traces(self, neuron_name: str):
+    def calculate_traces(self, neuron_name: str) -> pd.Series:
         """
         First step when plotting, with the mode saved as a class variable
 
@@ -71,7 +69,8 @@ class TracePlotter:
         -------
 
         """
-        assert (self.channel_mode in ['green', 'red', 'ratio', 'df_over_f_10', 'ratio_df_over_f_10', "linear_model"]), \
+        assert (self.channel_mode in ['green', 'red', 'ratio', 'linear_model',
+                                      'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20']), \
             f"Unknown channel mode {self.channel_mode}"
 
         if self.verbose >= 3:
@@ -87,12 +86,14 @@ class TracePlotter:
         if not self.bleach_correct:
             def calc_single_df_over_f(i, _df) -> pd.Series:
                 _y = calc_single_trace(i, _df)
-                return _y / np.nanquantile(_y, 0.2)
+                y0 = np.nanquantile(_y, 0.2)
+                return pd.Series((_y-y0) / y0)
         else:
             def calc_single_df_over_f(i, _df) -> pd.Series:
                 _y = calc_single_trace(i, _df)
                 _y, _ = pd.Series(detrend_exponential_lmfit(_y))
-                return _y / np.nanquantile(_y, 0.2)
+                y0 = np.nanquantile(_y, 0.2)
+                return pd.Series((_y-y0) / y0)
 
         ##
         ## Function for getting final y value from above functions
@@ -105,7 +106,7 @@ class TracePlotter:
             def calc_y(i) -> pd.Series:
                 return calc_single_trace(i, df)
 
-        elif self.channel_mode in ['red', 'green', 'df_over_f_10']:
+        elif self.channel_mode in ['red', 'green', 'df_over_f_20']:
             # Second: use a single traces dataframe (red OR green)
             if self.channel_mode == 'red':
                 df = self.red_traces
@@ -115,11 +116,11 @@ class TracePlotter:
             if self.channel_mode in ['red', 'green']:
                 def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df)
-            else:
+            elif self.channel_mode == 'df_over_f_20':
                 def calc_y(i) -> pd.Series:
-                    return calc_single_trace(i, df)
+                    return calc_single_df_over_f(i, df)
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_10', 'linear_model']:
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'linear_model']:
             # Third: use both traces dataframes (red AND green)
             df_red = self.red_traces
             df_green = self.green_traces
@@ -127,56 +128,23 @@ class TracePlotter:
             if self.channel_mode == 'ratio':
                 def calc_y(i) -> pd.Series:
                     return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
-            else:
+
+            elif self.channel_mode == 'ratio_df_over_f_20':
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
 
-            if self.channel_mode == "linear_model":
+            elif self.channel_mode == 'linear_model':
                 def calc_y(_neuron_name) -> pd.Series:
-                    # Predict green from time, volume, and red
-                    # Also add x and y
-
-                    red = df_red[_neuron_name]["intensity_image"]
-                    green = df_green[_neuron_name]["intensity_image"]
-                    vol = df_red[_neuron_name]["area"]
-                    x = df_red[_neuron_name]["x"]
-                    y = df_red[_neuron_name]["y"]
-                    num_timepoints = len(green)
-                    t = range(num_timepoints)
-                    valid_indices = np.logical_not(np.isnan(red))
-
-                    # This is important for test videos that are very short
-                    if valid_indices.value_counts()[True] <= 4:
-                        y_empty = green.copy()
-                        y_empty[:] = np.nan
-                        return y_empty
-
-                    # remove nas and z score
-                    def _z_score(_x):
-                        _x = np.array(_x)[valid_indices]
-                        return (_x - np.mean(_x)) / np.std(_x)
-
-                    green_trace = green[valid_indices]
-                    red_lm = _z_score(red)
-                    vol_lm = _z_score(vol)
-                    x_lm = _z_score(x)
-                    y_lm = _z_score(y)
-                    t_lm = _z_score(t)
-                    predictor_matrix = np.array([vol_lm, red_lm, t_lm, x_lm, y_lm])
-                    predictor_matrix = np.c_[predictor_matrix.T]
-
-                    # create model
-                    model = sklearn.linear_model.LinearRegression()
-                    model.fit(predictor_matrix, green_trace)
-                    green_predicted = model.predict(predictor_matrix)
-                    y_result_missing_na = green_trace - green_predicted
-
-                    # Align output and input formats
-                    y_including_na = fill_missing_indices_with_nan(pd.DataFrame(y_result_missing_na),
-                                                                   expected_max_t=num_timepoints)[0]
-                    y_result_including_na = pd.Series(list(y_including_na["intensity_image"]))
-
+                    y_result_including_na = correct_trace_using_linear_model(df_red, df_green, _neuron_name)
                     return y_result_including_na
+
+            elif self.channel_mode == 'dr_over_r_20':
+                def calc_y(i) -> pd.Series:
+                    ratio = calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
+                    r0 = np.nanquantile(ratio, 0.2)
+                    dr_over_r = (ratio - r0) / r0
+                    return pd.Series(dr_over_r)
+                pass
 
         else:
             raise ValueError("Unknown calculation or channel mode")

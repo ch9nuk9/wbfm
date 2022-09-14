@@ -1,5 +1,5 @@
 # From: http://proceedings.mlr.press/v139/zbontar21a/zbontar21a.pdf
-
+import concurrent.futures
 import gc
 import numpy as np
 import torch
@@ -13,7 +13,7 @@ from torch.utils.data.dataset import random_split
 from torch.utils.data import Dataset
 from typing import Optional
 from torch.utils.data.dataloader import DataLoader
-from wbfm.utils.nn_utils.utils_fdnc.siamese import Siamese
+from wbfm.utils.nn_utils.siamese import Siamese
 import math
 
 
@@ -29,8 +29,7 @@ class BarlowTwins3d(nn.Module):
         super().__init__()
         self.args = args
 
-        # embedding_dim = 32
-        embedding_dim = 2048
+        embedding_dim = args.embedding_dim
         self.backbone = backbone(embedding_dim=embedding_dim, **backbone_kwargs)
         self.backbone.fc = nn.Identity()
 
@@ -54,14 +53,25 @@ class BarlowTwins3d(nn.Module):
 
     def forward(self, y1, y2):
         # Shape of z: neurons x features
-        # Because neurons=batch for me, I need to switch the below evaluation
-        c = self.calculate_correlation_matrix(y1, y2)
-        # c = self.bn(z1) @ self.bn(z2).T
-        # c = self.bn(z1).T @ self.bn(z2)
+        if self.args.train_both_correlations:
+            c = self.calculate_correlation_matrix(y1, y2)
+            on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
+            off_diag = off_diagonal(c).pow_(2).sum()
+            loss = on_diag + self.args.lambd * off_diag
+        else:
+            c_features, c_objects = self.calculate_both_correlation_matrices(y1, y2)
+            # Original loss
+            on_diag = torch.diagonal(c_features).add_(-1).pow_(2).sum()
+            off_diag = off_diagonal(c_features).pow_(2).sum()
+            loss_features = on_diag + self.args.lambd * off_diag
 
-        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
-        off_diag = off_diagonal(c).pow_(2).sum()
-        loss = on_diag + self.args.lambd * off_diag
+            # New object loss; use same lambd and additional lambd_obj
+            on_diag = torch.diagonal(c_objects).add_(-1).pow_(2).sum()
+            off_diag = off_diagonal(c_objects).pow_(2).sum()
+            loss_objects = on_diag + self.args.lambd * off_diag
+
+            loss = loss_features + self.args.lambd_obj*loss_objects
+
         return loss
 
     def calculate_correlation_matrix(self, y1, y2):
@@ -73,6 +83,23 @@ class BarlowTwins3d(nn.Module):
         this_batch_sz = z1.shape[0]
         c = torch.matmul(z1_norm.T, z2_norm) / this_batch_sz  # D x D (feature space)
         return c
+
+    def calculate_both_correlation_matrices(self, y1, y2):
+        z1 = self.embed(y1)
+        z2 = self.embed(y2)
+        # empirical cross-correlation matrix
+        z1_norm = (z1 - z1.mean(0)) / z1.std(0)
+        z2_norm = (z2 - z2.mean(0)) / z2.std(0)
+        this_batch_sz = z1.shape[0]
+        c_features = torch.matmul(z1_norm.T, z2_norm) / this_batch_sz  # D x D (feature space)
+
+        # empirical cross-correlation matrix
+        z1_norm = (z1 - z1.mean(1)) / z1.std(1)
+        z2_norm = (z2 - z2.mean(1)) / z2.std(1)
+        this_num_features = z1.shape[1]
+        c_objects = torch.matmul(z1_norm, z2_norm.T) / this_num_features  # N x N (object space)
+
+        return c_features, c_objects
 
 
 class LARS(optim.Optimizer):
@@ -118,61 +145,91 @@ class LARS(optim.Optimizer):
 
 class Transform:
     def __init__(self):
+        self.final_normalization = tio.RescaleIntensity(percentiles=(5, 100))
+
         self.transform = tio.transforms.Compose([
-            tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
+            # tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
             tio.RandomBlur(p=0.1),
-            tio.RandomMotion(translation=0, degrees=180, p=1.0),
+            tio.RandomAffine(degrees=(180, 0, 0), p=1.0),  # Also allows scaling
+            # tio.RandomMotion(translation=1, degrees=90, p=1.0),
             # tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.5),
             tio.RandomNoise(p=0.5),
+            # tio.ZNormalization()
+            self.final_normalization
             # transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406],
-            #                      std=[0.229, 0.224, 0.225])
+            # transforms.Normalize(mean=[0, 0.485, 0.456, 0.406],
+            #                      std=[1, 0.229, 0.224, 0.225])
         ])
         self.transform_prime = transforms.Compose([
             # tio.RandomFlip(axes=(1, 2), p=0.1),  # Do not flip z
             # tio.RandomBlur(p=0.0),
-            tio.RandomMotion(translation=0, degrees=180, p=0.5),
+            tio.RandomAffine(degrees=(180, 0, 0), p=0.1),  # Also allows scaling
             # tio.RandomElasticDeformation(max_displacement=(1, 5, 5), p=0.1),
             tio.RandomNoise(p=0.1),
+            # tio.ZNormalization()
+            self.final_normalization
             # transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406],
-            #                      std=[0.229, 0.224, 0.225])
+            # transforms.Normalize(mean=[0, 0.485, 0.456, 0.406],
+            #                      std=[1, 0.229, 0.224, 0.225])
         ])
 
     def __call__(self, x):
+        # print(x.shape)
         y1 = self.transform(x)
         y2 = self.transform_prime(x)
         return y1, y2
 
+    def normalize(self, img):
+        return self.final_normalization(img)
+
 
 class NeuronImageWithGTDataset(Dataset):
-    def __init__(self, list_of_neurons_of_volumes, list_of_ids_of_volumes, which_neurons):
-        self.all_volume_crops = [torch.as_tensor(this_vol.astype(float), dtype=torch.float32) for this_vol in
-                                 list_of_neurons_of_volumes]
-        self.list_of_ids_of_volumes = list_of_ids_of_volumes
+    def __init__(self, dict_of_neurons_of_volumes, dict_of_ids_of_volumes, which_neurons):
+        # Same normalization as the Transform used to train
+        # Note: that was applied to crops, not full volumes
+        t = tio.RescaleIntensity(percentiles=(5, 100))
+
+        self.dict_all_volume_crops = {i: t(torch.as_tensor(this_vol.astype(float), dtype=torch.float32)) for i, this_vol in
+                                      dict_of_neurons_of_volumes.items()}
+        self.dict_of_ids_of_volumes = dict_of_ids_of_volumes
         self.which_neurons = which_neurons
 
     def __getitem__(self, idx):
-        x = torch.unsqueeze(self.all_volume_crops[idx], 0)
-        gt_id = self.list_of_ids_of_volumes[idx]
-        sz = x.shape[0]
-        n = nn.InstanceNorm3d(sz, affine=False)  # Todo: set this to a global mean and std
-        x = n(x)
+        if idx not in self.dict_of_ids_of_volumes:
+            raise IndexError   # Make basic looping work with pytorch
+        x = torch.unsqueeze(self.dict_all_volume_crops[idx], 0)
+        gt_id = self.dict_of_ids_of_volumes[idx]
         return x, gt_id
 
     def __len__(self):
-        return len(self.all_volume_crops)
+        return len(self.dict_all_volume_crops)
 
     @staticmethod
-    def load_from_project(project_data, num_frames):
-        list_of_neurons_of_volumes, list_of_ids_of_volumes = [], []
-        for t in tqdm(range(num_frames)):
-            all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, t)
+    def load_from_project(project_data, num_frames, target_sz):
+        project_data.project_config.logger.info("Loading dataset from project")
+        if num_frames is None:
+            num_frames = project_data.num_frames
+
+        dict_of_neurons_of_volumes, dict_of_ids_of_volumes = {}, {}
+
+        def parallel_func(_t):
+            all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, _t,
+                                                                                              target_sz=target_sz)
             keys = list(all_dat_dict.keys())  # Need to enforce ordering?
-            # print(all_seg_dict)
-            list_of_ids_of_volumes.append(keys)  # strings
-            list_of_neurons_of_volumes.append(np.stack([all_dat_dict[k] for k in keys], 0))
-        return NeuronImageWithGTDataset(list_of_neurons_of_volumes, list_of_ids_of_volumes, which_neurons)
+            keys.sort()
+            dict_of_ids_of_volumes[_t] = keys  # strings
+            dict_of_neurons_of_volumes[_t] = np.stack([all_dat_dict[k] for k in keys], 0)
+
+        which_neurons = project_data.get_list_of_finished_neurons()[1]
+
+        with tqdm(total=num_frames) as pbar:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+                futures = {executor.submit(parallel_func, i): i for i in list(range(num_frames))}
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+                    pbar.update(1)
+
+        return NeuronImageWithGTDataset(dict_of_neurons_of_volumes, dict_of_ids_of_volumes, which_neurons)
 
 
 class NeuronAugmentedImagePairDataset(Dataset):
@@ -188,10 +245,10 @@ class NeuronAugmentedImagePairDataset(Dataset):
         y1, y2 = self.augmentor(torch.squeeze(crops))
 
         # Normalize; different batch each time
-        sz = y1.shape[0]  # Todo: set this to a global mean and std
-        n = nn.InstanceNorm3d(sz, affine=False)
-        y1 = n(y1)
-        y2 = n(y2)
+        # sz = y1.shape[0]  # Todo: set this to a global mean and std
+        # n = nn.InstanceNorm3d(sz, affine=False)
+        # y1 = n(y1)
+        # y2 = n(y2)
 
         return y1, y2
 

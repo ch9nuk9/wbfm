@@ -34,6 +34,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  bleach_correct=True,
                                  behavioral_correlation_shading=None,
                                  min_nonnan=None,
+                                 share_y_axis=False,
                                  to_save=True):
     """
 
@@ -55,7 +56,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     """
     if channel_mode == 'all':
-        all_modes = ['red', 'green', 'ratio', 'linear_model']
+        all_modes = ['red', 'green', 'dr_over_r_20', 'ratio', 'linear_model']
         opt = dict(project_data=project_data,
                    calculation_mode=calculation_mode,
                    color_using_behavior=color_using_behavior,
@@ -63,11 +64,15 @@ def make_grid_plot_using_project(project_data: ProjectData,
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         # Also try to remove outliers and filter
-        all_modes = ['ratio', 'linear_model']
+        all_modes = ['ratio', 'dr_over_r_20', 'linear_model']
         opt['remove_outliers'] = True
+        # for mode in all_modes:
+        #     make_grid_plot_using_project(channel_mode=mode, **opt)
+        opt['filter_mode'] = 'rolling_mean'
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
-        opt['filter_mode'] = 'rolling_mean'
+        # Also do share-y versions, with the filtering
+        opt['share_y_axis'] = True
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         return
@@ -94,7 +99,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
                                   color_using_behavior=color_using_behavior,
-                                  background_shading_value_func=background_shading_value_func, logger=logger)
+                                  background_shading_value_func=background_shading_value_func, logger=logger,
+                                  share_y_axis=share_y_axis)
 
     # Save final figure
     if to_save:
@@ -104,6 +110,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
                 prefix = f"{prefix}_outliers_removed"
             if filter_mode != "no_filtering":
                 prefix = f"{prefix}_{filter_mode}"
+            if share_y_axis:
+                prefix = f"{prefix}_sharey"
             fname = f"{prefix}_grid_plot.png"
         else:
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
@@ -203,6 +211,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   shade_plot_func: callable,
                                   background_shading_value_func: callable = None,
                                   color_using_behavior: bool = True,
+                                  share_y_axis: bool = True,
                                   logger: logging.Logger = None):
     """
 
@@ -246,7 +255,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
-    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 25), sharex=True, sharey=False)
+    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 25), sharex=True, sharey=share_y_axis)
     # for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
     for i in tqdm(range(len(neuron_names))):
 
