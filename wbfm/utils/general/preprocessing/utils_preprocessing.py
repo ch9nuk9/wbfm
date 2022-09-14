@@ -22,7 +22,6 @@ from tqdm.auto import tqdm
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
     align_stack_using_previous_results, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
-from wbfm.utils.projects.paths_to_external_resources import get_precalculated_camera_alignment_matrix
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from wbfm.utils.projects.utils_filenames import add_name_suffix
 from wbfm.utils.projects.utils_project import edit_config
@@ -105,7 +104,8 @@ class PreprocessingSettings:
     do_rigid_alignment: bool = False
 
     # Rigid alignment (green to red channel)
-    align_green_red_cameras: bool = False
+    align_green_red_cameras: bool = True
+    camera_alignment_method: str = 'data'
     _camera_alignment_matrix: np.array = None
     path_to_camera_alignment_matrix: str = None
     gauss_filt_sigma: float = None
@@ -282,6 +282,18 @@ class PreprocessingSettings:
             return self._camera_alignment_matrix
         # warp_mat = get_precalculated_camera_alignment_matrix()
 
+    def calculate_warp_mat(self, project_config):
+        valid_methods = ['data', 'dots', 'grid']
+        assert self.camera_alignment_method in valid_methods, \
+            f"Invalid method found {self.camera_alignment_method}, must be one of {valid_methods}"
+
+        if self.camera_alignment_method == 'data':
+            self.calculate_warp_mat_from_btf_files(project_config)
+        elif self.camera_alignment_method == 'dots':
+            self.calculate_warp_mat_from_dot_overlay(project_config)
+        if self.camera_alignment_method == 'grid':
+            self.calculate_warp_mat_from_grid_overlay(project_config)
+
     def calculate_warp_mat_from_dot_overlay(self, project_config):
         # Find calibration videos, if present
         red_btf_fname, green_btf_fname = project_config.get_red_and_green_dot_alignment_bigtiffs()
@@ -368,7 +380,8 @@ class PreprocessingSettings:
 
         # Calculate (average over above volumes)
         warp_mat = calculate_alignment_matrix_two_stacks(red_vol_subset, green_vol_subset,
-                                                         use_only_first_pair=False)
+                                                         use_only_first_pair=False,
+                                                         gauss_filt_sigma=self.gauss_filt_sigma)
 
         # Save in this object
         self._camera_alignment_matrix = warp_mat
