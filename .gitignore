@@ -43,4 +43,4 @@ wbfm/new_project_defaults/snakemake/.snakemake/
 /DLC_for_WBFM/*
 *.log
 *.zarr/
-*/dask-worker-space/
+*/dask-worker-space/*
