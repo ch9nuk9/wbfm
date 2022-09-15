@@ -1166,7 +1166,7 @@ def create_crop_masks_using_config(project_config: ModularProjectConfig, target_
     dz, dx, dy = (np.array(target_sz) / 2.0).astype(int)
 
     new_seg_fname = get_sequential_filename(old_seg_fname)
-    new_masks = zarr.open_like(old_masks, new_seg_fname, fill_value=0)
+    new_masks = zarr.open(new_seg_fname, chunks=old_masks.chunks, shape=old_masks.shape, fill_value=0)
     # new_masks = zarr.zeros_like(old_masks, store=new_seg_fname)
 
     with tqdm(total=num_frames) as pbar:
