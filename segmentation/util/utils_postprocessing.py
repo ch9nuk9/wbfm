@@ -1163,16 +1163,17 @@ def create_crop_masks_using_config(project_config: ModularProjectConfig, target_
     old_seg_fname = segment_cfg.resolve_relative_path_from_config('output_masks')
     old_masks = zarr_reader_folder_or_zipstore(old_seg_fname)
     num_frames = old_masks.shape[0]
-    dz, dx, dy = (target_sz / 2.0).astype(int)
+    dz, dx, dy = (np.array(target_sz) / 2.0).astype(int)
 
     new_seg_fname = get_sequential_filename(old_seg_fname)
-    new_masks = zarr.zeros_like(old_masks, store=new_seg_fname)
+    new_masks = zarr.open_like(old_masks, new_seg_fname, fill_value=0)
+    # new_masks = zarr.zeros_like(old_masks, store=new_seg_fname)
 
     with tqdm(total=num_frames) as pbar:
         def parallel_func(i):
             labels = old_masks[i].copy()
             props = regionprops(labels)
-            for p in props:
+            for p in tqdm(props, leave=False):
                 # Get centroids (just recalculate, unweighted)
                 label = p.label
                 centroid = p.centroid
@@ -1185,7 +1186,7 @@ def create_crop_masks_using_config(project_config: ModularProjectConfig, target_
                 # Apply
                 new_masks[i, z0:z1, x0:x1, y0:y1] = label
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = {executor.submit(parallel_func, i): i for i in range(num_frames)}
             for future in concurrent.futures.as_completed(futures):
                 future.result()
