@@ -1152,6 +1152,7 @@ def create_crop_masks_using_config(project_config: ModularProjectConfig, target_
     Parameters
     ----------
     project_config
+    target_sz
 
     Returns
     -------
