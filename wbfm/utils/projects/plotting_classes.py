@@ -22,7 +22,7 @@ from wbfm.gui.utils.utils_gui import build_tracks_from_dataframe
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
-    remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
+    remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
@@ -163,7 +163,8 @@ class TracePlotter:
 
         # TODO: allow parameter selection
         if self.remove_outliers:
-            y = remove_outliers_via_rolling_mean(y, window=9)
+            # y = remove_outliers_via_rolling_mean(y, window=9)
+            y = remove_outliers_using_std(y, std_factor=5)
 
         if self.filter_mode == "rolling_mean":
             y = filter_rolling_mean(y, window=5)
