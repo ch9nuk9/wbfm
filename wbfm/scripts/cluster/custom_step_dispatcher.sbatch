@@ -17,12 +17,13 @@ pwd; hostname; date
 #export HOME="/scratch/neurobiology/zimmer/Charles"
 
 # Get all user flags
-while getopts t:n:s: flag
+while getopts t:n:s:k: flag
 do
     case "${flag}" in
         t) project_path=${OPTARG};;
         n) is_dry_run=${OPTARG};;
         s) CMD_SUFFIX=${OPTARG};;
+        k) KWARGS=${OPTARG};;
         *) raise error "Unknown flag"
     esac
 done
@@ -35,11 +36,12 @@ FULL_CMD="python $CMD with project_path=$project_path"
 
 echo "Running step $CMD_SUFFIX using full command:"
 echo "$FULL_CMD"
+echo "And kwargs: $KWARGS"
 
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $FULL_CMD"
 else
-  python "$CMD" with project_path="$project_path"
+  python "$CMD" with project_path="$project_path" "$KWARGS"
 fi
 
 date
