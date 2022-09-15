@@ -26,7 +26,7 @@ ex.add_config(project_path=None, DEBUG=False)
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
-    cfg.setup_logger('step_1.log')
+    cfg.setup_logger('step_resegment.log')
     check_all_needed_data_for_step(cfg, 1)
 
     if not DEBUG:
