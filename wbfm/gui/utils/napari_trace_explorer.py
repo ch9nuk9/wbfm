@@ -102,7 +102,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.vbox2 = QtWidgets.QVBoxLayout(self.groupBox2)
 
         self.changeChannelDropdown = QtWidgets.QComboBox()
-        self.changeChannelDropdown.addItems(['green', 'red', 'ratio', 'linear_model', 'df_over_f_20'])
+        self.changeChannelDropdown.addItems(['green', 'red', 'ratio', 'linear_model', 'df_over_f_20', 'dr_over_r_20'])
         self.changeChannelDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.vbox1.addWidget(self.changeChannelDropdown)
 
