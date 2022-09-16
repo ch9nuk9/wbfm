@@ -356,8 +356,9 @@ class PreprocessingSettings:
 
         red_btf_fname = project_config.config['red_bigtiff_fname']
         green_btf_fname = project_config.config['green_bigtiff_fname']
+        num_frames = project_config.config['dataset_params']['num_frames']
 
-        tspan = np.arange(10, 3000, 250, dtype=int)
+        tspan = np.arange(10, num_frames, 500, dtype=int)
 
         red_vol_subset, green_vol_subset = [], []
 
