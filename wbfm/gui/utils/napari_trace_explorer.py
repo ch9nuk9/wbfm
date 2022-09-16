@@ -1351,7 +1351,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return all_tracks_array, track_of_point
 
 
-def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None):
+def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None, DEBUG=False):
     # A parent QT application must be initialized first
     os.environ["NAPARI_ASYNC"] = "1"
     # os.environ["NAPARI_PERFMON"] = "1"
@@ -1370,6 +1370,8 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
                                                                    to_load_segmentation_metadata=True,
                                                                    to_load_frames=True,
                                                                    initialization_kwargs=initialization_kwargs)
+    if DEBUG:
+        logging.debug(project_data)
     # TODO: debug custom dataframe here
     project_data.use_custom_padded_dataframe = False
     project_data.load_interactive_properties()

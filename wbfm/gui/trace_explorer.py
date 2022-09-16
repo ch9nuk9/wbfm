@@ -14,4 +14,4 @@ if __name__ == "__main__":
 
     print("Starting trace explorer GUI, may take up to a minute to load...")
 
-    napari_trace_explorer_from_config(project_path)
+    napari_trace_explorer_from_config(project_path, DEBUG)
