@@ -1186,7 +1186,7 @@ def create_crop_masks_using_config(project_config: ModularProjectConfig, target_
                 # Apply
                 new_masks[i, z0:z1, x0:x1, y0:y1] = label
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
             futures = {executor.submit(parallel_func, i): i for i in range(num_frames)}
             for future in concurrent.futures.as_completed(futures):
                 future.result()
