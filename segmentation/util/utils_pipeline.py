@@ -1,6 +1,8 @@
 import logging
 import os
 import threading
+
+import cv2
 from wbfm.utils.general.custom_errors import NoMatchesError
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_filenames import add_name_suffix
