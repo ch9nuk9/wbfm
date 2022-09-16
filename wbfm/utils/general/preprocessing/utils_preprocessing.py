@@ -197,7 +197,7 @@ class PreprocessingSettings:
         self.initialize_background()
 
     def load_background(self, background_fname):
-        num_frames = 40  # TODO
+        num_frames = 10
         background_video_list = read_background(background_fname, num_frames, self.raw_number_of_planes,
                                                 preprocessing_settings=None)
         # Add a new truly constant background value, to keep anything from going negative
