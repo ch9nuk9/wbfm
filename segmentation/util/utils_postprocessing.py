@@ -1179,9 +1179,9 @@ def create_crop_masks_using_config(project_config: ModularProjectConfig, target_
                 centroid = p.centroid
 
                 # Get bbox of the smaller size
-                z0, z1 = int(centroid[0] + dz), int(centroid[0] - dz)
-                x0, x1 = int(centroid[1] + dx), int(centroid[1] - dx)
-                y0, y1 = int(centroid[2] + dy), int(centroid[2] - dy)
+                z0, z1 = int(centroid[0] - dz), int(centroid[0] + dz)
+                x0, x1 = int(centroid[1] - dx), int(centroid[1] + dx)
+                y0, y1 = int(centroid[2] - dy), int(centroid[2] + dy)
 
                 # Apply
                 new_masks[i, z0:z1, x0:x1, y0:y1] = label
