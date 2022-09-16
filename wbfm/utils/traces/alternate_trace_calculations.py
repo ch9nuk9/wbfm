@@ -2,9 +2,10 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 from sklearn.mixture import GaussianMixture
+from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 
-def gaussian_mixture_model(project_data, neuron, pixel_values_dict_red):
+def double_gaussian_mixture_model_to_histogram(neuron, pixel_values_dict_red):
     """gives back auc for the gaussian curve with higher mean
 
     example for input that is expected as pixel_values_dict_red:
@@ -14,8 +15,8 @@ def gaussian_mixture_model(project_data, neuron, pixel_values_dict_red):
     pixel_values_dict_red = pickle.load(file, encoding='bytes')"""
 
     auc_trace = []
-    num_timepoints = project_data.red_traces.shape[0]
-    neuron_int = int(neuron[-3:])
+    num_timepoints = len(pixel_values_dict_red)
+    neuron_int = name2int_neuron_and_tracklet(neuron)
 
     for timepoint in tqdm(range(num_timepoints)):
         try:
