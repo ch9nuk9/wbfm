@@ -47,24 +47,49 @@ def set_big_font(size=22):
 
 
 def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predictor_names=None):
-    # Predict green from time, volume, and red
+    """
+    Predict green from time, volume, and red
+
+    Can also use special (calculated) predictors. Currently implemented are:
+        t - a simple time vector
+        "{var1}_over_{var2}" - dividing the columns given by var1 and var2
+
+    Parameters
+    ----------
+    df_red
+    df_green
+    neuron_name - Optional. If not passed, assumes the dataframe is not multiindexed
+    predictor_names - list of column names to extract from df_red
+
+    Returns
+    -------
+
+    """
     if predictor_names is None:
         predictor_names = ["t", "intensity_image", "area", "x", "y"]
     if neuron_name is not None:
         df_green = df_green[neuron_name]
         df_red = df_red[neuron_name]
     green = df_green["intensity_image"]
-    # Also add x and y
+    # Construct processed predictors
+    processed_vars = []
     if 't' in predictor_names:
-        include_t = True
+        processed_vars.append(range(len(green)))
         predictor_names.remove('t')
-    else:
-        include_t = False
-    predictor_vars = [df_red[name] for name in predictor_names]
+    simple_predictor_names = []
+    for name in predictor_names:
+        if '_over_' in name:
+            var1, var2 = name.split('_over_')
+            this_var = df_red[var1] / df_red[var2]
+            processed_vars.append(this_var)
+        else:
+            simple_predictor_names.append(name)
 
-    num_timepoints = len(green)
-    if include_t:
-        predictor_vars.append(range(num_timepoints))
+    # Build simple predictors and combine
+    predictor_vars = [df_red[name] for name in simple_predictor_names]
+    predictor_vars.extend(processed_vars)
+
+    # Fix nan values and fit
     valid_indices = np.logical_not(np.isnan(green))
     # This is important for test videos that are very short
     if valid_indices.value_counts()[True] <= 4:
@@ -89,6 +114,6 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
 
         # Align output and input formats
         y_including_na = fill_missing_indices_with_nan(pd.DataFrame(y_result_missing_na),
-                                                       expected_max_t=num_timepoints)[0]
+                                                       expected_max_t=len(green))[0]
         y_result_including_na = pd.Series(list(y_including_na["intensity_image"]))
     return y_result_including_na
