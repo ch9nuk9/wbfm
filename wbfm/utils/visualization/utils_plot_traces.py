@@ -46,7 +46,8 @@ def set_big_font(size=22):
     matplotlib.rc('font', **font)
 
 
-def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predictor_names=None):
+def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predictor_names=None,
+                                     remove_intercept=True):
     """
     Predict green from time, volume, and red
 
@@ -60,6 +61,7 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
     df_green
     neuron_name - Optional. If not passed, assumes the dataframe is not multiindexed
     predictor_names - list of column names to extract from df_red
+    remove_intercept - whether to remove the intercept of the linear model
 
     Returns
     -------
@@ -109,6 +111,8 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
         # create model
         model = sklearn.linear_model.LinearRegression()
         model.fit(predictor_matrix, green_trace)
+        if not remove_intercept:
+            model.intercept_ = [0.0]
         green_predicted = model.predict(predictor_matrix)
         y_result_missing_na = green_trace - green_predicted
 
