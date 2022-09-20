@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import sklearn
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
+from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
@@ -47,7 +49,9 @@ def set_big_font(size=22):
 
 
 def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predictor_names=None,
-                                     remove_intercept=True):
+                                     remove_intercept=True,
+                                     model=sklearn.linear_model.LinearRegression(),
+                                     bleach_correct=False):
     """
     Predict green from time, volume, and red
 
@@ -62,6 +66,7 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
     neuron_name - Optional. If not passed, assumes the dataframe is not multiindexed
     predictor_names - list of column names to extract from df_red
     remove_intercept - whether to remove the intercept of the linear model
+    model
 
     Returns
     -------
@@ -73,17 +78,22 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
         df_green = df_green[neuron_name]
         df_red = df_red[neuron_name]
     green = df_green["intensity_image"]
+    valid_indices = np.logical_not(np.isnan(green))
+    if bleach_correct:
+        green = detrend_exponential_lmfit(green)[0]
     # Construct processed predictors
     processed_vars = []
-    if 't' in predictor_names:
-        processed_vars.append(range(len(green)))
-        predictor_names.remove('t')
     simple_predictor_names = []
     for name in predictor_names:
         if '_over_' in name:
             var1, var2 = name.split('_over_')
             this_var = df_red[var1] / df_red[var2]
             processed_vars.append(this_var)
+        elif 'intensity_image' in name and bleach_correct:
+            red = detrend_exponential_lmfit(df_red[name])[0]
+            processed_vars.append(red)
+        elif name == 't':
+            processed_vars.append(range(len(green)))
         else:
             simple_predictor_names.append(name)
 
@@ -92,9 +102,8 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
     predictor_vars.extend(processed_vars)
 
     # Fix nan values and fit
-    valid_indices = np.logical_not(np.isnan(green))
-    # This is important for test videos that are very short
     if valid_indices.value_counts()[True] <= 4:
+        # This is important for test videos that are very short
         y_result_including_na = green.copy()
         y_result_including_na[:] = np.nan
     else:
@@ -109,7 +118,6 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
         predictor_matrix = np.c_[predictor_matrix.T]
 
         # create model
-        model = sklearn.linear_model.LinearRegression()
         model.fit(predictor_matrix, green_trace)
         if not remove_intercept:
             model.intercept_ = [0.0]
@@ -117,7 +125,48 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
         y_result_missing_na = green_trace - green_predicted
 
         # Align output and input formats
-        y_including_na = fill_missing_indices_with_nan(pd.DataFrame(y_result_missing_na),
+        y_df_missing_na = pd.DataFrame(y_result_missing_na, index=np.where(valid_indices)[0])
+        y_including_na = fill_missing_indices_with_nan(y_df_missing_na,
                                                        expected_max_t=len(green))[0]
-        y_result_including_na = pd.Series(list(y_including_na["intensity_image"]))
+        # try:
+        col_name = get_names_from_df(y_including_na)[0]
+        y_result_including_na = pd.Series(list(y_including_na[col_name]))
+        # except KeyError:
+        #     y_result_including_na = y_including_na
     return y_result_including_na
+
+
+def get_lower_bound_values(x, y, min_vals_per_bin=10, num_bins=100):
+    """
+    Calculates the lower bound of a scatter plot
+
+    Designed to be used when high values correspond to anomalies and/or "real" activity that shouldn't be regressed out
+
+    Parameters
+    ----------
+    x
+    y
+    min_vals_per_bin
+    num_bins
+
+    Returns
+    -------
+
+    """
+    window_starts = np.linspace(np.min(x), np.max(x), num_bins)
+    y_mins = []
+    x_mins = window_starts[:-1]
+    for i in range(len(window_starts[:-1])):
+        start, end = window_starts[i], window_starts[i + 1]
+        _ind = np.where(np.logical_and(x < end, x > start))[0]
+        if len(_ind) > min_vals_per_bin:
+            y_mins.append(np.min(y[_ind]))
+        else:
+            y_mins.append(0)
+
+    y_mins = np.array(y_mins)
+    nonzero_ind = y_mins > 0
+    y_mins = y_mins[nonzero_ind]
+    x_mins = x_mins[nonzero_ind]
+
+    return x_mins, y_mins

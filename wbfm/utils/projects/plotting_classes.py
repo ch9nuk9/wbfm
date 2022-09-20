@@ -8,6 +8,7 @@ from copy import deepcopy
 import napari
 import numpy as np
 import pandas as pd
+import sklearn.linear_model
 import zarr
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
@@ -70,7 +71,8 @@ class TracePlotter:
 
         """
         assert (self.channel_mode in ['green', 'red', 'ratio', 'linear_model',
-                                      'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20']), \
+                                      'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20',
+                                      'linear_model_experimental']), \
             f"Unknown channel mode {self.channel_mode}"
 
         if self.verbose >= 3:
@@ -120,7 +122,8 @@ class TracePlotter:
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df)
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'linear_model']:
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'linear_model',
+                                   'linear_model_experimental']:
             # Third: use both traces dataframes (red AND green)
             df_red = self.red_traces
             df_green = self.green_traces
@@ -136,6 +139,17 @@ class TracePlotter:
             elif self.channel_mode == 'linear_model':
                 def calc_y(_neuron_name) -> pd.Series:
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, _neuron_name)
+                    return y_result_including_na
+
+            elif self.channel_mode == 'linear_model_experimental':
+                def calc_y(_neuron_name) -> pd.Series:
+                    # predictor_names = ['t', 'area', 'intensity_image_over_area']
+                    predictor_names = ['x', 'y', 'z', 't', 'area', 'intensity_image_over_area']
+                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
+                               model=sklearn.linear_model.HuberRegressor())
+                    y_green = correct_trace_using_linear_model(df_red, df_green, **opt)
+                    y_red = correct_trace_using_linear_model(df_red, df_red, **opt)
+                    y_result_including_na = y_green / y_red
                     return y_result_including_na
 
             elif self.channel_mode == 'dr_over_r_20':
