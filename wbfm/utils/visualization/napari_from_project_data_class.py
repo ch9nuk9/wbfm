@@ -202,7 +202,8 @@ class NapariLayerInitializer:
         return viewer
 
 
-def take_screenshot_using_project(project_data, additional_layers: List[list], base_layers=None, t_target=None, **kwargs):
+def take_screenshot_using_project(project_data, additional_layers: List[list], base_layers=None, t_target=None,
+                                  **kwargs):
     """
     Example:
     additional_layers = [[('heatmap', 'count_nonnan')],

@@ -144,7 +144,9 @@ class TracePlotter:
             elif self.channel_mode == 'linear_model_experimental':
                 def calc_y(_neuron_name) -> pd.Series:
                     # predictor_names = ['t', 'area', 'intensity_image_over_area']
-                    predictor_names = ['x', 'y', 'z', 't', 'area', 'intensity_image_over_area']
+                    # predictor_names = ['x', 'y', 'z', 't', 'area', 'intensity_image_over_area']
+                    predictor_names = ['x', 'y', 'z', 't', 't_squared', 'area', 'area_squared',
+                                       'intensity_image_over_area']
                     opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
                                model=sklearn.linear_model.HuberRegressor())
                     y_green = correct_trace_using_linear_model(df_red, df_green, **opt)
