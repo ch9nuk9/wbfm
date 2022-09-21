@@ -51,13 +51,15 @@ def set_big_font(size=22):
 def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predictor_names=None,
                                      remove_intercept=True,
                                      model=sklearn.linear_model.LinearRegression(),
-                                     bleach_correct=False):
+                                     bleach_correct=False,
+                                     DEBUG=False):
     """
     Predict green from time, volume, and red
 
     Can also use special (calculated) predictors. Currently implemented are:
         t - a simple time vector
         "{var1}_over_{var2}" - dividing the columns given by var1 and var2
+        "{var1}_squared" - the square of a variable in df_red. t also works
 
     Parameters
     ----------
@@ -78,7 +80,6 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
         df_green = df_green[neuron_name]
         df_red = df_red[neuron_name]
     green = df_green["intensity_image"]
-    valid_indices = np.logical_not(np.isnan(green))
     if bleach_correct:
         green = detrend_exponential_lmfit(green)[0]
     # Construct processed predictors
@@ -94,6 +95,16 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
             processed_vars.append(red)
         elif name == 't':
             processed_vars.append(range(len(green)))
+        elif '_squared' in name:
+            pow = 2.0
+            sub_name = name.split('_squared')[0]
+            if sub_name in df_red:
+                var = df_red[sub_name] ** pow
+            elif 't' in sub_name:
+                var = np.arange(len(green)) ** pow
+            else:
+                raise NotImplementedError
+            processed_vars.append(var)
         else:
             simple_predictor_names.append(name)
 
@@ -101,8 +112,18 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
     predictor_vars = [df_red[name] for name in simple_predictor_names]
     predictor_vars.extend(processed_vars)
 
+    # Get valid indices in all variables
+    to_remove_predictors = [np.where(np.isnan(var))[0] for var in predictor_vars]
+    to_remove_y = np.where(np.isnan(green))[0]
+    to_remove_predictors.append(to_remove_y)
+    to_keep = set(range(len(green)))
+
+    to_remove_all = set.union(*[set(r) for r in to_remove_predictors])
+    valid_indices = np.array(list(to_keep - to_remove_all))
+
     # Fix nan values and fit
-    if valid_indices.value_counts()[True] <= 4:
+    # if valid_indices.value_counts()[True] <= 4:
+    if len(valid_indices) <= 4:
         # This is important for test videos that are very short
         y_result_including_na = green.copy()
         y_result_including_na[:] = np.nan
@@ -125,7 +146,8 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
         y_result_missing_na = green_trace - green_predicted
 
         # Align output and input formats
-        y_df_missing_na = pd.DataFrame(y_result_missing_na, index=np.where(valid_indices)[0])
+        # y_df_missing_na = pd.DataFrame(y_result_missing_na, index=np.where(valid_indices)[0])
+        y_df_missing_na = pd.DataFrame(y_result_missing_na, index=valid_indices)
         y_including_na = fill_missing_indices_with_nan(y_df_missing_na,
                                                        expected_max_t=len(green))[0]
         # try:
