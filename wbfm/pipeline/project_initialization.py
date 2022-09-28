@@ -89,15 +89,15 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
 
     Parameters
     ----------
-    cfg - config class
-    out_fname - output filename. Should end in .zarr for zarr
-    video_fname - input filename. Should end in .btf
-    tiff_not_zarr - flag for output format
-    pad_to_align_with_original - flag for behavior if bigtiff_start_volume > 0, i.e. frames are removed at the beginning
-    save_fname_in_red_not_green - where to save the out_fname in the config file
-    use_preprocessed_data - flag for using already preprocessed data
-    preprocessing_settings - class with preprocessing settings. Can be loaded from cfg
-    which_channel - green or red
+    cfg: config class
+    out_fname: output filename. Should end in .zarr for zarr
+    video_fname: input filename. Should end in .btf
+    tiff_not_zarr: flag for output format
+    pad_to_align_with_original: flag for behavior if bigtiff_start_volume > 0, i.e. frames are removed at the beginning
+    save_fname_in_red_not_green: where to save the out_fname in the config file
+    use_preprocessed_data: flag for using already preprocessed data
+    preprocessing_settings: class with preprocessing settings. Can be loaded from cfg
+    which_channel: green or red
     DEBUG
 
     Returns

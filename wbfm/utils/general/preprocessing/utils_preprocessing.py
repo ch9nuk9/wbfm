@@ -21,7 +21,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
-    align_stack_using_previous_results, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
+    cumulative_alignment_of_stack, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from wbfm.utils.projects.utils_filenames import add_name_suffix
 from wbfm.utils.projects.utils_project import edit_config
@@ -419,7 +419,19 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     """
     Performs all preprocessing as set by the fields of preprocessing_settings
 
-    See PreprocessingSettings for options
+    See PreprocessingSettings for valid options
+
+    Parameters
+    ----------
+    single_volume_raw
+    preprocessing_settings
+    which_frame
+    which_channel
+
+    Returns
+    -------
+    numpy array
+
     """
 
     s = preprocessing_settings
@@ -468,7 +480,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             assert len(s.all_warp_matrices) > 0
             warp_matrices_dict = s.all_warp_matrices[which_frame]
             if len(warp_matrices_dict) > 0:
-                single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
+                single_volume_raw = cumulative_alignment_of_stack(single_volume_raw, warp_matrices_dict)
 
     if s.align_green_red_cameras and which_channel == 'green':
         # Matrix should be precalculated
@@ -476,8 +488,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
         if alignment_mat is None:
             logging.warning("Requested red-green alignment, but no matrix was found")
         else:
-            single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, alignment_mat,
-                                                                hide_progress=False)
+            single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, alignment_mat)
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
@@ -493,7 +504,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname: str,
                                        preprocessing_settings: PreprocessingSettings = None, which_frames: list = None,
                                        which_channel: str = None, out_fname: str = None, verbose: int = 0,
-                                       DEBUG: bool = False) -> Tuple[zarr.Array, dict]:
+                                       DEBUG: bool = False) -> zarr.Array:
     """
     Preprocesses all frames that will be analyzed as per config
 
@@ -502,6 +513,21 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname
 
     Loads but does not process frames before config['dataset_params']['start_volume']
         (to keep the indices the same as the original dataset)
+
+    Parameters
+    ----------
+    config: config class loaded from yaml
+    video_fname: filename of input video
+    preprocessing_settings: class with preprocessing settings
+    which_frames: list of frames to analyze. Optional
+    which_channel: red or green
+    out_fname: filename of output video
+    verbose
+    DEBUG
+
+    Returns
+    -------
+
     """
     if preprocessing_settings is None:
         p = PreprocessingSettings.load_from_config(config)
@@ -511,13 +537,33 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname
     num_slices, num_total_frames, bigtiff_start_volume, sz = _preprocess_all_frames_unpack_config(config.config,
                                                                                                   verbose,
                                                                                                   video_fname)
-    return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, bigtiff_start_volume, sz, video_fname,
-                                 which_frames, which_channel, out_fname)
+    return preprocess_all_frames(num_slices, num_total_frames, p, bigtiff_start_volume, sz, video_fname, which_frames,
+                                 which_channel, out_fname, DEBUG)
 
 
-def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p: PreprocessingSettings,
-                          start_volume: int, sz: Tuple, video_fname: str,
-                          which_frames: list, which_channel: str, out_fname: str) -> Tuple[zarr.Array, dict]:
+def preprocess_all_frames(num_slices: int, num_total_frames: int, p: PreprocessingSettings, start_volume: int,
+                          sz: Tuple, video_fname: str, which_frames: list, which_channel: str, out_fname: str,
+                          DEBUG: bool) -> zarr.Array:
+    """
+    Preprocesses all frames using multithreading, saving directly to an output zarr file
+
+    Parameters
+    ----------
+    DEBUG
+    num_slices
+    num_total_frames
+    p
+    start_volume
+    sz
+    video_fname
+    which_frames
+    which_channel
+    out_fname
+
+    Returns
+    -------
+
+    """
     import tifffile
     if DEBUG:
         # Make a much shorter video
@@ -590,7 +636,24 @@ def _get_video_options(config, video_fname):
 
 
 def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock=None):
-    # Note: the preprocessing class must know the number of planes in a volume
+    """
+    See perform_preprocessing
+
+    Note: the preprocessing class must know the number of planes in a volume
+
+    Parameters
+    ----------
+    i: frame index (time)
+    p: preprocessing class
+    start_volume
+    video_fname
+    which_channel
+    read_lock
+
+    Returns
+    -------
+
+    """
     if read_lock is None:
         single_volume_raw = p.get_single_volume(video_fname, i)
     else:

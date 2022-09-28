@@ -143,10 +143,22 @@ def align_stack_to_middle_slice(stack_to_align, hide_progress=True):
     return stack_aligned, warp_matrices
 
 
-def calculate_alignment_matrix_two_stacks(stack_template, stack_rotated, hide_progress=True,
-                                          use_only_first_pair=True, gauss_filt_sigma=2.5):
+def calculate_alignment_matrix_two_stacks(stack_template: np.ndarray, stack_rotated: np.ndarray, hide_progress=True,
+                                          use_only_first_pair=True, gauss_filt_sigma=2.5) -> np.ndarray:
     """
     Takes two z stacks (format: ZXY) and rigidly aligns plane, returning only the warp matrices
+
+
+    Parameters
+    ----------
+    stack_template
+    stack_rotated
+    hide_progress
+    use_only_first_pair: flag for using the first pair only (stacks might be full videos)
+    gauss_filt_sigma
+
+    Returns
+    -------
 
     """
     warp_matrices = []
@@ -168,9 +180,19 @@ def calculate_alignment_matrix_two_stacks(stack_template, stack_rotated, hide_pr
     return final_warp_mat
 
 
-def apply_alignment_matrix_to_stack(stack_to_align, warp_mat, hide_progress=True):
+def apply_alignment_matrix_to_stack(stack_to_align: np.ndarray, warp_mat: np.ndarray, hide_progress=True):
     """
     Takes a z stack (zxy) and a single previous alignment matrix, and performs the same alignment
+
+    Parameters
+    ----------
+    stack_to_align
+    warp_mat
+    hide_progress
+
+    Returns
+    -------
+
     """
     # Settings for the actual warping
     sz = stack_to_align[0].shape
@@ -185,9 +207,22 @@ def apply_alignment_matrix_to_stack(stack_to_align, warp_mat, hide_progress=True
     return stack_aligned
 
 
-def align_stack_using_previous_results(stack_to_align, previous_warp_matrices, hide_progress=True):
+def cumulative_alignment_of_stack(stack_to_align: np.ndarray, previous_warp_matrices: dict, hide_progress=True):
     """
-    Takes a z stack (zxy) and a dictionary of previous alignment matrices, and performs the same alignment
+    Takes a z stack (zxy) and a dictionary of previous alignment matrices (indexed by z slice), and performs the same
+    alignment
+
+    Cumulative version of apply_alignment_matrix_to_stack, counting out from the center plane
+
+    Parameters
+    ----------
+    stack_to_align
+    previous_warp_matrices
+    hide_progress
+
+    Returns
+    -------
+
     """
     # Settings for the actual warping
     sz = stack_to_align[0].shape
