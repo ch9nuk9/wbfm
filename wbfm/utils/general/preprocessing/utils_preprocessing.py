@@ -351,6 +351,21 @@ class PreprocessingSettings:
         self._camera_alignment_matrix = warp_mat
 
     def calculate_warp_mat_from_data(self, red_data, green_data):
+        """
+        Calculate a matrix for aligning two channels of data (designed to change second input matrix)
+
+        Does NOT apply the matrix
+
+        Parameters
+        ----------
+        red_data
+        green_data
+
+        Returns
+        -------
+        Nothing
+
+        """
         # Get representative volumes (in theory) and max project
         tspan = np.arange(10, red_data.shape[0], 250, dtype=int)
         red_vol_subset = np.array([np.max(red_data[t], axis=0) for t in tspan])
