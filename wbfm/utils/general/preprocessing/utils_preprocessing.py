@@ -519,6 +519,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_deconvolution:
         single_volume_raw = s.psf.deconvolve_single_volume(single_volume_raw)
+        s.psf.scaler.reset()
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
@@ -612,6 +613,10 @@ def preprocess_all_frames(num_slices: int, num_total_frames: int, p: Preprocessi
                                   synchronizer=zarr.ThreadSynchronizer(),
                                   store=store)
     read_lock = threading.Lock()
+
+    max_workers = 32
+    if p.do_deconvolution:
+        max_workers = 1
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
     with tifffile.TiffFile(video_fname) as vid_stream:
@@ -623,7 +628,7 @@ def preprocess_all_frames(num_slices: int, num_total_frames: int, p: Preprocessi
                 preprocessed_dat[i, ...] = get_and_preprocess(i, p, start_volume, vid_stream,
                                                               which_channel, read_lock)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in frame_list}
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
