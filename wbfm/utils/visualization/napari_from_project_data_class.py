@@ -99,15 +99,18 @@ class NapariLayerInitializer:
                              dask_for_segmentation=True, force_all_visible=False):
         if viewer is None:
             viewer = napari.Viewer(ndisplay=3)
-        if which_layers == 'all':
-            which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
+
+        basic_valid_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
                             'Neuron IDs', 'Intermediate global IDs']
+        if which_layers == 'all':
+            which_layers = basic_valid_layers
         if check_if_layers_exist:
             # NOTE: only works if the layer names are the same as these convinience names
             new_layers = set(which_layers) - set([layer.name for layer in viewer.layers])
             which_layers = list(new_layers)
 
         project_data.logger.info(f"Finished loading data, adding following layers: {which_layers}")
+        layers_actually_added = []
         z_to_xy_ratio = project_data.physical_unit_conversion.z_to_xy_ratio
         if to_remove_flyback:
             clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
@@ -119,6 +122,7 @@ class NapariLayerInitializer:
                              contrast_limits=[0, 2*np.max(project_data.red_data[0]+1)],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
+            layers_actually_added.append('Red data')
         if 'Green data' in which_layers:
             visibility = force_all_visible
             viewer.add_image(project_data.green_data, name="Green data", opacity=0.5, colormap='green',
@@ -126,16 +130,19 @@ class NapariLayerInitializer:
                              contrast_limits=[0, 2*np.max(project_data.green_data[0]+1)],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
+            layers_actually_added.append('Green data')
         if 'Raw segmentation' in which_layers:
             visibility = force_all_visible
             seg_array = project_data.raw_segmentation
             viewer.add_labels(seg_array, name="Raw segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=visibility,
                               rendering='translucent')
+            layers_actually_added.append('Raw segmentation')
         if 'Colored segmentation' in which_layers and project_data.segmentation is not None:
             visibility = force_all_visible
             viewer.add_labels(project_data.segmentation, name="Colored segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
+            layers_actually_added.append('Colored segmentation')
 
         # Add a text overlay
         if 'Neuron IDs' in which_layers:
@@ -143,6 +150,7 @@ class NapariLayerInitializer:
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
             options['visible'] = force_all_visible
             viewer.add_points(**options)
+            layers_actually_added.append('Neuron IDs')
 
         if 'GT IDs' in which_layers:
             # Not added by default!
@@ -155,6 +163,7 @@ class NapariLayerInitializer:
             options['text']['color'] = 'red'
             options['visible'] = force_all_visible
             viewer.add_points(**options)
+            layers_actually_added.append('GT IDs')
 
         if 'Intermediate global IDs' in which_layers and project_data.intermediate_global_tracks is not None:
             df = project_data.intermediate_global_tracks
@@ -163,10 +172,11 @@ class NapariLayerInitializer:
             options['text']['color'] = 'green'
             options['visible'] = force_all_visible
             viewer.add_points(**options)
+            layers_actually_added.append('Intermediate global IDs')
 
         # Special layers from the heatmapper class
         try:
-            heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces,curvature_fluorescence_fps = project_data.worm_posture_class.curvature_fluorescence_fps.iloc[0:project_data.red_traces["neuron_001"].shape[0],])
+            heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces, curvature_fluorescence_fps = project_data.worm_posture_class.curvature_fluorescence_fps.iloc[0:project_data.red_traces["neuron_001"].shape[0],])
         except Exception as exc:
             print(exc)
             heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces)
@@ -188,6 +198,7 @@ class NapariLayerInitializer:
                 continue
             else:
                 layer_name = layer_tuple[1]
+                layers_actually_added.append(layer_tuple)
 
             prop_dict = getattr(heat_mapper, layer_name)()
             # Note: this layer must be visible for the prop_dict to work correctly
@@ -198,6 +209,10 @@ class NapariLayerInitializer:
             _layer.color_mode = 'direct'
 
         project_data.logger.debug(f"Finished adding layers {which_layers}")
+        missed_layers = set(which_layers) - set(layers_actually_added)
+        if len(missed_layers) > 0:
+            project_data.logger.warning(f"Did not add unknown layers: {missed_layers}; "
+                                        f"did you mean one of {basic_valid_layers}?")
 
         return viewer
 
