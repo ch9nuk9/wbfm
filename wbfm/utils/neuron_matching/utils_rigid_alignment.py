@@ -8,9 +8,11 @@ from tqdm.auto import tqdm
 ## Utilities
 ##
 
-# this function calculates the overall transformation of two given warp matrix
-# the warp matrix which combines both given warp matrix is given back
+
 def merge_matrices(mat1, mat2):
+    # this function calculates the overall transformation of two given warp matrix
+    # the warp matrix which combines both given warp matrix is given back
+
     # creaty identity matrix of size 3x3
     firstMul = np.identity(3)
     secondMul = np.identity(3)
