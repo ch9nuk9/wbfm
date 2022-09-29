@@ -20,6 +20,7 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
+from wbfm.utils.general.preprocessing.deconvolution import DeconvolutionScaler, CustomPSF
 from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
     cumulative_alignment_of_stack, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
@@ -110,6 +111,9 @@ class PreprocessingSettings:
     path_to_camera_alignment_matrix: str = None
     gauss_filt_sigma: float = None
 
+    # Deconvolution (experimental)
+    do_deconvolution: bool = False
+
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
     final_dtype: str = 'uint16'
@@ -142,6 +146,14 @@ class PreprocessingSettings:
             return True
         else:
             return self.background_red is not None
+
+    @cached_property
+    def deconvolution_scaler(self):
+        return DeconvolutionScaler(self.reset_background_per_pixel)
+
+    @cached_property
+    def psf(self):
+        return CustomPSF()
 
     def initialize_background(self):
         logging.info("Loading background videos, may take a minute")
@@ -489,6 +501,9 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             logging.warning("Requested red-green alignment, but no matrix was found")
         else:
             single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, alignment_mat)
+
+    if s.do_deconvolution:
+        single_volume_raw = s.psf.deconvolve_single_volume(single_volume_raw)
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
