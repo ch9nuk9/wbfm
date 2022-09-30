@@ -518,7 +518,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, alignment_mat)
 
     if s.do_deconvolution:
-        single_volume_raw = s.psf.deconvolve_single_volume(single_volume_raw)
+        single_volume_raw = s.psf.deconvolve_single_volume_2d(single_volume_raw)
         s.psf.scaler.reset()
 
     if s.do_mini_max_projection:

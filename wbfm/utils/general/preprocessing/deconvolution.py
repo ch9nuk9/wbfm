@@ -46,9 +46,10 @@ class CustomPSF:
         #         'pinhole_shape': 'round',
         #     }
 
+        # TODO: the shape affects this quite a lot
         args = {
-            'shape': (22, 65),  # number of samples in z and r direction
-            'dims': (33, 21.125),  # size of FULL IMAGE in z and r direction in micrometers
+            'shape': (7, 9),  # number of samples in z and r direction
+            'dims': (10.5, 2.925),  # size of FULL IMAGE in z and r direction in micrometers
             'ex_wavelen': 488.0,  # excitation wavelength in nanometers
             'em_wavelen': 520.0,  # emission wavelength in nanometers
             'num_aperture': 1.0,
@@ -64,23 +65,34 @@ class CustomPSF:
 
     @cached_property
     def psf_2d(self):
-        # Just get the middle slice
+        # TODO: is this the middle slice?
         obsvol = self.psf
         return obsvol.volume()[obsvol.shape[0], ...]
 
     def deconvolve_volume_and_save(self, i, input_zarr, output_zarr):
         vol = input_zarr[i]
-        vol_deconvolved = self.deconvolve_single_volume(vol)
+        vol_deconvolved = self.deconvolve_single_volume_2d(vol)
         output_zarr[i] = vol_deconvolved
 
-    def deconvolve_single_volume(self, vol):
+    def deconvolve_single_volume_2d(self, vol):
+        """
+        Deconvolves a volume using a 2d point spread function
+
+        Parameters
+        ----------
+        vol
+
+        Returns
+        -------
+
+        """
         if self.scaler is not None:
             vol = self.scaler.scale_volume(vol)
-        psf = self.psf
+        psf_2d = self.psf_2d
         vol_deconvolved = np.zeros(vol.shape)
         for _i in range(vol.shape[0]):
             img = vol[_i, ...]
-            out = restoration.richardson_lucy(img, psf, iterations=30, filter_epsilon=1e-5)
+            out = restoration.richardson_lucy(img, psf_2d, iterations=30, filter_epsilon=1e-5)
             vol_deconvolved[_i, :, :] = out
         if self.scaler is not None:
             vol_deconvolved = self.scaler.unscale_volume(vol_deconvolved)
