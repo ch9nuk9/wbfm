@@ -611,7 +611,7 @@ def preprocess_all_frames(num_slices: int, num_total_frames: int, p: Preprocessi
         raise DeprecationWarning("uint16 should be saved directly")
     preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype=p.initial_dtype,
                                   synchronizer=zarr.ThreadSynchronizer(),
-                                  store=store)
+                                  store=store, overwrite=True)
     read_lock = threading.Lock()
 
     max_workers = 32
