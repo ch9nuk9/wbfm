@@ -7,6 +7,7 @@ import psf
 from backports.cached_property import cached_property
 from skimage import restoration
 from skimage.filters import difference_of_gaussians
+from skimage.restoration import denoise_bilateral
 from tqdm.auto import tqdm
 
 
@@ -124,6 +125,28 @@ def sharpen_volume_using_dog(vol):
     for i in tqdm(range(vol.shape[0]), leave=False):
         img = vol[i, ...]
         out = difference_of_gaussians(img, **opt)
+        vol_sharpened[i, :, :] = np.expand_dims(out, 0)
+
+    return vol_sharpened
+
+
+def sharpen_volume_using_bilateral(vol):
+    """
+    Assumes volume has been scaled
+
+    Parameters
+    ----------
+    vol
+
+    Returns
+    -------
+
+    """
+    opt = dict()
+    vol_sharpened = np.zeros(vol.shape)
+    for i in tqdm(range(vol.shape[0]), leave=False):
+        img = vol[i, ...]
+        out = denoise_bilateral(img, **opt)
         vol_sharpened[i, :, :] = np.expand_dims(out, 0)
 
     return vol_sharpened

@@ -20,7 +20,8 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.general.preprocessing.deconvolution import ImageScaler, CustomPSF, sharpen_volume_using_dog
+from wbfm.utils.general.preprocessing.deconvolution import ImageScaler, CustomPSF, sharpen_volume_using_dog, \
+    sharpen_volume_using_bilateral
 from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
     cumulative_alignment_of_stack, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
@@ -114,6 +115,7 @@ class PreprocessingSettings:
     # Deconvolution and other things (experimental)
     do_deconvolution: bool = False
     do_sharpening: bool = False
+    do_sharpening_bilateral: bool = False
 
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
@@ -525,6 +527,11 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     if s.do_sharpening:
         scaler = ImageScaler()
         single_volume_raw = sharpen_volume_using_dog(scaler.scale_volume(single_volume_raw))
+        single_volume_raw = scaler.unscale_volume(single_volume_raw)
+
+    if s.do_sharpening_bilateral:
+        scaler = ImageScaler()
+        single_volume_raw = sharpen_volume_using_bilateral(scaler.scale_volume(single_volume_raw))
         single_volume_raw = scaler.unscale_volume(single_volume_raw)
 
     if s.do_mini_max_projection:
