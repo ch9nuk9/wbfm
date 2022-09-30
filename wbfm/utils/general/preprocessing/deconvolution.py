@@ -121,7 +121,7 @@ def sharpen_volume_using_dog(vol):
     """
     opt = dict(low_sigma=1, high_sigma=50)
     vol_sharpened = np.zeros(vol.shape)
-    for i in tqdm(range(vol.shape[0])):
+    for i in tqdm(range(vol.shape[0]), leave=False):
         img = vol[i, ...]
         out = difference_of_gaussians(img, **opt)
         vol_sharpened[i, :, :] = np.expand_dims(out, 0)
