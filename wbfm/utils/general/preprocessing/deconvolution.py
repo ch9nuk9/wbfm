@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Optional
 
@@ -5,35 +6,42 @@ import numpy as np
 import psf
 from backports.cached_property import cached_property
 from skimage import restoration
+from skimage.filters import difference_of_gaussians
+from tqdm.auto import tqdm
 
 
 @dataclass
-class DeconvolutionScaler:
+class ImageScaler:
     """Preprocesses data for deconvolution"""
 
-    background_per_pixel: int
-
+    background_per_pixel: Optional[int] = None
     max_val: Optional[int] = None
     initial_dtype: np.dtype = np.uint16
 
     def scale_volume(self, vol):
         if self.max_val is None:
             self.max_val = np.max(vol)
-        return (vol - self.background_per_pixel) / self.max_val
+        if self.background_per_pixel is None:
+            self.background_per_pixel = np.min(vol)
+        return (vol.astype(float) - self.background_per_pixel) / self.max_val
 
     def unscale_volume(self, vol_scaled):
-        return (vol_scaled * self.max_val) + self.background_per_pixel
+        vol_scaled = (vol_scaled * self.max_val) + self.background_per_pixel
+        vol_scaled = np.clip(vol_scaled, 0, np.max(vol_scaled)).astype(self.initial_dtype)
+        return vol_scaled
 
     def reset(self):
         self.max_val = None
+        self.background_per_pixel = None
 
 
 class CustomPSF:
 
-    scaler: DeconvolutionScaler = None
+    scaler: ImageScaler = None
 
     @cached_property
     def psf(self):
+        logging.info("Setting up initial point spread function")
         # args = {
         #         'shape': (22, 650),  # number of samples in z and r direction
         #         'dims': (33, 211,25),  # size of FULL IMAGE in z and r direction in micrometers
@@ -90,10 +98,32 @@ class CustomPSF:
             vol = self.scaler.scale_volume(vol)
         psf_2d = self.psf_2d
         vol_deconvolved = np.zeros(vol.shape)
-        for _i in range(vol.shape[0]):
+        for _i in tqdm(range(vol.shape[0]), leave=False):
             img = vol[_i, ...]
             out = restoration.richardson_lucy(img, psf_2d, iterations=30, filter_epsilon=1e-5)
             vol_deconvolved[_i, :, :] = out
         if self.scaler is not None:
             vol_deconvolved = self.scaler.unscale_volume(vol_deconvolved)
         return vol_deconvolved
+
+
+def sharpen_volume_using_dog(vol):
+    """
+    Assumes volume has been scaled
+
+    Parameters
+    ----------
+    vol
+
+    Returns
+    -------
+
+    """
+    opt = dict(low_sigma=1, high_sigma=50)
+    vol_sharpened = np.zeros(vol.shape)
+    for i in tqdm(range(vol.shape[0])):
+        img = vol[i, ...]
+        out = difference_of_gaussians(img, **opt)
+        vol_sharpened[i, :, :] = np.expand_dims(out, 0)
+
+    return vol_sharpened
