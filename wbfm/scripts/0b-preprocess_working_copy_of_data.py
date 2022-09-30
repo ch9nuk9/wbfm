@@ -105,6 +105,7 @@ def main(_config, _run):
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
         video_fname = red_output_fname
         bbox_fname = _config['bounding_box_fname']
+        Path(bbox_fname).parent.mkdir(parents=True, exist_ok=True)
         calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames)
 
         segment_cfg = _config['segment_cfg']
