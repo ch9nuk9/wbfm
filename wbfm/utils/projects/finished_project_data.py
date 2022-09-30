@@ -266,7 +266,7 @@ class ProjectData:
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg,
             z_to_xy_ratio=self.physical_unit_conversion.z_to_xy_ratio,
-            buffer_masks=zarr.zeros_like(self.segmentation),
+            buffer_masks=zarr.zeros_like(self.raw_segmentation),
             logger=self.logger
         )
 
@@ -307,7 +307,7 @@ class ProjectData:
 
     def load_segmentation_related_properties(self):
         _ = self.segmentation_metadata.segmentation_metadata
-        self.all_used_fnames.append(self.segmentation_metadata.segmentation_metadata.detection_fname)
+        self.all_used_fnames.append(self.segmentation_metadata.detection_fname)
 
     @cached_property
     def num_frames(self) -> int:
@@ -413,27 +413,43 @@ class ProjectData:
         behavior_reader = lambda: WormFullVideoPosture.load_from_config(cfg)
         zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
 
-        # Note: when running on the cluster the raw data isn't (for now) accessible
+        cfg.logger.debug("Starting threads to read data...")
+        if to_load_tracklets:
+            obj.load_tracklet_related_properties()
+        if to_load_interactivity:
+            obj.load_interactive_properties()
+        if to_load_frames:
+            obj.load_frame_related_properties()
+        if to_load_segmentation_metadata:
+            obj.load_segmentation_related_properties()
+        red_data = read_if_exists(red_dat_fname, zarr_reader_folder_or_zipstore)
+        green_data = read_if_exists(green_dat_fname, zarr_reader_folder_or_zipstore)
+        red_traces = read_if_exists(red_traces_fname)
+        green_traces = read_if_exists(green_traces_fname)
+        # TODO: don't open this as read-write by default
+        raw_segmentation = read_if_exists(seg_fname_raw, zarr_reader_readwrite)
+        segmentation = read_if_exists(seg_fname, zarr_reader_folder_or_zipstore)
+        worm_posture_class = WormFullVideoPosture.load_from_config(cfg)
+
         with safe_cd(cfg.project_dir):
 
-            cfg.logger.debug("Starting threads to read data...")
-            with concurrent.futures.ThreadPoolExecutor() as ex:
-                if to_load_tracklets:
-                    ex.submit(obj.load_tracklet_related_properties)
-                if to_load_interactivity:
-                    ex.submit(obj.load_interactive_properties)
-                if to_load_frames:
-                    ex.submit(obj.load_frame_related_properties)
-                if to_load_segmentation_metadata:
-                    ex.submit(obj.load_segmentation_related_properties)
-                red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader_folder_or_zipstore).result()
-                green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader_folder_or_zipstore).result()
-                red_traces = ex.submit(read_if_exists, red_traces_fname).result()
-                green_traces = ex.submit(read_if_exists, green_traces_fname).result()
-                # TODO: don't open this as read-write by default
-                raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
-                segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_folder_or_zipstore).result()
-                worm_posture_class = ex.submit(behavior_reader).result()
+            # with concurrent.futures.ThreadPoolExecutor() as ex:
+            #     if to_load_tracklets:
+            #         ex.submit(obj.load_tracklet_related_properties)
+            #     if to_load_interactivity:
+            #         ex.submit(obj.load_interactive_properties)
+            #     if to_load_frames:
+            #         ex.submit(obj.load_frame_related_properties)
+            #     if to_load_segmentation_metadata:
+            #         ex.submit(obj.load_segmentation_related_properties)
+            #     red_data = ex.submit(read_if_exists, red_dat_fname, zarr_reader_folder_or_zipstore).result()
+            #     green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader_folder_or_zipstore).result()
+            #     red_traces = ex.submit(read_if_exists, red_traces_fname).result()
+            #     green_traces = ex.submit(read_if_exists, green_traces_fname).result()
+            #     # TODO: don't open this as read-write by default
+            #     raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
+            #     segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_folder_or_zipstore).result()
+            #     worm_posture_class = ex.submit(behavior_reader).result()
 
             if red_traces is not None:
                 red_traces.replace(0, np.nan, inplace=True)
