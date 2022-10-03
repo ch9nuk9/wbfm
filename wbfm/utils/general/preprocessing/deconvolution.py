@@ -108,28 +108,30 @@ class CustomPSF:
         return vol_deconvolved
 
 
-def sharpen_volume_using_dog(vol, user_kwargs=None):
+def sharpen_volume_using_dog(vol, user_kwarg_dict=None, verbose=0):
     """
     Assumes volume has been scaled
 
     Parameters
     ----------
-    user_kwargs
+    user_kwarg_dict
     vol
 
     Returns
     -------
 
     """
-    if user_kwargs is None:
-        user_kwargs = {}
-    defaults = dict(low_sigma=1, high_sigma=50)
-    user_kwargs.update(defaults)
+    if user_kwarg_dict is None:
+        user_kwarg_dict = {}
+    opt = dict(low_sigma=1, high_sigma=50)
+    opt.update(user_kwarg_dict)
+    if verbose >= 1:
+        logging.info(f"Doing sharpening with parameters: {opt}")
 
     vol_sharpened = np.zeros(vol.shape)
     for i in tqdm(range(vol.shape[0]), leave=False):
         img = vol[i, ...]
-        out = difference_of_gaussians(img, **user_kwargs)
+        out = difference_of_gaussians(img, **user_kwarg_dict)
         vol_sharpened[i, :, :] = np.expand_dims(out, 0)
 
     return vol_sharpened
