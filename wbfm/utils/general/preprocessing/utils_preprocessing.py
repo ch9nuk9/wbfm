@@ -139,6 +139,8 @@ class PreprocessingSettings:
     # Temporary variable to store warp matrices across time
     all_warp_matrices: dict = field(default_factory=dict)
 
+    verbose: int = 0
+
     def __post_init__(self):
         if self.do_background_subtraction:
             self.initialize_background()
@@ -349,7 +351,6 @@ class PreprocessingSettings:
             else:
                 green_align += get_single_volume(fname, **tiff_opt)
 
-        # print(red_align.shape)
         warp_mat = calculate_alignment_matrix_two_stacks(red_align, green_align)
 
         # Save in this object
@@ -443,6 +444,25 @@ class PreprocessingSettings:
         raw_volume = get_single_volume(video_fname, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
         return raw_volume
 
+    def __repr__(self):
+        return f"Preprocessing settings object with settings: \n\
+    Data settings: \n\
+    raw_number_of_planes = {self.raw_number_of_planes} \n\
+    starting_plane = {self.starting_plane} \n\
+    Filtering:  \n\
+    do_background_subtraction = {self.do_background_subtraction} \n\
+    reset_background = {self.reset_background} \n\
+    reset_background_per_pixel = {self.reset_background_per_pixel} \n\
+    Rigid alignment (slices to each other): \n\
+    do_rigid_alignment = {self.do_rigid_alignment} \n\
+    Rigid alignment (green to red channel) \n\
+    align_green_red_cameras = {self.align_green_red_cameras} \n\
+    camera_alignment_method = {self.camera_alignment_method} \n\
+    Deconvolution and other things (experimental): \n\
+    do_sharpening = {self.do_sharpening} \n\
+    sharpening_kwargs = {self.sharpening_kwargs} \n\
+"
+
 
 def perform_preprocessing(single_volume_raw: np.ndarray,
                           preprocessing_settings: PreprocessingSettings,
@@ -486,7 +506,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_background_subtraction:
         try:
-            single_volume_raw = single_volume_raw - background
+            single_volume_raw = uint_safe_subtraction(single_volume_raw, background)
         except ValueError:
             logging.warning(f"The background {background.shape} was not the correct shape {single_volume_raw.shape}")
             logging.warning("Setting 'do_background_subtraction' to False")
@@ -529,7 +549,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     if s.do_sharpening:
         scaler = ImageScaler()
         single_volume_raw = sharpen_volume_using_dog(scaler.scale_volume(single_volume_raw), s.sharpening_kwargs,
-                                                     verbose=0)
+                                                     verbose=1)
         single_volume_raw = scaler.unscale_volume(single_volume_raw)
 
     if s.do_sharpening_bilateral:
@@ -715,3 +735,25 @@ def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock
         return perform_preprocessing(single_volume_raw, p, i, which_channel=which_channel)
     else:
         return single_volume_raw
+
+
+def uint_safe_subtraction(vol_raw, background):
+    """
+    Subtracts uint values with clipping instead of overflow
+
+    Assumes uint16
+
+    Parameters
+    ----------
+    vol_raw
+    background
+
+    Returns
+    -------
+
+    """
+    vol_int = vol_raw.astype(int) - background
+
+    max_val = 65536
+    vol_int = np.clip(vol_int, 0, max_val).astype('uint16')
+    return vol_int
