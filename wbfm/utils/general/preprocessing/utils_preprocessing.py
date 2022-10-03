@@ -20,6 +20,7 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
+from wbfm.utils.general.custom_errors import MustBeFiniteError
 from wbfm.utils.general.preprocessing.deconvolution import ImageScaler, CustomPSF, sharpen_volume_using_dog, \
     sharpen_volume_using_bilateral
 from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
@@ -312,6 +313,10 @@ class PreprocessingSettings:
             self.calculate_warp_mat_from_dot_overlay(project_config)
         if self.camera_alignment_method == 'grid':
             self.calculate_warp_mat_from_grid_overlay(project_config)
+
+        # Check basic validity
+        if np.isnan(self.camera_alignment_matrix).any():
+            raise MustBeFiniteError(self.camera_alignment_matrix)
 
     def calculate_warp_mat_from_dot_overlay(self, project_config):
         # Find calibration videos, if present

@@ -66,5 +66,11 @@ class ShouldBeUnreachableError(Exception):
 
 class UnknownValueError(Exception):
     def __init__(self, value=""):
-        self.message = "fUnknown value passed: {value}"
+        self.message = f"Unknown value passed: {value}"
+        super().__init__(self.message)
+
+
+class MustBeFiniteError(Exception):
+    def __init__(self, value=""):
+        self.message = f"Value should not be nan, but was: {value}"
         super().__init__(self.message)
