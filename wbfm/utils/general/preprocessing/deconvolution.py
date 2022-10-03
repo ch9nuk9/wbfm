@@ -114,6 +114,7 @@ def sharpen_volume_using_dog(vol, user_kwarg_dict=None, verbose=0):
 
     Parameters
     ----------
+    verbose
     user_kwarg_dict
     vol
 
@@ -131,7 +132,7 @@ def sharpen_volume_using_dog(vol, user_kwarg_dict=None, verbose=0):
     vol_sharpened = np.zeros(vol.shape)
     for i in tqdm(range(vol.shape[0]), leave=False):
         img = vol[i, ...]
-        out = difference_of_gaussians(img, **user_kwarg_dict)
+        out = difference_of_gaussians(img, **opt)
         vol_sharpened[i, :, :] = np.expand_dims(out, 0)
 
     return vol_sharpened
