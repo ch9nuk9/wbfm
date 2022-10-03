@@ -117,6 +117,8 @@ class PreprocessingSettings:
     do_sharpening: bool = False
     do_sharpening_bilateral: bool = False
 
+    sharpening_kwargs: dict = field(default_factory=dict)
+
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
     final_dtype: str = 'uint16'
@@ -526,7 +528,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_sharpening:
         scaler = ImageScaler()
-        single_volume_raw = sharpen_volume_using_dog(scaler.scale_volume(single_volume_raw))
+        single_volume_raw = sharpen_volume_using_dog(scaler.scale_volume(single_volume_raw), s.sharpening_kwargs)
         single_volume_raw = scaler.unscale_volume(single_volume_raw)
 
     if s.do_sharpening_bilateral:
