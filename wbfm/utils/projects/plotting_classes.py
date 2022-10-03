@@ -8,6 +8,7 @@ from copy import deepcopy
 import napari
 import numpy as np
 import pandas as pd
+import sklearn.linear_model
 import zarr
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
@@ -22,7 +23,7 @@ from wbfm.gui.utils.utils_gui import build_tracks_from_dataframe
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
-    remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation
+    remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
@@ -70,7 +71,8 @@ class TracePlotter:
 
         """
         assert (self.channel_mode in ['green', 'red', 'ratio', 'linear_model',
-                                      'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20']), \
+                                      'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20',
+                                      'linear_model_experimental']), \
             f"Unknown channel mode {self.channel_mode}"
 
         if self.verbose >= 3:
@@ -120,7 +122,8 @@ class TracePlotter:
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df)
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'linear_model']:
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'linear_model',
+                                   'linear_model_experimental']:
             # Third: use both traces dataframes (red AND green)
             df_red = self.red_traces
             df_green = self.green_traces
@@ -136,6 +139,19 @@ class TracePlotter:
             elif self.channel_mode == 'linear_model':
                 def calc_y(_neuron_name) -> pd.Series:
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, _neuron_name)
+                    return y_result_including_na
+
+            elif self.channel_mode == 'linear_model_experimental':
+                def calc_y(_neuron_name) -> pd.Series:
+                    # predictor_names = ['t', 'area', 'intensity_image_over_area']
+                    # predictor_names = ['x', 'y', 'z', 't', 'area', 'intensity_image_over_area']
+                    predictor_names = ['x', 'y', 'z', 't', 't_squared', 'area', 'area_squared',
+                                       'intensity_image_over_area']
+                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
+                               model=sklearn.linear_model.HuberRegressor())
+                    y_green = correct_trace_using_linear_model(df_red, df_green, **opt)
+                    y_red = correct_trace_using_linear_model(df_red, df_red, **opt)
+                    y_result_including_na = y_green / y_red
                     return y_result_including_na
 
             elif self.channel_mode == 'dr_over_r_20':
@@ -163,7 +179,8 @@ class TracePlotter:
 
         # TODO: allow parameter selection
         if self.remove_outliers:
-            y = remove_outliers_via_rolling_mean(y, window=9)
+            # y = remove_outliers_via_rolling_mean(y, window=9)
+            y = remove_outliers_using_std(y, std_factor=5)
 
         if self.filter_mode == "rolling_mean":
             y = filter_rolling_mean(y, window=5)

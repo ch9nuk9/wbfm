@@ -186,4 +186,6 @@ See [detailed pipeline steps](docs/detailed_pipeline_steps.md)
 
 See [detailed installation instructions](docs/installation_instructions.md)
 
+See [known issues](docs/known_issues.md)
+
 If you would like to contribute, see [how to contribute](docs/how_to_contribute.md)

@@ -67,7 +67,7 @@ def main(_config, _run):
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
 
         # Very first: calculate the alignment between the red and green channels (camera misalignment)
-        preprocessing_settings.calculate_warp_mat_from_dot_overlay(cfg)
+        preprocessing_settings.calculate_warp_mat(cfg)
         green_name = Path(green_output_fname)
         fname = green_name.parent / (green_name.stem + "_camera_alignment.pickle")
         preprocessing_settings.path_to_camera_alignment_matrix = fname
@@ -105,6 +105,7 @@ def main(_config, _run):
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
         video_fname = red_output_fname
         bbox_fname = _config['bounding_box_fname']
+        Path(bbox_fname).parent.mkdir(parents=True, exist_ok=True)
         calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames)
 
         segment_cfg = _config['segment_cfg']

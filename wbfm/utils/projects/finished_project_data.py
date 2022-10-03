@@ -266,7 +266,7 @@ class ProjectData:
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg,
             z_to_xy_ratio=self.physical_unit_conversion.z_to_xy_ratio,
-            buffer_masks=zarr.zeros_like(self.segmentation),
+            buffer_masks=zarr.zeros_like(self.raw_segmentation),
             logger=self.logger
         )
 
@@ -307,7 +307,7 @@ class ProjectData:
 
     def load_segmentation_related_properties(self):
         _ = self.segmentation_metadata.segmentation_metadata
-        self.all_used_fnames.append(self.segmentation_metadata.segmentation_metadata.detection_fname)
+        self.all_used_fnames.append(self.segmentation_metadata.detection_fname)
 
     @cached_property
     def num_frames(self) -> int:
@@ -389,8 +389,8 @@ class ProjectData:
         obj.all_used_fnames = []
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg, do_background_subtraction=False)
 
-        red_dat_fname = str(cfg.resolve_mounted_path_in_current_os('preprocessed_red'))
-        green_dat_fname = str(cfg.resolve_mounted_path_in_current_os('preprocessed_green'))
+        red_dat_fname = str(cfg.resolve_relative_path_from_config('preprocessed_red'))
+        green_dat_fname = str(cfg.resolve_relative_path_from_config('preprocessed_green'))
         red_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['red'])
         green_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['green'])
 
@@ -413,10 +413,10 @@ class ProjectData:
         behavior_reader = lambda: WormFullVideoPosture.load_from_config(cfg)
         zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
 
-        # Note: when running on the cluster the raw data isn't (for now) accessible
+        cfg.logger.debug("Starting threads to read data...")
+
         with safe_cd(cfg.project_dir):
 
-            cfg.logger.debug("Starting threads to read data...")
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
                     ex.submit(obj.load_tracklet_related_properties)

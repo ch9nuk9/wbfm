@@ -49,13 +49,14 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
         _config['red_bigtiff_fname'] = red_bigtiff_fname
         _config['green_bigtiff_fname'] = green_bigtiff_fname
 
-    # Check the number of total frames in the video, and update the parameter
-    # Note: requires correct value of num_slices
-    logging.info("Detecting number of total frames in the video, may take ~30 seconds")
-    full_video = Image.open(red_bigtiff_fname)
-    num_2d_frames = full_video.n_frames
-    num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
-    _config['dataset_params']['num_frames'] = int(num_volumes)
+    if _config['dataset_params'].get('num_frames', None) is None:
+        # Check the number of total frames in the video, and update the parameter
+        # Note: requires correct value of num_slices
+        logging.info("Detecting number of total frames in the video, may take ~30 seconds")
+        full_video = Image.open(red_bigtiff_fname)
+        num_2d_frames = full_video.n_frames
+        num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
+        _config['dataset_params']['num_frames'] = int(num_volumes)
 
     # Uses the pip installed package location
     src = get_location_of_new_project_defaults()
@@ -77,14 +78,33 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
 def write_data_subset_using_config(cfg: ModularProjectConfig,
                                    out_fname: str = None,
                                    video_fname: str = None,
-                                   tiff_not_zarr: bool = True,
+                                   tiff_not_zarr: bool = False,
                                    pad_to_align_with_original: bool = False,
                                    save_fname_in_red_not_green: bool = None,
                                    use_preprocessed_data: bool = False,
                                    preprocessing_settings: PreprocessingSettings = None,
                                    which_channel: str = None,
                                    DEBUG: bool = False) -> None:
-    """Takes the original giant .btf file from and writes the subset of the data as zarr or tiff"""
+    """
+    Takes the original giant .btf file from and writes the subset of the data (or full dataset) as zarr or tiff
+
+    Parameters
+    ----------
+    cfg: config class
+    out_fname: output filename. Should end in .zarr for zarr
+    video_fname: input filename. Should end in .btf
+    tiff_not_zarr: flag for output format
+    pad_to_align_with_original: flag for behavior if bigtiff_start_volume > 0, i.e. frames are removed at the beginning
+    save_fname_in_red_not_green: where to save the out_fname in the config file
+    use_preprocessed_data: flag for using already preprocessed data
+    preprocessing_settings: class with preprocessing settings. Can be loaded from cfg
+    which_channel: green or red
+    DEBUG
+
+    Returns
+    -------
+
+    """
 
     out_fname, preprocessing_settings, project_dir, bigtiff_start_volume, verbose, video_fname = _unpack_config_for_data_subset(
         cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data,

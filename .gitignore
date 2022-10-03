@@ -21,6 +21,8 @@ Scratch/
 *.ckpt
 *.avi
 *.gif
+*.npy
+*.npz
 wbfm/utils/neuron_matching/opencv_samples/
 old/example-feature-workflow/feature_alignment/feature_alignment-Charlie-2021-01-06/
 old/example-feature-workflow/feature_alignment/feature_alignment-Charlie-2021-01-22/
@@ -43,3 +45,5 @@ wbfm/new_project_defaults/snakemake/.snakemake/
 /DLC_for_WBFM/*
 *.log
 *.zarr/
+/wbfm/notebooks/alternative_ideas//dask-worker-space/
+*.pth

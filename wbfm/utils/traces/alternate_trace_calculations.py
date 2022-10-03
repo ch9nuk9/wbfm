@@ -1,13 +1,11 @@
 import numpy as np
-from wbfm.utils.projects.finished_project_data import ProjectData
 import pandas as pd
 from tqdm.auto import tqdm
 from sklearn.mixture import GaussianMixture
-import cv2
-from segmentation.util.utils_pipeline import _create_or_continue_zarr
+from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 
-def gaussian_mixture_model(project_data, neuron, pixel_values_dict_red):
+def double_gaussian_mixture_model_to_histogram(neuron, pixel_values_dict_red):
     """gives back auc for the gaussian curve with higher mean
 
     example for input that is expected as pixel_values_dict_red:
@@ -17,8 +15,8 @@ def gaussian_mixture_model(project_data, neuron, pixel_values_dict_red):
     pixel_values_dict_red = pickle.load(file, encoding='bytes')"""
 
     auc_trace = []
-    num_timepoints = project_data.red_traces.shape[0]
-    neuron_int = int(neuron[-3:])
+    num_timepoints = len(pixel_values_dict_red)
+    neuron_int = name2int_neuron_and_tracklet(neuron)
 
     for timepoint in tqdm(range(num_timepoints)):
         try:
@@ -78,38 +76,3 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
     df_extracted_green = pd.DataFrame(extracted_traces_green[1:, :], neuron_names)
     return df_extracted_red, df_extracted_green
 
-
-#gaussian blur functions
-
-def gaussian_blur_volume(volume, kernel=(5, 5)):
-
-    """ takes volume """
-    restored = volume.copy()
-    for z in tqdm(range(volume.shape[0])):
-        restored[z, :, :] = cv2.GaussianBlur(volume[z, :, :], kernel, 0)
-
-    return restored
-
-
-def gaussian_blur_video(video, fname, kernel=(5, 5)):
-    """takes video"""
-
-    restored_video = _create_or_continue_zarr(fname + ".zarr", num_frames=video.shape[0], num_slices=video.shape[1],
-                                              x_sz=video.shape[2], y_sz=video.shape[3], mode='w-')
-
-    for i in tqdm(range(video.shape[0])):
-        volume = gaussian_blur_volume(video[i, :, :], kernel=kernel)
-        restored_video[i, :, :, :] = volume
-
-    return restored_video
-
-
-def gaussian_blur_using_config(project_cfg, fname_for_saving_red, fname_for_saving_green, kernel=(5, 5)):
-    """takes config file"""
-    # Open the file
-    project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
-    video_dat_red = project_dat.red_data
-    video_dat_green = project_dat.green_data
-
-    gaussian_blur_video(video_dat_red, fname=fname_for_saving_red, kernel=kernel)
-    gaussian_blur_video(video_dat_green, fname=fname_for_saving_green, kernel=kernel)

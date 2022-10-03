@@ -10,6 +10,7 @@ import zarr
 from skimage.measure import regionprops
 
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.general.custom_errors import NoMatchesError
 from tqdm.auto import tqdm
@@ -347,12 +348,12 @@ def extract_list_of_pixel_values_from_config(project_path: str):
         for prop in props_red:
             vol_of_values = prop['intensity_image']
             label = prop['label']
-            dict_for_this_time_red[label] = vol_of_values[vol_of_values > 0]
+            dict_for_this_time_red[int2name_neuron(label)] = vol_of_values[vol_of_values > 0]
 
         for prop in props_green:
             vol_of_values = prop['intensity_image']
             label = prop['label']
-            dict_for_this_time_green[label] = vol_of_values[vol_of_values > 0]
+            dict_for_this_time_green[int2name_neuron(label)] = vol_of_values[vol_of_values > 0]
 
         dict_of_dict_of_vals_red[t] = dict_for_this_time_red
         dict_of_dict_of_vals_green[t] = dict_for_this_time_green

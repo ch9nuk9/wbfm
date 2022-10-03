@@ -4,6 +4,7 @@ import dataclasses
 import logging
 import pickle
 import threading
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
@@ -19,9 +20,11 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
+from wbfm.utils.general.custom_errors import MustBeFiniteError
+from wbfm.utils.general.preprocessing.deconvolution import ImageScaler, CustomPSF, sharpen_volume_using_dog, \
+    sharpen_volume_using_bilateral
 from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
-    align_stack_using_previous_results, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
-from wbfm.utils.projects.paths_to_external_resources import get_precalculated_camera_alignment_matrix
+    cumulative_alignment_of_stack, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from wbfm.utils.projects.utils_filenames import add_name_suffix
 from wbfm.utils.projects.utils_project import edit_config
@@ -104,9 +107,18 @@ class PreprocessingSettings:
     do_rigid_alignment: bool = False
 
     # Rigid alignment (green to red channel)
-    align_green_red_cameras: bool = False
+    align_green_red_cameras: bool = True
+    camera_alignment_method: str = 'data'
     _camera_alignment_matrix: np.array = None
     path_to_camera_alignment_matrix: str = None
+    gauss_filt_sigma: float = None
+
+    # Deconvolution and other things (experimental)
+    do_deconvolution: bool = False
+    do_sharpening: bool = False
+    do_sharpening_bilateral: bool = False
+
+    sharpening_kwargs: dict = field(default_factory=dict)
 
     # Datatypes and scaling
     initial_dtype: str = 'uint16'  # Filtering etc. will act on this
@@ -128,6 +140,8 @@ class PreprocessingSettings:
     # Temporary variable to store warp matrices across time
     all_warp_matrices: dict = field(default_factory=dict)
 
+    verbose: int = 0
+
     def __post_init__(self):
         if self.do_background_subtraction:
             self.initialize_background()
@@ -140,6 +154,14 @@ class PreprocessingSettings:
             return True
         else:
             return self.background_red is not None
+
+    @cached_property
+    def deconvolution_scaler(self):
+        return ImageScaler(self.reset_background_per_pixel)
+
+    @cached_property
+    def psf(self):
+        return CustomPSF()
 
     def initialize_background(self):
         logging.info("Loading background videos, may take a minute")
@@ -195,7 +217,7 @@ class PreprocessingSettings:
         self.initialize_background()
 
     def load_background(self, background_fname):
-        num_frames = 40  # TODO
+        num_frames = 10
         background_video_list = read_background(background_fname, num_frames, self.raw_number_of_planes,
                                                 preprocessing_settings=None)
         # Add a new truly constant background value, to keep anything from going negative
@@ -280,9 +302,25 @@ class PreprocessingSettings:
             return self._camera_alignment_matrix
         # warp_mat = get_precalculated_camera_alignment_matrix()
 
+    def calculate_warp_mat(self, project_config):
+        valid_methods = ['data', 'dots', 'grid']
+        assert self.camera_alignment_method in valid_methods, \
+            f"Invalid method found {self.camera_alignment_method}, must be one of {valid_methods}"
+
+        if self.camera_alignment_method == 'data':
+            self.calculate_warp_mat_from_btf_files(project_config)
+        elif self.camera_alignment_method == 'dots':
+            self.calculate_warp_mat_from_dot_overlay(project_config)
+        if self.camera_alignment_method == 'grid':
+            self.calculate_warp_mat_from_grid_overlay(project_config)
+
+        # Check basic validity
+        if np.isnan(self.camera_alignment_matrix).any():
+            raise MustBeFiniteError(self.camera_alignment_matrix)
+
     def calculate_warp_mat_from_dot_overlay(self, project_config):
         # Find calibration videos, if present
-        red_btf_fname, green_btf_fname = project_config.get_red_and_green_alignment_bigtiffs()
+        red_btf_fname, green_btf_fname = project_config.get_red_and_green_dot_alignment_bigtiffs()
         if red_btf_fname is None or green_btf_fname is None:
             raise NotImplementedError("Tried to calculate alignment from dot overlay, but it wasn't found.")
             # self.calculate_warp_mat_from_data(project_data.red_data, project_data.green_data)
@@ -296,7 +334,49 @@ class PreprocessingSettings:
         # Save in this object
         self._camera_alignment_matrix = warp_mat
 
+    def calculate_warp_mat_from_grid_overlay(self, project_config):
+        # Find calibration videos, if present
+        red_btf_fnames, green_btf_fnames = project_config.get_red_and_green_grid_alignment_bigtiffs()
+        if red_btf_fnames is None or green_btf_fnames is None:
+            raise NotImplementedError("Tried to calculate alignment from dot overlay, but it wasn't found.")
+
+        red_align = None
+        # The num_slices shouldn't matter too
+        tiff_opt = dict(which_vol=0, num_slices=22, dtype='uint16')
+        for fname in red_btf_fnames:
+            if red_align is None:
+                red_align = get_single_volume(fname, **tiff_opt)
+            else:
+                red_align += get_single_volume(fname, **tiff_opt)
+
+        green_align = None
+        for fname in green_btf_fnames:
+            if green_align is None:
+                green_align = get_single_volume(fname, **tiff_opt)
+            else:
+                green_align += get_single_volume(fname, **tiff_opt)
+
+        warp_mat = calculate_alignment_matrix_two_stacks(red_align, green_align)
+
+        # Save in this object
+        self._camera_alignment_matrix = warp_mat
+
     def calculate_warp_mat_from_data(self, red_data, green_data):
+        """
+        Calculate a matrix for aligning two channels of data (designed to change second input matrix)
+
+        Does NOT apply the matrix
+
+        Parameters
+        ----------
+        red_data
+        green_data
+
+        Returns
+        -------
+        Nothing
+
+        """
         # Get representative volumes (in theory) and max project
         tspan = np.arange(10, red_data.shape[0], 250, dtype=int)
         red_vol_subset = np.array([np.max(red_data[t], axis=0) for t in tspan])
@@ -314,8 +394,9 @@ class PreprocessingSettings:
 
         red_btf_fname = project_config.config['red_bigtiff_fname']
         green_btf_fname = project_config.config['green_bigtiff_fname']
+        num_frames = project_config.config['dataset_params']['num_frames']
 
-        tspan = np.arange(10, 3000, 250, dtype=int)
+        tspan = np.arange(10, num_frames, 500, dtype=int)
 
         red_vol_subset, green_vol_subset = [], []
 
@@ -338,7 +419,8 @@ class PreprocessingSettings:
 
         # Calculate (average over above volumes)
         warp_mat = calculate_alignment_matrix_two_stacks(red_vol_subset, green_vol_subset,
-                                                         use_only_first_pair=False)
+                                                         use_only_first_pair=False,
+                                                         gauss_filt_sigma=self.gauss_filt_sigma)
 
         # Save in this object
         self._camera_alignment_matrix = warp_mat
@@ -367,6 +449,25 @@ class PreprocessingSettings:
         raw_volume = get_single_volume(video_fname, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
         return raw_volume
 
+    def __repr__(self):
+        return f"Preprocessing settings object with settings: \n\
+    Data settings: \n\
+    raw_number_of_planes = {self.raw_number_of_planes} \n\
+    starting_plane = {self.starting_plane} \n\
+    Filtering:  \n\
+    do_background_subtraction = {self.do_background_subtraction} \n\
+    reset_background = {self.reset_background} \n\
+    reset_background_per_pixel = {self.reset_background_per_pixel} \n\
+    Rigid alignment (slices to each other): \n\
+    do_rigid_alignment = {self.do_rigid_alignment} \n\
+    Rigid alignment (green to red channel) \n\
+    align_green_red_cameras = {self.align_green_red_cameras} \n\
+    camera_alignment_method = {self.camera_alignment_method} \n\
+    Deconvolution and other things (experimental): \n\
+    do_sharpening = {self.do_sharpening} \n\
+    sharpening_kwargs = {self.sharpening_kwargs} \n\
+"
+
 
 def perform_preprocessing(single_volume_raw: np.ndarray,
                           preprocessing_settings: PreprocessingSettings,
@@ -375,7 +476,19 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     """
     Performs all preprocessing as set by the fields of preprocessing_settings
 
-    See PreprocessingSettings for options
+    See PreprocessingSettings for valid options
+
+    Parameters
+    ----------
+    single_volume_raw
+    preprocessing_settings
+    which_frame
+    which_channel
+
+    Returns
+    -------
+    numpy array
+
     """
 
     s = preprocessing_settings
@@ -398,7 +511,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_background_subtraction:
         try:
-            single_volume_raw = single_volume_raw - background
+            single_volume_raw = uint_safe_subtraction(single_volume_raw, background)
         except ValueError:
             logging.warning(f"The background {background.shape} was not the correct shape {single_volume_raw.shape}")
             logging.warning("Setting 'do_background_subtraction' to False")
@@ -424,7 +537,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             assert len(s.all_warp_matrices) > 0
             warp_matrices_dict = s.all_warp_matrices[which_frame]
             if len(warp_matrices_dict) > 0:
-                single_volume_raw = align_stack_using_previous_results(single_volume_raw, warp_matrices_dict)
+                single_volume_raw = cumulative_alignment_of_stack(single_volume_raw, warp_matrices_dict)
 
     if s.align_green_red_cameras and which_channel == 'green':
         # Matrix should be precalculated
@@ -432,8 +545,22 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
         if alignment_mat is None:
             logging.warning("Requested red-green alignment, but no matrix was found")
         else:
-            single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, alignment_mat,
-                                                                hide_progress=False)
+            single_volume_raw = apply_alignment_matrix_to_stack(single_volume_raw, alignment_mat)
+
+    # if s.do_deconvolution:
+    #     single_volume_raw = s.psf.deconvolve_single_volume_2d(single_volume_raw)
+    #     s.psf.scaler.reset()
+
+    if s.do_sharpening:
+        scaler = ImageScaler()
+        single_volume_raw = sharpen_volume_using_dog(scaler.scale_volume(single_volume_raw), s.sharpening_kwargs,
+                                                     verbose=0)
+        single_volume_raw = scaler.unscale_volume(single_volume_raw)
+
+    if s.do_sharpening_bilateral:
+        scaler = ImageScaler()
+        single_volume_raw = sharpen_volume_using_bilateral(scaler.scale_volume(single_volume_raw))
+        single_volume_raw = scaler.unscale_volume(single_volume_raw)
 
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
@@ -449,7 +576,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname: str,
                                        preprocessing_settings: PreprocessingSettings = None, which_frames: list = None,
                                        which_channel: str = None, out_fname: str = None, verbose: int = 0,
-                                       DEBUG: bool = False) -> Tuple[zarr.Array, dict]:
+                                       DEBUG: bool = False) -> zarr.Array:
     """
     Preprocesses all frames that will be analyzed as per config
 
@@ -458,6 +585,21 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname
 
     Loads but does not process frames before config['dataset_params']['start_volume']
         (to keep the indices the same as the original dataset)
+
+    Parameters
+    ----------
+    config: config class loaded from yaml
+    video_fname: filename of input video
+    preprocessing_settings: class with preprocessing settings
+    which_frames: list of frames to analyze. Optional
+    which_channel: red or green
+    out_fname: filename of output video
+    verbose
+    DEBUG
+
+    Returns
+    -------
+
     """
     if preprocessing_settings is None:
         p = PreprocessingSettings.load_from_config(config)
@@ -467,13 +609,33 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname
     num_slices, num_total_frames, bigtiff_start_volume, sz = _preprocess_all_frames_unpack_config(config.config,
                                                                                                   verbose,
                                                                                                   video_fname)
-    return preprocess_all_frames(DEBUG, num_slices, num_total_frames, p, bigtiff_start_volume, sz, video_fname,
-                                 which_frames, which_channel, out_fname)
+    return preprocess_all_frames(num_slices, num_total_frames, p, bigtiff_start_volume, sz, video_fname, which_frames,
+                                 which_channel, out_fname, DEBUG)
 
 
-def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p: PreprocessingSettings,
-                          start_volume: int, sz: Tuple, video_fname: str,
-                          which_frames: list, which_channel: str, out_fname: str) -> Tuple[zarr.Array, dict]:
+def preprocess_all_frames(num_slices: int, num_total_frames: int, p: PreprocessingSettings, start_volume: int,
+                          sz: Tuple, video_fname: str, which_frames: list, which_channel: str, out_fname: str,
+                          DEBUG: bool) -> zarr.Array:
+    """
+    Preprocesses all frames using multithreading, saving directly to an output zarr file
+
+    Parameters
+    ----------
+    DEBUG
+    num_slices
+    num_total_frames
+    p
+    start_volume
+    sz
+    video_fname
+    which_frames
+    which_channel
+    out_fname
+
+    Returns
+    -------
+
+    """
     import tifffile
     if DEBUG:
         # Make a much shorter video
@@ -490,8 +652,12 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
         raise DeprecationWarning("uint16 should be saved directly")
     preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype=p.initial_dtype,
                                   synchronizer=zarr.ThreadSynchronizer(),
-                                  store=store)
+                                  store=store, overwrite=True)
     read_lock = threading.Lock()
+
+    max_workers = 32
+    if p.do_deconvolution:
+        max_workers = 1
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
     with tifffile.TiffFile(video_fname) as vid_stream:
@@ -503,7 +669,7 @@ def preprocess_all_frames(DEBUG: bool, num_slices: int, num_total_frames: int, p
                 preprocessed_dat[i, ...] = get_and_preprocess(i, p, start_volume, vid_stream,
                                                               which_channel, read_lock)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(parallel_func, i): i for i in frame_list}
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
@@ -546,7 +712,24 @@ def _get_video_options(config, video_fname):
 
 
 def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock=None):
-    # Note: the preprocessing class must know the number of planes in a volume
+    """
+    See perform_preprocessing
+
+    Note: the preprocessing class must know the number of planes in a volume
+
+    Parameters
+    ----------
+    i: frame index (time)
+    p: preprocessing class
+    start_volume
+    video_fname
+    which_channel
+    read_lock
+
+    Returns
+    -------
+
+    """
     if read_lock is None:
         single_volume_raw = p.get_single_volume(video_fname, i)
     else:
@@ -557,3 +740,25 @@ def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock
         return perform_preprocessing(single_volume_raw, p, i, which_channel=which_channel)
     else:
         return single_volume_raw
+
+
+def uint_safe_subtraction(vol_raw, background):
+    """
+    Subtracts uint values with clipping instead of overflow
+
+    Assumes uint16
+
+    Parameters
+    ----------
+    vol_raw
+    background
+
+    Returns
+    -------
+
+    """
+    vol_int = vol_raw.astype(int) - background
+
+    max_val = 65536
+    vol_int = np.clip(vol_int, 0, max_val).astype('uint16')
+    return vol_int

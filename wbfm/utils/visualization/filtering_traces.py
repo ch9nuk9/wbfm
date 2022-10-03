@@ -21,6 +21,16 @@ def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshol
     return y
 
 
+def remove_outliers_using_std(y: pd.Series, std_factor: float, verbose=0):
+    outlier_threshold = std_factor * np.std(y)
+    is_outlier = np.abs(y - y.mean()) > outlier_threshold
+    y[is_outlier] = np.nan
+    if verbose >= 1:
+        print(f"Removed {len(np.where(is_outlier)[0])} outliers")
+
+    return y
+
+
 def remove_outliers_large_diff(y: pd.DataFrame, outlier_threshold=None):
     raise NotImplementedError
     diff = y.diff()

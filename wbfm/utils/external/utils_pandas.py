@@ -83,7 +83,10 @@ def get_times_of_conflicting_dataframes(tracklet_list: list,
         idx1_edges = [int(idx1[0]), int(idx1[-1])+1]
         for idx2, target_tracklet_name in zip(all_indices[i1 + 1:], tracklet_network_names[i1 + 1:]):
             if base_tracklet_name == target_tracklet_name:
-                logging.warning("Attempted to compare tracklet to itself")
+                logging.warning("Attempted to compare tracklet to itself; continuing")
+                continue
+            if len(idx2) <= 1:
+                logging.warning("Tracklet was empty; continuing")
                 continue
             intersecting_ind = list(idx1.intersection(idx2))
             idx2_edges = [int(idx2[0]), int(idx2[-1])+1]

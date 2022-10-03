@@ -565,7 +565,7 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
         if DEBUG:
             print(color, val, block_start, block_end)
         if color is not None:
-            ax.axvspan(block_start, block_end, alpha=0.9, color=color)
+            ax.axvspan(block_start, block_end, alpha=0.9, color=color, zorder=-10)
 
         block_start = block_end + 1
 

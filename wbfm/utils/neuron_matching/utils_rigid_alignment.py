@@ -8,9 +8,11 @@ from tqdm.auto import tqdm
 ## Utilities
 ##
 
-# this function calculates the overall transformation of two given warp matrix
-# the warp matrix which combines both given warp matrix is given back
+
 def merge_matrices(mat1, mat2):
+    # this function calculates the overall transformation of two given warp matrix
+    # the warp matrix which combines both given warp matrix is given back
+
     # creaty identity matrix of size 3x3
     firstMul = np.identity(3)
     secondMul = np.identity(3)
@@ -53,7 +55,8 @@ def get_warp_mat(im_prev, im_next, warp_mat):
 
 def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
                   termination_eps=2e-2,
-                  number_of_iterations=10000):
+                  number_of_iterations=10000,
+                  gauss_filt_sigma=None):
     # prefilter Images, helps to correlate
     # for best performance a filter which keeps good features to align should be used.
     # for example: with strong differences in brightnes but identical edges an edge dector can be used to filter.
@@ -88,6 +91,9 @@ def calc_warp_ECC(im1_gray, im2_gray, warp_mode=cv2.MOTION_EUCLIDEAN,
     # Run the ECC algorithm. The results are stored in warp_matrix.
     # Depends on version of cv2
     try:
+        if gauss_filt_sigma is not None:
+            kernel_sz = (5, 5)
+            im1_gray = cv2.GaussianBlur(im1_gray.astype('float32'), kernel_sz, gauss_filt_sigma)
         (cc, warp_matrix) = cv2.findTransformECC(im1_gray.astype('float32'), im2_gray.astype('float32'), warp_matrix,
                                                  warp_mode, criteria, None)
     except TypeError:
@@ -139,17 +145,30 @@ def align_stack_to_middle_slice(stack_to_align, hide_progress=True):
     return stack_aligned, warp_matrices
 
 
-def calculate_alignment_matrix_two_stacks(stack_template, stack_rotated, hide_progress=True,
-                                          use_only_first_pair=True):
+def calculate_alignment_matrix_two_stacks(stack_template: np.ndarray, stack_rotated: np.ndarray, hide_progress=True,
+                                          use_only_first_pair=True, gauss_filt_sigma=2.5) -> np.ndarray:
     """
     Takes two z stacks (format: ZXY) and rigidly aligns plane, returning only the warp matrices
+
+
+    Parameters
+    ----------
+    stack_template
+    stack_rotated
+    hide_progress
+    use_only_first_pair: flag for using the first pair only (stacks might be full videos)
+    gauss_filt_sigma
+
+    Returns
+    -------
 
     """
     warp_matrices = []
 
     warp_mat = np.identity(3)[0:2, :]
     for i, (im0, im1) in enumerate(tqdm(zip(stack_template, stack_rotated), disable=hide_progress)):
-        warp_mat = calc_warp_ECC(im0, im1, termination_eps=1e-6, warp_mode=cv2.MOTION_AFFINE)
+        warp_mat = calc_warp_ECC(im0, im1, termination_eps=1e-6, warp_mode=cv2.MOTION_AFFINE,
+                                 gauss_filt_sigma=gauss_filt_sigma)
         if use_only_first_pair:
             break
         else:
@@ -163,9 +182,19 @@ def calculate_alignment_matrix_two_stacks(stack_template, stack_rotated, hide_pr
     return final_warp_mat
 
 
-def apply_alignment_matrix_to_stack(stack_to_align, warp_mat, hide_progress=True):
+def apply_alignment_matrix_to_stack(stack_to_align: np.ndarray, warp_mat: np.ndarray, hide_progress=True):
     """
     Takes a z stack (zxy) and a single previous alignment matrix, and performs the same alignment
+
+    Parameters
+    ----------
+    stack_to_align
+    warp_mat
+    hide_progress
+
+    Returns
+    -------
+
     """
     # Settings for the actual warping
     sz = stack_to_align[0].shape
@@ -180,9 +209,22 @@ def apply_alignment_matrix_to_stack(stack_to_align, warp_mat, hide_progress=True
     return stack_aligned
 
 
-def align_stack_using_previous_results(stack_to_align, previous_warp_matrices, hide_progress=True):
+def cumulative_alignment_of_stack(stack_to_align: np.ndarray, previous_warp_matrices: dict, hide_progress=True):
     """
-    Takes a z stack (zxy) and a dictionary of previous alignment matrices, and performs the same alignment
+    Takes a z stack (zxy) and a dictionary of previous alignment matrices (indexed by z slice), and performs the same
+    alignment
+
+    Cumulative version of apply_alignment_matrix_to_stack, counting out from the center plane
+
+    Parameters
+    ----------
+    stack_to_align
+    previous_warp_matrices
+    hide_progress
+
+    Returns
+    -------
+
     """
     # Settings for the actual warping
     sz = stack_to_align[0].shape

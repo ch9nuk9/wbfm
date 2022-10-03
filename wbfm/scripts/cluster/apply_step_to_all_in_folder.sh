@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-
+# Example usage:
+# bash apply_step_to_all_in_folder.sh -t '/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms' -s 0b
+# Found within the package in:
+# wbfm/scripts/cluster
 
 # Get all user flags
 while getopts t:n:s: flag
