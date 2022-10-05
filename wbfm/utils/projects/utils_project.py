@@ -146,7 +146,7 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
         print("If you want to really delete things, then use 'dryrun=False' in the command line")
 
 
-def make_project_like(project_path: str, target_directory: str, verbose=2):
+def make_project_like(project_path: str, target_directory: str, verbose=1):
     """Copy all config files from a project, i.e. only the files that would exist in a new project"""
 
     assert project_path.endswith('.yaml'), "Must pass a valid config file"
