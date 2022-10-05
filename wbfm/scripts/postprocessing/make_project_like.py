@@ -18,4 +18,4 @@ def main(_config, _run):
     target_directory = _config['target_directory']
     project_path = _config['project_path']
 
-    make_project_like(project_path, target_directory=target_directory, verbose=2)
+    make_project_like(project_path, target_directory=target_directory, verbose=1)
