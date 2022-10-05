@@ -136,6 +136,7 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
             if not dryrun:
                 os.remove(fname)
 
+    # Also remove the created directories, which are .zarr
     for fname in target_fnames:
         if fname.is_dir() and str(fname).endswith('.zarr'):
             shutil.rmtree(fname)
@@ -143,3 +144,51 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
     if dryrun:
         print("DRYRUN (nothing actually deleted)")
         print("If you want to really delete things, then use 'dryrun=False' in the command line")
+
+
+def make_project_like(project_path: str, target_directory: str, verbose=2):
+    """Copy all config files from a project, i.e. only the files that would exist in a new project"""
+
+    assert project_path.endswith('.yaml'), "Must pass a valid config file"
+    assert os.path.exists(target_directory), "Must pass a folder that exists"
+    target_directory = Path(target_directory)
+
+    project_dir = Path(project_path).parent
+    if verbose >= 1:
+        print(f"Copying project {project_dir}")
+
+    # Get a list of all files that should be present, relative to the project directory
+    src = get_location_of_new_project_defaults()
+    initial_fnames = list(Path(src).rglob('**/*'))
+    if len(initial_fnames) == 0:
+        print("Found no initial files, probably running this from the wrong directory")
+        raise FileNotFoundError
+
+    # Convert them to relative
+    initial_fnames = {str(fname.relative_to(src)) for fname in initial_fnames}
+    if verbose >= 3:
+        print(f"Found initial files: {initial_fnames}")
+
+    # Also get the filenames of the target folder
+    target_fnames = list(Path(project_dir).rglob('**/*'))
+    if verbose >= 3:
+        print(f"Found target files: {target_fnames}")
+
+    # Check each initial project fname, and if it is in the initial set, copy it
+    for fname in target_fnames:
+        if fname.is_dir():
+            continue
+        rel_fname = fname.relative_to(project_dir)
+        new_fname = target_directory.joinpath(fname)
+        if str(rel_fname) in initial_fnames:
+            os.makedirs(new_fname.parent, exist_ok=True)
+            shutil.copy(fname, new_fname)
+
+            if verbose >= 1:
+                print(f"Copying {rel_fname}")
+        elif verbose >= 2:
+            print(f"Not copying {rel_fname}")
+
+    # for fname in target_fnames:
+    #     if fname.is_dir() and str(fname).endswith('.zarr'):
+    #         shutil.rmtree(fname)
