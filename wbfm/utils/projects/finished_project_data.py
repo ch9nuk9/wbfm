@@ -374,7 +374,8 @@ class ProjectData:
                                 to_load_interactivity=False,
                                 to_load_frames=False,
                                 to_load_segmentation_metadata=False,
-                                initialization_kwargs=None):
+                                initialization_kwargs=None,
+                                verbose=1):
         """Load all data (Dataframes, etc.) from disk using filenames defined in config files"""
         # Initialize object in order to use cached properties
         if initialization_kwargs is None:
@@ -456,7 +457,10 @@ class ProjectData:
         obj.worm_posture_class = worm_posture_class
         obj.background_per_pixel = background_per_pixel
         obj.likelihood_thresh = likelihood_thresh
-        cfg.logger.info(obj)
+        if verbose >= 1:
+            cfg.logger.info(obj)
+        else:
+            cfg.logger.debug(obj)
         return obj
 
     @staticmethod

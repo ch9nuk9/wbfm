@@ -56,6 +56,8 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
     """
     Predict green from time, volume, and red
 
+    Note: the indices should start from 0
+
     Can also use special (calculated) predictors. Currently implemented are:
         t - a simple time vector
         "{var1}_over_{var2}" - dividing the columns given by var1 and var2
@@ -94,7 +96,7 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
             red = detrend_exponential_lmfit(df_red[name])[0]
             processed_vars.append(red)
         elif name == 't':
-            processed_vars.append(range(len(green)))
+            processed_vars.append(np.arange(len(green)))
         elif '_squared' in name:
             pow = 2.0
             sub_name = name.split('_squared')[0]
@@ -108,7 +110,7 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
         else:
             simple_predictor_names.append(name)
 
-    # Build simple predictors and combine
+    # Build simple predictors and combine with processed
     predictor_vars = [df_red[name] for name in simple_predictor_names]
     predictor_vars.extend(processed_vars)
 
