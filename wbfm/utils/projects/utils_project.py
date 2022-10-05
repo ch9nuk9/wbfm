@@ -179,7 +179,7 @@ def make_project_like(project_path: str, target_directory: str, verbose=2):
         if fname.is_dir():
             continue
         rel_fname = fname.relative_to(project_dir)
-        new_fname = target_directory.joinpath(fname)
+        new_fname = target_directory.joinpath(rel_fname)
         if str(rel_fname) in initial_fnames:
             os.makedirs(new_fname.parent, exist_ok=True)
             shutil.copy(fname, new_fname)
