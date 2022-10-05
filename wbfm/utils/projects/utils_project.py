@@ -146,14 +146,16 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
         print("If you want to really delete things, then use 'dryrun=False' in the command line")
 
 
-def make_project_like(project_path: str, target_directory: str, verbose=1):
+def make_project_like(project_path: str, target_directory: str, new_project_name: str = None, verbose=1):
     """Copy all config files from a project, i.e. only the files that would exist in a new project"""
 
     assert project_path.endswith('.yaml'), "Must pass a valid config file"
     assert os.path.exists(target_directory), "Must pass a folder that exists"
-    target_directory = Path(target_directory)
 
     project_dir = Path(project_path).parent
+    if new_project_name is None:
+        new_project_name = project_dir.name
+    target_project_name = Path(target_directory).joinpath(new_project_name)
     if verbose >= 1:
         print(f"Copying project {project_dir}")
 
@@ -179,7 +181,7 @@ def make_project_like(project_path: str, target_directory: str, verbose=1):
         if fname.is_dir():
             continue
         rel_fname = fname.relative_to(project_dir)
-        new_fname = target_directory.joinpath(rel_fname)
+        new_fname = target_project_name.joinpath(rel_fname)
         if str(rel_fname) in initial_fnames:
             os.makedirs(new_fname.parent, exist_ok=True)
             shutil.copy(fname, new_fname)
@@ -188,7 +190,3 @@ def make_project_like(project_path: str, target_directory: str, verbose=1):
                 print(f"Copying {rel_fname}")
         elif verbose >= 2:
             print(f"Not copying {rel_fname}")
-
-    # for fname in target_fnames:
-    #     if fname.is_dir() and str(fname).endswith('.zarr'):
-    #         shutil.rmtree(fname)
