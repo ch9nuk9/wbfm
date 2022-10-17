@@ -543,7 +543,8 @@ class ProjectData:
         neuron_names = get_names_from_df(df_tmp)
         return neuron_names
 
-    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False, **kwargs):
+    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False, raise_error_on_empty=True,
+                            **kwargs):
         """
         Uses the currently recommended 'best' settings:
         opt = dict(
@@ -577,8 +578,12 @@ class ProjectData:
         df = pd.DataFrame(trace_dict)
         df_drop = df.dropna(axis=1, thresh=min_nonnan)
         if df_drop.shape[1] == 0:
-            raise NoNeuronsError(f"All neurons were dropped with a threshold of {min_nonnan}; check project.num_frames."
-                                 f"If a video has very large gaps, num_frames should be set lower")
+            msg = f"All neurons were dropped with a threshold of {min_nonnan}; check project.num_frames."\
+                  f"If a video has very large gaps, num_frames should be set lower. For now, returning all"
+            if raise_error_on_empty:
+                raise NoNeuronsError(msg)
+            else:
+                logging.warning(msg)
         else:
             df = df_drop
 
