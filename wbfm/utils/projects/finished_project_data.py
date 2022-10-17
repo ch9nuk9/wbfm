@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
 from wbfm.utils.general.postprocessing.position_postprocessing import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
@@ -574,7 +574,13 @@ class ProjectData:
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
         trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
 
-        df = pd.DataFrame(trace_dict).dropna(axis=1, thresh=min_nonnan)
+        df = pd.DataFrame(trace_dict)
+        df_drop = df.dropna(axis=1, thresh=min_nonnan)
+        if df_drop.shape[1] == 0:
+            raise NoNeuronsError(f"All neurons were dropped with a threshold of {min_nonnan}; check project.num_frames."
+                                 f"If a video has very large gaps, num_frames should be set lower")
+        else:
+            df = df_drop
 
         if interpolate_nan:
             df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
