@@ -1053,7 +1053,19 @@ def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, n
 def template_matches_to_dataframe(project_data: ProjectData,
                                   all_matches: list,
                                   null_value=-1):
-    """Correct null value within all_matches is []"""
+    """
+    Extracts locations of the matches given by the second column of all_matches, and names them like the first column
+
+    Parameters
+    ----------
+    project_data
+    all_matches - Correct null value is []
+    null_value
+
+    Returns
+    -------
+
+    """
     num_frames = len(all_matches)
     coords = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list']
     sz = (num_frames, len(coords))
