@@ -544,29 +544,6 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
     return final_df
 
 
-def add_empty_rows_to_correct_index(final_df, empty_ind):
-    if len(empty_ind) == 0:
-        logging.info("No empty indices to correct")
-        return final_df
-    # Create empty rows at each index, then reset the index
-    # Note: if there sequential indices that are missed, then the new indices need to be BEFORE the current dataframe
-    # e.g.:
-    #  Current dataframe has 90, 91, 92
-    #  But, 91 and 92 are empty and need to be inserted back in
-    #  Therefore the new temporary indices for the empty rows should be 90.1, 90.2 (or something between 90 and 91)
-    #  But if 94 was then empty (but not 93), the new index should be 94.5
-    #
-    # BUT it also should be done sequentially, because an empty 94.5 only makese sense if the previous empty 91 and 92 are filled
-
-    logging.info(f"Correcting indices due to {len(empty_ind)} empty volumes")
-    df_index_corrected = final_df.copy()
-    for i in tqdm(empty_ind):
-        new_empty_row = pd.DataFrame(np.nan, columns=df_index_corrected.columns, index=[i + 0.5])
-        df_index_corrected = df_index_corrected.append(new_empty_row, ignore_index=False)
-        df_index_corrected = df_index_corrected.sort_index().reset_index(drop=True)
-    return df_index_corrected
-
-
 def fix_global2tracklet_full_dict(df_tracklets, global2tracklet) -> Dict[str, List[str]]:
     return {key: fix_matches_to_use_keys_not_int(df_tracklets, val) for key, val in global2tracklet.items()}
 
