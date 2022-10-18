@@ -5,6 +5,7 @@ import shutil
 import typing
 from contextlib import contextmanager
 from datetime import datetime
+from os import path as osp
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -190,3 +191,22 @@ def make_project_like(project_path: str, target_directory: str, new_project_name
                 print(f"Copying {rel_fname}")
         elif verbose >= 2:
             print(f"Not copying {rel_fname}")
+
+    # Update the copied project config with the new dest folder
+    update_project_config_path(_config, abs_dir_name)
+
+    # Also update the snakemake file with the project directory
+    update_snakemake_config_path(abs_dir_name)
+
+
+def update_project_config_path(_config, abs_dir_name):
+    dest_fname = 'project_config.yaml'
+    project_fname = osp.join(abs_dir_name, dest_fname)
+    project_fname = Path(project_fname).resolve()
+    edit_config(str(project_fname), _config)
+
+
+def update_snakemake_config_path(abs_dir_name):
+    snakemake_fname = osp.join(abs_dir_name, 'snakemake', 'config.yaml')
+    snakemake_updates = {'project_dir': abs_dir_name}
+    edit_config(snakemake_fname, snakemake_updates)

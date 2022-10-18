@@ -2,7 +2,6 @@ import concurrent
 import logging
 import os
 from os import path as osp
-from pathlib import Path
 from shutil import copytree
 import numpy as np
 import tifffile
@@ -14,9 +13,9 @@ from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSe
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 from wbfm.utils.projects.utils_filenames import get_sequential_filename, resolve_mounted_path_in_current_os, \
-    add_name_suffix, get_location_of_new_project_defaults, get_bigtiff_fname_from_folder, \
-    get_both_bigtiff_fnames_from_parent_folder
-from wbfm.utils.projects.utils_project import get_project_name, edit_config, safe_cd
+    add_name_suffix, get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder
+from wbfm.utils.projects.utils_project import get_project_name, safe_cd, update_project_config_path, \
+    update_snakemake_config_path
 
 
 def build_project_structure_from_config(_config: dict, logger: logging.Logger) -> None:
@@ -63,16 +62,10 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     copytree(src, abs_dir_name)
 
     # Update the copied project config with the new dest folder
-    dest_fname = 'project_config.yaml'
-    project_fname = osp.join(abs_dir_name, dest_fname)
-    project_fname = Path(project_fname).resolve()
-
-    edit_config(str(project_fname), _config)
+    update_project_config_path(_config, abs_dir_name)
 
     # Also update the snakemake file with the project directory
-    snakemake_fname = osp.join(abs_dir_name, 'snakemake', 'config.yaml')
-    snakemake_updates = {'project_dir': abs_dir_name}
-    edit_config(snakemake_fname, snakemake_updates)
+    update_snakemake_config_path(abs_dir_name)
 
 
 def write_data_subset_using_config(cfg: ModularProjectConfig,
