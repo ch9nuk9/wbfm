@@ -209,8 +209,25 @@ def rename_columns_using_matching(df_base, df_to_rename, column='raw_neuron_ind_
                                   try_to_fix_inf=False):
     """
     Aligns the names of df0 with the names of df1 based on bipartite matching on column
+    Drops columns without a match
 
-    Note: can't really handle nan or inf values in either matrix
+    Note: can't really handle nan or inf values in either matrix unless try_to_fix_inf=True
+
+    Parameters
+    ----------
+    df_base
+    df_to_rename
+    column
+    try_to_fix_inf
+
+    Returns
+    -------
+    df1_renamed
+    matches - list of 2-element matches
+    conf
+    name_mapping - neuron name dict of 'matches', with:
+        key = old name of df_to_rename
+        value = new name (same as df_base)
     """
 
     names0 = get_names_from_df(df_base)

@@ -77,6 +77,18 @@ class WormWithNeuronClassifier:
         self.labels_template = list(range(features.shape[0]))
 
     def match_target_frame(self, target_frame: ReferenceFrame):
+        """
+        Matches target frame (custom class) to the initialized template frame of this tracker
+
+        Parameters
+        ----------
+        target_frame
+
+        Returns
+        -------
+        Matches with confidence (n_matches x 3)
+
+        """
 
         with torch.no_grad():
             query_embedding = self.embed_target_frame(target_frame)
