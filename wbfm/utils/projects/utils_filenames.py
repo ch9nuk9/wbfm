@@ -270,9 +270,9 @@ def get_both_bigtiff_fnames_from_parent_folder(parent_data_folder):
         if subfolder.is_file():
             continue
         if subfolder.name.endswith('_Ch0'):
-            green_bigtiff_fname = get_bigtiff_fname_from_folder(subfolder, 0)
+            red_bigtiff_fname = get_bigtiff_fname_from_folder(subfolder, channel_to_check=0)
         if subfolder.name.endswith('_Ch1'):
-            red_bigtiff_fname = get_bigtiff_fname_from_folder(subfolder, 1)
+            green_bigtiff_fname = get_bigtiff_fname_from_folder(subfolder, channel_to_check=1)
 
     if green_bigtiff_fname is None or red_bigtiff_fname is None:
         logging.warning(f"Did not find one of: {(green_bigtiff_fname, red_bigtiff_fname)}")

@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
 from wbfm.utils.general.postprocessing.position_postprocessing import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
@@ -43,11 +43,39 @@ from backports.cached_property import cached_property
 
 @dataclass
 class ProjectData:
-    project_dir: str
-    project_config: ModularProjectConfig  # Custom class
+    """
+    Project data class that collects all important final data from a whole brain freely moving dataset
+    Also exposes methods to load intermediate data
 
-    red_data: zarr.Array = None  # Actual video (~100 GB)
-    green_data: zarr.Array = None  # Actual video (~100 GB)
+    ######## Important fields #########
+    project_config: ModularProjectConfig  # Custom class (used for loading intermediate results)
+
+    red_data: zarr.Array  # Preprocessed video (~100 GB)
+    green_data: zarr.Array  # Preprocessed video (~100 GB)
+
+    raw_segmentation: zarr.Array = None  # Full-sized segmentation (before tracking)
+    segmentation: zarr.Array  # Full-sized segmentation (after tracking -> colors are aligned)
+    segmentation_metadata: DetectedNeurons  # Easy conversion between segmentation ID and position
+
+    # Traces as calculated from the segmentation
+    red_traces: pd.DataFrame
+    green_traces: pd.DataFrame
+
+    ######## Important properties (loaded on demand) #########
+    intermediate_global_tracks
+    final_tracks
+
+    raw_frames
+    raw_matches
+
+    df_all_tracklets
+
+    """
+    project_dir: str
+    project_config: ModularProjectConfig  # Custom class (used for loading intermediate results)
+
+    red_data: zarr.Array = None  # Preprocessed video (~100 GB)
+    green_data: zarr.Array = None  # Preprocessed video (~100 GB)
 
     raw_segmentation: zarr.Array = None  # Full-sized segmentation (before tracking)
     segmentation: zarr.Array = None  # Full-sized segmentation (after tracking -> colors are aligned)
@@ -374,7 +402,8 @@ class ProjectData:
                                 to_load_interactivity=False,
                                 to_load_frames=False,
                                 to_load_segmentation_metadata=False,
-                                initialization_kwargs=None):
+                                initialization_kwargs=None,
+                                verbose=1):
         """Load all data (Dataframes, etc.) from disk using filenames defined in config files"""
         # Initialize object in order to use cached properties
         if initialization_kwargs is None:
@@ -456,7 +485,10 @@ class ProjectData:
         obj.worm_posture_class = worm_posture_class
         obj.background_per_pixel = background_per_pixel
         obj.likelihood_thresh = likelihood_thresh
-        cfg.logger.info(obj)
+        if verbose >= 1:
+            cfg.logger.info(obj)
+        else:
+            cfg.logger.debug(obj)
         return obj
 
     @staticmethod
@@ -539,7 +571,8 @@ class ProjectData:
         neuron_names = get_names_from_df(df_tmp)
         return neuron_names
 
-    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False, **kwargs):
+    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False, raise_error_on_empty=True,
+                            **kwargs):
         """
         Uses the currently recommended 'best' settings:
         opt = dict(
@@ -570,7 +603,17 @@ class ProjectData:
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
         trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
 
-        df = pd.DataFrame(trace_dict).dropna(axis=1, thresh=min_nonnan)
+        df = pd.DataFrame(trace_dict)
+        df_drop = df.dropna(axis=1, thresh=min_nonnan)
+        if df_drop.shape[1] == 0:
+            msg = f"All neurons were dropped with a threshold of {min_nonnan}; check project.num_frames."\
+                  f"If a video has very large gaps, num_frames should be set lower. For now, returning all"
+            if raise_error_on_empty:
+                raise NoNeuronsError(msg)
+            else:
+                logging.warning(msg)
+        else:
+            df = df_drop
 
         if interpolate_nan:
             df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
@@ -578,7 +621,18 @@ class ProjectData:
 
         return df
 
-    def plot_neuron_with_kymograph(self, neuron_name):
+    def plot_neuron_with_kymograph(self, neuron_name: str):
+        """
+        Plots a subplot with a neuron trace and the kymograph, if found
+
+        Parameters
+        ----------
+        neuron_name
+
+        Returns
+        -------
+
+        """
         t, y = self.calculate_traces(channel_mode='ratio', calculation_mode='integration',
                                      neuron_name=neuron_name)
         df_kymo = self.worm_posture_class.curvature_fluorescence_fps
@@ -594,6 +648,18 @@ class ProjectData:
         self.shade_axis_using_behavior()
 
     def save_fig_in_project(self, suffix=''):
+        """
+        Saves current figure within the project visualization directory, with optional suffix
+
+        Parameters
+        ----------
+        suffix - suffix of the filename
+
+        Returns
+        -------
+        Nothing
+
+        """
         out_fname = f'fig-{suffix}.png'
         foldername = self.project_config.get_visualization_dir()
         out_fname = os.path.join(foldername, out_fname)
@@ -601,7 +667,7 @@ class ProjectData:
 
         plt.savefig(out_fname)
 
-    def calculate_tracklets(self, neuron_name) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
+    def calculate_tracklets(self, neuron_name: str) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
         """
         Calculates tracklets using the tracklet_annotator class
 

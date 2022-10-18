@@ -87,15 +87,12 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
 
     all_dfs = []
     if segmentation_metadata is None:
-        raise NotImplementedError("New: Must pass segmentation metadata")
+        raise NotImplementedError("Must pass segmentation metadata")
 
-    def is_valid(df, ind):
-        which_frames = df.at[ind, 'slice_ind']
-        is_too_short = np.isscalar(which_frames) or len(which_frames) < min_length
-        if is_too_short:
-            return False
-        else:
-            return True
+    def is_valid(_df, _ind):
+        _which_frames = _df.at[_ind, 'slice_ind']
+        is_too_short = np.isscalar(_which_frames) or len(_which_frames) < min_length
+        return not is_too_short
 
     logger.info("Converting to pandas multi-index format")
     for ind, row in tqdm(df.iterrows(), total=df.shape[0]):
@@ -105,19 +102,10 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
         # Get basic position and confidence data
         which_frames = df.at[ind, 'slice_ind']
         bodypart = int2name_tracklet(ind)
-        try:
-            confidence = row['all_prob']
-        except KeyError:
-            confidence = []
         zxy = row['all_xyz']
-        if len(confidence) == 0:
-            # Then I didn't save confidences, so just set to 1
-            confidence = np.ones((len(zxy), 1))
-        elif len(confidence) == len(zxy) - 1:
-            # The confidence usually corresponds to the match, therefore is one shorter
-            confidence.append(0.0)
+        confidence = _confidence_from_row(row, zxy)
 
-        # Use original segmentation object to get data about the raw mask and brightness
+        # Use original segmentation object to get additional data about the raw mask and brightness
         this_local_ind = row['all_ind_local']
         # NOTE: these local indices start at 0, which are direct list indices, not the dataframe indices
         this_brightness, this_volume, this_seg_id = [], [], []
@@ -133,17 +121,30 @@ def convert_training_dataframe_to_scalar_format(df, min_length=10, scorer=None,
         # Combine all
         coords = np.hstack([zxy, confidence, this_local_ind, this_seg_id, this_brightness, this_volume])
 
-        index = get_tracklet_dataframe_multiindex(bodypart, scorer)
-        frame = pd.DataFrame(coords, columns=index, index=which_frames)
+        columns = get_tracklet_dataframe_multiindex(bodypart, scorer)
+        frame = pd.DataFrame(coords, columns=columns, index=which_frames)
         all_dfs.append(frame)
     if len(all_dfs) == 0:
         raise ParameterTooStringentError(min_length, 'min_length')
     new_df = pd.concat(all_dfs, axis=1)
 
-    empty_ind = segmentation_metadata.volumes_with_no_neurons
-    new_df = add_empty_rows_to_correct_index(new_df, empty_ind)
+    new_df, _ = fill_missing_indices_with_nan(new_df)
 
     return new_df
+
+
+def _confidence_from_row(row, zxy):
+    try:
+        confidence = row['all_prob']
+    except KeyError:
+        confidence = []
+    if len(confidence) == 0:
+        # Then I didn't save confidences, so just set to 1
+        confidence = np.ones((len(zxy), 1))
+    elif len(confidence) == len(zxy) - 1:
+        # The confidence usually corresponds to the match, therefore is one shorter
+        confidence.append(0.0)
+    return confidence
 
 
 def get_tracklet_dataframe_multiindex(bodypart, scorer=None):
