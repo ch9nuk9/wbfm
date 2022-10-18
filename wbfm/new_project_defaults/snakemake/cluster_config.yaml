@@ -4,7 +4,7 @@ __default__:
     partition: basic
     time: 04:00:00
     nodes: 1
-    cpus_per_task: 4
+    cpus_per_task: 8
     mem: 64G
     disk_mb: 8000
     mem_mb: 8000
