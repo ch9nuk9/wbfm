@@ -529,17 +529,9 @@ def build_tracklets_dfs(pairwise_matches_dict: dict,
             df = pd.DataFrame(dict(clust_ind=clust_ind, all_ind_local=[all_ind_local], all_xyz=[all_zxy],
                                    all_prob=[all_prob], slice_ind=[slice_ind]))
             all_dfs.append(df)
-            # clust_df = clust_df.append(df, ignore_index=True)
             clust_ind += 1
 
     final_df = pd.concat(all_dfs, ignore_index=True, axis=0)
-
-    # empty_ind = []
-    # for k, v in zxy_per_neuron_per_frame.items():
-    #     if v is None:
-    #         empty_ind.append(k)
-    #
-    # final_df = add_empty_rows_to_correct_index(final_df, empty_ind)
 
     return final_df
 
