@@ -43,11 +43,39 @@ from backports.cached_property import cached_property
 
 @dataclass
 class ProjectData:
-    project_dir: str
-    project_config: ModularProjectConfig  # Custom class
+    """
+    Project data class that collects all important final data from a whole brain freely moving dataset
+    Also exposes methods to load intermediate data
 
-    red_data: zarr.Array = None  # Actual video (~100 GB)
-    green_data: zarr.Array = None  # Actual video (~100 GB)
+    ######## Important fields #########
+    project_config: ModularProjectConfig  # Custom class (used for loading intermediate results)
+
+    red_data: zarr.Array  # Preprocessed video (~100 GB)
+    green_data: zarr.Array  # Preprocessed video (~100 GB)
+
+    raw_segmentation: zarr.Array = None  # Full-sized segmentation (before tracking)
+    segmentation: zarr.Array  # Full-sized segmentation (after tracking -> colors are aligned)
+    segmentation_metadata: DetectedNeurons  # Easy conversion between segmentation ID and position
+
+    # Traces as calculated from the segmentation
+    red_traces: pd.DataFrame
+    green_traces: pd.DataFrame
+
+    ######## Important properties (loaded on demand) #########
+    intermediate_global_tracks
+    final_tracks
+
+    raw_frames
+    raw_matches
+
+    df_all_tracklets
+
+    """
+    project_dir: str
+    project_config: ModularProjectConfig  # Custom class (used for loading intermediate results)
+
+    red_data: zarr.Array = None  # Preprocessed video (~100 GB)
+    green_data: zarr.Array = None  # Preprocessed video (~100 GB)
 
     raw_segmentation: zarr.Array = None  # Full-sized segmentation (before tracking)
     segmentation: zarr.Array = None  # Full-sized segmentation (after tracking -> colors are aligned)
@@ -593,7 +621,18 @@ class ProjectData:
 
         return df
 
-    def plot_neuron_with_kymograph(self, neuron_name):
+    def plot_neuron_with_kymograph(self, neuron_name: str):
+        """
+        Plots a subplot with a neuron trace and the kymograph, if found
+
+        Parameters
+        ----------
+        neuron_name
+
+        Returns
+        -------
+
+        """
         t, y = self.calculate_traces(channel_mode='ratio', calculation_mode='integration',
                                      neuron_name=neuron_name)
         df_kymo = self.worm_posture_class.curvature_fluorescence_fps
@@ -609,6 +648,18 @@ class ProjectData:
         self.shade_axis_using_behavior()
 
     def save_fig_in_project(self, suffix=''):
+        """
+        Saves current figure within the project visualization directory, with optional suffix
+
+        Parameters
+        ----------
+        suffix - suffix of the filename
+
+        Returns
+        -------
+        Nothing
+
+        """
         out_fname = f'fig-{suffix}.png'
         foldername = self.project_config.get_visualization_dir()
         out_fname = os.path.join(foldername, out_fname)
@@ -616,7 +667,7 @@ class ProjectData:
 
         plt.savefig(out_fname)
 
-    def calculate_tracklets(self, neuron_name) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
+    def calculate_tracklets(self, neuron_name: str) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
         """
         Calculates tracklets using the tracklet_annotator class
 
