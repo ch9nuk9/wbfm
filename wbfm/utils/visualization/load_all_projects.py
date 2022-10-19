@@ -17,6 +17,24 @@ project_data4 = ProjectData.load_final_project_data_from_config(fname, verbose=0
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/gfp_ZIM2319_worm5/project_config.yaml"
 project_data_gfp1 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/gfp_worm2-2022_08_29/project_config.yaml"
+project_data_gfp2_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/gfp_worm3-2022_08_29/project_config.yaml"
+project_data_gfp3_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/gfp_worm4-2022_08_29/project_config.yaml"
+project_data_gfp4_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/gfp_worm5-2022_08_29/project_config.yaml"
+project_data_gfp5_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/gfp_worm6-2022_08_29/project_config.yaml"
+project_data_gfp6_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/gfp_worm7-2022_08_29/project_config.yaml"
+project_data_gfp7_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
 ##
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/bright_worm5/project_config.yaml"
 project_data_bright1 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
@@ -40,12 +58,24 @@ project_data4_C = ProjectData.load_final_project_data_from_config(fname, verbose
 ##
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm3-2022_08_01/project_config.yaml"
 project_data1_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+project_data1_exp12 = project_data1_12ms
 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm6-2022_08_01/project_config.yaml"
 project_data2_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+project_data2_exp12 = project_data2_12ms
 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm12-2022_08_01/project_config.yaml"
 project_data3_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+project_data3_exp12 = project_data3_12ms
+
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm4-2022_08_02/project_config.yaml"
+project_data4_exp12 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm6-2022_08_01/project_config.yaml"
+project_data6_exp12 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm11-2022_08_02/project_config.yaml"
+project_data11_exp12 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
 ##
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_24ms/C-exp24_worm7-2022_08_01/project_config.yaml"
@@ -105,3 +135,13 @@ project_data8_gcamp7b = ProjectData.load_final_project_data_from_config(fname, v
 
 fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2165_Gcamp7b_worm9-2022_10_14/project_config.yaml"
 project_data9_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+##
+fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2319_worm1-2022_10_14"
+project_data1_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2319_worm2-2022_10_14"
+project_data2_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2319_worm3-2022_10_14"
+project_data3_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
