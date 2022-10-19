@@ -157,6 +157,8 @@ def make_project_like(project_path: str, target_directory: str, new_project_name
     if new_project_name is None:
         new_project_name = project_dir.name
     target_project_name = Path(target_directory).joinpath(new_project_name)
+    if os.path.exists(target_project_name):
+        raise FileExistsError(f"There is already a project at: {target_project_name}")
     if verbose >= 1:
         print(f"Copying project {project_dir}")
 
@@ -204,7 +206,7 @@ def update_project_config_path(abs_dir_name, project_config_updates=None):
     project_fname = osp.join(abs_dir_name, dest_fname)
     project_fname = Path(project_fname).resolve()
     if project_config_updates is None:
-        project_config_updates = dict(project_path=project_fname)
+        project_config_updates = dict(project_path=str(project_fname))
     edit_config(str(project_fname), project_config_updates)
 
 
