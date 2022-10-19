@@ -212,5 +212,5 @@ def update_project_config_path(abs_dir_name, project_config_updates=None):
 
 def update_snakemake_config_path(abs_dir_name):
     snakemake_fname = osp.join(abs_dir_name, 'snakemake', 'config.yaml')
-    snakemake_updates = {'project_dir': abs_dir_name}
+    snakemake_updates = {'project_dir': str(abs_dir_name)}
     edit_config(snakemake_fname, snakemake_updates)
