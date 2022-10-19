@@ -62,7 +62,7 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     copytree(src, abs_dir_name)
 
     # Update the copied project config with the new dest folder
-    update_project_config_path(_config, abs_dir_name)
+    update_project_config_path(abs_dir_name, _config)
 
     # Also update the snakemake file with the project directory
     update_snakemake_config_path(abs_dir_name)

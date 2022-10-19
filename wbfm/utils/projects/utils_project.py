@@ -193,17 +193,19 @@ def make_project_like(project_path: str, target_directory: str, new_project_name
             print(f"Not copying {rel_fname}")
 
     # Update the copied project config with the new dest folder
-    update_project_config_path(_config, abs_dir_name)
+    update_project_config_path(target_directory, _config)
 
     # Also update the snakemake file with the project directory
-    update_snakemake_config_path(abs_dir_name)
+    update_snakemake_config_path(target_directory)
 
 
-def update_project_config_path(_config, abs_dir_name):
+def update_project_config_path(abs_dir_name, project_config_updates=None):
     dest_fname = 'project_config.yaml'
     project_fname = osp.join(abs_dir_name, dest_fname)
     project_fname = Path(project_fname).resolve()
-    edit_config(str(project_fname), _config)
+    if project_config_updates is None:
+        project_config_updates = dict(project_path=project_fname)
+    edit_config(str(project_fname), project_config_updates)
 
 
 def update_snakemake_config_path(abs_dir_name):
