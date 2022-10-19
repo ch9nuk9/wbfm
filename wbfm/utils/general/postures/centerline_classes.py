@@ -154,8 +154,8 @@ class WormFullVideoPosture:
             elif file.name == 'skeleton_spline_Y_coords.csv':
                 filename_y = str(file)
         all_files = [filename_curvature, filename_x, filename_y]
-        if None in all_files:
-            project_config.logger.warning(f"Did not find at least one centerline related file: {all_files}")
+        # if None in all_files:
+        #     project_config.logger.warning(f"Did not find at least one centerline related file: {all_files}")
             # raise FileNotFoundError
 
         # Third, get the automatic behavior annotations
@@ -190,7 +190,7 @@ class WormFullVideoPosture:
 
         """
         if self.beh_annotation_is_stable_style:
-            print("Annotations are already stable style")
+            # print("Annotations are already stable style")
             return self.beh_annotation
         if self.beh_annotation is None:
             return None
