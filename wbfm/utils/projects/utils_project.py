@@ -193,7 +193,7 @@ def make_project_like(project_path: str, target_directory: str, new_project_name
             print(f"Not copying {rel_fname}")
 
     # Update the copied project config with the new dest folder
-    update_project_config_path(target_directory, _config)
+    update_project_config_path(target_directory)
 
     # Also update the snakemake file with the project directory
     update_snakemake_config_path(target_directory)
