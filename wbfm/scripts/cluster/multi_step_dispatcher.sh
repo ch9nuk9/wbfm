@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-# Pass command steps in order, without a tag
+# Pass command steps in order. Example:
+# bash multi_step_dispatcher.sh -s 0b -s 4-alt -t '/scratch/neurobiology/zimmer/Charles/dlc_stacks/gcamp7b/ZIM2165_Gcamp7b_worm8_immobilised-2022_10_14_sharpened_1_10/project_config.yaml'
+
 
 # Get all user flags
 while getopts t:n:s: flag
