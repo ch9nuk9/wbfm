@@ -359,10 +359,13 @@ def extract_list_of_pixel_values_from_config(project_path: str):
         dict_of_dict_of_vals_green[t] = dict_for_this_time_green
 
     # Save
+    config = project_data.project_config
+    Path(config.resolve_relative_path('visualization')).mkdir(exist_ok=True)
+
     fname_red = os.path.join('visualization', 'pixel_values_all_neurons_red.pickle')
-    project_data.project_config.pickle_data_in_local_project(dict_of_dict_of_vals_red, fname_red)
+    config.pickle_data_in_local_project(dict_of_dict_of_vals_red, fname_red)
 
     fname_green = os.path.join('visualization', 'pixel_values_all_neurons_green.pickle')
-    project_data.project_config.pickle_data_in_local_project(dict_of_dict_of_vals_green, fname_green)
+    config.pickle_data_in_local_project(dict_of_dict_of_vals_green, fname_green)
 
     return dict_of_dict_of_vals_red, dict_of_dict_of_vals_green
