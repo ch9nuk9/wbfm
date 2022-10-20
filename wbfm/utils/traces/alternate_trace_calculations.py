@@ -41,20 +41,17 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
         "rb")
     pixel_values_dict_red = pickle.load(file, encoding='bytes')"""
 
-    num_neurons = int(project_data.red_traces.shape[1] / 6)
-    num_timepoints = project_data.red_traces.shape[0]
 
-    neuron_names = []
-    for neuron_int in range(1, num_neurons):
-        neuron_name = "neuron_" + str(neuron_int).zfill(3)
-        neuron_names.append(neuron_name)
+    neuron_names = project_data.neuron_names
+    num_neurons = len(neuron_names)
+    num_timepoints = project_data.red_traces.shape[0]
 
     extracted_traces_green = np.array([np.array([np.nan] * num_timepoints)] * num_neurons)
     extracted_traces_red = np.array([np.array([np.nan] * num_timepoints)] * num_neurons)
     num_pixel = 10
 
-    for i_neuron in tqdm(range(num_neurons)):
-        neuron_name = "neuron_" + str(i_neuron + 1).zfill(3)
+    for i_neuron, neuron_name in enumerate(tqdm(neuron_names)):
+        # neuron_name = "neuron_" + str(i_neuron + 1).zfill(3)
         mean_vol = np.mean(project_data.red_traces[neuron_name]["area"])
         num_pixel = int(percentage * mean_vol)
         if DEBUG:
@@ -81,7 +78,7 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
         if DEBUG:
             break
 
-    df_extracted_red = pd.DataFrame(extracted_traces_red[1:, :], neuron_names).T
-    df_extracted_green = pd.DataFrame(extracted_traces_green[1:, :], neuron_names).T
+    df_extracted_red = pd.DataFrame(extracted_traces_red, neuron_names).T
+    df_extracted_green = pd.DataFrame(extracted_traces_green, neuron_names).T
     return df_extracted_red, df_extracted_green
 
