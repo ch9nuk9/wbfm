@@ -32,7 +32,7 @@ def double_gaussian_mixture_model_to_histogram(neuron, pixel_values_dict_red):
     return auc_trace
 
 
-def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green, percentage=0.25):
+def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green, percentage=0.25, DEBUG=False):
     """gives back two dataframes (red;green) with new trace for every neuron
 
     example for input that is expected as pixel_values_dict_red:
@@ -45,34 +45,43 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
     num_timepoints = project_data.red_traces.shape[0]
 
     neuron_names = []
-    for neuron_int in tqdm(range(1, num_neurons)):
-        neuron = "neuron_" + str(neuron_int).zfill(3)
-        neuron_names.append(neuron)
+    for neuron_int in range(1, num_neurons):
+        neuron_name = "neuron_" + str(neuron_int).zfill(3)
+        neuron_names.append(neuron_name)
 
     extracted_traces_green = np.array([np.array([np.nan] * num_timepoints)] * num_neurons)
     extracted_traces_red = np.array([np.array([np.nan] * num_timepoints)] * num_neurons)
     num_pixel = 10
 
-    for neuron in tqdm(range(num_neurons)):
-        neuron_name = "neuron_" + str(neuron + 1).zfill(3)
+    for i_neuron in tqdm(range(num_neurons)):
+        neuron_name = "neuron_" + str(i_neuron + 1).zfill(3)
         mean_vol = np.mean(project_data.red_traces[neuron_name]["area"])
         num_pixel = int(percentage * mean_vol)
+        if DEBUG:
+            print(num_pixel)
 
         for timepoint in np.sort(list(pixel_values_dict_red.keys())):
 
             # red
             dic = pixel_values_dict_red[timepoint]
+            if DEBUG:
+                print(dic[neuron_name])
 
-            if neuron in dic.keys():
-                extracted_traces_red[neuron, timepoint] = np.sum(np.sort(dic[neuron])[-num_pixel:])
+            if neuron_name in dic.keys():
+                extracted_traces_red[i_neuron, timepoint] = np.sum(np.sort(dic[neuron_name])[-num_pixel:])
 
             # green
             dic = pixel_values_dict_green[timepoint]
 
-            if neuron in dic.keys():
-                extracted_traces_green[neuron, timepoint] = np.sum(np.sort(dic[neuron])[-num_pixel:])
+            if neuron_name in dic.keys():
+                extracted_traces_green[i_neuron, timepoint] = np.sum(np.sort(dic[neuron_name])[-num_pixel:])
 
-    df_extracted_red = pd.DataFrame(extracted_traces_red[1:, :], neuron_names)
-    df_extracted_green = pd.DataFrame(extracted_traces_green[1:, :], neuron_names)
+            if DEBUG:
+                break
+        if DEBUG:
+            break
+
+    df_extracted_red = pd.DataFrame(extracted_traces_red[1:, :], neuron_names).T
+    df_extracted_green = pd.DataFrame(extracted_traces_green[1:, :], neuron_names).T
     return df_extracted_red, df_extracted_green
 
