@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 
 import matplotlib.pyplot as plt
@@ -121,6 +122,38 @@ def make_grid_plot_using_project(project_data: ProjectData,
         save_grid_plot(out_fname)
 
 
+def make_grid_plot_from_dataframe(df: pd.DataFrame,
+                                  project_data = None,
+                                  neuron_names_to_plot: list = None,
+                                  color_using_behavior=True,
+                                  share_y_axis=False,
+                                  fig=None,
+                                  to_save=False):
+
+    if neuron_names_to_plot is not None:
+        neuron_names = neuron_names_to_plot
+    else:
+        neuron_names = get_names_from_df(df)
+    neuron_names.sort()
+
+    # Build functions to make a single subplot
+    tspan = np.arange(df.shape[0])
+    get_data_func = lambda neuron_name: (tspan, df[neuron_name])
+    if project_data is not None:
+        shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
+        logger = project_data.logger
+    else:
+        shade_plot_func = lambda axis: 0
+        logger = None
+
+    fig = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                        color_using_behavior=color_using_behavior, logger=logger,
+                                        share_y_axis=share_y_axis,
+                                        fig=fig)
+
+    return fig
+
+
 def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading: str) \
         -> Optional[callable]:
     valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature']
@@ -212,7 +245,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   background_shading_value_func: callable = None,
                                   color_using_behavior: bool = True,
                                   share_y_axis: bool = True,
-                                  logger: logging.Logger = None):
+                                  logger: logging.Logger = None,
+                                  fig = None):
     """
 
     Parameters
@@ -255,29 +289,37 @@ def make_grid_plot_from_callables(get_data_func: callable,
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
-    fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 25), sharex=True, sharey=share_y_axis)
-    # for ax, neuron_name in tqdm(zip(fig.axes, neuron_names), total=len(neuron_names)):
+    if fig is None:
+        fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 25), sharex=True, sharey=share_y_axis)
+        new_fig = True
+    else:
+        new_fig = False
+
     for i in tqdm(range(len(neuron_names))):
 
         ax, neuron_name = fig.axes[i], neuron_names[i]
 
         t, y = get_data_func(neuron_name)
         ax.plot(t, y, label=neuron_name)
-        # For removing the lines from the legends:
-        # https://stackoverflow.com/questions/25123127/how-do-you-just-show-the-text-label-in-plot-legend-e-g-remove-a-labels-line
-        leg = ax.legend(loc='upper left', handlelength=0, handletextpad=0, fancybox=True, framealpha=0.0)
-        for item in leg.legendHandles:
-            item.set_visible(False)
-        # ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
-        ax.set_frame_on(False)
-        ax.set_axis_off()
-        if color_using_behavior:
-            shade_plot_func(ax)
 
-        if background_shading_value_func is not None:
-            color, val = colors[i], background_shading_value_func(y)
-            ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
-            ax.set_title(f"Shaded value: {val:0.2f}")
+        if not new_fig:
+            # For removing the lines from the legends:
+            # https://stackoverflow.com/questions/25123127/how-do-you-just-show-the-text-label-in-plot-legend-e-g-remove-a-labels-line
+            leg = ax.legend(loc='upper left', handlelength=0, handletextpad=0, fancybox=True, framealpha=0.0)
+            for item in leg.legendHandles:
+                item.set_visible(False)
+            # ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
+            ax.set_frame_on(False)
+            ax.set_axis_off()
+            if color_using_behavior:
+                shade_plot_func(ax)
+
+            if background_shading_value_func is not None:
+                color, val = colors[i], background_shading_value_func(y)
+                ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
+                ax.set_title(f"Shaded value: {val:0.2f}")
+
+    return fig
 
 ##
 ## Generally plotting
