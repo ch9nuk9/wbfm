@@ -49,6 +49,7 @@ def set_big_font(size=22):
 
 
 def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predictor_names=None,
+                                     target_name='intensity_image',
                                      remove_intercept=True,
                                      model=sklearn.linear_model.LinearRegression(),
                                      bleach_correct=False,
@@ -81,7 +82,7 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
     if neuron_name is not None:
         df_green = df_green[neuron_name]
         df_red = df_red[neuron_name]
-    green = df_green["intensity_image"]
+    green = df_green[target_name]
     if bleach_correct:
         green = detrend_exponential_lmfit(green)[0]
     # Construct processed predictors
