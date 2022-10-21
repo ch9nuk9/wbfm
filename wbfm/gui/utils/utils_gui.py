@@ -146,7 +146,7 @@ def get_zxy_from_multi_neuron_layer(layer, t, ind_within_layer=None):
 
 
 def change_viewer_time_point(viewer: napari.Viewer,
-                             dt: int = None, t_target: int=None, a_max: int = None) -> None:
+                             dt: int = None, t_target: int = None, a_max: int = None) -> tuple:
     # Increment time
     if dt is not None:
         t = np.clip(viewer.dims.current_step[0] + dt, a_min=0, a_max=a_max)
@@ -156,6 +156,8 @@ def change_viewer_time_point(viewer: napari.Viewer,
         raise ValueError("Must pass either target time or dt")
     tzxy = (t,) + viewer.dims.current_step[1:]
     viewer.dims.current_step = tzxy
+
+    return tzxy
 
 
 def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy_ratio=1.0):
