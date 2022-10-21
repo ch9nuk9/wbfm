@@ -572,6 +572,7 @@ class ProjectData:
         return neuron_names
 
     def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False, raise_error_on_empty=True,
+                            neuron_names=None, verbose=0,
                             **kwargs):
         """
         Uses the currently recommended 'best' settings:
@@ -598,13 +599,21 @@ class ProjectData:
         if isinstance(min_nonnan, float):
             min_nonnan = int(min_nonnan * self.num_frames)
 
-        neuron_names = self.neuron_names
+        if neuron_names is None:
+            neuron_names = self.neuron_names
         # Initialize the object
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
         trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
 
         df = pd.DataFrame(trace_dict)
-        df_drop = df.dropna(axis=1, thresh=min_nonnan)
+        if min_nonnan is not None:
+            df_drop = df.dropna(axis=1, thresh=min_nonnan)
+        else:
+            df_drop = df
+
+        if verbose >= 1:
+            print(f"Dropped {df.shape[1] - df_drop.shape[1]} neurons with threshold {min_nonnan}/{df.shape[0]}")
+
         if df_drop.shape[1] == 0:
             msg = f"All neurons were dropped with a threshold of {min_nonnan}; check project.num_frames."\
                   f"If a video has very large gaps, num_frames should be set lower. For now, returning all"
@@ -612,6 +621,7 @@ class ProjectData:
                 raise NoNeuronsError(msg)
             else:
                 logging.warning(msg)
+                # Do not return dropped version
         else:
             df = df_drop
 
