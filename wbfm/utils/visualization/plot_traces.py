@@ -296,13 +296,13 @@ def make_grid_plot_from_callables(get_data_func: callable,
         new_fig = False
 
     for i in tqdm(range(len(neuron_names))):
-
         ax, neuron_name = fig.axes[i], neuron_names[i]
-
         t, y = get_data_func(neuron_name)
-        ax.plot(t, y, label=neuron_name)
 
-        if not new_fig:
+        if new_fig:
+            ax.plot(t, y)
+        else:
+            ax.plot(t, y, label=neuron_name)
             # For removing the lines from the legends:
             # https://stackoverflow.com/questions/25123127/how-do-you-just-show-the-text-label-in-plot-legend-e-g-remove-a-labels-line
             leg = ax.legend(loc='upper left', handlelength=0, handletextpad=0, fancybox=True, framealpha=0.0)
