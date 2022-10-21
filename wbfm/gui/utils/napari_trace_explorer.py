@@ -997,8 +997,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def on_subplot_click(self, event):
         t = event.xdata
+        t_old = self.t
         change_viewer_time_point(self.viewer, t_target=t)
         self.zoom_using_current_neuron_or_tracklet()
+        self.time_changed_callbacks(t_old)
 
     def change_trace_tracklet_mode(self):
         current_mode = self.changeTraceTrackletDropdown.currentText()
