@@ -32,7 +32,9 @@ def double_gaussian_mixture_model_to_histogram(neuron, pixel_values_dict_red):
     return auc_trace
 
 
-def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green, percentage=0.25, DEBUG=False):
+def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
+                   percentage=0.25, neuron_names=None,
+                   DEBUG=False):
     """gives back two dataframes (red;green) with new trace for every neuron
 
     example for input that is expected as pixel_values_dict_red:
@@ -41,8 +43,8 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
         "rb")
     pixel_values_dict_red = pickle.load(file, encoding='bytes')"""
 
-
-    neuron_names = project_data.neuron_names
+    if neuron_names is None:
+        neuron_names = project_data.neuron_names
     num_neurons = len(neuron_names)
     num_timepoints = project_data.red_traces.shape[0]
 
@@ -50,7 +52,7 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
     extracted_traces_red = np.array([np.array([np.nan] * num_timepoints)] * num_neurons)
     num_pixel = 10
 
-    for i_neuron, neuron_name in enumerate(tqdm(neuron_names)):
+    for i_neuron, neuron_name in enumerate(tqdm(neuron_names, leave=False)):
         # neuron_name = "neuron_" + str(i_neuron + 1).zfill(3)
         mean_vol = np.mean(project_data.red_traces[neuron_name]["area"])
         num_pixel = int(percentage * mean_vol)
