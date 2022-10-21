@@ -453,4 +453,4 @@ def calc_tracklet_track_mismatch(project_data, to_plot=False):
         plt.hist([df_nan_in_final, df_mismatched], label=['nan in final tracks', 'nonequal without nan'], bins=20);
         plt.legend()
 
-    return df_nonequal_tracks, df_mismatched
+    return df_nan_in_final, df_mismatched
