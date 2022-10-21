@@ -426,3 +426,31 @@ def test_baseline_and_new_matcher_on_embeddings(project_data, t0=0, t1=1):
     acc_baseline_greedy = accuracy_of_matches(all_matches, baseline_matches2)
 
     return acc_new, acc_baseline_bipartite, acc_baseline_greedy
+
+
+## Just the track-tracklet comparisons
+def calc_tracklet_track_mismatch(project_data, to_plot=False):
+    df_final = project_data.final_tracks.loc[:, (slice(None), 'raw_neuron_ind_in_list')].droplevel(level=1,
+                                                                                                   axis=1).T.sort_index().T
+    df_intermediate = project_data.intermediate_global_tracks.loc[:, (slice(None), 'raw_neuron_ind_in_list')].droplevel(
+        level=1, axis=1)
+
+    df_diff = (df_intermediate - df_final)
+    num_t = df_diff.shape[0]
+
+    df_nonequal_tracks = (df_diff != 0).apply(pd.value_counts).loc[True, :] / num_t
+    df_nan_in_final = (num_t - df_final.count()) / num_t
+    df_mismatched = df_nonequal_tracks - df_nan_in_final
+
+    if to_plot:
+        # plt.figure(dpi=150)
+        # plt.plot(df_nonequal_tracks, label='nonequal')
+        # plt.plot(df_mismatched, label='nonequal without nan')
+        # plt.legend()
+        # plt.xticks([]);
+
+        plt.figure()
+        plt.hist([df_nan_in_final, df_mismatched], label=['nan in final tracks', 'nonequal without nan'], bins=20);
+        plt.legend()
+
+    return df_nonequal_tracks, df_mismatched
