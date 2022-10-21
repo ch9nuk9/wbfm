@@ -130,8 +130,7 @@ class WormFullVideoPosture:
             project_config.logger.debug("behavior_fname not found; searching")
             behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
             if not flag:
-                project_config.logger.warning("behavior_fname search failed; returning empty object")
-                project_config.logger.warning("This means all calculations with curvature (kymograph) will fail!")
+                project_config.logger.warning("behavior_fname search failed; All calculations with curvature (kymograph) will fail")
                 behavior_subfolder = None
         else:
             behavior_subfolder = Path(behavior_fname).parent
@@ -154,9 +153,6 @@ class WormFullVideoPosture:
             elif file.name == 'skeleton_spline_Y_coords.csv':
                 filename_y = str(file)
         all_files = [filename_curvature, filename_x, filename_y]
-        # if None in all_files:
-        #     project_config.logger.warning(f"Did not find at least one centerline related file: {all_files}")
-            # raise FileNotFoundError
 
         # Third, get the automatic behavior annotations
         try:
@@ -190,7 +186,6 @@ class WormFullVideoPosture:
 
         """
         if self.beh_annotation_is_stable_style:
-            # print("Annotations are already stable style")
             return self.beh_annotation
         if self.beh_annotation is None:
             return None
