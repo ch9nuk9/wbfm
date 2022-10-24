@@ -3,6 +3,8 @@ import os
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
+import tensorflow as tf
+tf.__version__  # tf must be imported, see https://github.com/pytorch/pytorch/issues/81140
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.neuron_matching.long_range_matching import _unpack_for_track_tracklet_matching, \
