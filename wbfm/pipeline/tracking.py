@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -68,6 +70,52 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
                                                               make_sequential_filename=True)
 
     tracking_cfg.update_self_on_disk()
+
+
+def match_two_projects_using_superglue_using_config(project_cfg_base: ModularProjectConfig,
+                                                    project_cfg_target: ModularProjectConfig, DEBUG):
+    all_frames_base, _, num_random_templates, project_data_base, t_template, tracking_cfg, use_multiple_templates = _unpack_project_for_global_tracking(
+        DEBUG, project_cfg_base)
+    # Also unpack second config
+
+    all_frames_target, num_frames, _, project_data_target, _, _, _ = _unpack_project_for_global_tracking(
+        DEBUG, project_cfg_target)
+
+    superglue_unpacker = SuperGlueUnpacker(project_data=project_data_base, t_template=t_template)
+    tracker_base = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker)
+    model = tracker_base.model  # Save for later initialization
+    min_neurons_for_template = 50
+
+    if not use_multiple_templates:
+        df_final = track_using_template(all_frames_target, num_frames, project_data_target, tracker_base)
+    else:
+        # Ensure the reference frames are actually good by checking they have a minimum number of neurons
+        all_templates = generate_random_valid_template_frames(all_frames_base, min_neurons_for_template, num_frames,
+                                                              t_template, num_random_templates)
+
+        # All subsequent dataframes will have their names mapped to this
+        df_base = track_using_template(all_frames_target, num_frames, project_cfg_base, tracker_base)
+        all_dfs_names_aligned = [df_base]
+        all_dfs_raw = [df_base]
+        for i, t in enumerate(tqdm(all_templates[1:])):
+            superglue_unpacker = SuperGlueUnpacker(project_data=project_data_base, t_template=t)
+            tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker, model=model)
+            df = track_using_template(all_frames_target, num_frames, project_data_target, tracker)
+            df_name_aligned, _, _, _ = rename_columns_using_matching(df_base, df, try_to_fix_inf=True)
+            all_dfs_names_aligned.append(df_name_aligned)
+            all_dfs_raw.append(df)
+
+        tracking_cfg.config['t_templates'] = all_templates
+        df_final = combine_dataframes_using_bipartite_matching(all_dfs_names_aligned)
+
+    # Save in target AND base folders
+    fname = f'match_{project_data_base.shortened_name}_{project_data_target.shortened_name}.h5'
+    fname = os.path.join('visualization', fname)
+
+    project_cfg_base.h5_data_in_local_project(df_final, fname)
+    project_cfg_target.h5_data_in_local_project(df_final, fname)
+
+    return df_final
 
 
 def track_using_embedding_using_config(project_cfg, DEBUG):
