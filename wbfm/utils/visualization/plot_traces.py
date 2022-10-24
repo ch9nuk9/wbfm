@@ -1,4 +1,6 @@
 import logging
+import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -9,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
 
+from wbfm.utils.projects.utils_filenames import get_sequential_filename
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
@@ -17,8 +20,10 @@ from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.utils_plot_traces import check_default_names
+import matplotlib.style as mplstyle
 
 
 ##
@@ -98,10 +103,11 @@ def make_grid_plot_using_project(project_data: ProjectData,
     background_shading_value_func = factory_correlate_trace_to_behavior_variable(project_data,
                                                                                  behavioral_correlation_shading)
 
-    make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
-                                  color_using_behavior=color_using_behavior,
-                                  background_shading_value_func=background_shading_value_func, logger=logger,
-                                  share_y_axis=share_y_axis)
+    fig = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                        color_using_behavior=color_using_behavior,
+                                        background_shading_value_func=background_shading_value_func,
+                                        logger=logger,
+                                        share_y_axis=share_y_axis)
 
     # Save final figure
     if to_save:
@@ -120,6 +126,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
         out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
         save_grid_plot(out_fname)
+
+    return fig
 
 
 def make_grid_plot_from_dataframe(df: pd.DataFrame,
@@ -299,7 +307,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
         ax, neuron_name = fig.axes[i], neuron_names[i]
         t, y = get_data_func(neuron_name)
 
-        if new_fig:
+        if not new_fig:
             ax.plot(t, y)
         else:
             ax.plot(t, y, label=neuron_name)
@@ -391,3 +399,109 @@ def get_measurement_channel(t_dict):
     except KeyError:
         dat = t_dict['green']
     return dat
+
+
+##
+## For interactivity
+##
+
+class ClickableGridPlot:
+    def __init__(self, project_data, verbose=1):
+
+        opt = dict(channel_mode='ratio',
+                   calculation_mode='integration',
+                   filter_mode='rolling_mean',
+                   to_save=False)
+
+        mplstyle.use('fast')
+        with safe_cd(project_data.project_dir):
+            fig = make_grid_plot_using_project(project_data, **opt)
+
+        self.fig = fig
+        self.project_data = project_data
+
+        names = project_data.neuron_names
+        self.selected_neurons = {n: 0 for n in names}
+        self.current_list_index = 1
+        self.verbose = verbose
+        self.connect()
+
+    def connect(self):
+        cid = self.fig.canvas.mpl_connect('button_press_event', self.shade_selected_subplot)
+        cid = self.fig.canvas.mpl_connect('key_press_event', self.update_current_list_index)
+        cid = self.fig.canvas.mpl_connect('close_event', self.write_file)
+
+    def update_current_list_index(self, event):
+        if event.key == '1':
+            self.current_list_index = 1
+        else:
+            self.current_list_index = 2
+
+        print(f"Current list index: {self.current_list_index}")
+
+    def get_color_from_list_index(self):
+        if self.current_list_index == 1:
+            return 'green'
+        else:
+            return 'blue'
+
+    def shade_selected_subplot(self, event):
+        verbose = self.verbose
+
+        ax = event.inaxes
+        if verbose >= 3:
+            print(event)
+
+        if ax is None or len(ax.lines) == 0:
+            return
+
+        line = ax.lines[0]
+        label = line.get_label()
+
+        # Button codes: https://matplotlib.org/stable/api/backend_bases_api.html#matplotlib.backend_bases.MouseButton
+        if event.button == 1:
+            # Left click = select neuron
+            if self.selected_neurons[label] == self.current_list_index:
+                print(f"{label} already selected")
+            else:
+                print(f"Selecting {label}")
+
+                y = line.get_ydata()
+                color = self.get_color_from_list_index()
+
+                shading = ax.axhspan(np.nanmin(y), np.nanmax(y), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
+                ax.draw_artist(shading)
+
+                self.selected_neurons[label] = self.current_list_index
+
+        elif event.button == 3:
+            # Right click = deselect
+            if self.selected_neurons[label] == 0:
+                print(f"{label} not selected")
+            else:
+                print(f"Deselecting {label}")
+                # if len(ax.patches) > 0:
+                ax.patches[0].remove()
+                # ax.patches.pop()
+                plt.draw()
+                del self.selected_neurons[label]
+
+        # From: https://stackoverflow.com/questions/29277080/efficient-matplotlib-redrawing
+        ax.figure.canvas.blit(ax.bbox)
+
+        if verbose >= 2:
+            print("Currently selected neuron:")
+            print(self.selected_neurons)
+
+    def write_file(self, event):
+        log_dir = self.project_data.project_config.get_visualization_dir()
+        fname = os.path.join(log_dir, 'selected_neurons.csv')
+        fname = get_sequential_filename(fname)
+        print(f"Saving: {fname}")
+
+        df = pd.DataFrame(self.selected_neurons, index=["List ID"])
+        df.T.to_csv(path_or_buf=fname, header=False, index=True)
+        # df = pd.DataFrame(self.selected_neurons, index=[0])
+        # df.to_csv(path_or_buf=fname, header=True, index=False)
+
+        print(df)
