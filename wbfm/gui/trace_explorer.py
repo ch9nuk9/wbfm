@@ -4,7 +4,7 @@ from wbfm.gui.utils.napari_trace_explorer import napari_trace_explorer_from_conf
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')
-    parser.add_argument('--project_path', default=None,
+    parser.add_argument('--project_path', '-p', default=None,
                         help='path to config file')
     parser.add_argument('--DEBUG', default=False,
                         help='')
