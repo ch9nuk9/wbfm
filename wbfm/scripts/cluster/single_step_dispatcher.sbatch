@@ -32,7 +32,7 @@ CMD_DIR="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/scr
 
 declare -A CMD_DICT
 CMD_DICT["0b"]="0b-preprocess_working_copy_of_data.py"
-CMD_DICT["0b"]="0b-preprocess_working_copy_of_data.py"
+CMD_DICT["0-alt"]="alternate/0+zip_raw_zarr.py"
 CMD_DICT["1"]="1-segment_video.py"
 CMD_DICT["2a"]="2a-build_frame_objects.py"
 CMD_DICT["2b"]="2b-match_adjacent_volumes.py"
