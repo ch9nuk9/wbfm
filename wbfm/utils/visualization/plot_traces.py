@@ -444,10 +444,10 @@ class ClickableGridPlot:
         cid = self.fig.canvas.mpl_connect('close_event', self.write_file)
 
     def update_current_list_index(self, event):
-        if event.key == '1':
-            self.current_list_index = 1
+        if event.key in ['1', '2', '3']:
+            self.current_list_index = f"{event.key}"
         else:
-            self.current_list_index = 2
+            self.current_list_index = 0
 
         print(f"Current list index: {self.current_list_index}")
 
@@ -461,8 +461,10 @@ class ClickableGridPlot:
     def get_color_from_list_index(self):
         if self.current_list_index == 1:
             return 'green'
-        else:
+        elif self.current_list_index == 2:
             return 'blue'
+        else:
+            return 'red'
 
     def shade_selected_subplot(self, event):
         verbose = self.verbose
@@ -482,7 +484,7 @@ class ClickableGridPlot:
         # Button codes: https://matplotlib.org/stable/api/backend_bases_api.html#matplotlib.backend_bases.MouseButton
         if event.button == 1:
             # Left click = select neuron
-            if self.selected_neurons[label] == self.current_list_index:
+            if self.selected_neurons[label]["List ID"] == self.current_list_index:
                 print(f"{label} already selected")
             else:
                 print(f"Selecting {label}")
@@ -497,7 +499,7 @@ class ClickableGridPlot:
 
         elif event.button == 3:
             # Right click = deselect
-            if self.selected_neurons[label] == 0:
+            if self.selected_neurons[label]["List ID"] == 0:
                 print(f"{label} not selected")
             else:
                 print(f"Deselecting {label}")
