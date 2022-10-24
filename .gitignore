@@ -47,3 +47,6 @@ wbfm/new_project_defaults/snakemake/.snakemake/
 *.zarr/
 /wbfm/notebooks/alternative_ideas//dask-worker-space/
 *.pth
+/wbfm/notebooks/debugging/*.ipynb
+
+*.json
