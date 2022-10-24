@@ -440,12 +440,12 @@ class ClickableGridPlot:
 
     def connect(self):
         cid = self.fig.canvas.mpl_connect('button_press_event', self.shade_selected_subplot)
-        # cid = self.text_box.on_submit(self.update_current_list_index)
+        cid = self.fig.canvas.mpl_connect('key_press_event', self.update_current_list_index)
         cid = self.fig.canvas.mpl_connect('close_event', self.write_file)
 
     def update_current_list_index(self, event):
         if event.key in ['1', '2', '3']:
-            self.current_list_index = f"{event.key}"
+            self.current_list_index = int(event.key)
         else:
             self.current_list_index = 0
 
@@ -459,6 +459,7 @@ class ClickableGridPlot:
         # self.text_box.set_val(new_label)
 
     def get_color_from_list_index(self):
+        print(f"Getting color: {self.current_list_index}")
         if self.current_list_index == 1:
             return 'green'
         elif self.current_list_index == 2:
@@ -512,9 +513,9 @@ class ClickableGridPlot:
         # From: https://stackoverflow.com/questions/29277080/efficient-matplotlib-redrawing
         ax.figure.canvas.blit(ax.bbox)
 
-        if verbose >= 2:
-            print("Currently selected neuron:")
-            print(self.selected_neurons)
+        # if verbose >= 2:
+        #     print("Currently selected neuron:")
+        #     print(self.selected_neurons)
 
     def write_file(self, event):
         log_dir = self.project_data.project_config.get_visualization_dir()
