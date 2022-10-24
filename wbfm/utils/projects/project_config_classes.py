@@ -57,8 +57,15 @@ class ConfigFileWithProjectContext:
 
     def update_self_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)
-        edit_config(fname, self.config)
         self.logger.info(f"Updating config file {fname} on disk")
+        try:
+            edit_config(fname, self.config)
+        except PermissionError as e:
+            if Path(fname).is_relative_to(self.project_dir):
+                raise e
+            else:
+                self.logger.debug(f"Skipped updating nonlocal file: {fname}")
+                pass
 
     def resolve_relative_path_from_config(self, key) -> str:
         val = self.config.get(key, None)
