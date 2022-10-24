@@ -150,8 +150,8 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
 def make_project_like(project_path: str, target_directory: str, new_project_name: str = None, verbose=1):
     """Copy all config files from a project, i.e. only the files that would exist in a new project"""
 
-    assert project_path.endswith('.yaml'), "Must pass a valid config file"
-    assert os.path.exists(target_directory), "Must pass a folder that exists"
+    assert project_path.endswith('.yaml'), f"Must pass a valid config file: {project_path}"
+    assert os.path.exists(target_directory), f"Must pass a folder that exists: {target_directory}"
 
     project_dir = Path(project_path).parent
     if new_project_name is None:
