@@ -368,6 +368,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def seg_layer(self):
         return self.viewer.layers['Raw segmentation']
 
+    @property
+    def neuron_id_layer(self):
+        return self.viewer.layers['Neuron IDs']
+
     def refresh_default_napari_layers(self):
         self.logger.warning("Undocumented shortcut!")
         self.dat.add_layers_to_viewer(self.viewer, which_layers='all', check_if_layers_exist=True,
@@ -605,6 +609,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         @viewer.bind_key('Shift-z', overwrite=True)
         def zoom_last_time_point(viewer):
             self.zoom_last_time_point()
+
+        @viewer.bind_key('Shift-s', overwrite=True)
+        def toggle_neuron_ids(viewer):
+            self.toggle_neuron_ids()
 
         @viewer.bind_key('f', overwrite=True)
         def zoom_to_next_nan(viewer):
@@ -848,13 +856,20 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.tracklet_updated_psuedo_event(which_tracklets_to_update={current_tracklet_name: 'remove'})
 
     def toggle_raw_segmentation_layer(self):
-        if self.viewer.layers.selection.active == self.seg_layer:
+        self._toggle_layer(self.seg_layer)
+
+    def toggle_neuron_ids(self):
+        self.neuron_id_layer.visible = not self.neuron_id_layer.visible
+        # self._toggle_layer(self.neuron_id_layer)
+
+    def _toggle_layer(self, layer):
+        if self.viewer.layers.selection.active == layer:
             self.viewer.layers.selection.clear()
-            self.seg_layer.visible = False
+            layer.visible = False
         else:
             self.viewer.layers.selection.clear()
-            self.viewer.layers.selection.add(self.seg_layer)
-            self.seg_layer.visible = True
+            self.viewer.layers.selection.add(layer)
+            layer.visible = True
 
     def save_current_tracklet_to_neuron(self):
         self.logger.debug("USER: save current tracklet to neuron")
