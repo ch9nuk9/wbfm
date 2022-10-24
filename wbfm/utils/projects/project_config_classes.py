@@ -107,6 +107,7 @@ class ConfigFileWithProjectContext:
         https://stackoverflow.com/questions/29704139/pickle-in-python3-doesnt-work-for-large-data-saving
         """
         abs_path = self.resolve_relative_path(relative_path)
+        Path(abs_path).parent.mkdir(parents=True, exist_ok=True)
         if not abs_path.endswith('.pickle'):
             abs_path += ".pickle"
         if make_sequential_filename:
@@ -125,6 +126,7 @@ class ConfigFileWithProjectContext:
     def h5_data_in_local_project(self, data: pd.DataFrame, relative_path: str,
                                  allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):
         abs_path = self.resolve_relative_path(relative_path)
+        Path(abs_path).parent.mkdir(parents=True, exist_ok=True)
         if not abs_path.endswith('.h5'):
             abs_path += ".h5"
         if make_sequential_filename:
