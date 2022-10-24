@@ -1,6 +1,5 @@
 import logging
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -10,6 +9,7 @@ from matplotlib.colors import TwoSlopeNorm
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
+from matplotlib.widgets import TextBox
 
 from wbfm.utils.projects.utils_filenames import get_sequential_filename
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
@@ -406,8 +406,9 @@ def get_measurement_channel(t_dict):
 ##
 
 class ClickableGridPlot:
-    def __init__(self, project_data, verbose=1):
+    def __init__(self, project_data, verbose=3):
 
+        # Set up grid plot
         opt = dict(channel_mode='ratio',
                    calculation_mode='integration',
                    filter_mode='rolling_mean',
@@ -420,15 +421,26 @@ class ClickableGridPlot:
         self.fig = fig
         self.project_data = project_data
 
+        # Set up metadata objects
         names = project_data.neuron_names
-        self.selected_neurons = {n: 0 for n in names}
+        self.selected_neurons = {n: {"List ID": 0, "Proposed Name": n} for n in names}
         self.current_list_index = 1
+        self.current_selected_label = None
         self.verbose = verbose
+
+        # Set up text box for modifying names
+        # plt.subplots_adjust(bottom=0.2)
+        # axbox = plt.axes([0.1, 0.05, 0.8, 0.075])
+        # self.text_box = TextBox(axbox, 'Modify neuron name', initial="initial_text")
+        # self.text_box.on_submit(self.modify_neuron_name)
+
+        # Finish
         self.connect()
+        plt.show()
 
     def connect(self):
         cid = self.fig.canvas.mpl_connect('button_press_event', self.shade_selected_subplot)
-        cid = self.fig.canvas.mpl_connect('key_press_event', self.update_current_list_index)
+        # cid = self.text_box.on_submit(self.update_current_list_index)
         cid = self.fig.canvas.mpl_connect('close_event', self.write_file)
 
     def update_current_list_index(self, event):
@@ -438,6 +450,13 @@ class ClickableGridPlot:
             self.current_list_index = 2
 
         print(f"Current list index: {self.current_list_index}")
+
+    def modify_neuron_name(self, text):
+        self.selected_neurons[self.current_selected_label]["Proposed Name"] = text
+
+    def update_selected_label(self, new_label):
+        self.current_selected_label = new_label
+        # self.text_box.set_val(new_label)
 
     def get_color_from_list_index(self):
         if self.current_list_index == 1:
@@ -451,12 +470,14 @@ class ClickableGridPlot:
         ax = event.inaxes
         if verbose >= 3:
             print(event)
+            print(ax)
 
         if ax is None or len(ax.lines) == 0:
             return
 
         line = ax.lines[0]
         label = line.get_label()
+        self.update_selected_label(label)
 
         # Button codes: https://matplotlib.org/stable/api/backend_bases_api.html#matplotlib.backend_bases.MouseButton
         if event.button == 1:
@@ -472,7 +493,7 @@ class ClickableGridPlot:
                 shading = ax.axhspan(np.nanmin(y), np.nanmax(y), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
                 ax.draw_artist(shading)
 
-                self.selected_neurons[label] = self.current_list_index
+                self.selected_neurons[label]["List ID"] = self.current_list_index
 
         elif event.button == 3:
             # Right click = deselect
@@ -484,7 +505,7 @@ class ClickableGridPlot:
                 ax.patches[0].remove()
                 # ax.patches.pop()
                 plt.draw()
-                del self.selected_neurons[label]
+                self.selected_neurons[label]["List ID"] = 0
 
         # From: https://stackoverflow.com/questions/29277080/efficient-matplotlib-redrawing
         ax.figure.canvas.blit(ax.bbox)
@@ -499,7 +520,7 @@ class ClickableGridPlot:
         fname = get_sequential_filename(fname)
         print(f"Saving: {fname}")
 
-        df = pd.DataFrame(self.selected_neurons, index=["List ID"])
+        df = pd.DataFrame(self.selected_neurons)#, index=["List ID", "Proposed Name"])
         df.T.to_csv(path_or_buf=fname, index=True)
         fname = Path(fname).with_suffix('.xlsx')
         df.T.to_excel(fname, index=True)

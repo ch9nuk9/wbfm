@@ -22,4 +22,3 @@ if __name__ == "__main__":
     proj_dat.verbose = 0
 
     grid = ClickableGridPlot(proj_dat)
-    plt.show()
