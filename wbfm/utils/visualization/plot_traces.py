@@ -500,8 +500,10 @@ class ClickableGridPlot:
         print(f"Saving: {fname}")
 
         df = pd.DataFrame(self.selected_neurons, index=["List ID"])
-        df.T.to_csv(path_or_buf=fname, header=False, index=True)
+        df.T.to_csv(path_or_buf=fname, index=True)
+        fname = Path(fname).with_suffix('.xlsx')
+        df.T.to_excel(fname, index=True)
         # df = pd.DataFrame(self.selected_neurons, index=[0])
         # df.to_csv(path_or_buf=fname, header=True, index=False)
 
-        print(df)
+        print(df.T)
