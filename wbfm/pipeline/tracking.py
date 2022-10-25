@@ -109,12 +109,34 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
         tracking_cfg.config['t_templates'] = all_templates
         df_final = combine_dataframes_using_bipartite_matching(all_dfs_names_aligned)
 
-    # Save in target AND base folders
-    fname = f'match_{project_data_base.shortened_name}_{project_data_target.shortened_name}.h5'
-    fname = os.path.join('visualization', fname)
+    # TODO: which project_data should this be?
+    _, matches, conf, name_mapping = rename_columns_using_matching(df_final, project_data_target.final_tracks,
+                                                                   try_to_fix_inf=True)
 
-    project_cfg_base.h5_data_in_local_project(df_final, fname, also_save_csv=True)
-    project_cfg_target.h5_data_in_local_project(df_final, fname, also_save_csv=True)
+    # Save in target AND base folders
+    fname = f'match_{project_data_base.shortened_name}_{project_data_target.shortened_name}.pickle'
+    fname = os.path.join('visualization', fname)
+    project_cfg_base.pickle_data_in_local_project(matches, fname)
+    project_cfg_target.pickle_data_in_local_project(matches, fname)
+
+    fname = f'conf_{project_data_base.shortened_name}_{project_data_target.shortened_name}.pickle'
+    fname = os.path.join('visualization', fname)
+    project_cfg_base.pickle_data_in_local_project(conf, fname)
+    project_cfg_target.pickle_data_in_local_project(conf, fname)
+
+    fname = f'name_mapping_{project_data_base.shortened_name}_{project_data_target.shortened_name}.pickle'
+    fname = os.path.join('visualization', fname)
+    project_cfg_base.pickle_data_in_local_project(name_mapping, fname)
+    project_cfg_target.pickle_data_in_local_project(name_mapping, fname)
+
+    fname = f'name_mapping_{project_data_base.shortened_name}_{project_data_target.shortened_name}.xlsx'
+    fname = os.path.join('visualization', fname)
+    df_mapping = pd.DataFrame(name_mapping, index=["Immobilized Match"]).T
+    fname1 = os.path.join(project_data_base.project_dir, fname)
+    df_mapping.to_excel(fname1)
+    fname2 = os.path.join(project_data_target.project_dir, fname)
+    df_mapping.to_excel(fname2)
+
 
     return df_final
 
