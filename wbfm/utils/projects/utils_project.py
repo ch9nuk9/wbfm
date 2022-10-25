@@ -9,6 +9,8 @@ from os import path as osp
 from pathlib import Path
 
 from ruamel.yaml import YAML
+
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
 
 
@@ -147,8 +149,24 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
         print("If you want to really delete things, then use 'dryrun=False' in the command line")
 
 
-def make_project_like(project_path: str, target_directory: str, new_project_name: str = None, verbose=1):
-    """Copy all config files from a project, i.e. only the files that would exist in a new project"""
+def make_project_like(project_path: str, target_directory: str,
+                      steps_to_keep: list = None,
+                      new_project_name: str = None, verbose=1):
+    """
+    Copy all config files from a project, i.e. only the files that would exist in a new project
+
+    Parameters
+    ----------
+    project_path - project to copy
+    target_directory - parent folder within which to create the new project
+    steps_to_keep - steps, if any, to keep absolute paths connecting to the old project
+    new_project_name - optional new name for project. Default is same as old
+    verbose
+
+    Returns
+    -------
+
+    """
 
     assert project_path.endswith('.yaml'), f"Must pass a valid config file: {project_path}"
     assert os.path.exists(target_directory), f"Must pass a folder that exists: {target_directory}"
@@ -196,6 +214,22 @@ def make_project_like(project_path: str, target_directory: str, new_project_name
 
     # Update the copied project config with the new dest folder
     update_project_config_path(target_project_name)
+
+    # Connect the new project to old project config files, if any
+    if steps_to_keep is not None:
+        project_updates = dict(subfolder_configs=dict())
+        old_cfg = ModularProjectConfig(project_path)
+        old_project_dir = old_cfg.project_dir
+
+        for step in steps_to_keep:
+            subcfg_fname = old_cfg.config['subfolder_configs'].get(step, None)
+            if subcfg_fname is None:
+                continue
+
+            if Path(subcfg_fname).is_absolute():
+                project_updates['subfolder_configs'][step] = subcfg_fname
+            else:
+                project_updates['subfolder_configs'][step] = os.path.join(old_project_dir, subcfg_fname)
 
     # Also update the snakemake file with the project directory
     update_snakemake_config_path(target_project_name)
