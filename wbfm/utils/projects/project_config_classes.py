@@ -575,14 +575,17 @@ def make_project_like(project_path: str, target_directory: str,
         old_project_dir = old_cfg.project_dir
 
         for step in steps_to_keep:
+            print(f"Updating step {step}")
             subcfg_fname = old_cfg.config['subfolder_configs'].get(step, None)
             if subcfg_fname is None:
-                continue
+                raise NotImplementedError(step)
 
             if Path(subcfg_fname).is_absolute():
                 project_updates['subfolder_configs'][step] = subcfg_fname
             else:
                 project_updates['subfolder_configs'][step] = os.path.join(old_project_dir, subcfg_fname)
+    else:
+        print("All new steps")
 
     # Also update the snakemake file with the project directory
     update_snakemake_config_path(target_project_name)
