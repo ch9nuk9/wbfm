@@ -576,18 +576,28 @@ def make_project_like(project_path: str, target_directory: str,
     if steps_to_keep is not None:
         project_updates = dict(subfolder_configs=dict())
         old_cfg = ModularProjectConfig(project_path)
+        all_steps = list(old_cfg.config['subfolder_configs'].keys())
         old_project_dir = old_cfg.project_dir
 
-        for step in steps_to_keep:
-            print(f"Updating step {step}")
+        for step in all_steps:
             subcfg_fname = old_cfg.config['subfolder_configs'].get(step, None)
             if subcfg_fname is None:
                 raise NotImplementedError(step)
 
-            if Path(subcfg_fname).is_absolute():
-                project_updates['subfolder_configs'][step] = subcfg_fname
+            if step in steps_to_keep:
+                # Must make it absolute
+                if Path(subcfg_fname).is_absolute():
+                    project_updates['subfolder_configs'][step] = subcfg_fname
+                else:
+                    project_updates['subfolder_configs'][step] = os.path.join(old_project_dir, subcfg_fname)
+
             else:
-                project_updates['subfolder_configs'][step] = os.path.join(old_project_dir, subcfg_fname)
+                # Must explicitly include the relative path, otherwise it will be deleted
+                if Path(subcfg_fname).is_absolute():
+                    subcfg_fname = Path(subcfg_fname)
+                    project_updates['subfolder_configs'][step] = os.path.join(subcfg_fname.parent.name, subcfg_fname.name)
+                else:
+                    project_updates['subfolder_configs'][step] = subcfg_fname
 
         dest_fname = 'project_config.yaml'
         project_fname = os.path.join(target_project_name, dest_fname)
