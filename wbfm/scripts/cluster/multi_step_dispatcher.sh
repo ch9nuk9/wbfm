@@ -14,7 +14,7 @@ do
     esac
 done
 
-NUM_JOBS=$(( $# - 1 ))
+NUM_JOBS=$(( ( $# / 2 ) - 1 ))
 echo "Found $NUM_JOBS jobs"
 
 for step_reference in ${step_reference_array[@]}; do
