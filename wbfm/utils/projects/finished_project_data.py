@@ -106,7 +106,7 @@ class ProjectData:
     final_tracks_fname: str = None
     global2tracklet_fname: str = None
     df_all_tracklets_fname: str = None
-    force_tracklets_to_be_sparse: bool = True  # TODO: pass as arg
+    force_tracklets_to_be_sparse: bool = False  # TODO: pass as arg
 
     _custom_frame_indices: list = None
 
@@ -267,6 +267,12 @@ class ProjectData:
                                                                     this_reader=pandas_read_any_filetype)
         self.df_all_tracklets_fname = fname
         self.all_used_fnames.append(fname)
+
+        # Loosely check if there has been any manual annotation
+        if train_cfg.config['df_3d_tracklets'] != "2-training_data/all_tracklets.pickle":
+            self.force_tracklets_to_be_sparse = True
+        else:
+            self.logger.info("Found initial tracklets; not casting as sparse")
 
         if self.force_tracklets_to_be_sparse:
             # if not check_if_fully_sparse(df_all_tracklets):
