@@ -79,7 +79,6 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
     all_frames_base, _, num_random_templates, project_data_base, t_template, tracking_cfg, use_multiple_templates = _unpack_project_for_global_tracking(
         DEBUG, project_cfg_base)
     # Also unpack second config
-
     all_frames_target, num_frames, _, project_data_target, _, _, _ = _unpack_project_for_global_tracking(
         DEBUG, project_cfg_target)
 
@@ -96,7 +95,7 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
                                                               t_template, num_random_templates)
 
         # All subsequent dataframes will have their names mapped to this
-        df_base = track_using_template(all_frames_target, num_frames, project_cfg_base, tracker_base)
+        df_base = track_using_template(all_frames_target, num_frames, project_data_target, tracker_base)
         all_dfs_names_aligned = [df_base]
         all_dfs_raw = [df_base]
         for i, t in enumerate(tqdm(all_templates[1:])):

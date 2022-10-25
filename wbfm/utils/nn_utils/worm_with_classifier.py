@@ -205,6 +205,23 @@ class WormWithSuperGlueClassifier:
 
 
 def track_using_template(all_frames, num_frames, project_data, tracker):
+    """
+    Tracks all the frames in all_frames using the tracker class.
+
+    Project data should match all_frames, and is used to add information about centroids to the final dataframe
+    However, the tracker object (which is initialized with a project_data object), does not need to be the same dataset
+
+    Parameters
+    ----------
+    all_frames
+    num_frames
+    project_data
+    tracker
+
+    Returns
+    -------
+
+    """
     all_matches = []
     for t in tqdm(range(num_frames), leave=False):
         # Note: if there are no neurons, this list should be empty
