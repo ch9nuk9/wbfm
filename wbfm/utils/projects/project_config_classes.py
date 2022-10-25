@@ -584,6 +584,11 @@ def make_project_like(project_path: str, target_directory: str,
                 project_updates['subfolder_configs'][step] = subcfg_fname
             else:
                 project_updates['subfolder_configs'][step] = os.path.join(old_project_dir, subcfg_fname)
+
+        dest_fname = 'project_config.yaml'
+        project_fname = os.path.join(target_project_name, dest_fname)
+        project_fname = str(Path(project_fname).resolve())
+        edit_config(project_fname, project_updates)
     else:
         print("All new steps")
 
