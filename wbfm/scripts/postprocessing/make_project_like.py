@@ -4,7 +4,7 @@ import sacred
 from sacred import Experiment
 
 # main function
-from wbfm.utils.projects.utils_project import make_project_like
+from wbfm.utils.projects.project_config_classes import make_project_like
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)

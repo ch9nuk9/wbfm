@@ -10,7 +10,6 @@ from pathlib import Path
 
 from ruamel.yaml import YAML
 
-from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
 
 
@@ -147,92 +146,6 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
     if dryrun:
         print("DRYRUN (nothing actually deleted)")
         print("If you want to really delete things, then use 'dryrun=False' in the command line")
-
-
-def make_project_like(project_path: str, target_directory: str,
-                      steps_to_keep: list = None,
-                      new_project_name: str = None, verbose=1):
-    """
-    Copy all config files from a project, i.e. only the files that would exist in a new project
-
-    Parameters
-    ----------
-    project_path - project to copy
-    target_directory - parent folder within which to create the new project
-    steps_to_keep - steps, if any, to keep absolute paths connecting to the old project
-    new_project_name - optional new name for project. Default is same as old
-    verbose
-
-    Returns
-    -------
-
-    """
-
-    assert project_path.endswith('.yaml'), f"Must pass a valid config file: {project_path}"
-    assert os.path.exists(target_directory), f"Must pass a folder that exists: {target_directory}"
-
-    project_dir = Path(project_path).parent
-    if new_project_name is None:
-        new_project_name = project_dir.name
-    target_project_name = Path(target_directory).joinpath(new_project_name)
-    if os.path.exists(target_project_name):
-        raise FileExistsError(f"There is already a project at: {target_project_name}")
-    if verbose >= 1:
-        print(f"Copying project {project_dir}")
-
-    # Get a list of all files that should be present, relative to the project directory
-    src = get_location_of_new_project_defaults()
-    initial_fnames = list(Path(src).rglob('**/*'))
-    if len(initial_fnames) == 0:
-        print("Found no initial files, probably running this from the wrong directory")
-        raise FileNotFoundError
-
-    # Convert them to relative
-    initial_fnames = {str(fname.relative_to(src)) for fname in initial_fnames}
-    if verbose >= 3:
-        print(f"Found initial files: {initial_fnames}")
-
-    # Also get the filenames of the target folder
-    target_fnames = list(Path(project_dir).rglob('**/*'))
-    if verbose >= 3:
-        print(f"Found target files: {target_fnames}")
-
-    # Check each initial project fname, and if it is in the initial set, copy it
-    for fname in target_fnames:
-        if fname.is_dir():
-            continue
-        rel_fname = fname.relative_to(project_dir)
-        new_fname = target_project_name.joinpath(rel_fname)
-        if str(rel_fname) in initial_fnames:
-            os.makedirs(new_fname.parent, exist_ok=True)
-            shutil.copy(fname, new_fname)
-
-            if verbose >= 1:
-                print(f"Copying {rel_fname}")
-        elif verbose >= 2:
-            print(f"Not copying {rel_fname}")
-
-    # Update the copied project config with the new dest folder
-    update_project_config_path(target_project_name)
-
-    # Connect the new project to old project config files, if any
-    if steps_to_keep is not None:
-        project_updates = dict(subfolder_configs=dict())
-        old_cfg = ModularProjectConfig(project_path)
-        old_project_dir = old_cfg.project_dir
-
-        for step in steps_to_keep:
-            subcfg_fname = old_cfg.config['subfolder_configs'].get(step, None)
-            if subcfg_fname is None:
-                continue
-
-            if Path(subcfg_fname).is_absolute():
-                project_updates['subfolder_configs'][step] = subcfg_fname
-            else:
-                project_updates['subfolder_configs'][step] = os.path.join(old_project_dir, subcfg_fname)
-
-    # Also update the snakemake file with the project directory
-    update_snakemake_config_path(target_project_name)
 
 
 def update_project_config_path(abs_dir_name, project_config_updates=None):
