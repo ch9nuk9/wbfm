@@ -9,15 +9,11 @@ import sys
 import napari
 import numpy as np
 import pandas as pd
-from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence
 from PyQt5 import QtWidgets
-
 from backports.cached_property import cached_property
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication
-
 from wbfm.gui.utils.utils_matplotlib import PlotQWidget
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
     build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer
@@ -85,7 +81,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.logger.debug("Starting main UI setup")
         # Load dataframe and path to outputs
         self.viewer = viewer
-        neuron_names = get_names_from_df(self.dat.red_traces)
+        neuron_names = self.dat.neuron_names
         self.current_neuron_name = neuron_names[0]
 
         # BOX 1: Change neurons (dropdown)
@@ -165,11 +161,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox()
         # self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Remove outliers (activity)?", self.changeTraceOutlierCheckBox)
-
         # self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
         # self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
 
+        # Add reference neuron trace (dropdown)
+        self.changeReferenceTrace = QtWidgets.QComboBox()
+
+        neuron_names_and_none = self.dat.neuron_names
+        neuron_names_and_none.insert(0, "None")
+        self.changeReferenceTrace.addItems(neuron_names_and_none)
+        self.changeReferenceTrace.currentIndexChanged.connect(self.update_reference_trace)
+        self.formlayout3.addRow("Reference trace:", self.changeReferenceTrace)
         # TODO: spin box must be integers
         # self.changeTrackingOutlierSpinBox = QtWidgets.QSpinBox()
         # self.changeTrackingOutlierSpinBox.setRange(0, 1)
@@ -997,6 +1000,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def initialize_trace_subplot(self):
         self.update_stored_trace_time_series()
         self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
+        self.reference_line = self.static_ax.plot([])[0]  # Initialize an empty line
 
     def initialize_tracklet_subplot(self):
         # Designed for traces, but reuse
@@ -1039,7 +1043,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Not just updating the data because we fully cleared the axes
         del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
         self.init_subplot_post_clear()
-        self.finish_subplot_update(current_mode)
+        self.finish_subplot_update_and_draw(current_mode)
 
     def initialize_trace_or_tracklet_subplot(self):
         if not self.subplot_is_initialized:
@@ -1080,10 +1084,33 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_stored_trace_time_series()
         self.trace_line.set_ydata(self.y_trace_mode)
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
+        self.update_reference_trace(force_draw=False)
 
         self.invalidate_y_on_plot()
         self.init_subplot_post_clear()
-        self.finish_subplot_update(title, preserve_xlims=True)
+        self.finish_subplot_update_and_draw(title, preserve_xlims=True)
+
+    def update_reference_trace(self, force_draw=True):
+        if not self.changeTraceTrackletDropdown.currentText() == 'traces':
+            print("Currently on tracklet setting, so this option didn't do anything")
+            return
+        ref_name = self.changeReferenceTrace.currentText()
+        if ref_name == "None":
+            # Reset line
+            self.reference_line.set_data([], [])
+            title = f"{self.changeChannelDropdown.currentText()} trace for " \
+                    f"{self.changeTraceCalculationDropdown.currentText()}"
+        else:
+            # Plot other trace
+            t, y = self.calculate_trace(neuron_name=ref_name)
+            # print(f"Setting data: {y}")
+            self.reference_line.set_data(t, y)
+            # self.reference_line.set_ydata(y)
+            title = f"{self.changeChannelDropdown.currentText()} trace for " \
+                    f"{self.changeTraceCalculationDropdown.currentText()} mode with reference {ref_name}"
+
+        if force_draw:
+            self.finish_subplot_update_and_draw(title, preserve_xlims=True)
 
     def update_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
         # For now, actually reinitializes the axes
@@ -1153,7 +1180,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # print(f"Final tracklets on plot: {self.tracklet_lines.keys()}")
         # print(self.static_ax.lines)
 
-        self.finish_subplot_update(title, preserve_xlims)
+        self.finish_subplot_update_and_draw(title, preserve_xlims)
         pass
 
     def add_tracklet_to_cache(self, new_line, tracklet_name):
@@ -1236,7 +1263,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.last_time_point = old_time
         self.set_segmentation_layer_do_not_show_selected_label()
 
-    def finish_subplot_update(self, title, preserve_xlims=True):
+    def finish_subplot_update_and_draw(self, title, preserve_xlims=True):
         self.update_time_line()
         self.static_ax.set_title(title)
         self.static_ax.relim()
@@ -1284,8 +1311,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return [t, t], [ymin, ymax], line_color
 
     def update_stored_trace_time_series(self, calc_mode=None):
+        t, y = self.calculate_trace(calc_mode)
+        self.y_trace_mode = y
+        self.tspan = t
+
+    def calculate_trace(self, calc_mode=None, neuron_name=None):
         # i = self.changeNeuronsDropdown.currentIndex()
-        name = self.current_neuron_name
+        if neuron_name is None:
+            neuron_name = self.current_neuron_name
         channel = self.changeChannelDropdown.currentText()
         if calc_mode is None:
             calc_mode = self.changeTraceCalculationDropdown.currentText()
@@ -1298,13 +1331,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # else:
         #     min_confidence = None
         filter_mode = self.changeTraceFilteringDropdown.currentText()
-
-        t, y = self.dat.calculate_traces(channel, calc_mode, name,
-                                        remove_outliers_activity,
-                                        filter_mode,
-                                        min_confidence=min_confidence)
-        self.y_trace_mode = y
-        self.tspan = t
+        t, y = self.dat.calculate_traces(channel, calc_mode, neuron_name,
+                                         remove_outliers_activity,
+                                         filter_mode,
+                                         min_confidence=min_confidence)
+        return t, y
 
     def update_stored_tracklets_for_plotting(self):
         name = self.current_neuron_name
