@@ -504,6 +504,7 @@ def rename_variable_in_config(project_path: str, vars_to_rename: dict):
 
 def make_project_like(project_path: str, target_directory: str,
                       steps_to_keep: list = None,
+                      target_suffix: str = None,
                       new_project_name: str = None, verbose=1):
     """
     Copy all config files from a project, i.e. only the files that would exist in a new project
@@ -513,6 +514,7 @@ def make_project_like(project_path: str, target_directory: str,
     project_path - project to copy
     target_directory - parent folder within which to create the new project
     steps_to_keep - steps, if any, to keep absolute paths connecting to the old project
+    target_suffix - suffix for filename. Default is none
     new_project_name - optional new name for project. Default is same as old
     verbose
 
@@ -527,6 +529,8 @@ def make_project_like(project_path: str, target_directory: str,
     project_dir = Path(project_path).parent
     if new_project_name is None:
         new_project_name = project_dir.name
+    if target_suffix is not None:
+        new_project_name = f"{new_project_name}{target_suffix}"
     target_project_name = Path(target_directory).joinpath(new_project_name)
     if os.path.exists(target_project_name):
         raise FileExistsError(f"There is already a project at: {target_project_name}")
