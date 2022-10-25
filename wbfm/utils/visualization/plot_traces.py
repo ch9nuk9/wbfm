@@ -428,6 +428,7 @@ class ClickableGridPlot:
         self.current_selected_label = None
         self.verbose = verbose
 
+
         # Set up text box for modifying names
         # plt.subplots_adjust(bottom=0.2)
         # axbox = plt.axes([0.1, 0.05, 0.8, 0.075])
@@ -436,10 +437,12 @@ class ClickableGridPlot:
 
         # Finish
         self.connect()
+        # Load file and add initial colors, if any
+        self.load_previous_file()
         plt.show()
 
     def connect(self):
-        cid = self.fig.canvas.mpl_connect('button_press_event', self.shade_selected_subplot)
+        cid = self.fig.canvas.mpl_connect('button_press_event', self.shade_selected_subplot_callback)
         cid = self.fig.canvas.mpl_connect('key_press_event', self.update_current_list_index)
         cid = self.fig.canvas.mpl_connect('close_event', self.write_file)
 
@@ -467,28 +470,31 @@ class ClickableGridPlot:
         else:
             return 'red'
 
-    def shade_selected_subplot(self, event):
-        verbose = self.verbose
-
+    def shade_selected_subplot_callback(self, event):
         ax = event.inaxes
-        if verbose >= 3:
+        if self.verbose >= 3:
             print(event)
             print(ax)
-
         if ax is None or len(ax.lines) == 0:
             return
+        button_pressed = event.button
+
+        self.shade_selected_subplot(ax, button_pressed)
+
+    def shade_selected_subplot(self, ax, button_pressed):
 
         line = ax.lines[0]
         label = line.get_label()
         self.update_selected_label(label)
 
         # Button codes: https://matplotlib.org/stable/api/backend_bases_api.html#matplotlib.backend_bases.MouseButton
-        if event.button == 1:
+        if button_pressed == 1:
             # Left click = select neuron
             if self.selected_neurons[label]["List ID"] == self.current_list_index:
                 print(f"{label} already selected")
             else:
                 print(f"Selecting {label}")
+                self._reset_shading(ax)
 
                 y = line.get_ydata()
                 color = self.get_color_from_list_index()
@@ -498,32 +504,35 @@ class ClickableGridPlot:
 
                 self.selected_neurons[label]["List ID"] = self.current_list_index
 
-        elif event.button == 3:
+        elif button_pressed == 3:
             # Right click = deselect
             if self.selected_neurons[label]["List ID"] == 0:
                 print(f"{label} not selected")
             else:
                 print(f"Deselecting {label}")
-                # if len(ax.patches) > 0:
-                ax.patches[0].remove()
-                # ax.patches.pop()
+                self._reset_shading(ax)
                 plt.draw()
                 self.selected_neurons[label]["List ID"] = 0
-
+        else:
+            print("Button press detected, but did nothing")
         # From: https://stackoverflow.com/questions/29277080/efficient-matplotlib-redrawing
         ax.figure.canvas.blit(ax.bbox)
-
         # if verbose >= 2:
         #     print("Currently selected neuron:")
         #     print(self.selected_neurons)
 
+    def _reset_shading(self, ax):
+        if len(ax.patches) > 0:
+            [p.remove() for p in ax.patches]
+            # ax.patches = []
+
     def write_file(self, event):
         log_dir = self.project_data.project_config.get_visualization_dir()
         fname = os.path.join(log_dir, 'selected_neurons.csv')
-        fname = get_sequential_filename(fname)
+        # fname = get_sequential_filename(fname)
         print(f"Saving: {fname}")
 
-        df = pd.DataFrame(self.selected_neurons)#, index=["List ID", "Proposed Name"])
+        df = pd.DataFrame(self.selected_neurons)
         df.T.to_csv(path_or_buf=fname, index=True)
         fname = Path(fname).with_suffix('.xlsx')
         df.T.to_excel(fname, index=True)
@@ -531,3 +540,33 @@ class ClickableGridPlot:
         # df.to_csv(path_or_buf=fname, header=True, index=False)
 
         print(df.T)
+
+    def load_previous_file(self):
+        log_dir = self.project_data.project_config.get_visualization_dir()
+        fname = os.path.join(log_dir, 'selected_neurons.csv')
+        if not os.path.exists(fname):
+            print(f"Did not find previous state at: {fname}")
+            return
+        else:
+            # plt.show(block=False)
+            self.fig.canvas.draw()
+            print(f"Reading previous state from: {fname}")
+            df = pd.read_csv(fname, index_col=0)
+
+            axes = self.fig.axes
+            button_pressed = 1
+
+            for ax, (name, list_index) in zip(axes, df.iterrows()):
+                if list_index[0] == 0:
+                    continue
+
+                # Add the shading to this axis
+                print(f"Shading {name} with index {list_index}")
+                self.current_list_index = list_index[0]
+                self.shade_selected_subplot(ax, button_pressed)
+
+                # Also add the info to the dict
+                self.selected_neurons[name]["List ID"] = list_index
+
+        plt.draw()
+        self.current_list_index = 1
