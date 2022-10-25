@@ -113,8 +113,8 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
     fname = f'match_{project_data_base.shortened_name}_{project_data_target.shortened_name}.h5'
     fname = os.path.join('visualization', fname)
 
-    project_cfg_base.h5_data_in_local_project(df_final, fname)
-    project_cfg_target.h5_data_in_local_project(df_final, fname)
+    project_cfg_base.h5_data_in_local_project(df_final, fname, also_save_csv=True)
+    project_cfg_target.h5_data_in_local_project(df_final, fname, also_save_csv=True)
 
     return df_final
 
