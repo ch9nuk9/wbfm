@@ -157,13 +157,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation'])
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Trace filtering:", self.changeTraceFilteringDropdown)
-        # Change trace outlier removal (dropdown)
-        # self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox()
-        # self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
-        # self.formlayout3.addRow("Remove outliers (activity)?", self.changeTraceOutlierCheckBox)
+        # Change trace outlier removal (checkbox)
+        self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox()
+        self.changeTraceOutlierCheckBox.setChecked(True)
+        self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
+        self.formlayout3.addRow("Remove outliers?", self.changeTraceOutlierCheckBox)
         # self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
         # self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
+        # Do bleach correction
+        self.changeBleachCorrectionCheckBox = QtWidgets.QCheckBox()
+        self.changeBleachCorrectionCheckBox.setChecked(True)
+        self.changeBleachCorrectionCheckBox.stateChanged.connect(self.update_trace_subplot)
+        self.formlayout3.addRow("Do bleach correction?", self.changeBleachCorrectionCheckBox)
 
         # Add reference neuron trace (dropdown)
         self.changeReferenceTrace = QtWidgets.QComboBox()
@@ -1322,9 +1328,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         channel = self.changeChannelDropdown.currentText()
         if calc_mode is None:
             calc_mode = self.changeTraceCalculationDropdown.currentText()
-        remove_outliers_activity = False
+        # remove_outliers_activity = False
         min_confidence = None
-        # remove_outliers_activity = self.changeTraceOutlierCheckBox.checkState()
+        # bleach_correct = True
+
+        remove_outliers_activity = self.changeTraceOutlierCheckBox.isChecked()
+        bleach_correct = self.changeBleachCorrectionCheckBox.isChecked()
         # remove_outliers_tracking = self.changeTrackingOutlierCheckBox.checkState()
         # if remove_outliers_tracking:
         #     min_confidence = self.changeTrackingOutlierSpinBox.value()
@@ -1334,7 +1343,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         t, y = self.dat.calculate_traces(channel, calc_mode, neuron_name,
                                          remove_outliers_activity,
                                          filter_mode,
-                                         min_confidence=min_confidence)
+                                         min_confidence=min_confidence,
+                                         bleach_correct=bleach_correct)
         return t, y
 
     def update_stored_tracklets_for_plotting(self):
