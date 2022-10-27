@@ -30,7 +30,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     main_subplot_xlim = None
 
     last_time_point = 0
-    current_time_point = 0
+    current_time_point_before_callback = 0
 
     logger: logging.Logger = None
 
@@ -702,20 +702,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return len(self.dat.final_tracks) - 1
 
     def zoom_next(self, viewer=None, dt=1):
-        t_old = self.t
         change_viewer_time_point(self.viewer, dt=dt, a_max=self.max_time)
-        self.time_changed_callbacks(t_old)
+        self.time_changed_callbacks()
 
     def zoom_previous(self, viewer=None, dt=1):
-        t_old = self.t
         change_viewer_time_point(self.viewer, dt=-dt, a_max=self.max_time)
-        self.time_changed_callbacks(t_old)
+        self.time_changed_callbacks()
 
     def zoom_last_time_point(self, viewer=None):
         t_target = self.last_time_point
-        t_old = self.t
         change_viewer_time_point(self.viewer, t_target=t_target, a_max=self.max_time)
-        self.time_changed_callbacks(t_old)
+        self.time_changed_callbacks()
 
     def zoom_to_next_nan(self, viewer=None):
         y_on_plot = self.y_on_plot[0]  # Don't need both min and max
@@ -732,26 +729,24 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 break
         else:
             print("No nan point found; not moving")
-        self.time_changed_callbacks(t_old)
+        self.time_changed_callbacks()
 
     def zoom_to_next_conflict(self, viewer=None):
-        t_old = self.t
         t, conflict_neuron = self.dat.tracklet_annotator.time_of_next_conflict(i_start=self.t)
 
         if conflict_neuron is not None:
             change_viewer_time_point(self.viewer, t_target=t)
         else:
             print("No conflict point found; not moving")
-        self.time_changed_callbacks(t_old)
+        self.time_changed_callbacks()
 
     def zoom_to_end_of_current_tracklet(self, viewer=None):
-        t_old = self.t
         t = self.dat.tracklet_annotator.end_time_of_current_tracklet()
         if t is not None:
             change_viewer_time_point(self.viewer, t_target=t)
         else:
             print("No tracklet selected; not zooming")
-        self.time_changed_callbacks(t_old)
+        self.time_changed_callbacks()
 
     def zoom_to_next_ground_truth_conflict(self):
         if self.dat.tracklet_annotator.gt_mismatches is None:
@@ -814,13 +809,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 self.viewer.layers.remove(layer)
 
     def zoom_to_start_of_current_tracklet(self, viewer=None):
-        t_old = self.t
         t = self.dat.tracklet_annotator.start_time_of_current_tracklet()
         if t is not None:
             change_viewer_time_point(self.viewer, t_target=t)
         else:
             print("No tracklet selected; not zooming")
-        self.time_changed_callbacks(t_old)
+        self.time_changed_callbacks()
 
     def split_current_tracklet_keep_right(self):
         self.logger.debug("USER: split tracklet keep right")
@@ -1016,9 +1010,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def on_subplot_click(self, event):
         t = event.xdata
-        t_old = self.t
         change_viewer_time_point(self.viewer, t_target=t)
-        self.time_changed_callbacks(t_old)
+        self.time_changed_callbacks()
 
     def change_trace_tracklet_mode(self):
         current_mode = self.changeTraceTrackletDropdown.currentText()
@@ -1257,9 +1250,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def set_segmentation_layer_do_not_show_selected_label(self):
         self.seg_layer.show_selected_label = False
 
-    def time_changed_callbacks(self, old_time=None):
-        if old_time is not None:
-            self.last_time_point = old_time
+    def time_changed_callbacks(self):
+        self.last_time_point = self.current_time_point_before_callback
+        self.current_time_point_before_callback = self.t
         self.zoom_using_current_neuron_or_tracklet()
         self.set_segmentation_layer_do_not_show_selected_label()
 
