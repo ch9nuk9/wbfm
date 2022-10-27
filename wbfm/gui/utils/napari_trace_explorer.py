@@ -1100,9 +1100,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         ref_name = self.changeReferenceTrace.currentText()
         if ref_name == "None":
             # Reset line
+            # self.static_ax.lines.remove(self.reference_line)
             self.reference_line.set_data([], [])
             title = f"{self.changeChannelDropdown.currentText()} trace for " \
                     f"{self.changeTraceCalculationDropdown.currentText()}"
+
+            if force_draw:
+                # For some reason, just the second call doesn't properly delete the line
+                self.update_trace_subplot()
+                self.finish_subplot_update_and_draw(title, preserve_xlims=True)
         else:
             # Plot other trace
             t, y = self.calculate_trace(neuron_name=ref_name)
@@ -1112,8 +1118,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             title = f"{self.changeChannelDropdown.currentText()} trace for " \
                     f"{self.changeTraceCalculationDropdown.currentText()} mode with reference {ref_name}"
 
-        if force_draw:
-            self.finish_subplot_update_and_draw(title, preserve_xlims=True)
+            if force_draw:
+                self.finish_subplot_update_and_draw(title, preserve_xlims=True)
 
     def update_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
         # For now, actually reinitializes the axes
