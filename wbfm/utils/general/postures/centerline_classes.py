@@ -49,6 +49,8 @@ class WormFullVideoPosture:
     bigtiff_start_volume: int = 0
     frames_per_volume: int = 32  # TODO: make sure this is synchronized with z_slices
 
+    project_config: ModularProjectConfig = None
+
     def __post_init__(self):
         self.fix_temporary_annotation_format()
 
@@ -120,7 +122,8 @@ class WormFullVideoPosture:
         frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
         bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
         opt = dict(frames_per_volume=frames_per_volume,
-                   bigtiff_start_volume=bigtiff_start_volume)
+                   bigtiff_start_volume=bigtiff_start_volume,
+                   project_config=project_config)
 
         # First, get the folder that contains all behavior information
         # Try 1: read from config file
@@ -140,9 +143,7 @@ class WormFullVideoPosture:
             return WormFullVideoPosture(**opt)
 
         # Second get the centerline-specific files
-        filename_curvature = None
-        filename_x = None
-        filename_y = None
+        filename_curvature, filename_x, filename_y = None, None, None
         for file in Path(behavior_subfolder).iterdir():
             if not file.is_file():
                 continue
@@ -164,6 +165,15 @@ class WormFullVideoPosture:
             project_config.logger.warning("Did not find behavioral annotations")
             filename_beh_annotation = None
         all_files.append(filename_beh_annotation)
+
+        # Fourth, get the table stage position (Should always exist)
+        filename_table_position = None
+        fnames = [fn for fn in glob.glob(os.path.join(behavior_subfolder.parent, '*TablePosRecord.txt'))]
+        if len(fnames) != 1:
+            logging.warning(f"Did not find stage position file in {behavior_subfolder}")
+        else:
+            filename_table_position = fnames[0]
+        all_files.append(filename_table_position)
 
         return WormFullVideoPosture(*all_files, **opt)
 
@@ -274,7 +284,7 @@ class WormFullVideoPosture:
     @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
-        return range(self.bigtiff_start_volume*self.frames_per_volume, len(self.curvature), self.frames_per_volume)
+        return range(self.bigtiff_start_volume*self.frames_per_volume, len(self.worm_speed), self.frames_per_volume)
 
     def __repr__(self):
         return f"=======================================\n\
