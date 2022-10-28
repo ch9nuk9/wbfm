@@ -538,7 +538,7 @@ class ProjectData:
 
         Parameters
         ----------
-        channel_mode - red, green, ratio, df_over_f_20, ratio_df_over_f_20, linear_model
+        channel_mode - red, green, ratio, df_over_f_20, ratio_df_over_f_20, dr_over_r_20, linear_model
         calculation_mode - integration (raw sum of pixels), volume, mean, z, likelihood (from the tracks dataframe)
         neuron_name - example: 'neuron_001'
         remove_outliers - try to remove spiking outliers
@@ -581,6 +581,7 @@ class ProjectData:
                             neuron_names=None, verbose=0,
                             **kwargs):
         """
+
         Uses the currently recommended 'best' settings:
         opt = dict(
             channel_mode='linear_model',
@@ -588,11 +589,21 @@ class ProjectData:
             remove_outliers=True
         )
 
-        Also drops neurons with too few nonnan points, in this case 75%
-
         if interpolate_nan is True, then additionally (after dropping empty neurons and removing outliers):
             1. Filter
             2. PPCA to fill in all gaps
+
+        Parameters
+        ----------
+        min_nonnan - drops neurons with too few nonnan points, in this case 75%
+        interpolate_nan - bool, see above
+        raise_error_on_empty - if empty AFTER dropping, raise an error
+        neuron_names - a subset of names to do
+        verbose
+        kwargs - Args to pass to calculate_traces; updates the default 'opt' dict above
+
+        Returns
+        -------
 
         """
         opt = dict(
