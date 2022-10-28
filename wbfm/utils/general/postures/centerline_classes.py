@@ -246,20 +246,32 @@ class WormFullVideoPosture:
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
         # tdelta = df.index[1] - df.index[0]  # units = nanoseconds
-        tdelta = pd.Series(self.stage_position.index).diff().mean()
+        tdelta = pd.Series(df.index).diff().mean()
+        tdelta_s = tdelta.delta / 1e9
+        speed_mm_per_s = speed / tdelta_s
+
+        return speed_mm_per_s
+
+    # @property
+    # def worm_speed_fluorescence_fps(self):
+    #     return self.worm_speed[self.subsample_indices]
+    @cached_property
+    def worm_speed_fluorescence_fps(self):
+        # Don't subset the speed directly, but go back to the positions
+        df = self.stage_position_fluorescence_fps
+        speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
+
+        # tdelta = df.index[1] - df.index[0]  # units = nanoseconds
+        tdelta = pd.Series(df.index).diff().mean()
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
 
         return speed_mm_per_s
 
     @property
-    def worm_speed_fluorescence_fps(self):
-        return self.worm_speed[self.subsample_indices]
-
-    @property
     def worm_speed_fluorescence_fps_signed(self):
         """Just sets the speed to be negative when the behavior is annotated as reversal"""
-        speed = self.worm_speed[self.subsample_indices]
+        speed = self.worm_speed_fluorescence_fps
         rev_ind = self.behavior_annotations_fluorescence_fps == 1
         velocity = copy.copy(speed)
         velocity[rev_ind] *= -1
