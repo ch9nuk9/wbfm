@@ -7,6 +7,7 @@ from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 
 def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshold=None, verbose=0):
     # In practice very sensitive to exact threshold value, which only really works for the ratio
+    y = y.copy()
     y_filt = y.rolling(window, min_periods=1, center=True).mean()
     error = np.abs(y - y_filt)
     if outlier_threshold is None:
@@ -22,6 +23,7 @@ def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshol
 
 
 def remove_outliers_using_std(y: pd.Series, std_factor: float, verbose=0):
+    y = y.copy()
     outlier_threshold = std_factor * np.std(y)
     is_outlier = np.abs(y - y.mean()) > outlier_threshold
     y[is_outlier] = np.nan
