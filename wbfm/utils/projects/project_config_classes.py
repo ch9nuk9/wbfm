@@ -161,7 +161,7 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     def __post_init__(self):
         pass
 
-    def resolve_relative_path(self, val: str, prepend_subfolder=False) -> str:
+    def resolve_relative_path(self, val: str, prepend_subfolder=False) -> Optional[str]:
         if val is None:
             return None
 
@@ -186,19 +186,19 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     """
 
-    def get_segmentation_config(self):
+    def get_segmentation_config(self) -> SubfolderConfigFile:
         fname = Path(self.config['subfolder_configs']['segmentation'])
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
-    def get_training_config(self):
+    def get_training_config(self) -> SubfolderConfigFile:
         fname = Path(self.config['subfolder_configs']['training_data'])
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
-    def get_tracking_config(self):
+    def get_tracking_config(self) -> SubfolderConfigFile:
         fname = Path(self.config['subfolder_configs']['tracking'])
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
-    def get_preprocessing_config(self):
+    def get_preprocessing_config(self) -> ConfigFileWithProjectContext:
         """
         Not often used, except for updating the file.
 
@@ -207,14 +207,14 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = str(Path(self.project_dir).joinpath('preprocessing_config.yaml'))
         return ConfigFileWithProjectContext(fname)
 
-    def get_behavior_config(self):
+    def get_behavior_config(self) -> SubfolderConfigFile:
         fname = Path(self.project_dir).joinpath('behavior', 'behavior_config.yaml')
         if not fname.exists():
             # self.logger.warning("Project does not have a behavior config file")
             raise FileNotFoundError
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
-    def get_traces_config(self):
+    def get_traces_config(self) -> SubfolderConfigFile:
         fname = Path(self.config['subfolder_configs']['traces'])
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
@@ -263,7 +263,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_visualization_config(self):
         fname = Path(self.config['subfolder_configs'].get('visualization', None))
-        return SubfolderConfigFile(**self._check_path_and_load_config(fname, allow_config_to_not_exist=True))
+        cfg = SubfolderConfigFile(**self._check_path_and_load_config(fname, allow_config_to_not_exist=True))
+        try:
+            Path(cfg.subfolder).mkdir(exist_ok=True)
+        except PermissionError:
+            pass
+        return cfg
 
     def resolve_mounted_path_in_current_os(self, key) -> Optional[Path]:
         path = self.config.get(key, None)

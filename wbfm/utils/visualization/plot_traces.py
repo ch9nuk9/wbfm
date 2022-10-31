@@ -527,7 +527,7 @@ class ClickableGridPlot:
             # ax.patches = []
 
     def write_file(self, event):
-        log_dir = self.project_data.project_config.get_visualization_dir()
+        log_dir = self.project_data.project_config.get_visualization_config().subfolder
         fname = os.path.join(log_dir, 'selected_neurons.csv')
         # fname = get_sequential_filename(fname)
         print(f"Saving: {fname}")
@@ -542,7 +542,7 @@ class ClickableGridPlot:
         print(df.T)
 
     def load_previous_file(self):
-        log_dir = self.project_data.project_config.get_visualization_dir()
+        log_dir = self.project_data.project_config.get_visualization_config().subfolder
         fname = os.path.join(log_dir, 'selected_neurons.csv')
         if not os.path.exists(fname):
             print(f"Did not find previous state at: {fname}")

@@ -561,7 +561,7 @@ class ProjectData:
             filter_mode=filter_mode,
             bleach_correct=bleach_correct,
             background_per_pixel=self.background_per_pixel,
-            alternate_dataframe_folder=self.project_config.get_visualization_dir(),
+            alternate_dataframe_folder=self.project_config.get_visualization_config().subfolder,
             **kwargs
         )
         y = self._trace_plotter.calculate_traces(neuron_name)
@@ -689,7 +689,7 @@ class ProjectData:
 
         """
         out_fname = f'fig-{suffix}.png'
-        foldername = self.project_config.get_visualization_dir()
+        foldername = self.project_config.get_visualization_config().subfolder
         out_fname = os.path.join(foldername, out_fname)
         out_fname = get_sequential_filename(out_fname)
 
