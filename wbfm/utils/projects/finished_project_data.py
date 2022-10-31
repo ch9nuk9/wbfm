@@ -530,7 +530,7 @@ class ProjectData:
                          remove_outliers: bool = False,
                          filter_mode: str = 'no_filtering',
                          bleach_correct: bool = True,
-                         min_confidence: float = None) -> Tuple[list, list]:
+                         **kwargs) -> Tuple[list, pd.Series]:
         """
         Uses TracePlotter class to calculate traces
 
@@ -560,9 +560,9 @@ class ProjectData:
             remove_outliers=remove_outliers,
             filter_mode=filter_mode,
             bleach_correct=bleach_correct,
-            min_confidence=min_confidence,
             background_per_pixel=self.background_per_pixel,
-            alternate_dataframe_folder=self.project_config.get_visualization_dir()
+            alternate_dataframe_folder=self.project_config.get_visualization_dir(),
+            **kwargs
         )
         y = self._trace_plotter.calculate_traces(neuron_name)
         return self._trace_plotter.tspan, y
