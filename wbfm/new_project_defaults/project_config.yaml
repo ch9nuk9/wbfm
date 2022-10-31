@@ -52,7 +52,7 @@ subfolder_configs:
   tracking: 3-tracking/tracking_config.yaml
   traces: 4-traces/traces_config.yaml
   # Non-pipeline steps
-  data: dat/visualization_config.yaml
+  dat: dat/visualization_config.yaml  # NOTE: for now, not used
   visualization: visualization/visualization_config.yaml
 
 ###################
