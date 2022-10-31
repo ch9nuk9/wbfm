@@ -245,23 +245,18 @@ class WormFullVideoPosture:
         df = self.stage_position
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
-        # tdelta = df.index[1] - df.index[0]  # units = nanoseconds
         tdelta = pd.Series(df.index).diff().mean()
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
 
         return speed_mm_per_s
 
-    # @property
-    # def worm_speed_fluorescence_fps(self):
-    #     return self.worm_speed[self.subsample_indices]
     @cached_property
     def worm_speed_fluorescence_fps(self):
         # Don't subset the speed directly, but go back to the positions
         df = self.stage_position_fluorescence_fps
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
-        # tdelta = df.index[1] - df.index[0]  # units = nanoseconds
         tdelta = pd.Series(df.index).diff().mean()
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
@@ -489,8 +484,6 @@ class WormSinglePosture:
 
         centerline_tangent = self.centerline[closest_centerline_ind[0][0] + 1, :] - closest_centerline_pt
         angle = np.arctan2(centerline_tangent[0], centerline_tangent[1])
-        # angle = np.angle(centerline_tangent[0] + 1j * centerline_tangent[1])
-        # print(f"Rotation angle of {angle} with centerline index {closest_centerline_ind} and tangent {centerline_tangent} (pt={closest_centerline_pt})")
         matrix = transform.EuclideanTransform(rotation=angle)
 
         return matrix
