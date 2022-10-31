@@ -98,7 +98,7 @@ def save_alternate_trace_dataframes(project_data):
                                                               percentage=percentage)
 
         fname = f"df_top_{percentage}"
-        fname.replace('.', '-')
+        fname = fname.replace('.', '-')
         fname = os.path.join('visualization', f"{fname}")
         red_fname = f"{fname}_red.h5"
         project_data.project_config.h5_data_in_local_project(df_extracted_red, red_fname)
