@@ -47,6 +47,9 @@ class TracePlotter:
 
     tspan: list = None
 
+    # For experimental methods of trace calculation
+    alternate_dataframe_folder: str = None
+
     verbose: int = 1
 
     def __post_init__(self):
@@ -73,7 +76,7 @@ class TracePlotter:
         valid_modes = ['green', 'red', 'ratio', 'linear_model',
                        'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20',
                        'linear_model_experimental',
-                       'top_pixels_100']
+                       'top_pixels_10_percent']
         assert (self.channel_mode in valid_modes), \
             f"Unknown channel mode {self.channel_mode}, must be one of {valid_modes}"
 
@@ -163,7 +166,7 @@ class TracePlotter:
                     dr_over_r = (ratio - r0) / r0
                     return pd.Series(dr_over_r)
 
-        elif self.channel_mode in ['top_pixels_100']:
+        elif self.channel_mode in ['top_pixels_10_percent']:
             # Fourth: use a dictionary of the individual pixel values
             def calc_y(i) -> pd.Series:
                 ratio = calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
