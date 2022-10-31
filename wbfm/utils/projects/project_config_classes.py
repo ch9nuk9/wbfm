@@ -513,7 +513,8 @@ def make_project_like(project_path: str, target_directory: str,
     ----------
     project_path - project to copy
     target_directory - parent folder within which to create the new project
-    steps_to_keep - steps, if any, to keep absolute paths connecting to the old project
+    steps_to_keep - steps, if any, to keep absolute paths connecting to the old project.
+        Should be the full name of the step, not just a number (and not including the number)
     target_suffix - suffix for filename. Default is none
     new_project_name - optional new name for project. Default is same as old
     verbose
