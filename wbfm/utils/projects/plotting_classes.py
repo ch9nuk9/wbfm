@@ -1,4 +1,5 @@
 import logging
+import os
 import threading
 from collections import defaultdict
 from dataclasses import dataclass
@@ -10,6 +11,7 @@ import numpy as np
 import pandas as pd
 import sklearn.linear_model
 import zarr
+from backports.cached_property import cached_property
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
 
@@ -49,6 +51,7 @@ class TracePlotter:
 
     # For experimental methods of trace calculation
     alternate_dataframe_folder: str = None
+    use_alternate_dataframes: bool = False
 
     verbose: int = 1
 
@@ -115,10 +118,7 @@ class TracePlotter:
 
         elif self.channel_mode in ['red', 'green', 'df_over_f_20']:
             # Second: use a single traces dataframe (red OR green)
-            if self.channel_mode == 'red':
-                df = self.red_traces
-            else:
-                df = self.green_traces
+            df = self.get_single_dataframe_for_traces()
 
             if self.channel_mode in ['red', 'green']:
                 def calc_y(i) -> pd.Series:
@@ -126,12 +126,13 @@ class TracePlotter:
             elif self.channel_mode == 'df_over_f_20':
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df)
+            else:
+                raise NotImplementedError
 
         elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'linear_model',
                                    'linear_model_experimental']:
             # Third: use both traces dataframes (red AND green)
-            df_red = self.red_traces
-            df_green = self.green_traces
+            df_red, df_green = self.get_two_dataframes_for_traces()
 
             if self.channel_mode == 'ratio':
                 def calc_y(i) -> pd.Series:
@@ -142,6 +143,8 @@ class TracePlotter:
                     return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
 
             elif self.channel_mode == 'linear_model':
+                assert not self.use_alternate_dataframes, "Not yet implemented"
+
                 def calc_y(_neuron_name) -> pd.Series:
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, _neuron_name)
                     return y_result_including_na
@@ -165,14 +168,8 @@ class TracePlotter:
                     r0 = np.nanquantile(ratio, 0.2)
                     dr_over_r = (ratio - r0) / r0
                     return pd.Series(dr_over_r)
-
-        elif self.channel_mode in ['top_pixels_10_percent']:
-            # Fourth: use a dictionary of the individual pixel values
-            def calc_y(i) -> pd.Series:
-                ratio = calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
-                r0 = np.nanquantile(ratio, 0.2)
-                dr_over_r = (ratio - r0) / r0
-                return pd.Series(dr_over_r)
+            else:
+                raise NotImplementedError
 
         else:
             raise ValueError("Unknown calculation or channel mode")
@@ -225,6 +222,40 @@ class TracePlotter:
 
         df_traces = pd.DataFrame(trace_dict)
         return df_traces
+
+    @cached_property
+    def alternate_dataframes(self):
+        if self.channel_mode == 'top_pixels_10_percent':
+            fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_red.h5')
+            df_red = pd.read_hdf(fname)
+            fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_green.h5')
+            df_green = pd.read_hdf(fname)
+            return df_red, df_green
+        else:
+            raise NotImplementedError(f"Unknown type: {self.channel_mode}")
+
+    def get_single_dataframe_for_traces(self):
+        """If the trace uses only a single dataframe, this switches between which base"""
+        if not self.use_alternate_dataframes:
+            if self.channel_mode == 'red':
+                df = self.red_traces
+            else:
+                df = self.green_traces
+        else:
+            df_red, df_green = self.alternate_dataframes
+            if self.channel_mode == 'red':
+                df = df_red
+            else:
+                df = df_green
+        return df
+
+    def get_two_dataframes_for_traces(self):
+        """If the trace uses both dataframes, this switches between which base"""
+        if not self.use_alternate_dataframes:
+            df_red, df_green = self.red_traces, self.green_traces
+        else:
+            df_red, df_green = self.alternate_dataframes
+        return df_red, df_green
 
 
 @dataclass
