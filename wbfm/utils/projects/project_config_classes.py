@@ -253,7 +253,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         foldername.mkdir(exist_ok=True)
         return str(foldername)
 
-    def get_visualization_dir(self) -> str:
+    def _get_visualization_dir(self) -> str:
         foldername = Path(self.project_dir).joinpath('visualization')
         try:
             foldername.mkdir(exist_ok=True)
@@ -262,7 +262,11 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return str(foldername)
 
     def get_visualization_config(self):
-        fname = Path(self.config['subfolder_configs'].get('visualization', None))
+        fname = self.config['subfolder_configs'].get('visualization', None)
+        if fname is None:
+            # Assume the local folder is correct
+            fname = os.path.join(self._get_visualization_dir(), 'visualization_config.yaml')
+        fname = Path(fname)
         cfg = SubfolderConfigFile(**self._check_path_and_load_config(fname, allow_config_to_not_exist=True))
         try:
             Path(cfg.subfolder).mkdir(exist_ok=True)
