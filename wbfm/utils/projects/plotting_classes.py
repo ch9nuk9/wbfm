@@ -226,11 +226,17 @@ class TracePlotter:
     @cached_property
     def alternate_dataframes(self):
         if self.alternate_dataframe_mode == 'top_pixels_10_percent':
-            fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_red.h5')
-            df_red = pd.read_hdf(fname)
-            fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_green.h5')
-            df_green = pd.read_hdf(fname)
-            return df_red, df_green
+            red_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_red.h5')
+            green_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_green.h5')
+            return pd.read_hdf(red_fname), pd.read_hdf(green_fname)
+        elif self.alternate_dataframe_mode == 'top_pixels_25_percent':
+            red_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-25_red.h5')
+            green_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-25_green.h5')
+            return pd.read_hdf(red_fname), pd.read_hdf(green_fname)
+        elif self.alternate_dataframe_mode == 'top_pixels_50_percent':
+            red_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-5_red.h5')
+            green_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-5_green.h5')
+            return pd.read_hdf(red_fname), pd.read_hdf(green_fname)
         else:
             raise NotImplementedError(f"Unknown type: {self.channel_mode}")
 
