@@ -51,7 +51,7 @@ class TracePlotter:
 
     # For experimental methods of trace calculation
     alternate_dataframe_folder: str = None
-    use_alternate_dataframes: bool = False
+    alternate_dataframe_mode: str = None
 
     verbose: int = 1
 
@@ -143,7 +143,7 @@ class TracePlotter:
                     return calc_single_df_over_f(i, df_green) / calc_single_df_over_f(i, df_red)
 
             elif self.channel_mode == 'linear_model':
-                assert not self.use_alternate_dataframes, "Not yet implemented"
+                assert self.alternate_dataframe_mode is None, "Not yet implemented"
 
                 def calc_y(_neuron_name) -> pd.Series:
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, _neuron_name)
@@ -225,7 +225,7 @@ class TracePlotter:
 
     @cached_property
     def alternate_dataframes(self):
-        if self.channel_mode == 'top_pixels_10_percent':
+        if self.alternate_dataframe_mode == 'top_pixels_10_percent':
             fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_red.h5')
             df_red = pd.read_hdf(fname)
             fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_green.h5')
@@ -236,7 +236,7 @@ class TracePlotter:
 
     def get_single_dataframe_for_traces(self):
         """If the trace uses only a single dataframe, this switches between which base"""
-        if not self.use_alternate_dataframes:
+        if self.alternate_dataframe_mode is None:
             if self.channel_mode == 'red':
                 df = self.red_traces
             else:
@@ -251,7 +251,7 @@ class TracePlotter:
 
     def get_two_dataframes_for_traces(self):
         """If the trace uses both dataframes, this switches between which base"""
-        if not self.use_alternate_dataframes:
+        if self.alternate_dataframe_mode is None:
             df_red, df_green = self.red_traces, self.green_traces
         else:
             df_red, df_green = self.alternate_dataframes

@@ -248,7 +248,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_visualization_dir(self) -> str:
         foldername = Path(self.project_dir).joinpath('visualization')
-        foldername.mkdir(exist_ok=True)
+        try:
+            foldername.mkdir(exist_ok=True)
+        except PermissionError:
+            pass
         return str(foldername)
 
     def resolve_mounted_path_in_current_os(self, key) -> Optional[Path]:
