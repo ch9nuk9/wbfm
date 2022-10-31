@@ -1,7 +1,11 @@
+import os
+
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 from sklearn.mixture import GaussianMixture
+
+from wbfm.utils.projects.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 
@@ -50,10 +54,8 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
 
     extracted_traces_green = np.array([np.array([np.nan] * num_timepoints)] * num_neurons)
     extracted_traces_red = np.array([np.array([np.nan] * num_timepoints)] * num_neurons)
-    num_pixel = 10
 
     for i_neuron, neuron_name in enumerate(tqdm(neuron_names, leave=False)):
-        # neuron_name = "neuron_" + str(i_neuron + 1).zfill(3)
         mean_vol = np.mean(project_data.red_traces[neuron_name]["area"])
         num_pixel = int(percentage * mean_vol)
         if DEBUG:
@@ -75,12 +77,30 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
             if neuron_name in dic.keys():
                 extracted_traces_green[i_neuron, timepoint] = np.sum(np.sort(dic[neuron_name])[-num_pixel:])
 
-            if DEBUG:
-                break
-        if DEBUG:
-            break
-
     df_extracted_red = pd.DataFrame(extracted_traces_red, neuron_names).T
     df_extracted_green = pd.DataFrame(extracted_traces_green, neuron_names).T
     return df_extracted_red, df_extracted_green
 
+
+def save_alternate_trace_dataframes(project_data):
+
+    dirname = project_data.project_config.get_visualization_dir()
+
+    red_fname = os.path.join(dirname, 'pixel_values_all_neurons_red.pickle')
+    red_dict = pickle_load_binary(red_fname)
+    green_fname = os.path.join(dirname, 'pixel_values_all_neurons_green.pickle')
+    green_dict = pickle_load_binary(green_fname)
+
+    percentage_list = [0.1, 0.25, 0.5]
+
+    for percentage in tqdm(percentage_list):
+        df_extracted_red, df_extracted_green = top_percentage(project_data, red_dict, green_dict,
+                                                              percentage=percentage)
+
+        fname = f"df_top_{percentage}"
+        fname.replace('.', '-')
+        fname = os.path.join('visualization', f"{fname}")
+        red_fname = f"{fname}_red.h5"
+        project_data.h5_data_in_local_project(df_extracted_red, red_fname)
+        green_fname = f"{fname}_green.h5"
+        project_data.h5_data_in_local_project(df_extracted_green, green_fname)

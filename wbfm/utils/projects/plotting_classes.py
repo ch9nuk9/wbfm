@@ -70,10 +70,12 @@ class TracePlotter:
         -------
 
         """
-        assert (self.channel_mode in ['green', 'red', 'ratio', 'linear_model',
-                                      'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20',
-                                      'linear_model_experimental']), \
-            f"Unknown channel mode {self.channel_mode}"
+        valid_modes = ['green', 'red', 'ratio', 'linear_model',
+                       'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20',
+                       'linear_model_experimental',
+                       'top_pixels_100']
+        assert (self.channel_mode in valid_modes), \
+            f"Unknown channel mode {self.channel_mode}, must be one of {valid_modes}"
 
         if self.verbose >= 3:
             print(f"Calculating {self.channel_mode} trace for {neuron_name} for {self.calculation_mode} mode")
@@ -160,7 +162,14 @@ class TracePlotter:
                     r0 = np.nanquantile(ratio, 0.2)
                     dr_over_r = (ratio - r0) / r0
                     return pd.Series(dr_over_r)
-                pass
+
+        elif self.channel_mode in ['top_pixels_100']:
+            # Fourth: use a dictionary of the individual pixel values
+            def calc_y(i) -> pd.Series:
+                ratio = calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
+                r0 = np.nanquantile(ratio, 0.2)
+                dr_over_r = (ratio - r0) / r0
+                return pd.Series(dr_over_r)
 
         else:
             raise ValueError("Unknown calculation or channel mode")
