@@ -96,6 +96,10 @@ class ConfigFileWithProjectContext:
         except ValueError:
             return val
 
+    @property
+    def absolute_self_path(self):
+        return self.resolve_relative_path(self.self_path)
+
     def to_json(self):
         return json.dumps(vars(self))
 
@@ -157,6 +161,10 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     """
 
     subfolder: str = None
+
+    @property
+    def absolute_subfolder(self):
+        return self.resolve_relative_path(self.subfolder)
 
     def __post_init__(self):
         pass

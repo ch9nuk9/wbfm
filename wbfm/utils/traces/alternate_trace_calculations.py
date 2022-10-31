@@ -84,7 +84,7 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
 
 def save_alternate_trace_dataframes(project_data):
 
-    dirname = project_data.project_config.get_visualization_config().subfolder
+    dirname = project_data.project_config.get_visualization_config().absolute_subfolder
 
     red_fname = os.path.join(dirname, 'pixel_values_all_neurons_red.pickle')
     red_dict = pickle_load_binary(red_fname)

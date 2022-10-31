@@ -263,7 +263,7 @@ def take_screenshot_using_project(project_data, additional_layers: List[list], b
                                                       force_all_visible=True, **kwargs)
 
         # For the output name, assume I'm only adding one layer type over the base layer
-        output_folder = project_data.project_config.get_visualization_config().subfolder
+        output_folder = project_data.project_config.get_visualization_config().absolute_subfolder
         layer_name = layer[0]
         if isinstance(layer_name, tuple):
             layer_name = layer_name[1]
