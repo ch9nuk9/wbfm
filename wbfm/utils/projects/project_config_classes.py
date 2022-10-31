@@ -225,13 +225,20 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             self.logger.warning("Using default physical unit conversions")
             return PhysicalUnitConversion()
 
-    def _check_path_and_load_config(self, subconfig_path: Path) -> Dict:
+    def _check_path_and_load_config(self, subconfig_path: Path,
+                                    allow_config_to_not_exist: bool = False) -> Dict:
         if subconfig_path.is_absolute():
             project_dir = subconfig_path.parent.parent
         else:
             project_dir = Path(self.self_path).parent
         with safe_cd(project_dir):
-            cfg = load_config(subconfig_path)
+            try:
+                cfg = load_config(subconfig_path)
+            except FileNotFoundError as e:
+                if allow_config_to_not_exist:
+                    cfg = dict()
+                else:
+                    raise e
         subfolder = subconfig_path.parent
 
         args = dict(self_path=str(subconfig_path),
@@ -253,6 +260,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         except PermissionError:
             pass
         return str(foldername)
+
+    def get_visualization_config(self):
+        fname = Path(self.config['subfolder_configs'].get('visualization', None))
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname, allow_config_to_not_exist=True))
 
     def resolve_mounted_path_in_current_os(self, key) -> Optional[Path]:
         path = self.config.get(key, None)

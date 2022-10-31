@@ -51,6 +51,9 @@ subfolder_configs:
   training_data: 2-training_data/training_data_config.yaml
   tracking: 3-tracking/tracking_config.yaml
   traces: 4-traces/traces_config.yaml
+  # Non-pipeline steps
+  data: dat/visualization_config.yaml
+  visualization: visualization/visualization_config.yaml
 
 ###################
 # Other
