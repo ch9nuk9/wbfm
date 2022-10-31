@@ -31,6 +31,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     last_time_point = 0
     current_time_point_before_callback = 0
+    dict_of_saved_times = None
 
     logger: logging.Logger = None
 
@@ -76,6 +77,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.traces_mode_calculation_options = ['integration', 'z', 'volume']
         self.tracklet_mode_calculation_options = ['z', 'volume', 'likelihood', 'brightness_red']
+
+        self.dict_of_saved_times = dict()
 
     def setupUi(self, viewer: napari.Viewer):
 
@@ -629,6 +632,38 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def zoom_last_time_point(viewer):
             self.zoom_last_time_point()
 
+        @viewer.bind_key('Ctrl-1', overwrite=True)
+        def save_time1(viewer):
+            self.save_time_as_shortcut(1)
+
+        @viewer.bind_key('1', overwrite=True)
+        def jump_time1(viewer):
+            self.jump_time_using_shortcut(1)
+
+        @viewer.bind_key('Ctrl-2', overwrite=True)
+        def save_time2(viewer):
+            self.save_time_as_shortcut(2)
+
+        @viewer.bind_key('2', overwrite=True)
+        def jump_time2(viewer):
+            self.jump_time_using_shortcut(2)
+
+        @viewer.bind_key('Ctrl-3', overwrite=True)
+        def save_time3(viewer):
+            self.save_time_as_shortcut(3)
+
+        @viewer.bind_key('3', overwrite=True)
+        def jump_time3(viewer):
+            self.jump_time_using_shortcut(3)
+
+        @viewer.bind_key('Ctrl-4', overwrite=True)
+        def save_time4(viewer):
+            self.save_time_as_shortcut(4)
+
+        @viewer.bind_key('4', overwrite=True)
+        def jump_time4(viewer):
+            self.jump_time_using_shortcut(4)
+
         @viewer.bind_key('Shift-s', overwrite=True)
         def toggle_neuron_ids(viewer):
             self.toggle_neuron_ids()
@@ -724,6 +759,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         print(self.last_time_point, self.current_time_point_before_callback, self.t)
         change_viewer_time_point(self.viewer, t_target=t_target, a_max=self.max_time)
         # self.time_changed_callbacks()
+
+    def save_time_as_shortcut(self, i, viewer=None):
+        self.dict_of_saved_times[i] = self.t
+
+    def jump_time_using_shortcut(self, i, viewer=None):
+        t_target = self.dict_of_saved_times.get(i, None)
+        if t_target is not None:
+            change_viewer_time_point(self.viewer, t_target=t_target, a_max=self.max_time)
 
     def zoom_to_next_nan(self, viewer=None):
         y_on_plot = self.y_on_plot[0]  # Don't need both min and max
