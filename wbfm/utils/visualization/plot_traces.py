@@ -140,7 +140,7 @@ def make_grid_plot_from_dataframe(df: pd.DataFrame,
     Parameters
     ----------
     df
-    project_data
+    project_data - Used for shading from behavioral annotations, if present
     neuron_names_to_plot
     to_save
     kwargs - see make_grid_plot_from_callables
@@ -170,6 +170,12 @@ def make_grid_plot_from_dataframe(df: pd.DataFrame,
                                         logger=logger,
                                         **kwargs)
 
+    return fig
+
+
+def make_grid_plot_from_two_dataframes(df0, df1, **kwargs):
+    fig = make_grid_plot_from_dataframe(df0, **kwargs)
+    fig = make_grid_plot_from_dataframe(df1, fig=fig, twinx_when_reusing_figure=True, **kwargs)
     return fig
 
 
@@ -266,6 +272,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   share_y_axis: bool = True,
                                   logger: logging.Logger = None,
                                   num_columns: int = 5,
+                                  twinx_when_reusing_figure: bool = False,
                                   fig = None):
     """
 
@@ -316,10 +323,15 @@ def make_grid_plot_from_callables(get_data_func: callable,
 
     for i in tqdm(range(len(neuron_names))):
         ax, neuron_name = fig.axes[i], neuron_names[i]
+        if twinx_when_reusing_figure and not new_fig:
+            ax = ax.twinx()
+            ax_opt = dict(color='tab:orange')
+        else:
+            ax_opt = dict()
         t, y = get_data_func(neuron_name)
 
         if not new_fig:
-            ax.plot(t, y)
+            ax.plot(t, y, **ax_opt)
         else:
             ax.plot(t, y, label=neuron_name)
             # For removing the lines from the legends:
@@ -339,6 +351,69 @@ def make_grid_plot_from_callables(get_data_func: callable,
                 ax.set_title(f"Shaded value: {val:0.2f}")
 
     return fig
+
+
+def _plot_subplots(y1, y2):
+    fig, axes = plt.subplots(ncols=2, figsize=(15, 5), dpi=100)
+
+    ax1 = axes[0]
+    ax1.plot(y1, label='Original trace')
+    ax1_2 = ax1.twinx()
+    ax1_2.plot(y2, 'tab:orange')
+    ax1.legend()
+
+    window = [500, 700]
+    for w in window:
+        ax1.plot([w, w], [np.nanmin(y1), np.nanmax(y1)], color='black', lw=3)
+
+    ax2 = axes[1]
+    ax2.plot(y1[window[0]:window[1]], lw=2)
+    ax2_2 = ax2.twinx()
+    ax2_2.plot(y2[window[0]:window[1]], 'tab:orange', lw=2, label='Modified trace')
+    ax2_2.legend()
+
+    return ax1, ax2
+
+
+def title_from_params(params):
+    t = ''
+    for key, val in params.items():
+        if isinstance(val, str):
+            k = key.split('_')[0]
+            t += f'{k}={val}-'
+
+    return t[:-1]
+
+
+def plot_compare_two_calculation_methods(project_data, neuron_name, variable_dict=None, **kwargs):
+    """
+    kwargs:
+        channel_mode: str,
+        calculation_mode: str,
+        neuron_name: str,
+        filter_mode: str = 'no_filtering'
+    """
+
+    default_kwargs = dict(
+        channel_mode='dr_over_r_20',
+        calculation_mode='integration',
+        filter_mode='rolling_mean',
+        remove_outliers=True
+    )
+    default_kwargs.update(kwargs)
+
+    t, y1 = project_data.calculate_traces(neuron_name=neuron_name, **default_kwargs)
+
+    for key, val_list in variable_dict.items():
+        for val in val_list:
+            default_kwargs[key] = val
+            t, y2 = project_data.calculate_traces(neuron_name=neuron_name, **default_kwargs)
+
+            ax1, ax2 = _plot_subplots(y1, y2)
+
+            title = title_from_params(default_kwargs)
+            ax1.set_title(title)
+            ax2.set_title(neuron_name)
 
 ##
 ## Generally plotting
