@@ -131,12 +131,24 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
 
 def make_grid_plot_from_dataframe(df: pd.DataFrame,
-                                  project_data = None,
+                                  project_data=None,
                                   neuron_names_to_plot: list = None,
-                                  color_using_behavior=True,
-                                  share_y_axis=False,
-                                  fig=None,
-                                  to_save=False):
+                                  to_save=False,
+                                  **kwargs):
+    """
+
+    Parameters
+    ----------
+    df
+    project_data
+    neuron_names_to_plot
+    to_save
+    kwargs - see make_grid_plot_from_callables
+
+    Returns
+    -------
+
+    """
 
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
@@ -155,9 +167,8 @@ def make_grid_plot_from_dataframe(df: pd.DataFrame,
         logger = None
 
     fig = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
-                                        color_using_behavior=color_using_behavior, logger=logger,
-                                        share_y_axis=share_y_axis,
-                                        fig=fig)
+                                        logger=logger,
+                                        **kwargs)
 
     return fig
 
@@ -254,6 +265,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   color_using_behavior: bool = True,
                                   share_y_axis: bool = True,
                                   logger: logging.Logger = None,
+                                  num_columns: int = 5,
                                   fig = None):
     """
 
@@ -293,7 +305,6 @@ def make_grid_plot_from_callables(get_data_func: callable,
 
     # Loop through neurons and plot
     num_neurons = len(neuron_names)
-    num_columns = 5
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")

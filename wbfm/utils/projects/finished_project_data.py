@@ -587,7 +587,8 @@ class ProjectData:
         opt = dict(
             channel_mode='linear_model',
             calculation_mode='integration',
-            remove_outliers=True
+            remove_outliers=True,
+            filter_mode='no_filtering'
         )
 
         if interpolate_nan is True, then additionally (after dropping empty neurons and removing outliers):
@@ -610,7 +611,8 @@ class ProjectData:
         opt = dict(
             channel_mode='ratio',
             calculation_mode='integration',
-            remove_outliers=True
+            remove_outliers=True,
+            filter_mode='no_filtering'
         )
         opt.update(kwargs)
 
