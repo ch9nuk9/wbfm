@@ -90,17 +90,18 @@ class TracePlotter:
         ## Function for getting a single time series (with preprocessing)
         ##
         # Format: y = f(neuron_name, traces_dataframe)
-        calc_single_trace = trace_from_dataframe_factory(self.calculation_mode, self.background_per_pixel,
-                                                         self.bleach_correct)
+        single_trace_preprocessed = trace_from_dataframe_factory(self.calculation_mode,
+                                                                 self.background_per_pixel,
+                                                                 self.bleach_correct)
 
         if not self.bleach_correct:
             def calc_single_df_over_f(i, _df) -> pd.Series:
-                _y = calc_single_trace(i, _df)
+                _y = single_trace_preprocessed(i, _df)
                 y0 = np.nanquantile(_y, 0.2)
                 return pd.Series((_y-y0) / y0)
         else:
             def calc_single_df_over_f(i, _df) -> pd.Series:
-                _y = calc_single_trace(i, _df)
+                _y = single_trace_preprocessed(i, _df)
                 _y, _ = pd.Series(detrend_exponential_lmfit(_y))
                 y0 = np.nanquantile(_y, 0.2)
                 return pd.Series((_y-y0) / y0)
@@ -114,7 +115,7 @@ class TracePlotter:
             df = self.final_tracks
 
             def calc_y(i) -> pd.Series:
-                return calc_single_trace(i, df)
+                return single_trace_preprocessed(i, df)
 
         elif self.channel_mode in ['red', 'green', 'df_over_f_20']:
             # Second: use a single traces dataframe (red OR green)
@@ -122,7 +123,7 @@ class TracePlotter:
 
             if self.channel_mode in ['red', 'green']:
                 def calc_y(i) -> pd.Series:
-                    return calc_single_trace(i, df)
+                    return single_trace_preprocessed(i, df)
             elif self.channel_mode == 'df_over_f_20':
                 def calc_y(i) -> pd.Series:
                     return calc_single_df_over_f(i, df)
@@ -136,7 +137,7 @@ class TracePlotter:
 
             if self.channel_mode == 'ratio':
                 def calc_y(i) -> pd.Series:
-                    return calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
+                    return single_trace_preprocessed(i, df_green) / single_trace_preprocessed(i, df_red)
 
             elif self.channel_mode == 'ratio_df_over_f_20':
                 def calc_y(i) -> pd.Series:
@@ -164,7 +165,7 @@ class TracePlotter:
 
             elif self.channel_mode == 'dr_over_r_20':
                 def calc_y(i) -> pd.Series:
-                    ratio = calc_single_trace(i, df_green) / calc_single_trace(i, df_red)
+                    ratio = single_trace_preprocessed(i, df_green) / single_trace_preprocessed(i, df_red)
                     r0 = np.nanquantile(ratio, 0.2)
                     dr_over_r = (ratio - r0) / r0
                     return pd.Series(dr_over_r)
