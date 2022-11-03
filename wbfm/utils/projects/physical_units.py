@@ -12,6 +12,8 @@ class PhysicalUnitConversion:
 
     leifer_um_per_unit: float = 84
 
+    fps: float = 3.8
+
     @property
     def z_to_xy_ratio(self):
         return self.zimmer_um_per_pixel_z / self.zimmer_fluroscence_um_per_pixel_xy

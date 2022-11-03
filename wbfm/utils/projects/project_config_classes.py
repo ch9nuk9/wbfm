@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pprint
 
+from wbfm.utils.general.postures.centerline_classes import get_behavior_fluorescence_fps_conversion
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
@@ -221,7 +222,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_physical_unit_conversion_class(self) -> PhysicalUnitConversion:
         if 'physical_units' in self.config:
-            return PhysicalUnitConversion(**self.config['physical_units'])
+            opt = self.config['physical_units']
+            if 'fps' not in opt:
+                camera_fps = 83  # TODO: this depends on the exposure time
+                frames_per_volume = get_behavior_fluorescence_fps_conversion(self)
+                opt['fps'] = camera_fps / frames_per_volume
+            return PhysicalUnitConversion(**opt)
         else:
             self.logger.warning("Using default physical unit conversions")
             return PhysicalUnitConversion()
