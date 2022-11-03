@@ -25,7 +25,7 @@ from wbfm.gui.utils.utils_gui import build_tracks_from_dataframe
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
-    remove_outliers_via_rolling_mean, filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std
+    filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
@@ -228,20 +228,31 @@ class TracePlotter:
 
     @cached_property
     def alternate_dataframes(self):
+        # First, read the new dataframes from the files
         if self.alternate_dataframe_mode == 'top_pixels_10_percent':
+            self.alternate_column_name = 'top10percent'
             red_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_red.h5')
             green_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-1_green.h5')
-            return pd.read_hdf(red_fname), pd.read_hdf(green_fname)
         elif self.alternate_dataframe_mode == 'top_pixels_25_percent':
+            self.alternate_column_name = 'top25percent'
             red_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-25_red.h5')
             green_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-25_green.h5')
-            return pd.read_hdf(red_fname), pd.read_hdf(green_fname)
         elif self.alternate_dataframe_mode == 'top_pixels_50_percent':
+            self.alternate_column_name = 'top50percent'
             red_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-5_red.h5')
             green_fname = os.path.join(self.alternate_dataframe_folder, f'df_top_0-5_green.h5')
-            return pd.read_hdf(red_fname), pd.read_hdf(green_fname)
         else:
             raise NotImplementedError(f"Unknown type: {self.channel_mode}")
+        df_red, df_green = pd.read_hdf(red_fname), pd.read_hdf(green_fname)
+
+        # Second, concatenate with the old metadata
+        df_red.columns = pd.MultiIndex.from_product([df_red.columns, [self.alternate_column_name]])
+        df_green.columns = pd.MultiIndex.from_product([df_green.columns, [self.alternate_column_name]])
+
+        df_red_full = pd.concat([df_red, self.red_traces], axis=1)
+        df_green_full = pd.concat([df_green, self.green_traces], axis=1)
+
+        return df_red_full, df_green_full
 
     def get_single_dataframe_for_traces(self):
         """If the trace uses only a single dataframe, this switches between which base"""
