@@ -163,7 +163,7 @@ def make_grid_plot_from_dataframe(df: pd.DataFrame,
         shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
         logger = project_data.logger
     else:
-        shade_plot_func = lambda axis: 0
+        shade_plot_func = lambda axis: None
         logger = None
 
     fig = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
@@ -173,9 +173,22 @@ def make_grid_plot_from_dataframe(df: pd.DataFrame,
     return fig
 
 
-def make_grid_plot_from_two_dataframes(df0, df1, **kwargs):
+def make_grid_plot_from_two_dataframes(df0, df1, twinx_when_reusing_figure=True, **kwargs):
+    """
+
+    Parameters
+    ----------
+    df0 - first trace (blue)
+    df1 - second trace (orange)
+    twinx_when_reusing_figure - Whether to plot the second trace on its own yaxis, or keep the same
+    kwargs
+
+    Returns
+    -------
+
+    """
     fig = make_grid_plot_from_dataframe(df0, **kwargs)
-    fig = make_grid_plot_from_dataframe(df1, fig=fig, twinx_when_reusing_figure=True, **kwargs)
+    fig = make_grid_plot_from_dataframe(df1, fig=fig, twinx_when_reusing_figure=twinx_when_reusing_figure, **kwargs)
     return fig
 
 
@@ -330,6 +343,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
             ax_opt = dict()
         t, y = get_data_func(neuron_name)
 
+        # print(neuron_name, y.mean())
         if not new_fig:
             ax.plot(t, y, **ax_opt)
         else:
