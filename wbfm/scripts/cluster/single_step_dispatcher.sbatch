@@ -41,7 +41,7 @@ CMD_DICT["3a"]="3a-track_using_superglue.py"
 CMD_DICT["3b"]="3b-match_tracklets_and_tracks_using_neuron_initialization.py"
 CMD_DICT["4"]="4-make_final_traces.py"
 CMD_DICT["4-alt"]="alternate/4c-extract_full_traces.py"
-CMD_DICT["4-pixel"]="visualization/4-extract_pixel_values_for_tracked_neurons.py"
+CMD_DICT["4-pixel"]="visualization/4+extract_pixel_values_for_tracked_neurons.py"
 CMD_DICT["check_gpu"]="/examples/check_gpu.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
