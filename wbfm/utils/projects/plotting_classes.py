@@ -46,6 +46,7 @@ class TracePlotter:
     bleach_correct: bool = True
     min_confidence: float = None
     background_per_pixel: float = None
+    preprocess_volume_correction: bool = False  # Alternate way to subtract background
 
     tspan: list = None
 
@@ -92,7 +93,8 @@ class TracePlotter:
         # Format: y = f(neuron_name, traces_dataframe)
         single_trace_preprocessed = trace_from_dataframe_factory(self.calculation_mode,
                                                                  self.background_per_pixel,
-                                                                 self.bleach_correct)
+                                                                 self.bleach_correct,
+                                                                 self.preprocess_volume_correction)
 
         if not self.bleach_correct:
             def calc_single_df_over_f(i, _df) -> pd.Series:
