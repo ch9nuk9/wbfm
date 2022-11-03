@@ -82,7 +82,23 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
     return df_extracted_red, df_extracted_green
 
 
-def save_alternate_trace_dataframes(project_data):
+def save_alternate_trace_dataframes(project_data, percentage_list=None):
+    """
+    Uses histograms of pixels to extract an alternate method of calculating traces
+
+    Uses a constant number of pixels across time (different per neuron)
+
+    Parameters
+    ----------
+    project_data - FinishedProjectData class
+    percentage_list - list of fractions of pixels to keep. Default is [0.1, 0.25, 0.5]
+
+    Returns
+    -------
+
+    """
+    if percentage_list is None:
+        percentage_list = [0.1, 0.25, 0.5]
 
     dirname = project_data.project_config.get_visualization_config().absolute_subfolder
 
@@ -90,8 +106,6 @@ def save_alternate_trace_dataframes(project_data):
     red_dict = pickle_load_binary(red_fname)
     green_fname = os.path.join(dirname, 'pixel_values_all_neurons_green.pickle')
     green_dict = pickle_load_binary(green_fname)
-
-    percentage_list = [0.1, 0.25, 0.5]
 
     for percentage in tqdm(percentage_list):
         df_extracted_red, df_extracted_green = top_percentage(project_data, red_dict, green_dict,
