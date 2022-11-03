@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from skimage import filters
 from skimage.measure import regionprops
@@ -72,8 +74,12 @@ def calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames=Non
         video_4d = zarr.open(video_fname)[:num_frames]
     all_bboxes = calculate_bounding_boxes_full_video(video_4d)
 
-    with open(bbox_fname, 'wb') as f:
-        pickle.dump(all_bboxes, f)
+    try:
+        with open(bbox_fname, 'wb') as f:
+            pickle.dump(all_bboxes, f)
+    except PermissionError:
+        logging.warning(f"Permission error when saving bounding boxes at {bbox_fname}"
+                        f"If this folder is in another project, this may not be a problem")
 
     return all_bboxes
 
