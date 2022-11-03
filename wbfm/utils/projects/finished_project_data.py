@@ -551,6 +551,11 @@ class ProjectData:
         time (as vector), y (as vector)
 
         """
+        if 'background_per_pixel' in kwargs:
+            self.background_per_pixel = kwargs['background_per_pixel']
+        else:
+            kwargs['background_per_pixel'] = self.background_per_pixel
+
         self._trace_plotter = TracePlotter(
             self.red_traces,
             self.green_traces,
@@ -560,7 +565,6 @@ class ProjectData:
             remove_outliers=remove_outliers,
             filter_mode=filter_mode,
             bleach_correct=bleach_correct,
-            background_per_pixel=self.background_per_pixel,
             alternate_dataframe_folder=self.project_config.get_visualization_config().absolute_subfolder,
             **kwargs
         )
