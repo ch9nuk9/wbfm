@@ -52,7 +52,7 @@ def detrend_exponential_lmfit(y_with_nan, x=None, restore_mean_value=False):
     -------
 
     """
-    original_mean = np.nanmean(x)
+    original_mean = np.nanmean(y_with_nan)
 
     exp_mod = ExponentialModel(prefix='exp_')
     ind = np.where(~np.isnan(y_with_nan))[0]
