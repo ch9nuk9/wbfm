@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
+from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
 
 def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshold=None, verbose=0):
@@ -76,19 +77,24 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
     # Way to process a single dataframe
     if calculation_mode == 'integration':
         def calc_single_trace(i, df_tmp) -> pd.Series:
-            y_raw, vol = _get_y_and_vol(df_tmp, i)
 
-            if bleach_correct:
-                y = pd.Series(detrend_exponential_lmfit(y)[0])
-
-            # if preprocess_volume_correction:
-
-
-            if vol is not None and background_per_pixel > 0:
-                y = y_raw - background_per_pixel * vol
+            if preprocess_volume_correction:
+                # This function can do everything, including bleach correction
+                opt = dict(predictor_names=['t', 'area'], neuron_name=i, remove_intercept=False,
+                           bleach_correct=bleach_correct)
+                y = correct_trace_using_linear_model(df_tmp, **opt)
             else:
-                logging.warning("Background subtraction requested, but volume was not included in the dataframe")
-                y = y_raw
+                # Otherwise we manually bleach and background correct
+                y_raw, vol = _get_y_and_vol(df_tmp, i)
+                if bleach_correct:
+                    y_raw = pd.Series(detrend_exponential_lmfit(y_raw)[0])
+
+                if vol is not None and background_per_pixel > 0:
+                    y = y_raw - background_per_pixel * vol
+                else:
+                    logging.warning("Background subtraction requested, but volume was not included in the dataframe")
+                    y = y_raw
+
             _check_valid(y, background_per_pixel)
             return y
 

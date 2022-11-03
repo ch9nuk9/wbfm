@@ -48,7 +48,7 @@ def set_big_font(size=22):
     matplotlib.rc('font', **font)
 
 
-def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predictor_names=None,
+def correct_trace_using_linear_model(df_red, df_green=None, neuron_name=None, predictor_names=None,
                                      target_name='intensity_image',
                                      remove_intercept=True,
                                      model=sklearn.linear_model.LinearRegression(),
@@ -79,6 +79,8 @@ def correct_trace_using_linear_model(df_red, df_green, neuron_name=None, predict
     """
     if predictor_names is None:
         predictor_names = ["t", "intensity_image", "area", "x", "y"]
+    if df_green is None:
+        df_green = df_red
     if neuron_name is not None:
         df_green = df_green[neuron_name]
         df_red = df_red[neuron_name]
