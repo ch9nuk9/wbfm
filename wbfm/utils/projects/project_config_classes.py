@@ -63,18 +63,11 @@ class ConfigFileWithProjectContext:
         try:
             edit_config(fname, self.config)
         except PermissionError as e:
-            # NOTE: is_relative_to() only works for python >= 3.9
-            try:
-                Path(fname).relative_to(self.project_dir)
-                # Then it was a local file
-                raise e
-            except ValueError:
+            if Path(self.self_path).is_absolute():
                 self.logger.debug(f"Skipped updating nonlocal file: {fname}")
-            # if Path(fname).is_relative_to(self.project_dir):
-            #     raise e
-            # else:
-            #     self.logger.debug(f"Skipped updating nonlocal file: {fname}")
-            #     pass
+            else:
+                # Then it was a local file, and the error was real
+                raise e
 
     def resolve_relative_path_from_config(self, key) -> str:
         val = self.config.get(key, None)
