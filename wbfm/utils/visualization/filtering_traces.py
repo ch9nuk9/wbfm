@@ -66,7 +66,7 @@ def _get_y_and_vol(df_tmp, i):
     return y_raw, vol
 
 
-def _check_valid(y):
+def _check_valid(y, background_per_pixel):
     if any(y < 0):
         logging.warning(f"Found negative trace value; check background_per_pixel value ({background_per_pixel})")
 
@@ -89,7 +89,7 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
             else:
                 logging.warning("Background subtraction requested, but volume was not included in the dataframe")
                 y = y_raw
-            _check_valid(y)
+            _check_valid(y, background_per_pixel)
             return y
 
     elif calculation_mode == 'mean':
@@ -100,7 +100,7 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
             else:
                 logging.warning("Background subtraction requested, but volume was not included in the dataframe")
                 y = y_raw
-            _check_valid(y)
+            _check_valid(y, background_per_pixel)
             return y
 
     elif calculation_mode == 'volume':
