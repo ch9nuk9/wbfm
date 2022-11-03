@@ -87,7 +87,7 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
                 # Otherwise we manually bleach and background correct
                 y_raw, vol = _get_y_and_vol(df_tmp, i)
                 if bleach_correct:
-                    y_raw = pd.Series(detrend_exponential_lmfit(y_raw)[0])
+                    y_raw = pd.Series(detrend_exponential_lmfit(y_raw, restore_mean_value=True)[0])
 
                 if background_per_pixel > 0:
                     if vol is None:

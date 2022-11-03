@@ -256,7 +256,7 @@ class TracePlotter:
                 df = df_red
             else:
                 df = df_green
-        return df
+        return df.copy()
 
     def get_two_dataframes_for_traces(self):
         """If the trace uses both dataframes, this switches between which base"""
@@ -264,7 +264,7 @@ class TracePlotter:
             df_red, df_green = self.red_traces, self.green_traces
         else:
             df_red, df_green = self.alternate_dataframes
-        return df_red, df_green
+        return df_red.copy(), df_green.copy()
 
 
 @dataclass

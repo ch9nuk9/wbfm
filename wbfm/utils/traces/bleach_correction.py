@@ -36,7 +36,7 @@ def detrend_exponential(y_with_nan):
     return ind, y_corrected
 
 
-def detrend_exponential_lmfit(y_with_nan, x=None):
+def detrend_exponential_lmfit(y_with_nan, x=None, restore_mean_value=False):
     """
     Bleach correction via simple exponential fit, subtraction, and re-adding the mean
 
@@ -46,11 +46,13 @@ def detrend_exponential_lmfit(y_with_nan, x=None):
     ----------
     x
     y_with_nan
+    restore_mean_value
 
     Returns
     -------
 
     """
+    original_mean = np.nanmean(x)
 
     exp_mod = ExponentialModel(prefix='exp_')
     ind = np.where(~np.isnan(y_with_nan))[0]
@@ -84,6 +86,9 @@ def detrend_exponential_lmfit(y_with_nan, x=None):
         # Note: divide by mean to keep the magnitude similar to other bleach corrected traces
         y_corrected_with_nan, y_fit = y_with_nan / np.mean(y_with_nan), np.mean(y_with_nan) * np.ones_like(y_with_nan)
         flag = False
+
+    if restore_mean_value:
+        y_corrected_with_nan *= original_mean / np.nanmean(y_corrected_with_nan)
 
     return y_corrected_with_nan, (y_fit, out, flag)
 

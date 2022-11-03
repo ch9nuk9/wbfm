@@ -86,7 +86,7 @@ def correct_trace_using_linear_model(df_red, df_green=None, neuron_name=None, pr
         df_red = df_red[neuron_name]
     green = df_green[target_name]
     if bleach_correct:
-        green = detrend_exponential_lmfit(green)[0]
+        green = detrend_exponential_lmfit(green, restore_mean_value=True)[0]
     # Construct processed predictors
     processed_vars = []
     simple_predictor_names = []
