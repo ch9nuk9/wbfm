@@ -56,9 +56,9 @@ def filter_linear_interpolation(y: pd.DataFrame, window=15):
     return y.interpolate(method='linear', limit=window, limit_direction='both')
 
 
-def _get_y_and_vol(df_tmp, i):
+def _get_y_and_vol(df_tmp, i, column_name):
     try:
-        y_raw = df_tmp[i]['intensity_image']
+        y_raw = df_tmp[i][column_name]
         vol = df_tmp[i]['area']
     except KeyError:
         # Then we just have a single level, and don't have the volume
@@ -73,7 +73,7 @@ def _check_valid(y, background_per_pixel):
 
 
 def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_correct,
-                                 preprocess_volume_correction) -> callable:
+                                 preprocess_volume_correction, column_name='intensity_image') -> callable:
     # Way to process a single dataframe
     if calculation_mode == 'integration':
         def calc_single_trace(i, df_tmp) -> pd.Series:
@@ -81,11 +81,11 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
             if preprocess_volume_correction:
                 # This function can do everything, including bleach correction
                 opt = dict(predictor_names=['t', 'area'], neuron_name=i, remove_intercept=False,
-                           bleach_correct=bleach_correct)
+                           bleach_correct=bleach_correct, target_name=column_name)
                 y = correct_trace_using_linear_model(df_tmp, **opt)
             else:
                 # Otherwise we manually bleach and background correct
-                y_raw, vol = _get_y_and_vol(df_tmp, i)
+                y_raw, vol = _get_y_and_vol(df_tmp, i, column_name)
                 if bleach_correct:
                     y_raw = pd.Series(detrend_exponential_lmfit(y_raw, restore_mean_value=True)[0])
 
@@ -102,7 +102,7 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
 
     elif calculation_mode == 'mean':
         def calc_single_trace(i, df_tmp) -> pd.Series:
-            y_raw, vol = _get_y_and_vol(df_tmp, i)
+            y_raw, vol = _get_y_and_vol(df_tmp, i, column_name)
 
             if background_per_pixel > 0:
                 if vol is None:

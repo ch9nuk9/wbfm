@@ -53,6 +53,7 @@ class TracePlotter:
     # For experimental methods of trace calculation
     alternate_dataframe_folder: str = None
     alternate_dataframe_mode: str = None
+    alternate_column_name: str = None
 
     verbose: int = 1
 
@@ -91,10 +92,15 @@ class TracePlotter:
         ## Function for getting a single time series (with preprocessing)
         ##
         # Format: y = f(neuron_name, traces_dataframe)
+        if self.alternate_column_name is None:
+            column_name = 'intensity_image'
+        else:
+            column_name = self.alternate_column_name
         single_trace_preprocessed = trace_from_dataframe_factory(self.calculation_mode,
                                                                  self.background_per_pixel,
                                                                  self.bleach_correct,
-                                                                 self.preprocess_volume_correction)
+                                                                 self.preprocess_volume_correction,
+                                                                 column_name=column_name)
 
         if not self.bleach_correct:
             def calc_single_df_over_f(i, _df) -> pd.Series:
