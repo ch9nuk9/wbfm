@@ -137,33 +137,36 @@ class WormFullVideoPosture:
         else:
             behavior_subfolder = Path(behavior_fname).parent
 
-        if behavior_subfolder is None:
-            # No files found, but at least save the fps
-            return WormFullVideoPosture(**opt)
+        if behavior_subfolder is not None:
 
-        # Second get the centerline-specific files
-        filename_curvature, filename_x, filename_y = None, None, None
-        for file in Path(behavior_subfolder).iterdir():
-            if not file.is_file():
-                continue
-            if file.name == 'skeleton_spline_K.csv':
-                filename_curvature = str(file)
-            elif file.name == 'skeleton_spline_X_coords.csv':
-                filename_x = str(file)
-            elif file.name == 'skeleton_spline_Y_coords.csv':
-                filename_y = str(file)
-        all_files = [filename_curvature, filename_x, filename_y]
+            # Second get the centerline-specific files
+            filename_curvature, filename_x, filename_y = None, None, None
+            for file in Path(behavior_subfolder).iterdir():
+                if not file.is_file():
+                    continue
+                if file.name == 'skeleton_spline_K.csv':
+                    filename_curvature = str(file)
+                elif file.name == 'skeleton_spline_X_coords.csv':
+                    filename_x = str(file)
+                elif file.name == 'skeleton_spline_Y_coords.csv':
+                    filename_y = str(file)
+            all_files = dict(filename_curvature=filename_curvature,
+                             filename_x=filename_x,
+                             filename_y=filename_y)
+        else:
+            all_files = dict()
 
         # Third, get the automatic behavior annotations
+        # Might exist even as manual annotation even if the behavior_subfolder wasn't found
         try:
             filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
             opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_stable_style,
                        beh_annotation_is_stable_style=is_stable_style))
         except FileNotFoundError:
-            # Many old projects won't have this
+            # Many projects won't have either annotation
             project_config.logger.warning("Did not find behavioral annotations")
             filename_beh_annotation = None
-        all_files.append(filename_beh_annotation)
+        all_files['filename_beh_annotation'] = filename_beh_annotation
 
         # Fourth, get the table stage position (Should always exist)
         filename_table_position = None
@@ -172,9 +175,10 @@ class WormFullVideoPosture:
             logging.warning(f"Did not find stage position file in {behavior_subfolder}")
         else:
             filename_table_position = fnames[0]
-        all_files.append(filename_table_position)
+        all_files['filename_table_position'] = filename_table_position
 
-        return WormFullVideoPosture(*all_files, **opt)
+        # Even if no files found, at least save the fps
+        return WormFullVideoPosture(**all_files, **opt)
 
     def shade_using_behavior(self, **kwargs):
         """Takes care of fps conversion and new vs. old annotation format"""
