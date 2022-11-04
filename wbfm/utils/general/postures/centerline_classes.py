@@ -546,7 +546,7 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
     if cmap is None:
         cmap = {0: None,
                 1: 'lightgray',
-                2: 'red',
+                2: 'pink',
                 3: 'lightblue'}
     if ax is None:
         ax = plt.gca()
