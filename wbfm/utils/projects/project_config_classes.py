@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 import pprint
 
-from wbfm.utils.general.postures.centerline_classes import get_behavior_fluorescence_fps_conversion
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
@@ -221,6 +220,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def get_physical_unit_conversion_class(self) -> PhysicalUnitConversion:
+        from wbfm.utils.general.postures.centerline_classes import get_behavior_fluorescence_fps_conversion
         if 'physical_units' in self.config:
             opt = self.config['physical_units']
             if 'fps' not in opt:
