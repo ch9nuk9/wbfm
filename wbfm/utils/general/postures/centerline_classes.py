@@ -153,10 +153,21 @@ class WormFullVideoPosture:
             all_files = dict(filename_curvature=filename_curvature,
                              filename_x=filename_x,
                              filename_y=filename_y)
+
+            # Third, get the table stage position
+            # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
+            filename_table_position = None
+            fnames = [fn for fn in glob.glob(os.path.join(behavior_subfolder.parent, '*TablePosRecord.txt'))]
+            if len(fnames) != 1:
+                logging.warning(f"Did not find stage position file in {behavior_subfolder}")
+            else:
+                filename_table_position = fnames[0]
+            all_files['filename_table_position'] = filename_table_position
+
         else:
             all_files = dict()
 
-        # Third, get the automatic behavior annotations
+        # Finally, get the automatic behavior annotations
         # Might exist even as manual annotation even if the behavior_subfolder wasn't found
         try:
             filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
@@ -167,15 +178,6 @@ class WormFullVideoPosture:
             project_config.logger.warning("Did not find behavioral annotations")
             filename_beh_annotation = None
         all_files['filename_beh_annotation'] = filename_beh_annotation
-
-        # Fourth, get the table stage position (Should always exist)
-        filename_table_position = None
-        fnames = [fn for fn in glob.glob(os.path.join(behavior_subfolder.parent, '*TablePosRecord.txt'))]
-        if len(fnames) != 1:
-            logging.warning(f"Did not find stage position file in {behavior_subfolder}")
-        else:
-            filename_table_position = fnames[0]
-        all_files['filename_table_position'] = filename_table_position
 
         # Even if no files found, at least save the fps
         return WormFullVideoPosture(**all_files, **opt)
