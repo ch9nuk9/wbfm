@@ -331,7 +331,9 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     try:
         behavior_cfg = cfg.get_behavior_config()
         behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
-        if behavior_fname is not None and not Path(behavior_fname).is_absolute():
+        if behavior_fname is not None and \
+                Path(behavior_fname).exists() and \
+                not Path(behavior_fname).is_absolute():
             # Assume it is in this project's behavior folder
             behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname, prepend_subfolder=True)
             if str(behavior_fname).endswith('.xlsx'):
