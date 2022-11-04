@@ -391,7 +391,8 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
             try:
                 behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
             except (PermissionError, FileNotFoundError):
-                logging.warning("Permission or File error; do you have the excel sheet open elsewhere?")
+                logging.warning(f"Permission or File error when reading {behavior_fname}"
+                                f"Do you have the excel sheet open elsewhere?")
                 behavior_annotations = None
     else:
         behavior_annotations = None
