@@ -13,7 +13,6 @@ from skimage import transform
 from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
-from tqdm.auto import tqdm
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists

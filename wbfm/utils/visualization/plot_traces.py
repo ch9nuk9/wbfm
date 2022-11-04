@@ -109,6 +109,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                         logger=logger,
                                         share_y_axis=share_y_axis)
 
+    plt.tight_layout()
+
     # Save final figure
     if to_save:
         if neuron_names_to_plot is None:
