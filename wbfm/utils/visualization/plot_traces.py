@@ -644,8 +644,8 @@ class ClickableGridPlot:
         print(df.T)
 
     def load_previous_file(self):
-        log_dir = self.project_data.project_config.get_visualization_config().absolute_subfolder
-        fname = os.path.join(log_dir, 'selected_neurons.csv')
+        visualization_directory = self.project_data.project_config.get_visualization_config().absolute_subfolder
+        fname = os.path.join(visualization_directory, 'selected_neurons.csv')
         if not os.path.exists(fname):
             print(f"Did not find previous state at: {fname}")
             return
