@@ -25,6 +25,10 @@ class CreateProjectDialog(QDialog):
         self.width = 640
         self.height = 480
 
+        self.red_filename = None
+        self.green_filename = None
+        self.data_foldername = None
+
         # self.project_foldername = None
         # self.green_filename = None
         # self.red_filename = None
@@ -79,25 +83,25 @@ class CreateProjectDialog(QDialog):
         self.dataFolderButton = QtWidgets.QPushButton(self.formLayoutWidget)
         self.dataFolderButton.setObjectName("dataFolderButton")
         self.dataFolderButton.setText("Load Dataset Folder (replaces green and red above)")
-        self.dataFolderButton.clicked.connect(self.load_data_filename)
-        self.formLayout.setWidget(23, QtWidgets.QFormLayout.FieldRole, self.dataFolderButton)
-        self.redLabel = QtWidgets.QLabel(self.formLayoutWidget)
-        self.redLabel.setObjectName("label_23")
-        self.formLayout.setWidget(23, QtWidgets.QFormLayout.LabelRole, self.dataFolderButton)
+        self.dataFolderButton.clicked.connect(self.load_data_foldername)
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.dataFolderButton)
+        self.dataFolderLabel = QtWidgets.QLabel(self.formLayoutWidget)
+        self.dataFolderLabel.setObjectName("label_folder")
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.dataFolderLabel)
 
         self.taskTextEdit = QtWidgets.QTextEdit(self.formLayoutWidget)
         self.taskTextEdit.setObjectName("textEdit_3")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.taskTextEdit)
+        self.formLayout.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.taskTextEdit)
         self.taskLabel = QtWidgets.QLabel(self.formLayoutWidget)
         self.taskLabel.setObjectName("label_2")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.taskLabel)
+        self.formLayout.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.taskLabel)
 
         self.experimenterTextEdit = QtWidgets.QTextEdit(self.formLayoutWidget)
         self.experimenterTextEdit.setObjectName("textEdit_4")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.experimenterTextEdit)
+        self.formLayout.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.experimenterTextEdit)
         self.experimenterLabel = QtWidgets.QLabel(self.formLayoutWidget)
         self.experimenterLabel.setObjectName("label")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.experimenterLabel)
+        self.formLayout.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.experimenterLabel)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -123,6 +127,7 @@ class CreateProjectDialog(QDialog):
         self.projectLocationLabel.setText(_translate("MainWindow", "Project Location"))
         self.greenLabel.setText(_translate("MainWindow", "Dataset 1: Green channel"))
         self.redLabel.setText(_translate("MainWindow", "Dataset 2: Red channel"))
+        self.dataFolderLabel.setText(_translate("MainWindow", "Dataset folder: parent folder"))
         self.taskLabel.setText(_translate("MainWindow", "Task Name (optional)"))
         self.experimenterLabel.setText(_translate("MainWindow", "Experimenter"))
 
@@ -136,10 +141,10 @@ class CreateProjectDialog(QDialog):
         self.green_filename = ex.fileName
         self.greenLabel.setText(self.green_filename)
 
-    def load_data_filename(self):
-        ex = FileDialog()
+    def load_data_foldername(self):
+        ex = FileDialog(file_not_folder=False)
         self.data_foldername = ex.fileName
-        self.dataFolderButton.setText(self.data_foldername)
+        self.dataFolderLabel.setText(self.data_foldername)
 
     def load_project_foldername(self):
         ex = FileDialog(file_not_folder=False)
@@ -155,13 +160,12 @@ class CreateProjectDialog(QDialog):
         if self.project_foldername is not None:
             if self.red_filename is not None and self.green_filename is not None:
                 full_command = f"python {command} with project_dir={self.project_foldername} " \
-                               f"parent_data_folder={self.data_foldername}" \
+                               f"red_bigtiff_fname={self.red_filename} green_bigtiff_fname={self.green_filename} " \
                                f"experimenter={experimenter} task_name={task}"
             elif self.data_foldername is not None:
                 full_command = f"python {command} with project_dir={self.project_foldername} " \
-                               f"red_bigtiff_fname={self.red_filename} green_bigtiff_fname={self.green_filename} " \
+                               f"parent_data_folder={self.data_foldername} " \
                                f"experimenter={experimenter} task_name={task}"
-
 
         if full_command is not None:
             subprocess.run(full_command, shell=True)
