@@ -157,14 +157,14 @@ class DetectedNeurons:
                 empty_ind.append(t)
         return empty_ind
 
-    def get_all_brightnesses(self, i_volume: int, is_relative_index=False):
+    def get_all_brightnesses(self, i_volume: int, is_relative_index=False) -> pd.Series:
         if is_relative_index:
             i_volume = self.correct_relative_index(i_volume)
         if i_volume not in self._brightnesses_cache:
             self._brightnesses_cache[i_volume] = self.segmentation_metadata[i_volume]['total_brightness']
         return self._brightnesses_cache[i_volume]
 
-    def get_all_volumes(self, i_volume: int, is_relative_index=False):
+    def get_all_volumes(self, i_volume: int, is_relative_index=False) -> pd.Series:
         if is_relative_index:
             i_volume = self.correct_relative_index(i_volume)
         if i_volume not in self._volumes_cache:
@@ -257,6 +257,21 @@ class DetectedNeurons:
         # Return position given the mask index
         seg_index = self.mask_index_to_i_in_array(i_time, mask_index)
         return np.array(self.segmentation_metadata[i_time].iloc[seg_index]['centroids'])
+
+    def print_statistics(self, detail_level=1):
+        print(self)
+        if detail_level >= 1:
+            print(f"Number of empty volumes: {len(self.volumes_with_no_neurons)}")
+        else:
+            return
+
+        if detail_level >= 2:
+            t = 10
+            b = self.get_all_brightnesses(t)
+            v = self.get_all_volumes(t)
+            print(f"Found {len(v)} neurons at t={t}")
+            print(f"Mean brightness: {np.mean(b)}")
+            print(f"Mean volume: {np.mean(v)}")
 
     def __repr__(self):
         return f"DetectedNeurons object with {self.num_frames} frames"
