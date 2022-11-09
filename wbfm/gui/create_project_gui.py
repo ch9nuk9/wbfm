@@ -76,6 +76,15 @@ class CreateProjectDialog(QDialog):
         self.redLabel.setObjectName("label_3")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.redLabel)
 
+        self.dataFolderButton = QtWidgets.QPushButton(self.formLayoutWidget)
+        self.dataFolderButton.setObjectName("dataFolderButton")
+        self.dataFolderButton.setText("Load Dataset Folder (replaces green and red above)")
+        self.dataFolderButton.clicked.connect(self.load_data_filename)
+        self.formLayout.setWidget(23, QtWidgets.QFormLayout.FieldRole, self.dataFolderButton)
+        self.redLabel = QtWidgets.QLabel(self.formLayoutWidget)
+        self.redLabel.setObjectName("label_23")
+        self.formLayout.setWidget(23, QtWidgets.QFormLayout.LabelRole, self.dataFolderButton)
+
         self.taskTextEdit = QtWidgets.QTextEdit(self.formLayoutWidget)
         self.taskTextEdit.setObjectName("textEdit_3")
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.taskTextEdit)
@@ -127,24 +136,35 @@ class CreateProjectDialog(QDialog):
         self.green_filename = ex.fileName
         self.greenLabel.setText(self.green_filename)
 
+    def load_data_filename(self):
+        ex = FileDialog()
+        self.data_foldername = ex.fileName
+        self.dataFolderButton.setText(self.data_foldername)
+
     def load_project_foldername(self):
         ex = FileDialog(file_not_folder=False)
         self.project_foldername = ex.fileName
         self.projectLocationLabel.setText(self.project_foldername)
 
     def create_project(self):
-        if self.red_filename is not None and \
-                self.green_filename is not None and \
-                self.project_foldername is not None:
-            # TODO: don't just call python from python!
-            command = "scripts/0a-create_new_project.py"
-            experimenter = self.experimenterTextEdit.toPlainText()
-            task = self.taskTextEdit.toPlainText()
-            full_command = f"python {command} with project_dir={self.project_foldername} " \
-                           f"red_bigtiff_fname={self.red_filename} green_bigtiff_fname={self.green_filename} " \
-                           f"experimenter={experimenter} task_name={task}"
-            subprocess.run(full_command, shell=True)
+        full_command = None
+        command = "scripts/0a-create_new_project.py"
+        experimenter = self.experimenterTextEdit.toPlainText()
+        task = self.taskTextEdit.toPlainText()
 
+        if self.project_foldername is not None:
+            if self.red_filename is not None and self.green_filename is not None:
+                full_command = f"python {command} with project_dir={self.project_foldername} " \
+                               f"parent_data_folder={self.data_foldername}" \
+                               f"experimenter={experimenter} task_name={task}"
+            elif self.data_foldername is not None:
+                full_command = f"python {command} with project_dir={self.project_foldername} " \
+                               f"red_bigtiff_fname={self.red_filename} green_bigtiff_fname={self.green_filename} " \
+                               f"experimenter={experimenter} task_name={task}"
+
+
+        if full_command is not None:
+            subprocess.run(full_command, shell=True)
             self.finishButton.setText("Create new project; Close the window if finished")
         else:
             print("Fill out required fields first!")
