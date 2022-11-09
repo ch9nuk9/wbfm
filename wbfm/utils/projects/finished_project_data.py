@@ -107,7 +107,7 @@ class ProjectData:
     final_tracks_fname: str = None
     global2tracklet_fname: str = None
     df_all_tracklets_fname: str = None
-    force_tracklets_to_be_sparse: bool = False  # TODO: pass as arg
+    force_tracklets_to_be_sparse: bool = False
 
     _custom_frame_indices: list = None
 
@@ -1045,6 +1045,26 @@ class ProjectData:
     def print_seg_statistics(self):
         self.segmentation_metadata.print_statistics(detail_level=2)
 
+    def print_tracklet_statistics(self):
+
+        # Check raw frames and matches, then check actual tracklets
+        print(f"Found {len(self.raw_frames)} Frame objects")
+        for i in range(5):
+            print(self.raw_frames[i])
+
+        print(f"Found {len(self.raw_matches)} Matches objects")
+        for i in range(5):
+            key = (i, i+1)
+            print(self.raw_matches[key])
+
+        print(self.tracklets_and_neurons_class)
+
+    def print_tracking_statistics(self):
+        worm = self.tracked_worm_class
+        worm.verbose = 2
+
+        print(worm)
+
     def __repr__(self):
         return f"=======================================\n\
 Project data for directory:\n\
@@ -1224,14 +1244,16 @@ def print_project_statistics(project_config: ModularProjectConfig):
 
     """
 
+    last_finished_step = get_project_status(project_config)
     # Load everything possible, because we will use it
     project_data = ProjectData.load_final_project_data_from_config(project_config,
                                                                    to_load_frames=True,
                                                                    to_load_segmentation_metadata=True,
                                                                    to_load_tracklets=True)
-    last_finished_step = get_project_status(project_config, verbose=0)
 
-    step_check_functions = {1: 'print_seg_statistics'}
+    step_check_functions = {1: 'print_seg_statistics',
+                            2: 'print_tracklet_statistics',
+                            3: 'print_tracking_statistics'}
 
     for i_step, func_name in step_check_functions.items():
         if i_step > last_finished_step:

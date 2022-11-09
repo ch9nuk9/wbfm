@@ -200,8 +200,12 @@ class NeuronComposedOfTracklets:
         plt.contourf(xx, yy, Z, levels=np.linspace(Z.min(), 0, 7), cmap=plt.cm.PuBu)
         a = plt.contour(xx, yy, Z, levels=[0], linewidths=2, colors="darkred")
 
+    @property
+    def num_matched_tracklets(self):
+        return len(self.neuron2tracklets) - 1
+
     def __repr__(self):
-        return f"Neuron {self.name} (index={self.neuron_ind}) with {len(self.neuron2tracklets) - 1} tracklets " \
+        return f"Neuron {self.name} (index={self.neuron_ind}) with {self.num_matched_tracklets} tracklets " \
                f"from time {self.initialization_frame} to {self.next_gap}"
 
     def pretty_print_matches(self):
@@ -405,8 +409,12 @@ class DetectedTrackletsAndNeurons:
             else:
                 logging.warning("Dataframe syncing attempted, but no filename saved")
 
+    @property
+    def num_total_tracklets(self):
+        return len(self.all_tracklet_names)
+
     def __repr__(self):
-        return f"DetectedTrackletsAndNeurons object with {len(self.all_tracklet_names)} tracklets"
+        return f"DetectedTrackletsAndNeurons object with {self.num_total_tracklets} tracklets"
 
 
 @dataclass
@@ -715,9 +723,17 @@ class TrackedWorm:
     def compose_global_neuron_and_tracklet_graph(self) -> MatchesAsGraph:
         return nx.compose_all([neuron.neuron2tracklets for neuron in self.global_name_to_neuron.values()])
 
+    @property
+    def num_total_matched_tracklets(self):
+        total = 0
+        for name in self.neuron_names:
+            total += self.global_name_to_neuron[name].num_matched_tracklets
+        return total
+
     def __repr__(self):
         short_message = f"Worm with {self.num_neurons} neurons"
         if self.verbose == 0:
             return short_message
         else:
-            return f"{short_message}"
+            return f"{short_message} and " \
+                   f"{self.num_total_matched_tracklets}/{self.detections.num_total_tracklets} matched tracklets"
