@@ -27,6 +27,7 @@ from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
     get_column_name_from_time_and_column_value
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
+from wbfm.utils.projects.utils_project_status import get_project_status
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
 from sklearn.neighbors import NearestNeighbors
@@ -1040,6 +1041,10 @@ class ProjectData:
     def shortened_name(self):
         return str(Path(self.project_dir).name)
 
+    # Functions for printing analysis statistics
+    def print_seg_statistics(self):
+        self.segmentation_metadata.print_statistics(detail_level=2)
+
     def __repr__(self):
         return f"=======================================\n\
 Project data for directory:\n\
@@ -1204,3 +1209,32 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
     logging.info(f"Found {sum(map(len, all_mismatches.values()))} mismatches")
 
     return all_mismatches
+
+
+def print_project_statistics(project_config: ModularProjectConfig):
+    """
+    Prints basic statistics of the output of each step that is completed
+
+    Parameters
+    ----------
+    project_config
+
+    Returns
+    -------
+
+    """
+
+    # Load everything possible, because we will use it
+    project_data = ProjectData.load_final_project_data_from_config(project_config,
+                                                                   to_load_frames=True,
+                                                                   to_load_segmentation_metadata=True,
+                                                                   to_load_tracklets=True)
+    last_finished_step = get_project_status(project_config, verbose=0)
+
+    step_check_functions = {1: 'print_seg_statistics'}
+
+    for i_step, func_name in step_check_functions.items():
+        if i_step > last_finished_step:
+            break
+
+        getattr(project_data, func_name)()

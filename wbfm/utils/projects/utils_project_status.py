@@ -174,16 +174,34 @@ def print_sacred_log(project_config: ModularProjectConfig) -> None:
         print("Key error in the log; this means a step is in progress or the log is corrupted")
 
 
-def print_project_status(project_config: ModularProjectConfig):
+def get_project_status(project_config: ModularProjectConfig, verbose=2):
+    """
+    Returns the index of the last step that was completed
+
+    Parameters
+    ----------
+    project_config
+    verbose
+
+    Returns
+    -------
+
+    """
     opt = dict(project_config=project_config, training_data_required=False, raise_error=False)
 
     project_config.logger.info("Determining status of project...")
+    i_step = 1
     for i_step in tqdm([1, 2, 3, 4, 5]):
         passed = check_all_needed_data_for_step(step_index=i_step, **opt)
         if not passed:
-            project_config.logger.info(f"==============================")
-            project_config.logger.info(f"Next pipeline step required: {i_step-1}")
-            project_config.logger.info(f"==============================")
+            if verbose >= 1:
+                project_config.logger.info(f"==============================")
+                project_config.logger.info(f"Next pipeline step required: {i_step-1}")
+                project_config.logger.info(f"==============================")
             break
     else:
-        project_config.logger.info("All steps of project are complete; manual annotation can begin")
+        if verbose >= 1:
+            project_config.logger.info("All steps of project are complete; manual annotation can begin")
+
+    # Return last completed step
+    return i_step - 1
