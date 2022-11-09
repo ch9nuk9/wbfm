@@ -331,7 +331,7 @@ class ProjectData:
 
     def load_tracklet_related_properties(self):
         _ = self.df_all_tracklets
-        # _ = self._raw_clust
+        _ = self.tracked_worm_class
 
     def load_interactive_properties(self):
         _ = self.tracklet_annotator
@@ -1043,9 +1043,18 @@ class ProjectData:
 
     # Functions for printing analysis statistics
     def print_seg_statistics(self):
+        print("=======================================\n")
+        print("Expectation: frames equal to total video")
+        print("Expectation: ~140-180 neurons; ~200 is okay")
+        print("Expectation: Brightness 300000-400000")
+        print("Expectation: Volume: 600-800")
         self.segmentation_metadata.print_statistics(detail_level=2)
+        print()
 
     def print_tracklet_statistics(self):
+        print("=======================================\n")
+        print("Expectation: ~140-180 neurons; ~200 is okay")
+        print("Expectation: ~90-95% matched")
 
         # Check raw frames and matches, then check actual tracklets
         print(f"Found {len(self.raw_frames)} Frame objects")
@@ -1058,12 +1067,15 @@ class ProjectData:
             print(self.raw_matches[key])
 
         print(self.tracklets_and_neurons_class)
+        print()
 
     def print_tracking_statistics(self):
+        print("=======================================\n")
         worm = self.tracked_worm_class
         worm.verbose = 2
 
         print(worm)
+        print()
 
     def __repr__(self):
         return f"=======================================\n\
