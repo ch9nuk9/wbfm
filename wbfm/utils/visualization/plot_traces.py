@@ -339,7 +339,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
     for i in tqdm(range(len(neuron_names))):
         ax, neuron_name = fig.axes[i], neuron_names[i]
         if twinx_when_reusing_figure and not new_fig:
-            ax = ax.twinx()
+            ax = ax.twinx().twiny()
             ax_opt = dict(color='tab:orange')
         else:
             ax_opt = dict()

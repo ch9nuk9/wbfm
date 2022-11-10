@@ -1,6 +1,73 @@
 import numpy as np
+import pandas as pd
 import scipy
 from matplotlib import pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from tqdm.auto import tqdm
+
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+
+##
+# Top level functions with pre-made filtering options
+##
+
+
+def apply_rolling_wiener_filter_full_dataframe(red, green, strength='strong', nperseg=128, **kwargs):
+
+    if strength == 'strong':
+        factor = 3
+    elif strength == 'weak':
+        factor = 4
+    else:
+        raise NotImplementedError(f"Unknown value: {strength}")
+    delta = 32
+    opt = dict(factor=factor, nperseg=nperseg)
+    df_filt = apply_function_to_red_and_green_dataframes(red, green, _wiener_filter, delta=delta, window=nperseg,
+                                                         **opt, **kwargs)
+
+    return df_filt
+
+
+def apply_rolling_wiener_filter_single_trace(y, y_red, strength='strong', nperseg=128):
+
+    if strength == 'strong':
+        factor = 4
+    elif strength == 'weak':
+        factor = 3
+    else:
+        raise NotImplementedError(f"Unknown value: {strength}")
+    delta = 32
+    opt = dict(factor=factor, nperseg=nperseg)
+    y_filt = rolling_filter_trace_using_func(y, y_red, _wiener_filter, delta=delta, window=nperseg, **opt)
+
+    return y_filt
+
+
+def _wiener_filter(trace, noise, factor, nperseg):
+    # scaler = StandardScaler()
+    trace_norm = trace  # scaler.fit_transform(np.array(trace).reshape(-1, 1))
+    trace_filtered = scipy.signal.wiener(np.squeeze(trace_norm), mysize=int(nperseg / (2 ** factor)) + 1,
+                                         noise=noise)
+    # return scaler.inverse_transform(trace_filtered)
+    return trace_filtered
+
+##
+# User functions, but lower level
+##
+
+
+def apply_function_to_red_and_green_dataframes(red, green, func, **kwargs):
+
+    names = get_names_from_df(red)
+    traces = dict()
+
+    for name in tqdm(names, leave=False):
+        y, x = green[name], red[name]
+        new_trace = rolling_filter_trace_using_func(y, x, func, **kwargs)
+        traces[name] = new_trace
+
+    df_filtered = pd.DataFrame(traces)
+    return df_filtered
 
 
 def rolling_filter_trace_using_func(y, x, func, window, delta, **kwargs):
@@ -24,6 +91,11 @@ def rolling_filter_trace_using_func(y, x, func, window, delta, **kwargs):
     y_filt = combine_trace_fragments(filtered_fragments, edges, len(y))
 
     return y_filt
+
+
+##
+# Helpers
+##
 
 
 def build_window_edges(full_size, window=128, delta=None):
@@ -61,7 +133,7 @@ def apply_function_to_windows(trace, window_edges, func, noise_trace=None, min_p
             pad_len = i1 - len(trace)
             num_real_pts = i1 - i0 - pad_len
             if num_real_pts < min_pts_required:
-                print("Skipping window; too few points")
+                # print("Skipping window; too few points")
                 continue
             this_trace = np.pad(trace, pad_len)
             if noise_trace is not None:
