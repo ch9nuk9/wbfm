@@ -56,3 +56,5 @@ dependencies:
     - wandb
     - seaborn
     - hdbscan
+    - psf
+    - setuptools==59.8.0

@@ -11,7 +11,7 @@ channels:
   - pytorch-lts
   - bioconda
 dependencies:
-  - python=3.9
+  - python=3.8
   - pip
   - numpy
   - pandas
@@ -54,3 +54,4 @@ dependencies:
     - torchvision==0.11.1
     - wandb
     - seaborn
+    - hdbscan
