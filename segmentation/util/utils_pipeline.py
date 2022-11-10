@@ -233,7 +233,8 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int,
 
 def get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat):
     if all_bounding_boxes is None:
-        volume = video_dat[i_volume, ...]
+        raise NotImplementedError("Bounding box not found, but will cause significant artifacts")
+        # volume = video_dat[i_volume, ...]
     else:
         bbox = all_bounding_boxes[i_volume]
         if bbox is None or len(bbox) == 0:
