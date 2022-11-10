@@ -13,8 +13,6 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     if DEBUG:
         num_frames = 1
     frame_list = list(range(start_volume, start_volume + num_frames))
-    # print(project_cfg.config)
-    # video_path = segment_cfg.config['video_path']
     video_path = project_cfg.config['preprocessed_red']
     # Generate new filenames if they are not set
     mask_fname = segment_cfg.config['output_masks']
@@ -33,8 +31,8 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     bbox_fname = segment_cfg.config.get('bbox_fname', None)
     if bbox_fname is not None:
         all_bounding_boxes = pickle_load_binary(bbox_fname)
-        print("Found bounding boxes!")
+        project_cfg.logger.info(f"Found bounding boxes at: {bbox_fname}")
     else:
         all_bounding_boxes = None
-        print("Did not find bounding boxes")
+        project_cfg.logger.info(f"Did not find bounding boxes at: {bbox_fname}")
     return frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes
