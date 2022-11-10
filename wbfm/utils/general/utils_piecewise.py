@@ -58,6 +58,10 @@ def _wiener_filter(trace, noise, factor, nperseg):
 
 def apply_function_to_red_and_green_dataframes(red, green, func, **kwargs):
 
+    idx_intersect = red.columns.itersection(green.columns)
+    red = red[idx_intersect]
+    green = green[idx_intersect]
+
     names = get_names_from_df(red)
     traces = dict()
 
