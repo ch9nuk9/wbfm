@@ -7,7 +7,6 @@ from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from sklearn.decomposition import TruncatedSVD
 from tqdm.auto import tqdm
-from tsnecuda import TSNE
 from hdbscan import HDBSCAN
 import hdbscan
 import matplotlib.patheffects as PathEffects
@@ -291,6 +290,7 @@ class WormTsneTracker:
             Y_tsne_svd = X
             db_svd = HDBSCAN(**opt_db).fit(Y_tsne_svd)
         else:
+            from tsnecuda import TSNE
             tsne = TSNE(**opt_tsne)
             Y_tsne_svd = tsne.fit_transform(X)
             db_svd = HDBSCAN(**opt_db).fit(Y_tsne_svd)
