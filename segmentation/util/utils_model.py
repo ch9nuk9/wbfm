@@ -129,7 +129,7 @@ def segment_with_stardist_2d(vol: np.ndarray,
         img = normalize(img, 1, 99.8, axis=axis_norm)
 
         # run the prediction
-        labels, details = model.predict_instances(img)
+        labels, details = model.predict_instances(img, show_tile_progress=False)
 
         # save labels in 3D array for output
         segmented_masks[idx] = labels
@@ -184,6 +184,6 @@ def segment_with_stardist_3d(volume: np.array, model: stardist.models.StarDist3D
     img = normalize(volume, 1, 99.8, axis=axis_norm)
 
     # run the prediction
-    labels, details = model.predict_instances(img)
+    labels, details = model.predict_instances(img, show_tile_progress=False)
 
     return labels
