@@ -255,8 +255,9 @@ def get_location_of_new_project_defaults():
 def get_bigtiff_fname_from_folder(folder_fname, channel_to_check=0):
     fname = None
     str_pattern = f'_Ch{channel_to_check}bigtiff.btf'
+    alt_str_pattern = f'_Ch{channel_to_check}_bigtiff.btf'
     for item in Path(folder_fname).iterdir():
-        if str(item).endswith(str_pattern):
+        if str(item).endswith(str_pattern) or str(item).endswith(alt_str_pattern):
             fname = str(item)
             break
     else:
