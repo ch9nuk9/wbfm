@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-import psf
 from backports.cached_property import cached_property
 from skimage import restoration
 from skimage.filters import difference_of_gaussians
@@ -42,6 +41,7 @@ class CustomPSF:
 
     @cached_property
     def psf(self):
+        import psf
         logging.info("Setting up initial point spread function")
         # args = {
         #         'shape': (22, 650),  # number of samples in z and r direction
