@@ -1,0 +1,56 @@
+# wbfm.yaml
+
+# Made by Charles Fieseler
+# update:  conda env update -f wbfm.yaml
+
+# Intended to be used with the long-term support (lts) version of pytorch
+
+channels:
+  - conda-forge
+  - defaults
+  - pytorch-lts
+  - bioconda
+dependencies:
+  - python=3.9
+  - pip
+  - numpy
+  - pandas
+  - tqdm
+  - zarr
+  - scipy
+  - torchaudio
+  - cudatoolkit=10.0.130
+  - cudnn=7.6.5
+  - opencv=3.4
+  - matplotlib
+  - torchvision
+  - scikit-learn
+  - scikit-image
+  - networkx
+  - lmfit
+  - natsort
+  - snakemake
+  - napari[all]
+  - pip:
+    - tifffile
+    - tables
+    - networkx
+    - tensorflow
+    - sacred
+    - tables
+    - ruamel.yaml
+    - stardist
+    - hashfs
+    - tinydb
+    - tinydb-serialization
+    - pytorch-lightning
+    - openpyxl
+    - pytest
+    - ruptures
+    - backports.cached_property
+    - pytorch-lightning==1.5.6
+    - torch==1.10.0
+    - torchmetrics==0.6.2
+    - torchvision==0.11.1
+    - wandb
+    - seaborn
