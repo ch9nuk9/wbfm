@@ -63,7 +63,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     """
     if channel_mode == 'all':
-        all_modes = ['red', 'green', 'dr_over_r_20', 'ratio', 'linear_model', 'linear_model_experimental']
+        all_modes = ['red', 'green', 'dr_over_r_20', 'ratio', 'linear_model']
         opt = dict(project_data=project_data,
                    calculation_mode=calculation_mode,
                    color_using_behavior=color_using_behavior,
