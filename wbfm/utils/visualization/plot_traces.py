@@ -11,6 +11,7 @@ import numpy as np
 import scipy.io
 from matplotlib.widgets import TextBox
 
+from wbfm.gui.utils.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_filenames import get_sequential_filename
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
@@ -103,11 +104,11 @@ def make_grid_plot_using_project(project_data: ProjectData,
     background_shading_value_func = factory_correlate_trace_to_behavior_variable(project_data,
                                                                                  behavioral_correlation_shading)
 
-    fig = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
-                                        color_using_behavior=color_using_behavior,
-                                        background_shading_value_func=background_shading_value_func,
-                                        logger=logger,
-                                        share_y_axis=share_y_axis)
+    fig, _ = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                           color_using_behavior=color_using_behavior,
+                                           background_shading_value_func=background_shading_value_func,
+                                           logger=logger,
+                                           share_y_axis=share_y_axis)
 
     plt.tight_layout()
 
@@ -168,11 +169,10 @@ def make_grid_plot_from_dataframe(df: pd.DataFrame,
         shade_plot_func = lambda axis: None
         logger = None
 
-    fig = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
-                                        logger=logger,
-                                        **kwargs)
+    fig, original_axes = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+                                                       logger=logger, **kwargs)
 
-    return fig
+    return fig, original_axes
 
 
 def make_grid_plot_from_two_dataframes(df0, df1, twinx_when_reusing_figure=True, **kwargs):
@@ -189,11 +189,12 @@ def make_grid_plot_from_two_dataframes(df0, df1, twinx_when_reusing_figure=True,
     -------
 
     """
-    fig = make_grid_plot_from_dataframe(df0, **kwargs)
-    fig = make_grid_plot_from_dataframe(df1, fig=fig, twinx_when_reusing_figure=twinx_when_reusing_figure, **kwargs)
+    fig, original_axes = make_grid_plot_from_dataframe(df0, **kwargs)
+    fig, _ = make_grid_plot_from_dataframe(df1, fig=fig, twinx_when_reusing_figure=twinx_when_reusing_figure, **kwargs)
     if kwargs.get('share_y_axis', False):
+        twinned_axes = [get_twin_axis(ax) for ax in original_axes]
         # From: https://www.tutorialspoint.com/how-to-share-secondary-y-axis-between-subplots-in-matplotlib
-        fig.axes[0].get_shared_y_axes().join(*fig.axes)
+        twinned_axes[0].get_shared_y_axes().join(*twinned_axes)
     return fig
 
 
@@ -334,9 +335,10 @@ def make_grid_plot_from_callables(get_data_func: callable,
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
     if fig is None:
-        fig, axes = plt.subplots(num_rows, num_columns, figsize=(25, 25), sharex=True, sharey=share_y_axis)
+        fig, original_axes = plt.subplots(num_rows, num_columns, figsize=(25, 25), sharex=True, sharey=share_y_axis)
         new_fig = True
     else:
+        original_axes = fig.axes
         new_fig = False
 
     for i in tqdm(range(len(neuron_names))):
@@ -368,7 +370,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                 ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
                 ax.set_title(f"Shaded value: {val:0.2f}")
 
-    return fig
+    return fig, original_axes
 
 
 def _plot_subplots(y1, y2):

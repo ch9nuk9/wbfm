@@ -34,3 +34,13 @@ class PlotCanvas(FigureCanvas):
     #     ax.plot(data, 'r-', linewidth = 0.5)
     #     ax.set_title('PyQt Matplotlib Example')
     #     self.draw()
+
+
+def get_twin_axis(ax, axis='x'):
+    # From: https://stackoverflow.com/questions/36209575/how-to-detect-if-a-twin-axis-has-been-generated-for-a-matplotlib-axis
+    assert axis in ("x", "y")
+    siblings = getattr(ax, f"get_shared_{axis}_axes")().get_siblings(ax)
+    for sibling in siblings:
+        if sibling.bbox.bounds == ax.bbox.bounds and sibling is not ax:
+            return sibling
+    return None
