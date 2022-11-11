@@ -1,3 +1,5 @@
+from typing import Union, Optional
+
 import numpy as np
 import pandas as pd
 import sklearn
@@ -48,7 +50,9 @@ def set_big_font(size=22):
     matplotlib.rc('font', **font)
 
 
-def correct_trace_using_linear_model(df_red, df_green=None, neuron_name=None, predictor_names=None,
+def correct_trace_using_linear_model(df_red: pd.DataFrame, df_green: Union[pd.DataFrame, np.ndarray]=None,
+                                     neuron_name: Optional[str]=None,
+                                     predictor_names: Optional[list]=None,
                                      target_name='intensity_image',
                                      remove_intercept=True,
                                      model=sklearn.linear_model.LinearRegression(),
@@ -84,7 +88,10 @@ def correct_trace_using_linear_model(df_red, df_green=None, neuron_name=None, pr
     if neuron_name is not None:
         df_green = df_green[neuron_name]
         df_red = df_red[neuron_name]
-    green = df_green[target_name]
+    if target_name in df_green:
+        green = df_green[target_name]
+    else:
+        green = df_green
     if bleach_correct:
         green = detrend_exponential_lmfit(green, restore_mean_value=True)[0]
     # Construct processed predictors
@@ -92,17 +99,29 @@ def correct_trace_using_linear_model(df_red, df_green=None, neuron_name=None, pr
     simple_predictor_names = []
     for name in predictor_names:
         if '_over_' in name:
+            # Division; doesn't work with squared
             var1, var2 = name.split('_over_')
             this_var = df_red[var1] / df_red[var2]
             processed_vars.append(this_var)
-        elif 'intensity_image' in name and bleach_correct:
+        elif '_times_' in name:
+            # Cross terms; doesn't work with squared
+            var1, var2 = name.split('_times_')
+            this_var = df_red[var1] * df_red[var2]
+            processed_vars.append(this_var)
+        elif name == 'intensity_image' and bleach_correct:
             red = detrend_exponential_lmfit(df_red[name])[0]
             processed_vars.append(red)
         elif name == 't':
             processed_vars.append(np.arange(len(green)))
-        elif '_squared' in name:
-            pow = 2.0
-            sub_name = name.split('_squared')[0]
+        elif '_squared' in name or '_cubed' in name:
+            # Only power 2 and 3 implemented
+            if '_squared' in name:
+                pow = 2.0
+                sub_name = name.split('_squared')[0]
+            else:
+                pow = 3.0
+                sub_name = name.split('_cubed')[0]
+
             if sub_name in df_red:
                 var = df_red[sub_name] ** pow
             elif 't' in sub_name:

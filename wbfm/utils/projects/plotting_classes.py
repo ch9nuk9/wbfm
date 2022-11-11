@@ -80,7 +80,8 @@ class TracePlotter:
         """
         valid_modes = ['green', 'red', 'ratio', 'linear_model',
                        'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20',
-                       'linear_model_experimental',
+                       'linear_model_then_ratio', 'ratio_then_linear_model', 'high_order_linear_model',
+                       'cross_term_linear_model',
                        'top_pixels_10_percent']
         assert (self.channel_mode in valid_modes), \
             f"Unknown channel mode {self.channel_mode}, must be one of {valid_modes}"
@@ -138,8 +139,8 @@ class TracePlotter:
             else:
                 raise NotImplementedError
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'linear_model',
-                                   'linear_model_experimental']:
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20'] or \
+                'linear_model' in self.channel_mode:
             # Third: use both traces dataframes (red AND green)
             df_red, df_green = self.get_two_dataframes_for_traces()
 
@@ -158,7 +159,7 @@ class TracePlotter:
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, _neuron_name)
                     return y_result_including_na
 
-            elif self.channel_mode == 'linear_model_experimental':
+            elif self.channel_mode == 'linear_model_then_ratio':
                 def calc_y(_neuron_name) -> pd.Series:
                     # predictor_names = ['t', 'area', 'intensity_image_over_area']
                     # predictor_names = ['x', 'y', 'z', 't', 'area', 'intensity_image_over_area']
@@ -169,6 +170,42 @@ class TracePlotter:
                     y_green = correct_trace_using_linear_model(df_red, df_green, **opt)
                     y_red = correct_trace_using_linear_model(df_red, df_red, **opt)
                     y_result_including_na = y_green / y_red
+                    return y_result_including_na
+
+            elif self.channel_mode == 'ratio_then_linear_model':
+
+                def calc_y(_neuron_name) -> pd.Series:
+                    y_ratio = single_trace_preprocessed(_neuron_name, df_green) / \
+                              single_trace_preprocessed(_neuron_name, df_red)
+                    predictor_names = ['x', 'y', 'z', 't', 't_squared', 'area', 'area_squared']
+                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
+                               model=sklearn.linear_model.HuberRegressor())
+                    y_result_including_na = correct_trace_using_linear_model(df_red, y_ratio, **opt)
+                    return y_result_including_na
+
+            elif self.channel_mode == 'high_order_linear_model':
+
+                def calc_y(_neuron_name) -> pd.Series:
+                    predictor_names = ['x', 'y', 'z', 'z_squared',
+                                       't', 't_squared', 't_cubed',
+                                       'area', 'area_squared', 'area_cubed',
+                                       'intensity_image', 'intensity_image_squared', 'intensity_image_cubed']
+                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
+                               model=sklearn.linear_model.HuberRegressor())
+                    y_result_including_na = correct_trace_using_linear_model(df_red, df_green, **opt)
+                    return y_result_including_na
+
+            elif self.channel_mode == 'cross_term_linear_model':
+
+                def calc_y(_neuron_name) -> pd.Series:
+                    predictor_names = ['x', 'y', 'z', 'z_squared',
+                                       't', 't_squared',
+                                       'area', 'area_squared', 'area_cubed',
+                                       'intensity_image', 'intensity_image_squared', 'intensity_image_cubed',
+                                       'area_times_intensity_image', 'z_times_intensity_image']
+                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
+                               model=sklearn.linear_model.HuberRegressor())
+                    y_result_including_na = correct_trace_using_linear_model(df_red, df_green, **opt)
                     return y_result_including_na
 
             elif self.channel_mode == 'dr_over_r_20':
