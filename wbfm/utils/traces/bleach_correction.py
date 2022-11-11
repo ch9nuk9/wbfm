@@ -1,7 +1,7 @@
 import numpy as np
 import scipy
 import sklearn
-from lmfit.models import ExponentialModel
+from lmfit.models import ExponentialModel, ConstantModel
 from sklearn.preprocessing import StandardScaler
 
 
@@ -55,6 +55,8 @@ def detrend_exponential_lmfit(y_with_nan, x=None, restore_mean_value=False):
     original_mean = np.nanmean(y_with_nan)
 
     exp_mod = ExponentialModel(prefix='exp_')
+    const_mod = ConstantModel(prefix='const_')
+    model = exp_mod + const_mod
     ind = np.where(~np.isnan(y_with_nan))[0]
     if x is None:
         x = ind
@@ -65,10 +67,11 @@ def detrend_exponential_lmfit(y_with_nan, x=None, restore_mean_value=False):
 
     try:
         pars = exp_mod.guess(y, x=x)
-        out = exp_mod.fit(y, pars, x=x)
+        pars += const_mod.guess(y, x=x)
+        out = model.fit(y, pars, x=x)
 
         comps = out.eval_components(x=x)
-        y_fit = comps['exp_']
+        y_fit = comps['exp_'] + comps['const_']
         y_corrected = y / y_fit
 
         y_corrected_with_nan = np.empty_like(y_with_nan)
