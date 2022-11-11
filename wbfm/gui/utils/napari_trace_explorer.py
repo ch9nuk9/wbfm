@@ -178,18 +178,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # Add reference neuron trace (dropdown)
         self.changeReferenceTrace = QtWidgets.QComboBox()
-
         neuron_names_and_none = self.dat.neuron_names
         neuron_names_and_none.insert(0, "None")
         self.changeReferenceTrace.addItems(neuron_names_and_none)
         self.changeReferenceTrace.currentIndexChanged.connect(self.update_reference_trace)
         self.formlayout3.addRow("Reference trace:", self.changeReferenceTrace)
-        # TODO: spin box must be integers
-        # self.changeTrackingOutlierSpinBox = QtWidgets.QSpinBox()
-        # self.changeTrackingOutlierSpinBox.setRange(0, 1)
-        # self.changeTrackingOutlierSpinBox.setSingleStep(0.1)
-        # self.changeTrackingOutlierSpinBox.valueChanged.connect(self.update_trace_subplot)
-        # self.formlayout3.addRow("Outlier threshold:", self.changeTrackingOutlierSpinBox)
 
     def _setup_general_shortcut_buttons(self):
         self.groupBox3b = QtWidgets.QGroupBox("General shortcuts", self.verticalLayoutWidget)
@@ -601,7 +594,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.bind_key('r', overwrite=True)
         def clear_segmentation(viewer):
-            # self.update_trace_or_tracklet_subplot()
             self.clear_current_segmentations()
 
         @viewer.bind_key('Shift-r', overwrite=True)
@@ -725,7 +717,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         @viewer.bind_key('x', overwrite=True)
         def remove_tracklet(viewer):
             self.save_segmentation_to_tracklet()
-            # self.remove_tracklet_from_all_matches()
             
         # Undocumented shortcuts just for my use
         @viewer.bind_key('Shift-p', overwrite=True)
@@ -1018,6 +1009,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.mpl_widget = PlotQWidget(self.viewer.window._qt_window.centralWidget())
         self.mpl_widget = PlotQWidget()
         self.static_ax = self.mpl_widget.canvas.fig.subplots()
+        self.reference_ax = self.static_ax.twinx()
         self.main_subplot_xlim = [0, self.dat.num_frames]
         # self.mpl_widget = FigureCanvas(Figure(figsize=(5, 3)))
         # self.static_ax = self.mpl_widget.figure.subplots()
@@ -1048,7 +1040,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def initialize_trace_subplot(self):
         self.update_stored_trace_time_series()
         self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
-        self.reference_line = self.static_ax.plot([])[0]  # Initialize an empty line
+        self.reference_line = self.reference_ax.plot([], color='tab:orange')[0]  # Initialize an empty line
 
     def initialize_tracklet_subplot(self):
         # Designed for traces, but reuse
@@ -1321,11 +1313,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def finish_subplot_update_and_draw(self, title, preserve_xlims=True):
         self.update_time_line()
         self.static_ax.set_title(title)
-        self.static_ax.relim()
         if preserve_xlims:
             self.static_ax.autoscale(axis='y')
+            self.reference_ax.autoscale(axis='y')
         else:
             self.static_ax.autoscale(axis='both')
+            self.reference_ax.autoscale(axis='both')
+        self.static_ax.relim()
+        self.reference_ax.relim()
         # self.static_ax.update_params()
         self.mpl_widget.draw()
         # self.mpl_widget.canvas.draw()
