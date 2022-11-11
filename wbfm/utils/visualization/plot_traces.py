@@ -191,6 +191,9 @@ def make_grid_plot_from_two_dataframes(df0, df1, twinx_when_reusing_figure=True,
     """
     fig = make_grid_plot_from_dataframe(df0, **kwargs)
     fig = make_grid_plot_from_dataframe(df1, fig=fig, twinx_when_reusing_figure=twinx_when_reusing_figure, **kwargs)
+    if kwargs.get('share_y_axis', False):
+        # From: https://www.tutorialspoint.com/how-to-share-secondary-y-axis-between-subplots-in-matplotlib
+        fig.axes[0].get_shared_y_axes().join(*fig.axes)
     return fig
 
 
@@ -345,7 +348,6 @@ def make_grid_plot_from_callables(get_data_func: callable,
             ax_opt = dict()
         t, y = get_data_func(neuron_name)
 
-        # print(neuron_name, y.mean())
         if not new_fig:
             ax.plot(t, y, **ax_opt)
         else:

@@ -86,7 +86,8 @@ def correct_trace_using_linear_model(df_red: pd.DataFrame, df_green: Union[pd.Da
     if df_green is None:
         df_green = df_red
     if neuron_name is not None:
-        df_green = df_green[neuron_name]
+        if neuron_name in df_green:
+            df_green = df_green[neuron_name]
         df_red = df_red[neuron_name]
     if target_name in df_green:
         green = df_green[target_name]

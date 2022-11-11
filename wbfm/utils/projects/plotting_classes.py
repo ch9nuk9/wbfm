@@ -165,8 +165,7 @@ class TracePlotter:
                     # predictor_names = ['x', 'y', 'z', 't', 'area', 'intensity_image_over_area']
                     predictor_names = ['x', 'y', 'z', 't', 't_squared', 'area', 'area_squared',
                                        'intensity_image_over_area']
-                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
-                               model=sklearn.linear_model.HuberRegressor())
+                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False)
                     y_green = correct_trace_using_linear_model(df_red, df_green, **opt)
                     y_red = correct_trace_using_linear_model(df_red, df_red, **opt)
                     y_result_including_na = y_green / y_red
@@ -178,8 +177,7 @@ class TracePlotter:
                     y_ratio = single_trace_preprocessed(_neuron_name, df_green) / \
                               single_trace_preprocessed(_neuron_name, df_red)
                     predictor_names = ['x', 'y', 'z', 't', 't_squared', 'area', 'area_squared']
-                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
-                               model=sklearn.linear_model.HuberRegressor())
+                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False)
                     y_result_including_na = correct_trace_using_linear_model(df_red, y_ratio, **opt)
                     return y_result_including_na
 
@@ -190,8 +188,7 @@ class TracePlotter:
                                        't', 't_squared', 't_cubed',
                                        'area', 'area_squared', 'area_cubed',
                                        'intensity_image', 'intensity_image_squared', 'intensity_image_cubed']
-                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
-                               model=sklearn.linear_model.HuberRegressor())
+                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False)
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, **opt)
                     return y_result_including_na
 
@@ -203,8 +200,7 @@ class TracePlotter:
                                        'area', 'area_squared', 'area_cubed',
                                        'intensity_image', 'intensity_image_squared', 'intensity_image_cubed',
                                        'area_times_intensity_image', 'z_times_intensity_image']
-                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False,
-                               model=sklearn.linear_model.HuberRegressor())
+                    opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False)
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, **opt)
                     return y_result_including_na
 
