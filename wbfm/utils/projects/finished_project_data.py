@@ -16,7 +16,7 @@ from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence, get_
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 import os
 from dataclasses import dataclass
-from typing import Tuple, Dict, Union, List
+from typing import Tuple, Dict, Union, List, Optional
 import napari
 import numpy as np
 import pandas as pd
@@ -1025,6 +1025,26 @@ class ProjectData:
             neurons_that_are_finished = []
 
         return neurons_that_are_finished
+
+    @cached_property
+    def neurons_with_ids(self) -> Optional[pd.DataFrame]:
+        """
+        Loads excel file with information about manually id'ed neurons
+
+        Returns
+        -------
+
+        """
+
+        # File should have the same name as the folder
+        vis_config = self.project_config.get_visualization_config()
+        fname = f"{self.shortened_name}.xlsx"
+        fname = vis_config.resolve_relative_path(fname, prepend_subfolder=True)
+
+        if Path(fname).exists():
+            return pd.read_excel(fname)
+        else:
+            return None
 
     def _check_format_and_unpack(self, df_manual_tracking):
         neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name]
