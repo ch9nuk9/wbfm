@@ -13,15 +13,15 @@ from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def apply_rolling_wiener_filter_full_dataframe(red, green, strength='strong', nperseg=128, **kwargs):
-
-    if strength == 'strong':
-        factor = 3
-    elif strength == 'weak':
-        factor = 4
-    else:
-        raise NotImplementedError(f"Unknown value: {strength}")
+    opt = dict(nperseg=nperseg)
+    if 'factor' not in kwargs:
+        if strength == 'strong':
+            opt['factor'] = 3
+        elif strength == 'weak':
+            opt['factor'] = 4
+        else:
+            raise NotImplementedError(f"Unknown value: {strength}")
     delta = 32
-    opt = dict(factor=factor, nperseg=nperseg)
     df_filt = apply_function_to_red_and_green_dataframes(red, green, _wiener_filter, delta=delta, window=nperseg,
                                                          **opt, **kwargs)
 
@@ -34,6 +34,10 @@ def apply_rolling_wiener_filter_single_trace(y, y_red, strength='strong', nperse
         factor = 4
     elif strength == 'weak':
         factor = 3
+    elif strength == 'weaker':
+        factor = 2
+    elif strength == 'weakest':
+        factor = 2
     else:
         raise NotImplementedError(f"Unknown value: {strength}")
     delta = 32
