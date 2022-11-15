@@ -6,6 +6,17 @@ import numpy as np
 import pandas as pd
 
 
+def fix_extra_spaces_in_dataframe_columns(df: pd.DataFrame) -> pd.DataFrame:
+    new_df = {}
+    for col in df.columns:
+        if isinstance(col, str):
+            new_col = col.strip()
+        else:
+            new_col = col
+        new_df[new_col] = df[col]
+    return pd.DataFrame(new_df)
+
+
 def dataframe_to_dataframe_zxy_format(df_tracklets: pd.DataFrame, flip_xy=False) -> pd.DataFrame:
     """Currently, flipxy is true when calling from napari"""
     if not flip_xy:

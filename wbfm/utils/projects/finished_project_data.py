@@ -24,7 +24,7 @@ import zarr
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
-    get_column_name_from_time_and_column_value
+    get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
@@ -1042,7 +1042,7 @@ class ProjectData:
         fname = vis_config.resolve_relative_path(fname, prepend_subfolder=True)
 
         if Path(fname).exists():
-            return pd.read_excel(fname)
+            return fix_extra_spaces_in_dataframe_columns(pd.read_excel(fname))
         else:
             return None
 
