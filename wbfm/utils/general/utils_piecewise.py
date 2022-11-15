@@ -37,7 +37,7 @@ def apply_rolling_wiener_filter_single_trace(y, y_red, strength='strong', nperse
     elif strength == 'weaker':
         factor = 2
     elif strength == 'weakest':
-        factor = 2
+        factor = 1
     else:
         raise NotImplementedError(f"Unknown value: {strength}")
     delta = 32
