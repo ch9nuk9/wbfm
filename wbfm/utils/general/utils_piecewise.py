@@ -1,8 +1,12 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 import scipy
 from matplotlib import pyplot as plt
+from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import StandardScaler
+from statsmodels.tools import add_constant
 from tqdm.auto import tqdm
 
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -10,6 +14,43 @@ from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 ##
 # Top level functions with pre-made filtering options
 ##
+
+
+def plot_ransac_corrected_traces(x, y, ratio, vol):
+    def _ransac_process(y, x):
+        predictors = add_constant(x)
+        reg = RANSACRegressor(random_state=42).fit(predictors, y)
+        return reg.predict(predictors)
+
+    # Predict
+    x_with_vol = pd.concat([x, vol], axis=0)
+    with warnings.catch_warnings():
+        warnings.simplefilter(action='ignore', category=FutureWarning)
+        warnings.simplefilter(action='ignore', category=RuntimeWarning)
+        y_pred = rolling_filter_trace_using_func(y, x_with_vol, _ransac_process, 128, delta=16)
+    y_corrected = y - y_pred
+
+    # Plot
+    fig, axes = plt.subplots(nrows=3, dpi=300)
+    axes[1].plot(ratio / ratio.mean(), label='original ratio', color='tab:blue')
+    axes[0].plot(y_pred, label='predicted green', color='tab:orange')
+    axes[0].plot(y, label='green', color='tab:green')
+    # plt.plot(y_corrected, label='corrected_green')
+    ratio2 = y / y_pred
+    axes[1].plot(ratio2, label='corrected ratio', color='tab:red')
+    # plt.xlim(1200, 1500)
+    axes[1].set_ylim(0.7, 1.3)
+    axes[0].set_ylim(np.quantile(y, 0.01), np.quantile(y, 0.99))
+    axes[0].legend()
+    axes[1].legend()
+    axes[0].set_xlim(500, 1100)
+    axes[1].set_xlim(500, 1100)
+
+    axes[2].plot(x, y, 'o')
+    axes[2].set_ylabel("Green")
+    axes[2].set_xlabel("Red")
+
+    return y_corrected, y_pred
 
 
 def apply_rolling_wiener_filter_full_dataframe(red, green, strength='strong', nperseg=128, **kwargs):
