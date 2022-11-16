@@ -217,14 +217,19 @@ class TracePlotter:
                 def calc_y(i) -> pd.Series:
                     _green = single_trace_preprocessed(i, df_green)
                     _red = single_trace_preprocessed(i, df_red)
-                    green_predicted = predict_using_rolling_ransac_filter_single_trace(_red, _green)
-                    return pd.Series(_green / green_predicted)
+                    # Remove nan
+                    valid_ind = _red.dropna().index.intersection(_green.dropna().index)
+                    green_predicted = predict_using_rolling_ransac_filter_single_trace(_red[valid_ind],
+                                                                                       _green[valid_ind])
+                    return pd.Series(_green[valid_ind] / green_predicted, index=valid_ind)
             elif self.channel_mode == 'green_rolling_ransac':
                 def calc_y(i) -> pd.Series:
                     _green = single_trace_preprocessed(i, df_green)
                     _red = single_trace_preprocessed(i, df_red)
-                    green_predicted = predict_using_rolling_ransac_filter_single_trace(_red, _green)
-                    return pd.Series(_green - green_predicted)
+                    valid_ind = _red.dropna().index.intersection(_green.dropna().index)
+                    green_predicted = predict_using_rolling_ransac_filter_single_trace(_red[valid_ind],
+                                                                                       _green[valid_ind])
+                    return pd.Series(_green[valid_ind] - green_predicted, index=valid_ind)
             else:
                 raise NotImplementedError
 
