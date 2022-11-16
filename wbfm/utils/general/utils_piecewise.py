@@ -295,8 +295,8 @@ def combine_trace_fragments(trace_fragments, window_edges_or_ind, full_size, win
             fragment = fragment[:i1 - i0]
 
         weights = window_func(len(fragment))  # May be different on the last one
-        final_trace += weights * fragment
-        num_overlaps += weights
+        final_trace[i0:i1] += weights * fragment
+        num_overlaps[i0:i1] += weights
 
     final_trace /= num_overlaps
     return final_trace
