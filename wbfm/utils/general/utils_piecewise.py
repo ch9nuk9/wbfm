@@ -20,11 +20,6 @@ def plot_ransac_corrected_traces(x, y, ratio, vol, xlim=None, include_red=False)
     if xlim is None:
         xlim = [500, 1100]
 
-    def _ransac_process(y, x):
-        predictors = add_constant(x)
-        reg = RANSACRegressor(random_state=42).fit(predictors, y)
-        return reg.predict(predictors)
-
     # Predict
     x_with_vol = pd.concat([x, vol], axis=0)
     with warnings.catch_warnings():
@@ -59,12 +54,16 @@ def plot_ransac_corrected_traces(x, y, ratio, vol, xlim=None, include_red=False)
     return y_corrected, y_pred
 
 
-def predict_using_rolling_ransac_filter_single_trace(red, green, vol=None, nperseg=256, random_state=42):
-
-    def _ransac_process(y, x):
+def _ransac_process(y, x, to_add_constant=True, random_state=42):
+    if to_add_constant:
         predictors = add_constant(x)
-        reg = RANSACRegressor(random_state=random_state).fit(predictors, y)
-        return reg.predict(predictors)
+    else:
+        predictors = x
+    reg = RANSACRegressor(random_state=random_state).fit(predictors, y)
+    return reg.predict(predictors)
+
+
+def predict_using_rolling_ransac_filter_single_trace(red, green, vol=None, nperseg=256):
 
     # Predict
     if vol is not None:
@@ -76,6 +75,54 @@ def predict_using_rolling_ransac_filter_single_trace(red, green, vol=None, npers
         y_pred = rolling_filter_trace_using_func(green, red, _ransac_process, nperseg, delta=32)
 
     return y_pred
+
+
+def predict_using_rolling_ransac_with_nan(df: pd.DataFrame, target_column: str, predictor_columns: list=None,
+                                          **kwargs):
+    """
+    Nan-safe version of predict_using_rolling_ransac_filter_single_trace with different interface to conform to pandas
+
+    WARNING: very slow, because pandas calculates by returning scalars
+    https://github.com/pandas-dev/pandas/issues/4130
+
+    Parameters
+    ----------
+    df - should have all
+    target_column - name of the column in the dataframe to predict
+    predictor_columns - names of the columns in the dataframe to use when predicting
+    kwargs
+
+    Returns
+    -------
+    pandas series of the single trace, as predicted using rolling ransac
+
+    """
+    if predictor_columns is None:
+        predictor_columns = [col for col in df.columns if col != target_column]
+
+    # Pandas rolling can't do multiple columns by default, so build a closure, following:
+    # https://stackoverflow.com/questions/41701246/how-to-get-rolling-pandas-dataframe-subsets
+    # Note that the answer is partially wrong, and the closure must return a scalar
+
+    def dataframe_roll(_df):
+        def my_fn(window_series):
+            i0, i1 = window_series.index[0], window_series.index[-1]
+            window_df = _df[(_df.index >= i0) & (_df.index <= i1)]
+            predictor_df = window_df[predictor_columns]
+            valid_ind = window_series.dropna().index.intersection(predictor_df.dropna().index)
+
+            _out = _ransac_process(window_series.loc[valid_ind], predictor_df.loc[valid_ind, :],
+                                   to_add_constant=False)
+            i_middle = int(len(_out) / 2)
+            return _out[i_middle]
+
+        return my_fn
+
+    rol = df[target_column].rolling(**kwargs)
+    closure_func = dataframe_roll(df)
+    result = rol.apply(closure_func, raw=False)
+
+    return result
 
 
 def apply_rolling_wiener_filter_full_dataframe(red, green, strength='strong', nperseg=128, **kwargs):
@@ -231,18 +278,25 @@ def apply_function_to_windows(trace, window_edges, func, noise_trace=None, min_p
     return filtered_fragments, noise_fragments, raw_fragments
 
 
-def combine_trace_fragments(trace_fragments, window_edges, full_size, window_func=scipy.signal.windows.hann):
+def combine_trace_fragments(trace_fragments, window_edges_or_ind, full_size, window_func=scipy.signal.windows.hann):
+
     final_trace = np.zeros(full_size)
     num_overlaps = np.zeros(full_size)
-    for fragment, edges in zip(trace_fragments, window_edges):
-        i0, i1 = edges
+    for fragment, edges_or_ind in zip(trace_fragments, window_edges_or_ind):
+        if not len(edges_or_ind) == 2:
+            raise NotImplementedError
+        #     ind = np.arange(i0, i1)
+        # else:
+        #     ind = edges_or_ind
+
+        i0, i1 = edges_or_ind
         if i1 > full_size:
             i1 = full_size
             fragment = fragment[:i1 - i0]
 
         weights = window_func(len(fragment))  # May be different on the last one
-        final_trace[i0:i1] += weights * fragment
-        num_overlaps[i0:i1] += weights
+        final_trace += weights * fragment
+        num_overlaps += weights
 
     final_trace /= num_overlaps
     return final_trace
