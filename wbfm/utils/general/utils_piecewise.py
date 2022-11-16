@@ -207,9 +207,10 @@ def rolling_filter_trace_using_func(y, x, func, window, delta, **kwargs):
 
     """
     edges = build_window_edges(len(y), window=window, delta=delta)
-    filtered_fragments, noise_fragments, raw_fragments = apply_function_to_windows(y, edges, func, noise_trace=x,
-                                                                                   **kwargs)
-    y_filt = combine_trace_fragments(filtered_fragments, edges, len(y))
+    filtered_fragments, noise_fragments, raw_fragments, used_edges = apply_function_to_windows(y, edges, func,
+                                                                                               noise_trace=x,
+                                                                                               **kwargs)
+    y_filt = combine_trace_fragments(filtered_fragments, used_edges, len(y))
 
     return y_filt
 
@@ -248,6 +249,7 @@ def apply_function_to_windows(trace, window_edges, func, noise_trace=None, min_p
     filtered_fragments = []
     raw_fragments = []
     noise_fragments = []
+    used_edges = []
     for edges in window_edges:
         i0, i1 = edges
         if i1 > len(trace):
@@ -269,13 +271,19 @@ def apply_function_to_windows(trace, window_edges, func, noise_trace=None, min_p
             noise_fragment = this_noise_trace[i0:i1].copy()
 
         raw_fragments.append(fragment)
-        if noise_trace is None:
-            filtered_fragments.append(func(fragment, **kwargs))
-        else:
-            filtered_fragments.append(func(fragment, noise_fragment, **kwargs))
-            noise_fragments.append(noise_fragment)
+        try:
+            if noise_trace is None:
+                filtered_fragments.append(func(fragment, **kwargs))
+            else:
+                filtered_fragments.append(func(fragment, noise_fragment, **kwargs))
+                noise_fragments.append(noise_fragment)
+        except ValueError:
+            # Ignore if some fail
+            pass
 
-    return filtered_fragments, noise_fragments, raw_fragments
+        used_edges.append(edges)
+
+    return filtered_fragments, noise_fragments, raw_fragments, used_edges
 
 
 def combine_trace_fragments(trace_fragments, window_edges_or_ind, full_size, window_func=scipy.signal.windows.hann):
