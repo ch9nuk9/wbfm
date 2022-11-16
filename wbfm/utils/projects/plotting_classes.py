@@ -15,6 +15,7 @@ from backports.cached_property import cached_property
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
 
+from wbfm.utils.general.utils_piecewise import predict_using_rolling_ransac_filter_single_trace
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_sparse_dataframe
@@ -82,6 +83,7 @@ class TracePlotter:
                        'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20',
                        'linear_model_then_ratio', 'ratio_then_linear_model', 'high_order_linear_model',
                        'cross_term_linear_model',
+                       'green_rolling_ransac', 'ratio_rolling_ransac',
                        'top_pixels_10_percent']
         assert (self.channel_mode in valid_modes), \
             f"Unknown channel mode {self.channel_mode}, must be one of {valid_modes}"
@@ -140,7 +142,7 @@ class TracePlotter:
                 raise NotImplementedError
 
         elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20'] or \
-                'linear_model' in self.channel_mode:
+                'linear_model' in self.channel_mode or 'ransac' in self.channel_mode:
             # Third: use both traces dataframes (red AND green)
             df_red, df_green = self.get_two_dataframes_for_traces()
 
@@ -210,6 +212,19 @@ class TracePlotter:
                     r0 = np.nanquantile(ratio, 0.2)
                     dr_over_r = (ratio - r0) / r0
                     return pd.Series(dr_over_r)
+
+            elif self.channel_mode == 'ratio_rolling_ransac':
+                def calc_y(i) -> pd.Series:
+                    _green = single_trace_preprocessed(i, df_green)
+                    _red = single_trace_preprocessed(i, df_red)
+                    green_predicted = predict_using_rolling_ransac_filter_single_trace(_red, _green)
+                    return pd.Series(_green / green_predicted)
+            elif self.channel_mode == 'green_rolling_ransac':
+                def calc_y(i) -> pd.Series:
+                    _green = single_trace_preprocessed(i, df_green)
+                    _red = single_trace_preprocessed(i, df_red)
+                    green_predicted = predict_using_rolling_ransac_filter_single_trace(_red, _green)
+                    return pd.Series(_green - green_predicted)
             else:
                 raise NotImplementedError
 

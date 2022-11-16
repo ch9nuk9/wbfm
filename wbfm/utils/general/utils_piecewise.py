@@ -59,6 +59,25 @@ def plot_ransac_corrected_traces(x, y, ratio, vol, xlim=None, include_red=False)
     return y_corrected, y_pred
 
 
+def predict_using_rolling_ransac_filter_single_trace(red, green, vol=None, nperseg=256, random_state=42):
+
+    def _ransac_process(y, x):
+        predictors = add_constant(x)
+        reg = RANSACRegressor(random_state=random_state).fit(predictors, y)
+        return reg.predict(predictors)
+
+    # Predict
+    if vol is not None:
+        red = pd.concat([red, vol], axis=0).copy()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter(action='ignore', category=FutureWarning)
+        warnings.simplefilter(action='ignore', category=RuntimeWarning)
+        y_pred = rolling_filter_trace_using_func(green, red, _ransac_process, nperseg, delta=32)
+
+    return y_pred
+
+
 def apply_rolling_wiener_filter_full_dataframe(red, green, strength='strong', nperseg=128, **kwargs):
     opt = dict(nperseg=nperseg)
     if 'factor' not in kwargs:
