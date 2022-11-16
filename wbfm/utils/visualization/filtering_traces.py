@@ -49,7 +49,7 @@ def remove_outliers_large_diff(y: pd.DataFrame, outlier_threshold=None):
 
 
 def filter_rolling_mean(y: pd.DataFrame, window: int = 9):
-    return y.rolling(window, min_periods=1).mean()
+    return y.rolling(window, min_periods=1, center=True).mean()
 
 
 def filter_linear_interpolation(y: pd.DataFrame, window=15):
