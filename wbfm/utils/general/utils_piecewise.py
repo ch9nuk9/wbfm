@@ -16,7 +16,10 @@ from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 ##
 
 
-def plot_ransac_corrected_traces(x, y, ratio, vol):
+def plot_ransac_corrected_traces(x, y, ratio, vol, xlim=None, include_red=False):
+    if xlim is None:
+        xlim = [500, 1100]
+
     def _ransac_process(y, x):
         predictors = add_constant(x)
         reg = RANSACRegressor(random_state=42).fit(predictors, y)
@@ -27,24 +30,27 @@ def plot_ransac_corrected_traces(x, y, ratio, vol):
     with warnings.catch_warnings():
         warnings.simplefilter(action='ignore', category=FutureWarning)
         warnings.simplefilter(action='ignore', category=RuntimeWarning)
-        y_pred = rolling_filter_trace_using_func(y, x_with_vol, _ransac_process, 128, delta=16)
+        y_pred = rolling_filter_trace_using_func(y, x_with_vol, _ransac_process, 256, delta=32)
     y_corrected = y - y_pred
 
     # Plot
     fig, axes = plt.subplots(nrows=3, dpi=300)
-    axes[1].plot(ratio / ratio.mean(), label='original ratio', color='tab:blue')
     axes[0].plot(y_pred, label='predicted green', color='tab:orange')
+    if include_red:
+        axes[0].plot(x / x.mean() * y.mean(), label='scaled red', color='tab:red')
     axes[0].plot(y, label='green', color='tab:green')
     # plt.plot(y_corrected, label='corrected_green')
     ratio2 = y / y_pred
     axes[1].plot(ratio2, label='corrected ratio', color='tab:red')
+    ratio_norm = ratio / ratio.mean() * ratio2.mean()
+    axes[1].plot(ratio_norm, label='original ratio', color='tab:blue')
     # plt.xlim(1200, 1500)
-    axes[1].set_ylim(0.7, 1.3)
-    axes[0].set_ylim(np.quantile(y, 0.01), np.quantile(y, 0.99))
+    axes[1].set_ylim(0.8*np.nanquantile(ratio2, 0.05), 1.5*np.nanquantile(ratio2, 0.98))
+    axes[0].set_ylim(0.8*np.nanquantile(y, 0.05), 1.5*np.nanquantile(y, 0.98))
     axes[0].legend()
     axes[1].legend()
-    axes[0].set_xlim(500, 1100)
-    axes[1].set_xlim(500, 1100)
+    axes[0].set_xlim(xlim[0], xlim[1])
+    axes[1].set_xlim(xlim[0], xlim[1])
 
     axes[2].plot(x, y, 'o')
     axes[2].set_ylabel("Green")
