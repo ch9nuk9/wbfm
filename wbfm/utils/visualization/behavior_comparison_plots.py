@@ -13,6 +13,7 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 class BehaviorPlotter:
     project_path: str
 
+    use_ransac: bool = True
     project_data: ProjectData = None
 
     def __post_init__(self):
@@ -23,7 +24,7 @@ class BehaviorPlotter:
             logging.warning("Behavior annotation not found, this class will not work")
 
     @cached_property
-    def all_dfs(self) -> list:
+    def _all_dfs(self) -> list:
         print("First time calculating traces, may take a while...")
 
         opt = dict(channel_mode='red')
@@ -40,7 +41,14 @@ class BehaviorPlotter:
         to_drop = set(ratio_filt.columns) - set(red.columns)
         ratio_filt.drop(columns=to_drop, inplace=True)
 
-        return [red, green, ratio, ratio_ransac, ratio_filt]
+        return [red, green, ratio, ratio_filt, ratio_ransac]
+
+    @property
+    def all_dfs(self):
+        if self.use_ransac:
+            return self._all_dfs
+        else:
+            return self._all_dfs[:-1]
 
     @cached_property
     def all_dfs_corr(self):
@@ -55,13 +63,19 @@ class BehaviorPlotter:
         all_dfs_corr = [df.iloc[ind_neurons, ind_nonneuron] for df in all_dfs_corr]
         return all_dfs_corr
 
-    @cached_property
+    @property
     def all_labels(self):
-        return ['red', 'green', 'ratio', 'ratio_ransac', 'ratio_filt']
+        if self.use_ransac:
+            return ['red', 'green', 'ratio', 'ratio_filt', 'ratio_ransac']
+        else:
+            return ['red', 'green', 'ratio', 'ratio_filt']
 
-    @cached_property
+    @property
     def all_colors(self):
-        return ['tab:red', 'tab:green', 'tab:blue', 'tab:purple', 'tab:orange']
+        if self.use_ransac:
+            return ['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple']
+        else:
+            return ['tab:red', 'tab:green', 'tab:blue', 'tab:orange']
 
     def plot_correlation_of_examples(self, **kwargs):
         # Calculate correlation dataframes
@@ -73,9 +87,55 @@ class BehaviorPlotter:
 
         plt.figure(dpi=100)
         plt.hist(all_max_corrs,
-                 color=self.all_colors)
+                 color=self.all_colors,
+                 label=self.all_labels)
         plt.xlim(-0.2, 1)
         plt.title(self.project_data.shortened_name)
+        plt.xlabel("Maximum correlation")
+        plt.legend()
+
+    def plot_histogram_difference_after_ratio(self, df_start_names=None, df_final_name='ratio'):
+        if df_start_names is None:
+            df_start_names = ['red', 'green']
+        # Get data
+        all_df_starts = [self.all_dfs_corr[self.all_labels.index(name)] for name in df_start_names]
+        df_final = self.all_dfs_corr[self.all_labels.index(df_final_name)]
+
+        # Get differences
+        df_final_maxes = df_final.max(axis=1)
+        all_diffs = [df_final_maxes - df.max(axis=1) for df in all_df_starts]
+
+        # Plot
+        plt.hist(all_diffs)
+
+        plt.xlabel("Maximum correlation difference")
+        plt.title(f"Correlation difference between {df_start_names} to {df_final_name}")
+
+    def plot_paired_boxplot_difference_after_ratio(self, df_start_name='red', df_final_name='ratio'):
+        # Get data
+        df_start = self.all_dfs_corr[self.all_labels.index(df_start_name)]
+        df_final = self.all_dfs_corr[self.all_labels.index(df_final_name)]
+
+        start_maxes = df_start.max(axis=1)
+        final_max = df_final.max(axis=1)
+        both_maxes = pd.concat([start_maxes, final_max], axis=1).T
+
+        # Plot
+        plt.figure(dpi=100)
+        x = both_maxes.index
+        y0_vec = both_maxes.iloc[0, :]
+        y1_vec = both_maxes.iloc[1, :]
+        diff = y1_vec - y0_vec
+        colors = ['green' if d > 0 else 'red' for d in diff]
+        for y0, y1, col in zip(y0_vec, y1_vec, colors):
+            plt.plot(x, [y0, y1], color=col, alpha=0.5)
+
+        bplot = plt.boxplot([y0_vec, y1_vec], positions=x, labels=[df_start_name, df_final_name], zorder=10,
+                            patch_artist=True)
+        for patch in bplot['boxes']:
+            patch.set_facecolor('lightgray')
+        plt.ylabel("Absolute correlation")
+        plt.title("Change in body segment correlation")
 
     @staticmethod
     def _multi_plot(all_dfs, all_dfs_corr, all_labels, all_colors, ax_locations=None,
