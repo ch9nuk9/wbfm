@@ -100,6 +100,10 @@ class WormFullVideoPosture:
             self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         return self._beh_annotation
 
+    @property
+    def has_beh_annotation(self):
+        return self.filename_beh_annotation is not None
+
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
@@ -306,7 +310,7 @@ filename_x:                 {self.filename_x is not None}\n\
 filename_y:                 {self.filename_y is not None}\n\
 filename_curvature:         {self.filename_curvature is not None}\n\
 ============Annotations================\n\
-filename_beh_annotation:    {self.filename_beh_annotation is not None}\n\
+filename_beh_annotation:    {self.has_beh_annotation}\n\
 ============Stage Position================\n\
 filename_table_position:    {self.filename_table_position is not None}\n"
 
