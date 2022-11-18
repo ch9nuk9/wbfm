@@ -7,6 +7,8 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from pint import matplotlib
+from scipy.stats import pearsonr
 
 
 class PlotQWidget(QWidget):
@@ -75,3 +77,32 @@ def paired_boxplot_from_dataframes(both_maxes: pd.DataFrame, labels: list=None):
     bplot = plt.boxplot([y0_vec, y1_vec], positions=x, zorder=10, patch_artist=True, **box_opt)
     for patch in bplot['boxes']:
         patch.set_facecolor('lightgray')
+
+
+def corrfunc(x, y, ax=None, **kws):
+    """
+    Plot the correlation coefficient in the top left hand corner of a plot.
+    If there are multiple colors, offsets the text below
+
+    Can be used with seaborn pairplots using map_lower(corrfunc)
+
+    From: https://stackoverflow.com/questions/50832204/show-correlation-values-in-pairplot-using-seaborn-in-python
+
+    Parameters
+    ----------
+    x
+    y
+    ax
+    kws
+
+    Returns
+    -------
+
+    """
+    r, _ = pearsonr(x, y)
+    ax = ax or plt.gca()
+    offset = 0
+    for c in ax.get_children():
+        if isinstance(c, matplotlib.text.Annotation):
+            offset += 0.075
+    ax.annotate(f'ρ={r:.2f}', xy=(.8, .9 - offset), xycoords=ax.transAxes)
