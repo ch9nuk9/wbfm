@@ -66,6 +66,7 @@ class BehaviorPlotter:
 
     @property
     def all_labels(self):
+        # TODO: refactor as dict
         if self.use_ransac:
             return ['red', 'green', 'ratio', 'ratio_filt', 'ratio_ransac']
         else:
@@ -77,6 +78,57 @@ class BehaviorPlotter:
             return ['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple']
         else:
             return ['tab:red', 'tab:green', 'tab:blue', 'tab:orange']
+
+    def calc_summary_df(self, name):
+        """
+
+        Parameters
+        ----------
+        name - str, one of self.all_labels
+
+        Returns
+        -------
+
+        """
+        df_corr = self.all_dfs_corr[self.all_labels.index(name)]
+        df_traces = self.all_dfs[self.all_labels.index(name)]
+
+        body_segment_argmax = df_corr.columns[df_corr.apply(pd.Series.argmax, axis=1)]
+        body_segment_argmax = pd.Series(body_segment_argmax, index=df_corr.index)
+
+        corr_max = df_corr.max(axis=1)
+        median = df_traces.median(axis=0)
+        var = df_traces.var(axis=0)
+
+        df_all = pd.concat([median, var, body_segment_argmax, corr_max], axis=1)
+        df_all.columns = ['median_brightness', 'var_brightness', 'body_segment_argmax', 'corr_max']
+
+        return df_all
+
+    def calc_pairwise_summary_df(self, start_name, final_name, to_add_columns=True):
+        """
+        Calculates basic parameters for single data types, as well as phase shifts
+
+        Parameters
+        ----------
+        start_name
+        final_name
+
+        Returns
+        -------
+
+        """
+        # Get data for both individually
+        df_start = self.calc_summary_df(start_name)
+        df_final = self.calc_summary_df(final_name)
+        df = df_start.join(df_final, lsuffix=f"_{start_name}", rsuffix=f"_{final_name}")
+
+        # Build additional columns
+        if to_add_columns:
+            to_subtract = 'body_segment_argmax'
+            df['phase_difference'] = df[f"{to_subtract}_{final_name}"] - df[f"{to_subtract}_{start_name}"]
+
+        return df
 
     def plot_correlation_of_examples(self, **kwargs):
         # Calculate correlation dataframes
@@ -127,6 +179,34 @@ class BehaviorPlotter:
         plt.ylim(0, 0.8)
         plt.ylabel("Absolute correlation")
         plt.title("Change in body segment correlation")
+
+    def plot_phase_difference(self, df_start_name='red', df_final_name='green', corr_thresh=0.2, remove_zeros=True):
+        """
+        Green minus red
+
+        Returns
+        -------
+
+        """
+        df_start = self.all_dfs_corr[self.all_labels.index(df_start_name)].copy()
+        df_final = self.all_dfs_corr[self.all_labels.index(df_final_name)].copy()
+
+        ind_to_keep = df_start.max(axis=1) > corr_thresh
+        df_start = df_start.loc[ind_to_keep, :]
+        df_final = df_final.loc[ind_to_keep, :]
+
+        start_body_segment_argmax = df_start.columns[df_start.apply(pd.Series.argmax, axis=1)]
+        final_body_segment_argmax = df_final.columns[df_final.apply(pd.Series.argmax, axis=1)]
+
+        diff = final_body_segment_argmax - start_body_segment_argmax
+        title_str = f"{df_final_name} - {df_start_name} with starting corr > {corr_thresh}"
+        if remove_zeros:
+            diff = diff[diff != 0]
+            title_str = f"{title_str} (zeros removed)"
+        plt.hist(diff, bins=np.arange(diff.min(), diff.max()))
+        plt.title(title_str)
+        plt.xlabel("Phase shift (body segments)")
+
 
     @staticmethod
     def _multi_plot(all_dfs, all_dfs_corr, all_labels, all_colors, ax_locations=None,
