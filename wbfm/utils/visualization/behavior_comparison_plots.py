@@ -31,18 +31,22 @@ class BehaviorPlotter:
         if not self.project_data.worm_posture_class.has_beh_annotation:
             logging.warning("Behavior annotation not found, this class will not work")
 
+        if self.dataframes_to_load is None:
+            self.dataframes_to_load = ['red', 'green', 'ratio', 'ratio_filt']
+
     @cached_property
-    def _all_dfs(self) -> Dict[str, pd.DataFrame]:
+    def all_dfs(self) -> Dict[str, pd.DataFrame]:
         print("First time calculating traces, may take a while...")
 
         all_dfs = dict()
-        for raw_key in self.dataframes_to_load:
+        for key in self.dataframes_to_load:
             # Assumes keys are a basic data mode, perhaps with a _filt suffix
             opt = dict()
-            key = raw_key
-            if '_filt' in raw_key:
-                key = raw_key.replace('_filt', '')
+            channel_key = key
+            if '_filt' in key:
+                channel_key = key.replace('_filt', '')
                 opt['filter_mode'] = 'rolling_mean'
+            opt['channel_mode'] = channel_key
             all_dfs[key] = self.project_data.calc_default_traces(**opt)
 
         # Align columns to commmon subset
@@ -54,13 +58,6 @@ class BehaviorPlotter:
 
         return all_dfs
 
-    @property
-    def all_dfs(self) -> Dict[str, pd.DataFrame]:
-        if self.use_ransac:
-            return self._all_dfs
-        else:
-            return self._all_dfs[:-1]
-
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
         kymo = self.project_data.worm_posture_class.curvature_fluorescence_fps.reset_index(drop=True, inplace=False)
@@ -70,7 +67,7 @@ class BehaviorPlotter:
 
         # Only get the corner we care about: traces vs. kymo
         label0 = self.all_labels[0]
-        ind_nonneuron = np.arange(self.all_dfs[label0].shape[1], all_dfs_corr[0].shape[1])
+        ind_nonneuron = np.arange(self.all_dfs[label0].shape[1], all_dfs_corr[label0].shape[1])
         ind_neurons = np.arange(0, self.all_dfs[label0].shape[1])
         all_dfs_corr = {key: df.iloc[ind_neurons, ind_nonneuron] for key, df in all_dfs_corr.items()}
         return all_dfs_corr
@@ -85,10 +82,8 @@ class BehaviorPlotter:
 
     @property
     def all_colors(self):
-        if self.use_ransac:
-            return ['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple']
-        else:
-            return ['tab:red', 'tab:green', 'tab:blue', 'tab:orange']
+        cols = ['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple']
+        return cols[:len(self.all_labels)]
 
     def calc_summary_df(self, name):
         """
@@ -264,7 +259,7 @@ class BehaviorPlotter:
         plt.xlabel("Phase shift (body segments)")
 
     @staticmethod
-    def _multi_plot(all_dfs, all_dfs_corr, all_labels, all_colors, ax_locations=None,
+    def _multi_plot(all_dfs_list, all_dfs_corr_list, all_labels, all_colors, ax_locations=None,
                     project_data: ProjectData=None,
                     corr_thresh=0.3, which_df_to_apply_corr_thresh=0, max_num_plots=None,
                     xlim=None, to_save=False):
@@ -273,11 +268,12 @@ class BehaviorPlotter:
         if ax_locations is None:
             ax_locations = [1, 1, 3, 3, 3]
 
-        all_names = list(all_dfs_corr[0].index)
+        # label0 = list(all_dfs_corr_list.keys())[0]
+        all_names = list(all_dfs_corr_list[0].index)
         num_open_plots = 0
 
-        for i in range(all_dfs_corr[0].shape[0]):
-            corr = np.abs(all_dfs_corr[which_df_to_apply_corr_thresh].iloc[i, :])
+        for i in range(all_dfs_corr_list[0].shape[0]):
+            corr = np.abs(all_dfs_corr_list[which_df_to_apply_corr_thresh].iloc[i, :])
             if corr.max() < corr_thresh:
                 continue
             else:
@@ -287,7 +283,7 @@ class BehaviorPlotter:
             axes = np.ravel(axes)
             neuron_name = all_names[i]
 
-            for df, df_corr, lab, col, ax_loc in zip(all_dfs, all_dfs_corr, all_labels, all_colors, ax_locations):
+            for df, df_corr, lab, col, ax_loc in zip(all_dfs_list, all_dfs_corr_list, all_labels, all_colors, ax_locations):
 
                 plt_opt = dict(label=lab, color=col)
                 # Always put the correlation on ax 0
@@ -312,8 +308,7 @@ class BehaviorPlotter:
                 if project_data is not None:
                     project_data.shade_axis_using_behavior(ax)
 
-            # axes[2].remove()
-            axes[2].plot(all_dfs[0][neuron_name], all_dfs[1][neuron_name], '.')
+            axes[2].plot(all_dfs_list[0][neuron_name], all_dfs_list[1][neuron_name], '.')
             axes[2].set_xlabel("Red")
             axes[2].set_ylabel("Green")
 
@@ -322,7 +317,7 @@ class BehaviorPlotter:
             if to_save:
                 vis_cfg = project_data.project_config.get_visualization_config()
                 fname = f'traces_kymo_correlation_{neuron_name}.png'
-                fname = vis_cfg.resolve_relative_path(vis_cfg, prepend_subfolder=True)
+                fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
                 plt.savefig(fname)
 
