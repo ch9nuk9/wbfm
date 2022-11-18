@@ -12,6 +12,9 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 
 @dataclass
 class BehaviorPlotter:
+    # TODO: refactor dataframes as dict
+    # TODO: refactor loaded dataframes as argument
+    # TODO: parent class for multiple datasets
     project_path: str
 
     use_ransac: bool = True
@@ -66,7 +69,6 @@ class BehaviorPlotter:
 
     @property
     def all_labels(self):
-        # TODO: refactor as dict
         if self.use_ransac:
             return ['red', 'green', 'ratio', 'ratio_filt', 'ratio_ransac']
         else:
