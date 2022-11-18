@@ -14,9 +14,10 @@ fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/roun
 project_data4 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
 ##
+
+# NOTE: this is 6ms
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/gfp_ZIM2319_worm5/project_config.yaml"
 project_data_gfp1 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-project_data_gfp1_12ms = project_data_gfp1
 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/gfp_worm2-2022_08_29/project_config.yaml"
 project_data_gfp2_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
@@ -36,7 +37,7 @@ project_data_gfp6_12ms = ProjectData.load_final_project_data_from_config(fname, 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/gfp_worm7-2022_08_29/project_config.yaml"
 project_data_gfp7_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
-all_projects_gfp_exp12 = [project_data_gfp1_12ms, project_data_gfp2_12ms, project_data_gfp3_12ms,
+all_projects_gfp_exp12 = [project_data_gfp2_12ms, project_data_gfp3_12ms,
                           project_data_gfp4_12ms, project_data_gfp5_12ms, project_data_gfp6_12ms,
                           project_data_gfp7_12ms]
 
