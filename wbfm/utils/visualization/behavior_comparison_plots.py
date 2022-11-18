@@ -1,10 +1,12 @@
 import logging
 from dataclasses import dataclass
+from typing import List
 
 import numpy as np
 import pandas as pd
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
+from tqdm.auto import tqdm
 
 from wbfm.gui.utils.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -17,7 +19,7 @@ class BehaviorPlotter:
     # TODO: parent class for multiple datasets
     project_path: str
 
-    use_ransac: bool = True
+    use_ransac: bool = False
     project_data: ProjectData = None
 
     def __post_init__(self):
@@ -105,6 +107,10 @@ class BehaviorPlotter:
         df_all = pd.concat([median, var, body_segment_argmax, corr_max], axis=1)
         df_all.columns = ['median_brightness', 'var_brightness', 'body_segment_argmax', 'corr_max']
 
+        # Add column with name of dataset
+        df_all['dataset_name'] = self.project_data.shortened_name
+        df_all.dataset_name = df_all.dataset_name.astype('category')
+
         return df_all
 
     def calc_wide_pairwise_summary_df(self, start_name, final_name, to_add_columns=True):
@@ -112,6 +118,10 @@ class BehaviorPlotter:
         Calculates basic parameters for single data types, as well as phase shifts
 
         Returns a widened dataframe, with new columns for each variable
+
+        Example usage (with seaborn):
+            df = plotter_gcamp.calc_wide_pairwise_summary_df('red', 'green')
+            sns.pairplot(df)
 
         Parameters
         ----------
@@ -140,6 +150,10 @@ class BehaviorPlotter:
 
         Returns a long dataframe, with new columns for the original datatype ('source_data')
         Is also reindexed, with a new column referring to neuron names (these are duplicated)
+
+        Example usage:
+            df = plotter_gcamp.calc_long_pairwise_summary_df('red', 'green')
+            sns.pairplot(df, hue='source_data', palette={'red': 'pink', 'green': 'green'})
 
         Parameters
         ----------
@@ -241,7 +255,6 @@ class BehaviorPlotter:
         plt.title(title_str)
         plt.xlabel("Phase shift (body segments)")
 
-
     @staticmethod
     def _multi_plot(all_dfs, all_dfs_corr, all_labels, all_colors, ax_locations=None,
                     project_data: ProjectData=None,
@@ -279,20 +292,24 @@ class BehaviorPlotter:
 
             axes[0].set_xlabel("Body segment")
             axes[0].set_ylabel("Correlation")
+            axes[0].set_ylim(0, 0.8)
             axes[0].set_title(neuron_name)
             axes[0].legend()
 
-            axes[1].set_xlim(xlim[0], xlim[1])
-            axes[3].set_xlim(xlim[0], xlim[1])
-            axes[1].legend()
-            axes[3].legend()
-            axes[3].set_xlabel("Time (frames)")
-            axes[1].set_ylabel("Normalized amplitude")
-            if project_data is not None:
-                project_data.shade_axis_using_behavior(axes[1])
-                project_data.shade_axis_using_behavior(axes[3])
+            for ax in [axes[1], axes[3]]:
+                ax.set_xlim(xlim[0], xlim[1])
+                ax.legend()
+                ax.set_xlabel("Time (frames)")
+                ax.set_ylabel("Normalized amplitude")
+                if project_data is not None:
+                    project_data.shade_axis_using_behavior(ax)
 
-            axes[2].remove()
+            # axes[2].remove()
+            axes[2].plot(all_dfs[0][neuron_name], all_dfs[1][neuron_name], '.')
+            axes[2].set_xlabel("Red")
+            axes[2].set_ylabel("Green")
+
+            fig.tight_layout()
 
             if to_save:
                 vis_cfg = project_data.project_config.get_visualization_config()
@@ -304,4 +321,26 @@ class BehaviorPlotter:
             if max_num_plots is not None and num_open_plots >= max_num_plots:
                 break
 
-            # plt.show()
+
+@dataclass
+class MultiProjectBehaviorPlotter:
+    all_project_paths: list
+
+    _all_behavior_plotters: List[BehaviorPlotter] = None
+
+    def __post_init__(self):
+        # Just initialize the behavior plotters
+        self._all_behavior_plotters = [BehaviorPlotter(p) for p in self.all_project_paths]
+
+    def __getattr__(self, item):
+        # Transform all unknown function calls into a loop of calls to the subobjects
+        def method(*args, **kwargs):
+            output = []
+            for p in tqdm(self._all_behavior_plotters):
+                out = getattr(p, item)(*args, **kwargs)
+                output.append(out)
+            return output
+            # print("tried to handle unknown method " + item)
+            # if args:
+            #     print("it had arguments: " + str(args) + str(kwargs))
+        return method
