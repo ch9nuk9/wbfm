@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
-from typing import List
+from functools import reduce
+from typing import List, Dict
 
 import numpy as np
 import pandas as pd
@@ -16,8 +17,9 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 class BehaviorPlotter:
     # TODO: refactor dataframes as dict
     # TODO: refactor loaded dataframes as argument
-    # TODO: parent class for multiple datasets
     project_path: str
+
+    dataframes_to_load: List[str] = None
 
     use_ransac: bool = False
     project_data: ProjectData = None
@@ -30,51 +32,56 @@ class BehaviorPlotter:
             logging.warning("Behavior annotation not found, this class will not work")
 
     @cached_property
-    def _all_dfs(self) -> list:
+    def _all_dfs(self) -> Dict[str, pd.DataFrame]:
         print("First time calculating traces, may take a while...")
 
-        opt = dict(channel_mode='red')
-        red = self.project_data.calc_default_traces(**opt)
-        opt = dict(channel_mode='green')
-        green = self.project_data.calc_default_traces(**opt)
-        opt = dict(channel_mode='ratio')
-        ratio = self.project_data.calc_default_traces(**opt)
-        opt = dict(channel_mode='ratio_rolling_ransac')
-        ratio_ransac = self.project_data.calc_default_traces(**opt)
-        opt = dict(channel_mode='ratio', filter_mode='rolling_mean')
-        ratio_filt = self.project_data.calc_default_traces(**opt)
-        # Align columns
-        to_drop = set(ratio_filt.columns) - set(red.columns)
-        ratio_filt.drop(columns=to_drop, inplace=True)
+        all_dfs = dict()
+        for raw_key in self.dataframes_to_load:
+            # Assumes keys are a basic data mode, perhaps with a _filt suffix
+            opt = dict()
+            key = raw_key
+            if '_filt' in raw_key:
+                key = raw_key.replace('_filt', '')
+                opt['filter_mode'] = 'rolling_mean'
+            all_dfs[key] = self.project_data.calc_default_traces(**opt)
 
-        return [red, green, ratio, ratio_filt, ratio_ransac]
+        # Align columns to commmon subset
+        all_column_names = [df.columns for df in all_dfs.values()]
+        common_column_names = reduce(np.intersect1d, all_column_names)
+        all_to_drop = [set(df.columns) - set(common_column_names) for df in all_dfs.values()]
+        for key, to_drop in zip(all_dfs.keys(), all_to_drop):
+            all_dfs[key].drop(columns=to_drop, inplace=True)
+
+        return all_dfs
 
     @property
-    def all_dfs(self):
+    def all_dfs(self) -> Dict[str, pd.DataFrame]:
         if self.use_ransac:
             return self._all_dfs
         else:
             return self._all_dfs[:-1]
 
     @cached_property
-    def all_dfs_corr(self):
+    def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
         kymo = self.project_data.worm_posture_class.curvature_fluorescence_fps.reset_index(drop=True, inplace=False)
         kymo_smaller = kymo.loc[:, 3:30].copy()
 
-        all_dfs_corr = [np.abs(pd.concat([df, kymo_smaller], axis=1).corr()) for df in self.all_dfs]
+        all_dfs_corr = {key: np.abs(pd.concat([df, kymo_smaller], axis=1).corr()) for key, df in self.all_dfs.items()}
 
         # Only get the corner we care about: traces vs. kymo
-        ind_nonneuron = np.arange(self.all_dfs[0].shape[1], all_dfs_corr[0].shape[1])
-        ind_neurons = np.arange(0, self.all_dfs[0].shape[1])
-        all_dfs_corr = [df.iloc[ind_neurons, ind_nonneuron] for df in all_dfs_corr]
+        label0 = self.all_labels[0]
+        ind_nonneuron = np.arange(self.all_dfs[label0].shape[1], all_dfs_corr[0].shape[1])
+        ind_neurons = np.arange(0, self.all_dfs[label0].shape[1])
+        all_dfs_corr = {key: df.iloc[ind_neurons, ind_nonneuron] for key, df in all_dfs_corr.items()}
         return all_dfs_corr
 
     @property
     def all_labels(self):
-        if self.use_ransac:
-            return ['red', 'green', 'ratio', 'ratio_filt', 'ratio_ransac']
-        else:
-            return ['red', 'green', 'ratio', 'ratio_filt']
+        return list(self.all_dfs.keys())
+        # if self.use_ransac:
+        #     return ['red', 'green', 'ratio', 'ratio_filt', 'ratio_ransac']
+        # else:
+        #     return ['red', 'green', 'ratio', 'ratio_filt']
 
     @property
     def all_colors(self):
@@ -94,8 +101,8 @@ class BehaviorPlotter:
         -------
 
         """
-        df_corr = self.all_dfs_corr[self.all_labels.index(name)]
-        df_traces = self.all_dfs[self.all_labels.index(name)]
+        df_corr = self.all_dfs_corr[name]
+        df_traces = self.all_dfs[name]
 
         body_segment_argmax = df_corr.columns[df_corr.apply(pd.Series.argmax, axis=1)]
         body_segment_argmax = pd.Series(body_segment_argmax, index=df_corr.index)
@@ -180,11 +187,12 @@ class BehaviorPlotter:
 
     def plot_correlation_of_examples(self, **kwargs):
         # Calculate correlation dataframes
-        self._multi_plot(self.all_dfs, self.all_dfs_corr, self.all_labels, self.all_colors,
+        self._multi_plot(list(self.all_dfs.values()), list(self.all_dfs_corr.values()),
+                         self.all_labels, self.all_colors,
                          project_data=self.project_data, **kwargs)
 
     def plot_correlation_histograms(self):
-        all_max_corrs = [df_corr.max(axis=1) for df_corr in self.all_dfs_corr]
+        all_max_corrs = [df_corr.max(axis=1) for df_corr in self.all_dfs_corr.values()]
 
         plt.figure(dpi=100)
         plt.hist(all_max_corrs,
@@ -199,8 +207,8 @@ class BehaviorPlotter:
         if df_start_names is None:
             df_start_names = ['red', 'green']
         # Get data
-        all_df_starts = [self.all_dfs_corr[self.all_labels.index(name)] for name in df_start_names]
-        df_final = self.all_dfs_corr[self.all_labels.index(df_final_name)]
+        all_df_starts = [self.all_dfs_corr[name] for name in df_start_names]
+        df_final = self.all_dfs_corr[df_final_name]
 
         # Get differences
         df_final_maxes = df_final.max(axis=1)
@@ -214,8 +222,8 @@ class BehaviorPlotter:
 
     def plot_paired_boxplot_difference_after_ratio(self, df_start_name='red', df_final_name='ratio'):
         # Get data
-        df_start = self.all_dfs_corr[self.all_labels.index(df_start_name)]
-        df_final = self.all_dfs_corr[self.all_labels.index(df_final_name)]
+        df_start = self.all_dfs_corr[df_start_name]
+        df_final = self.all_dfs_corr[df_final_name]
 
         start_maxes = df_start.max(axis=1)
         final_max = df_final.max(axis=1)
@@ -236,8 +244,8 @@ class BehaviorPlotter:
         -------
 
         """
-        df_start = self.all_dfs_corr[self.all_labels.index(df_start_name)].copy()
-        df_final = self.all_dfs_corr[self.all_labels.index(df_final_name)].copy()
+        df_start = self.all_dfs_corr[df_start_name].copy()
+        df_final = self.all_dfs_corr[df_final_name].copy()
 
         ind_to_keep = df_start.max(axis=1) > corr_thresh
         df_start = df_start.loc[ind_to_keep, :]
@@ -335,10 +343,10 @@ class MultiProjectBehaviorPlotter:
     def __getattr__(self, item):
         # Transform all unknown function calls into a loop of calls to the subobjects
         def method(*args, **kwargs):
-            output = []
+            output = {}
             for p in tqdm(self._all_behavior_plotters):
                 out = getattr(p, item)(*args, **kwargs)
-                output.append(out)
+                output[p.project_data.shortened_name] = out
             return output
             # print("tried to handle unknown method " + item)
             # if args:
