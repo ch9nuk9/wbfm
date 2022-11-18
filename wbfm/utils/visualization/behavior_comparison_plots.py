@@ -6,6 +6,7 @@ import pandas as pd
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 
+from wbfm.gui.utils.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 
@@ -121,19 +122,9 @@ class BehaviorPlotter:
         both_maxes = pd.concat([start_maxes, final_max], axis=1).T
 
         # Plot
-        plt.figure(dpi=100)
-        x = both_maxes.index
-        y0_vec = both_maxes.iloc[0, :]
-        y1_vec = both_maxes.iloc[1, :]
-        diff = y1_vec - y0_vec
-        colors = ['green' if d > 0 else 'red' for d in diff]
-        for y0, y1, col in zip(y0_vec, y1_vec, colors):
-            plt.plot(x, [y0, y1], color=col, alpha=0.5)
+        paired_boxplot_from_dataframes(both_maxes, df_final_name, df_start_name)
 
-        bplot = plt.boxplot([y0_vec, y1_vec], positions=x, labels=[df_start_name, df_final_name], zorder=10,
-                            patch_artist=True)
-        for patch in bplot['boxes']:
-            patch.set_facecolor('lightgray')
+        plt.ylim(0, 0.8)
         plt.ylabel("Absolute correlation")
         plt.title("Change in body segment correlation")
 
