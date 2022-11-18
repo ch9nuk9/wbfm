@@ -105,9 +105,11 @@ class BehaviorPlotter:
 
         return df_all
 
-    def calc_pairwise_summary_df(self, start_name, final_name, to_add_columns=True):
+    def calc_wide_pairwise_summary_df(self, start_name, final_name, to_add_columns=True):
         """
         Calculates basic parameters for single data types, as well as phase shifts
+
+        Returns a widened dataframe, with new columns for each variable
 
         Parameters
         ----------
@@ -123,10 +125,40 @@ class BehaviorPlotter:
         df_final = self.calc_summary_df(final_name)
         df = df_start.join(df_final, lsuffix=f"_{start_name}", rsuffix=f"_{final_name}")
 
-        # Build additional columns
+        # Build additional numeric columns
         if to_add_columns:
             to_subtract = 'body_segment_argmax'
             df['phase_difference'] = df[f"{to_subtract}_{final_name}"] - df[f"{to_subtract}_{start_name}"]
+
+        return df
+
+    def calc_long_pairwise_summary_df(self, start_name, final_name):
+        """
+        Calculates basic parameters for single data types
+
+        Returns a long dataframe, with new columns for the original datatype ('source_data')
+        Is also reindexed, with a new column referring to neuron names (these are duplicated)
+
+        Parameters
+        ----------
+        start_name
+        final_name
+
+        Returns
+        -------
+
+        """
+        # Get data for both individually
+        df_start = self.calc_summary_df(start_name)
+        df_final = self.calc_summary_df(final_name)
+
+        # Build columns and join
+        df_start['source_data'] = start_name
+        df_final['source_data'] = final_name
+
+        df = pd.concat([df_start, df_final], axis=0)
+        df.source_data = df.source_data.astype('category')
+        df = df.reset_index().rename(columns={'index': 'neuron_name'})
 
         return df
 
