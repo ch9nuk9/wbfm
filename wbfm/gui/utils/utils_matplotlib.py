@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from pint import matplotlib
+import matplotlib
 from scipy.stats import pearsonr
 
 
@@ -81,7 +81,7 @@ def paired_boxplot_from_dataframes(both_maxes: pd.DataFrame, labels: list=None):
 
 def corrfunc(x, y, ax=None, **kws):
     """
-    Plot the correlation coefficient in the top left hand corner of a plot.
+    Plot the correlation coefficient in the top right hand corner of a plot.
     If there are multiple colors, offsets the text below
 
     Can be used with seaborn pairplots using map_lower(corrfunc)
