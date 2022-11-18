@@ -1,6 +1,7 @@
 # From https://stackoverflow.com/questions/48140576/matplotlib-toolbar-in-a-pyqt5-application
 import random
 
+import pandas as pd
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSizePolicy
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -47,7 +48,22 @@ def get_twin_axis(ax, axis='x'):
     return None
 
 
-def paired_boxplot_from_dataframes(both_maxes, df_final_name, df_start_name):
+def paired_boxplot_from_dataframes(both_maxes: pd.DataFrame, labels: list=None):
+    """
+    Plots a pair of boxplots with red (green) lines showing points that lost (gained) value between conditions
+
+    Parameters
+    ----------
+    both_maxes - 2 x n Dataframe, with index equal to x positions
+    labels
+
+    Returns
+    -------
+
+    """
+    box_opt = {}
+    if labels is not None:
+        box_opt['labels'] = labels
     plt.figure(dpi=100)
     x = both_maxes.index
     y0_vec = both_maxes.iloc[0, :]
@@ -56,7 +72,6 @@ def paired_boxplot_from_dataframes(both_maxes, df_final_name, df_start_name):
     colors = ['green' if d > 0 else 'red' for d in diff]
     for y0, y1, col in zip(y0_vec, y1_vec, colors):
         plt.plot(x, [y0, y1], color=col, alpha=0.5)
-    bplot = plt.boxplot([y0_vec, y1_vec], positions=x, labels=[df_start_name, df_final_name], zorder=10,
-                        patch_artist=True)
+    bplot = plt.boxplot([y0_vec, y1_vec], positions=x, zorder=10, patch_artist=True, **box_opt)
     for patch in bplot['boxes']:
         patch.set_facecolor('lightgray')
