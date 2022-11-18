@@ -20,8 +20,6 @@ class BehaviorPlotter:
     project_path: str
 
     dataframes_to_load: List[str] = None
-
-    use_ransac: bool = False
     project_data: ProjectData = None
 
     def __post_init__(self):
@@ -75,10 +73,6 @@ class BehaviorPlotter:
     @property
     def all_labels(self):
         return list(self.all_dfs.keys())
-        # if self.use_ransac:
-        #     return ['red', 'green', 'ratio', 'ratio_filt', 'ratio_ransac']
-        # else:
-        #     return ['red', 'green', 'ratio', 'ratio_filt']
 
     @property
     def all_colors(self):
