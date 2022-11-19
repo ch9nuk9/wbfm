@@ -9,7 +9,7 @@ import pandas as pd
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy import stats
-from statsmodels.tools.sm_exceptions import ConvergenceWarning
+from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -380,7 +380,7 @@ class MarkovRegressionModel:
         valid_ind = np.where(~np.isnan(trace))[0]
         valid_ind = valid_ind[valid_ind < self.trace_len]
 
-        return valid_ind, trace
+        return valid_ind, trace[valid_ind]
 
     @property
     def trace_len(self):
@@ -433,6 +433,7 @@ class MarkovRegressionModel:
 
                 with warnings.catch_warnings():
                     warnings.simplefilter(action='ignore', category=ConvergenceWarning)
+                    warnings.simplefilter(action='ignore', category=ValueWarning)
                     warnings.simplefilter(action='ignore', category=RuntimeWarning)
                     mod = sm.tsa.MarkovRegression(trace, k_regimes=2, exog=exog)
                     res = mod.fit()
