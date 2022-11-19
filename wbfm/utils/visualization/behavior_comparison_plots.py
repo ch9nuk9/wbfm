@@ -238,7 +238,7 @@ class BehaviorPlotter:
         both_maxes = pd.concat([start_maxes, final_max], axis=1).T
 
         # Plot
-        paired_boxplot_from_dataframes(both_maxes, [df_final_name, df_start_name])
+        paired_boxplot_from_dataframes(both_maxes, [df_start_name, df_final_name])
 
         plt.ylim(0, 0.8)
         plt.ylabel("Absolute correlation")
