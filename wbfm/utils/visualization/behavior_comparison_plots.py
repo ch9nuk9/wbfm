@@ -7,16 +7,16 @@ import numpy as np
 import pandas as pd
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
+from scipy import stats
 from tqdm.auto import tqdm
-
 from wbfm.gui.utils.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
+import statsmodels.api as sm
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 @dataclass
 class BehaviorPlotter:
-    # TODO: refactor dataframes as dict
-    # TODO: refactor loaded dataframes as argument
     project_path: str
 
     dataframes_to_load: List[str] = None
@@ -341,3 +341,168 @@ class MultiProjectBehaviorPlotter:
             # if args:
             #     print("it had arguments: " + str(args) + str(kwargs))
         return method
+
+
+@dataclass
+class MarkovRegressionModel:
+    project_path: str
+    project_data: ProjectData = None
+
+    df: pd.DataFrame = None
+
+    aic_list: list = None
+    resid_list: list = None
+    neuron_list: list = None
+    results_list: list = None
+
+    def __post_init__(self):
+
+        project_data = ProjectData.load_final_project_data_from_config(self.project_path)
+        self.project_data = project_data
+
+        kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode='rolling_mean')
+        self.df = project_data.calc_default_traces(interpolate_nan=True, **kwargs)
+
+    @cached_property
+    def speed(self):
+        speed_with_outliers = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed
+        speed = pd.Series(speed_with_outliers)
+        return speed
+
+    @cached_property
+    def vis_cfg(self):
+        return self.project_data.project_config.get_visualization_config()
+
+    def plot_no_neuron_markov_model(self, to_save=True):
+        mod_speed = sm.tsa.MarkovRegression(self.speed, k_regimes=2)
+        res_speed = mod_speed.fit()
+
+        speed_pred = res_speed.predict()
+        plt.figure(dpi=100)
+
+        plt.plot(self.speed, label='speed')
+        plt.plot(speed_pred, label='predicted speed')
+        plt.legend()
+        self.project_data.shade_axis_using_behavior()
+
+        plt.ylabel("Speed (mm/s)")
+        plt.xlabel("Time (Frames)")
+
+        r, p = stats.pearsonr(self.speed, speed_pred)
+        plt.title(f"Correlation: {r:.2f}")
+
+        if to_save:
+            fname = self.vis_cfg.resolve_relative_path(f'no_neurons.png', prepend_subfolder=True)
+            plt.savefig(fname)
+
+        plt.show()
+
+    def calc_aic_feature_selected_neurons(self, num_iters=5):
+
+        # Get features
+        aic_list = []
+        resid_list = []
+        neuron_list = []
+
+        remaining_neurons = get_names_from_df(self.df)
+        trace_len = self.df.shape[0]
+        previous_traces = []
+
+        for i in tqdm(range(num_iters)):
+            best_aic = 0
+            best_resid = np.inf
+            best_neuron = None
+
+            for n in tqdm(remaining_neurons, leave=False):
+                exog = pd.concat(previous_traces + [self.df[n]], axis=1)
+
+                mod = sm.tsa.MarkovRegression(self.speed[:trace_len], k_regimes=2, exog=exog)
+                res = mod.fit()
+
+                if np.sum(res.resid ** 2) < best_resid:
+                    best_resid = np.sum(res.resid ** 2)
+                    best_aic = res.aic
+                    best_neuron = n
+
+            print(f"{best_neuron} selected for iteration {i}")
+            aic_list.append(best_aic)
+            resid_list.append(best_resid)
+            neuron_list.append(best_neuron)
+
+            previous_traces.append(self.df[best_neuron])
+            remaining_neurons.remove(best_neuron)
+
+        # Fit models
+        results_list = []
+        previous_traces = []
+        for n in tqdm(neuron_list):
+            exog = pd.concat(previous_traces + [self.df[n]], axis=1)
+            mod = sm.tsa.MarkovRegression(self.speed[:trace_len], k_regimes=2, exog=exog)
+            res = mod.fit()
+            previous_traces.append(self.df[n])
+            results_list.append(res)
+
+        self.aic_list = aic_list
+        self.resid_list = resid_list
+        self.neuron_list = neuron_list
+        self.results_list = results_list
+
+    def plot_aic_feature_selected_neurons(self, to_save=True):
+        if self.aic_list is None:
+            self.calc_aic_feature_selected_neurons()
+
+        aic_list = self.aic_list
+        resid_list = self.resid_list
+        neuron_list = self.neuron_list
+        results_list = self.results_list
+        trace_len = self.df.shape[0]
+
+        # Plot 1
+        fig, ax = plt.subplots(dpi=100)
+        ax.plot(resid_list, label="Residual")
+
+        ax2 = ax.twinx()
+        ax2.plot(aic_list, label="AIC", c='tab:orange')
+
+        ax.set_xticks(ticks=range(len(neuron_list)), labels=neuron_list, rotation=45)
+        plt.xlabel("Neuron selected each iteration")
+
+        if to_save:
+            fname = self.vis_cfg.resolve_relative_path(f'error_across_neurons.png', prepend_subfolder=True)
+            plt.savefig(fname)
+
+        # Plot 2
+        all_pred = [r.predict() for r in results_list]
+        plt.figure(dpi=100)
+        plt.plot(self.speed, label='speed', lw=2)
+
+        for p, lab in zip(all_pred, neuron_list[0:8]):
+            line = plt.plot(p, label=lab)
+        plt.legend()
+        plt.title("Predictions with cumulatively included neurons")
+        plt.ylabel("Speed (mm/s)")
+        plt.xlabel("Time (Frames)")
+
+        r, p = stats.pearsonr(self.speed[:trace_len], all_pred[-1])
+        plt.title(f"Best correlation: {r:.2f}")
+
+        if to_save:
+            fname = self.vis_cfg.resolve_relative_path(f'with_all_neurons_aic_feature_selected.png', prepend_subfolder=True)
+            plt.savefig(fname)
+
+        # Plot 3
+        all_traces = [self.df[n] for n in neuron_list]
+
+        plt.figure(dpi=100)
+        for i, (t, lab) in enumerate(zip(all_traces, neuron_list[:5])):
+            line = plt.plot(t - i, label=lab)
+        plt.legend()
+
+        self.project_data.shade_axis_using_behavior()
+        plt.title("Neurons selected as predictive (top is best)")
+
+        if to_save:
+            fname = self.vis_cfg.resolve_relative_path(f'aic_predictive_traces.png', prepend_subfolder=True)
+            plt.savefig(fname)
+
+        plt.show()
