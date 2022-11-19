@@ -183,9 +183,9 @@ class BehaviorPlotter:
                          project_data=self.project_data, to_save=to_save, **kwargs)
 
     def plot_correlation_histograms(self, to_save=True):
+        plt.figure(dpi=100)
         all_max_corrs = [df_corr.max(axis=1) for df_corr in self.all_dfs_corr.values()]
 
-        plt.figure(dpi=100)
         plt.hist(all_max_corrs,
                  color=self.all_colors,
                  label=self.all_labels)
@@ -202,6 +202,8 @@ class BehaviorPlotter:
             plt.savefig(fname)
 
     def plot_histogram_difference_after_ratio(self, df_start_names=None, df_final_name='ratio', to_save=True):
+        plt.figure(dpi=100)
+
         if df_start_names is None:
             df_start_names = ['red', 'green']
         # Get data
@@ -226,6 +228,7 @@ class BehaviorPlotter:
             plt.savefig(fname)
 
     def plot_paired_boxplot_difference_after_ratio(self, df_start_name='red', df_final_name='ratio', to_save=True):
+        plt.figure(dpi=100)
         # Get data
         df_start = self.all_dfs_corr[df_start_name]
         df_final = self.all_dfs_corr[df_final_name]
@@ -257,6 +260,7 @@ class BehaviorPlotter:
         -------
 
         """
+        plt.figure(dpi=100)
         df_start = self.all_dfs_corr[df_start_name].copy()
         df_final = self.all_dfs_corr[df_final_name].copy()
 
@@ -278,7 +282,7 @@ class BehaviorPlotter:
 
         if to_save:
             vis_cfg = self.project_data.project_config.get_visualization_config()
-            fname = f'{title_str}.png'
+            fname = f'{title_str.replace(">", "ge")}.png'
             fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
             plt.savefig(fname)
 
@@ -292,7 +296,6 @@ class BehaviorPlotter:
         if ax_locations is None:
             ax_locations = [1, 1, 3, 3, 3]
 
-        # label0 = list(all_dfs_corr_list.keys())[0]
         all_names = list(all_dfs_corr_list[0].index)
         num_open_plots = 0
 
