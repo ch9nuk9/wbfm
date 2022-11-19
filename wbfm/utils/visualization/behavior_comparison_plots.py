@@ -388,7 +388,7 @@ class MarkovRegressionModel:
         plt.ylabel("Speed (mm/s)")
         plt.xlabel("Time (Frames)")
 
-        r, p = stats.pearsonr(self.speed, speed_pred)
+        r = self.speed.corr(speed_pred)
         plt.title(f"Correlation: {r:.2f}")
 
         if to_save:
@@ -483,7 +483,7 @@ class MarkovRegressionModel:
         plt.ylabel("Speed (mm/s)")
         plt.xlabel("Time (Frames)")
 
-        r, p = stats.pearsonr(self.speed[:trace_len], all_pred[-1])
+        r = self.speed[:trace_len].corr(all_pred[-1])
         plt.title(f"Best correlation: {r:.2f}")
 
         if to_save:
