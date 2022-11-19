@@ -25,6 +25,10 @@ def cfg(project_path):
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    model = MarkovRegressionModel(_config['project_path'])
+    model = MarkovRegressionModel(_config['project_path'], behavior_to_predict='leifer_curvature')
+    model.plot_no_neuron_markov_model(to_save=True)
+    model.plot_aic_feature_selected_neurons(to_save=True)
+
+    model = MarkovRegressionModel(_config['project_path'], behavior_to_predict='speed')
     model.plot_no_neuron_markov_model(to_save=True)
     model.plot_aic_feature_selected_neurons(to_save=True)

@@ -2,7 +2,7 @@ import logging
 import warnings
 from dataclasses import dataclass
 from functools import reduce
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -367,7 +367,7 @@ class MarkovRegressionModel:
         kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode='rolling_mean')
         self.df = project_data.calc_default_traces(interpolate_nan=True, **kwargs)
 
-    def get_valid_ind_and_trace(self):
+    def get_valid_ind_and_trace(self) -> Tuple[np.ndarray, pd.Series]:
         if self.behavior_to_predict == 'speed':
             trace = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed
             trace = pd.Series(trace)
@@ -397,14 +397,14 @@ class MarkovRegressionModel:
         pred = res.predict()
 
         plt.figure(dpi=100)
-        plt.plot(self.get_valid_ind_and_trace, label=self.behavior_to_predict)
+        plt.plot(trace, label=self.behavior_to_predict)
         plt.plot(pred, label=f'predicted {self.behavior_to_predict}')
         plt.legend()
         self.project_data.shade_axis_using_behavior()
 
         plt.ylabel(f"{self.behavior_to_predict}")
         plt.xlabel("Time (Frames)")
-        r = self.get_valid_ind_and_trace.corr(pred)
+        r = trace.corr(pred)
         plt.title(f"Correlation: {r:.2f}")
 
         if to_save:
@@ -509,7 +509,7 @@ class MarkovRegressionModel:
             plt.savefig(fname)
 
         # Plot 3
-        all_traces = [self.df[n] for n in neuron_list]
+        all_traces = [self.df[n][valid_ind] for n in neuron_list]
 
         plt.figure(dpi=100)
         for i, (t, lab) in enumerate(zip(all_traces, neuron_list[:5])):
