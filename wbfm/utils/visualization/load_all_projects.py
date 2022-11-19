@@ -13,9 +13,11 @@ project_data2 = ProjectData.load_final_project_data_from_config(fname, verbose=0
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/round2_worm3/project_config.yaml"
 project_data4 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
+all_original_projects = [project_data1, project_data2, project_data4]
+
 ##
 
-# NOTE: this is 6ms
+# NOTE: this is 6ms, the rest are 12ms
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/gfp_ZIM2319_worm5/project_config.yaml"
 project_data_gfp1 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
@@ -41,12 +43,17 @@ all_projects_gfp_exp12 = [project_data_gfp2_12ms, project_data_gfp3_12ms,
                           project_data_gfp4_12ms, project_data_gfp5_12ms, project_data_gfp6_12ms,
                           project_data_gfp7_12ms]
 
+all_projects_gfp_exp12_smaller = [project_data_gfp2_12ms, project_data_gfp3_12ms,
+                                  project_data_gfp4_12ms, project_data_gfp5_12ms, project_data_gfp7_12ms]
+
 ##
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/bright_worm5/project_config.yaml"
 project_data_bright1 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/bright_worm7/project_config.yaml"
 project_data_bright2 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+all_december_bright_projects = [project_data_bright1, project_data_bright2]
 
 ##
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright6-2022_07_12/project_config.yaml"
@@ -60,6 +67,8 @@ project_data3_C = ProjectData.load_final_project_data_from_config(fname, verbose
 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright9-2022_06_30/project_config.yaml"
 project_data4_C = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+all_projects_new_bright = [project_data2_C, project_data3_C, project_data4_C]
 
 ##
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm3-2022_08_01/project_config.yaml"
@@ -86,6 +95,25 @@ project_data11_exp12 = ProjectData.load_final_project_data_from_config(fname, ve
 all_projects_exp12 = [project_data1_exp12, project_data2_exp12, project_data3_exp12, #project_data4_exp12,
                       project_data6_exp12, project_data11_exp12]
 
+## Also Ulises' new 'control' 12ms exposure
+fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm2-2022_09_14/project_config.yaml"
+project_data2_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm3-2022_09_14/project_config.yaml"
+project_data3_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm4-2022_09_14/project_config.yaml"
+project_data4_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm5-2022_09_14/project_config.yaml"
+project_data5_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm6-2022_09_14/project_config.yaml"
+project_data6_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+all_projects_exp12_uli = [project_data2_exp12_uli, project_data3_exp12_uli, project_data4_exp12_uli,
+                          project_data5_exp12_uli, project_data6_exp12_uli]
+
 ##
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_24ms/C-exp24_worm7-2022_08_01/project_config.yaml"
 project_data1_24ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
@@ -110,6 +138,9 @@ project_data1_2gcamp_12ms = ProjectData.load_final_project_data_from_config(fnam
 fname = "/scratch/neurobiology/zimmer/StephanieEder/WBFM/projects/2xGCaMP_15per_12ms_w1-2022_08_26/project_config.yaml"
 project_data2_2gcamp_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
+all_project_2gcamp_12_or_6ms = [project_data1_2gcamp_12ms, project_data2_2gcamp_12ms,
+                                project_data1_2gcamp_6ms, project_data2_2gcamp_6ms]
+
 ##
 fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/IL40_worm1-2022_09_14/project_config.yaml"
 project_data1_2gcamp_12ms_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
@@ -119,6 +150,8 @@ project_data2_2gcamp_12ms_uli = ProjectData.load_final_project_data_from_config(
 
 fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/IL40_worm4-2022_09_14/project_config.yaml"
 project_data4_2gcamp_12ms_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+all_project_2gcamp_uli = [project_data1_2gcamp_12ms_uli, project_data2_2gcamp_12ms_uli, project_data4_2gcamp_12ms_uli]
 
 ##
 # Note: some of them were rerun by me due to stopping-early bug
