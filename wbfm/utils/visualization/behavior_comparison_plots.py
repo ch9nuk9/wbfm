@@ -176,13 +176,13 @@ class BehaviorPlotter:
 
         return df
 
-    def plot_correlation_of_examples(self, **kwargs):
+    def plot_correlation_of_examples(self, to_save=True, **kwargs):
         # Calculate correlation dataframes
         self._multi_plot(list(self.all_dfs.values()), list(self.all_dfs_corr.values()),
                          self.all_labels, self.all_colors,
-                         project_data=self.project_data, **kwargs)
+                         project_data=self.project_data, to_save=to_save, **kwargs)
 
-    def plot_correlation_histograms(self):
+    def plot_correlation_histograms(self, to_save=True):
         all_max_corrs = [df_corr.max(axis=1) for df_corr in self.all_dfs_corr.values()]
 
         plt.figure(dpi=100)
@@ -194,7 +194,14 @@ class BehaviorPlotter:
         plt.xlabel("Maximum correlation")
         plt.legend()
 
-    def plot_histogram_difference_after_ratio(self, df_start_names=None, df_final_name='ratio'):
+        if to_save:
+            vis_cfg = self.project_data.project_config.get_visualization_config()
+            fname = f'maximum_correlation_histogram.png'
+            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+
+            plt.savefig(fname)
+
+    def plot_histogram_difference_after_ratio(self, df_start_names=None, df_final_name='ratio', to_save=True):
         if df_start_names is None:
             df_start_names = ['red', 'green']
         # Get data
@@ -209,9 +216,16 @@ class BehaviorPlotter:
         plt.hist(all_diffs)
 
         plt.xlabel("Maximum correlation difference")
-        plt.title(f"Correlation difference between {df_start_names} to {df_final_name}")
+        title_str = f"Correlation difference between {df_start_names} to {df_final_name}"
+        plt.title(title_str)
 
-    def plot_paired_boxplot_difference_after_ratio(self, df_start_name='red', df_final_name='ratio'):
+        if to_save:
+            vis_cfg = self.project_data.project_config.get_visualization_config()
+            fname = f'{title_str}.png'
+            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+            plt.savefig(fname)
+
+    def plot_paired_boxplot_difference_after_ratio(self, df_start_name='red', df_final_name='ratio', to_save=True):
         # Get data
         df_start = self.all_dfs_corr[df_start_name]
         df_final = self.all_dfs_corr[df_final_name]
@@ -225,9 +239,17 @@ class BehaviorPlotter:
 
         plt.ylim(0, 0.8)
         plt.ylabel("Absolute correlation")
-        plt.title("Change in body segment correlation")
+        title_str = f"Change in correlation from {df_start_name} to {df_final_name}"
+        plt.title(title_str)
 
-    def plot_phase_difference(self, df_start_name='red', df_final_name='green', corr_thresh=0.2, remove_zeros=True):
+        if to_save:
+            vis_cfg = self.project_data.project_config.get_visualization_config()
+            fname = f'{title_str}.png'
+            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+            plt.savefig(fname)
+
+    def plot_phase_difference(self, df_start_name='red', df_final_name='green', corr_thresh=0.2, remove_zeros=True,
+                              to_save=True):
         """
         Green minus red
 
@@ -253,6 +275,12 @@ class BehaviorPlotter:
         plt.hist(diff, bins=np.arange(diff.min(), diff.max()))
         plt.title(title_str)
         plt.xlabel("Phase shift (body segments)")
+
+        if to_save:
+            vis_cfg = self.project_data.project_config.get_visualization_config()
+            fname = f'{title_str}.png'
+            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+            plt.savefig(fname)
 
     @staticmethod
     def _multi_plot(all_dfs_list, all_dfs_corr_list, all_labels, all_colors, ax_locations=None,
