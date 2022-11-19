@@ -1,4 +1,5 @@
 import logging
+import warnings
 from dataclasses import dataclass
 from functools import reduce
 from typing import List, Dict
@@ -8,6 +9,7 @@ import pandas as pd
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy import stats
+from statsmodels.tools.sm_exceptions import ConvergenceWarning
 from tqdm.auto import tqdm
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -346,8 +348,10 @@ class MultiProjectBehaviorPlotter:
 @dataclass
 class MarkovRegressionModel:
     project_path: str
-    project_data: ProjectData = None
 
+    behavior_to_predict: str = 'speed'
+
+    project_data: ProjectData = None
     df: pd.DataFrame = None
 
     aic_list: list = None
@@ -363,49 +367,60 @@ class MarkovRegressionModel:
         kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode='rolling_mean')
         self.df = project_data.calc_default_traces(interpolate_nan=True, **kwargs)
 
-    @cached_property
-    def speed(self):
-        speed_with_outliers = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed
-        speed = pd.Series(speed_with_outliers)
-        return speed
+    def get_valid_ind_and_trace(self):
+        if self.behavior_to_predict == 'speed':
+            trace = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed
+            trace = pd.Series(trace)
+        elif self.behavior_to_predict == 'leifer_curvature':
+            worm = self.project_data.worm_posture_class
+            trace = worm.leifer_curvature_from_kymograph[worm.subsample_indices].copy().reset_index(drop=True)
+        else:
+            raise NotImplementedError(self.behavior_to_predict)
+
+        valid_ind = np.where(~np.isnan(trace))[0]
+        valid_ind = valid_ind[valid_ind < self.trace_len]
+
+        return valid_ind, trace
+
+    @property
+    def trace_len(self):
+        return self.df.shape[0]
 
     @cached_property
     def vis_cfg(self):
         return self.project_data.project_config.get_visualization_config()
 
     def plot_no_neuron_markov_model(self, to_save=True):
-        mod_speed = sm.tsa.MarkovRegression(self.speed, k_regimes=2)
-        res_speed = mod_speed.fit()
+        valid_ind, trace = self.get_valid_ind_and_trace()
+        mod = sm.tsa.MarkovRegression(trace, k_regimes=2)
+        res = mod.fit()
+        pred = res.predict()
 
-        speed_pred = res_speed.predict()
         plt.figure(dpi=100)
-
-        plt.plot(self.speed, label='speed')
-        plt.plot(speed_pred, label='predicted speed')
+        plt.plot(self.get_valid_ind_and_trace, label=self.behavior_to_predict)
+        plt.plot(pred, label=f'predicted {self.behavior_to_predict}')
         plt.legend()
         self.project_data.shade_axis_using_behavior()
 
-        plt.ylabel("Speed (mm/s)")
+        plt.ylabel(f"{self.behavior_to_predict}")
         plt.xlabel("Time (Frames)")
-
-        r = self.speed.corr(speed_pred)
+        r = self.get_valid_ind_and_trace.corr(pred)
         plt.title(f"Correlation: {r:.2f}")
 
         if to_save:
-            fname = self.vis_cfg.resolve_relative_path(f'no_neurons.png', prepend_subfolder=True)
+            fname = self.vis_cfg.resolve_relative_path(f'{self.behavior_to_predict}_no_neurons.png', prepend_subfolder=True)
             plt.savefig(fname)
 
         plt.show()
 
-    def calc_aic_feature_selected_neurons(self, num_iters=5):
-
+    def calc_aic_feature_selected_neurons(self, num_iters=4):
+        valid_ind, trace = self.get_valid_ind_and_trace()
         # Get features
         aic_list = []
         resid_list = []
         neuron_list = []
 
         remaining_neurons = get_names_from_df(self.df)
-        trace_len = self.df.shape[0]
         previous_traces = []
 
         for i in tqdm(range(num_iters)):
@@ -414,10 +429,13 @@ class MarkovRegressionModel:
             best_neuron = None
 
             for n in tqdm(remaining_neurons, leave=False):
-                exog = pd.concat(previous_traces + [self.df[n]], axis=1)
+                exog = pd.concat(previous_traces + [self.df[n][valid_ind]], axis=1)
 
-                mod = sm.tsa.MarkovRegression(self.speed[:trace_len], k_regimes=2, exog=exog)
-                res = mod.fit()
+                with warnings.catch_warnings():
+                    warnings.simplefilter(action='ignore', category=ConvergenceWarning)
+                    warnings.simplefilter(action='ignore', category=RuntimeWarning)
+                    mod = sm.tsa.MarkovRegression(trace, k_regimes=2, exog=exog)
+                    res = mod.fit()
 
                 if np.sum(res.resid ** 2) < best_resid:
                     best_resid = np.sum(res.resid ** 2)
@@ -428,18 +446,17 @@ class MarkovRegressionModel:
             aic_list.append(best_aic)
             resid_list.append(best_resid)
             neuron_list.append(best_neuron)
-
-            previous_traces.append(self.df[best_neuron])
+            previous_traces.append(self.df[best_neuron][valid_ind])
             remaining_neurons.remove(best_neuron)
 
         # Fit models
         results_list = []
         previous_traces = []
         for n in tqdm(neuron_list):
-            exog = pd.concat(previous_traces + [self.df[n]], axis=1)
-            mod = sm.tsa.MarkovRegression(self.speed[:trace_len], k_regimes=2, exog=exog)
+            exog = pd.concat(previous_traces + [self.df[n][valid_ind]], axis=1)
+            mod = sm.tsa.MarkovRegression(trace, k_regimes=2, exog=exog)
             res = mod.fit()
-            previous_traces.append(self.df[n])
+            previous_traces.append(self.df[n][valid_ind])
             results_list.append(res)
 
         self.aic_list = aic_list
@@ -448,14 +465,13 @@ class MarkovRegressionModel:
         self.results_list = results_list
 
     def plot_aic_feature_selected_neurons(self, to_save=True):
+        valid_ind, trace = self.get_valid_ind_and_trace()
         if self.aic_list is None:
             self.calc_aic_feature_selected_neurons()
-
         aic_list = self.aic_list
         resid_list = self.resid_list
         neuron_list = self.neuron_list
         results_list = self.results_list
-        trace_len = self.df.shape[0]
 
         # Plot 1
         fig, ax = plt.subplots(dpi=100)
@@ -468,26 +484,28 @@ class MarkovRegressionModel:
         plt.xlabel("Neuron selected each iteration")
 
         if to_save:
-            fname = self.vis_cfg.resolve_relative_path(f'error_across_neurons.png', prepend_subfolder=True)
+            fname = self.vis_cfg.resolve_relative_path(f'{self.behavior_to_predict}_error_across_neurons.png',
+                                                       prepend_subfolder=True)
             plt.savefig(fname)
 
         # Plot 2
         all_pred = [r.predict() for r in results_list]
         plt.figure(dpi=100)
-        plt.plot(self.speed, label='speed', lw=2)
+        plt.plot(trace, label=self.behavior_to_predict, lw=2)
 
         for p, lab in zip(all_pred, neuron_list[0:8]):
             line = plt.plot(p, label=lab)
         plt.legend()
         plt.title("Predictions with cumulatively included neurons")
-        plt.ylabel("Speed (mm/s)")
+        plt.ylabel(f"{self.behavior_to_predict}")
         plt.xlabel("Time (Frames)")
 
-        r = self.speed[:trace_len].corr(all_pred[-1])
+        r = trace.corr(all_pred[-1])
         plt.title(f"Best correlation: {r:.2f}")
 
         if to_save:
-            fname = self.vis_cfg.resolve_relative_path(f'with_all_neurons_aic_feature_selected.png', prepend_subfolder=True)
+            fname = self.vis_cfg.resolve_relative_path(
+                f'{self.behavior_to_predict}_with_all_neurons_aic_feature_selected.png', prepend_subfolder=True)
             plt.savefig(fname)
 
         # Plot 3
@@ -502,7 +520,8 @@ class MarkovRegressionModel:
         plt.title("Neurons selected as predictive (top is best)")
 
         if to_save:
-            fname = self.vis_cfg.resolve_relative_path(f'aic_predictive_traces.png', prepend_subfolder=True)
+            fname = self.vis_cfg.resolve_relative_path(
+                f'{self.behavior_to_predict}_aic_predictive_traces.png', prepend_subfolder=True)
             plt.savefig(fname)
 
         plt.show()
