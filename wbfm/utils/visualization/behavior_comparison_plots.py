@@ -500,6 +500,7 @@ class MarkovRegressionModel:
         plt.title("Predictions with cumulatively included neurons")
         plt.ylabel(f"{self.behavior_to_predict}")
         plt.xlabel("Time (Frames)")
+        self.project_data.shade_axis_using_behavior()
 
         r = trace.corr(all_pred[-1])
         plt.title(f"Best correlation: {r:.2f}")
@@ -516,7 +517,6 @@ class MarkovRegressionModel:
         for i, (t, lab) in enumerate(zip(all_traces, neuron_list[:5])):
             line = plt.plot(t - i, label=lab)
         plt.legend()
-
         self.project_data.shade_axis_using_behavior()
         plt.title("Neurons selected as predictive (top is best)")
 
