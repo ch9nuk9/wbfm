@@ -9,7 +9,7 @@ from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy import stats
 from tqdm.auto import tqdm
-from wbfm.gui.utils.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df

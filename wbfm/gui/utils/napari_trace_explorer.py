@@ -13,7 +13,7 @@ from PyQt5 import QtWidgets
 from backports.cached_property import cached_property
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication
-from wbfm.gui.utils.utils_matplotlib import PlotQWidget
+from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
     build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer

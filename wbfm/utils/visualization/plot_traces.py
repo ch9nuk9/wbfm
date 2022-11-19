@@ -9,10 +9,8 @@ from matplotlib.colors import TwoSlopeNorm
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
-from matplotlib.widgets import TextBox
 
-from wbfm.gui.utils.utils_matplotlib import get_twin_axis
-from wbfm.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.general.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
@@ -23,7 +21,6 @@ from tqdm.auto import tqdm
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.visualization.utils_plot_traces import check_default_names
 import matplotlib.style as mplstyle
 
 
