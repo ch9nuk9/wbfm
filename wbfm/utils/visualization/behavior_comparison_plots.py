@@ -196,7 +196,7 @@ class BehaviorPlotter:
 
         if to_save:
             vis_cfg = self.project_data.project_config.get_visualization_config()
-            fname = f'maximum_correlation_histogram.png'
+            fname = f'maximum_correlation_kymograph_histogram.png'
             fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
             plt.savefig(fname)
