@@ -39,7 +39,7 @@ def paired_boxplot_from_dataframes(both_maxes: pd.DataFrame, labels: list=None):
     diff = y1_vec - y0_vec
     colors = ['green' if d > 0 else 'red' for d in diff]
     for y0, y1, col in zip(y0_vec, y1_vec, colors):
-        plt.plot(x, [y0, y1], color=col, alpha=0.5)
+        plt.plot(x, [y0, y1], color=col, alpha=0.1)
     bplot = plt.boxplot([y0_vec, y1_vec], positions=x, zorder=10, patch_artist=True, **box_opt)
     for patch in bplot['boxes']:
         patch.set_facecolor('lightgray')

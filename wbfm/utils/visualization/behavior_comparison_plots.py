@@ -230,12 +230,7 @@ class BehaviorPlotter:
     def plot_paired_boxplot_difference_after_ratio(self, df_start_name='red', df_final_name='ratio', to_save=True):
         plt.figure(dpi=100)
         # Get data
-        df_start = self.all_dfs_corr[df_start_name]
-        df_final = self.all_dfs_corr[df_final_name]
-
-        start_maxes = df_start.max(axis=1)
-        final_max = df_final.max(axis=1)
-        both_maxes = pd.concat([start_maxes, final_max], axis=1).T
+        both_maxes = self.get_data_for_paired_boxplot(df_final_name, df_start_name)
 
         # Plot
         paired_boxplot_from_dataframes(both_maxes, [df_start_name, df_final_name])
@@ -250,6 +245,14 @@ class BehaviorPlotter:
             fname = f'{title_str}.png'
             fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
             plt.savefig(fname)
+
+    def get_data_for_paired_boxplot(self, df_final_name, df_start_name):
+        df_start = self.all_dfs_corr[df_start_name]
+        df_final = self.all_dfs_corr[df_final_name]
+        start_maxes = df_start.max(axis=1)
+        final_max = df_final.max(axis=1)
+        both_maxes = pd.concat([start_maxes, final_max], axis=1).T
+        return both_maxes
 
     def plot_phase_difference(self, df_start_name='red', df_final_name='green', corr_thresh=0.2, remove_zeros=True,
                               to_save=True):
@@ -289,7 +292,7 @@ class BehaviorPlotter:
     @staticmethod
     def _multi_plot(all_dfs_list, all_dfs_corr_list, all_labels, all_colors, ax_locations=None,
                     project_data: ProjectData=None,
-                    corr_thresh=0.3, which_df_to_apply_corr_thresh=0, max_num_plots=None,
+                    corr_thresh=0.3, which_df_to_apply_corr_thresh=-1, max_num_plots=None,
                     xlim=None, to_save=False):
         if xlim is None:
             xlim = [100, 450]
@@ -374,6 +377,14 @@ class MultiProjectBehaviorPlotter:
             # if args:
             #     print("it had arguments: " + str(args) + str(kwargs))
         return method
+
+    @staticmethod
+    def concat_multiple_datasets_long(dict_of_dfs):
+        # Works for get_data_for_paired_boxplot
+        df = pd.concat(dict_of_dfs, axis=1)  # Creates a multiindex dataframe
+        df = df.T.reset_index().drop(columns='level_1')
+        df = df.rename(columns={'level_0': 'dataset_name'})
+        return df.T
 
 
 @dataclass
