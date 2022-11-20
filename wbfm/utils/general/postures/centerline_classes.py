@@ -146,7 +146,8 @@ class WormFullVideoPosture:
             # Second get the centerline-specific files
             filename_curvature, filename_x, filename_y = None, None, None
             for file in Path(behavior_subfolder).iterdir():
-                if not file.is_file():
+                if not file.is_file() or file.name.startswith('.'):
+                    # Skip hidden files and directories
                     continue
                 if file.name.endswith('skeleton_spline_K.csv'):
                     filename_curvature = str(file)
