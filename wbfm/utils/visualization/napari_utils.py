@@ -58,9 +58,11 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
         zxy[:, 0] *= z_to_xy_ratio
         # zxy = df[n][zxy_names].to_numpy(dtype=int)
         t_zxy = np.hstack([t_vec, zxy])
-        if n in neuron_name_dict:
+
+        this_gt_name = neuron_name_dict.get(n, None)
+        if this_gt_name is not None:
             # label_vec[:] = this_name
-            label_vec = [neuron_name_dict[n]] * len(df.index)
+            label_vec = [this_gt_name] * len(df.index)
             if DEBUG:
                 print(f"Found named neuron: {n} = {label_vec[0]}")
         else:

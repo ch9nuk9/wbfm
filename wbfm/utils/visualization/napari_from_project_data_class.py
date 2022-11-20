@@ -96,12 +96,13 @@ class NapariLayerInitializer:
     @staticmethod
     def add_layers_to_viewer(project_data, viewer=None, which_layers: Union[str, List[str]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
-                             dask_for_segmentation=True, force_all_visible=False):
+                             dask_for_segmentation=True, force_all_visible=False,
+                             gt_neuron_name_dict=None):
         if viewer is None:
             viewer = napari.Viewer(ndisplay=3)
 
         basic_valid_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
-                            'Neuron IDs', 'Intermediate global IDs']
+                              'Neuron IDs', 'Intermediate global IDs']
         if which_layers == 'all':
             which_layers = basic_valid_layers
         if check_if_layers_exist:
@@ -155,10 +156,11 @@ class NapariLayerInitializer:
         if 'GT IDs' in which_layers:
             # Not added by default!
             df = project_data.final_tracks
-            neurons_that_are_finished = project_data.finished_neuron_names
-            neuron_name_dict = {name: f"GT_{name.split('_')[1]}" for name in neurons_that_are_finished}
+            if gt_neuron_name_dict is None:
+                neurons_that_are_finished = project_data.finished_neuron_names
+                gt_neuron_name_dict = {name: f"GT_{name.split('_')[1]}" for name in neurons_that_are_finished}
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
-                                                          neuron_name_dict=neuron_name_dict)
+                                                          neuron_name_dict=gt_neuron_name_dict)
             options['name'] = 'GT IDs'
             options['text']['color'] = 'red'
             options['visible'] = force_all_visible
@@ -218,6 +220,7 @@ class NapariLayerInitializer:
 
 
 def take_screenshot_using_project(project_data, additional_layers: List[list], base_layers=None, t_target=None,
+                                  close_afterwards=False,
                                   **kwargs):
     """
     Example:
@@ -267,8 +270,11 @@ def take_screenshot_using_project(project_data, additional_layers: List[list], b
         layer_name = layer[0]
         if isinstance(layer_name, tuple):
             layer_name = layer_name[1]
-        fname = os.path.join(output_folder, f'{layer_name}.png')
+        fname = os.path.join(output_folder, f'{layer_name}_t{t_target}.png')
         fname = get_sequential_filename(fname)
         viewer.screenshot(path=fname)
 
         viewer.layers.remove(layer_name)
+
+    if close_afterwards:
+        viewer.close()
