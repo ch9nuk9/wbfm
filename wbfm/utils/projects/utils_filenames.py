@@ -89,7 +89,11 @@ def read_if_exists(filename, reader=pd.read_hdf, **kwargs):
     if filename is None:
         return None
     elif os.path.exists(filename):
-        return reader(filename, **kwargs)
+        try:
+            return reader(filename, **kwargs)
+        except UnicodeDecodeError:
+            logging.warning(f"Encountered unicode error; aborting read of {filename}")
+            return None
     else:
         logging.debug(f"Did not find file {filename}")
         return None
