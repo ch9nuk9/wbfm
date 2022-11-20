@@ -379,9 +379,12 @@ class MultiProjectBehaviorPlotter:
         return method
 
     @staticmethod
-    def concat_multiple_datasets_long(dict_of_dfs):
+    def concat_multiple_datasets_long(dict_of_dfs, long_format=True):
         # Works for get_data_for_paired_boxplot
-        df = pd.concat(dict_of_dfs, axis=1)  # Creates a multiindex dataframe
+        if long_format:
+            df = pd.concat(dict_of_dfs, axis=1)  # Creates a multiindex dataframe
+        else:
+            df = pd.concat(dict_of_dfs, axis=0).T
         df = df.T.reset_index().drop(columns='level_1')
         df = df.rename(columns={'level_0': 'dataset_name'})
         return df.T

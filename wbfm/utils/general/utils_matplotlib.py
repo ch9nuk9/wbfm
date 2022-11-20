@@ -1,5 +1,5 @@
 # From https://stackoverflow.com/questions/48140576/matplotlib-toolbar-in-a-pyqt5-application
-
+import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib
@@ -72,3 +72,25 @@ def corrfunc(x, y, ax=None, **kws):
         if isinstance(c, matplotlib.text.Annotation):
             offset += 0.075
     ax.annotate(f'ρ={r:.2f}', xy=(.8, .9 - offset), xycoords=ax.transAxes)
+
+
+def build_histogram_from_counts(all_dat, pixel_sz=0.1):
+    """
+    From 3d count data (e.g. x and y over time), convert into a video
+
+    Parameters
+    ----------
+    all_dat - format: txy
+
+    Returns
+    -------
+
+    """
+
+    bins = int(np.ceil(2.0 / pixel_sz))
+    video_histogram = np.zeros((len(all_dat), bins, bins))
+
+    for i, dat in enumerate(all_dat):
+        video_histogram[i, ...] = np.histogram2d(dat[:, 0], dat[:, 1], bins=bins)[0]
+
+    return video_histogram
