@@ -274,7 +274,8 @@ def take_screenshot_using_project(project_data, additional_layers: List[list], b
         fname = get_sequential_filename(fname)
         viewer.screenshot(path=fname)
 
-        viewer.layers.remove(layer_name)
+        if len(additional_layers) > 1:
+            viewer.layers.remove(layer_name)
 
     if close_afterwards:
         viewer.close()
