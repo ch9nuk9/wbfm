@@ -80,7 +80,7 @@ class TracePlotter:
 
         """
         valid_modes = ['green', 'red', 'ratio', 'linear_model',
-                       'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20',
+                       'df_over_f_20', 'ratio_df_over_f_20', 'dr_over_r_20', 'dr_over_r_50',
                        'linear_model_then_ratio', 'ratio_then_linear_model', 'high_order_linear_model',
                        'cross_term_linear_model',
                        'green_rolling_ransac', 'ratio_rolling_ransac',
@@ -141,7 +141,7 @@ class TracePlotter:
             else:
                 raise NotImplementedError
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20'] or \
+        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'dr_over_r_50'] or \
                 'linear_model' in self.channel_mode or 'ransac' in self.channel_mode:
             # Third: use both traces dataframes (red AND green)
             df_red, df_green = self.get_two_dataframes_for_traces()
@@ -210,6 +210,12 @@ class TracePlotter:
                 def calc_y(i) -> pd.Series:
                     ratio = single_trace_preprocessed(i, df_green) / single_trace_preprocessed(i, df_red)
                     r0 = np.nanquantile(ratio, 0.2)
+                    dr_over_r = (ratio - r0) / r0
+                    return pd.Series(dr_over_r)
+            elif self.channel_mode == 'dr_over_r_50':
+                def calc_y(i) -> pd.Series:
+                    ratio = single_trace_preprocessed(i, df_green) / single_trace_preprocessed(i, df_red)
+                    r0 = np.nanmedian(ratio)
                     dr_over_r = (ratio - r0) / r0
                     return pd.Series(dr_over_r)
 
