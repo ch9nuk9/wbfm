@@ -1,7 +1,7 @@
 import logging
 import os
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import reduce
 from typing import List, Dict, Tuple
 import seaborn as sns
@@ -10,6 +10,8 @@ import pandas as pd
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy import stats
+from sklearn.linear_model import RidgeCV
+from sklearn.metrics import median_absolute_error
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
@@ -19,26 +21,19 @@ from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 @dataclass
-class BehaviorPlotter:
+class NeuronEncodingBase:
+    """General class for behavioral encoding or correlations"""
     project_path: str
 
-    dataframes_to_load: List[str] = None
-    project_data: ProjectData = None
+    dataframes_to_load: List[str] = field(default_factory=lambda: ['red', 'green', 'ratio', 'ratio_filt'])
 
-    is_valid: bool = False
+    is_valid: bool = True
 
-    def __post_init__(self):
-        project_data = ProjectData.load_final_project_data_from_config(self.project_path)
-        self.project_data = project_data
+    df_kwargs: dict = field(default_factory=dict)
 
-        if not self.project_data.worm_posture_class.has_full_kymograph:
-            logging.warning("Kymograph not found, this class will not work")
-            self.is_valid = False
-        else:
-            self.is_valid = True
-
-        if self.dataframes_to_load is None:
-            self.dataframes_to_load = ['red', 'green', 'ratio', 'ratio_filt']
+    @cached_property
+    def project_data(self) -> ProjectData:
+        return ProjectData.load_final_project_data_from_config(self.project_path)
 
     @cached_property
     def all_dfs(self) -> Dict[str, pd.DataFrame]:
@@ -53,7 +48,7 @@ class BehaviorPlotter:
                 channel_key = key.replace('_filt', '')
                 opt['filter_mode'] = 'rolling_mean'
             opt['channel_mode'] = channel_key
-            all_dfs[key] = self.project_data.calc_default_traces(**opt)
+            all_dfs[key] = self.project_data.calc_default_traces(**opt, **self.df_kwargs)
 
         # Align columns to commmon subset
         all_column_names = [df.columns for df in all_dfs.values()]
@@ -63,6 +58,51 @@ class BehaviorPlotter:
             all_dfs[key].drop(columns=to_drop, inplace=True)
 
         return all_dfs
+
+
+@dataclass
+class SpeedEncoding(NeuronEncodingBase):
+
+    def __post_init__(self):
+        self.df_kwargs['interpolate_nan'] = True
+
+    def calc_speed_encoding(self, df_name):
+        X_train = self.all_dfs[df_name]
+        y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
+        model = RidgeCV(store_cv_values=True).fit(X_train, y_train)
+        return model, X_train, y_train
+
+    def plot_speed_encoding(self, df_name):
+        model, X_train, y_train = self.calc_speed_encoding(df_name)
+        y_pred = model.predict(X_train)
+
+        mae = median_absolute_error(y_train, y_pred)
+
+        fig, ax = plt.subplots(dpi=100)
+        # ax.plot(y_train-y_pred, label='error')
+        ax.plot(y_pred, label='prediction')
+        ax.set_title(f"Ridge model with error {mae:.4f} from {df_name} traces")
+        plt.ylabel("Time (mm/s)")
+        plt.xlabel("Truths")
+
+        ax.plot(y_train, color='tab:red', label='Original Speed')
+        plt.legend()
+        # plt.xlim(800, 1000)
+
+        self.project_data.shade_axis_using_behavior()
+
+
+@dataclass
+class BehaviorPlotter(NeuronEncodingBase):
+    """Designed for single-neuron correlations to all kymograph body segments"""
+
+    def __post_init__(self):
+
+        if not self.project_data.worm_posture_class.has_full_kymograph:
+            logging.warning("Kymograph not found, this class will not work")
+            self.is_valid = False
+        else:
+            self.is_valid = True
 
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
