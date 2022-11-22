@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 from scipy import stats
 from sklearn.linear_model import RidgeCV
 from sklearn.metrics import median_absolute_error
+from sklearn.model_selection import cross_validate, RepeatedKFold
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
@@ -79,21 +80,52 @@ class SpeedEncoding(NeuronEncodingBase):
         model, X_train, y_train = self.calc_encoding(df_name, y_train=y_train)
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
+        # self._plot_variables(model, df_name)
 
     def _plot(self, df_name, y_pred, y_train):
         mae = median_absolute_error(y_train, y_pred)
         fig, ax = plt.subplots(dpi=100)
         opt = dict()
         if df_name == 'green' or df_name == 'red':
-            opt['col'] = df_name
+            opt['color'] = df_name
         ax.plot(y_pred, label='prediction', **opt)
 
         ax.set_title(f"Ridge model with error {mae:.4f} from {df_name} traces")
         plt.ylabel("Time (mm/s)")
         plt.xlabel("Truths")
-        ax.plot(y_train, color='tab:black', label='Target')
+        ax.plot(y_train, color='black', label='Target')
         plt.legend()
         self.project_data.shade_axis_using_behavior()
+
+    def _plot_variables(self, X, y, df_name, model=RidgeCV()):
+        # From https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#sphx-glr-auto-examples-inspection-plot-linear-model-coefficient-interpretation-py
+        feature_names = get_names_from_df(self.all_dfs[df_name])
+
+        cv = RepeatedKFold(n_splits=5, n_repeats=5, random_state=0)
+        cv_model = cross_validate(
+            model,
+            X,
+            y,
+            cv=cv,
+            return_estimator=True,
+            n_jobs=2,
+        )
+        try:
+            coefs = pd.DataFrame(
+                [est.coef_ for est in cv_model["estimator"]], columns=feature_names
+            )
+        except ValueError:
+            # If the estimator is Lasso, it returns a list, and we want the last
+            coefs = pd.DataFrame(
+                [model[-1].regressor_.coef_ for est in cv_model["estimator"]], columns=feature_names
+            )
+
+        plt.figure(figsize=(10, 15), dpi=100)
+        sns.stripplot(data=coefs, orient="h", color="k", alpha=0.5)
+        sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=100)
+        plt.axvline(x=0, color=".5")
+        plt.title("Coefficient variability")
+        plt.subplots_adjust(left=0.3)
 
 
 @dataclass
