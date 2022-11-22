@@ -1,4 +1,9 @@
 #!/bin/bash
+# Opens tmux session and runs snakemake for all projects in a folder. Example dry run usage:
+# bash run_snakemake_for_all_in_folder.sh -t '/path/to/parent/folder' -n True
+#
+# For real usage, remove '-n True' and update the path after -t
+#
 
 # Get all user flags
 while getopts t:n:s:d: flag
