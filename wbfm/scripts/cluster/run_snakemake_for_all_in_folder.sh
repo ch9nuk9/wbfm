@@ -26,7 +26,7 @@ for f in "$folder_of_projects"/*; do
                     # Get the snakemake command and run it
                     echo "TODO"
                 fi
-                i_tmux+=1
+                i_tmux=$((i_tmux+1))
             fi
         done
     fi
