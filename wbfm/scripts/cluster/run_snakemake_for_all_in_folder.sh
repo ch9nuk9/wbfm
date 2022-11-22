@@ -22,11 +22,13 @@ for f in "$folder_of_projects"/*; do
                 tmux_name="worm$i_tmux"
                 if [ "$is_dry_run" ]; then
                     # Run the snakemake dryrun
-                    echo "DRYRUN: Dispatching on config file: $f_config with tmux name $tmux_name"
+                    echo "DRYRUN: Dispatching on config file: $f_config with tmux session: $tmux_name"
                 else
+                    echo "Opening tmux session: $tmux_name"
                     # Get the snakemake command and run it
-                    if $is_snakemake_dry_run; then
+                    if [ "$is_snakemake_dry_run" ]; then
                        snakemake_cmd="$f/snakemake/DRYRUN.sh"
+                       echo "Running snakemake dry run"
                     else
                        snakemake_cmd="$f/snakemake/RUNME_cluster.sh"
                     fi
