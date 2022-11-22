@@ -164,33 +164,62 @@ def cast_int_or_nan(i: Union[list, int]):
         return int(i)
 
 
-def get_contiguous_blocks_from_column(tracklet: pd.Series) -> Tuple[list, list]:
+def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boolean=False) -> Tuple[list, list]:
     """
     Given a pd.Series that may have gaps, get the indices of the contiguous blocks of non-nan points
 
     Parameters
     ----------
-    tracklet
+    column_or_series
 
     Returns
     -------
 
     """
-    if hasattr(tracklet, 'sparse'):
-        change_ind = np.where(tracklet.isnull().sparse.to_dense().diff().values)[0]
+    if already_boolean:
+        bool_column_or_series = column_or_series
     else:
-        change_ind = np.where(tracklet.isnull().diff().values)[0]
+        bool_column_or_series = column_or_series.isnull()
+
+    if hasattr(column_or_series, 'sparse'):
+        change_ind = np.where(bool_column_or_series.sparse.to_dense().diff().values)[0]
+    else:
+        change_ind = np.where(bool_column_or_series.diff().values)[0]
+
     block_starts = []
     block_ends = []
-
     for i in change_ind:
-        if np.isnan(tracklet.iat[i]):
+        if np.isnan(column_or_series.iat[i]) or (already_boolean and not bool_column_or_series.iat[i]):
             if i > 0:
                 # Diff always has a value here, but it can only be a start, not an end
                 block_ends.append(i)
         else:
-            block_starts.append(i)
+            if not already_boolean or bool_column_or_series.iat[i]:
+                block_starts.append(i)
     return block_starts, block_ends
+
+
+def get_durations_from_column(column_or_series: pd.Series, already_boolean=False) -> list:
+    """
+    Given a pd.Series that may have gaps, get the durations of contiguous blocks of non-nan points
+
+    If a specific state is desired, pass 'column_or_series==val' instead of 'column_or_series'
+
+    See also get_durations_from_column
+
+    Parameters
+    ----------
+    column_or_series
+
+    Returns
+    -------
+
+    """
+
+    block_starts, block_ends = get_contiguous_blocks_from_column(column_or_series, already_boolean=already_boolean)
+    durations = [e - s for e, s in zip(block_ends, block_starts)]
+
+    return durations
 
 
 def df_to_matches(df_gt: pd.DataFrame, t0: int, t1: int = None, col='raw_neuron_ind_in_list') -> list:

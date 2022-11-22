@@ -112,6 +112,40 @@ class BehaviorPlotter(NeuronEncodingBase):
         all_dfs_corr = {key: pd.concat([df, kymo_smaller], axis=1).corr() for key, df in self.all_dfs.items()}
 
         # Only get the corner we care about: traces vs. kymo
+        all_dfs_corr = self.get_corner_from_corr_df(all_dfs_corr)
+        return all_dfs_corr
+
+    @cached_property
+    def all_dfs_corr_fwd(self) -> Dict[str, pd.DataFrame]:
+        assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
+
+        kymo = self.project_data.worm_posture_class.curvature_fluorescence_fps.reset_index(drop=True, inplace=False)
+
+        # New: only do certain indices
+        ind = self.project_data.worm_posture_class.beh_annotation == 0
+        kymo_smaller = kymo.loc[ind, 3:60].copy()
+        all_dfs_corr = {key: pd.concat([df.loc[ind, :], kymo_smaller], axis=1).corr() for key, df in self.all_dfs.items()}
+
+        # Only get the corner we care about: traces vs. kymo
+        all_dfs_corr = self.get_corner_from_corr_df(all_dfs_corr)
+        return all_dfs_corr
+
+    @cached_property
+    def all_dfs_corr_rev(self) -> Dict[str, pd.DataFrame]:
+        assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
+
+        kymo = self.project_data.worm_posture_class.curvature_fluorescence_fps.reset_index(drop=True, inplace=False)
+
+        # New: only do certain indices
+        ind = self.project_data.worm_posture_class.beh_annotation == 1
+        kymo_smaller = kymo.loc[ind, 3:60].copy()
+        all_dfs_corr = {key: pd.concat([df.loc[ind, :], kymo_smaller], axis=1).corr() for key, df in self.all_dfs.items()}
+
+        # Only get the corner we care about: traces vs. kymo
+        all_dfs_corr = self.get_corner_from_corr_df(all_dfs_corr)
+        return all_dfs_corr
+
+    def get_corner_from_corr_df(self, all_dfs_corr):
         label0 = self.all_labels[0]
         ind_nonneuron = np.arange(self.all_dfs[label0].shape[1], all_dfs_corr[label0].shape[1])
         ind_neurons = np.arange(0, self.all_dfs[label0].shape[1])
@@ -222,11 +256,37 @@ class BehaviorPlotter(NeuronEncodingBase):
 
         return df
 
-    def plot_correlation_of_examples(self, to_save=True, **kwargs):
+    def plot_correlation_of_examples(self, to_save=True, only_within_state=None, **kwargs):
         # Calculate correlation dataframes
-        self._multi_plot(list(self.all_dfs.values()), list(self.all_dfs_corr.values()),
+        if only_within_state is None:
+            all_dfs = list(self.all_dfs_corr.values())
+        elif only_within_state.lower() == 'fwd':
+            all_dfs = list(self.all_dfs_corr_fwd.values())
+        elif only_within_state.lower() == 'rev':
+            all_dfs = list(self.all_dfs_corr_rev.values())
+        else:
+            raise NotImplementedError
+
+        self._multi_plot(list(self.all_dfs.values()), all_dfs,
                          self.all_labels, self.all_colors,
                          project_data=self.project_data, to_save=to_save, **kwargs)
+
+    def plot_correlation_of_prefentially_one_state(self, to_save=True, only_within_state=None, **kwargs):
+        # Calculate correlation dataframes
+        all_dfs_fwd = list(self.all_dfs_corr_fwd.values())
+        all_dfs_rev = list(self.all_dfs_corr_rev.values())
+        if only_within_state.lower() == 'fwd':
+            all_dfs = [f - r for f, r in zip(all_dfs_fwd, all_dfs_rev)]
+        elif only_within_state.lower() == 'rev':
+            all_dfs = [r - f for f, r in zip(all_dfs_fwd, all_dfs_rev)]
+        else:
+            raise NotImplementedError
+
+        all_figs = self._multi_plot(list(self.all_dfs.values()), all_dfs,
+                                    self.all_labels, self.all_colors,
+                                    project_data=self.project_data, to_save=to_save, **kwargs)
+        # for fig in all_figs:
+        #     fig.axes[0][0].set_ylabel("Differential correlation")
 
     def plot_correlation_histograms(self, to_save=True):
         plt.figure(dpi=100)
@@ -339,23 +399,29 @@ class BehaviorPlotter(NeuronEncodingBase):
     def _multi_plot(all_dfs_list, all_dfs_corr_list, all_labels, all_colors, ax_locations=None,
                     project_data: ProjectData=None,
                     corr_thresh=0.3, which_df_to_apply_corr_thresh=-1, max_num_plots=None,
-                    xlim=None, to_save=False):
+                    xlim=None, to_save=False, all_names=None):
+        all_figs = []
         if xlim is None:
             xlim = [100, 450]
         if ax_locations is None:
             ax_locations = [1, 1, 3, 3, 3]
 
-        all_names = list(all_dfs_corr_list[0].index)
+        if all_names is None:
+            all_names = list(all_dfs_corr_list[0].index)
+        else:
+            # Plot all that are sent
+            corr_thresh = None
         num_open_plots = 0
 
-        for i in range(all_dfs_corr_list[0].shape[0]):
+        for i in range(all_names):
             abs_corr = all_dfs_corr_list[which_df_to_apply_corr_thresh].iloc[i, :]
-            if abs_corr.max() < corr_thresh:
+            if corr_thresh is not None and abs_corr.max() < corr_thresh:
                 continue
             else:
                 num_open_plots += 1
 
             fig, axes = plt.subplots(ncols=2, nrows=2, dpi=100, figsize=(15, 5))
+            all_figs.append(fig)
             axes = np.ravel(axes)
             neuron_name = all_names[i]
 
@@ -367,12 +433,12 @@ class BehaviorPlotter(NeuronEncodingBase):
                 axes[0].plot(abs_corr, **plt_opt)
 
                 # Put the trace on the passed axis
-                abs_corr = df[neuron_name]
-                axes[ax_loc].plot(abs_corr / abs_corr.mean(), **plt_opt)
+                trace = df[neuron_name]
+                axes[ax_loc].plot(trace / trace.mean(), **plt_opt)
 
             axes[0].set_xlabel("Body segment")
             axes[0].set_ylabel("Correlation")
-            axes[0].set_ylim(-0.5, 0.8)
+            axes[0].set_ylim(-0.75, 0.75)
             axes[0].set_title(neuron_name)
             axes[0].legend()
 
@@ -399,6 +465,7 @@ class BehaviorPlotter(NeuronEncodingBase):
 
             if max_num_plots is not None and num_open_plots >= max_num_plots:
                 break
+        return all_figs
 
 
 @dataclass
