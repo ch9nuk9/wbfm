@@ -104,6 +104,10 @@ class WormFullVideoPosture:
     def has_beh_annotation(self):
         return self.filename_beh_annotation is not None
 
+    @property
+    def has_full_kymograph(self):
+        return (self.filename_x is not None) and (self.filename_y is not None) and (self.filename_curvature is not None)
+
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
