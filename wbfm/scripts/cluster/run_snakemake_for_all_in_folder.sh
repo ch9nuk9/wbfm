@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Get all user flags
-while getopts t:n:s: flag
+while getopts t:n:s:d: flag
 do
     case "${flag}" in
         t) folder_of_projects=${OPTARG};;
         n) is_dry_run=${OPTARG};;
+        d) is_snakemake_dry_run=${OPTARG};;
         *) raise error "Unknown flag"
     esac
 done
@@ -18,13 +19,18 @@ for f in "$folder_of_projects"/*; do
 
         for f_config in "$f"/*; do
             if [ -f "$f_config" ] && [ "${f_config##*/}" = "project_config.yaml" ]; then
+                tmux_name="worm$i_tmux"
                 if [ "$is_dry_run" ]; then
                     # Run the snakemake dryrun
-                    tmux_name="worm$i_tmux"
                     echo "DRYRUN: Dispatching on config file: $f_config with tmux name $tmux_name"
                 else
                     # Get the snakemake command and run it
-                    echo "TODO"
+                    if $is_snakemake_dry_run; then
+                       snakemake_cmd="$f/snakemake/DRYRUN.sh"
+                    else
+                       snakemake_cmd="$f/snakemake/RUNME_cluster.sh"
+                    fi
+                    tmux new-session -d -s $tmux_name "bash $snakemake_cmd"
                 fi
                 i_tmux=$((i_tmux+1))
             fi
