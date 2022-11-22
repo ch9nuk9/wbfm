@@ -1,9 +1,10 @@
 import logging
+import os
 import warnings
 from dataclasses import dataclass
 from functools import reduce
 from typing import List, Dict, Tuple
-
+import seaborn as sns
 import numpy as np
 import pandas as pd
 from backports.cached_property import cached_property
@@ -11,7 +12,7 @@ from matplotlib import pyplot as plt
 from scipy import stats
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
-from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
 from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -24,12 +25,17 @@ class BehaviorPlotter:
     dataframes_to_load: List[str] = None
     project_data: ProjectData = None
 
+    is_valid: bool = False
+
     def __post_init__(self):
         project_data = ProjectData.load_final_project_data_from_config(self.project_path)
         self.project_data = project_data
 
-        if not self.project_data.worm_posture_class.has_beh_annotation:
-            logging.warning("Behavior annotation not found, this class will not work")
+        if not self.project_data.worm_posture_class.has_full_kymograph:
+            logging.warning("Kymograph not found, this class will not work")
+            self.is_valid = False
+        else:
+            self.is_valid = True
 
         if self.dataframes_to_load is None:
             self.dataframes_to_load = ['red', 'green', 'ratio', 'ratio_filt']
@@ -61,9 +67,9 @@ class BehaviorPlotter:
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
         kymo = self.project_data.worm_posture_class.curvature_fluorescence_fps.reset_index(drop=True, inplace=False)
-        kymo_smaller = kymo.loc[:, 3:30].copy()
+        kymo_smaller = kymo.loc[:, 3:60].copy()
 
-        all_dfs_corr = {key: np.abs(pd.concat([df, kymo_smaller], axis=1).corr()) for key, df in self.all_dfs.items()}
+        all_dfs_corr = {key: pd.concat([df, kymo_smaller], axis=1).corr() for key, df in self.all_dfs.items()}
 
         # Only get the corner we care about: traces vs. kymo
         label0 = self.all_labels[0]
@@ -95,10 +101,10 @@ class BehaviorPlotter:
         df_corr = self.all_dfs_corr[name]
         df_traces = self.all_dfs[name]
 
-        body_segment_argmax = df_corr.columns[df_corr.apply(pd.Series.argmax, axis=1)]
+        body_segment_argmax = df_corr.columns[df_corr.abs().apply(pd.Series.argmax, axis=1)]
         body_segment_argmax = pd.Series(body_segment_argmax, index=df_corr.index)
 
-        corr_max = df_corr.max(axis=1)
+        corr_max = df_corr.abs().max(axis=1)
         median = df_traces.median(axis=0)
         var = df_traces.var(axis=0)
 
@@ -184,7 +190,7 @@ class BehaviorPlotter:
 
     def plot_correlation_histograms(self, to_save=True):
         plt.figure(dpi=100)
-        all_max_corrs = [df_corr.max(axis=1) for df_corr in self.all_dfs_corr.values()]
+        all_max_corrs = [df_corr.abs().max(axis=1) for df_corr in self.all_dfs_corr.values()]
 
         plt.hist(all_max_corrs,
                  color=self.all_colors,
@@ -267,12 +273,12 @@ class BehaviorPlotter:
         df_start = self.all_dfs_corr[df_start_name].copy()
         df_final = self.all_dfs_corr[df_final_name].copy()
 
-        ind_to_keep = df_start.max(axis=1) > corr_thresh
+        ind_to_keep = df_start.abs().max(axis=1) > corr_thresh
         df_start = df_start.loc[ind_to_keep, :]
         df_final = df_final.loc[ind_to_keep, :]
 
-        start_body_segment_argmax = df_start.columns[df_start.apply(pd.Series.argmax, axis=1)]
-        final_body_segment_argmax = df_final.columns[df_final.apply(pd.Series.argmax, axis=1)]
+        start_body_segment_argmax = df_start.columns[df_start.abs().apply(pd.Series.argmax, axis=1)]
+        final_body_segment_argmax = df_final.columns[df_final.abs().apply(pd.Series.argmax, axis=1)]
 
         diff = final_body_segment_argmax - start_body_segment_argmax
         title_str = f"{df_final_name} - {df_start_name} with starting corr > {corr_thresh}"
@@ -303,8 +309,8 @@ class BehaviorPlotter:
         num_open_plots = 0
 
         for i in range(all_dfs_corr_list[0].shape[0]):
-            corr = np.abs(all_dfs_corr_list[which_df_to_apply_corr_thresh].iloc[i, :])
-            if corr.max() < corr_thresh:
+            abs_corr = all_dfs_corr_list[which_df_to_apply_corr_thresh].iloc[i, :]
+            if abs_corr.max() < corr_thresh:
                 continue
             else:
                 num_open_plots += 1
@@ -317,16 +323,16 @@ class BehaviorPlotter:
 
                 plt_opt = dict(label=lab, color=col)
                 # Always put the correlation on ax 0
-                corr = df_corr.iloc[i, :]
-                axes[0].plot(corr, **plt_opt)
+                abs_corr = df_corr.iloc[i, :]
+                axes[0].plot(abs_corr, **plt_opt)
 
                 # Put the trace on the passed axis
-                corr = df[neuron_name]
-                axes[ax_loc].plot(corr / corr.mean(), **plt_opt)
+                abs_corr = df[neuron_name]
+                axes[ax_loc].plot(abs_corr / abs_corr.mean(), **plt_opt)
 
             axes[0].set_xlabel("Body segment")
             axes[0].set_ylabel("Correlation")
-            axes[0].set_ylim(0, 0.8)
+            axes[0].set_ylim(-0.5, 0.8)
             axes[0].set_title(neuron_name)
             axes[0].legend()
 
@@ -370,12 +376,12 @@ class MultiProjectBehaviorPlotter:
         def method(*args, **kwargs):
             output = {}
             for p in tqdm(self._all_behavior_plotters):
+                if not p.is_valid:
+                    logging.warning(f"Skipping invalid project {p.project_data.shortened_name}")
+                    continue
                 out = getattr(p, item)(*args, **kwargs)
                 output[p.project_data.shortened_name] = out
             return output
-            # print("tried to handle unknown method " + item)
-            # if args:
-            #     print("it had arguments: " + str(args) + str(kwargs))
         return method
 
     @staticmethod
@@ -388,6 +394,31 @@ class MultiProjectBehaviorPlotter:
         df = df.T.reset_index().drop(columns='level_1')
         df = df.rename(columns={'level_0': 'dataset_name'})
         return df.T
+
+    def pairplot_multi_dataset(self, which_channel='red', include_corr=True, to_save=False):
+
+        all_dfs = self.calc_summary_df(which_channel)
+
+        df = pd.concat(all_dfs, axis=0)
+        df = df.reset_index().rename(columns={'index': 'neuron_name'})
+        g = sns.pairplot(df, hue='dataset_name')
+        if include_corr:
+            g.map_lower(corrfunc)
+
+        return g
+
+        # if to_save:
+        #     fname = '/home/charles/Current_work/presentations/nov_2022'
+        #     fname = os.path.join(fname, 'gcamp6f_red_summary.png')
+        #     plt.savefig(fname)
+
+    def paired_boxplot_multi_dataset(self, df_start_name='red', df_final_name='ratio'):
+        all_dfs = self.get_data_for_paired_boxplot(df_final_name, df_start_name)
+        df = self.concat_multiple_datasets_long(all_dfs)
+
+        paired_boxplot_from_dataframes(df.iloc[1:, :], [df_start_name, df_final_name])
+        plt.title("Maximum correlation to kymograph")
+        plt.ylim(0, 0.8)
 
 
 @dataclass
