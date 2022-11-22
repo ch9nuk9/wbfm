@@ -14,6 +14,7 @@ from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
 
+from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -119,6 +120,32 @@ class WormFullVideoPosture:
         c_x = self.centerlineX.iloc[t * self.frames_per_volume]
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
+
+    def calc_psuedo_roaming_state(self, thresh=80):
+        """
+        Calculates a binary vector that is 1 when the worm is in a long forward bout (defined by thresh), and 0
+        otherwise
+
+        Returns
+        -------
+
+        """
+        binary_fwd = self.behavior_annotations_fluorescence_fps == 0
+        all_durations = get_durations_from_column(binary_fwd, already_boolean=True)
+        all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
+        start2duration_and_end_dict = {}
+        for duration, start, end in zip(all_durations, all_starts, all_ends):
+            start2duration_and_end_dict[start] = [duration, end]
+
+        # Turn into time series
+        num_pts = len(self.subsample_indices)
+        state_trace = np.zeros(num_pts)
+        for start, (duration, end) in start2duration_and_end_dict.items():
+            if duration < thresh:
+                continue
+            state_trace[start:end] = 1
+
+        return state_trace
 
     @staticmethod
     def load_from_config(project_config: ModularProjectConfig):
