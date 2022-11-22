@@ -66,29 +66,33 @@ class SpeedEncoding(NeuronEncodingBase):
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
 
-    def calc_speed_encoding(self, df_name):
+    def calc_encoding(self, df_name, y_train=None):
+        """Speed by default"""
         X_train = self.all_dfs[df_name]
-        y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
+        if y_train is None:
+            y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
         model = RidgeCV(store_cv_values=True).fit(X_train, y_train)
         return model, X_train, y_train
 
-    def plot_speed_encoding(self, df_name):
-        model, X_train, y_train = self.calc_speed_encoding(df_name)
+    def plot_encoding(self, df_name, y_train=None):
+        """Speed by default"""
+        model, X_train, y_train = self.calc_encoding(df_name, y_train=y_train)
         y_pred = model.predict(X_train)
+        self._plot(df_name, y_pred, y_train)
 
+    def _plot(self, df_name, y_pred, y_train):
         mae = median_absolute_error(y_train, y_pred)
-
         fig, ax = plt.subplots(dpi=100)
-        # ax.plot(y_train-y_pred, label='error')
-        ax.plot(y_pred, label='prediction')
+        opt = dict()
+        if df_name == 'green' or df_name == 'red':
+            opt['col'] = df_name
+        ax.plot(y_pred, label='prediction', **opt)
+
         ax.set_title(f"Ridge model with error {mae:.4f} from {df_name} traces")
         plt.ylabel("Time (mm/s)")
         plt.xlabel("Truths")
-
-        ax.plot(y_train, color='tab:red', label='Original Speed')
+        ax.plot(y_train, color='tab:black', label='Target')
         plt.legend()
-        # plt.xlim(800, 1000)
-
         self.project_data.shade_axis_using_behavior()
 
 
@@ -472,11 +476,12 @@ class BehaviorPlotter(NeuronEncodingBase):
 class MultiProjectBehaviorPlotter:
     all_project_paths: list
 
-    _all_behavior_plotters: List[BehaviorPlotter] = None
+    class_constructor: callable = BehaviorPlotter
+    _all_behavior_plotters: List[NeuronEncodingBase] = None
 
     def __post_init__(self):
         # Just initialize the behavior plotters
-        self._all_behavior_plotters = [BehaviorPlotter(p) for p in self.all_project_paths]
+        self._all_behavior_plotters = [self.class_constructor(p) for p in self.all_project_paths]
 
     def __getattr__(self, item):
         # Transform all unknown function calls into a loop of calls to the subobjects
