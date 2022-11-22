@@ -32,7 +32,8 @@ for f in "$folder_of_projects"/*; do
                     else
                        snakemake_cmd="$f/snakemake/RUNME_cluster.sh"
                     fi
-                    tmux new-session -d -s $tmux_name "bash $snakemake_cmd"
+                    tmux new-session -d -s $tmux_name
+                    tmux send-keys -t "$tmux_name" "bash $snakemake_cmd" Enter
                 fi
                 i_tmux=$((i_tmux+1))
             fi
