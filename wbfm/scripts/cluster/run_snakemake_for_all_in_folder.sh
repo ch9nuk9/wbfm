@@ -27,14 +27,15 @@ for f in "$folder_of_projects"/*; do
                     echo "Opening tmux session: $tmux_name"
                     # Get the snakemake command and run it
                     setup_cmd="conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/"
+                    snakemake_folder="$f/snakemake"
                     if [ "$is_snakemake_dry_run" ]; then
-                       snakemake_cmd="$f/snakemake/DRYRUN.sh"
+                       snakemake_cmd="$snakemake_folder/DRYRUN.sh"
                        echo "Running snakemake dry run"
                     else
-                       snakemake_cmd="$f/snakemake/RUNME_cluster.sh"
+                       snakemake_cmd="$snakemake_folder/RUNME_cluster.sh"
                     fi
                     tmux new-session -d -s $tmux_name
-                    tmux send-keys -t "$tmux_name" "$setup_cmd; bash $snakemake_cmd" Enter
+                    tmux send-keys -t "$tmux_name" "$setup_cmd; cd $snakemake_folder; bash $snakemake_cmd" Enter
                 fi
                 i_tmux=$((i_tmux+1))
             fi
