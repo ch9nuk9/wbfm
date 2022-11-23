@@ -11,7 +11,7 @@ import sklearn.exceptions
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy import stats
-from sklearn.linear_model import RidgeCV
+from sklearn.linear_model import RidgeCV, LassoCV
 from sklearn.metrics import median_absolute_error
 from sklearn.model_selection import cross_validate, RepeatedKFold
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
@@ -79,12 +79,12 @@ class SpeedEncoding(NeuronEncodingBase):
             model = RidgeCV(store_cv_values=True).fit(X_train, y_train)
         return model, X_train, y_train
 
-    def plot_encoding(self, df_name, y_train=None):
+    def plot_encoding(self, df_name, y_train=None, y_name="speed"):
         """Speed by default"""
         model, X_train, y_train = self.calc_encoding(df_name, y_train=y_train)
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
-        # self._plot_variables(model, df_name)
+        self._plot_linear_regression_coefficients(X_train, y_train, df_name, y_name=y_name)
 
     def _plot(self, df_name, y_pred, y_train):
         mae = median_absolute_error(y_train, y_pred)
@@ -101,26 +101,26 @@ class SpeedEncoding(NeuronEncodingBase):
         plt.legend()
         self.project_data.shade_axis_using_behavior()
 
-    def _plot_variables(self, X, y, df_name, model=RidgeCV(),
-                        only_plot_nonzero=True, also_plot_traces=True):
+    def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
+                                             only_plot_nonzero=True, also_plot_traces=True, y_name="speed"):
         # From https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#sphx-glr-auto-examples-inspection-plot-linear-model-coefficient-interpretation-py
+        if model is None:
+            alphas = np.logspace(-10, 10, 21)  # alpha values to be chosen from by cross-validation
+            model = LassoCV(alphas=alphas, max_iter=1000)
+
         feature_names = get_names_from_df(self.all_dfs[df_name])
         initial_val = os.environ.get("PYTHONWARNINGS", "")
         os.environ["PYTHONWARNINGS"] = "ignore"  # Also affect subprocesses
 
         cv = RepeatedKFold(n_splits=5, n_repeats=5, random_state=0)
-        with warnings.catch_warnings():
-            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            warnings.simplefilter("ignore")
-
-            cv_model = cross_validate(
-                model,
-                X,
-                y,
-                cv=cv,
-                return_estimator=True,
-                n_jobs=2,
-            )
+        cv_model = cross_validate(
+            model,
+            X,
+            y,
+            cv=cv,
+            return_estimator=True,
+            n_jobs=2,
+        )
         try:
             coefs = pd.DataFrame(
                 [est.coef_ for est in cv_model["estimator"]], columns=feature_names
@@ -141,15 +141,20 @@ class SpeedEncoding(NeuronEncodingBase):
         sns.stripplot(data=coefs, orient="h", color="k", alpha=0.5, linewidth=1)
         sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=100)
         plt.axvline(x=0, color=".5")
-        plt.title(f"Coefficient variability for {self.project_data.shortened_name}")
+        title_str = f"Coefficient variability for {self.project_data.shortened_name}"
+        plt.title(title_str)
         plt.subplots_adjust(left=0.3)
         plt.grid(axis='y', which='both')
+
+        vis_cfg = self.project_data.project_config.get_visualization_config()
+        fname = vis_cfg.resolve_relative_path(f"lasso_coefficients_{df_name}_{y_name}.png", prepend_subfolder=True)
+        plt.savefig(fname)
 
         # gridplot of traces
         if also_plot_traces:
             make_grid_plot_using_project(self.project_data, 'integration', 'ratio',
                                          neuron_names_to_plot=get_names_from_df(coefs),
-                                         sort_using_shade_value=True, savename_suffix="encoding")
+                                         sort_using_shade_value=True, savename_suffix=f"{y_name}_encoding")
 
         os.environ["PYTHONWARNINGS"] = initial_val  # Also affect subprocesses
 
