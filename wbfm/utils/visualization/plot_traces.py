@@ -41,6 +41,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  min_nonnan=None,
                                  share_y_axis=False,
                                  to_save=True,
+                                 savename_suffix="",
                                  **kwargs):
     """
 
@@ -127,10 +128,10 @@ def make_grid_plot_using_project(project_data: ProjectData,
                 prefix = f"{prefix}_sharey"
             if behavioral_correlation_shading is not None:
                 if isinstance(behavioral_correlation_shading, str):
-                    prefix = f"{prefix}_beh-{behavioral_correlation_shading}"
+                    prefix = f"{prefix}_beh_{behavioral_correlation_shading}"
                 else:
                     prefix = f"{prefix}_beh-custom"
-            fname = f"{prefix}_grid_plot.png"
+            fname = f"{prefix}-grid-{savename_suffix}.png"
         else:
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
         traces_cfg = project_data.project_config.get_traces_config()
