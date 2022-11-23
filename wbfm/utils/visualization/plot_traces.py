@@ -37,6 +37,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  remove_outliers=False,
                                  bleach_correct=True,
                                  behavioral_correlation_shading=None,
+                                 direct_shading_dict=None,
                                  min_nonnan=None,
                                  share_y_axis=False,
                                  to_save=True):
@@ -98,8 +99,12 @@ def make_grid_plot_using_project(project_data: ProjectData,
     logger = project_data.logger
 
     # Correlate to a behavioral variable
-    background_shading_value_func = factory_correlate_trace_to_behavior_variable(project_data,
-                                                                                 behavioral_correlation_shading)
+    assert direct_shading_dict is None or behavioral_correlation_shading is None, "Can't shade in both ways"
+    if direct_shading_dict is None:
+        background_shading_value_func = factory_correlate_trace_to_behavior_variable(project_data,
+                                                                                     behavioral_correlation_shading)
+    else:
+        background_shading_value_func = lambda y, name: direct_shading_dict.get(name, None)
 
     fig, _ = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
                                            color_using_behavior=color_using_behavior,
@@ -241,7 +246,7 @@ def factory_correlate_trace_to_behavior_variable(project_data,
     if y is None:
         return None
 
-    def background_shading_value_func(X):
+    def background_shading_value_func(X, name):
         ind = np.where(~np.isnan(X))[0]
         return np.corrcoef(X[ind], y[:len(X)][ind])[0, 1]
 
@@ -332,7 +337,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
 
         # First get all the traces, so that the entire cmap can be scaled
         all_y = [get_data_func(name)[1] for name in neuron_names]
-        all_vals = [background_shading_value_func(y) for y in all_y]
+        all_vals = [background_shading_value_func(y, name) for y, name in zip(all_y, neuron_names)]
 
         norm = TwoSlopeNorm(vmin=np.nanmin(all_vals), vcenter=0, vmax=np.nanmax(all_vals))
         # norm.autoscale(all_vals)
@@ -379,7 +384,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                 shade_plot_func(ax)
 
             if background_shading_value_func is not None:
-                color, val = colors[i], background_shading_value_func(y)
+                color, val = colors[i], background_shading_value_func(y, neuron_name)
                 ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
                 ax.set_title(f"Shaded value (below): {val:0.2f}")
 
