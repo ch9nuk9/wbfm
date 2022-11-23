@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 from matplotlib import pyplot as plt
+from scipy.ndimage import gaussian_filter1d
 from skimage import transform
 from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
@@ -121,10 +122,12 @@ class WormFullVideoPosture:
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_psuedo_roaming_state(self, thresh=80):
+    def calc_psuedo_roaming_state(self, thresh=80, only_onset=False, onset_blur_sigma=5):
         """
         Calculates a binary vector that is 1 when the worm is in a long forward bout (defined by thresh), and 0
         otherwise
+
+        If only_onset is true, then the vector is only on at the first point
 
         Returns
         -------
@@ -143,7 +146,51 @@ class WormFullVideoPosture:
         for start, (duration, end) in start2duration_and_end_dict.items():
             if duration < thresh:
                 continue
-            state_trace[start:end] = 1
+
+            if not only_onset:
+                state_trace[start:end] = 1
+            else:
+                state_trace[start] = 1
+        if only_onset:
+            state_trace = gaussian_filter1d(state_trace, onset_blur_sigma)
+
+        return state_trace
+
+    def calc_fwd_counter_state(self):
+        """
+        Calculates an integer vector that counts the time since last reversal
+
+        Returns
+        -------
+
+        """
+        binary_fwd = self.behavior_annotations_fluorescence_fps == 0
+        all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
+
+        # Turn into time series
+        num_pts = len(self.subsample_indices)
+        state_trace = np.zeros(num_pts)
+        for start, end in zip(all_starts, all_ends):
+            state_trace[start:end] = np.arange(end - start)
+
+        return state_trace
+
+    def calc_rev_counter_state(self):
+        """
+        Calculates an integer vector that counts the time since last forward state
+
+        Returns
+        -------
+
+        """
+        binary_rev = self.behavior_annotations_fluorescence_fps == 1
+        all_starts, all_ends = get_contiguous_blocks_from_column(binary_rev, already_boolean=True)
+
+        # Turn into time series
+        num_pts = len(self.subsample_indices)
+        state_trace = np.zeros(num_pts)
+        for start, end in zip(all_starts, all_ends):
+            state_trace[start:end] = np.arange(end - start)
 
         return state_trace
 
