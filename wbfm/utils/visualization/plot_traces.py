@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union, Callable
 
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
@@ -106,7 +106,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                            background_shading_value_func=background_shading_value_func,
                                            logger=logger,
                                            share_y_axis=share_y_axis)
-
+    plt.suptitle(project_data.shortened_name, y=1.02, fontsize='x-large')
     plt.tight_layout()
 
     # Save final figure
@@ -119,6 +119,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
                 prefix = f"{prefix}_{filter_mode}"
             if share_y_axis:
                 prefix = f"{prefix}_sharey"
+            if behavioral_correlation_shading is not None:
+                prefix = f"{prefix}_behavior"
             fname = f"{prefix}_grid_plot.png"
         else:
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
@@ -195,13 +197,27 @@ def make_grid_plot_from_two_dataframes(df0, df1, twinx_when_reusing_figure=True,
     return fig
 
 
-def factory_correlate_trace_to_behavior_variable(project_data, behavioral_correlation_shading: str) \
-        -> Optional[callable]:
+def factory_correlate_trace_to_behavior_variable(project_data,
+                                                 behavioral_correlation_shading: Union[str, Callable])\
+        -> Optional[Callable]:
+    """
+
+    Parameters
+    ----------
+    project_data
+    behavioral_correlation_shading
+
+    Returns
+    -------
+
+    """
     valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature']
     posture_class = project_data.worm_posture_class
     y = None
     if behavioral_correlation_shading is None:
         y = None
+    elif isinstance(behavioral_correlation_shading, Callable):
+        y = behavioral_correlation_shading(project_data)
     elif behavioral_correlation_shading == 'absolute_speed':
         y = posture_class.worm_speed_fluorescence_fps
     elif behavioral_correlation_shading == 'speed':
@@ -290,7 +306,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   num_columns: int = 5,
                                   twinx_when_reusing_figure: bool = False,
                                   fig = None):
-    """
+    """z
 
     Parameters
     ----------
@@ -365,7 +381,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
             if background_shading_value_func is not None:
                 color, val = colors[i], background_shading_value_func(y)
                 ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
-                ax.set_title(f"Shaded value: {val:0.2f}")
+                ax.set_title(f"Shaded value (below): {val:0.2f}")
 
     return fig, original_axes
 
