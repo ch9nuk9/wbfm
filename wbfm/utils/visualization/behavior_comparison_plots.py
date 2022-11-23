@@ -148,7 +148,8 @@ class SpeedEncoding(NeuronEncodingBase):
         # gridplot of traces
         if also_plot_traces:
             make_grid_plot_using_project(self.project_data, 'integration', 'ratio',
-                                         neuron_names_to_plot=get_names_from_df(coefs))
+                                         neuron_names_to_plot=get_names_from_df(coefs),
+                                         sort_using_shade_value=True)
 
         os.environ["PYTHONWARNINGS"] = initial_val  # Also affect subprocesses
 
