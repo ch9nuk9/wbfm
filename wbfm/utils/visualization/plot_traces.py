@@ -40,7 +40,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  direct_shading_dict=None,
                                  min_nonnan=None,
                                  share_y_axis=False,
-                                 to_save=True):
+                                 to_save=True,
+                                 **kwargs):
     """
 
     See project_data.calculate_traces for details on the arguments, and TracePlotter for even more detail
@@ -61,7 +62,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     """
     if channel_mode == 'all':
-        all_modes = ['red', 'green', 'dr_over_r_20', 'ratio', 'linear_model']
+        all_modes = ['red', 'green']
         opt = dict(project_data=project_data,
                    calculation_mode=calculation_mode,
                    color_using_behavior=color_using_behavior,
@@ -110,7 +111,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                            color_using_behavior=color_using_behavior,
                                            background_shading_value_func=background_shading_value_func,
                                            logger=logger,
-                                           share_y_axis=share_y_axis)
+                                           share_y_axis=share_y_axis, **kwargs)
     plt.suptitle(project_data.shortened_name, y=1.02, fontsize='x-large')
     plt.tight_layout()
 
