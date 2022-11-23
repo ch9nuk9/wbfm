@@ -311,8 +311,9 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   logger: logging.Logger = None,
                                   num_columns: int = 5,
                                   twinx_when_reusing_figure: bool = False,
-                                  fig = None):
-    """z
+                                  fig = None,
+                                  sort_using_shade_value=False):
+    """
 
     Parameters
     ----------
@@ -340,6 +341,11 @@ def make_grid_plot_from_callables(get_data_func: callable,
         all_y = [get_data_func(name)[1] for name in neuron_names]
         all_vals = [background_shading_value_func(y, name) for y, name in zip(all_y, neuron_names)]
 
+        if sort_using_shade_value:
+            ind = np.argsort(all_vals)
+            neuron_names = [neuron_names[i] for i in ind]
+            all_vals = [all_vals[i] for i in ind]
+
         norm = TwoSlopeNorm(vmin=np.nanmin(all_vals), vcenter=0, vmax=np.nanmax(all_vals))
         # norm.autoscale(all_vals)
         values_normalized = norm(all_vals)
@@ -347,6 +353,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
 
     else:
         colors = []
+        all_vals = None
 
     # Loop through neurons and plot
     num_neurons = len(neuron_names)
