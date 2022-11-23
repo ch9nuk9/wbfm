@@ -79,14 +79,35 @@ class SpeedEncoding(NeuronEncodingBase):
             model = RidgeCV(store_cv_values=True).fit(X_train, y_train)
         return model, X_train, y_train
 
-    def plot_encoding(self, df_name, y_train=None, y_name="speed"):
+    def plot_basic_encoding(self, df_name, y_train=None, y_name="speed"):
         """Speed by default"""
         model, X_train, y_train = self.calc_encoding(df_name, y_train=y_train)
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
-        self._plot_linear_regression_coefficients(X_train, y_train, df_name, y_name=y_name)
 
-    def _plot(self, df_name, y_pred, y_train):
+    def plot_encoding_and_weights(self, df_name, y_train=None, y_name="speed"):
+        """
+        Plots the fit, regression weights, and grid plot for a Lasso model
+
+        Parameters
+        ----------
+        df_name
+        y_train
+        y_name
+
+        Returns
+        -------
+
+        """
+        X_train = self.all_dfs[df_name]
+        if y_train is None:
+            y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
+        cv_model = self._plot_linear_regression_coefficients(X_train, y_train, df_name, y_name=y_name)[0]
+        model = cv_model['estimator'][0]  # Just predict using a single model?
+        y_pred = model.predict(X_train)
+        self._plot(df_name, y_pred, y_train)
+
+    def _plot(self, df_name, y_pred, y_train, y_name=""):
         mae = median_absolute_error(y_train, y_pred)
         fig, ax = plt.subplots(dpi=100)
         opt = dict()
@@ -94,12 +115,16 @@ class SpeedEncoding(NeuronEncodingBase):
             opt['color'] = df_name
         ax.plot(y_pred, label='prediction', **opt)
 
-        ax.set_title(f"Ridge model with error {mae:.4f} from {df_name} traces")
+        ax.set_title(f"Regression model with error {mae:.4f} from {df_name} traces")
         plt.ylabel("Time (mm/s)")
         plt.xlabel("Truths")
         ax.plot(y_train, color='black', label='Target')
         plt.legend()
         self.project_data.shade_axis_using_behavior()
+
+        vis_cfg = self.project_data.project_config.get_visualization_config()
+        fname = vis_cfg.resolve_relative_path(f"regression_fit_{df_name}_{y_name}.png", prepend_subfolder=True)
+        plt.savefig(fname)
 
     def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
                                              only_plot_nonzero=True, also_plot_traces=True, y_name="speed"):
@@ -121,15 +146,9 @@ class SpeedEncoding(NeuronEncodingBase):
             return_estimator=True,
             n_jobs=2,
         )
-        try:
-            coefs = pd.DataFrame(
-                [est.coef_ for est in cv_model["estimator"]], columns=feature_names
-            )
-        except ValueError:
-            # If the estimator is Lasso, it returns a list, and we want the last
-            coefs = pd.DataFrame(
-                [model[-1].regressor_.coef_ for est in cv_model["estimator"]], columns=feature_names
-            )
+        coefs = pd.DataFrame(
+            [est.coef_ for est in cv_model["estimator"]], columns=feature_names
+        )
 
         # Only keep neurons with nonzero values
         tol = 1e-3

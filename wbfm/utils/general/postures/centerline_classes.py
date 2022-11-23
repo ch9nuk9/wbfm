@@ -18,6 +18,7 @@ from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
+from wbfm.utils.traces.triggered_averages import calc_triggered_average_indices
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -121,6 +122,19 @@ class WormFullVideoPosture:
         c_x = self.centerlineX.iloc[t * self.frames_per_volume]
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
+
+    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None):
+        """
+        Calculates a list of indices that can be used to calculate triggered averages of 'state'
+
+        Returns
+        -------
+
+        """
+        binary_state = self.behavior_annotations_fluorescence_fps == state
+        all_ind = calc_triggered_average_indices(binary_state, min_duration, trace_len)
+
+        return all_ind
 
     def calc_psuedo_roaming_state(self, thresh=80, only_onset=False, onset_blur_sigma=5):
         """
