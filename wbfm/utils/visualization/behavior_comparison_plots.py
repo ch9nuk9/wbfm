@@ -7,6 +7,7 @@ from typing import List, Dict, Tuple
 import seaborn as sns
 import numpy as np
 import pandas as pd
+import sklearn.exceptions
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy import stats
@@ -19,6 +20,7 @@ from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, 
 from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 
 
 @dataclass
@@ -72,7 +74,9 @@ class SpeedEncoding(NeuronEncodingBase):
         X_train = self.all_dfs[df_name]
         if y_train is None:
             y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
-        model = RidgeCV(store_cv_values=True).fit(X_train, y_train)
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
+            model = RidgeCV(store_cv_values=True).fit(X_train, y_train)
         return model, X_train, y_train
 
     def plot_encoding(self, df_name, y_train=None):
@@ -97,19 +101,26 @@ class SpeedEncoding(NeuronEncodingBase):
         plt.legend()
         self.project_data.shade_axis_using_behavior()
 
-    def _plot_variables(self, X, y, df_name, model=RidgeCV()):
+    def _plot_variables(self, X, y, df_name, model=RidgeCV(),
+                        only_plot_nonzero=True, also_plot_traces=True):
         # From https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#sphx-glr-auto-examples-inspection-plot-linear-model-coefficient-interpretation-py
         feature_names = get_names_from_df(self.all_dfs[df_name])
+        initial_val = os.environ.get("PYTHONWARNINGS", "")
+        os.environ["PYTHONWARNINGS"] = "ignore"  # Also affect subprocesses
 
         cv = RepeatedKFold(n_splits=5, n_repeats=5, random_state=0)
-        cv_model = cross_validate(
-            model,
-            X,
-            y,
-            cv=cv,
-            return_estimator=True,
-            n_jobs=2,
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
+            warnings.simplefilter("ignore")
+
+            cv_model = cross_validate(
+                model,
+                X,
+                y,
+                cv=cv,
+                return_estimator=True,
+                n_jobs=2,
+            )
         try:
             coefs = pd.DataFrame(
                 [est.coef_ for est in cv_model["estimator"]], columns=feature_names
@@ -120,12 +131,28 @@ class SpeedEncoding(NeuronEncodingBase):
                 [model[-1].regressor_.coef_ for est in cv_model["estimator"]], columns=feature_names
             )
 
-        plt.figure(figsize=(10, 15), dpi=100)
-        sns.stripplot(data=coefs, orient="h", color="k", alpha=0.5)
+        # Only keep neurons with nonzero values
+        tol = 1e-3
+        if only_plot_nonzero:
+            coefs = coefs.loc[:, coefs.mean().abs() > tol]
+
+        # Boxplot of variability
+        plt.figure(dpi=100)
+        sns.stripplot(data=coefs, orient="h", color="k", alpha=0.5, linewidth=1)
         sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=100)
         plt.axvline(x=0, color=".5")
-        plt.title("Coefficient variability")
+        plt.title(f"Coefficient variability for {self.project_data.shortened_name}")
         plt.subplots_adjust(left=0.3)
+        plt.grid(axis='y', which='both')
+
+        # gridplot of traces
+        if also_plot_traces:
+            make_grid_plot_using_project(self.project_data, 'integration', 'ratio',
+                                         neuron_names_to_plot=get_names_from_df(coefs))
+
+        os.environ["PYTHONWARNINGS"] = initial_val  # Also affect subprocesses
+
+        return cv_model, coefs
 
 
 @dataclass
