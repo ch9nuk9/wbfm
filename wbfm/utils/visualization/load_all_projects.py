@@ -73,26 +73,29 @@ all_projects_new_bright = [project_data2_C, project_data3_C, project_data4_C]
 ##
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm3-2022_08_01/project_config.yaml"
 project_data1_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-project_data1_exp12 = project_data1_12ms
+project_data3_exp12 = project_data1_12ms
 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm6-2022_08_01/project_config.yaml"
 project_data2_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-project_data2_exp12 = project_data2_12ms
+project_data6_exp12 = project_data2_12ms
 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm12-2022_08_01/project_config.yaml"
 project_data3_12ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-project_data3_exp12 = project_data3_12ms
+project_data12_exp12 = project_data3_12ms
 
 # fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm4-2022_08_02/project_config.yaml"
 # project_data4_exp12 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
-fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm6-2022_08_01/project_config.yaml"
-project_data6_exp12 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm1-2022_08_02/project_config.yaml"
+project_data1_exp12 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm2-2022_08_02/project_config.yaml"
+project_data2_exp12 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm11-2022_08_02/project_config.yaml"
 project_data11_exp12 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
-all_projects_exp12 = [project_data1_exp12, project_data2_exp12, project_data3_exp12, #project_data4_exp12,
+all_projects_exp12 = [project_data3_exp12, project_data2_exp12, project_data12_exp12, project_data1_exp12,
                       project_data6_exp12, project_data11_exp12]
 
 ## Also Ulises' new 'control' 12ms exposure
