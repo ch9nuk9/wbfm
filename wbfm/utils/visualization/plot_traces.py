@@ -38,7 +38,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  bleach_correct=True,
                                  behavioral_correlation_shading=None,
                                  direct_shading_dict=None,
-                                 postprocessing_func=Optional[callable],
+                                 postprocessing_func: Optional[callable] = None,
                                  min_nonnan=None,
                                  share_y_axis=False,
                                  to_save=True,
@@ -98,11 +98,11 @@ def make_grid_plot_using_project(project_data: ProjectData,
     # Build functions to make a single subplot
     options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
                'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct}
-    base_get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
     if postprocessing_func is None:
-        get_data_func = base_get_data_func
+        get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
     else:
-        get_data_func = lambda neuron_name: postprocessing_func(base_get_data_func(neuron_name))
+        get_data_func = lambda neuron_name: postprocessing_func(project_data.calculate_traces(neuron_name=neuron_name,
+                                                                                              **options))
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
 
@@ -321,8 +321,9 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   logger: logging.Logger = None,
                                   num_columns: int = 5,
                                   twinx_when_reusing_figure: bool = False,
-                                  fig = None,
-                                  sort_using_shade_value=False):
+                                  fig=None,
+                                  sort_using_shade_value=False,
+                                  ax_plot_func: Optional[callable] = None):
     """
 
     Parameters
@@ -333,6 +334,12 @@ def make_grid_plot_from_callables(get_data_func: callable,
     shade_plot_func - function that accepts an axis object and shades the plot
     background_shading_value_func - function to get a value to shade the background, e.g. correlation to behavior
     color_using_behavior - whether to use the shade_plot_func
+    ax_plot_func - signature: (t, y, ax, name, **kwargs) -> None [should plot something on the given axis]
+    share_y_axis
+    num_columns
+    twinx_when_reusing_figure
+    sort_using_shade_value
+    fig
     logger
 
     Example:
@@ -343,6 +350,9 @@ def make_grid_plot_from_callables(get_data_func: callable,
     -------
 
     """
+    if ax_plot_func is None:
+        ax_plot_func = lambda t, y, ax, name, **kwargs: ax.plot(t, y, **kwargs)
+
     # Set up the colormap of the background, if any
     if background_shading_value_func is not None:
         # From: https://stackoverflow.com/questions/59638155/how-to-set-0-to-white-at-a-uneven-color-ramp
@@ -352,7 +362,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
         all_vals = [background_shading_value_func(y, name) for y, name in zip(all_y, neuron_names)]
 
         if sort_using_shade_value:
-            ind = np.argsort(all_vals)
+            # Sort descending
+            ind = np.argsort(-np.array(all_vals))
             neuron_names = [neuron_names[i] for i in ind]
             all_vals = [all_vals[i] for i in ind]
 
@@ -387,17 +398,20 @@ def make_grid_plot_from_callables(get_data_func: callable,
         t, y = get_data_func(neuron_name)
 
         if not new_fig:
-            ax.plot(t, y, **ax_opt)
+            # ax.plot(t, y, **ax_opt)
+            ax_plot_func(t, y, ax, neuron_name, **ax_opt)
         else:
-            ax.plot(t, y, label=neuron_name)
+            ax_plot_func(t, y, ax, neuron_name, label=neuron_name)
+            # ax.plot(t, y, label=neuron_name)
             # For removing the lines from the legends:
             # https://stackoverflow.com/questions/25123127/how-do-you-just-show-the-text-label-in-plot-legend-e-g-remove-a-labels-line
             leg = ax.legend(loc='upper left', handlelength=0, handletextpad=0, fancybox=True, framealpha=0.0)
             for item in leg.legendHandles:
                 item.set_visible(False)
-            # ax.set_title(neuron_name, {'fontsize': 28}, y=0.7)
             ax.set_frame_on(False)
             ax.set_axis_off()
+
+            # Additional layers of information on the axes
             if color_using_behavior:
                 shade_plot_func(ax)
 

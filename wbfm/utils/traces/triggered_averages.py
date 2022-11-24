@@ -51,11 +51,11 @@ def plot_triggered_average_from_matrix_with_histogram(triggered_avg_matrix, show
     return axes
 
 
-def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual_lines=True):
+def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual_lines=True, **kwargs):
     triggered_avg = np.nanmean(triggered_avg_matrix, axis=0)
     triggered_std = np.nanstd(triggered_avg_matrix, axis=0)
     x = np.arange(len(triggered_avg))
-    ax.plot(triggered_avg)
+    ax.plot(triggered_avg, **kwargs)
     if show_individual_lines:
         for trace in triggered_avg_matrix:
             ax.plot(trace, 'black', alpha=0.2)
