@@ -38,6 +38,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  bleach_correct=True,
                                  behavioral_correlation_shading=None,
                                  direct_shading_dict=None,
+                                 postprocessing_func=Optional[callable],
                                  min_nonnan=None,
                                  share_y_axis=False,
                                  to_save=True,
@@ -56,6 +57,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
     filter_mode
     color_using_behavior
     remove_outliers
+    postprocessing_func - Callable that must accept the output of calculate_traces, and give the same type of output
     to_save
 
     Returns
@@ -96,7 +98,11 @@ def make_grid_plot_using_project(project_data: ProjectData,
     # Build functions to make a single subplot
     options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
                'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct}
-    get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
+    base_get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
+    if postprocessing_func is None:
+        get_data_func = base_get_data_func
+    else:
+        get_data_func = lambda neuron_name: postprocessing_func(base_get_data_func(neuron_name))
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
 
