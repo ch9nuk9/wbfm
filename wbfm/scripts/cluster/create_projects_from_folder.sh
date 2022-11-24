@@ -13,7 +13,8 @@ done
 
 # Actually run
 COMMAND="/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/0a-create_new_project.py"
-EXPERIMENTER=$(basename "$PARENT_DATA_FOLDER")
+EXPERIMENTER=$(cd "$DATA_PATH"/.. && pwd)
+EXPERIMENTER=$(dirname EXPERIMENTER)
 
 # Loop through the parent folder, then try to get the config file within each of these parent folders
 for f in "$DATA_PATH"/*; do
