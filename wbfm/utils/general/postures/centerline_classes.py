@@ -18,7 +18,8 @@ from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
-from wbfm.utils.traces.triggered_averages import calc_triggered_average_indices
+from wbfm.utils.traces.triggered_averages import calc_triggered_average_indices, calc_triggered_average_matrix, \
+    plot_triggered_average_from_matrix_with_histogram
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -127,6 +128,8 @@ class WormFullVideoPosture:
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state'
 
+        By default, state=0 is forward, and 1 is reversal. Sometimes 2 is annotated (turn), but this will likely change
+
         Returns
         -------
 
@@ -135,6 +138,11 @@ class WormFullVideoPosture:
         all_ind = calc_triggered_average_indices(binary_state, min_duration, trace_len)
 
         return all_ind
+
+    def plot_triggered_average(self, state, trace):
+        ind = self.calc_triggered_average_indices(state=state, trace_len=len(trace))
+        mat = calc_triggered_average_matrix(trace, ind)
+        plot_triggered_average_from_matrix_with_histogram(mat)
 
     def calc_psuedo_roaming_state(self, thresh=80, only_onset=False, onset_blur_sigma=5):
         """

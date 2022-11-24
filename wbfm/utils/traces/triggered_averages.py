@@ -34,16 +34,30 @@ def calc_triggered_average_stats(triggered_avg_matrix):
     return triggered_avg, triggered_std, triggered_avg_counts
 
 
-def plot_triggered_average_from_matrix(triggered_avg_matrix):
+def plot_triggered_average_from_matrix_with_histogram(triggered_avg_matrix, show_individual_lines=True):
     triggered_avg, triggered_std, triggered_avg_counts = calc_triggered_average_stats(triggered_avg_matrix)
 
-    fig, ax = plt.subplots(nrows=2, sharex=True, dpi=100)
+    fig, axes = plt.subplots(nrows=2, sharex=True, dpi=100)
+
+    ax = axes[0]
+    plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual_lines)
+
+    triggered_avg_counts = np.nansum(~np.isnan(triggered_avg_matrix), axis=0)
     x = np.arange(len(triggered_avg))
+    axes[1].bar(x, triggered_avg_counts)
+    axes[1].set_ylabel("Num contributing")
+    axes[1].set_xlabel("Time (frames)")
 
-    ax[0].plot(triggered_avg)
-    ax[0].fill_between(x, triggered_avg + triggered_std, triggered_avg - triggered_std, alpha=0.25)
-    ax[0].set_ylabel("Activity")
+    return axes
 
-    ax[1].bar(x, triggered_avg_counts)
-    ax[1].set_ylabel("Num traces contributing")
-    ax[1].set_xlabel("Time (frames)")
+
+def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual_lines=True):
+    triggered_avg = np.nanmean(triggered_avg_matrix, axis=0)
+    triggered_std = np.nanstd(triggered_avg_matrix, axis=0)
+    x = np.arange(len(triggered_avg))
+    ax.plot(triggered_avg)
+    if show_individual_lines:
+        for trace in triggered_avg_matrix:
+            ax.plot(trace, 'black', alpha=0.2)
+    ax.fill_between(x, triggered_avg + triggered_std, triggered_avg - triggered_std, alpha=0.25)
+    ax.set_ylabel("Activity")
