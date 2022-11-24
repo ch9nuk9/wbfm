@@ -18,18 +18,13 @@ EXPERIMENTER=$(dirname EXPERIMENTER)
 
 # Loop through the parent folder, then try to get the config file within each of these parent folders
 for f in "$DATA_PATH"/*; do
-    if [ -d "$f" ] && [ ! -L "$f" ]; then
+    if [[ -d "$f" ]] && [[ "$f" == *"_worm"* ]]; then
         echo "Checking folder: $f"
-
-        for subfolder in "$f"/*; do
-            if [[ -d "$subfolder" ]] && [[ "$subfolder" == *"_worm"* ]]; then
-                if [ "$is_dry_run" ]; then
-                    echo "DRYRUN: Dispatching on folder: $subfolder with EXPERIMENTER $EXPERIMENTER"
-                else
-                    python $COMMAND with project_dir="$PROJECT_DIR" experimenter="$EXPERIMENTER" parent_data_folder="$subfolder"
-                fi
-            fi
-        done
+        if [ "$is_dry_run" ]; then
+            echo "DRYRUN: Dispatching on folder: $f with EXPERIMENTER $EXPERIMENTER"
+        else
+            python $COMMAND with project_dir="$PROJECT_DIR" experimenter="$EXPERIMENTER" parent_data_folder="$f"
+        fi
     fi
 done
 
