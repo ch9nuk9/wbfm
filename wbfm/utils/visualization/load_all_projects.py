@@ -1,4 +1,4 @@
-from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.finished_project_data import ProjectData, load_all_projects_in_folder
 
 # Load all projects with different names for further processing
 
@@ -224,3 +224,15 @@ fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2319_worm3-2022_10
 project_data3_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
 all_projects_dim_gfp = [project_data1_gfp_dim, project_data2_gfp_dim, project_data3_gfp_dim]
+
+##
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer"
+all_projects_spacer = load_all_projects_in_folder(foldername)
+
+##
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_2per_agar"
+all_projects_spacer_2per = load_all_projects_in_folder(foldername)
+
+##
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_on_food"
+all_projects_spacer_food = load_all_projects_in_folder(foldername)

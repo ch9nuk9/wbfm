@@ -1292,3 +1292,15 @@ def print_project_statistics(project_config: ModularProjectConfig):
             break
 
         getattr(project_data, func_name)()
+
+
+def load_all_projects_in_folder(folder_name, **kwargs) -> List[ProjectData]:
+    all_projects = []
+    for folder in Path(folder_name).iterdir():
+        if Path(folder).is_file():
+            continue
+        for file in Path(folder).iterdir():
+            if "config.yaml" in file.name:
+                proj = ProjectData.load_final_project_data_from_config(file, verbose=0, **kwargs)
+                all_projects.append(proj)
+    return all_projects
