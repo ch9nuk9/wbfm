@@ -78,3 +78,30 @@ def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual
             ax.plot(trace, 'black', alpha=0.2)
     ax.fill_between(x, triggered_avg + triggered_std, triggered_avg - triggered_std, alpha=0.25)
     ax.set_ylabel("Activity")
+
+
+def ax_plot_func_for_grid_plot(project_data, t, y, ax, name, **kwargs):
+    """
+    Designed to be used with make_grid_plot_using_project with the arg ax_plot_func=ax_plot_func
+    Note that you must create a closure to remove project_data from the args of this function, and pass a lambda
+
+    Parameters
+    ----------
+    project_data
+    t
+    y
+    ax
+    name
+    kwargs
+
+    Returns
+    -------
+
+    """
+    ind_preceding = 10
+    ind = project_data.worm_posture_class.calc_triggered_average_indices(state=1, trace_len=len(y),
+                                                                         ind_preceding=ind_preceding)
+    mat = calc_triggered_average_matrix(y, ind)
+    plot_triggered_average_from_matrix(mat, ax, show_individual_lines=True, label=name)
+    ax.axhline(np.mean(y), c='black', ls='--')
+    ax.plot(ind_preceding, np.mean(y), "r*", lw=3)
