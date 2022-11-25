@@ -16,7 +16,7 @@ if __name__ == "__main__":
     for _ in range(50):
         Y = torch.matmul(X.T, X)
         print("Mean value: ", Y.mean())
-        Y_tf = torch.matmul(X_tf.T, X_tf)
+        Y_tf = tf.linalg.matmul(X_tf.T, X_tf)
         print("Mean value (tensorflow): ", Y_tf.mean())
 
     print("Finished calculations")
