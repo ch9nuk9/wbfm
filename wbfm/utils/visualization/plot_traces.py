@@ -584,7 +584,6 @@ class ClickableGridPlot:
         self.current_selected_label = None
         self.verbose = verbose
 
-
         # Set up text box for modifying names
         # plt.subplots_adjust(bottom=0.2)
         # axbox = plt.axes([0.1, 0.05, 0.8, 0.075])
@@ -717,12 +716,13 @@ class ClickableGridPlot:
                     continue
 
                 # Add the shading to this axis
-                print(f"Shading {name} with index {list_index}")
+                print(f"Shading {name} with index {list_index[0]} and name {list_index[1]}")
                 self.current_list_index = list_index[0]
                 self.shade_selected_subplot(ax, button_pressed)
 
                 # Also add the info to the dict
-                self.selected_neurons[name]["List ID"] = list_index
+                self.selected_neurons[name]["List ID"] = list_index[0]
+                self.selected_neurons[name]["Proposed Name"] = list_index[1]
 
         plt.draw()
         self.current_list_index = 1
