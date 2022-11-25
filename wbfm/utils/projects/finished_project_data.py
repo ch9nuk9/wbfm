@@ -1300,7 +1300,7 @@ def load_all_projects_in_folder(folder_name, **kwargs) -> List[ProjectData]:
         if Path(folder).is_file():
             continue
         for file in Path(folder).iterdir():
-            if "config.yaml" in file.name:
+            if "project_config.yaml" in file.name:
                 proj = ProjectData.load_final_project_data_from_config(file, verbose=0, **kwargs)
                 all_projects.append(proj)
     return all_projects
