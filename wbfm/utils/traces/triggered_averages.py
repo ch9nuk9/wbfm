@@ -4,22 +4,39 @@ from matplotlib import pyplot as plt
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
 
 
-def calc_triggered_average_indices(binary_state, min_duration, trace_len):
+def calc_triggered_average_indices(binary_state, min_duration, trace_len, ind_preceding=0):
+    """
+    If ind_preceding > 0, then a very early event will lead to negative indices
+    Thus in later steps, the trace should be padded with nan at the end to avoid wrapping
+
+    Parameters
+    ----------
+    binary_state
+    min_duration
+    trace_len
+    ind_preceding
+
+    Returns
+    -------
+
+    """
     if trace_len is not None:
         binary_state = binary_state[:trace_len]
     all_starts, all_ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
     # Turn into time series
     all_ind = []
     for start, end in zip(all_starts, all_ends):
-        if end - start <= min_duration:
+        if end - start < min_duration:
             continue
-        ind = np.arange(start, end)
+        ind = np.arange(start - ind_preceding, end)
         all_ind.append(ind)
     return all_ind
 
 
 def calc_triggered_average_matrix(trace, all_ind):
     max_len_subset = max(map(len, all_ind))
+    # Pad with nan in case there are negative indices
+    trace = np.pad(trace, max_len_subset, mode='constant', constant_values=(np.nan,))
     triggered_avg_matrix = np.zeros((len(all_ind), max_len_subset))
     triggered_avg_matrix[:] = np.nan
     for i, ind in enumerate(all_ind):

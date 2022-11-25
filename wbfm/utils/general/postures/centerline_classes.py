@@ -124,7 +124,7 @@ class WormFullVideoPosture:
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None):
+    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None, **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state'
 
@@ -135,7 +135,7 @@ class WormFullVideoPosture:
 
         """
         binary_state = self.behavior_annotations_fluorescence_fps == state
-        all_ind = calc_triggered_average_indices(binary_state, min_duration, trace_len)
+        all_ind = calc_triggered_average_indices(binary_state, min_duration, trace_len, **kwargs)
 
         return all_ind
 
