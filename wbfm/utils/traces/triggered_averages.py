@@ -70,7 +70,9 @@ def nan_points_of_state_before_point(triggered_average_mat, list_of_triggered_in
             if i_local >= preceding_ind:
                 break
             if beh_annotations[i_global] in list_of_invalid_states:
-                triggered_average_mat[i_trace, i_local] = np.nan
+                # Remove all points before this
+                for i_to_remove in range(i_local):
+                    triggered_average_mat[i_trace, i_to_remove] = np.nan
 
     return triggered_average_mat
 
