@@ -29,4 +29,5 @@ for f in "$DATA_PATH"/*; do
     fi
 done
 
-echo "Finished; check logs to determine success"
+echo "Dispatched all jobs; they will finish in ~30 seconds if successful"
+echo "Expected message: INFO - 0a-create_new_project - Completed after 0:00:XX"
