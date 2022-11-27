@@ -126,9 +126,17 @@ class WormFullVideoPosture:
 
     def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None, **kwargs):
         """
-        Calculates a list of indices that can be used to calculate triggered averages of 'state'
+        Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
 
         By default, state=0 is forward, and 1 is reversal. Sometimes 2 is annotated (turn), but this will likely change
+
+
+        Parameters
+        ----------
+        state
+        min_duration
+        trace_len
+        kwargs
 
         Returns
         -------
