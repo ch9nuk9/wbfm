@@ -47,6 +47,34 @@ def calc_triggered_average_matrix(trace, all_ind, mean_subtract=False):
     return triggered_avg_matrix
 
 
+def nan_points_of_state_before_point(triggered_average_mat, list_of_triggered_ind, preceding_ind,
+                                     list_of_invalid_states,
+                                     beh_annotations):
+    """
+    Checks points up to a certain level, and nans them if they are invalid. Only checks up to a certain threshold
+
+    Parameters
+    ----------
+    mat
+    preceding_ind
+    list_of_invalid_states
+
+    Returns
+    -------
+
+    """
+
+    for i_trace in range(len(list_of_triggered_ind)):
+        these_ind = list_of_triggered_ind[i_trace]
+        for i_local, i_global in enumerate(these_ind):
+            if i_local >= preceding_ind:
+                break
+            if beh_annotations[i_global] in list_of_invalid_states:
+                triggered_average_mat[i_trace, i_local] = np.nan
+
+    return triggered_average_mat
+
+
 def calc_triggered_average_stats(triggered_avg_matrix):
     triggered_avg = np.nanmean(triggered_avg_matrix, axis=0)
     triggered_std = np.nanstd(triggered_avg_matrix, axis=0)
@@ -118,9 +146,14 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=5,
 
     """
     ind_preceding = 20
-    ind = project_data.worm_posture_class.calc_triggered_average_indices(state=state, trace_len=len(y),
-                                                                         ind_preceding=ind_preceding)
+    worm_class = project_data.worm_posture_class
+
+    ind = worm_class.calc_triggered_average_indices(state=state, trace_len=len(y), ind_preceding=ind_preceding)
     mat = calc_triggered_average_matrix(y, ind)
+    invalid_states = [0, 1, 2]
+    invalid_states.remove(state)
+    mat = nan_points_of_state_before_point(mat, ind, ind_preceding, invalid_states,
+                                           worm_class.behavior_annotations_fluorescence_fps)
     plot_triggered_average_from_matrix(mat, ax, show_individual_lines=True, label=name, min_lines=min_lines)
     ax.axhline(np.nanmean(mat), c='black', ls='--')
     ax.plot(ind_preceding, np.nanmean(mat), "r>", markersize=10)
