@@ -153,7 +153,7 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=5,
     invalid_states = [0, 1, 2]
     invalid_states.remove(state)
     mat = nan_points_of_state_before_point(mat, ind, ind_preceding, invalid_states,
-                                           worm_class.behavior_annotations_fluorescence_fps)
+                                           np.array(worm_class.behavior_annotations_fluorescence_fps))
     plot_triggered_average_from_matrix(mat, ax, show_individual_lines=True, label=name, min_lines=min_lines)
     ax.axhline(np.nanmean(mat), c='black', ls='--')
     ax.plot(ind_preceding, np.nanmean(mat), "r>", markersize=10)
