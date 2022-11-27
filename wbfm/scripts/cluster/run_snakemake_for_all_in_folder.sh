@@ -39,6 +39,11 @@ for f in "$folder_of_projects"/*; do
                     else
                        snakemake_cmd="$snakemake_folder/RUNME_cluster.sh"
                     fi
+                    # Check if the session exists
+                    tmux has-session -t $tmux_name 2>/dev/null
+                    if [ $? = 0 ]; then
+                      tmux_name="$tmux_name-1"
+                    fi
                     tmux new-session -d -s $tmux_name
                     tmux send-keys -t "$tmux_name" "$setup_cmd; cd $snakemake_folder; bash $snakemake_cmd" Enter
                 fi
