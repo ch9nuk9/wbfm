@@ -90,12 +90,18 @@ def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual
             ax.plot(trace[:xmax], 'black', alpha=0.2)
     ax.fill_between(x, triggered_avg + triggered_std, triggered_avg - triggered_std, alpha=0.25)
     ax.set_ylabel("Activity")
+    ax.set_ylim(np.nanmin(triggered_avg- triggered_std), np.nanmax(triggered_avg+ triggered_std))
 
 
-def ax_plot_func_for_grid_plot(project_data, t, y, ax, name, **kwargs):
+def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, **kwargs):
     """
     Designed to be used with make_grid_plot_using_project with the arg ax_plot_func=ax_plot_func
-    Note that you must create a closure to remove project_data from the args of this function, and pass a lambda
+    Note that you must create a closure to remove the following args, and pass a lambda:
+        project_data
+        state
+
+    Example:
+    func = lambda *args, **kwargs: ax_plot_func_for_grid_plot(*args, project_data=p, state=1, **kwargs)
 
     Parameters
     ----------
@@ -110,10 +116,10 @@ def ax_plot_func_for_grid_plot(project_data, t, y, ax, name, **kwargs):
     -------
 
     """
-    ind_preceding = 10
-    ind = project_data.worm_posture_class.calc_triggered_average_indices(state=1, trace_len=len(y),
+    ind_preceding = 20
+    ind = project_data.worm_posture_class.calc_triggered_average_indices(state=state, trace_len=len(y),
                                                                          ind_preceding=ind_preceding)
     mat = calc_triggered_average_matrix(y, ind)
     plot_triggered_average_from_matrix(mat, ax, show_individual_lines=True, label=name)
-    ax.axhline(np.mean(y), c='black', ls='--')
-    ax.plot(ind_preceding, np.mean(y), "r*", lw=3)
+    ax.axhline(np.nanmean(mat), c='black', ls='--')
+    ax.plot(ind_preceding, np.nanmean(mat), "r>", markersize=10)
