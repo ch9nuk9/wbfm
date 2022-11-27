@@ -9,7 +9,7 @@
 #SBATCH --mem=16G
 #SBATCH --cpus-per-task=16
 #SBATCH --gpus-per-node=1
-# SBATCH --partition=gpu
+#SBATCH --partition=gpu
 
 pwd; hostname; date
 

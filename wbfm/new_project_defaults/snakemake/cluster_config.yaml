@@ -27,6 +27,7 @@ match_frame_pairs:
     partition: gpu
     gpus_per_node: 1
     time: 12:00:00
+    nodelist: nodee02
 
 build_frame_objects:
     cpus_per_task: 16
@@ -34,11 +35,13 @@ build_frame_objects:
 postprocess_matches_to_tracklets:
     partition: gpu
     cpus_per_task: 1
+    nodelist: nodee02
 
 tracking:
     partition: gpu
     gpus_per_node: 1
     time: 12:00:00
+    nodelist: nodee02
 
 combine_tracking_and_tracklets:
     time: 12:00:00
