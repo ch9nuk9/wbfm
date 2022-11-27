@@ -1,5 +1,5 @@
 """
-The top level function for producing dlc tracks in 3d
+main
 """
 
 from pathlib import Path

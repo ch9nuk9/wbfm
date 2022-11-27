@@ -93,12 +93,13 @@ def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual
     ax.set_ylim(np.nanmin(triggered_avg- triggered_std), np.nanmax(triggered_avg+ triggered_std))
 
 
-def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, **kwargs):
+def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=5, **kwargs):
     """
     Designed to be used with make_grid_plot_using_project with the arg ax_plot_func=ax_plot_func
     Note that you must create a closure to remove the following args, and pass a lambda:
         project_data
         state
+        min_lines
 
     Example:
     func = lambda *args, **kwargs: ax_plot_func_for_grid_plot(*args, project_data=p, state=1, **kwargs)
@@ -120,6 +121,6 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, **kwargs):
     ind = project_data.worm_posture_class.calc_triggered_average_indices(state=state, trace_len=len(y),
                                                                          ind_preceding=ind_preceding)
     mat = calc_triggered_average_matrix(y, ind)
-    plot_triggered_average_from_matrix(mat, ax, show_individual_lines=True, label=name)
+    plot_triggered_average_from_matrix(mat, ax, show_individual_lines=True, label=name, min_lines=min_lines)
     ax.axhline(np.nanmean(mat), c='black', ls='--')
     ax.plot(ind_preceding, np.nanmean(mat), "r>", markersize=10)
