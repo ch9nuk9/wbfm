@@ -40,7 +40,7 @@ for f in "$folder_of_projects"/*; do
                        snakemake_cmd="$snakemake_folder/RUNME_cluster.sh"
                     fi
                     # Check if the session exists
-                    tmux has-session -t $tmux_name 2>/dev/null
+                    tmux has-session -t=$tmux_name 2>/dev/null
                     if [ $? = 0 ]; then
                       tmux_name="$tmux_name-1"
                     fi
