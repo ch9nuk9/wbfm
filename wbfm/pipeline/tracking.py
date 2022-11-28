@@ -280,8 +280,6 @@ def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig
 
     num_frames = df_global_tracks.shape[0]
     df_final, num_added = fill_missing_indices_with_nan(df_new, expected_max_t=num_frames)
-    if hasattr(df_final, 'sparse'):
-        df_final = df_final.sparse.to_dense()
     if num_added > 0:
         logger.warning(f"Some time points {num_added} are completely empty of tracklets, and are added as nan")
 

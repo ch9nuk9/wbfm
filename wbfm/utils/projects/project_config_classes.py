@@ -132,6 +132,8 @@ class ConfigFileWithProjectContext:
             abs_path = get_sequential_filename(abs_path)
         self.logger.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
         check_exists(abs_path, allow_overwrite)
+        if hasattr(data, 'sparse'):
+            data = data.sparse.to_dense()
         data.to_hdf(abs_path, key="df_with_missing")
 
         if also_save_csv:
