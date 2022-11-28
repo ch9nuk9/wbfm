@@ -8,7 +8,8 @@
 channels:
   - conda-forge
   - defaults
-  - pytorch-lts
+  - pytorch
+  - nvidia
   - bioconda
 dependencies:
   - python=3.8
