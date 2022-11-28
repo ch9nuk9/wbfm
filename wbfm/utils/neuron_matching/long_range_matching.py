@@ -343,6 +343,8 @@ def combine_tracklets_using_matching(df_tracklets, final_matching):
                 id_vector[nonzero_ind] = tracklet_id
                 df_new[neuron_name, 'raw_tracklet_id'] = id_vector
 
+    if hasattr(df_new, 'sparse'):
+        df_new = df_new.sparse.to_dense()
     return df_new
 
 
