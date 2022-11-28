@@ -31,27 +31,26 @@ dependencies:
   - natsort
   - snakemake
   - napari[all]
+  - pytorch=1.13.0
+  - torchvision=0.13.0
+  - torchaudio=0.2.2
+  - pytorch-cuda=11.6
   - pip:
     - tifffile
     - tables
     - networkx
     - tensorflow
     - sacred
-    - tables
     - ruamel.yaml
     - stardist
     - hashfs
     - tinydb
     - tinydb-serialization
-    - pytorch-lightning
     - openpyxl
     - pytest
     - ruptures
     - backports.cached_property
     - pytorch-lightning==1.5.6
-    - torch==1.10.0
-    - torchmetrics==0.6.2
-    - torchvision==0.11.1
     - wandb
     - seaborn
     - hdbscan
