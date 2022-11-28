@@ -73,7 +73,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         # Also try to remove outliers and filter
-        all_modes = ['ratio', 'dr_over_r_20', 'linear_model']
+        all_modes = ['ratio', 'linear_model']
         opt['remove_outliers'] = True
         # for mode in all_modes:
         #     make_grid_plot_using_project(channel_mode=mode, **opt)
