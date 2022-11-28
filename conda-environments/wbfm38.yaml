@@ -7,7 +7,6 @@
 
 channels:
   - conda-forge
-  - defaults
   - pytorch
   - nvidia
   - bioconda

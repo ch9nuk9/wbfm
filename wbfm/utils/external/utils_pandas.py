@@ -154,6 +154,32 @@ def to_sparse_multiindex(df: pd.DataFrame, new_columns=None):
     return df
 
 
+def ensure_dense_dataframe(df: pd.DataFrame, new_columns=None):
+    """
+    Converts a dataframe to a fully dense version
+
+    Must be done in a loop, per column (note: column index will generally be a tuple)
+
+    Parameters
+    ----------
+    df
+    new_columns
+
+    Returns
+    -------
+
+    """
+    if new_columns is None:
+        new_columns = df
+    for c in new_columns.columns:
+        try:
+            df[c] = new_columns[c].sparse.to_dense()
+        except AttributeError:
+            df[c] = new_columns[c]
+
+    return df
+
+
 def cast_int_or_nan(i: Union[list, int]):
     """Cast as integer, but do not crash if np.nan"""
     if isinstance(i, (list, pd.Series)):
