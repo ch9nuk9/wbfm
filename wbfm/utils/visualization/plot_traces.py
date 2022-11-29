@@ -382,7 +382,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
     if fig is None:
-        fig, original_axes = plt.subplots(num_rows, num_columns, dpi=250, figsize=(25, 25), sharex=True,
+        fig, original_axes = plt.subplots(num_rows, num_columns, dpi=150, figsize=(25, 25), sharex=True,
                                           sharey=share_y_axis)
         new_fig = True
     else:
