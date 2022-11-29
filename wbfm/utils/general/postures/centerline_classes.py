@@ -106,11 +106,12 @@ class WormFullVideoPosture:
 
     @property
     def has_beh_annotation(self):
-        return self.filename_beh_annotation is not None
+        return self.filename_beh_annotation is not None and os.path.exists(self.filename_beh_annotation)
 
     @property
     def has_full_kymograph(self):
-        return (self.filename_x is not None) and (self.filename_y is not None) and (self.filename_curvature is not None)
+        fnames = [self.filename_y, self.filename_x, self.filename_curvature]
+        return all([f is not None for f in fnames]) and all([os.path.exists(f) for f in fnames])
 
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
@@ -252,7 +253,7 @@ class WormFullVideoPosture:
         if behavior_subfolder is not None:
 
             # Second get the centerline-specific files
-            filename_curvature, filename_x, filename_y = None, None, None
+            filename_curvature, filename_x, filename_y, filename_beh_annotation = None, None, None, None
             for file in Path(behavior_subfolder).iterdir():
                 if not file.is_file() or file.name.startswith('.'):
                     # Skip hidden files and directories
@@ -263,9 +264,12 @@ class WormFullVideoPosture:
                     filename_x = str(file)
                 elif file.name.endswith('skeleton_spline_Y_coords.csv'):
                     filename_y = str(file)
+                elif file.name.endswith('_beh_annotation.csv'):
+                    filename_beh_annotation = str(file)
             all_files = dict(filename_curvature=filename_curvature,
                              filename_x=filename_x,
-                             filename_y=filename_y)
+                             filename_y=filename_y,
+                             filename_beh_annotation=filename_beh_annotation)
 
             # Third, get the table stage position
             # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
@@ -280,17 +284,17 @@ class WormFullVideoPosture:
         else:
             all_files = dict()
 
-        # Finally, get the automatic behavior annotations
-        # Might exist even as manual annotation even if the behavior_subfolder wasn't found
-        try:
-            filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
-            opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_stable_style,
-                       beh_annotation_is_stable_style=is_stable_style))
-        except FileNotFoundError:
-            # Many projects won't have either annotation
-            project_config.logger.warning("Did not find behavioral annotations")
-            filename_beh_annotation = None
-        all_files['filename_beh_annotation'] = filename_beh_annotation
+        # Finally, get the manuel behavior annotations if automatic wasn't found
+        if all_files.get('filename_beh_annotation', None) is None:
+            try:
+                filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
+                opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_stable_style,
+                           beh_annotation_is_stable_style=is_stable_style))
+            except FileNotFoundError:
+                # Many projects won't have either annotation
+                project_config.logger.warning("Did not find behavioral annotations")
+                filename_beh_annotation = None
+            all_files['filename_beh_annotation'] = filename_beh_annotation
 
         # Even if no files found, at least save the fps
         return WormFullVideoPosture(**all_files, **opt)
