@@ -58,19 +58,19 @@ project_data_bright2 = ProjectData.load_final_project_data_from_config(fname, ve
 all_december_bright_projects = [project_data_bright1, project_data_bright2]
 
 ##
-fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright6-2022_07_12/project_config.yaml"
-project_data1_C = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright7-2022_06_30/project_config.yaml"
-project_data2_C = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright8-2022_06_30/project_config.yaml"
-project_data3_C = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright9-2022_06_30/project_config.yaml"
-project_data4_C = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-all_projects_new_bright = [project_data2_C, project_data3_C, project_data4_C]
+# fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright6-2022_07_12/project_config.yaml"
+# project_data1_C = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright7-2022_06_30/project_config.yaml"
+# project_data2_C = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright8-2022_06_30/project_config.yaml"
+# project_data3_C = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/incomplete/C-NewBright9-2022_06_30/project_config.yaml"
+# project_data4_C = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# all_projects_new_bright = [project_data2_C, project_data3_C, project_data4_C]
 
 ##
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm3-2022_08_01/project_config.yaml"
@@ -100,34 +100,34 @@ project_data11_exp12 = ProjectData.load_final_project_data_from_config(fname, ve
 all_projects_exp12 = [project_data3_exp12, project_data2_exp12, project_data12_exp12, project_data1_exp12,
                       project_data6_exp12, project_data11_exp12]
 
-## Also Ulises' new 'control' 12ms exposure
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm2-2022_09_14/project_config.yaml"
-project_data2_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm3-2022_09_14/project_config.yaml"
-project_data3_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm4-2022_09_14/project_config.yaml"
-project_data4_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm5-2022_09_14/project_config.yaml"
-project_data5_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm6-2022_09_14/project_config.yaml"
-project_data6_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-all_projects_exp12_uli = [project_data2_exp12_uli, project_data3_exp12_uli, project_data4_exp12_uli,
-                          project_data5_exp12_uli, project_data6_exp12_uli]
+# ## Also Ulises' new 'control' 12ms exposure
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm2-2022_09_14/project_config.yaml"
+# project_data2_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm3-2022_09_14/project_config.yaml"
+# project_data3_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm4-2022_09_14/project_config.yaml"
+# project_data4_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm5-2022_09_14/project_config.yaml"
+# project_data5_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2156_worm6-2022_09_14/project_config.yaml"
+# project_data6_exp12_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# all_projects_exp12_uli = [project_data2_exp12_uli, project_data3_exp12_uli, project_data4_exp12_uli,
+#                           project_data5_exp12_uli, project_data6_exp12_uli]
 
 ##
-fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_24ms/C-exp24_worm7-2022_08_01/project_config.yaml"
-project_data1_24ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_24ms/C-exp24_worm8-2022_08_01/project_config.yaml"
-project_data2_24ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_24ms/C-exp24_worm9-2022_08_01/project_config.yaml"
-project_data3_24ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+# fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_24ms/C-exp24_worm7-2022_08_01/project_config.yaml"
+# project_data1_24ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_24ms/C-exp24_worm8-2022_08_01/project_config.yaml"
+# project_data2_24ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_24ms/C-exp24_worm9-2022_08_01/project_config.yaml"
+# project_data3_24ms = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
 ##
 fname = "/scratch/neurobiology/zimmer/StephanieEder/WBFM/projects/2xGCaMP_15per_6ms_w2-2022_08_26/project_config.yaml"
@@ -147,16 +147,16 @@ all_project_2gcamp_12_or_6ms = [project_data1_2gcamp_12ms, project_data2_2gcamp_
                                 project_data1_2gcamp_6ms, project_data2_2gcamp_6ms]
 
 ##
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/IL40_worm1-2022_09_14/project_config.yaml"
-project_data1_2gcamp_12ms_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/IL40_worm2-2022_09_14/project_config.yaml"
-project_data2_2gcamp_12ms_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/IL40_worm4-2022_09_14/project_config.yaml"
-project_data4_2gcamp_12ms_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-all_project_2gcamp_uli = [project_data1_2gcamp_12ms_uli, project_data2_2gcamp_12ms_uli, project_data4_2gcamp_12ms_uli]
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/IL40_worm1-2022_09_14/project_config.yaml"
+# project_data1_2gcamp_12ms_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/IL40_worm2-2022_09_14/project_config.yaml"
+# project_data2_2gcamp_12ms_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/IL40_worm4-2022_09_14/project_config.yaml"
+# project_data4_2gcamp_12ms_uli = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# all_project_2gcamp_uli = [project_data1_2gcamp_12ms_uli, project_data2_2gcamp_12ms_uli, project_data4_2gcamp_12ms_uli]
 
 ##
 # Note: some of them were rerun by me due to stopping-early bug
@@ -164,8 +164,8 @@ all_project_2gcamp_uli = [project_data1_2gcamp_12ms_uli, project_data2_2gcamp_12
 # fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2165_Gcamp7b_worm1-2022_10_14/project_config.yaml"
 # project_data1_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2165_Gcamp7b_worm3-2022_10_14/project_config.yaml"
-project_data3_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2165_Gcamp7b_worm3-2022_10_14/project_config.yaml"
+# project_data3_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
 # fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2165_Gcamp7b_worm4-2022_10_14/project_config.yaml"
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/gcamp7b/ZIM2165_Gcamp7b_worm4-2022_10_14/project_config.yaml"
@@ -175,67 +175,76 @@ project_data4_gcamp7b = ProjectData.load_final_project_data_from_config(fname, v
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/gcamp7b/ZIM2165_Gcamp7b_worm5-2022_10_14/project_config.yaml"
 project_data5_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2165_Gcamp7b_worm6-2022_10_14/project_config.yaml"
-project_data6_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2165_Gcamp7b_worm6-2022_10_14/project_config.yaml"
+# project_data6_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
 # fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2165_Gcamp7b_worm7-2022_10_14/project_config.yaml"
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/gcamp7b/ZIM2165_Gcamp7b_worm7-2022_10_14/project_config.yaml"
 project_data7_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2165_Gcamp7b_worm8-2022_10_14/project_config.yaml"
-project_data8_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2165_Gcamp7b_worm8-2022_10_14/project_config.yaml"
+# project_data8_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
 # fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2165_Gcamp7b_worm9-2022_10_14/project_config.yaml"
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/gcamp7b/ZIM2165_Gcamp7b_worm9-2022_10_14/project_config.yaml"
 project_data9_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
-all_projects_gcamp7b = [project_data3_gcamp7b, project_data4_gcamp7b, project_data5_gcamp7b,
-                        project_data6_gcamp7b, project_data7_gcamp7b, project_data8_gcamp7b, project_data9_gcamp7b]
+# all_projects_gcamp7b = [project_data3_gcamp7b, project_data4_gcamp7b, project_data5_gcamp7b,
+#                         project_data6_gcamp7b, project_data7_gcamp7b, project_data8_gcamp7b, project_data9_gcamp7b]
+all_projects_gcamp7b = [project_data4_gcamp7b, project_data5_gcamp7b,
+                        project_data7_gcamp7b, project_data9_gcamp7b]
 
 ##
-base_folder = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects"
-fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm1_immobilised-2022_10_14/project_config.yaml")
-project_data1_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+# base_folder = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects"
+# fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm1_immobilised-2022_10_14/project_config.yaml")
+# project_data1_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm3_immobilised2-2022_10_14/project_config.yaml")
+# project_data3_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm5_immobilised-2022_10_14/project_config.yaml")
+# project_data5_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm6_immobilised2-2022_10_14/project_config.yaml")
+# project_data6_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm7_immobilised-2022_10_14/project_config.yaml")
+# project_data7_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm8_immobilised-2022_10_14/project_config.yaml")
+# project_data8_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# all_projects_gcamp7b_imm = [project_data1_gcamp7b_imm, project_data3_gcamp7b_imm, project_data5_gcamp7b_imm,
+#                             project_data6_gcamp7b_imm, project_data7_gcamp7b_imm, project_data8_gcamp7b_imm]
 
-fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm3_immobilised2-2022_10_14/project_config.yaml")
-project_data3_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm5_immobilised-2022_10_14/project_config.yaml")
-project_data5_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm6_immobilised2-2022_10_14/project_config.yaml")
-project_data6_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm7_immobilised-2022_10_14/project_config.yaml")
-project_data7_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = os.path.join(base_folder, "ZIM2165_Gcamp7b_worm8_immobilised-2022_10_14/project_config.yaml")
-project_data8_gcamp7b_imm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-all_projects_gcamp7b_imm = [project_data1_gcamp7b_imm, project_data3_gcamp7b_imm, project_data5_gcamp7b_imm,
-                            project_data6_gcamp7b_imm, project_data7_gcamp7b_imm, project_data8_gcamp7b_imm]
-
-
-##
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2319_worm1-2022_10_14"
-project_data1_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2319_worm2-2022_10_14"
-project_data2_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2319_worm3-2022_10_14"
-project_data3_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-all_projects_dim_gfp = [project_data1_gfp_dim, project_data2_gfp_dim, project_data3_gfp_dim]
 
 ##
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer"
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2319_worm1-2022_10_14"
+# project_data1_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2319_worm2-2022_10_14"
+# project_data2_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/older_projects/ZIM2319_worm3-2022_10_14"
+# project_data3_gfp_dim = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+#
+# all_projects_dim_gfp = [project_data1_gfp_dim, project_data2_gfp_dim, project_data3_gfp_dim]
+
+##
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b"
 all_projects_spacer = load_all_projects_in_folder(foldername)
 
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_round2"
+all_projects_spacer_round2 = load_all_projects_in_folder(foldername)
+
 ##
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_2per_agar"
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_2per_agar"
 all_projects_spacer_2per = load_all_projects_in_folder(foldername)
 
 ##
 foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_on_food"
 all_projects_spacer_food = load_all_projects_in_folder(foldername)
+
+##
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_2per_round2"
+all_projects_spacer_2per_day2 = load_all_projects_in_folder(foldername)
