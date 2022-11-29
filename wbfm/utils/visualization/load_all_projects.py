@@ -237,14 +237,16 @@ all_projects_spacer = load_all_projects_in_folder(foldername)
 foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_round2"
 all_projects_spacer_round2 = load_all_projects_in_folder(foldername)
 
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_round3"
+all_projects_spacer_round3 = load_all_projects_in_folder(foldername)
+
 ##
 foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_2per_agar"
 all_projects_spacer_2per = load_all_projects_in_folder(foldername)
 
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_2per_round2"
+all_projects_spacer_2per_round2 = load_all_projects_in_folder(foldername)
+
 ##
 foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_on_food"
 all_projects_spacer_food = load_all_projects_in_folder(foldername)
-
-##
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_2per_round2"
-all_projects_spacer_2per_day2 = load_all_projects_in_folder(foldername)
