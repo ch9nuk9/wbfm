@@ -32,8 +32,9 @@ dependencies:
   - snakemake
   - napari[all]
   - pytorch=1.13.0
-  - torchvision=0.13.0
-  - torchaudio=0.2.2
+  - torchvision=0.2.2
+  - torchaudio=0.13.0
+  - torchmetrics=0.10.3
   - pytorch-cuda=11.6
   - pip:
     - tifffile
