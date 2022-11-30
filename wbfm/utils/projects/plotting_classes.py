@@ -642,7 +642,9 @@ class TrackletAndSegmentationAnnotator:
         else:
             logging.warning("Tried to add tracklet, but is already added")
 
-    def remove_tracklet_from_neuron(self, tracklet_name, neuron_name):
+    def remove_tracklet_from_neuron(self, tracklet_name, neuron_name=None):
+        if neuron_name is None:
+            neuron_name = self.current_neuron
         previously_added = self.manual_global2tracklet_names[neuron_name]
         previously_removed = self.manual_global2tracklet_removals[neuron_name]
         if tracklet_name in previously_removed:
@@ -657,13 +659,13 @@ class TrackletAndSegmentationAnnotator:
             self.manual_global2tracklet_names[neuron_name].remove(tracklet_name)
             self.remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
 
-    def remove_tracklet_from_all_matches(self):
-        tracklet_name = self.current_tracklet_name
+    def remove_tracklet_from_all_matches(self, tracklet_name=None):
+        if tracklet_name is None:
+            tracklet_name = self.current_tracklet_name
         other_match = self.get_neuron_name_of_conflicting_match(tracklet_name)
         if other_match is not None:
             with self.saving_lock:
                 self.remove_tracklet_from_neuron(tracklet_name, other_match)
-            # assert not self.is_tracklet_already_matched(tracklet_name), f"Removal of {tracklet_name} from {other_match} failed"
         else:
             self.logger.debug("Already unmatched")
         return tracklet_name
@@ -754,9 +756,21 @@ class TrackletAndSegmentationAnnotator:
         self.logger.info("Saving successful! You may now quit")
 
     def split_current_tracklet(self, i_split, set_new_half_to_current=True):
-        # The current time is included in the "new half" of the tracklet
-        # The newer half is added as a new index in the df_tracklet dataframe
-        # And finally, the newer half is set as the current tracklet
+        """
+        The current time is included in the "new half" of the tracklet
+        The newer half is added as a new index in the df_tracklet dataframe
+
+        And finally, the newer half is set as the current tracklet (if set_new_half_to_current)
+
+        Parameters
+        ----------
+        i_split
+        set_new_half_to_current
+
+        Returns
+        -------
+
+        """
         if self.current_tracklet_name is None:
             print("No current tracklet!")
             return False
@@ -766,8 +780,6 @@ class TrackletAndSegmentationAnnotator:
             old_name = self.current_tracklet_name
             all_tracklets = self.df_tracklet_obj.df_tracklets_zxy
 
-            # successfully_split, all_tracklets, left_name, right_name = \
-            #     split_tracklet_within_dataframe(all_tracklets, i_split, old_name)
             if self.df_tracklet_obj.use_custom_padded_dataframe:
                 successfully_split, all_tracklets, left_name, right_name = \
                     all_tracklets.split_tracklet(i_split, old_name)
