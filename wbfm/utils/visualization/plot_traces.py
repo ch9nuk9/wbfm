@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Optional, Union, Callable
-
+import seaborn as sns
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 
@@ -727,3 +727,56 @@ class ClickableGridPlot:
 
         plt.draw()
         self.current_list_index = 1
+
+
+def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwargs=None, trace_kwargs=None):
+    """
+    Uses seaborn to make a heatmap, including clustering of the
+
+    Parameters
+    ----------
+    project_data
+    to_save
+
+    Returns
+    -------
+
+    """
+    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='dr_over_r_20')
+    if trace_kwargs is not None:
+        default_trace_kwargs.update(trace_kwargs)
+    trace_kwargs = default_trace_kwargs
+
+    default_plot_kwargs = dict(metric="correlation", cmap='PuBu', figsize=(15, 10), col_cluster=False)
+    if plot_kwargs is not None:
+        default_plot_kwargs.update(plot_kwargs)
+    plot_kwargs = default_plot_kwargs
+
+    # Calculate
+    df = project_data.calc_default_traces(**trace_kwargs)
+    if 'vmin' not in plot_kwargs:
+        plot_kwargs['vmin'] = np.nanquantile(df.values, 0.1)
+    if 'vmax' not in plot_kwargs:
+        plot_kwargs['vmax'] = np.nanquantile(df.values, 0.9)
+
+    # Plot
+    fig = sns.clustermap(df, **plot_kwargs)
+    plt.xlabel("Time")
+    plt.ylabel("Neuron name")
+
+    plot_kwargs['z_score'] = 0
+    fig_zscore = sns.clustermap(df, **plot_kwargs)
+    plt.xlabel("Time")
+    plt.ylabel("Neuron name")
+
+    # Save
+    if to_save:
+        traces_cfg = project_data.project_config.get_traces_config()
+
+        fname = 'heatmap.png'
+        fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        fig.savefig(fname)
+
+        fname = 'heatmap_zscore.png'
+        fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        fig_zscore.savefig(fname)
