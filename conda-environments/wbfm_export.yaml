@@ -1,4 +1,3 @@
-name: /scratch/neurobiology/zimmer/.conda/envs/wbfm
 channels:
   - bioconda
   - pytorch
