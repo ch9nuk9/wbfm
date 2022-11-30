@@ -106,7 +106,7 @@ def pandas_read_any_filetype(filename):
         if filename.endswith('.h5'):
             return pd.read_hdf(filename)
         elif filename.endswith('.pickle'):
-            return pd.read_pickle(filename)
+            return pickle_load_binary(filename)
         else:
             raise NotImplementedError
     else:
@@ -116,7 +116,12 @@ def pandas_read_any_filetype(filename):
 
 def pickle_load_binary(fname, verbose=0):
     with open(fname, 'rb') as f:
-        dat = pickle.load(f)
+        try:
+            dat = pickle.load(f)
+        except ValueError:
+            # Pickle saved in 3.8 has a new protocol
+            import pickle5
+            dat = pickle5.load(f)
     if verbose >= 1:
         logging.info(f"Read from pickle file: {fname}")
     return dat
