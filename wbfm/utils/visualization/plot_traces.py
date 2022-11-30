@@ -761,13 +761,13 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
     # Plot
     fig = sns.clustermap(df, **plot_kwargs)
-    plt.xlabel("Time")
-    plt.ylabel("Neuron name")
+    # plt.xlabel("Time")
+    # plt.ylabel("Neuron name")
 
     plot_kwargs['z_score'] = 0
     fig_zscore = sns.clustermap(df, **plot_kwargs)
-    plt.xlabel("Time")
-    plt.ylabel("Neuron name")
+    # plt.xlabel("Time")
+    # plt.ylabel("Neuron name")
 
     # Save
     if to_save:

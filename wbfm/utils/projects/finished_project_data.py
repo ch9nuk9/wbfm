@@ -590,7 +590,7 @@ class ProjectData:
 
         Uses the currently recommended 'best' settings:
         opt = dict(
-            channel_mode='linear_model',
+            channel_mode='ratio',
             calculation_mode='integration',
             remove_outliers=True,
             filter_mode='no_filtering'
