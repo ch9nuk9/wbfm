@@ -878,9 +878,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             if successfully_split:
                 # Remove old half, and attach new one
                 previous_tracklet_name = self.dat.tracklet_annotator.previous_tracklet_name
+                current_tracklet_name = self.dat.tracklet_annotator.current_tracklet_name
                 self.dat.tracklet_annotator.remove_tracklet_from_neuron(previous_tracklet_name)
                 self.save_current_tracklet_to_neuron(do_callback=False)
 
+                # Reselect the tracklet, because it is removed when saved by default
+                self.dat.tracklet_annotator.set_current_tracklet(current_tracklet_name)
                 self.add_layer_of_current_tracklet()
                 # post_split_dict = self.subplot_update_dict_for_tracklet_modification()
                 # which_tracklets_to_update.update(post_split_dict)
