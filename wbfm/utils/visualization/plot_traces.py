@@ -9,6 +9,7 @@ from matplotlib.colors import TwoSlopeNorm
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
+from sklearn.decomposition import PCA
 
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
@@ -227,7 +228,8 @@ def factory_correlate_trace_to_behavior_variable(project_data,
     -------
 
     """
-    valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature']
+    valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature',
+                                 'pc1']
     posture_class = project_data.worm_posture_class
     y = None
     if behavioral_correlation_shading is None:
@@ -250,6 +252,13 @@ def factory_correlate_trace_to_behavior_variable(project_data,
             y[forward_ind] = 0
     elif behavioral_correlation_shading == 'curvature':
         y = posture_class.leifer_curvature_from_kymograph
+    elif behavioral_correlation_shading == 'pc1':
+        # Note: this does not require the kymograph
+        model = PCA(n_components=1)
+        df = project_data.calc_default_traces(interpolate_nan=True, min_nonnan=0.9)
+        df -= df.mean()
+        model.fit(df.T)
+        y = model.components_
     else:
         assert behavioral_correlation_shading in valid_behavioral_shadings, \
             f"Must pass None or one of: {valid_behavioral_shadings}"
