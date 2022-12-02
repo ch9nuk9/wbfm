@@ -250,3 +250,6 @@ all_projects_spacer_2per_round2 = load_all_projects_in_folder(foldername)
 ##
 foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-23_spacer_on_food"
 all_projects_spacer_food = load_all_projects_in_folder(foldername)
+
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_on_food"
+all_projects_spacer_food_round2 = load_all_projects_in_folder(foldername)
