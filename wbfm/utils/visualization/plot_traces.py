@@ -792,3 +792,18 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
         fname = 'heatmap_zscore.png'
         fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         fig_zscore.savefig(fname)
+
+
+def make_default_summary_plots_using_config(project_cfg):
+    # Note: reloads the project data to properly read the new trace h5 files
+    project_cfg.logger.info("Making default grid plots")
+    proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
+    grid_opt = dict(channel_mode='all', calculation_mode='integration', min_nonnan=0.5)
+    make_grid_plot_using_project(proj_dat, **grid_opt)
+    # Also save a heatmap and a colored plot
+    make_heatmap_using_project(proj_dat, to_save=True)
+    # Also save a PC1-correlated grid plot
+    grid_opt['channel_mode'] = 'ratio'
+    grid_opt['filter_mode'] = 'rolling_mean'
+    grid_opt['behavioral_correlation_shading'] = 'pc1'
+    make_grid_plot_using_project(proj_dat, **grid_opt)
