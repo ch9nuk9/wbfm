@@ -67,7 +67,8 @@ def read_background(background_fname, num_frames, num_slices, preprocessing_sett
             # Note: this will do rigid rotation
             background_volume = perform_preprocessing(background_volume, preprocessing_settings, i)
             background_video_list.append(background_volume)
-    logging.info(f"Read background tiff file of shape: {background_video_list[0].shape}")
+        else:
+            logging.info(f"Read background tiff file of shape: {background_video_list[0].shape}")
     return background_video_list
 
 
