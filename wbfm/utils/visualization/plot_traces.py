@@ -258,7 +258,7 @@ def factory_correlate_trace_to_behavior_variable(project_data,
         df = project_data.calc_default_traces(interpolate_nan=True, min_nonnan=0.9)
         df -= df.mean()
         model.fit(df.T)
-        y = model.components_
+        y = np.squeeze(model.components_)
     else:
         assert behavioral_correlation_shading in valid_behavioral_shadings, \
             f"Must pass None or one of: {valid_behavioral_shadings}"
