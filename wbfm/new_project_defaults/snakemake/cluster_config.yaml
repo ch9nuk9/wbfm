@@ -4,8 +4,8 @@ __default__:
     partition: basic
     time: 04:00:00
     nodes: 1
-    cpus_per_task: 8
-    mem: 64G
+    cpus_per_task: 4
+    mem: 32G
     disk_mb: 8000
     mem_mb: 8000
     output: log_snakemake_step-%j.out
@@ -13,13 +13,13 @@ __default__:
 # Note: himem is not actually needed at the moment, but is usually more free for large jobs
 preprocessing:
     time: 18:00:00
-    cpus_per_task: 16
+    cpus_per_task: 42
 
 # Note: himem is not actually needed at the moment, but is usually more free for large jobs
 segmentation:
     time: 18:00:00
     mem: 600G
-    cpus_per_task: 32
+    cpus_per_task: 42
     partition: himem
 
 match_frame_pairs:
@@ -28,7 +28,7 @@ match_frame_pairs:
     time: 12:00:00
 
 build_frame_objects:
-    cpus_per_task: 16
+    cpus_per_task: 42
 
 postprocess_matches_to_tracklets:
     partition: gpu
