@@ -519,6 +519,10 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             single_volume_raw = uint_safe_subtraction(single_volume_raw, background)
         except ValueError:
             logging.warning(f"The background {background.shape} was not the correct shape {single_volume_raw.shape}")
+
+        except TypeError:
+            logging.warning(f"Background was incorrect type: {background}")
+        finally:
             logging.warning("Setting 'do_background_subtraction' to False")
             s.do_background_subtraction = False
 
