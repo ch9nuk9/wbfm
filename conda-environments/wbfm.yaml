@@ -58,3 +58,4 @@ dependencies:
     - hdbscan
     - psf
     - setuptools==59.8.0
+    - ppca

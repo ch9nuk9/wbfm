@@ -56,3 +56,4 @@ dependencies:
     - seaborn
     - hdbscan
     - statsmodels
+    - ppca
