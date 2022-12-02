@@ -124,6 +124,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
     plt.tight_layout()
 
     # Save final figure
+    if not savename_suffix.startswith('-'):
+        savename_suffix = f"-{savename_suffix}"
     if to_save:
         if neuron_names_to_plot is None:
             prefix = f"{channel_mode}_{calculation_mode}"
@@ -138,7 +140,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                     prefix = f"{prefix}_beh_{behavioral_correlation_shading}"
                 else:
                     prefix = f"{prefix}_beh-custom"
-            fname = f"{prefix}-grid-{savename_suffix}.png"
+            fname = f"{prefix}-grid{savename_suffix}.png"
         else:
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
         traces_cfg = project_data.project_config.get_traces_config()
@@ -752,7 +754,7 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
     """
 
-    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='dr_over_r_20')
+    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='ratio')
     if trace_kwargs is not None:
         default_trace_kwargs.update(trace_kwargs)
     trace_kwargs = default_trace_kwargs
