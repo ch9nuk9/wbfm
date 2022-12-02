@@ -2,7 +2,7 @@
 # cluster_config.yml - cluster configuration
 __default__:
     partition: basic
-    time: 18:00:00
+    time: 0-18:00:00
     nodes: 1
     cpus_per_task: 4
     mem: 32G
