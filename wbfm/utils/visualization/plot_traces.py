@@ -751,12 +751,13 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     -------
 
     """
+
     default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='dr_over_r_20')
     if trace_kwargs is not None:
         default_trace_kwargs.update(trace_kwargs)
     trace_kwargs = default_trace_kwargs
 
-    default_plot_kwargs = dict(metric="correlation", cmap='PuBu', figsize=(15, 10), col_cluster=False)
+    default_plot_kwargs = dict(metric="correlation", cmap='jet', figsize=(15, 10), col_cluster=False)
     if plot_kwargs is not None:
         default_plot_kwargs.update(plot_kwargs)
     plot_kwargs = default_plot_kwargs
@@ -764,9 +765,9 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     # Calculate
     df = project_data.calc_default_traces(**trace_kwargs).T
     if 'vmin' not in plot_kwargs:
-        plot_kwargs['vmin'] = np.nanquantile(df.values, 0.1)
+        plot_kwargs['vmin'] = 2*np.nanquantile(df.values, 0.1)
     if 'vmax' not in plot_kwargs:
-        plot_kwargs['vmax'] = np.nanquantile(df.values, 0.9)
+        plot_kwargs['vmax'] = 2*np.nanquantile(df.values, 0.95)
 
     # Plot
     fig = sns.clustermap(df, **plot_kwargs)
