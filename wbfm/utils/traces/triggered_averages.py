@@ -1,17 +1,12 @@
 import logging
 from dataclasses import dataclass
-from typing import List, Union
 
 import numpy as np
 import pandas as pd
 from backports.cached_property import cached_property
-from matplotlib import pyplot as plt
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-
-
-# from wbfm.utils.projects.finished_project_data import ProjectData
 
 
 @dataclass
@@ -271,18 +266,18 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
 
 
 
-def plot_triggered_average_from_matrix_with_histogram(triggered_avg_matrix, show_individual_lines=True):
-    triggered_avg, triggered_std, triggered_avg_counts = calc_triggered_average_stats(triggered_avg_matrix)
-
-    fig, axes = plt.subplots(nrows=2, sharex=True, dpi=100)
-
-    ax = axes[0]
-    plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual_lines)
-
-    triggered_avg_counts = np.nansum(~np.isnan(triggered_avg_matrix), axis=0)
-    x = np.arange(len(triggered_avg))
-    axes[1].bar(x, triggered_avg_counts)
-    axes[1].set_ylabel("Num contributing")
-    axes[1].set_xlabel("Time (frames)")
-
-    return axes
+# def plot_triggered_average_from_matrix_with_histogram(triggered_avg_matrix, show_individual_lines=True):
+#     triggered_avg, triggered_std, triggered_avg_counts = calc_triggered_average_stats(triggered_avg_matrix)
+#
+#     fig, axes = plt.subplots(nrows=2, sharex=True, dpi=100)
+#
+#     ax = axes[0]
+#     plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual_lines)
+#
+#     triggered_avg_counts = np.nansum(~np.isnan(triggered_avg_matrix), axis=0)
+#     x = np.arange(len(triggered_avg))
+#     axes[1].bar(x, triggered_avg_counts)
+#     axes[1].set_ylabel("Num contributing")
+#     axes[1].set_xlabel("Time (frames)")
+#
+#     return axes

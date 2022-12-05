@@ -44,6 +44,7 @@ CMD_DICT["4-alt"]="alternate/4c-extract_full_traces.py"
 CMD_DICT["4-pixel"]="visualization/4+extract_pixel_values_for_tracked_neurons.py"
 CMD_DICT["4-heat"]="visualization/4+make_heatmap.py"
 CMD_DICT["4-grid"]="visualization/4+make_summary_grid_plots.py"
+CMD_DICT["4-trigger"]="visualization/4+make_triggered_average_grid_plot.py"
 CMD_DICT["check_gpu"]="/examples/check_gpu.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
