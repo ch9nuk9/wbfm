@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ipywidgets import interact
 
-from wbfm.utils.general.postprocessing.base_DLC_utils import xy_from_dlc_dat
 from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_from_avi
 from wbfm.utils.general.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual
 from wbfm.utils.visualization.utils_plot_traces import set_big_font
@@ -54,76 +53,6 @@ def interact_box_around_track(video_fname_mcherry,
 ##
 ## Function for syncing videos and traces
 ##
-def plot_video_crop_trace(video_fname,
-                          gcamp_fname,
-                          mcherry_fname,
-                          annotation_fname,
-                          trace_fname,
-                          which_neuron,
-                          num_frames,
-                          crop_sz,
-                          which_z,
-                          which_field='gcamp',
-                          num_slices=33,
-                          alpha=1.0,
-                          flip_x=False,
-                          start_volume=0):
-    """
-    Plots in 3 panels:
-        - Tracked video or behavior
-        - Cropped data
-        - Trace
-    """
-
-    # Read in video
-    video_reader = imageio.get_reader(video_fname)
-    video_dat = []
-    for im in video_reader:
-        video_dat.append(im)
-
-    # Read in crop
-    cropped_dat = []
-    this_xy, this_prob = xy_from_dlc_dat(annotation_fname,
-                                         which_neuron=which_neuron,
-                                         num_frames=num_frames)
-    cropped_dat_mcherry = get_crop_from_ometiff_virtual(mcherry_fname,
-                                                        this_xy,
-                                                        this_prob,
-                                                        which_z,
-                                                        num_frames,
-                                                        crop_sz=crop_sz,
-                                                        num_slices=num_slices,
-                                                        alpha=alpha,
-                                                        flip_x=~flip_x,
-                                                        start_volume=start_volume,
-                                                        verbose=False)
-    cropped_dat_gcamp = get_crop_from_ometiff_virtual(gcamp_fname,
-                                                      this_xy,
-                                                      this_prob,
-                                                      which_z,
-                                                      num_frames,
-                                                      crop_sz=crop_sz,
-                                                      num_slices=num_slices,
-                                                      alpha=alpha,
-                                                      flip_x=flip_x,
-                                                      start_volume=start_volume,
-                                                      verbose=False)
-
-    # Read traces
-    trace_dat = pickle.load(open(trace_fname, 'rb'))
-    trace_dat = np.array(trace_dat[which_neuron][which_field])
-
-    # Widget for interaction
-    f = lambda t, z: \
-        plot_video_crop_trace_frame(t, z, video_dat,
-                                    cropped_dat_mcherry,
-                                    cropped_dat_gcamp,
-                                    trace_dat)
-    args = {'t': (0, num_frames - 1), 'z': (0, crop_sz[-1] - 1)}
-
-    return interact(f, **args)
-
-
 def plot_video_crop_trace_frame(t, z, video_dat,
                                 cropped_dat_mcherry,
                                 cropped_dat_gcamp,

@@ -296,7 +296,6 @@ class PreprocessingSettings:
     @property
     def camera_alignment_matrix(self):
         if self._camera_alignment_matrix is None:
-            # TODO: load from disk
             return None
         else:
             return self._camera_alignment_matrix

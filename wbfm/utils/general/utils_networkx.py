@@ -140,7 +140,7 @@ def calc_bipartite_from_candidates(all_candidate_matches, min_confidence_after_s
     # Note: bipartite matching is very sensitive to outliers
     conf_matrix = np.where(conf_matrix < min_confidence_after_sum, 0.0, conf_matrix)
 
-    # TODO: newer versions of scipy can directly maximize this
+    # newer versions of scipy can directly maximize this
     # The current form has lots of spurious 0-weight matches that need to be explicitly removed
     matches = linear_sum_assignment(-conf_matrix)
     matches = [[m0, m1] for (m0, m1) in zip(matches[0], matches[1])]
@@ -166,7 +166,6 @@ def calc_icp_matches(xyz0: np.ndarray, xyz1: np.ndarray,
     Calculates matches between lists of 3d points (which may have outliers) using ICP
 
     Currently using open3d implementation of ICP
-    TODO: does this work on a cluster?
 
     Parameters
     ----------
