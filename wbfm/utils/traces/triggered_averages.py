@@ -102,6 +102,7 @@ def plot_triggered_average_from_matrix_with_histogram(triggered_avg_matrix, show
 
 
 def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual_lines=True, min_lines=2,
+                                       color_significant_times=False,
                                        **kwargs):
     triggered_avg, triggered_std, triggered_avg_counts = calc_triggered_average_stats(triggered_avg_matrix)
     # Remove points where there are too few lines contributing
@@ -110,6 +111,8 @@ def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual
     triggered_std[to_remove] = np.nan
     xmax = pd.Series(triggered_avg).last_valid_index()
     triggered_avg = triggered_avg[:xmax]
+    raw_trace_mean = np.nanmean(triggered_avg)
+    triggered_avg -= raw_trace_mean  # No y axis is shown, so this is only for later calculation cleanup
     triggered_std = triggered_std[:xmax]
 
     # Plot
@@ -117,10 +120,19 @@ def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual
     ax.plot(triggered_avg, **kwargs)
     if show_individual_lines:
         for trace in triggered_avg_matrix:
-            ax.plot(trace[:xmax], 'black', alpha=0.2)
-    ax.fill_between(x, triggered_avg + triggered_std, triggered_avg - triggered_std, alpha=0.25)
+            ax.plot(trace[:xmax] - raw_trace_mean, 'black', alpha=0.2)
+    upper_shading = triggered_avg + triggered_std
+    lower_shading = triggered_avg - triggered_std
+    ax.fill_between(x, upper_shading, lower_shading, alpha=0.25)
     ax.set_ylabel("Activity")
-    ax.set_ylim(np.nanmin(triggered_avg- triggered_std), np.nanmax(triggered_avg+ triggered_std))
+    ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
+
+    x_significant = np.where(np.logical_or(lower_shading > 0, upper_shading < 0))[0]
+    if color_significant_times:
+        if len(x_significant) > 0:
+            ax.plot(x_significant, triggered_avg[x_significant], 'o', color='tab:orange')
+
+    return len(x_significant)
 
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
@@ -136,17 +148,22 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
 
     Parameters
     ----------
+    state: the state whose onset is calculated as the trigger
+    min_lines: the minimum number of lines that must exist for a line to be plotted
     project_data
-    t
-    y
-    ax
-    name
+    t: time vector (unused)
+    y: full trace (1d)
+    ax: matplotlib axis
+    name: neuron name
     kwargs
 
     Returns
     -------
 
     """
+    plot_kwargs = dict(show_individual_lines=True, color_significant_times=True)
+    plot_kwargs.update(kwargs)
+
     ind_preceding = 20
     worm_class = project_data.worm_posture_class
 
@@ -154,6 +171,6 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
     mat = calc_triggered_average_matrix(y, ind)
     mat = nan_points_of_state_before_point(mat, ind, ind_preceding, [state],
                                            np.array(worm_class.behavior_annotations_fluorescence_fps))
-    plot_triggered_average_from_matrix(mat, ax, show_individual_lines=True, label=name, min_lines=min_lines)
-    ax.axhline(np.nanmean(mat), c='black', ls='--')
-    ax.plot(ind_preceding, np.nanmean(mat), "r>", markersize=10)
+    plot_triggered_average_from_matrix(mat, ax, label=name, min_lines=min_lines, **kwargs)
+    ax.axhline(0, c='black', ls='--')
+    ax.plot(ind_preceding, 0, "r>", markersize=10)
