@@ -6,29 +6,6 @@ import zarr
 from wbfm.utils.projects.utils_project import safe_cd
 
 
-def napari_of_full_data(project_dir):
-    # TODO: read from config file, not project directory
-    training_dat_fname = os.path.join('4-traces', 'data_red_channel.zarr')
-    dat_exists = os.path.exists(training_dat_fname)
-    training_seg_fname = os.path.join('4-traces', 'reindexed_masks.zarr')
-    with safe_cd(project_dir):
-        if dat_exists:
-            z_dat = zarr.open_array(training_dat_fname)
-        else:
-            z_dat = None
-
-        if not os.path.exists(training_seg_fname):
-            raise FileNotFoundError(f"{training_seg_fname} must exist; run scripts/visualization/4+reindex_...")
-        z_seg = zarr.open_array(training_seg_fname)
-
-    viewer = napari.view_labels(z_seg, ndisplay=3)
-    if dat_exists:
-        viewer.view_data(z_dat)
-    viewer.show()
-
-    return viewer, z_dat, z_seg
-
-
 def dlc_to_napari_tracks(df, likelihood_thresh=0.4):
     """
     Convert a deeplabcut-style track to an array that can be visualized using:

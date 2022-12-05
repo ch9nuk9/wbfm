@@ -12,7 +12,7 @@ def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshol
     y_filt = y.rolling(window, min_periods=1, center=True).mean()
     error = np.abs(y - y_filt)
     if outlier_threshold is None:
-        # TODO: not working very well
+        logging.warning("not working very well")
         outlier_threshold = 2*error.std() + error.mean()
         if verbose >= 1:
             print(f"Calculated error threshold at {outlier_threshold}")
@@ -36,9 +36,9 @@ def remove_outliers_using_std(y: pd.Series, std_factor: float, verbose=0):
 
 def remove_outliers_large_diff(y: pd.DataFrame, outlier_threshold=None):
     raise NotImplementedError
+    logging.warning("not working very well")
     diff = y.diff()
     if outlier_threshold is None:
-        # TODO: not working very well
         outlier_threshold = 10*diff.var() + np.abs(diff.mean())
         print(f"Calculated error threshold at {outlier_threshold}")
     # Only remove the first jump frame, because often the outliers are only one frame

@@ -59,7 +59,6 @@ def test_trained_embedding_matcher(dataloader, model,
                                    trained_embedding=None, trained_labels=None,
                                    loss_fn=None):
     if loss_fn is None:
-        # TODO
         loss_fn = model.criterion
     if trained_embedding is None:
         trained_labels, trained_embedding = build_template_from_loader(dataloader, model)
@@ -74,7 +73,7 @@ def test_trained_embedding_matcher(dataloader, model,
         for i, (volume, labels) in enumerate(tqdm(dataset)):
             volume = torch.squeeze(volume.to(model.device))
             # labels = labels[0].to("cpu").numpy().astype(int)
-            # TODO: check for binary
+            # Should I check for binary
             query_embedding = model.embed(volume).astype(float)
 
             matches = calc_matches_from_positions_using_softmax(query_embedding, trained_embedding)

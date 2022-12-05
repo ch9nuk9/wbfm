@@ -160,7 +160,7 @@ all_project_2gcamp_uli = [project_data1_2gcamp_12ms_uli, project_data2_2gcamp_12
 
 ##
 # Note: some of them were rerun by me due to stopping-early bug
-# TODO: rerun
+# Needs to be rerun
 # fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2165_Gcamp7b_worm1-2022_10_14/project_config.yaml"
 # project_data1_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
