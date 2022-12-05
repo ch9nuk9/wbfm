@@ -118,7 +118,7 @@ def pickle_load_binary(fname, verbose=0):
     with open(fname, 'rb') as f:
         try:
             dat = pickle.load(f)
-        except ValueError:
+        except (ValueError, AttributeError):
             # Pickle saved in 3.8 has a new protocol
             import pickle5
             dat = pickle5.load(f)
