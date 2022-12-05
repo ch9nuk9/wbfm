@@ -114,7 +114,8 @@ class TriggeredAverageIndices:
         raw_trace_mean = np.nanmean(triggered_avg)
         triggered_avg -= raw_trace_mean  # No y axis is shown, so this is only for later calculation cleanup
         triggered_std = triggered_std[:xmax]
-        return raw_trace_mean, triggered_avg, triggered_std, xmax
+        is_valid = len(triggered_avg) > 0 and np.count_nonzero(np.isnan(triggered_avg)) > 0
+        return raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid
 
     @staticmethod
     def calc_triggered_average_stats(triggered_avg_matrix):
@@ -138,8 +139,10 @@ class TriggeredAverageIndices:
         -------
 
         """
-        raw_trace_mean, triggered_avg, triggered_std, xmax = \
+        raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
             self.prep_triggered_average_for_plotting(triggered_avg_matrix)
+        if not is_valid:
+            return []
         upper_shading = triggered_avg + triggered_std
         lower_shading = triggered_avg - triggered_std
         x_significant = np.where(np.logical_or(lower_shading > 0, upper_shading < 0))[0]
@@ -149,8 +152,10 @@ class TriggeredAverageIndices:
                                            show_individual_lines=True,
                                            color_significant_times=False,
                                            **kwargs):
-        raw_trace_mean, triggered_avg, triggered_std, xmax = \
+        raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
             self.prep_triggered_average_for_plotting(triggered_avg_matrix)
+        if not is_valid:
+            return
 
         # Plot
         x = np.arange(xmax)
