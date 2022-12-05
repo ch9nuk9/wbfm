@@ -153,7 +153,7 @@ def segment_with_stardist_2d(vol: np.ndarray,
     return segmented_masks
 
 
-def segment_with_stardist_3d(volume: np.array, model: stardist.models.StarDist3D, verbose=0) -> np.array:
+def segment_with_stardist_3d(volume: np.array, model: stardist.models.StarDist3D, verbose=0) -> np.ndarray:
     """
     Segments a 3D volume using stardists 3D-segmentation.
     For now, only one self-trained 3D model is available.

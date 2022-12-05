@@ -3,6 +3,7 @@ import os
 import threading
 
 import cv2
+from skimage.measure import regionprops
 from wbfm.utils.general.custom_errors import NoMatchesError
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_filenames import add_name_suffix
@@ -50,11 +51,13 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
     video_dat = project_dat.red_data
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
+    # For now don't worry about postprocessing the first volume
+    opt_postprocessing = segment_cfg.config['postprocessing_params']  # Most options are 2d-only
     # Do first volume outside the parallelization loop to initialize keras and zarr
     masks_zarr = _do_first_volume3d(frame_list, mask_fname, num_frames,
                                     sd_model, verbose, video_dat, all_bounding_boxes, continue_from_frame)
     # Main function
-    segmentation_options = {'masks_zarr': masks_zarr,
+    segmentation_options = {'masks_zarr': masks_zarr, 'opt_postprocessing': opt_postprocessing,
                             'all_bounding_boxes': all_bounding_boxes,
                             'sd_model': sd_model, 'verbose': verbose}
 
@@ -133,7 +136,7 @@ def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
-    opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
+    opt_postprocessing = segment_cfg.config['postprocessing_params']
     if verbose > 1:
         print("Postprocessing settings: ")
         print(opt_postprocessing)
@@ -302,7 +305,7 @@ def _create_or_continue_zarr(output_fname, num_frames, num_slices, x_sz, y_sz, m
     return masks_zarr
 
 
-def segment_and_save3d(i, i_volume, masks_zarr,
+def segment_and_save3d(i, i_volume, masks_zarr, opt_postprocessing,
                        all_bounding_boxes,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
     """
@@ -327,11 +330,15 @@ def segment_and_save3d(i, i_volume, masks_zarr,
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
     from segmentation.util.utils_model import segment_with_stardist_3d
     if keras_lock is None:
-        final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+        segmented_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     else:
         with keras_lock:  # Keras is not thread-safe in the end
-            final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+            segmented_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
 
+    final_masks = perform_post_processing_3d(segmented_masks,
+                                             volume,
+                                             **opt_postprocessing,
+                                             verbose=verbose - 1)
     save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr)
 
 
@@ -382,7 +389,44 @@ def save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volu
     metadata[i_volume] = meta_df
 
 
-def perform_post_processing_2d(mask_array: np.ndarray, img_volume: np.ndarray, border_width_to_remove, to_remove_border=True,
+def perform_post_processing_3d(mask_array: np.ndarray, img_volume: np.ndarray, to_remove_dim_slices=False,
+                               max_number_of_objects=None,
+                               **kwargs) -> np.ndarray:
+    """
+    Post processes volumes in 3d. Similar to perform_post_processing_2d, but much simpler
+        Note: the function signature is designed to be similar, thus unused args are fine
+
+    Currently, only entirely removing dim objects is supported, based on keeping the brightest num_to_keep
+
+    Parameters
+    ----------
+    mask_array
+    img_volume
+    to_remove_dim_slices
+    kwargs
+
+    Returns
+    -------
+
+    """
+    if to_remove_dim_slices and max_number_of_objects is not None:
+        props = regionprops(mask_array, intensity_image=img_volume)
+        all_intensities = np.array([p.intensity_mean for p in props])
+        if len(all_intensities) > max_number_of_objects:
+            ind_sorted = np.argsort(-all_intensities)
+            for i in ind_sorted[max_number_of_objects:]:
+                if props[i].label == 0:
+                    continue
+                # Numpy wants two lists:
+                # https://stackoverflow.com/questions/28491230/indexing-a-numpy-array-with-a-list-of-tuples
+                np_coords = list(zip(*props[i].coords))
+                mask_array[np_coords] = 0
+
+    return mask_array
+
+
+def perform_post_processing_2d(mask_array: np.ndarray, img_volume: np.ndarray, border_width_to_remove,
+                               to_remove_border=True,
                                upper_length_threshold=12, lower_length_threshold=3,
                                to_remove_dim_slices=False,
                                stitch_via_watershed=False,
@@ -390,7 +434,8 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume: np.ndarray, b
                                already_stitched=False,
                                also_split_using_centroids=False,
                                verbose=0,
-                               DEBUG=False):
+                               DEBUG=False,
+                               **kwargs):
     """
     Performs some post-processing steps including: Splitting long neurons, removing short neurons and
     removing too large areas
