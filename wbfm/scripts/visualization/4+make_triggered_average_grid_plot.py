@@ -37,13 +37,15 @@ def main(_config, _run):
     all_triggers = dict(reversal=1, forward=0)
 
     # All triggers
-    trace_opt = dict(channel_mode='ratio', calculation_mode='integration', to_save=False,
-                     color_using_behavior=False, share_y_axis=False, min_nonnan=0.8)
+    trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
     df = proj_dat.calc_default_traces(**trace_opt)
     trigger_opt = dict(min_lines=5, ind_preceding=20, state=None, trace_len=df.shape[0])
     min_significant = 20
     ind_class = proj_dat.worm_posture_class.calc_triggered_average_indices(**trigger_opt)
     triggered_averages_class = FullDatasetTriggeredAverages(df, ind_class, min_points_for_significance=min_significant)
+
+    trace_and_plot_opt = dict(to_save=False, color_using_behavior=False, share_y_axis=False)
+    trace_and_plot_opt.update(trace_opt)
 
     for name, state in all_triggers.items():
         # Change option within class
@@ -51,22 +53,24 @@ def main(_config, _run):
 
         # First, general gridplot
         func = triggered_averages_class.ax_plot_func_for_grid_plot
-        make_grid_plot_using_project(proj_dat, **trace_opt, ax_plot_func=func)
+        make_grid_plot_using_project(proj_dat, **trace_and_plot_opt, ax_plot_func=func)
 
         fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average.png", prepend_subfolder=True)
         plt.savefig(fname)
 
         # Second, gridplot with "significant" points marked
         func = triggered_averages_class.ax_plot_func_for_grid_plot
-        make_grid_plot_using_project(proj_dat, **trace_opt, ax_plot_func=func)
+        make_grid_plot_using_project(proj_dat, **trace_and_plot_opt, ax_plot_func=func)
 
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png", prepend_subfolder=True)
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
+                                              prepend_subfolder=True)
         plt.savefig(fname)
 
         # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
         subset_neurons = triggered_averages_class.which_neurons_are_significant()
         func = triggered_averages_class.ax_plot_func_for_grid_plot
-        make_grid_plot_using_project(proj_dat, **trace_opt, ax_plot_func=func, neuron_names_to_plot=subset_neurons)
+        make_grid_plot_using_project(proj_dat, **trace_and_plot_opt, ax_plot_func=func,
+                                     neuron_names_to_plot=subset_neurons)
 
         fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
         plt.savefig(fname)
