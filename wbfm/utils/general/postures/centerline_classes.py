@@ -18,8 +18,7 @@ from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
-from wbfm.utils.traces.triggered_averages import plot_triggered_average_from_matrix_with_histogram, \
-    TriggeredAverageIndices
+from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -147,10 +146,10 @@ class WormFullVideoPosture:
                                             trace_len=trace_len, **kwargs)
         return ind_class
 
-    def plot_triggered_average(self, state, trace):
-        ind_class = self.calc_triggered_average_indices(state=state, trace_len=len(trace))
-        mat = ind_class.calc_triggered_average_matrix(trace)
-        plot_triggered_average_from_matrix_with_histogram(mat)
+    # def plot_triggered_average(self, state, trace):
+    #     ind_class = self.calc_triggered_average_indices(state=state, trace_len=len(trace))
+    #     mat = ind_class.calc_triggered_average_matrix(trace)
+    #     plot_triggered_average_from_matrix_with_histogram(mat)
 
     def calc_psuedo_roaming_state(self, thresh=80, only_onset=False, onset_blur_sigma=5):
         """
