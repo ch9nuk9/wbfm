@@ -104,16 +104,8 @@ def plot_triggered_average_from_matrix_with_histogram(triggered_avg_matrix, show
 def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual_lines=True, min_lines=2,
                                        color_significant_times=False,
                                        **kwargs):
-    triggered_avg, triggered_std, triggered_avg_counts = calc_triggered_average_stats(triggered_avg_matrix)
-    # Remove points where there are too few lines contributing
-    to_remove = triggered_avg_counts < min_lines
-    triggered_avg[to_remove] = np.nan
-    triggered_std[to_remove] = np.nan
-    xmax = pd.Series(triggered_avg).last_valid_index()
-    triggered_avg = triggered_avg[:xmax]
-    raw_trace_mean = np.nanmean(triggered_avg)
-    triggered_avg -= raw_trace_mean  # No y axis is shown, so this is only for later calculation cleanup
-    triggered_std = triggered_std[:xmax]
+    raw_trace_mean, triggered_avg, triggered_std, xmax = prep_triggered_average_for_plotting(min_lines,
+                                                                                             triggered_avg_matrix)
 
     # Plot
     x = np.arange(xmax)
@@ -127,12 +119,49 @@ def plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual
     ax.set_ylabel("Activity")
     ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
 
-    x_significant = np.where(np.logical_or(lower_shading > 0, upper_shading < 0))[0]
+    x_significant = calc_significant_points_from_triggered_matrix(triggered_avg_matrix, min_lines=2)
     if color_significant_times:
         if len(x_significant) > 0:
             ax.plot(x_significant, triggered_avg[x_significant], 'o', color='tab:orange')
 
     return len(x_significant)
+
+
+def prep_triggered_average_for_plotting(min_lines, triggered_avg_matrix):
+    triggered_avg, triggered_std, triggered_avg_counts = calc_triggered_average_stats(triggered_avg_matrix)
+    # Remove points where there are too few lines contributing
+    to_remove = triggered_avg_counts < min_lines
+    triggered_avg[to_remove] = np.nan
+    triggered_std[to_remove] = np.nan
+    xmax = pd.Series(triggered_avg).last_valid_index()
+    triggered_avg = triggered_avg[:xmax]
+    raw_trace_mean = np.nanmean(triggered_avg)
+    triggered_avg -= raw_trace_mean  # No y axis is shown, so this is only for later calculation cleanup
+    triggered_std = triggered_std[:xmax]
+    return raw_trace_mean, triggered_avg, triggered_std, xmax
+
+
+def calc_significant_points_from_triggered_matrix(triggered_avg_matrix, min_lines=2):
+    """
+    Calculates the time points that are (based on the std) "significantly" different from a flat line
+
+    Designed to be used to remove uninteresting traces from triggered average grid plots
+
+    Parameters
+    ----------
+    triggered_avg_matrix
+    min_lines
+
+    Returns
+    -------
+
+    """
+    raw_trace_mean, triggered_avg, triggered_std, xmax = prep_triggered_average_for_plotting(min_lines,
+                                                                                             triggered_avg_matrix)
+    upper_shading = triggered_avg + triggered_std
+    lower_shading = triggered_avg - triggered_std
+    x_significant = np.where(np.logical_or(lower_shading > 0, upper_shading < 0))[0]
+    return x_significant
 
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
