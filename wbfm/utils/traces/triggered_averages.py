@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import List, Union
 
@@ -7,6 +8,9 @@ from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+
+
 # from wbfm.utils.projects.finished_project_data import ProjectData
 
 
@@ -170,8 +174,6 @@ class TriggeredAverageIndices:
             if len(x_significant) > 0:
                 ax.plot(x_significant, triggered_avg[x_significant], 'o', color='tab:orange')
 
-        return len(x_significant)
-
 
 @dataclass
 class FullDatasetTriggeredAverages:
@@ -189,19 +191,43 @@ class FullDatasetTriggeredAverages:
     # Calculating full average
     mean_subtract_each_trace: bool = False
     min_lines: int = 2
+    min_points_for_significance: int = 5
 
     # Plotting
     show_individual_lines: bool = True
     color_significant_times: bool = True
 
+    @property
+    def neuron_names(self):
+        return get_names_from_df(self.df_traces)
+
     def triggered_average_matrix(self, name):
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
+    def which_neurons_are_significant(self, min_points_for_significance=None):
+        if min_points_for_significance is not None:
+            self.min_points_for_significance = min_points_for_significance
+        names_to_keep = []
+        for name in self.neuron_names:
+            mat = self.triggered_average_matrix(name)
+            x_significant = self.ind_class.calc_significant_points_from_triggered_matrix(mat)
+            if len(x_significant) > self.min_points_for_significance:
+                names_to_keep.append(name)
 
+        if len(names_to_keep) == 0:
+            logging.warning("Found no significant neurons, subsequent steps may not work")
 
+        return names_to_keep
 
+    def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
+        """Same as ax_plot_func_for_grid_plot, but can be used directly"""
+        plot_kwargs = dict(show_individual_lines=True, color_significant_times=True, label=name)
+        plot_kwargs.update(kwargs)
 
-
+        mat = self.ind_class.calc_triggered_average_matrix(y)
+        self.ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
+        ax.axhline(0, c='black', ls='--')
+        ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
 
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
