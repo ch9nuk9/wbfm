@@ -250,7 +250,7 @@ class UiMainWindow(object):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')
-    parser.add_argument('--project_path', default=None,
+    parser.add_argument('--project_path', '-p', default=None,
                         help='path to config file')
     parser.add_argument('--DEBUG', default=False,
                         help='')
