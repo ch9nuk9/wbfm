@@ -30,7 +30,6 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
 
     frame_pair_options = all_matches[(0, 1)].options
 
-    # TODO: move the centerlines to config files
     fname = "/project/neurobiology/zimmer/wbfm/centerline/wbfm_ulises_centerline_for_charlie/2021-03-04_16-17-30_worm3_ZIM2051-_spline_K.csv"
     fname_X = "/project/neurobiology/zimmer/wbfm/centerline/wbfm_ulises_centerline_for_charlie/2021-03-04_16-17-30_worm3_ZIM2051-_spline_X_coords.csv"
     fname_Y = "/project/neurobiology/zimmer/wbfm/centerline/wbfm_ulises_centerline_for_charlie/2021-03-04_16-17-30_worm3_ZIM2051-_spline_Y_coords.csv"
@@ -100,7 +99,7 @@ def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_m
         split_df_fname = os.path.join('3-tracking', 'all_tracklets_after_conflict_splitting.pickle')
         track_config.pickle_data_in_local_project(df_tracklets_split, relative_path=split_df_fname,
                                                   custom_writer=pd.to_pickle)
-        # TODO: update the name of this field
+        # TODO: update the name of wiggle_split_tracklets_df_fname
         updates['wiggle_split_tracklets_df_fname'] = split_df_fname
 
     # Update config file

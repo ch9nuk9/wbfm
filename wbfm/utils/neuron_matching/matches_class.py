@@ -374,7 +374,7 @@ class MatchesAsGraph(Graph):
         return name
 
     def raw_name_to_network_name(self, raw_name):
-        # TODO: only needed because I have some objects initialized with the old code
+        # May be needed because I have some objects initialized with the old code
         # if self._raw2network_names is not None:
         #     if raw_name in self._raw2network_names:
         #         return self._raw2network_names[raw_name]

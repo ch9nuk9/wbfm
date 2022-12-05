@@ -240,7 +240,7 @@ class ReferenceFrame:
 
         kp_3d_locs, neuron_locs = self.keypoint_locs, self.neuron_locs
 
-        # TODO: Requires some open3d subfunctions; may not work on a cluster
+        # Requires some open3d subfunctions; will not work on a cluster
         num_f, pc_f, _ = build_feature_tree(kp_3d_locs, which_slice=None)
         _, _, tree_neurons = build_neuron_tree(neuron_locs, to_mirror=False)
         kp2n_map = build_f2n_map(kp_3d_locs,
