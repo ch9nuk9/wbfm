@@ -33,7 +33,7 @@ class TriggeredAverageIndices:
     def binary_state(self):
         return self.behavioral_annotation == self.behavioral_state
 
-    @cached_property
+    @property
     def triggered_average_indices(self):
         """
         If ind_preceding > 0, then a very early event will lead to negative indices
