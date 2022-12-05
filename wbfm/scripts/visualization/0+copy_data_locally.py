@@ -39,7 +39,6 @@ def cfg(project_path, do_only_training_data, out_fname, copy_locally, tiff_not_z
 
     if do_only_training_data:
         # Change config to match the frames used for training (assuming contiguous)
-        # TODO: Change to training_cfg
         cfg['dataset_params']['start_volume'] = tracking_cfg['training_data_3d']['which_frames'][0]
         cfg['dataset_params']['num_frames'] = tracking_cfg['training_data_3d']['num_training_frames']
 

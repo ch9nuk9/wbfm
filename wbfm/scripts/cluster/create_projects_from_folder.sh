@@ -14,7 +14,6 @@ done
 # Actually run
 COMMAND="/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/0a-create_new_project.py"
 
-# TODO: project name should reflect the data folder
 # Loop through the parent folder, then try to get the config file within each of these parent folders
 for f in "$DATA_PATH"/*; do
     if [[ -d "$f" ]] && [[ "$f" == *"_worm"* ]]; then

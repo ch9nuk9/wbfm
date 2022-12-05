@@ -219,7 +219,7 @@ def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing
 
     preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
     num_slices = preprocessing_settings.raw_number_of_planes
-    num_frames = 50  # TODO: is this constant?
+    num_frames = 50
     if DEBUG:
         num_frames = 2
 
