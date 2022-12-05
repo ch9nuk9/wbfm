@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 from wbfm.utils.general.postprocessing.utils_metadata import regionprops_one_volume_one_channel
+from wbfm.utils.projects.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 import numpy as np
@@ -132,9 +133,8 @@ class DetectedNeurons:
     def segmentation_metadata(self):
         assert Path(self.detection_fname).exists(), f"{self.detection_fname} doesn't exist!"
         if self._segmentation_metadata is None:
-            with open(self.detection_fname, 'rb') as f:
                 # Note: dict of dataframes
-                self._segmentation_metadata = pickle.load(f)
+            self._segmentation_metadata = pickle_load_binary(self.detection_fname)
         return self._segmentation_metadata
 
     @property
