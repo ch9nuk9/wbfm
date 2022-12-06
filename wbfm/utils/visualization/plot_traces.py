@@ -334,6 +334,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   twinx_when_reusing_figure: bool = False,
                                   fig=None,
                                   sort_using_shade_value=False,
+                                  sort_without_shading=False,
                                   ax_plot_func: Optional[callable] = None):
     """
 
@@ -350,6 +351,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
     num_columns
     twinx_when_reusing_figure
     sort_using_shade_value
+    sort_without_shading
     fig
     logger
 
@@ -372,7 +374,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
         all_y = [get_data_func(name)[1] for name in neuron_names]
         all_vals = [background_shading_value_func(y, name) for y, name in zip(all_y, neuron_names)]
 
-        if sort_using_shade_value:
+        if sort_using_shade_value or sort_without_shading:
             # Sort descending
             ind = np.argsort(-np.array(all_vals))
             neuron_names = [neuron_names[i] for i in ind]
@@ -427,7 +429,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
             if color_using_behavior:
                 shade_plot_func(ax)
 
-            if background_shading_value_func is not None:
+            if background_shading_value_func is not None and not sort_without_shading:
                 color, val = colors[i], background_shading_value_func(y, neuron_name)
                 ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
                 ax.set_title(f"Shaded value (below): {val:0.2f}")

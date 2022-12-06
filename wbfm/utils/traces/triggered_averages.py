@@ -114,7 +114,7 @@ class TriggeredAverageIndices:
         raw_trace_mean = np.nanmean(triggered_avg)
         triggered_avg -= raw_trace_mean  # No y axis is shown, so this is only for later calculation cleanup
         triggered_std = triggered_std[:xmax]
-        is_valid = len(triggered_avg) > 0 and np.count_nonzero(np.isnan(triggered_avg)) > 0
+        is_valid = len(triggered_avg) > 0 and np.count_nonzero(~np.isnan(triggered_avg)) > 0
         return raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid
 
     @staticmethod
@@ -155,6 +155,7 @@ class TriggeredAverageIndices:
         raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
             self.prep_triggered_average_for_plotting(triggered_avg_matrix)
         if not is_valid:
+            logging.warning("Found invalid neuron (empty triggered average)")
             return
 
         # Plot
