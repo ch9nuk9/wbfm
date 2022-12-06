@@ -118,7 +118,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
     if df_traces is None:
         trace_options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
                          'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct,
-                         'neuron_names': neuron_names}
+                         'neuron_names': neuron_names, 'min_nonnan': min_nonnan}
         df_traces = project_data.calc_default_traces(**trace_options)
 
     # Build functions to make a single subplot
