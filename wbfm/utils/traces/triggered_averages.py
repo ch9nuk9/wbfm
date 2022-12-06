@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from backports.cached_property import cached_property
+from matplotlib import pyplot as plt
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -148,7 +149,7 @@ class TriggeredAverageIndices:
         x_significant = np.where(np.logical_or(lower_shading > 0, upper_shading < 0))[0]
         return x_significant
 
-    def plot_triggered_average_from_matrix(self, triggered_avg_matrix, ax,
+    def plot_triggered_average_from_matrix(self, triggered_avg_matrix, ax=None,
                                            show_individual_lines=True,
                                            color_significant_times=False,
                                            **kwargs):
@@ -159,17 +160,24 @@ class TriggeredAverageIndices:
             return
 
         # Plot
+        if ax is None:
+            fig, ax = plt.subplots(dpi=100)
         x = np.arange(xmax)
+        # Lines
         ax.plot(triggered_avg, **kwargs)
         if show_individual_lines:
             for trace in triggered_avg_matrix:
                 ax.plot(trace[:xmax] - raw_trace_mean, 'black', alpha=0.2)
+        # Shading
         upper_shading = triggered_avg + triggered_std
         lower_shading = triggered_avg - triggered_std
         ax.fill_between(x, upper_shading, lower_shading, alpha=0.25)
         ax.set_ylabel("Activity")
         ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
-
+        # Reference points
+        ax.axhline(0, c='black', ls='--')
+        ax.plot(self.ind_preceding, 0, "r>", markersize=10)
+        # Optional orange points
         x_significant = self.calc_significant_points_from_triggered_matrix(triggered_avg_matrix)
         if color_significant_times:
             if len(x_significant) > 0:
@@ -267,8 +275,6 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
                                                           min_lines=min_lines)
     mat = ind_class.calc_triggered_average_matrix(y)
     ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
-    ax.axhline(0, c='black', ls='--')
-    ax.plot(ind_preceding, 0, "r>", markersize=10)
 
 
 
