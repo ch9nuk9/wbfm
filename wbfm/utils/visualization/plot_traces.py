@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
+from wbfm.utils.general.custom_errors import NoNeuronsError
 
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
@@ -815,15 +816,24 @@ def make_default_summary_plots_using_config(project_cfg):
     project_cfg.logger.info("Making default grid plots")
     proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
     grid_opt = dict(channel_mode='all', calculation_mode='integration', min_nonnan=0.5)
-    make_grid_plot_using_project(proj_dat, **grid_opt)
+    try:
+        make_grid_plot_using_project(proj_dat, **grid_opt)
+    except NoNeuronsError:
+        pass
     # Also save a heatmap and a colored plot
-    make_heatmap_using_project(proj_dat, to_save=True)
+    try:
+        make_heatmap_using_project(proj_dat, to_save=True)
+    except NoNeuronsError:
+        pass
     # Also save a PC1-correlated grid plot
     grid_opt['channel_mode'] = 'ratio'
     grid_opt['filter_mode'] = 'rolling_mean'
     grid_opt['behavioral_correlation_shading'] = 'pc1'
     grid_opt['sort_using_shade_value'] = True
-    make_grid_plot_using_project(proj_dat, **grid_opt)
+    try:
+        make_grid_plot_using_project(proj_dat, **grid_opt)
+    except NoNeuronsError:
+        pass
 
 
 def make_default_triggered_average_plots(project_cfg):
