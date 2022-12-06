@@ -40,6 +40,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  bleach_correct=True,
                                  behavioral_correlation_shading=None,
                                  direct_shading_dict=None,
+                                 df_traces: pd.DataFrame=None,
                                  postprocessing_func: Optional[callable] = None,
                                  min_nonnan=None,
                                  share_y_axis=False,
@@ -49,6 +50,12 @@ def make_grid_plot_using_project(project_data: ProjectData,
     """
 
     See project_data.calculate_traces for details on the arguments, and TracePlotter for even more detail
+
+    Design of this function:
+        Build a dataframe of traces.
+            With channel_mode=all, plots for multiple dataframes
+        Build a set of functions to apply to each subplot based on the traces
+        Plot all subplots
 
     Parameters
     ----------
@@ -64,6 +71,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
     direct_shading_dict: instead of dynamic calculation using behavioral_correlation_shading, pass a value per neuron
     share_y_axis: subplot option
     min_nonnan: minimum tracking performance to include
+    df_traces: traces dataframe that replaces all trace calculation options
     postprocessing_func: Callable that must accept the output of calculate_traces, and give the same type of output
     to_save: to export png
     savename_suffix: for saving
@@ -73,6 +81,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
     -------
 
     """
+    # Evaluate possible recursion
     if channel_mode == 'all':
         all_modes = ['red', 'green']
         opt = dict(project_data=project_data,
@@ -95,6 +104,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
             make_grid_plot_using_project(channel_mode=mode, **opt)
         return
 
+    # Set up initial variables
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
     else:
@@ -104,18 +114,18 @@ def make_grid_plot_using_project(project_data: ProjectData,
             neuron_names = project_data.neuron_names
     neuron_names.sort()
 
+    # Build dataframe of all traces
+    if df_traces is None:
+        trace_options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
+                         'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct,
+                         'neuron_names': neuron_names}
+        df_traces = project_data.calc_default_traces(**trace_options)
+
     # Build functions to make a single subplot
-    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
-               'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct}
-    if postprocessing_func is None:
-        get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
-    else:
-        get_data_func = lambda neuron_name: postprocessing_func(project_data.calculate_traces(neuron_name=neuron_name,
-                                                                                              **options))
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
 
-    # Correlate to a behavioral variable
+    # Optional function: correlate to a behavioral variable or passed list
     assert direct_shading_dict is None or behavioral_correlation_shading is None, "Can't shade in both ways"
     if direct_shading_dict is None:
         background_shading_value_func = factory_correlate_trace_to_behavior_variable(project_data,
@@ -123,7 +133,11 @@ def make_grid_plot_using_project(project_data: ProjectData,
     else:
         background_shading_value_func = lambda y, name: direct_shading_dict.get(name, None)
 
-    fig, _ = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+    ##
+    # Actually make grid plot
+    ##
+    fig, _ = make_grid_plot_from_dataframe(df_traces, neuron_names,
+                                           shade_plot_func=shade_plot_func,
                                            color_using_behavior=color_using_behavior,
                                            background_shading_value_func=background_shading_value_func,
                                            logger=logger,
@@ -131,7 +145,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
     plt.suptitle(project_data.shortened_name, y=1.02, fontsize='xx-large')
     plt.tight_layout()
 
-    # Save final figure
+    # Save final figure and dataframe used to produce it
     if not savename_suffix.startswith('-'):
         savename_suffix = f"-{savename_suffix}"
     if to_save:
@@ -153,25 +167,24 @@ def make_grid_plot_using_project(project_data: ProjectData,
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
         traces_cfg = project_data.project_config.get_traces_config()
         out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-
         save_grid_plot(out_fname)
+
+        fname = Path(fname).with_suffix('.h5')
+        traces_cfg.h5_data_in_local_project(df_traces, str(fname))
 
     return fig
 
 
-def make_grid_plot_from_dataframe(df: pd.DataFrame,
-                                  project_data=None,
-                                  neuron_names_to_plot: list = None,
-                                  to_save=False,
-                                  **kwargs):
+def make_grid_plot_from_dataframe(df: pd.DataFrame, neuron_names_to_plot: list = None, **kwargs):
     """
+    See make_grid_plot_from_project for a more high-level function
+
+    Note: this function does NOT accept a project object; use make_grid_plot_from_project for that
 
     Parameters
     ----------
     df
-    project_data - Used for shading from behavioral annotations, if present
     neuron_names_to_plot
-    to_save
     kwargs - see make_grid_plot_from_callables
 
     Returns
@@ -188,15 +201,8 @@ def make_grid_plot_from_dataframe(df: pd.DataFrame,
     # Build functions to make a single subplot
     tspan = np.arange(df.shape[0])
     get_data_func = lambda neuron_name: (tspan, df[neuron_name])
-    if project_data is not None:
-        shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
-        logger = project_data.logger
-    else:
-        shade_plot_func = lambda axis: None
-        logger = None
 
-    fig, original_axes = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
-                                                       logger=logger, **kwargs)
+    fig, original_axes = make_grid_plot_from_callables(get_data_func, neuron_names, **kwargs)
 
     return fig, original_axes
 
@@ -333,7 +339,7 @@ def save_grid_plot(out_fname):
 
 def make_grid_plot_from_callables(get_data_func: callable,
                                   neuron_names: list,
-                                  shade_plot_func: callable,
+                                  shade_plot_func: callable = None,
                                   background_shading_value_func: callable = None,
                                   color_using_behavior: bool = True,
                                   share_y_axis: bool = True,
@@ -348,13 +354,13 @@ def make_grid_plot_from_callables(get_data_func: callable,
 
     Parameters
     ----------
-    color_using_behavior - boolean for actually shading
-    get_data_func - function that accepts a neuron name and returns a tuple of (t, y)
-    neuron_names - list of neurons to plot
-    shade_plot_func - function that accepts an axis object and shades the plot
-    background_shading_value_func - function to get a value to shade the background, e.g. correlation to behavior
-    color_using_behavior - whether to use the shade_plot_func
-    ax_plot_func - signature: (t, y, ax, name, **kwargs) -> None [should plot something on the given axis]
+    color_using_behavior: boolean for actually shading
+    get_data_func: function that accepts a neuron name and returns a tuple of (t, y)
+    neuron_names: list of neurons to plot
+    shade_plot_func: function that accepts an axis object and shades the plot
+    background_shading_value_func: function to get a value to shade the background, e.g. correlation to behavior
+    color_using_behavior: whether to use the shade_plot_func
+    ax_plot_func: signature: (t, y, ax, name, **kwargs) -> None [should plot something on the given axis]
     share_y_axis
     num_columns
     twinx_when_reusing_figure
