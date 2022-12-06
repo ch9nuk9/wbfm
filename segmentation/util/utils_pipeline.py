@@ -422,10 +422,15 @@ def perform_post_processing_3d(mask_array: np.ndarray, img_volume: np.ndarray, t
                 z, x, y = c[:, 0], c[:, 1], c[:, 2]
                 try:
                     mask_array[z, x, y] = 0
-                except IndexError as e:
-                    print(z, x, y)
-                    print(mask_array.shape)
-                    raise e
+                except IndexError:
+                    # The above should work, but it's giving me errors
+                    logging.debug("Initial indexing failed")
+                    try:
+                        mask_array[mask_array == props[i].label] = 0
+                    except IndexError as e:
+                        print(z, x, y)
+                        print(mask_array.shape)
+                        raise e
 
     return mask_array
 
