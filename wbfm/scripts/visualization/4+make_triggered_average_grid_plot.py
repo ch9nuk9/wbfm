@@ -44,18 +44,22 @@ def main(_config, _run):
     ind_class = proj_dat.worm_posture_class.calc_triggered_average_indices(**trigger_opt)
     triggered_averages_class = FullDatasetTriggeredAverages(df, ind_class, min_points_for_significance=min_significant)
 
-    trace_and_plot_opt = dict(to_save=False, color_using_behavior=False, share_y_axis=False)
+    trace_and_plot_opt = dict(to_save=False, color_using_behavior=False, share_y_axis=False,
+                              behavioral_correlation_shading='pc1', sort_without_shading=True)
     trace_and_plot_opt.update(trace_opt)
 
     for name, state in all_triggers.items():
         # Change option within class
         triggered_averages_class.ind_class.behavioral_state = state
 
-        # First, general gridplot
-        func = triggered_averages_class.ax_plot_func_for_grid_plot
+        # First, simple gridplot
+        func = lambda *args, **kwargs: \
+            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
+                                                                show_individual_lines=False,
+                                                                color_significant_times=False)
         make_grid_plot_using_project(proj_dat, **trace_and_plot_opt, ax_plot_func=func)
 
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average.png", prepend_subfolder=True)
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
         plt.savefig(fname)
 
         # Second, gridplot with "significant" points marked
@@ -68,7 +72,9 @@ def main(_config, _run):
 
         # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
         subset_neurons = triggered_averages_class.which_neurons_are_significant()
-        func = triggered_averages_class.ax_plot_func_for_grid_plot
+        func = lambda *args, **kwargs: \
+            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
+                                                                color_significant_times=False)
         make_grid_plot_using_project(proj_dat, **trace_and_plot_opt, ax_plot_func=func,
                                      neuron_names_to_plot=subset_neurons)
 
