@@ -4,16 +4,13 @@ main
 
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 # Experiment tracking
 import sacred
 from sacred import Experiment
-from sacred.observers import TinyDbObserver
 
 # main function
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.traces.triggered_averages import ax_plot_func_for_grid_plot, FullDatasetTriggeredAverages
-from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
+from wbfm.utils.visualization.plot_traces import make_default_triggered_average_plots
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
@@ -30,53 +27,4 @@ def cfg(project_path):
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    proj_dat = ProjectData.load_final_project_data_from_config(_config['project_path'])
-    vis_cfg = proj_dat.project_config.get_visualization_config()
-    proj_dat.verbose = 0
-
-    all_triggers = dict(reversal=1, forward=0)
-
-    # All triggers
-    trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
-    df = proj_dat.calc_default_traces(**trace_opt)
-    trigger_opt = dict(min_lines=5, ind_preceding=20, state=None, trace_len=df.shape[0])
-    min_significant = 20
-    ind_class = proj_dat.worm_posture_class.calc_triggered_average_indices(**trigger_opt)
-    triggered_averages_class = FullDatasetTriggeredAverages(df, ind_class, min_points_for_significance=min_significant)
-
-    trace_and_plot_opt = dict(to_save=False, color_using_behavior=False, share_y_axis=False,
-                              behavioral_correlation_shading='pc1', sort_without_shading=True)
-    trace_and_plot_opt.update(trace_opt)
-
-    for name, state in all_triggers.items():
-        # Change option within class
-        triggered_averages_class.ind_class.behavioral_state = state
-
-        # First, simple gridplot
-        func = lambda *args, **kwargs: \
-            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
-                                                                show_individual_lines=False,
-                                                                color_significant_times=False)
-        make_grid_plot_using_project(proj_dat, **trace_and_plot_opt, ax_plot_func=func)
-
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
-        plt.savefig(fname)
-
-        # Second, gridplot with "significant" points marked
-        func = triggered_averages_class.ax_plot_func_for_grid_plot
-        make_grid_plot_using_project(proj_dat, **trace_and_plot_opt, ax_plot_func=func)
-
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
-                                              prepend_subfolder=True)
-        plt.savefig(fname)
-
-        # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
-        subset_neurons = triggered_averages_class.which_neurons_are_significant()
-        func = lambda *args, **kwargs: \
-            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
-                                                                color_significant_times=False)
-        make_grid_plot_using_project(proj_dat, **trace_and_plot_opt, ax_plot_func=func,
-                                     neuron_names_to_plot=subset_neurons)
-
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
-        plt.savefig(fname)
+    make_default_triggered_average_plots(_config['project_path'])

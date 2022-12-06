@@ -15,12 +15,13 @@ from wbfm.utils.general.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
-from matplotlib import transforms
+from matplotlib import transforms, pyplot as plt
 from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 import matplotlib.style as mplstyle
 
@@ -810,3 +811,53 @@ def make_default_summary_plots_using_config(project_cfg):
     grid_opt['behavioral_correlation_shading'] = 'pc1'
     grid_opt['sort_using_shade_value'] = True
     make_grid_plot_using_project(proj_dat, **grid_opt)
+
+
+def make_default_triggered_average_plots(project_cfg):
+
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    vis_cfg = project_data.project_config.get_visualization_config()
+    project_data.verbose = 0
+    all_triggers = dict(reversal=1, forward=0)
+    # All triggers
+    trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
+    df = project_data.calc_default_traces(**trace_opt)
+    trigger_opt = dict(min_lines=5, ind_preceding=20, state=None, trace_len=df.shape[0])
+    min_significant = 20
+    ind_class = project_data.worm_posture_class.calc_triggered_average_indices(**trigger_opt)
+    triggered_averages_class = FullDatasetTriggeredAverages(df, ind_class, min_points_for_significance=min_significant)
+    trace_and_plot_opt = dict(to_save=False, color_using_behavior=False, share_y_axis=False,
+                              behavioral_correlation_shading='pc1', sort_without_shading=True)
+    trace_and_plot_opt.update(trace_opt)
+    for name, state in all_triggers.items():
+        # Change option within class
+        triggered_averages_class.ind_class.behavioral_state = state
+
+        # First, simple gridplot
+        func = lambda *args, **kwargs: \
+            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
+                                                                show_individual_lines=False,
+                                                                color_significant_times=False)
+        make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
+
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
+        plt.savefig(fname)
+
+        # Second, gridplot with "significant" points marked
+        func = triggered_averages_class.ax_plot_func_for_grid_plot
+        make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
+
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
+                                              prepend_subfolder=True)
+        plt.savefig(fname)
+
+        # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
+        subset_neurons = triggered_averages_class.which_neurons_are_significant()
+        func = lambda *args, **kwargs: \
+            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
+                                                                color_significant_times=False)
+        make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
+                                     neuron_names_to_plot=subset_neurons)
+
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
+        plt.savefig(fname)

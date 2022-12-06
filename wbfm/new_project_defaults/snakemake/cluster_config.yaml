@@ -12,12 +12,12 @@ __default__:
 
 # Note: himem is not actually needed at the moment, but is usually more free for large jobs
 preprocessing:
-    cpus_per_task: 42
+    cpus_per_task: 64
 
 # Note: himem is not actually needed at the moment, but is usually more free for large jobs
 segmentation:
     mem: 600G
-    cpus_per_task: 42
+    cpus_per_task: 64
     partition: himem
 
 match_frame_pairs:
@@ -30,6 +30,7 @@ build_frame_objects:
 postprocess_matches_to_tracklets:
     partition: gpu
     cpus_per_task: 1
+    time: 0-2:00:00
 
 tracking:
     partition: gpu
