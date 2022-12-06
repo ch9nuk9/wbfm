@@ -417,13 +417,13 @@ def perform_post_processing_3d(mask_array: np.ndarray, img_volume: np.ndarray, t
             for i in ind_sorted[max_number_of_objects:]:
                 if props[i].label == 0:
                     continue
-                # Numpy wants two lists:
-                # https://stackoverflow.com/questions/28491230/indexing-a-numpy-array-with-a-list-of-tuples
-                np_coords = list(zip(*props[i].coords))
+                # Numpy wants individual lists
+                c = props[i].coords
+                z, x, y = c[:, 0], c[:, 1], c[:, 2]
                 try:
-                    mask_array[np_coords] = 0
+                    mask_array[z, x, y] = 0
                 except IndexError as e:
-                    print(np_coords)
+                    print(z, x, y)
                     print(mask_array.shape)
                     raise e
 
