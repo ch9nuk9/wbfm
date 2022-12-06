@@ -113,7 +113,7 @@ class TriggeredAverageIndices:
         xmax = pd.Series(triggered_avg).last_valid_index()
         triggered_avg = triggered_avg[:xmax]
         raw_trace_mean = np.nanmean(triggered_avg)
-        triggered_avg -= raw_trace_mean  # No y axis is shown, so this is only for later calculation cleanup
+        # triggered_avg -= raw_trace_mean  # No y axis is shown, so this is only for later calculation cleanup
         triggered_std = triggered_std[:xmax]
         is_valid = len(triggered_avg) > 0 and np.count_nonzero(~np.isnan(triggered_avg)) > 0
         return raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid
@@ -146,7 +146,7 @@ class TriggeredAverageIndices:
             return []
         upper_shading = triggered_avg + triggered_std
         lower_shading = triggered_avg - triggered_std
-        x_significant = np.where(np.logical_or(lower_shading > 0, upper_shading < 0))[0]
+        x_significant = np.where(np.logical_or(lower_shading > raw_trace_mean, upper_shading < raw_trace_mean))[0]
         return x_significant
 
     def plot_triggered_average_from_matrix(self, triggered_avg_matrix, ax=None,
@@ -167,7 +167,7 @@ class TriggeredAverageIndices:
         ax.plot(triggered_avg, **kwargs)
         if show_individual_lines:
             for trace in triggered_avg_matrix:
-                ax.plot(trace[:xmax] - raw_trace_mean, 'black', alpha=0.2)
+                ax.plot(trace[:xmax], 'black', alpha=0.2)
         # Shading
         upper_shading = triggered_avg + triggered_std
         lower_shading = triggered_avg - triggered_std
@@ -175,8 +175,8 @@ class TriggeredAverageIndices:
         ax.set_ylabel("Activity")
         ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
         # Reference points
-        ax.axhline(0, c='black', ls='--')
-        ax.plot(self.ind_preceding, 0, "r>", markersize=10)
+        ax.axhline(raw_trace_mean, c='black', ls='--')
+        ax.plot(self.ind_preceding, raw_trace_mean, "r>", markersize=10)
         # Optional orange points
         x_significant = self.calc_significant_points_from_triggered_matrix(triggered_avg_matrix)
         if color_significant_times:
