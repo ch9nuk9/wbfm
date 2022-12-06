@@ -52,15 +52,22 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     Parameters
     ----------
-    project_data
-    channel_mode
-    calculation_mode
-    neuron_names_to_plot
-    filter_mode
-    color_using_behavior
-    remove_outliers
-    postprocessing_func - Callable that must accept the output of calculate_traces, and give the same type of output
-    to_save
+    project_data: full project data
+    channel_mode: trace calculation option; see calc_default_traces
+    calculation_mode: trace calculation option; see calc_default_traces
+    neuron_names_to_plot: subset of neurons to plot
+    filter_mode: trace calculation option; see calc_default_traces
+    color_using_behavior: if behavioral annotation exists, shade background for reversals and turns
+    remove_outliers: trace calculation option; see calc_default_traces
+    bleach_correct: trace calculation option; see calc_default_traces
+    behavioral_correlation_shading: correlate to a particular behavior; see factory_correlate_trace_to_behavior_variable
+    direct_shading_dict: instead of dynamic calculation using behavioral_correlation_shading, pass a value per neuron
+    share_y_axis: subplot option
+    min_nonnan: minimum tracking performance to include
+    postprocessing_func: Callable that must accept the output of calculate_traces, and give the same type of output
+    to_save: to export png
+    savename_suffix: for saving
+    kwargs: passed to make_grid_plot_from_callables
 
     Returns
     -------
@@ -75,7 +82,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         # Also try to remove outliers and filter
-        all_modes = ['ratio', 'linear_model']
+        all_modes = ['ratio']
         opt['remove_outliers'] = True
         # for mode in all_modes:
         #     make_grid_plot_using_project(channel_mode=mode, **opt)
