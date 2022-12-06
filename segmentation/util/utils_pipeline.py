@@ -411,8 +411,8 @@ def perform_post_processing_3d(mask_array: np.ndarray, img_volume: np.ndarray, t
     """
     if to_remove_dim_slices and max_number_of_objects is not None:
         props = regionprops(mask_array, intensity_image=img_volume)
-        all_intensities = np.array([p.intensity_mean for p in props])
-        if len(all_intensities) > max_number_of_objects:
+        if len(props) > max_number_of_objects:
+            all_intensities = np.array([p.intensity_mean for p in props])
             ind_sorted = np.argsort(-all_intensities)
             for i in ind_sorted[max_number_of_objects:]:
                 if props[i].label == 0:
@@ -420,7 +420,12 @@ def perform_post_processing_3d(mask_array: np.ndarray, img_volume: np.ndarray, t
                 # Numpy wants two lists:
                 # https://stackoverflow.com/questions/28491230/indexing-a-numpy-array-with-a-list-of-tuples
                 np_coords = list(zip(*props[i].coords))
-                mask_array[np_coords] = 0
+                try:
+                    mask_array[np_coords] = 0
+                except IndexError as e:
+                    print(np_coords)
+                    print(mask_array.shape)
+                    raise e
 
     return mask_array
 
