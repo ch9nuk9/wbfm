@@ -55,7 +55,7 @@ class TriggeredAverageIndices:
         # Turn into time series
         all_ind = []
         for start, end in zip(all_starts, all_ends):
-            if end - start < self.min_duration:
+            if end - start < self.min_duration or start == 0 or self.behavioral_annotation.iat[start-1] == -1:
                 continue
             ind = np.arange(start - self.ind_preceding, end)
             all_ind.append(ind)
