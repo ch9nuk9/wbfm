@@ -600,6 +600,9 @@ class MultiProjectBehaviorPlotter:
     def __getattr__(self, item):
         # Transform all unknown function calls into a loop of calls to the subobjects
         def method(*args, **kwargs):
+            print(f"Dynamically dispatching method: {item}")
+            if item == '_all_behavior_plotters':
+                return self._all_behavior_plotters
             output = {}
             for p in tqdm(self._all_behavior_plotters):
                 if not p.is_valid:
