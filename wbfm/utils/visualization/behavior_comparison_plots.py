@@ -72,7 +72,7 @@ class SpeedEncoding(NeuronEncodingBase):
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
 
-    def calc_multineuron_encoding(self, df_name, y_train=None):
+    def calc_multi_neuron_encoding(self, df_name, y_train=None):
         """Speed by default"""
         X_train = self.all_dfs[df_name]
         if y_train is None:
@@ -107,7 +107,7 @@ class SpeedEncoding(NeuronEncodingBase):
 
     def plot_multineuron_encoding(self, df_name, y_train=None, y_name="speed"):
         """Speed by default"""
-        score, model, X_train, y_train = self.calc_multineuron_encoding(df_name, y_train=y_train)
+        score, model, X_train, y_train = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
 
