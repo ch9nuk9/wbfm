@@ -32,7 +32,6 @@ class NeuronEncodingBase:
     dataframes_to_load: List[str] = field(default_factory=lambda: ['red', 'green', 'ratio', 'ratio_filt'])
 
     is_valid: bool = True
-
     df_kwargs: dict = field(default_factory=dict)
 
     @cached_property
@@ -215,11 +214,11 @@ class BehaviorPlotter(NeuronEncodingBase):
 
     def __post_init__(self):
 
-        if not self.project_data.worm_posture_class.has_full_kymograph:
+        if self.project_data.worm_posture_class.has_full_kymograph and self.project_data.has_traces():
+            self.is_valid = True
+        else:
             logging.warning("Kymograph not found, this class will not work")
             self.is_valid = False
-        else:
-            self.is_valid = True
 
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
@@ -590,10 +589,12 @@ class MultiProjectBehaviorPlotter:
     all_project_paths: list
 
     class_constructor: callable = BehaviorPlotter
+    use_threading: bool = True
+
     _all_behavior_plotters: List[NeuronEncodingBase] = None
 
     def __post_init__(self):
-        # Just initialize the behavior plotters
+        # Initialize the behavior plotters
         self._all_behavior_plotters = [self.class_constructor(p) for p in self.all_project_paths]
 
     def __getattr__(self, item):

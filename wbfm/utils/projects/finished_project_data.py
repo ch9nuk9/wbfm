@@ -1097,6 +1097,9 @@ class ProjectData:
         print(worm)
         print()
 
+    def has_traces(self):
+        return (self.red_traces is not None) and (self.green_traces is not None)
+
     def __repr__(self):
         return f"=======================================\n\
 Project data for directory:\n\
@@ -1111,8 +1114,7 @@ manual_tracking:          {self.df_manual_tracking is not None}\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
 ============Traces=====================\n\
-red_traces:               {self.red_traces is not None}\n\
-green_traces:             {self.green_traces is not None}\n"
+traces:               {self.has_traces}\n"
 
 
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
