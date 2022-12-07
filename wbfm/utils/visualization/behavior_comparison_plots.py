@@ -11,6 +11,7 @@ import sklearn.exceptions
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy import stats
+from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.linear_model import RidgeCV, LassoCV
 from sklearn.metrics import median_absolute_error
 from sklearn.model_selection import cross_validate, RepeatedKFold
@@ -65,23 +66,49 @@ class NeuronEncodingBase:
 
 @dataclass
 class SpeedEncoding(NeuronEncodingBase):
+    """Subclass for specifically encoding a 1-d behavioral variable. By default this is speed"""
+
+    cv: int = 5
 
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
 
-    def calc_encoding(self, df_name, y_train=None):
+    def calc_multineuron_encoding(self, df_name, y_train=None):
         """Speed by default"""
         X_train = self.all_dfs[df_name]
         if y_train is None:
             y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            model = RidgeCV(store_cv_values=True).fit(X_train, y_train)
-        return model, X_train, y_train
+            model = RidgeCV(cv=self.cv).fit(X_train, y_train)
+        score = model.best_score_
+        return score, model, X_train, y_train
 
-    def plot_basic_encoding(self, df_name, y_train=None, y_name="speed"):
+    def calc_single_neuron_encoding(self, df_name, y_train=None):
+        """
+        Note that this does cross validation within the cross validation to select:
+        ridge alpha (inner) and best neuron (outer)
+        """
+        X_train = self.all_dfs[df_name]
+        if y_train is None:
+            y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
+            estimator = RidgeCV(cv=self.cv)
+            # This can be parallelized, but has a pickle error on my machine
+            model = SequentialFeatureSelector(estimator=estimator,
+                                              n_features_to_select=1, direction='forward', cv=self.cv)
+            model.fit(X_train, y_train)
+        # Seems like you need to refit the model after searching
+        feature_names = get_names_from_df(self.all_dfs[df_name])
+        best_neuron = feature_names[np.where(model.get_support())[0][0]]
+        X = X_train[best_neuron].values.reshape(-1, 1)
+        score = model.estimator.fit(X, y_train).score(X, y_train)
+        return score, model, X_train, y_train, best_neuron
+
+    def plot_multineuron_encoding(self, df_name, y_train=None, y_name="speed"):
         """Speed by default"""
-        model, X_train, y_train = self.calc_encoding(df_name, y_train=y_train)
+        score, model, X_train, y_train = self.calc_multineuron_encoding(df_name, y_train=y_train)
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
 
