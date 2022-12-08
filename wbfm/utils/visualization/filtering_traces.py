@@ -69,7 +69,7 @@ def _get_y_and_vol(df_tmp, i, column_name):
 
 def _check_valid(y, background_per_pixel):
     if any(y < 0):
-        logging.warning(f"Found negative trace value; check background_per_pixel value ({background_per_pixel})")
+        logging.debug(f"Found negative trace value; check background_per_pixel value ({background_per_pixel})")
 
 
 def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_correct,
