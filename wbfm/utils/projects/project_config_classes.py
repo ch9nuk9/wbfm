@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pprint
 
+from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
@@ -132,9 +133,7 @@ class ConfigFileWithProjectContext:
             abs_path = get_sequential_filename(abs_path)
         self.logger.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
         check_exists(abs_path, allow_overwrite)
-        if hasattr(data, 'sparse'):
-            data = data.sparse.to_dense()
-        data.to_hdf(abs_path, key="df_with_missing")
+        ensure_dense_dataframe(data).to_hdf(abs_path, key="df_with_missing")
 
         if also_save_csv:
             csv_fname = Path(abs_path).with_suffix('.csv')
@@ -168,11 +167,20 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
         if val is None:
             return None
 
+        final_path = self._prepend_subfolder(prepend_subfolder, val)
+        return str(Path(final_path).resolve())
+
+    def _prepend_subfolder(self, prepend_subfolder, val):
         if prepend_subfolder:
             final_path = os.path.join(self.project_dir, self.subfolder, val)
         else:
             final_path = os.path.join(self.project_dir, val)
-        return str(Path(final_path).resolve())
+        return final_path
+
+    def h5_data_in_local_project(self, data: pd.DataFrame, relative_path: str, prepend_subfolder=False,
+                                 **kwargs):
+        path = self._prepend_subfolder(relative_path, prepend_subfolder)
+        super().h5_data_in_local_project(data, path, **kwargs)
 
 
 @dataclass

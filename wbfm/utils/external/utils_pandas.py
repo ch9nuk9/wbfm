@@ -154,6 +154,32 @@ def to_sparse_multiindex(df: pd.DataFrame, new_columns=None):
     return df
 
 
+def ensure_dense_dataframe(df: pd.DataFrame, new_columns=None):
+    """
+    Converts a dataframe to a fully dense version
+
+    Must be done in a loop, per column (note: column index will generally be a tuple)
+
+    Parameters
+    ----------
+    df
+    new_columns
+
+    Returns
+    -------
+
+    """
+    if new_columns is None:
+        new_columns = df
+    for c in new_columns.columns:
+        try:
+            df[c] = new_columns[c].sparse.to_dense()
+        except AttributeError:
+            df[c] = new_columns[c]
+
+    return df
+
+
 def cast_int_or_nan(i: Union[list, int]):
     """Cast as integer, but do not crash if np.nan"""
     if isinstance(i, (list, pd.Series)):
@@ -197,6 +223,35 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
             if not already_boolean or bool_column_or_series.iat[i]:
                 block_starts.append(i)
     return block_starts, block_ends
+
+
+def remove_tiny_state_changes(column: pd.Series, min_length, replace_with_preceding_state=True):
+    """
+    Removes very small states from an integer series, assuming they are noise. Replaces the tiny states with the
+    surrounding state index. If the before and after are not the same, chooses based on 'replace_with_preceding_state'
+
+    Parameters
+    ----------
+    column
+    min_length
+    replace_with_preceding_state
+
+    Returns
+    -------
+
+    """
+    starts, ends = get_contiguous_blocks_from_column(column)
+    new_column = column.copy()
+
+    for s, e in zip(starts, ends):
+        if e - s < min_length:
+            # Beginning and end are special
+            if e >= len(new_column) or (replace_with_preceding_state and s > 0):
+                replacement_state = column[s - 1]
+            else:
+                replacement_state = column[e]
+            new_column.iloc[s:e] = replacement_state
+    return new_column
 
 
 def get_durations_from_column(column_or_series: pd.Series, already_boolean=False) -> list:

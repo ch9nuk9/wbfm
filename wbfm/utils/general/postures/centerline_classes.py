@@ -18,8 +18,7 @@ from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
-from wbfm.utils.traces.triggered_averages import calc_triggered_average_indices, calc_triggered_average_matrix, \
-    plot_triggered_average_from_matrix_with_histogram
+from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -106,11 +105,12 @@ class WormFullVideoPosture:
 
     @property
     def has_beh_annotation(self):
-        return self.filename_beh_annotation is not None
+        return self.filename_beh_annotation is not None and os.path.exists(self.filename_beh_annotation)
 
     @property
     def has_full_kymograph(self):
-        return (self.filename_x is not None) and (self.filename_y is not None) and (self.filename_curvature is not None)
+        fnames = [self.filename_y, self.filename_x, self.filename_curvature]
+        return all([f is not None for f in fnames]) and all([os.path.exists(f) for f in fnames])
 
     def plot_pca(self):
         fig = plt.figure(figsize=(15, 15))
@@ -124,7 +124,8 @@ class WormFullVideoPosture:
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None, **kwargs):
+    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None, ind_preceding=20,
+                                       **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
 
@@ -142,15 +143,14 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_state = self.behavior_annotations_fluorescence_fps == state
-        all_ind = calc_triggered_average_indices(binary_state, min_duration, trace_len, **kwargs)
+        ind_class = TriggeredAverageIndices(self.behavior_annotations_fluorescence_fps, state, min_duration,
+                                            trace_len=trace_len, ind_preceding=ind_preceding, **kwargs)
+        return ind_class
 
-        return all_ind
-
-    def plot_triggered_average(self, state, trace):
-        ind = self.calc_triggered_average_indices(state=state, trace_len=len(trace))
-        mat = calc_triggered_average_matrix(trace, ind)
-        plot_triggered_average_from_matrix_with_histogram(mat)
+    # def plot_triggered_average(self, state, trace):
+    #     ind_class = self.calc_triggered_average_indices(state=state, trace_len=len(trace))
+    #     mat = ind_class.calc_triggered_average_matrix(trace)
+    #     plot_triggered_average_from_matrix_with_histogram(mat)
 
     def calc_psuedo_roaming_state(self, thresh=80, only_onset=False, onset_blur_sigma=5):
         """
@@ -252,7 +252,7 @@ class WormFullVideoPosture:
         if behavior_subfolder is not None:
 
             # Second get the centerline-specific files
-            filename_curvature, filename_x, filename_y = None, None, None
+            filename_curvature, filename_x, filename_y, filename_beh_annotation = None, None, None, None
             for file in Path(behavior_subfolder).iterdir():
                 if not file.is_file() or file.name.startswith('.'):
                     # Skip hidden files and directories
@@ -263,9 +263,12 @@ class WormFullVideoPosture:
                     filename_x = str(file)
                 elif file.name.endswith('skeleton_spline_Y_coords.csv'):
                     filename_y = str(file)
+                elif file.name.endswith('_beh_annotation.csv'):
+                    filename_beh_annotation = str(file)
             all_files = dict(filename_curvature=filename_curvature,
                              filename_x=filename_x,
-                             filename_y=filename_y)
+                             filename_y=filename_y,
+                             filename_beh_annotation=filename_beh_annotation)
 
             # Third, get the table stage position
             # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
@@ -280,17 +283,17 @@ class WormFullVideoPosture:
         else:
             all_files = dict()
 
-        # Finally, get the automatic behavior annotations
-        # Might exist even as manual annotation even if the behavior_subfolder wasn't found
-        try:
-            filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
-            opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_stable_style,
-                       beh_annotation_is_stable_style=is_stable_style))
-        except FileNotFoundError:
-            # Many projects won't have either annotation
-            project_config.logger.warning("Did not find behavioral annotations")
-            filename_beh_annotation = None
-        all_files['filename_beh_annotation'] = filename_beh_annotation
+        # Finally, get the manuel behavior annotations if automatic wasn't found
+        if all_files.get('filename_beh_annotation', None) is None:
+            try:
+                filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
+                opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_stable_style,
+                           beh_annotation_is_stable_style=is_stable_style))
+            except FileNotFoundError:
+                # Many projects won't have either annotation
+                project_config.logger.warning("Did not find behavioral annotations")
+                filename_beh_annotation = None
+            all_files['filename_beh_annotation'] = filename_beh_annotation
 
         # Even if no files found, at least save the fps
         return WormFullVideoPosture(**all_files, **opt)

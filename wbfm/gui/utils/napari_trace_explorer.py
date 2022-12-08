@@ -862,14 +862,30 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.time_changed_callbacks()
 
     def split_current_tracklet_keep_right(self):
+        """
+        Splits the current tracklet, updating the tracklet database.
+        Keeps the right (future) half as selected in the gui, and removes old tracklet napari layer
+        Also updates the subplot that displays all the tracklets
+
+        Only difference between this and split_current_tracklet_keep_left:
+            Additional logic for removing the unwanted half (past) from the neuron
+        """
         self.logger.debug("USER: split tracklet keep right")
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.remove_layer_of_current_tracklet()
             # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_modification()
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             if successfully_split:
+                # Remove old half, and attach new one
+                previous_tracklet_name = self.dat.tracklet_annotator.previous_tracklet_name
+                current_tracklet_name = self.dat.tracklet_annotator.current_tracklet_name
+                self.dat.tracklet_annotator.remove_tracklet_from_neuron(previous_tracklet_name)
+                self.save_current_tracklet_to_neuron(do_callback=False)
+
+                # Reselect the tracklet, because it is removed when saved by default
+                self.dat.tracklet_annotator.set_current_tracklet(current_tracklet_name)
                 self.add_layer_of_current_tracklet()
-                post_split_dict = self.subplot_update_dict_for_tracklet_modification()
+                # post_split_dict = self.subplot_update_dict_for_tracklet_modification()
                 # which_tracklets_to_update.update(post_split_dict)
                 self.tracklet_updated_psuedo_event()
         else:
@@ -883,9 +899,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t + 1, False)
             if successfully_split:
                 self.add_layer_of_current_tracklet()
-                self.tracklet_updated_psuedo_event()
                 # post_split_dict = self.subplot_update_dict_for_tracklet_modification()
                 # which_tracklets_to_update.update(post_split_dict)
+                self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
@@ -913,14 +929,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.viewer.layers.selection.add(layer)
             layer.visible = True
 
-    def save_current_tracklet_to_neuron(self):
+    def save_current_tracklet_to_neuron(self, do_callback=True):
         self.logger.debug("USER: save current tracklet to neuron")
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             tracklet_name = self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
             if tracklet_name:
                 self.remove_layer_of_current_tracklet(tracklet_name)
                 # which_tracklets_to_update = self.get_dict_for_tracklet_save(tracklet_name)
-                self.tracklet_updated_psuedo_event()
+                if do_callback:
+                    self.tracklet_updated_psuedo_event()
         else:
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 

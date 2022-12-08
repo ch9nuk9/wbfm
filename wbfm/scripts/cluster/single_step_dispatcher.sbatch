@@ -5,10 +5,10 @@
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=log_single_step-%j.out    # Standard output and error log
-#SBATCH --time=12:00:00  # A normal video should only take <3 hours, but some could be longer
+#SBATCH --time=0-12:00:00  # A normal video should only take <3 hours, but some could be longer
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=8
-#SBATCH --partition=himem
+#SBATCH --partition=basic,gpu
 
 pwd; hostname; date
 
@@ -42,6 +42,9 @@ CMD_DICT["3b"]="3b-match_tracklets_and_tracks_using_neuron_initialization.py"
 CMD_DICT["4"]="4-make_final_traces.py"
 CMD_DICT["4-alt"]="alternate/4c-extract_full_traces.py"
 CMD_DICT["4-pixel"]="visualization/4+extract_pixel_values_for_tracked_neurons.py"
+CMD_DICT["4-heat"]="visualization/4+make_heatmap.py"
+CMD_DICT["4-grid"]="visualization/4+make_summary_grid_plots.py"
+CMD_DICT["4-trigger"]="visualization/4+make_triggered_average_grid_plot.py"
 CMD_DICT["check_gpu"]="/examples/check_gpu.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"

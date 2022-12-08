@@ -589,7 +589,7 @@ class ProjectData:
 
         Uses the currently recommended 'best' settings:
         opt = dict(
-            channel_mode='linear_model',
+            channel_mode='ratio',
             calculation_mode='integration',
             remove_outliers=True,
             filter_mode='no_filtering'
@@ -639,7 +639,7 @@ class ProjectData:
             print(f"Dropped {df.shape[1] - df_drop.shape[1]} neurons with threshold {min_nonnan}/{df.shape[0]}")
 
         if df_drop.shape[1] == 0:
-            msg = f"All neurons were dropped with a threshold of {min_nonnan}; check project.num_frames."\
+            msg = f"All neurons were dropped with a threshold of {min_nonnan}/{df.shape[0]}; check project.num_frames."\
                   f"If a video has very large gaps, num_frames should be set lower. For now, returning all"
             if raise_error_on_empty:
                 raise NoNeuronsError(msg)
@@ -1092,6 +1092,9 @@ class ProjectData:
         print(worm)
         print()
 
+    def has_traces(self):
+        return (self.red_traces is not None) and (self.green_traces is not None)
+
     def __repr__(self):
         return f"=======================================\n\
 Project data for directory:\n\
@@ -1106,8 +1109,7 @@ manual_tracking:          {self.df_manual_tracking is not None}\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
 ============Traces=====================\n\
-red_traces:               {self.red_traces is not None}\n\
-green_traces:             {self.green_traces is not None}\n"
+traces:               {self.has_traces()}\n"
 
 
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
@@ -1295,7 +1297,7 @@ def load_all_projects_in_folder(folder_name, **kwargs) -> List[ProjectData]:
         if Path(folder).is_file():
             continue
         for file in Path(folder).iterdir():
-            if "project_config.yaml" in file.name:
+            if "project_config.yaml" in file.name and not file.name.startswith('.'):
                 proj = ProjectData.load_final_project_data_from_config(file, verbose=0, **kwargs)
                 all_projects.append(proj)
     return all_projects
