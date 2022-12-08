@@ -234,7 +234,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         if 'physical_units' in self.config:
             opt = self.config['physical_units']
             if 'fps' not in opt:
-                # logging.warning("Using hard coded camera fps; this depends on the exposure time")
+                logging.debug("Using hard coded camera fps; this depends on the exposure time")
                 camera_fps = 83
                 frames_per_volume = get_behavior_fluorescence_fps_conversion(self)
                 opt['fps'] = camera_fps / frames_per_volume
