@@ -700,7 +700,7 @@ class MultiProjectBehaviorPlotter:
 
         """
         all_dfs = self.get_data_for_paired_boxplot(df_final_name, df_start_name)
-        df = pd.concat(all_dfs, axis=0).reset_index(drop=True)
+        df = self.concat_multiple_datasets_long(all_dfs)
 
         paired_boxplot_from_dataframes(df.iloc[1:, :], [df_start_name, df_final_name])
         plt.title("Maximum correlation to kymograph")
@@ -720,7 +720,7 @@ class MultiProjectBehaviorPlotter:
 
         """
         dict_of_dfs = self.calc_dataset_summary_df(df_name)
-        df = self.concat_multiple_datasets_long(dict_of_dfs)
+        df = pd.concat(dict_of_dfs, axis=0).reset_index(drop=True).T
 
         paired_boxplot_from_dataframes(df)
         plt.title("Encoding of speed")
