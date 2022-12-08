@@ -75,13 +75,24 @@ class SpeedEncoding(NeuronEncodingBase):
     def calc_multi_neuron_encoding(self, df_name, y_train=None):
         """Speed by default"""
         X_train = self.all_dfs[df_name]
-        if y_train is None:
-            y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
+        trace_len = X_train.shape[0]
+        y_train = self._get_y_train(trace_len, y_train)
+
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
             model = RidgeCV(cv=self.cv).fit(X_train, y_train)
         score = model.best_score_
         return score, model, X_train, y_train
+
+    def _get_y_train(self, trace_len, y_train):
+        if y_train is None:
+            y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
+        elif isinstance(y_train, str):
+            if y_train == 'abs_speed':
+                y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
+        else:
+            raise NotImplementedError(y_train)
+        return y_train
 
     def calc_single_neuron_encoding(self, df_name, y_train=None):
         """
@@ -89,8 +100,9 @@ class SpeedEncoding(NeuronEncodingBase):
         ridge alpha (inner) and best neuron (outer)
         """
         X_train = self.all_dfs[df_name]
-        if y_train is None:
-            y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
+        trace_len = X_train.shape[0]
+        y_train = self._get_y_train(trace_len, y_train)
+
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
             estimator = RidgeCV(cv=self.cv)
@@ -723,8 +735,8 @@ class MultiProjectBehaviorPlotter:
         df = pd.concat(dict_of_dfs, axis=0).reset_index(drop=True).T
 
         paired_boxplot_from_dataframes(df)
-        plt.title("Encoding of speed")
-        plt.ylim(0, 0.8)
+        plt.title("Decoding of speed")
+        # plt.ylim(0, 0.8)
 
     def __repr__(self):
         return f"Multiproject analyzer with {len(self._all_behavior_plotters)} projects"
