@@ -5,10 +5,10 @@
 #SBATCH --ntasks=1                  # Run a single task
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=log_single_step-%j.out    # Standard output and error log
-#SBATCH --time=12:00:00  # A normal video should only take <3 hours, but some could be longer
+#SBATCH --time=0-12:00:00  # A normal video should only take <3 hours, but some could be longer
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=8
-#SBATCH --partition=himem
+#SBATCH --partition=basic,gpu
 
 pwd; hostname; date
 
