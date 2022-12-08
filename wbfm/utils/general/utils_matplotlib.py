@@ -33,7 +33,7 @@ def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: li
     if labels is not None:
         box_opt['labels'] = labels
     plt.figure(dpi=100)
-    x = df_before_and_after.index
+    x = df_before_and_after.index[:2]
     y0_vec = df_before_and_after.iloc[0, :]
     y1_vec = df_before_and_after.iloc[1, :]
     diff = y1_vec - y0_vec

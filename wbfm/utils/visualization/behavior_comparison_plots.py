@@ -111,6 +111,28 @@ class SpeedEncoding(NeuronEncodingBase):
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
 
+    def calc_dataset_summary_df(self, name: str) -> pd.DataFrame:
+        """
+        Calculates a summary number for the full dataset:
+            The linear model error for a) the best single neuron and b) the multivariate encoding
+
+        Parameters
+        ----------
+        name
+
+        Returns
+        -------
+
+        """
+
+        multi = self.calc_multi_neuron_encoding(name)[0]
+        single = self.calc_single_neuron_encoding(name)[0]
+
+        df_dict = {'best_single_neuron': single, 'multi_neuron': multi,
+                   'dataset_name': self.project_data.shortened_name}
+        df = pd.DataFrame(df_dict, index=[0])
+        return df
+
     def plot_encoding_and_weights(self, df_name, y_train=None, y_name="speed"):
         """
         Plots the fit, regression weights, and grid plot for a Lasso model
@@ -277,8 +299,13 @@ class BehaviorPlotter(NeuronEncodingBase):
         cols = ['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple']
         return cols[:len(self.all_labels)]
 
-    def calc_summary_df(self, name):
+    def calc_per_neuron_df(self, name: str) -> pd.DataFrame:
         """
+        Calculates a summary dataframe of information per neuron.
+            Rows: neuron names
+            Columns: ['median_brightness', 'var_brightness', 'body_segment_argmax', 'corr_max', 'dataset_name']
+
+            Note that dataset_name is used when this is concatenated with other dataframes
 
         Parameters
         ----------
@@ -327,8 +354,8 @@ class BehaviorPlotter(NeuronEncodingBase):
 
         """
         # Get data for both individually
-        df_start = self.calc_summary_df(start_name)
-        df_final = self.calc_summary_df(final_name)
+        df_start = self.calc_per_neuron_df(start_name)
+        df_final = self.calc_per_neuron_df(final_name)
         df = df_start.join(df_final, lsuffix=f"_{start_name}", rsuffix=f"_{final_name}")
 
         # Build additional numeric columns
@@ -359,8 +386,8 @@ class BehaviorPlotter(NeuronEncodingBase):
 
         """
         # Get data for both individually
-        df_start = self.calc_summary_df(start_name)
-        df_final = self.calc_summary_df(final_name)
+        df_start = self.calc_per_neuron_df(start_name)
+        df_final = self.calc_per_neuron_df(final_name)
 
         # Build columns and join
         df_start['source_data'] = start_name
@@ -621,12 +648,29 @@ class MultiProjectBehaviorPlotter:
         else:
             df = pd.concat(dict_of_dfs, axis=0).T
         df = df.T.reset_index().drop(columns='level_1')
-        df = df.rename(columns={'level_0': 'dataset_name'})
+        if 'dataset_name' in df:
+            df.drop('level_0', inplace=True)
+        else:
+            df = df.rename(columns={'level_0': 'dataset_name'})
         return df.T
 
-    def pairplot_multi_dataset(self, which_channel='red', include_corr=True, to_save=False):
+    def pairplot_multi_dataset(self, which_channel='red', include_corr=True,
+                               to_save=False):
+        """
+        Plots a seaborn pairplot for multiple datasets
 
-        all_dfs = self.calc_summary_df(which_channel)
+        Parameters
+        ----------
+        which_channel
+        include_corr
+        to_save
+
+        Returns
+        -------
+
+        """
+
+        all_dfs = self.calc_per_neuron_df(which_channel)
 
         df = pd.concat(all_dfs, axis=0)
         df = df.reset_index().rename(columns={'index': 'neuron_name'})
@@ -641,13 +685,49 @@ class MultiProjectBehaviorPlotter:
         #     fname = os.path.join(fname, 'gcamp6f_red_summary.png')
         #     plt.savefig(fname)
 
-    def paired_boxplot_multi_dataset(self, df_start_name='red', df_final_name='ratio'):
+    def paired_boxplot_per_neuron_multi_dataset(self, df_start_name='red', df_final_name='ratio'):
+        """
+        Designed for use with subclass: BehavioralEncoding
+            Uses per-neuron dataframes from each dataset
+
+        Parameters
+        ----------
+        df_start_name
+        df_final_name
+
+        Returns
+        -------
+
+        """
         all_dfs = self.get_data_for_paired_boxplot(df_final_name, df_start_name)
-        df = self.concat_multiple_datasets_long(all_dfs)
+        df = pd.concat(all_dfs, axis=0).reset_index(drop=True)
 
         paired_boxplot_from_dataframes(df.iloc[1:, :], [df_start_name, df_final_name])
         plt.title("Maximum correlation to kymograph")
         plt.ylim(0, 0.8)
+
+    def paired_boxplot_overall_multi_dataset(self, df_name='ratio'):
+        """
+        Designed for use with subclass: SpeedEncoding
+            Uses full-dataset dataframes from each dataset (one number per dataset)
+
+        Parameters
+        ----------
+        df_name
+
+        Returns
+        -------
+
+        """
+        dict_of_dfs = self.calc_dataset_summary_df(df_name)
+        df = self.concat_multiple_datasets_long(dict_of_dfs)
+
+        paired_boxplot_from_dataframes(df)
+        plt.title("Encoding of speed")
+        plt.ylim(0, 0.8)
+
+    def __repr__(self):
+        return f"Multiproject analyzer with {len(self._all_behavior_plotters)} projects"
 
 
 @dataclass
