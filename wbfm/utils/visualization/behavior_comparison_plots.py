@@ -75,8 +75,7 @@ class SpeedEncoding(NeuronEncodingBase):
     def calc_multi_neuron_encoding(self, df_name, y_train=None):
         """Speed by default"""
         X_train = self.all_dfs[df_name]
-        trace_len = X_train.shape[0]
-        y_train = self._get_y_train(trace_len, y_train)
+        X_train, y_train = self._get_y_train_and_remove_nans(X_train, y_train)
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
@@ -84,24 +83,33 @@ class SpeedEncoding(NeuronEncodingBase):
         score = model.best_score_
         return score, model, X_train, y_train
 
-    def _get_y_train(self, trace_len, y_train):
+    def _get_y_train_and_remove_nans(self, X_train, y_train):
+        trace_len = X_train.shape[0]
+        # Get 1d series from behavior
         if y_train is None:
             y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
         elif isinstance(y_train, str):
             if y_train == 'abs_speed':
-                y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
+                y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps[:trace_len]
+            elif y_train == 'leifer_curvature':
+                y_train = self.project_data.worm_posture_class.leifer_curvature_from_kymograph[:trace_len]
         else:
             raise NotImplementedError(y_train)
-        return y_train
+
+        # Remove nan points, if any
+        valid_ind = np.where(~np.isnan(y_train))[0]
+        X_train = X_train.iloc[valid_ind, :]
+        y_train = y_train.iloc[valid_ind]
+
+        return X_train, y_train
 
     def calc_single_neuron_encoding(self, df_name, y_train=None):
         """
         Note that this does cross validation within the cross validation to select:
-        ridge alpha (inner) and best neuron (outer)
+            ridge alpha (inner) and best neuron (outer)
         """
         X_train = self.all_dfs[df_name]
-        trace_len = X_train.shape[0]
-        y_train = self._get_y_train(trace_len, y_train)
+        X_train, y_train = self._get_y_train_and_remove_nans(X_train, y_train)
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
@@ -123,7 +131,7 @@ class SpeedEncoding(NeuronEncodingBase):
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
 
-    def calc_dataset_summary_df(self, name: str) -> pd.DataFrame:
+    def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
         """
         Calculates a summary number for the full dataset:
             The linear model error for a) the best single neuron and b) the multivariate encoding
@@ -137,8 +145,8 @@ class SpeedEncoding(NeuronEncodingBase):
 
         """
 
-        multi = self.calc_multi_neuron_encoding(name)[0]
-        single = self.calc_single_neuron_encoding(name)[0]
+        multi = self.calc_multi_neuron_encoding(name, **kwargs)[0]
+        single = self.calc_single_neuron_encoding(name, **kwargs)[0]
 
         df_dict = {'best_single_neuron': single, 'multi_neuron': multi,
                    'dataset_name': self.project_data.shortened_name}
@@ -718,7 +726,7 @@ class MultiProjectBehaviorPlotter:
         plt.title("Maximum correlation to kymograph")
         plt.ylim(0, 0.8)
 
-    def paired_boxplot_overall_multi_dataset(self, df_name='ratio'):
+    def paired_boxplot_overall_multi_dataset(self, df_name='ratio', **kwargs):
         """
         Designed for use with subclass: SpeedEncoding
             Uses full-dataset dataframes from each dataset (one number per dataset)
@@ -731,7 +739,7 @@ class MultiProjectBehaviorPlotter:
         -------
 
         """
-        dict_of_dfs = self.calc_dataset_summary_df(df_name)
+        dict_of_dfs = self.calc_dataset_summary_df(df_name, **kwargs)
         df = pd.concat(dict_of_dfs, axis=0).reset_index(drop=True).T
 
         paired_boxplot_from_dataframes(df)
