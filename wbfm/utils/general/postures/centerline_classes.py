@@ -362,7 +362,7 @@ class WormFullVideoPosture:
         return self.stage_position.iloc[self.subsample_indices, :]
 
     @cached_property
-    def worm_speed(self):
+    def worm_speed(self) -> pd.Series:
         df = self.stage_position
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
@@ -370,10 +370,10 @@ class WormFullVideoPosture:
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
 
-        return speed_mm_per_s
+        return pd.Series(speed_mm_per_s)
 
     @cached_property
-    def worm_speed_fluorescence_fps(self):
+    def worm_speed_fluorescence_fps(self) -> pd.Series:
         # Don't subset the speed directly, but go back to the positions
         df = self.stage_position_fluorescence_fps
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
@@ -382,10 +382,10 @@ class WormFullVideoPosture:
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
 
-        return speed_mm_per_s
+        return pd.Series(speed_mm_per_s)
 
     @property
-    def worm_speed_fluorescence_fps_signed(self):
+    def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
         """Just sets the speed to be negative when the behavior is annotated as reversal"""
         speed = self.worm_speed_fluorescence_fps
         rev_ind = self.behavior_annotations_fluorescence_fps == 1
@@ -395,17 +395,17 @@ class WormFullVideoPosture:
         return velocity
 
     @property
-    def worm_speed_smoothed(self):
+    def worm_speed_smoothed(self) -> pd.Series:
         window = 50
         return pd.Series(self.worm_speed).rolling(window=window, center=True).mean()
 
     @property
-    def worm_speed_smoothed_fluorescence_fps(self):
+    def worm_speed_smoothed_fluorescence_fps(self) -> pd.Series:
         window = 5
         return pd.Series(self.worm_speed_fluorescence_fps).rolling(window=window, center=True).mean()
 
     @property
-    def leifer_curvature_from_kymograph(self):
+    def leifer_curvature_from_kymograph(self) -> pd.Series:
         # Signed average over segments 10 to 90
         return self.curvature_fluorescence_fps.loc[:, 5:90].mean(axis=1)
 

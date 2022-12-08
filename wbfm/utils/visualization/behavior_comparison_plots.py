@@ -743,7 +743,10 @@ class MultiProjectBehaviorPlotter:
         df = pd.concat(dict_of_dfs, axis=0).reset_index(drop=True).T
 
         paired_boxplot_from_dataframes(df)
-        plt.title("Decoding of speed")
+        if kwargs.get('y_train', None) is not None:
+            plt.title(f"Decoding of {kwargs['y_train']}")
+        else:
+            plt.title(f"Decoding of Speed")
         # plt.ylim(0, 0.8)
 
     def __repr__(self):
