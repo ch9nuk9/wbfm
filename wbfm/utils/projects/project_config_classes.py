@@ -163,14 +163,14 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     def __post_init__(self):
         pass
 
-    def resolve_relative_path(self, val: str, prepend_subfolder=False) -> Optional[str]:
-        if val is None:
+    def resolve_relative_path(self, raw_path: str, prepend_subfolder=False) -> Optional[str]:
+        if raw_path is None:
             return None
 
-        final_path = self._prepend_subfolder(prepend_subfolder, val)
+        final_path = self._prepend_subfolder(raw_path, prepend_subfolder)
         return str(Path(final_path).resolve())
 
-    def _prepend_subfolder(self, prepend_subfolder, val):
+    def _prepend_subfolder(self, val, prepend_subfolder):
         if prepend_subfolder:
             final_path = os.path.join(self.project_dir, self.subfolder, val)
         else:
