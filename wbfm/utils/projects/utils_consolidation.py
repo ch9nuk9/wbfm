@@ -22,9 +22,9 @@ def save_consolidated_tracklets(df_new, new_neuron2tracklets, track_cfg):
                                                                            make_sequential_filename=True)
     # Update config and filepaths
     output_neuron2tracklets_fname = track_cfg.unresolve_absolute_path(output_neuron2tracklets_fname)
-    track_cfg.config['manual_correction_global2tracklet_fname'] = output_neuron2tracklets_fname
+    track_cfg.config['manual_correction_global2tracklet_fname'] = str(output_neuron2tracklets_fname)
     output_df_fname = track_cfg.unresolve_absolute_path(output_df_fname)
-    track_cfg.config['manual_correction_tracklets_df_fname'] = output_df_fname
+    track_cfg.config['manual_correction_tracklets_df_fname'] = str(output_df_fname)
     track_cfg.update_self_on_disk()
 
 
@@ -79,11 +79,12 @@ def consolidate_tracklets(df_all_tracklets, global2tracklet, neuron_names, num_t
             new_neuron2tracklets[neuron] = name_mapping[new_tracklet_name]  # List of split names
 
         consolidated_tracklets.append(df_split)
-
         if DEBUG:
             break
+
     # Get remaining, unmatched tracklets
     df_unmatched = df_all_tracklets.loc[:, unmatched_tracklet_names]
     consolidated_tracklets.append(df_unmatched)
     df_new = pd.concat(consolidated_tracklets, axis=1)
+
     return df_new, new_neuron2tracklets
