@@ -145,6 +145,7 @@ class ProjectData:
         # Manual annotations take precedence by default
         fname = tracking_cfg.config['leifer_params']['output_df_fname']
         fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=False)
+        self.logger.debug(f"Loading intermediate global tracks from {tracking_cfg}")
         self.all_used_fnames.append(fname)
 
         global_tracks = read_if_exists(fname)
@@ -169,6 +170,7 @@ class ProjectData:
         final_tracks, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                                 this_reader=read_if_exists)
         self.final_tracks_fname = fname
+        self.logger.debug(f"Loading final global tracks from {fname}")
         self.all_used_fnames.append(fname)
         return final_tracks
 
@@ -202,6 +204,7 @@ class ProjectData:
         global2tracklet, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                                    this_reader=pickle_load_binary)
         self.global2tracklet_fname = fname
+        self.logger.debug(f"Loading global2tracklet from {fname}")
         if global2tracklet is not None:
             global2tracklet = fix_global2tracklet_full_dict(self.df_all_tracklets, global2tracklet)
         return global2tracklet
@@ -217,6 +220,7 @@ class ProjectData:
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'frame_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        self.logger.debug(f"Loading raw_frames from {fname}")
         frames = pickle_load_binary(fname)
         self.all_used_fnames.append(fname)
         return frames
@@ -232,6 +236,7 @@ class ProjectData:
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'match_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        self.logger.debug(f"Loading raw_matches from {fname}")
         matches = pickle_load_binary(fname)
         self.all_used_fnames.append(fname)
         return matches
@@ -283,7 +288,7 @@ class ProjectData:
                 df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
             else:
                 self.logger.info("Found sparse matrix")
-        self.logger.debug("Finished loading tracklets")
+        self.logger.debug(f"Finished loading tracklets from {fname}")
 
         return df_all_tracklets
 
