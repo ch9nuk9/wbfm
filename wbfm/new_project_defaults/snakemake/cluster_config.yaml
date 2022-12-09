@@ -12,7 +12,9 @@ __default__:
 
 # Note: himem is not actually needed at the moment, but is usually more free for large jobs
 preprocessing:
+    mem: 600G
     cpus_per_task: 64
+    partition: himem
 
 # Note: himem is not actually needed at the moment, but is usually more free for large jobs
 segmentation:
