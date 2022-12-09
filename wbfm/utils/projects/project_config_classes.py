@@ -61,6 +61,7 @@ class ConfigFileWithProjectContext:
     def update_self_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)
         self.logger.info(f"Updating config file {fname} on disk")
+        self.logger.debug(f"Updated values: {self.config}")
         try:
             edit_config(fname, self.config)
         except PermissionError as e:
