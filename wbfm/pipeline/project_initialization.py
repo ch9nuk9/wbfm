@@ -2,6 +2,7 @@ import concurrent
 import logging
 import os
 from os import path as osp
+from pathlib import Path
 from shutil import copytree
 import numpy as np
 import tifffile
@@ -19,13 +20,22 @@ from wbfm.utils.projects.utils_project import get_project_name, safe_cd, update_
 
 
 def build_project_structure_from_config(_config: dict, logger: logging.Logger) -> None:
-    parent_folder = _config['project_dir']
-    rel_dir_name = get_project_name(_config)
+    """
+    Builds a project from passed user data, which determines:
+        The location and name of the new project
+        The raw data files it points to
 
-    # Build copied folder structure
-    abs_dir_name = osp.join(parent_folder, rel_dir_name)
-    abs_dir_name = get_sequential_filename(abs_dir_name)
-    logger.info(f"Building new project at: {abs_dir_name}")
+    By default, the folder name of the project will read the date of the original data, and include that as a prefix
+
+    Parameters
+    ----------
+    _config
+    logger
+
+    Returns
+    -------
+
+    """
 
     # If the user just passed the parent raw data folder, then convert that into green and red
     parent_data_folder = _config.get('parent_data_folder', None)
@@ -48,24 +58,32 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
         _config['red_bigtiff_fname'] = red_bigtiff_fname
         _config['green_bigtiff_fname'] = green_bigtiff_fname
 
+    # Check the number of total frames in the video, and update the parameter
+    # Note: requires correct value of num_slices
     if _config['dataset_params'].get('num_frames', None) is None:
-        # Check the number of total frames in the video, and update the parameter
-        # Note: requires correct value of num_slices
         logging.info("Detecting number of total frames in the video, may take ~30 seconds")
         full_video = Image.open(red_bigtiff_fname)
         num_2d_frames = full_video.n_frames
         num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
         _config['dataset_params']['num_frames'] = int(num_volumes)
 
+    # Build the full project name using the date the data was taken
+    basename = Path(red_bigtiff_fname).name.split('_')[0]
+    parent_folder = _config['project_dir']
+    rel_new_project_name = get_project_name(_config, basename)
+    abs_new_project_name = osp.join(parent_folder, rel_new_project_name)
+    abs_new_project_name = get_sequential_filename(abs_new_project_name)
+    logger.info(f"Building new project at: {abs_new_project_name}")
+
     # Uses the pip installed package location
     src = get_location_of_new_project_defaults()
-    copytree(src, abs_dir_name)
+    copytree(src, abs_new_project_name)
 
     # Update the copied project config with the new dest folder
-    update_project_config_path(abs_dir_name, _config)
+    update_project_config_path(abs_new_project_name, _config)
 
     # Also update the snakemake file with the project directory
-    update_snakemake_config_path(abs_dir_name)
+    update_snakemake_config_path(abs_new_project_name)
 
 
 def write_data_subset_using_config(cfg: ModularProjectConfig,
@@ -219,7 +237,7 @@ def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing
 
     preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
     num_slices = preprocessing_settings.raw_number_of_planes
-    num_frames = 50  # TODO: is this constant?
+    num_frames = 50
     if DEBUG:
         num_frames = 2
 

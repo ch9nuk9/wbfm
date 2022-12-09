@@ -24,7 +24,6 @@ from wbfm.gui.utils.file_dialog_widget import FileDialog
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.projects.utils_project_status import check_segmentation, check_tracking, \
     check_traces, check_training_final, check_training_only_tracklets
-from wbfm.utils.visualization.napari_from_config import napari_of_full_data
 from wbfm.utils.projects.finished_project_data import napari_of_training_data, ProjectData
 from backports.cached_property import cached_property
 
@@ -250,7 +249,7 @@ class UiMainWindow(object):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')
-    parser.add_argument('--project_path', default=None,
+    parser.add_argument('--project_path', '-p', default=None,
                         help='path to config file')
     parser.add_argument('--DEBUG', default=False,
                         help='')

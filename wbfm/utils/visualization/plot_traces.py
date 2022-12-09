@@ -9,17 +9,20 @@ from matplotlib.colors import TwoSlopeNorm
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
+from sklearn.decomposition import PCA
+from wbfm.utils.general.custom_errors import NoNeuronsError
 
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
-from matplotlib import transforms
+from matplotlib import transforms, pyplot as plt
 from matplotlib.ticker import NullFormatter
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 import matplotlib.style as mplstyle
 
@@ -38,6 +41,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  bleach_correct=True,
                                  behavioral_correlation_shading=None,
                                  direct_shading_dict=None,
+                                 df_traces: pd.DataFrame=None,
                                  postprocessing_func: Optional[callable] = None,
                                  min_nonnan=None,
                                  share_y_axis=False,
@@ -48,22 +52,37 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     See project_data.calculate_traces for details on the arguments, and TracePlotter for even more detail
 
+    Design of this function:
+        Build a dataframe of traces.
+            With channel_mode=all, plots for multiple dataframes
+        Build a set of functions to apply to each subplot based on the traces
+        Plot all subplots
+
     Parameters
     ----------
-    project_data
-    channel_mode
-    calculation_mode
-    neuron_names_to_plot
-    filter_mode
-    color_using_behavior
-    remove_outliers
-    postprocessing_func - Callable that must accept the output of calculate_traces, and give the same type of output
-    to_save
+    project_data: full project data
+    channel_mode: trace calculation option; see calc_default_traces
+    calculation_mode: trace calculation option; see calc_default_traces
+    neuron_names_to_plot: subset of neurons to plot
+    filter_mode: trace calculation option; see calc_default_traces
+    color_using_behavior: if behavioral annotation exists, shade background for reversals and turns
+    remove_outliers: trace calculation option; see calc_default_traces
+    bleach_correct: trace calculation option; see calc_default_traces
+    behavioral_correlation_shading: correlate to a particular behavior; see factory_correlate_trace_to_behavior_variable
+    direct_shading_dict: instead of dynamic calculation using behavioral_correlation_shading, pass a value per neuron
+    share_y_axis: subplot option
+    min_nonnan: minimum tracking performance to include
+    df_traces: traces dataframe that replaces all trace calculation options
+    postprocessing_func: Callable that must accept the output of calculate_traces, and give the same type of output
+    to_save: to export png
+    savename_suffix: for saving
+    kwargs: passed to make_grid_plot_from_callables
 
     Returns
     -------
 
     """
+    # Evaluate possible recursion
     if channel_mode == 'all':
         all_modes = ['red', 'green']
         opt = dict(project_data=project_data,
@@ -73,7 +92,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         # Also try to remove outliers and filter
-        all_modes = ['ratio', 'linear_model']
+        all_modes = ['ratio']
         opt['remove_outliers'] = True
         # for mode in all_modes:
         #     make_grid_plot_using_project(channel_mode=mode, **opt)
@@ -86,6 +105,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
             make_grid_plot_using_project(channel_mode=mode, **opt)
         return
 
+    # Set up initial variables
     if neuron_names_to_plot is not None:
         neuron_names = neuron_names_to_plot
     else:
@@ -95,18 +115,18 @@ def make_grid_plot_using_project(project_data: ProjectData,
             neuron_names = project_data.neuron_names
     neuron_names.sort()
 
+    # Build dataframe of all traces
+    if df_traces is None:
+        trace_options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
+                         'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct,
+                         'neuron_names': neuron_names, 'min_nonnan': min_nonnan}
+        df_traces = project_data.calc_default_traces(**trace_options)
+
     # Build functions to make a single subplot
-    options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
-               'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct}
-    if postprocessing_func is None:
-        get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
-    else:
-        get_data_func = lambda neuron_name: postprocessing_func(project_data.calculate_traces(neuron_name=neuron_name,
-                                                                                              **options))
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
     logger = project_data.logger
 
-    # Correlate to a behavioral variable
+    # Optional function: correlate to a behavioral variable or passed list
     assert direct_shading_dict is None or behavioral_correlation_shading is None, "Can't shade in both ways"
     if direct_shading_dict is None:
         background_shading_value_func = factory_correlate_trace_to_behavior_variable(project_data,
@@ -114,7 +134,11 @@ def make_grid_plot_using_project(project_data: ProjectData,
     else:
         background_shading_value_func = lambda y, name: direct_shading_dict.get(name, None)
 
-    fig, _ = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
+    ##
+    # Actually make grid plot
+    ##
+    fig, _ = make_grid_plot_from_dataframe(df_traces, neuron_names,
+                                           shade_plot_func=shade_plot_func,
                                            color_using_behavior=color_using_behavior,
                                            background_shading_value_func=background_shading_value_func,
                                            logger=logger,
@@ -122,7 +146,9 @@ def make_grid_plot_using_project(project_data: ProjectData,
     plt.suptitle(project_data.shortened_name, y=1.02, fontsize='xx-large')
     plt.tight_layout()
 
-    # Save final figure
+    # Save final figure and dataframe used to produce it
+    if not savename_suffix.startswith('-'):
+        savename_suffix = f"-{savename_suffix}"
     if to_save:
         if neuron_names_to_plot is None:
             prefix = f"{channel_mode}_{calculation_mode}"
@@ -137,30 +163,29 @@ def make_grid_plot_using_project(project_data: ProjectData,
                     prefix = f"{prefix}_beh_{behavioral_correlation_shading}"
                 else:
                     prefix = f"{prefix}_beh-custom"
-            fname = f"{prefix}-grid-{savename_suffix}.png"
+            fname = f"{prefix}-grid{savename_suffix}.png"
         else:
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
         traces_cfg = project_data.project_config.get_traces_config()
         out_fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-
         save_grid_plot(out_fname)
+
+        fname = Path(fname).with_suffix('.h5')
+        traces_cfg.h5_data_in_local_project(df_traces, str(fname), prepend_subfolder=True)
 
     return fig
 
 
-def make_grid_plot_from_dataframe(df: pd.DataFrame,
-                                  project_data=None,
-                                  neuron_names_to_plot: list = None,
-                                  to_save=False,
-                                  **kwargs):
+def make_grid_plot_from_dataframe(df: pd.DataFrame, neuron_names_to_plot: list = None, **kwargs):
     """
+    See make_grid_plot_from_project for a more high-level function
+
+    Note: this function does NOT accept a project object; use make_grid_plot_from_project for that
 
     Parameters
     ----------
     df
-    project_data - Used for shading from behavioral annotations, if present
     neuron_names_to_plot
-    to_save
     kwargs - see make_grid_plot_from_callables
 
     Returns
@@ -177,15 +202,8 @@ def make_grid_plot_from_dataframe(df: pd.DataFrame,
     # Build functions to make a single subplot
     tspan = np.arange(df.shape[0])
     get_data_func = lambda neuron_name: (tspan, df[neuron_name])
-    if project_data is not None:
-        shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
-        logger = project_data.logger
-    else:
-        shade_plot_func = lambda axis: None
-        logger = None
 
-    fig, original_axes = make_grid_plot_from_callables(get_data_func, neuron_names, shade_plot_func,
-                                                       logger=logger, **kwargs)
+    fig, original_axes = make_grid_plot_from_callables(get_data_func, neuron_names, **kwargs)
 
     return fig, original_axes
 
@@ -227,7 +245,8 @@ def factory_correlate_trace_to_behavior_variable(project_data,
     -------
 
     """
-    valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature']
+    valid_behavioral_shadings = ['absolute_speed', 'speed', 'positive_speed', 'negative_speed', 'curvature',
+                                 'pc1']
     posture_class = project_data.worm_posture_class
     y = None
     if behavioral_correlation_shading is None:
@@ -250,6 +269,13 @@ def factory_correlate_trace_to_behavior_variable(project_data,
             y[forward_ind] = 0
     elif behavioral_correlation_shading == 'curvature':
         y = posture_class.leifer_curvature_from_kymograph
+    elif behavioral_correlation_shading == 'pc1':
+        # Note: this does not require the kymograph
+        model = PCA(n_components=1)
+        df = project_data.calc_default_traces(interpolate_nan=True, min_nonnan=0.9)
+        df -= df.mean()
+        model.fit(df.T)
+        y = np.squeeze(model.components_)
     else:
         assert behavioral_correlation_shading in valid_behavioral_shadings, \
             f"Must pass None or one of: {valid_behavioral_shadings}"
@@ -314,7 +340,7 @@ def save_grid_plot(out_fname):
 
 def make_grid_plot_from_callables(get_data_func: callable,
                                   neuron_names: list,
-                                  shade_plot_func: callable,
+                                  shade_plot_func: callable = None,
                                   background_shading_value_func: callable = None,
                                   color_using_behavior: bool = True,
                                   share_y_axis: bool = True,
@@ -323,22 +349,24 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   twinx_when_reusing_figure: bool = False,
                                   fig=None,
                                   sort_using_shade_value=False,
+                                  sort_without_shading=False,
                                   ax_plot_func: Optional[callable] = None):
     """
 
     Parameters
     ----------
-    color_using_behavior - boolean for actually shading
-    get_data_func - function that accepts a neuron name and returns a tuple of (t, y)
-    neuron_names - list of neurons to plot
-    shade_plot_func - function that accepts an axis object and shades the plot
-    background_shading_value_func - function to get a value to shade the background, e.g. correlation to behavior
-    color_using_behavior - whether to use the shade_plot_func
-    ax_plot_func - signature: (t, y, ax, name, **kwargs) -> None [should plot something on the given axis]
+    color_using_behavior: boolean for actually shading
+    get_data_func: function that accepts a neuron name and returns a tuple of (t, y)
+    neuron_names: list of neurons to plot
+    shade_plot_func: function that accepts an axis object and shades the plot
+    background_shading_value_func: function to get a value to shade the background, e.g. correlation to behavior
+    color_using_behavior: whether to use the shade_plot_func
+    ax_plot_func: signature: (t, y, ax, name, **kwargs) -> None [should plot something on the given axis]
     share_y_axis
     num_columns
     twinx_when_reusing_figure
     sort_using_shade_value
+    sort_without_shading
     fig
     logger
 
@@ -361,7 +389,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
         all_y = [get_data_func(name)[1] for name in neuron_names]
         all_vals = [background_shading_value_func(y, name) for y, name in zip(all_y, neuron_names)]
 
-        if sort_using_shade_value:
+        if sort_using_shade_value or sort_without_shading:
             # Sort descending
             ind = np.argsort(-np.array(all_vals))
             neuron_names = [neuron_names[i] for i in ind]
@@ -416,7 +444,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
             if color_using_behavior:
                 shade_plot_func(ax)
 
-            if background_shading_value_func is not None:
+            if background_shading_value_func is not None and not sort_without_shading:
                 color, val = colors[i], background_shading_value_func(y, neuron_name)
                 ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
                 ax.set_title(f"Shaded value (below): {val:0.2f}")
@@ -742,12 +770,13 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     -------
 
     """
-    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='dr_over_r_20')
+
+    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='ratio')
     if trace_kwargs is not None:
         default_trace_kwargs.update(trace_kwargs)
     trace_kwargs = default_trace_kwargs
 
-    default_plot_kwargs = dict(metric="correlation", cmap='PuBu', figsize=(15, 10), col_cluster=False)
+    default_plot_kwargs = dict(metric="correlation", cmap='jet', figsize=(15, 10), col_cluster=False)
     if plot_kwargs is not None:
         default_plot_kwargs.update(plot_kwargs)
     plot_kwargs = default_plot_kwargs
@@ -755,9 +784,9 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     # Calculate
     df = project_data.calc_default_traces(**trace_kwargs).T
     if 'vmin' not in plot_kwargs:
-        plot_kwargs['vmin'] = np.nanquantile(df.values, 0.1)
+        plot_kwargs['vmin'] = 2*np.nanquantile(df.values, 0.1)
     if 'vmax' not in plot_kwargs:
-        plot_kwargs['vmax'] = np.nanquantile(df.values, 0.9)
+        plot_kwargs['vmax'] = 2*np.nanquantile(df.values, 0.95)
 
     # Plot
     fig = sns.clustermap(df, **plot_kwargs)
@@ -780,3 +809,78 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
         fname = 'heatmap_zscore.png'
         fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         fig_zscore.savefig(fname)
+
+
+def make_default_summary_plots_using_config(project_cfg):
+    # Note: reloads the project data to properly read the new trace h5 files
+    project_cfg.logger.info("Making default grid plots")
+    proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
+    grid_opt = dict(channel_mode='all', calculation_mode='integration', min_nonnan=0.5)
+    try:
+        make_grid_plot_using_project(proj_dat, **grid_opt)
+    except NoNeuronsError:
+        pass
+    # Also save a heatmap and a colored plot
+    try:
+        make_heatmap_using_project(proj_dat, to_save=True)
+    except NoNeuronsError:
+        pass
+    # Also save a PC1-correlated grid plot
+    grid_opt['channel_mode'] = 'ratio'
+    grid_opt['filter_mode'] = 'rolling_mean'
+    grid_opt['behavioral_correlation_shading'] = 'pc1'
+    grid_opt['sort_using_shade_value'] = True
+    try:
+        make_grid_plot_using_project(proj_dat, **grid_opt)
+    except NoNeuronsError:
+        pass
+
+
+def make_default_triggered_average_plots(project_cfg):
+
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    vis_cfg = project_data.project_config.get_visualization_config()
+    project_data.verbose = 0
+    all_triggers = dict(reversal=1, forward=0)
+    # All triggers
+    trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
+    df = project_data.calc_default_traces(**trace_opt)
+    trigger_opt = dict(min_lines=5, ind_preceding=20, state=None, trace_len=df.shape[0])
+    min_significant = 20
+    ind_class = project_data.worm_posture_class.calc_triggered_average_indices(**trigger_opt)
+    triggered_averages_class = FullDatasetTriggeredAverages(df, ind_class, min_points_for_significance=min_significant)
+    trace_and_plot_opt = dict(to_save=False, color_using_behavior=False, share_y_axis=False,
+                              behavioral_correlation_shading='pc1', sort_without_shading=True)
+    trace_and_plot_opt.update(trace_opt)
+    for name, state in all_triggers.items():
+        # Change option within class
+        triggered_averages_class.ind_class.behavioral_state = state
+
+        # First, simple gridplot
+        func = lambda *args, **kwargs: \
+            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
+                                                                show_individual_lines=False,
+                                                                color_significant_times=False)
+        make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
+
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
+        plt.savefig(fname)
+
+        # Second, gridplot with "significant" points marked
+        func = triggered_averages_class.ax_plot_func_for_grid_plot
+        make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
+
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
+                                              prepend_subfolder=True)
+        plt.savefig(fname)
+
+        # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
+        subset_neurons = triggered_averages_class.which_neurons_are_significant()
+        func = lambda *args, **kwargs: \
+            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
+                                                                color_significant_times=False)
+        make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
+                                     neuron_names_to_plot=subset_neurons)
+
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
+        plt.savefig(fname)

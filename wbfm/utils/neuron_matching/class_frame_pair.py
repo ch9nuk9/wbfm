@@ -600,7 +600,7 @@ class FramePair:
                    'allow_z_change': allow_z_change,
                    'num_candidates': num_candidates}
         affine_matches, _, affine_pushed = calc_matches_using_affine_propagation(frame0, frame1, **options)
-        # TODO: above code requires that the keypoint_locs are actually the full keypoints...
+        # Above code requires that the keypoint_locs are actually the full keypoints
         # frame0.keypoint_locs = kp0_locs
         # frame1.keypoint_locs = kp1_locs
         self.affine_matches = affine_matches
@@ -700,7 +700,7 @@ def calc_FramePair_from_Frames(frame0: ReferenceFrame, frame1: ReferenceFrame, f
     frame_pair.match_using_feature_embedding()
 
     # May not change anything, based on frame_pair_options
-    # TODO: redo the feature alignment here?
+    # Should I redo the feature alignment here?
     # frame_pair.calc_final_matches()  # Temporary, using just the feature matches above
     # frame_pair.preprocess_data()
 

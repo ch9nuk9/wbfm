@@ -6,8 +6,7 @@ The top level function for getting final traces from 3d tracks and neuron masks
 import os
 import sacred
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
-from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
+from wbfm.utils.visualization.plot_traces import make_default_summary_plots_using_config
 from sacred import Experiment
 from sacred import SETTINGS
 # main function
@@ -83,7 +82,4 @@ def main(_config, _run):
         extract_traces_using_config(project_cfg, traces_cfg, name_mode='neuron', DEBUG=DEBUG)
 
         # By default make some visualizations
-        # Note: reloads the project data to properly read the new trace h5 files
-        project_cfg.logger.info("Making default grid plots")
-        proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
-        make_grid_plot_using_project(proj_dat, channel_mode='all', calculation_mode='integration')
+        make_default_summary_plots_using_config(project_cfg)

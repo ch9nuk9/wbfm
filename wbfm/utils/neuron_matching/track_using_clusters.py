@@ -93,7 +93,7 @@ class WormTsneTracker:
     verbose: int = 1
 
     def __post_init__(self):
-        # TODO: parameter search of these options
+        # Parameters should be optimized
         self.opt_tsne = dict(n_components=2, perplexity=10, early_exaggeration=200, force_magnify_iters=500)
         self.opt_db = dict(min_cluster_size=int(0.6*self.n_volumes_per_window),
                            min_samples=int(0.1*self.n_volumes_per_window),
@@ -336,7 +336,7 @@ class WormTsneTracker:
 
         # Choose a base dataframe and rename all to that one
         # For now, combine as we go so that the matching gets the benefit of any overlaps (but is slower)
-        # TODO: for now just choosing the one with the most neurons
+        # Just choosing the one with the most neurons
         i_base = np.argmax([df.shape[1] for df in all_raw_dfs])
         df_combined = combine_and_rename_multiple_dataframes(all_raw_dfs, i_base=i_base)
 

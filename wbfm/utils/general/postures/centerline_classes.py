@@ -18,8 +18,7 @@ from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
-from wbfm.utils.traces.triggered_averages import calc_triggered_average_indices, calc_triggered_average_matrix, \
-    plot_triggered_average_from_matrix_with_histogram
+from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -125,7 +124,8 @@ class WormFullVideoPosture:
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None, **kwargs):
+    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None, ind_preceding=20,
+                                       **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
 
@@ -143,15 +143,14 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_state = self.behavior_annotations_fluorescence_fps == state
-        all_ind = calc_triggered_average_indices(binary_state, min_duration, trace_len, **kwargs)
+        ind_class = TriggeredAverageIndices(self.behavior_annotations_fluorescence_fps, state, min_duration,
+                                            trace_len=trace_len, ind_preceding=ind_preceding, **kwargs)
+        return ind_class
 
-        return all_ind
-
-    def plot_triggered_average(self, state, trace):
-        ind = self.calc_triggered_average_indices(state=state, trace_len=len(trace))
-        mat = calc_triggered_average_matrix(trace, ind)
-        plot_triggered_average_from_matrix_with_histogram(mat)
+    # def plot_triggered_average(self, state, trace):
+    #     ind_class = self.calc_triggered_average_indices(state=state, trace_len=len(trace))
+    #     mat = ind_class.calc_triggered_average_matrix(trace)
+    #     plot_triggered_average_from_matrix_with_histogram(mat)
 
     def calc_psuedo_roaming_state(self, thresh=80, only_onset=False, onset_blur_sigma=5):
         """
@@ -363,7 +362,7 @@ class WormFullVideoPosture:
         return self.stage_position.iloc[self.subsample_indices, :]
 
     @cached_property
-    def worm_speed(self):
+    def worm_speed(self) -> pd.Series:
         df = self.stage_position
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
@@ -371,10 +370,10 @@ class WormFullVideoPosture:
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
 
-        return speed_mm_per_s
+        return pd.Series(speed_mm_per_s)
 
     @cached_property
-    def worm_speed_fluorescence_fps(self):
+    def worm_speed_fluorescence_fps(self) -> pd.Series:
         # Don't subset the speed directly, but go back to the positions
         df = self.stage_position_fluorescence_fps
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
@@ -383,10 +382,10 @@ class WormFullVideoPosture:
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
 
-        return speed_mm_per_s
+        return pd.Series(speed_mm_per_s)
 
     @property
-    def worm_speed_fluorescence_fps_signed(self):
+    def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
         """Just sets the speed to be negative when the behavior is annotated as reversal"""
         speed = self.worm_speed_fluorescence_fps
         rev_ind = self.behavior_annotations_fluorescence_fps == 1
@@ -396,17 +395,17 @@ class WormFullVideoPosture:
         return velocity
 
     @property
-    def worm_speed_smoothed(self):
+    def worm_speed_smoothed(self) -> pd.Series:
         window = 50
         return pd.Series(self.worm_speed).rolling(window=window, center=True).mean()
 
     @property
-    def worm_speed_smoothed_fluorescence_fps(self):
+    def worm_speed_smoothed_fluorescence_fps(self) -> pd.Series:
         window = 5
         return pd.Series(self.worm_speed_fluorescence_fps).rolling(window=window, center=True).mean()
 
     @property
-    def leifer_curvature_from_kymograph(self):
+    def leifer_curvature_from_kymograph(self) -> pd.Series:
         # Signed average over segments 10 to 90
         return self.curvature_fluorescence_fps.loc[:, 5:90].mean(axis=1)
 

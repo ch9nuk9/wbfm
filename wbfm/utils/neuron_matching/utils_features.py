@@ -585,7 +585,6 @@ def build_features_and_match_2volumes(dat0, dat1,
         all_matches.append(matches)
         all_kp0.extend(keypoints0)
         all_kp1.extend(keypoints1)
-        # TODO
         all_match_offsets.append([len(all_locs0), len(all_locs1)])
 
     if len(all_matches) == 0:

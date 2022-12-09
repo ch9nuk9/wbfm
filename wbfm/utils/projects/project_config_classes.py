@@ -167,11 +167,20 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
         if val is None:
             return None
 
+        final_path = self._prepend_subfolder(prepend_subfolder, val)
+        return str(Path(final_path).resolve())
+
+    def _prepend_subfolder(self, prepend_subfolder, val):
         if prepend_subfolder:
             final_path = os.path.join(self.project_dir, self.subfolder, val)
         else:
             final_path = os.path.join(self.project_dir, val)
-        return str(Path(final_path).resolve())
+        return final_path
+
+    def h5_data_in_local_project(self, data: pd.DataFrame, relative_path: str, prepend_subfolder=False,
+                                 **kwargs):
+        path = self._prepend_subfolder(relative_path, prepend_subfolder)
+        super().h5_data_in_local_project(data, path, **kwargs)
 
 
 @dataclass
@@ -225,7 +234,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         if 'physical_units' in self.config:
             opt = self.config['physical_units']
             if 'fps' not in opt:
-                camera_fps = 83  # TODO: this depends on the exposure time
+                logging.debug("Using hard coded camera fps; this depends on the exposure time")
+                camera_fps = 83
                 frames_per_volume = get_behavior_fluorescence_fps_conversion(self)
                 opt['fps'] = camera_fps / frames_per_volume
             return PhysicalUnitConversion(**opt)

@@ -18,9 +18,12 @@ from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defa
 #####################
 
 
-def get_project_name(_config: dict) -> str:
+def get_project_name(_config: dict, basename=None) -> str:
     # Use current time
-    project_name = datetime.now().strftime("%Y_%m_%d")
+    if basename is None:
+        project_name = datetime.now().strftime("%Y_%m_%d")
+    else:
+        project_name = basename
     exp = _config.get('experimenter', '')
     task = _config.get('task_name', '')
     if task is not None and task != '':

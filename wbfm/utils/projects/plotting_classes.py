@@ -596,7 +596,7 @@ class TrackletAndSegmentationAnnotator:
         if conflicting_match and conflicting_match == self.current_neuron:
             types_of_conflicts.append("Already added")
         else:
-            # TODO: It's possible for a human to force an already added tracklet to have multiple tracklets...
+            # It's possible for a human to force an already added tracklet to have multiple tracklets...
             if conflicting_match:
                 types_of_conflicts.append("Identity")
             if self.get_dict_of_tracklet_time_conflicts():

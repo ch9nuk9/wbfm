@@ -123,7 +123,6 @@ def track_using_fdnc_multiple_templates(project_data: ProjectData,
                                                           physical_unit_conversion=physical_unit_conversion)
 
     def _parallel_func(template):
-        # TODO: is pytorch thread safe?
         return track_using_fdnc(project_data, base_prediction_options, template, match_confidence_threshold,
                                 physical_unit_conversion=physical_unit_conversion)
 
@@ -245,7 +244,6 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
         tracks_cfg.pickle_data_in_local_project(all_mappings, fname)
 
     # Combine to make final tracks
-    # TODO: should I calculate the final neuron matches, not just tracks?
     df_combined = remove_outliers_to_combine_tracks(all_dfs)
 
     with safe_cd(project_cfg.project_dir):
@@ -271,8 +269,6 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
         project_data.project_config.config['dataset_params']['num_frames'] = 3
     physical_unit_conversion = project_cfg.get_physical_unit_conversion_class()
     if use_zimmer_template:
-        # TODO: use a hand-curated segmentation or read from config
-        # i_template = 10
         custom_template = project_data.get_centroids_as_numpy(i_template)
         custom_template = physical_unit_conversion.zimmer2leifer(custom_template)
     else:

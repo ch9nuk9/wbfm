@@ -63,6 +63,7 @@ def read_background(background_fname, num_frames, num_slices, preprocessing_sett
             try:
                 background_volume = get_single_volume(background_tiff, i, num_slices, dtype='uint16')
             except IndexError:
+                # The file should be found, but isn't long enough
                 break
             # Note: this will do rigid rotation
             background_volume = perform_preprocessing(background_volume, preprocessing_settings, i)
@@ -218,8 +219,12 @@ class PreprocessingSettings:
 
     def load_background(self, background_fname):
         num_frames = 10
-        background_video_list = read_background(background_fname, num_frames, self.raw_number_of_planes,
-                                                preprocessing_settings=None)
+        try:
+            background_video_list = read_background(background_fname, num_frames, self.raw_number_of_planes,
+                                                    preprocessing_settings=None)
+        except IndexError:
+            logging.warning(f"Found the background file at {background_fname}, but it was empty")
+            return None
         # Add a new truly constant background value, to keep anything from going negative
         new_background = self.reset_background_per_pixel
         # Get a single image, because that's the physical camera
@@ -296,7 +301,6 @@ class PreprocessingSettings:
     @property
     def camera_alignment_matrix(self):
         if self._camera_alignment_matrix is None:
-            # TODO: load from disk
             return None
         else:
             return self._camera_alignment_matrix
@@ -514,6 +518,10 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             single_volume_raw = uint_safe_subtraction(single_volume_raw, background)
         except ValueError:
             logging.warning(f"The background {background.shape} was not the correct shape {single_volume_raw.shape}")
+
+        except TypeError:
+            logging.warning(f"Background was incorrect type: {background}")
+        finally:
             logging.warning("Setting 'do_background_subtraction' to False")
             s.do_background_subtraction = False
 

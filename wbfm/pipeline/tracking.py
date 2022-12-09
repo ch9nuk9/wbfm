@@ -109,7 +109,6 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
         tracking_cfg.config['t_templates'] = all_templates
         df_final = combine_dataframes_using_bipartite_matching(all_dfs_names_aligned)
 
-    # TODO: which project_data should this be?
     _, matches, conf, name_mapping = rename_columns_using_matching(df_final, project_data_target.final_tracks,
                                                                    try_to_fix_inf=True)
 
@@ -265,7 +264,6 @@ def match_tracks_and_tracklets_using_config(project_config: ModularProjectConfig
                     worm_obj
                 )
 
-        # TODO: should I do this after tracklet-unique processing? For now the formats are a pain
         logger.info("Removing tracklets that have time conflicts on a single neuron ")
         worm_obj.remove_conflicting_tracklets_from_all_neurons()
         worm_obj.update_time_covering_ind_for_all_neurons()

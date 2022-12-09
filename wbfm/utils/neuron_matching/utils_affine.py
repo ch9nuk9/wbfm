@@ -134,7 +134,6 @@ def calc_matches_using_affine_propagation(f0: ReferenceFrame, f1: ReferenceFrame
     xyz0 = all_propagated
     xyz1 = f1.neuron_locs
 
-    # TODO: Better max distance
     out = calc_nearest_neighbor_matches(xyz0, xyz1, max_dist=maximum_distance, n_neighbors=num_candidates)
     all_matches, all_conf = out
     if len(all_matches) == 0:

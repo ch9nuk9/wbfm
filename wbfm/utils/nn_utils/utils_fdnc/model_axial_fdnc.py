@@ -40,7 +40,6 @@ class NITAxial(nn.Module):
         # self.model = nn.TransformerEncoder(self.enc_l, n_layer)
         self.model = RectAxialEncoder(in_channels=1, dim_h=length_to_pad, dim_w=3, blocks=n_hidden, heads=8)
 
-        # TODO: pass device directly
         self.device = torch.device("cuda:0" if cuda else "cpu")
 
     def encode(self, pts_padded, pts_length):
@@ -153,7 +152,6 @@ class NITAxial(nn.Module):
             # choose the matched pairs for worm1
             paired_idx = torch.argmax(p_m, dim=1)
             output_pairs['paired_idx'] = paired_idx
-            # TODO:
             # pick the maxima value
 
         loss_dict = dict()
@@ -322,7 +320,6 @@ class NITAxialRegistration(NITAxial):
             # choose the matched pairs for worm1
             paired_idx = torch.argmax(p_m, dim=1)
             output_pairs['paired_idx'] = paired_idx
-            # TODO:
             # pick the maxima value
 
         loss_dict = dict()

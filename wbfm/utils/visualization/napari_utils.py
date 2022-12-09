@@ -68,6 +68,7 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
         else:
             # Get the index from the dataframe, or try to convert the column name into a label
             if 'i_reindexed_segmentation' in df[n]:
+                # For old style
                 label_vec = list(map(int, df[n]['i_reindexed_segmentation']))
             elif 'label' in df[n]:
                 # For traces dataframe

@@ -160,7 +160,7 @@ all_project_2gcamp_12_or_6ms = [project_data1_2gcamp_12ms, project_data2_2gcamp_
 
 ##
 # Note: some of them were rerun by me due to stopping-early bug
-# TODO: rerun
+# Needs to be rerun
 # fname = "/scratch/neurobiology/zimmer/ulises/wbfm_projects/ZIM2165_Gcamp7b_worm1-2022_10_14/project_config.yaml"
 # project_data1_gcamp7b = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 
@@ -231,22 +231,29 @@ all_projects_gcamp7b = [project_data4_gcamp7b, project_data5_gcamp7b,
 # all_projects_dim_gfp = [project_data1_gfp_dim, project_data2_gfp_dim, project_data3_gfp_dim]
 
 ##
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b"
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-19_spacer_7b"
 all_projects_spacer = load_all_projects_in_folder(foldername)
 
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_round2"
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-23_spacer_7b"
 all_projects_spacer_round2 = load_all_projects_in_folder(foldername)
 
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_round3"
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-26_spacer_7b"
 all_projects_spacer_round3 = load_all_projects_in_folder(foldername)
 
 ##
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_2per_agar"
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-23_spacer_7b_2per_agar"
 all_projects_spacer_2per = load_all_projects_in_folder(foldername)
 
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_7b_2per_round2"
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar"
 all_projects_spacer_2per_round2 = load_all_projects_in_folder(foldername)
 
 ##
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/with_spacer_on_food"
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-23_spacer_on_food"
 all_projects_spacer_food = load_all_projects_in_folder(foldername)
+
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_on_food"
+all_projects_spacer_food_round2 = load_all_projects_in_folder(foldername)
+
+
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-30_spacer_7b_2per_agar"
+all_projects_spacer_2per_round3 = load_all_projects_in_folder(foldername)

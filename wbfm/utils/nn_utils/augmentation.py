@@ -67,7 +67,8 @@ class PointCloudAugmentationDINO(object):
         Replace neuron with outlier
         Add jitter to location
         Scale
-    TODO:
+
+    Possible future:
         RandomAffine
         (see: https://pytorch3d.readthedocs.io/en/latest/modules/transforms.html)
     """

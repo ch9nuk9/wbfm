@@ -16,13 +16,13 @@ def get_twin_axis(ax, axis='x'):
     return None
 
 
-def paired_boxplot_from_dataframes(both_maxes: pd.DataFrame, labels: list=None):
+def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: list = None, use_coloring=True):
     """
     Plots a pair of boxplots with red (green) lines showing points that lost (gained) value between conditions
 
     Parameters
     ----------
-    both_maxes - 2 x n Dataframe, with index equal to x positions
+    df_before_and_after: 2 x n Dataframe. Index is the x position on the boxplot (i.e. long form data)
     labels
 
     Returns
@@ -33,14 +33,18 @@ def paired_boxplot_from_dataframes(both_maxes: pd.DataFrame, labels: list=None):
     if labels is not None:
         box_opt['labels'] = labels
     plt.figure(dpi=100)
-    x = both_maxes.index
-    y0_vec = both_maxes.iloc[0, :]
-    y1_vec = both_maxes.iloc[1, :]
+    x = df_before_and_after.index[:2]
+    y0_vec = df_before_and_after.iloc[0, :]
+    y1_vec = df_before_and_after.iloc[1, :]
     diff = y1_vec - y0_vec
-    colors = ['green' if d > 0 else 'red' for d in diff]
+    if use_coloring:
+        colors = ['green' if d > 0 else 'red' for d in diff]
+    else:
+        colors = ['black' for _ in diff]
+    bplot = plt.boxplot([y0_vec, y1_vec], positions=[0, 1], zorder=10, patch_artist=True, **box_opt)
     for y0, y1, col in zip(y0_vec, y1_vec, colors):
         plt.plot(x, [y0, y1], color=col, alpha=0.1)
-    bplot = plt.boxplot([y0_vec, y1_vec], positions=x, zorder=10, patch_artist=True, **box_opt)
+    plt.xticks(ticks=[0, 1], labels=x)
     for patch in bplot['boxes']:
         patch.set_facecolor('lightgray')
 

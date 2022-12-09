@@ -337,7 +337,7 @@ def split_tracklets_using_neuron_match_conflicts(project_cfg: ModularProjectConf
     out_fname = os.path.join('3-tracking', 'all_tracklets_after_conflict_splitting.pickle')
     tracking_cfg.pickle_data_in_local_project(df_final, relative_path=out_fname, custom_writer=pd.to_pickle)
 
-    # TODO: update the name of this field
+    # TODO: update the name of wiggle_split_tracklets_df_fname
     tracking_cfg.config['wiggle_split_tracklets_df_fname'] = out_fname
     tracking_cfg.update_self_on_disk()
 
@@ -417,7 +417,7 @@ def overwrite_tracklets_using_ground_truth(project_cfg: ModularProjectConfig,
 
     if keep_new_tracklet_matches:
         raise NotImplementedError
-        # TODO: need to have a way to match these new neuron names to the old ones
+        # Need to have a way to match these new neuron names to the old ones
         # tracking_cfg = project_cfg.get_tracking_config()
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
         # old_global2tracklet = pickle_load_binary(fname)

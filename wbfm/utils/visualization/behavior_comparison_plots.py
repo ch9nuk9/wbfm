@@ -11,6 +11,7 @@ import sklearn.exceptions
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy import stats
+from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.linear_model import RidgeCV, LassoCV
 from sklearn.metrics import median_absolute_error
 from sklearn.model_selection import cross_validate, RepeatedKFold
@@ -31,7 +32,6 @@ class NeuronEncodingBase:
     dataframes_to_load: List[str] = field(default_factory=lambda: ['red', 'green', 'ratio', 'ratio_filt'])
 
     is_valid: bool = True
-
     df_kwargs: dict = field(default_factory=dict)
 
     @cached_property
@@ -65,25 +65,93 @@ class NeuronEncodingBase:
 
 @dataclass
 class SpeedEncoding(NeuronEncodingBase):
+    """Subclass for specifically encoding a 1-d behavioral variable. By default this is speed"""
+
+    cv: int = 5
 
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
 
-    def calc_encoding(self, df_name, y_train=None):
+    def calc_multi_neuron_encoding(self, df_name, y_train=None):
         """Speed by default"""
         X_train = self.all_dfs[df_name]
-        if y_train is None:
-            y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:X_train.shape[0]]
+        X_train, y_train = self._get_y_train_and_remove_nans(X_train, y_train)
+
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            model = RidgeCV(store_cv_values=True).fit(X_train, y_train)
-        return model, X_train, y_train
+            model = RidgeCV(cv=self.cv).fit(X_train, y_train)
+        score = model.best_score_
+        return score, model, X_train, y_train
 
-    def plot_basic_encoding(self, df_name, y_train=None, y_name="speed"):
+    def _get_y_train_and_remove_nans(self, X_train, y_train):
+        trace_len = X_train.shape[0]
+        # Get 1d series from behavior
+        if y_train is None:
+            y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
+        elif isinstance(y_train, str):
+            if y_train == 'abs_speed':
+                y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps[:trace_len]
+            elif y_train == 'leifer_curvature':
+                y_train = self.project_data.worm_posture_class.leifer_curvature_from_kymograph[:trace_len]
+        else:
+            raise NotImplementedError(y_train)
+
+        # Remove nan points, if any
+        valid_ind = np.where(~np.isnan(y_train))[0]
+        X_train = X_train.iloc[valid_ind, :]
+        y_train = y_train.iloc[valid_ind]
+
+        return X_train, y_train
+
+    def calc_single_neuron_encoding(self, df_name, y_train=None):
+        """
+        Note that this does cross validation within the cross validation to select:
+            ridge alpha (inner) and best neuron (outer)
+        """
+        X_train = self.all_dfs[df_name]
+        X_train, y_train = self._get_y_train_and_remove_nans(X_train, y_train)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
+            estimator = RidgeCV(cv=self.cv)
+            # This can be parallelized, but has a pickle error on my machine
+            model = SequentialFeatureSelector(estimator=estimator,
+                                              n_features_to_select=1, direction='forward', cv=self.cv)
+            model.fit(X_train, y_train)
+        # Seems like you need to refit the model after searching
+        feature_names = get_names_from_df(self.all_dfs[df_name])
+        best_neuron = feature_names[np.where(model.get_support())[0][0]]
+        X = X_train[best_neuron].values.reshape(-1, 1)
+        score = model.estimator.fit(X, y_train).score(X, y_train)
+        return score, model, X_train, y_train, best_neuron
+
+    def plot_multineuron_encoding(self, df_name, y_train=None, y_name="speed"):
         """Speed by default"""
-        model, X_train, y_train = self.calc_encoding(df_name, y_train=y_train)
+        score, model, X_train, y_train = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
+
+    def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
+        """
+        Calculates a summary number for the full dataset:
+            The linear model error for a) the best single neuron and b) the multivariate encoding
+
+        Parameters
+        ----------
+        name
+
+        Returns
+        -------
+
+        """
+
+        multi = self.calc_multi_neuron_encoding(name, **kwargs)[0]
+        single = self.calc_single_neuron_encoding(name, **kwargs)[0]
+
+        df_dict = {'best_single_neuron': single, 'multi_neuron': multi,
+                   'dataset_name': self.project_data.shortened_name}
+        df = pd.DataFrame(df_dict, index=[0])
+        return df
 
     def plot_encoding_and_weights(self, df_name, y_train=None, y_name="speed"):
         """
@@ -188,11 +256,11 @@ class BehaviorPlotter(NeuronEncodingBase):
 
     def __post_init__(self):
 
-        if not self.project_data.worm_posture_class.has_full_kymograph:
+        if self.project_data.worm_posture_class.has_full_kymograph and self.project_data.has_traces():
+            self.is_valid = True
+        else:
             logging.warning("Kymograph not found, this class will not work")
             self.is_valid = False
-        else:
-            self.is_valid = True
 
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
@@ -251,8 +319,13 @@ class BehaviorPlotter(NeuronEncodingBase):
         cols = ['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple']
         return cols[:len(self.all_labels)]
 
-    def calc_summary_df(self, name):
+    def calc_per_neuron_df(self, name: str) -> pd.DataFrame:
         """
+        Calculates a summary dataframe of information per neuron.
+            Rows: neuron names
+            Columns: ['median_brightness', 'var_brightness', 'body_segment_argmax', 'corr_max', 'dataset_name']
+
+            Note that dataset_name is used when this is concatenated with other dataframes
 
         Parameters
         ----------
@@ -301,8 +374,8 @@ class BehaviorPlotter(NeuronEncodingBase):
 
         """
         # Get data for both individually
-        df_start = self.calc_summary_df(start_name)
-        df_final = self.calc_summary_df(final_name)
+        df_start = self.calc_per_neuron_df(start_name)
+        df_final = self.calc_per_neuron_df(final_name)
         df = df_start.join(df_final, lsuffix=f"_{start_name}", rsuffix=f"_{final_name}")
 
         # Build additional numeric columns
@@ -333,8 +406,8 @@ class BehaviorPlotter(NeuronEncodingBase):
 
         """
         # Get data for both individually
-        df_start = self.calc_summary_df(start_name)
-        df_final = self.calc_summary_df(final_name)
+        df_start = self.calc_per_neuron_df(start_name)
+        df_final = self.calc_per_neuron_df(final_name)
 
         # Build columns and join
         df_start['source_data'] = start_name
@@ -563,15 +636,20 @@ class MultiProjectBehaviorPlotter:
     all_project_paths: list
 
     class_constructor: callable = BehaviorPlotter
+    use_threading: bool = True
+
     _all_behavior_plotters: List[NeuronEncodingBase] = None
 
     def __post_init__(self):
-        # Just initialize the behavior plotters
+        # Initialize the behavior plotters
         self._all_behavior_plotters = [self.class_constructor(p) for p in self.all_project_paths]
 
     def __getattr__(self, item):
         # Transform all unknown function calls into a loop of calls to the subobjects
         def method(*args, **kwargs):
+            print(f"Dynamically dispatching method: {item}")
+            if item == '_all_behavior_plotters':
+                return self._all_behavior_plotters
             output = {}
             for p in tqdm(self._all_behavior_plotters):
                 if not p.is_valid:
@@ -590,12 +668,29 @@ class MultiProjectBehaviorPlotter:
         else:
             df = pd.concat(dict_of_dfs, axis=0).T
         df = df.T.reset_index().drop(columns='level_1')
-        df = df.rename(columns={'level_0': 'dataset_name'})
+        if 'dataset_name' in df:
+            df.drop('level_0', inplace=True)
+        else:
+            df = df.rename(columns={'level_0': 'dataset_name'})
         return df.T
 
-    def pairplot_multi_dataset(self, which_channel='red', include_corr=True, to_save=False):
+    def pairplot_multi_dataset(self, which_channel='red', include_corr=True,
+                               to_save=False):
+        """
+        Plots a seaborn pairplot for multiple datasets
 
-        all_dfs = self.calc_summary_df(which_channel)
+        Parameters
+        ----------
+        which_channel
+        include_corr
+        to_save
+
+        Returns
+        -------
+
+        """
+
+        all_dfs = self.calc_per_neuron_df(which_channel)
 
         df = pd.concat(all_dfs, axis=0)
         df = df.reset_index().rename(columns={'index': 'neuron_name'})
@@ -610,13 +705,52 @@ class MultiProjectBehaviorPlotter:
         #     fname = os.path.join(fname, 'gcamp6f_red_summary.png')
         #     plt.savefig(fname)
 
-    def paired_boxplot_multi_dataset(self, df_start_name='red', df_final_name='ratio'):
+    def paired_boxplot_per_neuron_multi_dataset(self, df_start_name='red', df_final_name='ratio'):
+        """
+        Designed for use with subclass: BehavioralEncoding
+            Uses per-neuron dataframes from each dataset
+
+        Parameters
+        ----------
+        df_start_name
+        df_final_name
+
+        Returns
+        -------
+
+        """
         all_dfs = self.get_data_for_paired_boxplot(df_final_name, df_start_name)
         df = self.concat_multiple_datasets_long(all_dfs)
 
         paired_boxplot_from_dataframes(df.iloc[1:, :], [df_start_name, df_final_name])
         plt.title("Maximum correlation to kymograph")
         plt.ylim(0, 0.8)
+
+    def paired_boxplot_overall_multi_dataset(self, df_name='ratio', **kwargs):
+        """
+        Designed for use with subclass: SpeedEncoding
+            Uses full-dataset dataframes from each dataset (one number per dataset)
+
+        Parameters
+        ----------
+        df_name
+
+        Returns
+        -------
+
+        """
+        dict_of_dfs = self.calc_dataset_summary_df(df_name, **kwargs)
+        df = pd.concat(dict_of_dfs, axis=0).reset_index(drop=True).T
+
+        paired_boxplot_from_dataframes(df)
+        if kwargs.get('y_train', None) is not None:
+            plt.title(f"Decoding of {kwargs['y_train']}")
+        else:
+            plt.title(f"Decoding of Speed")
+        # plt.ylim(0, 0.8)
+
+    def __repr__(self):
+        return f"Multiproject analyzer with {len(self._all_behavior_plotters)} projects"
 
 
 @dataclass

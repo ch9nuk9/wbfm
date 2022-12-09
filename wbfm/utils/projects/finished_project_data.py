@@ -466,7 +466,6 @@ class ProjectData:
                 green_data = ex.submit(read_if_exists, green_dat_fname, zarr_reader_folder_or_zipstore).result()
                 red_traces = ex.submit(read_if_exists, red_traces_fname).result()
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
-                # TODO: don't open this as read-write by default
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_folder_or_zipstore).result()
                 worm_posture_class = ex.submit(behavior_reader).result()
@@ -640,7 +639,7 @@ class ProjectData:
             print(f"Dropped {df.shape[1] - df_drop.shape[1]} neurons with threshold {min_nonnan}/{df.shape[0]}")
 
         if df_drop.shape[1] == 0:
-            msg = f"All neurons were dropped with a threshold of {min_nonnan}; check project.num_frames."\
+            msg = f"All neurons were dropped with a threshold of {min_nonnan}/{df.shape[0]}; check project.num_frames."\
                   f"If a video has very large gaps, num_frames should be set lower. For now, returning all"
             if raise_error_on_empty:
                 raise NoNeuronsError(msg)
@@ -768,7 +767,6 @@ class ProjectData:
         -------
 
         """
-        # TODO: save the list of split neurons in separate pickle
         if new_mask is None or t is None:
             new_mask = self.tracklet_annotator.candidate_mask
             t = self.tracklet_annotator.time_of_candidate
@@ -865,9 +863,7 @@ class ProjectData:
         -------
 
         """
-        # TODO: refactor to segmentation class?
         if nbr_obj is None:
-            # TODO: cache these neighbor objects?
             segmented_pts = self.get_centroids_as_numpy(i_frame)
             nbr_obj = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(segmented_pts)
 
@@ -985,7 +981,6 @@ class ProjectData:
     @cached_property
     def df_manual_tracking(self) -> pd.DataFrame:
         """Load a dataframe corresponding to manual tracking, i.e. which neurons have been manually corrected"""
-        # TODO: do not hardcode
         track_cfg = self.project_config.get_tracking_config()
         fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
         df_manual_tracking = read_if_exists(fname, reader=pd.read_csv)
@@ -1097,6 +1092,9 @@ class ProjectData:
         print(worm)
         print()
 
+    def has_traces(self):
+        return (self.red_traces is not None) and (self.green_traces is not None)
+
     def __repr__(self):
         return f"=======================================\n\
 Project data for directory:\n\
@@ -1111,8 +1109,7 @@ manual_tracking:          {self.df_manual_tracking is not None}\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
 ============Traces=====================\n\
-red_traces:               {self.red_traces is not None}\n\
-green_traces:             {self.green_traces is not None}\n"
+traces:               {self.has_traces()}\n"
 
 
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
