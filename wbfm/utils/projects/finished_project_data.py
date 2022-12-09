@@ -1297,8 +1297,14 @@ def print_project_statistics(project_config: ModularProjectConfig):
 
 
 def load_all_projects_in_folder(folder_name, **kwargs) -> List[ProjectData]:
+    list_of_project_folders = list(Path(folder_name).iterdir())
+    all_projects = load_all_projects_from_list(list_of_project_folders, **kwargs)
+    return all_projects
+
+
+def load_all_projects_from_list(list_of_project_folders, **kwargs):
     all_projects = []
-    for folder in Path(folder_name).iterdir():
+    for folder in list_of_project_folders:
         if Path(folder).is_file():
             continue
         for file in Path(folder).iterdir():

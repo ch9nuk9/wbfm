@@ -14,7 +14,7 @@ from wbfm.utils.projects.finished_project_data import load_all_projects_in_folde
 # main function
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.visualization.behavior_comparison_plots import SpeedEncoding, MultiProjectBehaviorPlotter
-from wbfm.utils.visualization.load_final_projects import load_good_datasets, get_summary_visualization_dir
+from wbfm.utils.visualization.hardcoded_paths import load_good_datasets, get_summary_visualization_dir
 from wbfm.utils.visualization.plot_traces import make_default_summary_plots_using_config
 
 # Initialize sacred experiment
