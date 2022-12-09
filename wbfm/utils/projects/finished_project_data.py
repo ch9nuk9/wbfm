@@ -145,7 +145,7 @@ class ProjectData:
         # Manual annotations take precedence by default
         fname = tracking_cfg.config['leifer_params']['output_df_fname']
         fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=False)
-        self.logger.debug(f"Loading intermediate global tracks from {tracking_cfg}")
+        self.logger.debug(f"Loading intermediate global tracks from {fname}")
         self.all_used_fnames.append(fname)
 
         global_tracks = read_if_exists(fname)
