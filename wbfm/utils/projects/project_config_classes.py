@@ -181,7 +181,8 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     def h5_data_in_local_project(self, data: pd.DataFrame, relative_path: str, prepend_subfolder=False,
                                  **kwargs):
         path = self._prepend_subfolder(relative_path, prepend_subfolder)
-        super().h5_data_in_local_project(data, path, **kwargs)
+        abs_path = super().h5_data_in_local_project(data, path, **kwargs)
+        return abs_path
 
 
 @dataclass
