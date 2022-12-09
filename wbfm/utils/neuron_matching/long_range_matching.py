@@ -110,6 +110,7 @@ def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_m
     track_config.config.update(updates)
     track_config.update_self_on_disk()
 
+    # Additional helper files
     track_config.logger.info("Also saving raw intermediate products")
     dir_name = Path(os.path.join('3-tracking', 'raw'))
     dir_name.mkdir(exist_ok=True)

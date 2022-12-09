@@ -62,7 +62,7 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
     out_fname = tracking_cfg.h5_data_in_local_project(df_final, out_fname, also_save_csv=True,
                                                       make_sequential_filename=True)
     out_fname = tracking_cfg.unresolve_absolute_path(out_fname)
-    tracking_cfg.config['leifer_params']['output_df_fname'] = out_fname
+    tracking_cfg.config['leifer_params']['output_df_fname'] = str(out_fname)
 
     # Also save the intermediate dataframes
     if use_multiple_templates:
