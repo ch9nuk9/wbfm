@@ -782,7 +782,12 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     plot_kwargs = default_plot_kwargs
 
     # Calculate
-    df = project_data.calc_default_traces(**trace_kwargs).T
+    try:
+        df = project_data.calc_default_traces(**trace_kwargs).T
+    except ValueError:
+        logging.warning("Value error when interpolating traces; probably this means there wasn't enough data")
+        return
+
     if 'vmin' not in plot_kwargs:
         plot_kwargs['vmin'] = 2*np.nanquantile(df.values, 0.1)
     if 'vmax' not in plot_kwargs:
