@@ -20,7 +20,7 @@ from wbfm.utils.visualization.plot_traces import make_default_summary_plots_usin
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
-ex.add_config(folder_path=None)
+ex.add_config(project_path=None)
 
 
 @ex.config
@@ -31,7 +31,7 @@ def cfg(project_path):
 @ex.automain
 def main(_config, _run):
     sacred.commands.print_config(_run)
-    folder_path = _config['folder_path']
+    folder_path = _config['project_path']
     if folder_path.lower() == "good":
         all_projects = load_good_datasets()
         output_folder = Path(get_summary_visualization_dir())
