@@ -50,7 +50,7 @@ def load_good_datasets():
             worm_id_str = f"worm{worm_id}"
             for this_project_folder in group_folder.iterdir():
                 if worm_id_str in this_project_folder.name:
-                    list_of_all_projects.append(this_project_folder.name)
+                    list_of_all_projects.append(this_project_folder.resolve())
 
     good_projects = load_all_projects_from_list(list_of_all_projects)
 
