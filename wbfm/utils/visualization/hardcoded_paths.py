@@ -36,6 +36,7 @@ def load_good_datasets():
 
     """
 
+    # Build a dictionary of all
     folder_and_id_dict = {
         "2022-11-30_spacer_7b_2per_agar": [1, 2],
         "2022-11-27_spacer_7b_2per_agar": [1, 3, 4, 6],
