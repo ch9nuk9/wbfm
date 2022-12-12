@@ -11,6 +11,6 @@ NEW_SETTINGS="MinMemoryNode=600000 partition=himem"
 # Loop through jobs and update each
 
 for ID in ${MY_IDS[@]}; do
-  echo "Running: update jobid=$ID $NEW_SETTINGS"
-  scontrol update jobid="$ID" "$NEW_SETTINGS"
+  echo "Running: scontrol update jobid=$ID $NEW_SETTINGS"
+  scontrol update jobid=$ID MinMemoryNode=600000 partition=himem
 done
