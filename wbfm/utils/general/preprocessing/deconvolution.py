@@ -55,7 +55,7 @@ class CustomPSF:
         #         'pinhole_shape': 'round',
         #     }
 
-        # TODO: the shape affects this quite a lot
+        # Note: the shape affects this quite a lot
         args = {
             'shape': (7, 9),  # number of samples in z and r direction
             'dims': (10.5, 2.925),  # size of FULL IMAGE in z and r direction in micrometers
@@ -74,7 +74,7 @@ class CustomPSF:
 
     @cached_property
     def psf_2d(self):
-        # TODO: is this the middle slice?
+        # is this the middle slice?
         obsvol = self.psf
         return obsvol.volume()[obsvol.shape[0], ...]
 

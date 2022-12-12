@@ -372,7 +372,7 @@ def _unpack_tracklets_for_combining(project_cfg: ModularProjectConfig,
         [used_names.update(names) for names in global2tracklet.values()]
         num_tracklets = len(get_names_from_df(df_tracklets))
         # logging.info(f"Found previous tracklet matches with {len(used_names)}/{num_tracklets} matches")
-        # TODO: don't allow these to be integers from the beginning
+        # Should be fixed: don't allow these to be integers from the beginning
         global2tracklet = fix_global2tracklet_full_dict(df_tracklets, global2tracklet)
 
     # fname = track_config.resolve_relative_path_from_config('global2tracklet_matches_fname')

@@ -254,7 +254,6 @@ class TracePlotter:
             outliers_from_tracking = np.logical_or(low_confidence, nan_confidence)
             y[outliers_from_tracking] = np.nan
 
-        # TODO: allow parameter selection
         if self.remove_outliers:
             # y = remove_outliers_via_rolling_mean(y, window=9)
             y = remove_outliers_using_std(y, std_factor=5)

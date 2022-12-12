@@ -49,7 +49,7 @@ class WormFullVideoPosture:
     pca_i_end: int = -10
 
     bigtiff_start_volume: int = 0
-    frames_per_volume: int = 32  # TODO: make sure this is synchronized with z_slices
+    frames_per_volume: int = 32  # Enhancement: make sure this is synchronized with z_slices
 
     project_config: ModularProjectConfig = None
 
@@ -428,7 +428,7 @@ filename_table_position:    {self.filename_table_position is not None}\n"
 
 
 def get_behavior_fluorescence_fps_conversion(project_config):
-    # TODO: in new config files, there should be a way to read this directly
+    # Enhancement: In new config files, there should be a way to read this directly
     preprocessing_cfg = project_config.get_preprocessing_config()
     final_number_of_planes = project_config.config['dataset_params']['num_slices']
     raw_number_of_planes = preprocessing_cfg.config.get('raw_number_of_planes', final_number_of_planes)

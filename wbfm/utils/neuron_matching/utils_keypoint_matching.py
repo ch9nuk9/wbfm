@@ -59,7 +59,7 @@ def calc_vectors(this_neuron, kp_df, slice_ind):
 
 
 def calc_features_from_vectors(one_neuron_vectors, only_diagonal):
-    """Todo: refactor to be smarter with inner product"""
+    """TODO: refactor to be smarter with inner product"""
     n = len(one_neuron_vectors)
     one_neuron_features = []
     for i1 in range(n):

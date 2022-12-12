@@ -190,7 +190,7 @@ def extend_tracks_using_global_tracking(df_global_tracks, df_tracklets, worm_obj
         if verbose >= 2:
             print(f"Checking global track {neuron_name}")
         # New: use the track as produced by the global tracking
-        # TODO: confirm that the worm_obj has the same neuron names as leifer
+        # Is currently working: Confirm that the worm_obj has the same neuron names as leifer
         if to_shorten:
             this_global_track = df_global_tracks[neuron_name][coords][:-1]
         else:
@@ -300,7 +300,7 @@ def extend_tracks_using_similar_postures(all_frames, frame_pair_options, referen
                                tracklet=matched_tracklet_df,
                                metadata=f"Match due to pair {pair_indices}; original name {matched_tracklet_name}")
 
-            # TODO: Also record if the matched neurons match the tracklets that didn't end
+            # Enhancement: Also record if the matched neurons match the tracklets that didn't end
             tracks_that_are_filled += 1
 
         if verbose >= 2:

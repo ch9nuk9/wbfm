@@ -618,7 +618,7 @@ class TrackedWorm:
         overlapping_confidences, overlapping_tracklet_names = \
             self.get_conflicting_tracklets_for_neuron(neuron_name)
         # Then just take the highest confidence one, removing all others
-        # TODO: this currently allows some multi-conflict tracklets to be in both "to_keep" and "to_remove"
+        # Note: this currently allows some multi-conflict tracklets to be in both "to_keep" and "to_remove"
         # As written, it just removes them anyway
         names_to_remove = set()
         names_to_keep = set()
