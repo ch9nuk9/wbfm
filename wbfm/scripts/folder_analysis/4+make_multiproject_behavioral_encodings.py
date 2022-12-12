@@ -40,6 +40,7 @@ def main(_config, _run):
         output_folder = Path(folder_path)
 
     behavior_plotter = MultiProjectBehaviorPlotter(all_projects, SpeedEncoding)
+    print(f"Saving all output in folder: {output_folder}")
 
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio')
     fname = output_folder.joinpath("encoding_signed_speed.png")
