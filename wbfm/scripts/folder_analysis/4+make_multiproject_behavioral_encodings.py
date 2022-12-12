@@ -13,7 +13,7 @@ from sacred.observers import TinyDbObserver
 from wbfm.utils.projects.finished_project_data import load_all_projects_in_folder
 # main function
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.visualization.behavior_comparison_plots import SpeedEncoding, MultiProjectBehaviorPlotter
+from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding, MultiProjectBehaviorPlotter
 from wbfm.utils.visualization.hardcoded_paths import load_good_datasets, get_summary_visualization_dir
 from wbfm.utils.visualization.plot_traces import make_default_summary_plots_using_config
 
@@ -39,7 +39,7 @@ def main(_config, _run):
         all_projects = load_all_projects_in_folder(folder_path)
         output_folder = Path(folder_path)
 
-    behavior_plotter = MultiProjectBehaviorPlotter(all_projects, SpeedEncoding)
+    behavior_plotter = MultiProjectBehaviorPlotter(all_projects, NeuronToUnivariateEncoding)
     print(f"Saving all output in folder: {output_folder}")
 
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio')

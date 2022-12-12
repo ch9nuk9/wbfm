@@ -64,10 +64,12 @@ class NeuronEncodingBase:
 
 
 @dataclass
-class SpeedEncoding(NeuronEncodingBase):
+class NeuronToUnivariateEncoding(NeuronEncodingBase):
     """Subclass for specifically encoding a 1-d behavioral variable. By default this is speed"""
 
     cv: int = 5
+
+    _last_model_calculated: callable = None
 
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
@@ -81,6 +83,7 @@ class SpeedEncoding(NeuronEncodingBase):
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
             model = RidgeCV(cv=self.cv).fit(X_train, y_train)
         score = model.best_score_
+        self._last_model_calculated = model
         return score, model, X_train, y_train
 
     def _get_y_train_and_remove_nans(self, X_train, y_train):
@@ -123,13 +126,23 @@ class SpeedEncoding(NeuronEncodingBase):
         best_neuron = feature_names[np.where(model.get_support())[0][0]]
         X = X_train[best_neuron].values.reshape(-1, 1)
         score = model.estimator.fit(X, y_train).score(X, y_train)
+        self._last_model_calculated = model
         return score, model, X_train, y_train, best_neuron
 
-    def plot_multineuron_encoding(self, df_name, y_train=None, y_name="speed"):
+    def plot_model_prediction(self, df_name, y_train=None, y_name="speed", use_multineuron=True):
         """Speed by default"""
-        score, model, X_train, y_train = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
+        if use_multineuron:
+            score, model, X_train, y_train = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
+        else:
+            score, model, X_train, y_train, _ = self.calc_single_neuron_encoding(df_name, y_train=y_train)
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
+
+    def plot_model_prediction(self, df_name, y_train=None):
+        """Plots model prediction over raw data"""
+        score, model, X_train, y_train = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
+        y_pred = model.predict(X_train)
+
 
     def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
         """
@@ -251,7 +264,7 @@ class SpeedEncoding(NeuronEncodingBase):
 
 
 @dataclass
-class BehaviorPlotter(NeuronEncodingBase):
+class NeuronToMultivariateEncoding(NeuronEncodingBase):
     """Designed for single-neuron correlations to all kymograph body segments"""
 
     def __post_init__(self):
@@ -635,7 +648,7 @@ class BehaviorPlotter(NeuronEncodingBase):
 class MultiProjectBehaviorPlotter:
     all_project_paths: list
 
-    class_constructor: callable = BehaviorPlotter
+    class_constructor: callable = NeuronToMultivariateEncoding
     use_threading: bool = True
 
     _all_behavior_plotters: List[NeuronEncodingBase] = None
