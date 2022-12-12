@@ -164,7 +164,7 @@ class WormFullVideoPosture:
 
         """
         binary_fwd = self.behavior_annotations_fluorescence_fps == 0
-        all_durations = get_durations_from_column(binary_fwd, already_boolean=True)
+        all_durations = get_durations_from_column(binary_fwd, already_boolean=True, remove_edges=False)
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
         start2duration_and_end_dict = {}
         for duration, start, end in zip(all_durations, all_starts, all_ends):
