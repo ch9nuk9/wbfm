@@ -83,8 +83,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
             model = RidgeCV(cv=self.cv).fit(X_train, y_train)
         score = model.best_score_
+        y_pred = model.predict(X_train)
         self._last_model_calculated = model
-        return score, model, X_train, y_train
+        return score, model, X_train, y_train, y_pred
 
     def _get_y_train_and_remove_nans(self, X_train, y_train):
         trace_len = X_train.shape[0]
@@ -118,31 +119,26 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
             estimator = RidgeCV(cv=self.cv)
             # This can be parallelized, but has a pickle error on my machine
-            model = SequentialFeatureSelector(estimator=estimator,
+            sfs = SequentialFeatureSelector(estimator=estimator,
                                               n_features_to_select=1, direction='forward', cv=self.cv)
-            model.fit(X_train, y_train)
+            sfs.fit(X_train, y_train)
         # Seems like you need to refit the model after searching
         feature_names = get_names_from_df(self.all_dfs[df_name])
-        best_neuron = feature_names[np.where(model.get_support())[0][0]]
+        best_neuron = feature_names[np.where(sfs.get_support())[0][0]]
         X = X_train[best_neuron].values.reshape(-1, 1)
-        score = model.estimator.fit(X, y_train).score(X, y_train)
+        model = sfs.estimator.fit(X, y_train)
+        score = model.score(X, y_train)
+        y_pred = model.predict(X)
         self._last_model_calculated = model
-        return score, model, X_train, y_train, best_neuron
+        return score, model, X_train, y_train, y_pred, best_neuron
 
-    def plot_model_prediction(self, df_name, y_train=None, y_name="speed", use_multineuron=True):
-        """Speed by default"""
-        if use_multineuron:
-            score, model, X_train, y_train = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
-        else:
-            score, model, X_train, y_train, _ = self.calc_single_neuron_encoding(df_name, y_train=y_train)
-        y_pred = model.predict(X_train)
-        self._plot(df_name, y_pred, y_train)
-
-    def plot_model_prediction(self, df_name, y_train=None):
+    def plot_model_prediction(self, df_name, y_train=None, y_name="speed", use_multineuron=True, to_save=False):
         """Plots model prediction over raw data"""
-        score, model, X_train, y_train = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
-        y_pred = model.predict(X_train)
-
+        if use_multineuron:
+            score, model, X_train, y_train, y_pred = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
+        else:
+            score, model, X_train, y_train, y_pred, _ = self.calc_single_neuron_encoding(df_name, y_train=y_train)
+        self._plot(df_name, y_pred, y_train, to_save=to_save)
 
     def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
         """
@@ -188,24 +184,25 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
 
-    def _plot(self, df_name, y_pred, y_train, y_name=""):
+    def _plot(self, df_name, y_pred, y_train, y_name="", to_save=False):
         mae = median_absolute_error(y_train, y_pred)
-        fig, ax = plt.subplots(dpi=100)
+        fig, ax = plt.subplots(dpi=200)
         opt = dict()
         if df_name == 'green' or df_name == 'red':
             opt['color'] = df_name
         ax.plot(y_pred, label='prediction', **opt)
 
-        ax.set_title(f"Regression model with error {mae:.4f} from {df_name} traces")
+        ax.set_title(f"Prediction error {mae:.3f} from {df_name} traces ({self.project_data.shortened_name})")
         plt.ylabel("Time (mm/s)")
         plt.xlabel("Truths")
-        ax.plot(y_train, color='black', label='Target')
+        ax.plot(y_train, color='black', label='Target', alpha=0.8)
         plt.legend()
         self.project_data.shade_axis_using_behavior()
 
-        vis_cfg = self.project_data.project_config.get_visualization_config()
-        fname = vis_cfg.resolve_relative_path(f"regression_fit_{df_name}_{y_name}.png", prepend_subfolder=True)
-        plt.savefig(fname)
+        if to_save:
+            vis_cfg = self.project_data.project_config.get_visualization_config()
+            fname = vis_cfg.resolve_relative_path(f"regression_fit_{df_name}_{y_name}.png", prepend_subfolder=True)
+            plt.savefig(fname)
 
     def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
                                              only_plot_nonzero=True, also_plot_traces=True, y_name="speed"):
