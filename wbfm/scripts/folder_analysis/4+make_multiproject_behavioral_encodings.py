@@ -42,26 +42,29 @@ def main(_config, _run):
     behavior_plotter = MultiProjectBehaviorPlotter(all_projects, NeuronToUnivariateEncoding)
     print(f"Saving all output in folder: {output_folder}")
 
+    # Single neuron plot options
+    opt = dict(df_name='ratio', to_save=True, saving_folder=output_folder)
+
     # Signed speed
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio')
     fname = output_folder.joinpath("encoding_signed_speed.png")
     plt.savefig(fname)
 
     behavior_plotter.plot_model_prediction('ratio', to_save=True, use_multineuron=True)
-    behavior_plotter.plot_model_prediction('ratio', to_save=True, use_multineuron=False)
+    behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
 
     # Absolute speed
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='abs_speed')
     fname = output_folder.joinpath("encoding_absolute_speed.png")
     plt.savefig(fname)
 
-    behavior_plotter.plot_model_prediction('ratio', y_train='abs_speed', to_save=True, use_multineuron=True)
-    behavior_plotter.plot_model_prediction('ratio', y_train='abs_speed', to_save=True, use_multineuron=False)
+    behavior_plotter.plot_model_prediction(y_train='abs_speed', use_multineuron=True, **opt)
+    behavior_plotter.plot_model_prediction(y_train='abs_speed', use_multineuron=False, **opt)
 
     # Curvature from leifer paper
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='leifer_curvature')
     fname = output_folder.joinpath("encoding_leifer_curvature.png")
     plt.savefig(fname)
 
-    behavior_plotter.plot_model_prediction('ratio', y_train='leifer_curvature', to_save=True, use_multineuron=True)
-    behavior_plotter.plot_model_prediction('ratio', y_train='leifer_curvature', to_save=True, use_multineuron=False)
+    behavior_plotter.plot_model_prediction(y_train='leifer_curvature', use_multineuron=True, **opt)
+    behavior_plotter.plot_model_prediction(y_train='leifer_curvature', use_multineuron=False, **opt)
