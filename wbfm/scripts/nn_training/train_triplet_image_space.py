@@ -64,7 +64,7 @@ criterion = nn.TripletMarginLoss(margin=1.0)
 # criterion = torch.jit.script(nn.CrossEntropyLoss())
 training_folder = os.path.join(project_data.project_dir, 'nn_training')
 training_opt = {'batch_size': 8}
-# TODO: Just using a small subset for now
+# Just using a small subset for now
 training_dataset = NeuronTripletDataset(training_folder, remap_labels=True)
 small_dataset, large_dataset = random_split(training_dataset, [100, 900], generator=torch.Generator().manual_seed(42))
 train_loader = DataLoader(small_dataset, **training_opt)

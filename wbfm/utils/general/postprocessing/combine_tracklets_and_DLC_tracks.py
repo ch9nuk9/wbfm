@@ -46,7 +46,6 @@ def calc_covering_from_distances(all_dist: list,
     i_sorted_by_median_distance = np.argsort(all_summarized_dist)
     all_tracklet_names = get_names_from_df(df_tracklets)
 
-    # TODO: refactor to remove indices, and only return names
     # covering_tracklet_ind = []
     t = df_tracklets.index
     assert len(t) == int(t[-1])+1, "Tracklet dataframe has missing indices, and will cause errors"
@@ -136,8 +135,8 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
                 split_points.append(conflict_ind[-1])
                 split_modes.append("keep_left")
             else:
-                # TODO: what if the conflict is in the middle of the tracklet?
-                # TODO: what if the conflict is near the edge, but doesn't touch the exact edge frame?
+                # Enhancement: what if the conflict is in the middle of the tracklet?
+                # Enhancement: what if the conflict is near the edge, but doesn't touch the exact edge frame?
                 break
         if len(split_points) < len(time_conflicts):
             successfully_split = False

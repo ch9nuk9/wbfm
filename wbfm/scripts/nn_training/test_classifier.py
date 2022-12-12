@@ -70,7 +70,7 @@ def main(_config, _run):
     model_fname = f"classifier_{num_classes}_cluster.ckpt"
     training_folder = os.path.join(project_data.project_dir, 'nn_training')
     model_fname = os.path.join(training_folder, model_fname)
-    # TODO: actually save the hyperparameters
+    # Enhancement: actually save the hyperparameters
     model = NeuronEmbeddingModel.load_from_checkpoint(model_fname, num_classes=num_classes)
 
     log_fname = str(Path(model_fname).with_suffix('.log'))

@@ -87,7 +87,7 @@ def zoom_using_layer_in_viewer(viewer: napari.Viewer, layer_name='pts_with_futur
         print(f"Layer {layer_name} not found; no zooming")
         return
 
-    # TODO: better way to check for nesting
+    # Enhancement: better way to check for nesting
     if len(tzxy) == 1:
         tzxy = tzxy[0]
     if len(tzxy) == 1:

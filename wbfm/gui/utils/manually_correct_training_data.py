@@ -234,7 +234,7 @@ def create_manual_correction_gui(cfg: ModularProjectConfig,
             fname = training_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
             df_initial_annotations = pd.read_hdf(fname)
             # fname = os.path.join('2-training_data', 'training_data_tracks.h5')
-            # TODO: not hardcoded experimenter
+            # Future: not hardcoded experimenter
             # df = pd.read_hdf(fname)['Charlie'].copy()
         else:
             # Use partially manually annotated tracking

@@ -321,7 +321,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.formlayout5.addRow("Alt-click:", self.splitSegmentationHint2)
 
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
-        self.splitSegmentationManualSliceButton.setRange(1, 20)  # TODO: look at actual z depth of neuron
+        self.splitSegmentationManualSliceButton.setRange(1, 20)  # Future: look at actual z depth of neuron
         self.splitSegmentationManualSliceButton.valueChanged.connect(self.update_segmentation_options)
         self.formlayout6.addRow("Manual slice index: ", self.splitSegmentationManualSliceButton)
 
@@ -1179,7 +1179,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print("Currently on traces setting, so this option didn't do anything")
             return
 
-        # TODO: Only refresh this if it needs to be updated
+        # Enhancement: Only refresh this if it needs to be updated
         self.update_stored_tracklets_for_plotting()
         if preserve_xlims:
             self.current_subplot_xlim = self.static_ax.get_xlim()
@@ -1510,7 +1510,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
                                                                    initialization_kwargs=initialization_kwargs)
     if DEBUG:
         logging.debug(project_data)
-    # TODO: debug custom dataframe here
+    # If I don't set this to false, need to debug custom dataframe here
     project_data.use_custom_padded_dataframe = False
     project_data.load_interactive_properties()
     ui, viewer = napari_trace_explorer(project_data, app=app, to_print_fps=to_print_fps)
