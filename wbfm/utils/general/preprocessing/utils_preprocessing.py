@@ -170,8 +170,12 @@ class PreprocessingSettings:
             logging.debug("Didn't find background filename; this will have to be rerun")
             return
 
-        self.background_red = self.load_background(self.background_fname_red)
-        self.background_green = self.load_background(self.background_fname_green)
+        try:
+            self.background_red = self.load_background(self.background_fname_red)
+            self.background_green = self.load_background(self.background_fname_green)
+        except FileNotFoundError:
+            logging.warning(f"Did not find background files at {self.background_fname_red} "
+                            f"and {self.background_fname_green}")
 
     def find_background_files_from_raw_data_path(self, cfg: ModularProjectConfig, force_search=False):
         if self.background_fname_red is not None:
