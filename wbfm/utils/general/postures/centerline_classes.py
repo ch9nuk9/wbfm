@@ -388,7 +388,7 @@ class WormFullVideoPosture:
     def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
         """Just sets the speed to be negative when the behavior is annotated as reversal"""
         speed = self.worm_speed_fluorescence_fps
-        rev_ind = self.behavior_annotations_fluorescence_fps == 1
+        rev_ind = (self.behavior_annotations_fluorescence_fps == 1).reset_index(drop=True)
         velocity = copy.copy(speed)
         velocity[rev_ind] *= -1
 
