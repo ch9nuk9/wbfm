@@ -54,5 +54,8 @@ def load_good_datasets():
                     list_of_all_projects.append(this_project_folder.resolve())
 
     good_projects = load_all_projects_from_list(list_of_all_projects)
+    good_projects_filtered = [p for p in good_projects if p.worm_posture_class.has_beh_annotation]
+    if len(good_projects_filtered) < len(good_projects):
+        print("Removed some designated 'good' projects because they didn't have behavior")
 
-    return good_projects
+    return good_projects_filtered
