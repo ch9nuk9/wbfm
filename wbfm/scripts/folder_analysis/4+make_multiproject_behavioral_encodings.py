@@ -14,7 +14,7 @@ from wbfm.utils.projects.finished_project_data import load_all_projects_in_folde
 # main function
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding, MultiProjectBehaviorPlotter
-from wbfm.utils.visualization.hardcoded_paths import load_good_datasets, get_summary_visualization_dir
+from wbfm.utils.visualization.hardcoded_paths import load_paper_datasets, get_summary_visualization_dir
 from wbfm.utils.visualization.plot_traces import make_default_summary_plots_using_config
 
 # Initialize sacred experiment
@@ -32,9 +32,9 @@ def cfg(project_path):
 def main(_config, _run):
     sacred.commands.print_config(_run)
     folder_path = _config['project_path']
-    if folder_path.lower() == "good":
+    if folder_path.lower() in ["good", "gfp"]:
         # Save in common folder, but make a subfolder
-        all_projects = load_good_datasets()
+        all_projects = load_paper_datasets(folder_path)
         output_folder = Path(get_summary_visualization_dir())
         output_folder = output_folder.joinpath(Path(folder_path).name)
         output_folder.mkdir(exist_ok=True)
