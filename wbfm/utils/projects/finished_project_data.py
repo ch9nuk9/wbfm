@@ -95,7 +95,6 @@ class ProjectData:
     green_traces: pd.DataFrame = None
 
     # For plotting and visualization
-    worm_posture_class: WormFullVideoPosture = None  # Allows coloring the traces (currently, done manually)
     background_per_pixel: float = None  # Simple version of background correction
     likelihood_thresh: float = None  # When plotting, plot gaps for low-confidence time points
 
@@ -327,6 +326,11 @@ class ProjectData:
                                            use_custom_padded_dataframe=self.use_custom_padded_dataframe)
 
     @cached_property
+    def worm_posture_class(self) -> WormFullVideoPosture:
+        """Allows coloring the traces """
+        return WormFullVideoPosture.load_from_config(self.project_config)
+
+    @cached_property
     def tracked_worm_class(self):
         """Class that connects tracklets and final neurons using global tracking"""
         self.logger.warning("Loading tracked worm object for the first time, may take a while")
@@ -449,19 +453,14 @@ class ProjectData:
         # Metadata uses class from segmentation package, which does lazy loading itself
         seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         obj.segmentation_metadata = DetectedNeurons(seg_metadata_fname)
-
         obj.physical_unit_conversion = cfg.get_physical_unit_conversion_class()
 
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
-
-        behavior_reader = lambda: WormFullVideoPosture.load_from_config(cfg)
         zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
-
         cfg.logger.debug("Starting threads to read data...")
 
         with safe_cd(cfg.project_dir):
-
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
                     ex.submit(obj.load_tracklet_related_properties)
@@ -477,7 +476,6 @@ class ProjectData:
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_folder_or_zipstore).result()
-                worm_posture_class = ex.submit(behavior_reader).result()
 
             if red_traces is not None:
                 red_traces.replace(0, np.nan, inplace=True)
@@ -497,7 +495,6 @@ class ProjectData:
         obj.segmentation = segmentation
         obj.red_traces = red_traces
         obj.green_traces = green_traces
-        obj.worm_posture_class = worm_posture_class
         obj.background_per_pixel = background_per_pixel
         obj.likelihood_thresh = likelihood_thresh
         if verbose >= 1:
