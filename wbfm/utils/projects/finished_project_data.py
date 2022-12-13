@@ -28,7 +28,7 @@ from tqdm.auto import tqdm
 import dask.array as da
 
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
-    get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns
+    get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, get_contiguous_blocks_from_column
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
@@ -1319,16 +1319,43 @@ def load_all_projects_from_list(list_of_project_folders, **kwargs):
     return all_projects
 
 
-def estimate_tracking_failures_from_project(project_data: ProjectData, contamination='auto'):
-    """Uses sudden dips in the number of detected objects to guess where the tracking might fail"""
+def estimate_tracking_failures_from_project(project_data: ProjectData, pad_nan_points=3, contamination='auto'):
+    """
+    Uses sudden dips in the number of detected objects to guess where the tracking might fail
+
+    Additionally pads contiguous regions of tracking failure, assuming that the tracking was incorrect before and after
+    the times it was detected
+
+    Parameters
+    ----------
+    project_data
+    pad_nan_points
+    contamination
+
+    Returns
+    -------
+
+    """
     all_vol = [project_data.segmentation_metadata.get_all_volumes(i) for i in range(project_data.num_frames)]
     all_num_objs = np.array(list(map(len, all_vol)))
     all_num_objs = detrend(all_num_objs)
     model = LocalOutlierFactor(contamination=contamination)
     vals = model.fit_predict(all_num_objs.reshape(-1, 1))
 
+    # Pad the discovered blocks
+    if pad_nan_points is not None:
+        df_vals = pd.Series(vals == -1)
+        starts, ends = get_contiguous_blocks_from_column(df_vals, already_boolean=True)
+        idx_boolean = np.zeros_like(vals, dtype=bool)
+        for s, e in zip(starts, ends):
+            s = np.clip(s - pad_nan_points, a_min=0, a_max=len(vals))
+            e = np.clip(e + pad_nan_points, a_min=0, a_max=len(vals))
+            idx_boolean[s:e] = True
+    else:
+        idx_boolean = vals == -1
+
     # Get outliers, but only care about decreases in objects, not increases
-    invalid_idx = np.where(vals == -1)[0]
+    invalid_idx = np.where(idx_boolean)[0]
     invalid_idx = np.array([i for i in invalid_idx if all_num_objs[i] < 0])
 
     return invalid_idx
