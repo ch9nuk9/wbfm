@@ -147,7 +147,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             y_name = "single_best_neuron"
         self._plot(df_name, y_pred, y_train, y_name=y_name, score=score, **kwargs)
 
-    def plot_sorted_correlations(self, df_name, y_train=None):
+    def plot_sorted_correlations(self, df_name, y_train=None, saving_folder=None):
         """Does not fit a model, just raw correlation"""
         X_train = self.all_dfs[df_name]
         X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
@@ -175,6 +175,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         for i, tick in enumerate(ax.xaxis.get_major_ticks()):
             tick.set_pad(8 * (i % 4))
         plt.title(f"Sorted correlation: {df_name} traces with {y_train_name}")
+
+        fname = f"sorted_correlation_{df_name}_{y_train_name}.png"
+        self._savefig(fname, saving_folder)
 
     def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
         """
@@ -238,12 +241,15 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         if to_save:
             fname = f"regression_fit_{df_name}_{y_name}.png"
-            if saving_folder is None:
-                vis_cfg = self.project_data.project_config.get_visualization_config()
-                fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            else:
-                fname = os.path.join(saving_folder, f"{self.project_data.shortened_name}-{fname}")
-            plt.savefig(fname)
+            self._savefig(fname, saving_folder)
+
+    def _savefig(self, fname, saving_folder):
+        if saving_folder is None:
+            vis_cfg = self.project_data.project_config.get_visualization_config()
+            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        else:
+            fname = os.path.join(saving_folder, f"{self.project_data.shortened_name}-{fname}")
+        plt.savefig(fname)
 
     def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
                                              only_plot_nonzero=True, also_plot_traces=True, y_name="speed"):
