@@ -1,9 +1,13 @@
 import concurrent
 import logging
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+
+import dask
 from methodtools import lru_cache
 from pathlib import Path
 from matplotlib import pyplot as plt
+from scipy.signal import detrend
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
@@ -21,6 +25,7 @@ import numpy as np
 import pandas as pd
 import zarr
 from tqdm.auto import tqdm
+import dask.array as da
 
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
     get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns
@@ -29,7 +34,7 @@ from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import NearestNeighbors, LocalOutlierFactor
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from wbfm.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
 from segmentation.util.utils_metadata import DetectedNeurons
@@ -1312,3 +1317,18 @@ def load_all_projects_from_list(list_of_project_folders, **kwargs):
                 proj = ProjectData.load_final_project_data_from_config(file, verbose=0, **kwargs)
                 all_projects.append(proj)
     return all_projects
+
+
+def estimate_tracking_failures_from_project(project_data: ProjectData, contamination='auto'):
+    """Uses sudden dips in the number of detected objects to guess where the tracking might fail"""
+    all_vol = [project_data.segmentation_metadata.get_all_volumes(i) for i in range(project_data.num_frames)]
+    all_num_objs = np.array(list(map(len, all_vol)))
+    all_num_objs = detrend(all_num_objs)
+    model = LocalOutlierFactor(contamination=contamination)
+    vals = model.fit_predict(all_num_objs.reshape(-1, 1))
+
+    # Get outliers, but only care about decreases in objects, not increases
+    invalid_idx = np.where(vals == -1)[0]
+    invalid_idx = np.array([i for i in invalid_idx if all_num_objs[i] < 0])
+
+    return invalid_idx
