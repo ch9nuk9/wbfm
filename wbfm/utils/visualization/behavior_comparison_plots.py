@@ -20,6 +20,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
 from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
+from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 
@@ -77,7 +78,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def calc_multi_neuron_encoding(self, df_name, y_train=None):
         """Speed by default"""
         X_train = self.all_dfs[df_name]
-        X_train, y_train = self._get_y_train_and_remove_nans(X_train, y_train)
+        X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
@@ -87,18 +88,21 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         self._last_model_calculated = model
         return score, model, X_train, y_train, y_pred
 
-    def _get_y_train_and_remove_nans(self, X_train, y_train):
+    def _get_y_train_and_remove_nans(self, X_train, y_train_name):
         trace_len = X_train.shape[0]
         # Get 1d series from behavior
-        if y_train is None:
+        if y_train_name is None:
+            y_train_name = 'signed_speed'
             y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
-        elif isinstance(y_train, str):
-            if y_train == 'abs_speed':
+        elif isinstance(y_train_name, str):
+            if y_train_name == 'abs_speed':
                 y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps[:trace_len]
-            elif y_train == 'leifer_curvature':
+            elif y_train_name == 'leifer_curvature':
                 y_train = self.project_data.worm_posture_class.leifer_curvature_from_kymograph[:trace_len]
+            else:
+                raise NotImplementedError(y_train_name)
         else:
-            raise NotImplementedError(y_train)
+            raise NotImplementedError(y_train_name)
         y_train.reset_index(drop=True, inplace=True)
 
         # Remove nan points, if any
@@ -106,7 +110,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         X_train = X_train.iloc[valid_ind, :]
         y_train = y_train.iloc[valid_ind]
 
-        return X_train, y_train
+        return X_train, y_train, y_train_name
 
     def calc_single_neuron_encoding(self, df_name, y_train=None):
         """
@@ -114,7 +118,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             ridge alpha (inner) and best neuron (outer)
         """
         X_train = self.all_dfs[df_name]
-        X_train, y_train = self._get_y_train_and_remove_nans(X_train, y_train)
+        X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
@@ -142,6 +146,35 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             score, model, X_train, y_train, y_pred, _ = self.calc_single_neuron_encoding(df_name, y_train=y_train)
             y_name = "single_best_neuron"
         self._plot(df_name, y_pred, y_train, y_name=y_name, score=score, **kwargs)
+
+    def plot_sorted_correlations(self, df_name, y_train=None):
+        """Does not fit a model, just raw correlation"""
+        X_train = self.all_dfs[df_name]
+        X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
+
+        corr = X_train.corrwith(y_train)
+        idx = np.argsort(corr)
+        names = get_names_from_df(X_train)
+
+        fig, ax = plt.subplots(dpi=200)
+        x = range(len(idx))
+        plt.bar(x, corr.iloc[idx.values])
+
+        labels = np.array(names)[idx.values]
+        labels = [name2int_neuron_and_tracklet(n) for n in labels]
+        # plt.xticks(x, labels="")
+        # ymin = np.min(corr) - 0.1
+        # for i, name in enumerate(labels):
+        #     plt.annotate(text=name, xy=(i, ymin), xytext=(i, ymin-0.1*(-i % 8)-0.1), xycoords='data', arrowprops={'width':1, 'headwidth':0}, annotation_clip=False)
+        # ax.xaxis.set_major_locator(MultipleLocator(10))
+        # ax.xaxis.set_minor_locator(MultipleLocator(1))
+        plt.xticks(ticks=x, labels=labels, fontsize=6)
+        # ax.xaxis.set_minor_formatter(FormatStrFormatter("%d"))
+        plt.grid(which='major', axis='x')
+        ax.set_axisbelow(True)
+        for i, tick in enumerate(ax.xaxis.get_major_ticks()):
+            tick.set_pad(8 * (i % 4))
+        plt.title(f"Sorted correlation: {df_name} traces with {y_train_name}")
 
     def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
         """
