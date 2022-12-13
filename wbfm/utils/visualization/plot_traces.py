@@ -757,12 +757,15 @@ class ClickableGridPlot:
         self.current_list_index = 1
 
 
-def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwargs=None, trace_kwargs=None):
+def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwargs=None, trace_kwargs=None,
+                               also_plot_zscore=True):
     """
-    Uses seaborn to make a heatmap, including clustering of the
+    Uses seaborn to make a heatmap, including clustering of the traces
 
     Parameters
     ----------
+    trace_kwargs
+    plot_kwargs
     project_data
     to_save
 
@@ -771,7 +774,7 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
     """
 
-    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='ratio')
+    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='dr_over_r_20')
     if trace_kwargs is not None:
         default_trace_kwargs.update(trace_kwargs)
     trace_kwargs = default_trace_kwargs
@@ -798,10 +801,11 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     # plt.xlabel("Time")
     # plt.ylabel("Neuron name")
 
-    plot_kwargs['z_score'] = 0
-    fig_zscore = sns.clustermap(df, **plot_kwargs)
-    # plt.xlabel("Time")
-    # plt.ylabel("Neuron name")
+    if also_plot_zscore:
+        plot_kwargs['z_score'] = 0
+        fig_zscore = sns.clustermap(df, **plot_kwargs)
+        # plt.xlabel("Time")
+        # plt.ylabel("Neuron name")
 
     # Save
     if to_save:
@@ -811,9 +815,10 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
         fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         fig.savefig(fname)
 
-        fname = 'heatmap_zscore.png'
-        fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        fig_zscore.savefig(fname)
+        if also_plot_zscore:
+            fname = 'heatmap_zscore.png'
+            fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+            fig_zscore.savefig(fname)
 
 
 def make_default_summary_plots_using_config(project_cfg):
