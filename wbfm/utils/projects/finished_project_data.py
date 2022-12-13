@@ -327,7 +327,7 @@ class ProjectData:
 
     @cached_property
     def worm_posture_class(self) -> WormFullVideoPosture:
-        """Allows coloring the traces """
+        """Allows coloring the traces using behavioral annotation, and general correlations to behavior"""
         return WormFullVideoPosture.load_from_config(self.project_config)
 
     @cached_property
