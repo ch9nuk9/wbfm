@@ -99,6 +99,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 y_train = self.project_data.worm_posture_class.leifer_curvature_from_kymograph[:trace_len]
         else:
             raise NotImplementedError(y_train)
+        y_train.reset_index(drop=True, inplace=True)
 
         # Remove nan points, if any
         valid_ind = np.where(~np.isnan(y_train))[0]
