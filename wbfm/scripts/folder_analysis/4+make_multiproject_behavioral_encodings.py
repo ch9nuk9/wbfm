@@ -33,8 +33,11 @@ def main(_config, _run):
     sacred.commands.print_config(_run)
     folder_path = _config['project_path']
     if folder_path.lower() == "good":
+        # Save in common folder, but make a subfolder
         all_projects = load_good_datasets()
         output_folder = Path(get_summary_visualization_dir())
+        output_folder = output_folder.joinpath(Path(folder_path).name)
+        output_folder.mkdir(exist_ok=True)
     else:
         all_projects = load_all_projects_in_folder(folder_path)
         output_folder = Path(folder_path)
