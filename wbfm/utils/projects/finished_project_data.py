@@ -1,10 +1,9 @@
 import concurrent
 import logging
 from collections import defaultdict
+from methodtools import lru_cache
 from pathlib import Path
-
 from matplotlib import pyplot as plt
-
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
@@ -587,6 +586,7 @@ class ProjectData:
         neuron_names = get_names_from_df(df_tmp)
         return neuron_names
 
+    @lru_cache(maxsize=128)
     def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False, raise_error_on_empty=True,
                             neuron_names=None, verbose=0,
                             **kwargs):
