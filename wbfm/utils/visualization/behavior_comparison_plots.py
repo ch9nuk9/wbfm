@@ -147,7 +147,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             y_name = "single_best_neuron"
         self._plot(df_name, y_pred, y_train, y_name=y_name, score=score, **kwargs)
 
-    def plot_sorted_correlations(self, df_name, y_train=None, saving_folder=None):
+    def plot_sorted_correlations(self, df_name, y_train=None, to_save=False, saving_folder=None):
         """Does not fit a model, just raw correlation"""
         X_train = self.all_dfs[df_name]
         X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
@@ -176,8 +176,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             tick.set_pad(8 * (i % 4))
         plt.title(f"Sorted correlation: {df_name} traces with {y_train_name}")
 
-        fname = f"sorted_correlation_{df_name}_{y_train_name}.png"
-        self._savefig(fname, saving_folder)
+        if to_save:
+            fname = f"sorted_correlation_{df_name}_{y_train_name}.png"
+            self._savefig(fname, saving_folder)
 
     def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
         """

@@ -55,19 +55,24 @@ def main(_config, _run):
 
     behavior_plotter.plot_model_prediction('ratio', to_save=True, use_multineuron=True)
     behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
+    behavior_plotter.plot_sorted_correlations('ratio', to_save=True)
 
     # Absolute speed
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='abs_speed')
     fname = output_folder.joinpath("encoding_absolute_speed.png")
     plt.savefig(fname)
 
-    behavior_plotter.plot_model_prediction(y_train='abs_speed', use_multineuron=True, **opt)
-    behavior_plotter.plot_model_prediction(y_train='abs_speed', use_multineuron=False, **opt)
+    opt['y_train'] = 'abs_speed'
+    behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
+    behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
+    behavior_plotter.plot_sorted_correlations(**opt)
 
     # Curvature from leifer paper
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='leifer_curvature')
     fname = output_folder.joinpath("encoding_leifer_curvature.png")
     plt.savefig(fname)
 
-    behavior_plotter.plot_model_prediction(y_train='leifer_curvature', use_multineuron=True, **opt)
-    behavior_plotter.plot_model_prediction(y_train='leifer_curvature', use_multineuron=False, **opt)
+    opt['y_train'] = 'leifer_curvature'
+    behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
+    behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
+    behavior_plotter.plot_sorted_correlations(**opt)
