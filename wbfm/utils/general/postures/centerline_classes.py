@@ -4,6 +4,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Union
+import statsmodels.api as sm
 
 import numpy as np
 import pandas as pd
@@ -52,6 +53,7 @@ class WormFullVideoPosture:
     frames_per_volume: int = 32  # Enhancement: make sure this is synchronized with z_slices
 
     project_config: ModularProjectConfig = None
+    num_frames: int = None
 
     # Postprocessing the time series
     tracking_failure_idx: np.ndarray = None
@@ -189,6 +191,43 @@ class WormFullVideoPosture:
 
         return state_trace
 
+    def calc_psuedo_pirouette_state(self, min_duration=3, window=600, std=50):
+        """
+        Calculates a state that is high when there are many reversal onsets, and low otherwise
+            Note: is low even during reversals if they are isolated
+
+        Parameters
+        ----------
+        min_duration
+        window
+        std
+
+        Returns
+        -------
+
+        """
+        ind_class = self.calc_triggered_average_indices(state=1, trace_len=self.num_frames, ind_preceding=0,
+                                                        min_duration=min_duration)
+
+        onsets = np.array([vec[0] for vec in self.calc_triggered_average_indices().triggered_average_indices
+                           if vec[0] > 0])
+
+        onset_vec = np.zeros(ind_class.trace_len)
+        onset_vec[onsets] = 1
+        pad_num = int(window / 2)
+        onset_vec_pad = np.pad(onset_vec, pad_num, constant_values=0)
+        x = np.arange(len(onset_vec_pad)) - pad_num
+        # probability_to_reverse = pd.Series(onset_vec_pad).rolling(center=True, window=window, win_type=None,
+        # min_periods=1).mean()
+        probability_to_reverse = pd.Series(onset_vec_pad).rolling(center=True, window=window, win_type='gaussian',
+                                                                  min_periods=1).mean(std=std)
+
+        mod = sm.tsa.MarkovRegression(probability_to_reverse, k_regimes=2)
+        res = mod.fit()
+        predicted_pirouette_state = res.predict()
+
+        return predicted_pirouette_state
+
     def calc_fwd_counter_state(self):
         """
         Calculates an integer vector that counts the time since last reversal
@@ -242,6 +281,7 @@ class WormFullVideoPosture:
         bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
         opt = dict(frames_per_volume=frames_per_volume,
                    bigtiff_start_volume=bigtiff_start_volume,
+                   num_frames=proj.num_frames,
                    project_config=project_config,
                    tracking_failure_idx=invalid_idx)
 
