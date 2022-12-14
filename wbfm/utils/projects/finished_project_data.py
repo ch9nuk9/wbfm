@@ -931,7 +931,7 @@ class ProjectData:
 
     def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[str]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
-                             dask_for_segmentation=True) -> napari.Viewer:
+                             dask_for_segmentation=True, **kwargs) -> napari.Viewer:
         """
         Add layers corresponding to any analysis steps to a napari viewer object
 
@@ -971,7 +971,7 @@ class ProjectData:
         from wbfm.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
         v = NapariLayerInitializer.add_layers_to_viewer(self, viewer, which_layers,
                                                         to_remove_flyback, check_if_layers_exist,
-                                                        dask_for_segmentation)
+                                                        dask_for_segmentation, **kwargs)
         return v
 
     def get_desynced_seg_and_frame_object_frames(self, verbose=1) -> List[int]:
