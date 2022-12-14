@@ -141,11 +141,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, **kwargs):
         """Plots model prediction over raw data"""
         if use_multineuron:
-            score, model, X_train, y_train, y_train_name, y_pred = \
+            score, model, X_train, y_train, y_pred, y_train_name = \
                 self.calc_multi_neuron_encoding(df_name, y_train=y_train)
             y_name = f"multineuron_{y_train_name}"
         else:
-            score, model, X_train, y_train, y_train_name, y_pred, _ = \
+            score, model, X_train, y_train, y_pred, y_train_name, _ = \
                 self.calc_single_neuron_encoding(df_name, y_train=y_train)
             y_name = f"single_best_neuron_{y_train_name}"
         self._plot(df_name, y_pred, y_train, y_name=y_name, score=score, **kwargs)
