@@ -200,12 +200,13 @@ class NapariLayerInitializer:
 
             if heatmap_kwargs.get('t', None) is not None:
                 seg = project_data.segmentation[heatmap_kwargs['t']]
+                del heatmap_kwargs['t']
             else:
                 seg = project_data.segmentation
 
             prop_dict = getattr(heat_mapper, layer_name)(**heatmap_kwargs)
             # Note: this layer must be visible for the prop_dict to work correctly
-            _layer = viewer.add_labels(seg, name=layer_name, scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
+            _layer = viewer.add_labels(seg, name=layer_name, scale=(z_to_xy_ratio, 1.0, 1.0),
                                        opacity=0.4, visible=True, rendering='translucent')
             _layer.color = prop_dict
             _layer.color_mode = 'direct'
