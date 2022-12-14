@@ -6,6 +6,8 @@ import signal
 import warnings
 import logging
 import sys
+from typing import List, Tuple
+
 import napari
 import numpy as np
 import pandas as pd
@@ -183,6 +185,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeReferenceTrace.addItems(neuron_names_and_none)
         self.changeReferenceTrace.currentIndexChanged.connect(self.update_reference_trace)
         self.formlayout3.addRow("Reference trace:", self.changeReferenceTrace)
+
+        self.addReferenceHeatmap = QtWidgets.QPushButton("Add Layer")
+        self.addReferenceHeatmap.pressed.connect(self.add_layer_colored_by_correlation_to_current_neuron)
+        self.formlayout3.addRow("Correlation to current trace:", self.addReferenceHeatmap)
 
     def _setup_general_shortcut_buttons(self):
         self.groupBox3b = QtWidgets.QGroupBox("General shortcuts", self.verticalLayoutWidget)
@@ -760,7 +766,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             change_viewer_time_point(self.viewer, t_target=t_target, a_max=self.max_time)
 
     def zoom_to_next_nan(self, viewer=None):
-        y_on_plot = self.y_on_plot[0]  # Don't need both min and max
+        y_on_plot = self.y_min_max_on_plot[0]  # Don't need both min and max
         if len(y_on_plot) == 0:
             return
         t_old = self.t
@@ -1000,7 +1006,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.tracklet_updated_psuedo_event()
 
     @cached_property
-    def y_on_plot(self):
+    def y_min_max_on_plot(self):
         # Return the min and max, because there could be overlapping lines in tracklet mode
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_on_plot = [line.get_ydata() for line in self.static_ax.lines]
@@ -1041,7 +1047,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.time_line is not None:
             self.time_line.remove()
             del self.time_line
-        self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
+        # self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
+        self.time_line = self.static_ax.axvline(**self.calculate_time_line_options())
 
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
         self.color_using_behavior()
@@ -1341,6 +1348,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.static_ax.update_params()
         self.mpl_widget.draw()
         # self.mpl_widget.canvas.draw()
+        y_min, y_max = self.y_min_max_on_plot
+        self.logger.debug(f"Autoscaled axis: {np.min(y_min)} and {np.max(y_max)}")
 
     def connect_time_line_callback(self):
         viewer = self.viewer
@@ -1351,21 +1360,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_time_line(self):
         # Doesn't work if the time line needs to be initialized
-        time_options = self.calculate_time_line()
-        self.time_line.set_data(time_options[:2])
-        self.time_line.set_color(time_options[-1])
+        time_options = self.calculate_time_line_options()
+        self.time_line.set_xdata(time_options['x'])
+        # self.time_line.set_data(time_options[:2])
+        self.time_line.set_color(time_options['color'])
         self.mpl_widget.draw()
 
     @property
     def t(self):
         return self.viewer.dims.current_step[0]
 
-    def calculate_time_line(self):
+    def calculate_time_line_options(self):
         t = self.t
-        y_min, y_max = self.y_on_plot
+        y_min, y_max = self.y_min_max_on_plot
         if len(y_min) == 0:
             return [t, t], [0, 30], 'r'
-        ymin, ymax = np.nanmin(y_min), np.nanmax(y_max)
+        # ymin, ymax = np.nanmin(y_min), np.nanmax(y_max)
         if t < len(y_min):
             self.tracking_is_nan = np.isnan(y_min[t])
         else:
@@ -1375,38 +1385,44 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             line_color = 'k'
         # print(f"Updating time line for t={t}, y[t] = {y[t]}, color={line_color}")
-        return [t, t], [ymin, ymax], line_color
+        # return [t, t], [ymin, ymax], line_color
+        return dict(x=t, color=line_color)
 
-    def update_stored_trace_time_series(self, calc_mode=None):
-        t, y = self.calculate_trace(calc_mode)
-        self.y_trace_mode = y
+    def update_stored_trace_time_series(self):
+        t, y = self.calculate_trace()
+        self.y_trace_mode: pd.Series = y
         self.tspan = t
 
-    def calculate_trace(self, calc_mode=None, neuron_name=None):
-        # i = self.changeNeuronsDropdown.currentIndex()
+    def calculate_trace(self, neuron_name=None) -> Tuple[List, pd.Series]:
         if neuron_name is None:
             neuron_name = self.current_neuron_name
-        channel = self.changeChannelDropdown.currentText()
-        if calc_mode is None:
-            calc_mode = self.changeTraceCalculationDropdown.currentText()
-        # remove_outliers_activity = False
-        min_confidence = None
-        # bleach_correct = True
 
+        trace_opt = self.get_trace_opt()
+        t, y = self.dat.calculate_traces(neuron_name=neuron_name, **trace_opt)
+        return t, y
+
+    def get_trace_opt(self):
+        channel = self.changeChannelDropdown.currentText()
+        calc_mode = self.changeTraceCalculationDropdown.currentText()
+        min_confidence = None
         remove_outliers_activity = self.changeTraceOutlierCheckBox.isChecked()
         bleach_correct = self.changeBleachCorrectionCheckBox.isChecked()
-        # remove_outliers_tracking = self.changeTrackingOutlierCheckBox.checkState()
-        # if remove_outliers_tracking:
-        #     min_confidence = self.changeTrackingOutlierSpinBox.value()
-        # else:
-        #     min_confidence = None
         filter_mode = self.changeTraceFilteringDropdown.currentText()
-        t, y = self.dat.calculate_traces(channel, calc_mode, neuron_name,
-                                         remove_outliers_activity,
-                                         filter_mode,
-                                         min_confidence=min_confidence,
-                                         bleach_correct=bleach_correct)
-        return t, y
+        trace_opt = dict(channel_mode=channel, calculation_mode=calc_mode,
+                         remove_outliers=remove_outliers_activity,
+                         filter_mode=filter_mode,
+                         min_confidence=min_confidence,
+                         bleach_correct=bleach_correct)
+        return trace_opt
+    @property
+    def df_of_current_traces(self):
+        """
+        Dataframe of traces with current options
+
+        Note that the project data class caches these dataframes, so they should only be slow once
+        """
+        trace_opt = self.get_trace_opt()
+        return self.dat.calc_default_traces(**trace_opt)
 
     def update_stored_tracklets_for_plotting(self):
         name = self.current_neuron_name
@@ -1487,6 +1503,20 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.bad_points = to_remove
         return all_tracks_array, track_of_point
+
+    def add_layer_colored_by_correlation_to_current_neuron(self):
+        """
+        Get the correlation between the current neuron and the rest...
+        for now the dataframe needs to be recalculated
+        """
+        which_layers = [('heatmap', 'custom_val_to_plot')]
+        y = self.y_trace_mode
+        df = self.df_of_current_traces
+        val_to_plot = df.corrwith(y)
+        # Square but keep the sign... de-emphasizes very small correlations
+        val_to_plot = val_to_plot * np.abs(val_to_plot)
+        heatmap_kwargs = dict(val_to_plot=val_to_plot, t=self.t)
+        self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs)
 
 
 def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None, DEBUG=False):

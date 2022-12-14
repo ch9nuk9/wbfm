@@ -119,7 +119,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
     if df_traces is None:
         trace_options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
                          'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct,
-                         'neuron_names': neuron_names, 'min_nonnan': min_nonnan}
+                         'neuron_names': tuple(neuron_names), 'min_nonnan': min_nonnan}
         df_traces = project_data.calc_default_traces(**trace_options)
 
     # Build functions to make a single subplot
@@ -757,12 +757,15 @@ class ClickableGridPlot:
         self.current_list_index = 1
 
 
-def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwargs=None, trace_kwargs=None):
+def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwargs=None, trace_kwargs=None,
+                               also_plot_zscore=True, neuron_names_to_plot=None):
     """
-    Uses seaborn to make a heatmap, including clustering of the
+    Uses seaborn to make a heatmap, including clustering of the traces
 
     Parameters
     ----------
+    trace_kwargs
+    plot_kwargs
     project_data
     to_save
 
@@ -771,7 +774,7 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
     """
 
-    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='ratio')
+    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='dr_over_r_20')
     if trace_kwargs is not None:
         default_trace_kwargs.update(trace_kwargs)
     trace_kwargs = default_trace_kwargs
@@ -782,7 +785,15 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     plot_kwargs = default_plot_kwargs
 
     # Calculate
-    df = project_data.calc_default_traces(**trace_kwargs).T
+    try:
+        df = project_data.calc_default_traces(**trace_kwargs).T
+    except ValueError:
+        logging.warning("Value error when interpolating traces; probably this means there wasn't enough data")
+        return
+
+    if neuron_names_to_plot is not None:
+        df = df.loc[neuron_names_to_plot, :]
+
     if 'vmin' not in plot_kwargs:
         plot_kwargs['vmin'] = 2*np.nanquantile(df.values, 0.1)
     if 'vmax' not in plot_kwargs:
@@ -793,10 +804,11 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     # plt.xlabel("Time")
     # plt.ylabel("Neuron name")
 
-    plot_kwargs['z_score'] = 0
-    fig_zscore = sns.clustermap(df, **plot_kwargs)
-    # plt.xlabel("Time")
-    # plt.ylabel("Neuron name")
+    if also_plot_zscore:
+        plot_kwargs['z_score'] = 0
+        fig_zscore = sns.clustermap(df, **plot_kwargs)
+        # plt.xlabel("Time")
+        # plt.ylabel("Neuron name")
 
     # Save
     if to_save:
@@ -806,9 +818,10 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
         fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         fig.savefig(fname)
 
-        fname = 'heatmap_zscore.png'
-        fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        fig_zscore.savefig(fname)
+        if also_plot_zscore:
+            fname = 'heatmap_zscore.png'
+            fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+            fig_zscore.savefig(fname)
 
 
 def make_default_summary_plots_using_config(project_cfg):
@@ -832,11 +845,11 @@ def make_default_summary_plots_using_config(project_cfg):
     grid_opt['sort_using_shade_value'] = True
     try:
         make_grid_plot_using_project(proj_dat, **grid_opt)
-    except NoNeuronsError:
+    except (NoNeuronsError, np.linalg.LinAlgError):
         pass
 
 
-def make_default_triggered_average_plots(project_cfg):
+def make_default_triggered_average_plots(project_cfg, to_save=True):
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     vis_cfg = project_data.project_config.get_visualization_config()
@@ -863,16 +876,18 @@ def make_default_triggered_average_plots(project_cfg):
                                                                 color_significant_times=False)
         make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
 
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
-        plt.savefig(fname)
+        if to_save:
+            fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
+            plt.savefig(fname)
 
         # Second, gridplot with "significant" points marked
         func = triggered_averages_class.ax_plot_func_for_grid_plot
         make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
 
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
-                                              prepend_subfolder=True)
-        plt.savefig(fname)
+        if to_save:
+            fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
+                                                  prepend_subfolder=True)
+            plt.savefig(fname)
 
         # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
         subset_neurons = triggered_averages_class.which_neurons_are_significant()
@@ -882,5 +897,6 @@ def make_default_triggered_average_plots(project_cfg):
         make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
                                      neuron_names_to_plot=subset_neurons)
 
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
-        plt.savefig(fname)
+        if to_save:
+            fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
+            plt.savefig(fname)

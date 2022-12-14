@@ -250,8 +250,14 @@ all_projects_spacer_2per_round2 = load_all_projects_in_folder(foldername)
 foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-30_spacer_7b_2per_agar"
 all_projects_spacer_2per_round3 = load_all_projects_in_folder(foldername)
 
-foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-12_05_spacer_7b_2per_agar"
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-12-05_spacer_7b_2per_agar"
 all_projects_spacer_2per_round4 = load_all_projects_in_folder(foldername)
+
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-12-08_spacer_7b_2per_agar"
+all_projects_spacer_2per_round5 = load_all_projects_in_folder(foldername)
+
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-12-10_spacer_7b_2per_agar"
+all_projects_spacer_2per_round6 = load_all_projects_in_folder(foldername)
 
 ##
 foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-23_spacer_on_food"
@@ -260,4 +266,6 @@ all_projects_spacer_food = load_all_projects_in_folder(foldername)
 foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_on_food"
 all_projects_spacer_food_round2 = load_all_projects_in_folder(foldername)
 
-
+##
+foldername = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-12-10_spacer_7b_2per_agar_GFP"
+all_projects_spacer_2per_gfp = load_all_projects_in_folder(foldername)

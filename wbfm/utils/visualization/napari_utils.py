@@ -155,7 +155,7 @@ class NapariPropertyHeatMapper:
             val_to_plot = corrcoefs
             return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
-    def anchor_corr_red(self,anchor="neuron_028"):
+    def anchor_corr_red(self, anchor="neuron_028"):
         corrcoefs = []
         anchor_trace_raw = detrend_exponential_iter(self.red_traces[anchor]["intensity_image"])[0]
         for neuron in self.names:
@@ -214,8 +214,11 @@ class NapariPropertyHeatMapper:
         val_to_plot = list((self.mean_green / self.mean_red).std())
         return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
+    def custom_val_to_plot(self, val_to_plot):
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
-def property_vector_to_colormap(val_to_plot, vec_of_labels, cmap=plt.cm.plasma):
+
+def property_vector_to_colormap(val_to_plot, vec_of_labels, cmap=plt.cm.RdBu):
     prop = np.array(val_to_plot)
     prop_scaled = (
             (prop - prop.min()) / (prop.max() - prop.min())

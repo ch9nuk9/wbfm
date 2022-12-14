@@ -1,10 +1,14 @@
 import concurrent
 import logging
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+
+import dask
+from methodtools import lru_cache
 from pathlib import Path
-
 from matplotlib import pyplot as plt
-
+from scipy.signal import detrend
+from sklearn.decomposition import PCA
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
@@ -22,15 +26,16 @@ import numpy as np
 import pandas as pd
 import zarr
 from tqdm.auto import tqdm
+import dask.array as da
 
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
-    get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns
+    get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, get_contiguous_blocks_from_column
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import NearestNeighbors, LocalOutlierFactor
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from wbfm.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
 from segmentation.util.utils_metadata import DetectedNeurons
@@ -91,7 +96,6 @@ class ProjectData:
     green_traces: pd.DataFrame = None
 
     # For plotting and visualization
-    worm_posture_class: WormFullVideoPosture = None  # Allows coloring the traces (currently, done manually)
     background_per_pixel: float = None  # Simple version of background correction
     likelihood_thresh: float = None  # When plotting, plot gaps for low-confidence time points
 
@@ -323,6 +327,11 @@ class ProjectData:
                                            use_custom_padded_dataframe=self.use_custom_padded_dataframe)
 
     @cached_property
+    def worm_posture_class(self) -> WormFullVideoPosture:
+        """Allows coloring the traces using behavioral annotation, and general correlations to behavior"""
+        return WormFullVideoPosture.load_from_config(self.project_config)
+
+    @cached_property
     def tracked_worm_class(self):
         """Class that connects tracklets and final neurons using global tracking"""
         self.logger.warning("Loading tracked worm object for the first time, may take a while")
@@ -445,19 +454,14 @@ class ProjectData:
         # Metadata uses class from segmentation package, which does lazy loading itself
         seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         obj.segmentation_metadata = DetectedNeurons(seg_metadata_fname)
-
         obj.physical_unit_conversion = cfg.get_physical_unit_conversion_class()
 
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
-
-        behavior_reader = lambda: WormFullVideoPosture.load_from_config(cfg)
         zarr_reader_readwrite = lambda fname: zarr.open(fname, mode='r+')
-
         cfg.logger.debug("Starting threads to read data...")
 
         with safe_cd(cfg.project_dir):
-
             with concurrent.futures.ThreadPoolExecutor() as ex:
                 if to_load_tracklets:
                     ex.submit(obj.load_tracklet_related_properties)
@@ -473,7 +477,6 @@ class ProjectData:
                 green_traces = ex.submit(read_if_exists, green_traces_fname).result()
                 raw_segmentation = ex.submit(read_if_exists, seg_fname_raw, zarr_reader_readwrite).result()
                 segmentation = ex.submit(read_if_exists, seg_fname, zarr_reader_folder_or_zipstore).result()
-                worm_posture_class = ex.submit(behavior_reader).result()
 
             if red_traces is not None:
                 red_traces.replace(0, np.nan, inplace=True)
@@ -493,7 +496,6 @@ class ProjectData:
         obj.segmentation = segmentation
         obj.red_traces = red_traces
         obj.green_traces = green_traces
-        obj.worm_posture_class = worm_posture_class
         obj.background_per_pixel = background_per_pixel
         obj.likelihood_thresh = likelihood_thresh
         if verbose >= 1:
@@ -587,8 +589,10 @@ class ProjectData:
         neuron_names = get_names_from_df(df_tmp)
         return neuron_names
 
-    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False, raise_error_on_empty=True,
-                            neuron_names=None, verbose=0,
+    @lru_cache(maxsize=128)
+    def calc_default_traces(self, min_nonnan: float = 0.75, interpolate_nan: bool = False,
+                            raise_error_on_empty: bool = True,
+                            neuron_names: tuple = None, verbose=0,
                             **kwargs):
         """
 
@@ -606,12 +610,12 @@ class ProjectData:
 
         Parameters
         ----------
-        min_nonnan - drops neurons with too few nonnan points, in this case 75%
-        interpolate_nan - bool, see above
-        raise_error_on_empty - if empty AFTER dropping, raise an error
-        neuron_names - a subset of names to do
+        min_nonnan: drops neurons with too few nonnan points, in this case 75%
+        interpolate_nan: bool, see above
+        raise_error_on_empty: if empty AFTER dropping, raise an error
+        neuron_names: a subset of names to do
         verbose
-        kwargs - Args to pass to calculate_traces; updates the default 'opt' dict above
+        kwargs: Args to pass to calculate_traces; updates the default 'opt' dict above
 
         Returns
         -------
@@ -927,7 +931,7 @@ class ProjectData:
 
     def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[str]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
-                             dask_for_segmentation=True) -> napari.Viewer:
+                             dask_for_segmentation=True, **kwargs) -> napari.Viewer:
         """
         Add layers corresponding to any analysis steps to a napari viewer object
 
@@ -967,7 +971,7 @@ class ProjectData:
         from wbfm.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
         v = NapariLayerInitializer.add_layers_to_viewer(self, viewer, which_layers,
                                                         to_remove_flyback, check_if_layers_exist,
-                                                        dask_for_segmentation)
+                                                        dask_for_segmentation, **kwargs)
         return v
 
     def get_desynced_seg_and_frame_object_frames(self, verbose=1) -> List[int]:
@@ -991,6 +995,51 @@ class ProjectData:
         df_manual_tracking = read_if_exists(fname, reader=pd.read_csv)
         # df_manual_tracking = pd.read_csv(fname)
         return df_manual_tracking
+
+    def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto'):
+        """
+        Uses sudden dips in the number of detected objects to guess where the tracking might fail
+
+        Additionally, pads contiguous regions of tracking failure, assuming that the tracking was incorrect before and after
+        the times it was detected
+
+        Parameters
+        ----------
+        project_data
+        pad_nan_points
+        contamination
+
+        Returns
+        -------
+
+        """
+        try:
+            all_vol = [self.segmentation_metadata.get_all_volumes(i) for i in range(self.num_frames)]
+        except AttributeError as e:
+            self.logger.warning(f"Error with reading segmentation, may be due to python version: {e}")
+            return None
+        all_num_objs = np.array(list(map(len, all_vol)))
+        all_num_objs = detrend(all_num_objs)
+        model = LocalOutlierFactor(contamination=contamination)
+        vals = model.fit_predict(all_num_objs.reshape(-1, 1))
+
+        # Pad the discovered blocks
+        if pad_nan_points is not None:
+            df_vals = pd.Series(vals == -1)
+            starts, ends = get_contiguous_blocks_from_column(df_vals, already_boolean=True)
+            idx_boolean = np.zeros_like(vals, dtype=bool)
+            for s, e in zip(starts, ends):
+                s = np.clip(s - pad_nan_points, a_min=0, a_max=len(vals))
+                e = np.clip(e + pad_nan_points, a_min=0, a_max=len(vals))
+                idx_boolean[s:e] = True
+        else:
+            idx_boolean = vals == -1
+
+        # Get outliers, but only care about decreases in objects, not increases
+        invalid_idx = np.where(idx_boolean)[0]
+        invalid_idx = np.array([i for i in invalid_idx if all_num_objs[i] < 0])
+
+        return invalid_idx
 
     @cached_property
     def finished_neuron_names(self) -> List[str]:
@@ -1297,12 +1346,50 @@ def print_project_statistics(project_config: ModularProjectConfig):
 
 
 def load_all_projects_in_folder(folder_name, **kwargs) -> List[ProjectData]:
+    list_of_project_folders = list(Path(folder_name).iterdir())
+    all_projects = load_all_projects_from_list(list_of_project_folders, **kwargs)
+    return all_projects
+
+
+def load_all_projects_from_list(list_of_project_folders, **kwargs):
     all_projects = []
-    for folder in Path(folder_name).iterdir():
+    if 'verbose' not in kwargs:
+        kwargs['verbose'] = 0
+    for folder in list_of_project_folders:
         if Path(folder).is_file():
             continue
         for file in Path(folder).iterdir():
             if "project_config.yaml" in file.name and not file.name.startswith('.'):
-                proj = ProjectData.load_final_project_data_from_config(file, verbose=0, **kwargs)
+                proj = ProjectData.load_final_project_data_from_config(file, **kwargs)
                 all_projects.append(proj)
     return all_projects
+
+
+def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, title=""):
+    if trace_kwargs is None:
+        trace_kwargs = {}
+
+    X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
+    X = detrend(X, axis=0)
+    n_components = 3
+    pca = PCA(n_components=n_components, whiten=False)
+    pca.fit(X.T)
+    pca_modes = pca.components_.T
+
+    plt.figure(dpi=100, figsize=(15, 3))
+
+    offsets = 1.5*np.arange(n_components)
+    plt.plot(pca_modes / pca_modes.max() - offsets, label=[f"mode {i+1}" for i in range(n_components)])
+    plt.legend(loc='lower right')
+    project_data.shade_axis_using_behavior()
+    plt.yticks([])
+    plt.xlim(0, project_data.num_frames)
+
+    plt.title(title)
+
+    vis_cfg = project_data.project_config.get_visualization_config()
+    fname = 'pca_modes.png'
+    fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+    plt.savefig(fname)
+
+    return pca

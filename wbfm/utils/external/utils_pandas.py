@@ -254,7 +254,7 @@ def remove_tiny_state_changes(column: pd.Series, min_length, replace_with_preced
     return new_column
 
 
-def get_durations_from_column(column_or_series: pd.Series, already_boolean=False) -> list:
+def get_durations_from_column(column_or_series: pd.Series, already_boolean=False, remove_edges=True) -> list:
     """
     Given a pd.Series that may have gaps, get the durations of contiguous blocks of non-nan points
 
@@ -264,6 +264,8 @@ def get_durations_from_column(column_or_series: pd.Series, already_boolean=False
 
     Parameters
     ----------
+    remove_edges: remove events if they touch the edges (these lengths have a censoring effect)
+    already_boolean
     column_or_series
 
     Returns
@@ -272,7 +274,11 @@ def get_durations_from_column(column_or_series: pd.Series, already_boolean=False
     """
 
     block_starts, block_ends = get_contiguous_blocks_from_column(column_or_series, already_boolean=already_boolean)
-    durations = [e - s for e, s in zip(block_ends, block_starts)]
+    durations = []
+    for e, s in zip(block_ends, block_starts):
+        if remove_edges and (s == 0 or e == len(column_or_series)):
+            continue
+        durations.append(e - s)
 
     return durations
 

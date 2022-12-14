@@ -8,7 +8,7 @@ from pathlib import Path
 import sacred
 from sacred import Experiment
 
-from wbfm.utils.visualization.behavior_comparison_plots import BehaviorPlotter
+from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
@@ -25,7 +25,7 @@ def cfg(project_path):
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    model = BehaviorPlotter(_config['project_path'])
+    model = NeuronToMultivariateEncoding(_config['project_path'])
 
     model.plot_correlation_of_examples(to_save=True)
     model.plot_correlation_histograms(to_save=True)

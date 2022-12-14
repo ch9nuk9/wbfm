@@ -31,3 +31,4 @@ dependencies:
     - pytest
     - ruptures
     - backports.cached_property
+    - methodtools

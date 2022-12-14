@@ -94,10 +94,12 @@ class NapariLayerInitializer:
         return v
 
     @staticmethod
-    def add_layers_to_viewer(project_data, viewer=None, which_layers: Union[str, List[str]] = 'all',
+    def add_layers_to_viewer(project_data, viewer=None, which_layers: Union[str, List[str], List[tuple]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
                              dask_for_segmentation=True, force_all_visible=False,
-                             gt_neuron_name_dict=None):
+                             gt_neuron_name_dict=None, heatmap_kwargs=None):
+        if heatmap_kwargs is None:
+            heatmap_kwargs = {}
         if viewer is None:
             viewer = napari.Viewer(ndisplay=3)
 
@@ -177,12 +179,6 @@ class NapariLayerInitializer:
             layers_actually_added.append('Intermediate global IDs')
 
         # Special layers from the heatmapper class
-        try:
-            heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces, curvature_fluorescence_fps = project_data.worm_posture_class.curvature_fluorescence_fps.iloc[0:project_data.red_traces["neuron_001"].shape[0],])
-        except Exception as exc:
-            print(exc)
-            heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces)
-
         for layer_tuple in which_layers:
             if not isinstance(layer_tuple, tuple):
                 continue
@@ -202,10 +198,15 @@ class NapariLayerInitializer:
                 layer_name = layer_tuple[1]
                 layers_actually_added.append(layer_tuple)
 
-            prop_dict = getattr(heat_mapper, layer_name)()
+            if heatmap_kwargs.get('t', None) is not None:
+                seg = project_data.segmentation[heatmap_kwargs['t']]
+                del heatmap_kwargs['t']
+            else:
+                seg = project_data.segmentation
+
+            prop_dict = getattr(heat_mapper, layer_name)(**heatmap_kwargs)
             # Note: this layer must be visible for the prop_dict to work correctly
-            _layer = viewer.add_labels(project_data.segmentation, name=layer_name,
-                                       scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
+            _layer = viewer.add_labels(seg, name=layer_name, scale=(z_to_xy_ratio, 1.0, 1.0),
                                        opacity=0.4, visible=True, rendering='translucent')
             _layer.color = prop_dict
             _layer.color_mode = 'direct'

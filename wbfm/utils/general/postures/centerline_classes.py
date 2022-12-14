@@ -53,6 +53,9 @@ class WormFullVideoPosture:
 
     project_config: ModularProjectConfig = None
 
+    # Postprocessing the time series
+    tracking_failure_idx: np.ndarray = None
+
     def __post_init__(self):
         self.fix_temporary_annotation_format()
 
@@ -164,7 +167,7 @@ class WormFullVideoPosture:
 
         """
         binary_fwd = self.behavior_annotations_fluorescence_fps == 0
-        all_durations = get_durations_from_column(binary_fwd, already_boolean=True)
+        all_durations = get_durations_from_column(binary_fwd, already_boolean=True, remove_edges=False)
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
         start2duration_and_end_dict = {}
         for duration, start, end in zip(all_durations, all_starts, all_ends):
@@ -231,12 +234,18 @@ class WormFullVideoPosture:
 
         # Before anything, load metadata
         frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
+        # Use the project data class to check for tracking failures
+        from wbfm.utils.projects.finished_project_data import ProjectData
+        proj = ProjectData.load_final_project_data_from_config(project_config, to_load_segmentation_metadata=True)
+        invalid_idx = proj.estimate_tracking_failures_from_project()
+
         bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
         opt = dict(frames_per_volume=frames_per_volume,
                    bigtiff_start_volume=bigtiff_start_volume,
-                   project_config=project_config)
+                   project_config=project_config,
+                   tracking_failure_idx=invalid_idx)
 
-        # First, get the folder that contains all behavior information
+        # Get the folder that contains all behavior information
         # Try 1: read from config file
         behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
         if behavior_fname is None:
@@ -244,7 +253,8 @@ class WormFullVideoPosture:
             project_config.logger.debug("behavior_fname not found; searching")
             behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
             if not flag:
-                project_config.logger.warning("behavior_fname search failed; All calculations with curvature (kymograph) will fail")
+                project_config.logger.warning("behavior_fname search failed; "
+                                              "All calculations with curvature (kymograph) will fail")
                 behavior_subfolder = None
         else:
             behavior_subfolder = Path(behavior_fname).parent
@@ -283,7 +293,7 @@ class WormFullVideoPosture:
         else:
             all_files = dict()
 
-        # Finally, get the manuel behavior annotations if automatic wasn't found
+        # Get the manual behavior annotations if automatic wasn't found
         if all_files.get('filename_beh_annotation', None) is None:
             try:
                 filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
@@ -353,7 +363,7 @@ class WormFullVideoPosture:
     @property
     def curvature_fluorescence_fps(self):
         if self.curvature is not None:
-            return self.curvature.iloc[self.subsample_indices, :]
+            return self.remove_invalid_idx(self.curvature.iloc[self.subsample_indices, :])
         else:
             return None
 
@@ -382,17 +392,17 @@ class WormFullVideoPosture:
         tdelta_s = tdelta.delta / 1e9
         speed_mm_per_s = speed / tdelta_s
 
-        return pd.Series(speed_mm_per_s)
+        return self.remove_invalid_idx(pd.Series(speed_mm_per_s))
 
     @property
     def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
         """Just sets the speed to be negative when the behavior is annotated as reversal"""
         speed = self.worm_speed_fluorescence_fps
-        rev_ind = self.behavior_annotations_fluorescence_fps == 1
+        rev_ind = (self.behavior_annotations_fluorescence_fps == 1).reset_index(drop=True)
         velocity = copy.copy(speed)
         velocity[rev_ind] *= -1
 
-        return velocity
+        return self.remove_invalid_idx(velocity)
 
     @property
     def worm_speed_smoothed(self) -> pd.Series:
@@ -407,12 +417,18 @@ class WormFullVideoPosture:
     @property
     def leifer_curvature_from_kymograph(self) -> pd.Series:
         # Signed average over segments 10 to 90
-        return self.curvature_fluorescence_fps.loc[:, 5:90].mean(axis=1)
+        return self.remove_invalid_idx(self.curvature_fluorescence_fps.loc[:, 5:90].mean(axis=1))
 
     @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
         return range(self.bigtiff_start_volume*self.frames_per_volume, len(self.worm_speed), self.frames_per_volume)
+
+    def remove_invalid_idx(self, vec: pd.Series) -> pd.Series:
+        if self.tracking_failure_idx is not None:
+            vec = vec.copy()
+            vec.iloc[self.tracking_failure_idx] = np.nan
+        return vec
 
     def __repr__(self):
         return f"=======================================\n\

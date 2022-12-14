@@ -176,7 +176,8 @@ class TriggeredAverageIndices:
         ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
         # Reference points
         ax.axhline(raw_trace_mean, c='black', ls='--')
-        ax.plot(self.ind_preceding, raw_trace_mean, "r>", markersize=10)
+        ax.axvline(x=self.ind_preceding, color='r', ls='--')
+        # ax.plot(self.ind_preceding, raw_trace_mean, "r>", markersize=10)
         # Optional orange points
         x_significant = self.calc_significant_points_from_triggered_matrix(triggered_avg_matrix)
         if color_significant_times:

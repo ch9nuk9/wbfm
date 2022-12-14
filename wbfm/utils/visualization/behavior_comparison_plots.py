@@ -20,6 +20,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
 from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
+from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 
@@ -64,10 +65,12 @@ class NeuronEncodingBase:
 
 
 @dataclass
-class SpeedEncoding(NeuronEncodingBase):
+class NeuronToUnivariateEncoding(NeuronEncodingBase):
     """Subclass for specifically encoding a 1-d behavioral variable. By default this is speed"""
 
     cv: int = 5
+
+    _last_model_calculated: callable = None
 
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
@@ -75,33 +78,40 @@ class SpeedEncoding(NeuronEncodingBase):
     def calc_multi_neuron_encoding(self, df_name, y_train=None):
         """Speed by default"""
         X_train = self.all_dfs[df_name]
-        X_train, y_train = self._get_y_train_and_remove_nans(X_train, y_train)
+        X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
+        alphas = np.logspace(-10, 10, 21)  # alpha values to be chosen from by cross-validation
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            model = RidgeCV(cv=self.cv).fit(X_train, y_train)
+            model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
         score = model.best_score_
-        return score, model, X_train, y_train
+        y_pred = model.predict(X_train)
+        self._last_model_calculated = model
+        return score, model, X_train, y_train, y_pred, y_train_name
 
-    def _get_y_train_and_remove_nans(self, X_train, y_train):
+    def _get_y_train_and_remove_nans(self, X_train, y_train_name):
         trace_len = X_train.shape[0]
         # Get 1d series from behavior
-        if y_train is None:
+        if y_train_name is None:
+            y_train_name = 'signed_speed'
             y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
-        elif isinstance(y_train, str):
-            if y_train == 'abs_speed':
+        elif isinstance(y_train_name, str):
+            if y_train_name == 'abs_speed':
                 y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps[:trace_len]
-            elif y_train == 'leifer_curvature':
+            elif y_train_name == 'leifer_curvature':
                 y_train = self.project_data.worm_posture_class.leifer_curvature_from_kymograph[:trace_len]
+            else:
+                raise NotImplementedError(y_train_name)
         else:
-            raise NotImplementedError(y_train)
+            raise NotImplementedError(y_train_name)
+        y_train.reset_index(drop=True, inplace=True)
 
         # Remove nan points, if any
         valid_ind = np.where(~np.isnan(y_train))[0]
         X_train = X_train.iloc[valid_ind, :]
         y_train = y_train.iloc[valid_ind]
 
-        return X_train, y_train
+        return X_train, y_train, y_train_name
 
     def calc_single_neuron_encoding(self, df_name, y_train=None):
         """
@@ -109,27 +119,69 @@ class SpeedEncoding(NeuronEncodingBase):
             ridge alpha (inner) and best neuron (outer)
         """
         X_train = self.all_dfs[df_name]
-        X_train, y_train = self._get_y_train_and_remove_nans(X_train, y_train)
+        X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
             estimator = RidgeCV(cv=self.cv)
             # This can be parallelized, but has a pickle error on my machine
-            model = SequentialFeatureSelector(estimator=estimator,
+            sfs = SequentialFeatureSelector(estimator=estimator,
                                               n_features_to_select=1, direction='forward', cv=self.cv)
-            model.fit(X_train, y_train)
+            sfs.fit(X_train, y_train)
         # Seems like you need to refit the model after searching
         feature_names = get_names_from_df(self.all_dfs[df_name])
-        best_neuron = feature_names[np.where(model.get_support())[0][0]]
+        best_neuron = feature_names[np.where(sfs.get_support())[0][0]]
         X = X_train[best_neuron].values.reshape(-1, 1)
-        score = model.estimator.fit(X, y_train).score(X, y_train)
-        return score, model, X_train, y_train, best_neuron
+        model = sfs.estimator.fit(X, y_train)
+        score = model.score(X, y_train)
+        y_pred = model.predict(X)
+        self._last_model_calculated = model
+        return score, model, X_train, y_train, y_pred, y_train_name, best_neuron
 
-    def plot_multineuron_encoding(self, df_name, y_train=None, y_name="speed"):
-        """Speed by default"""
-        score, model, X_train, y_train = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
-        y_pred = model.predict(X_train)
-        self._plot(df_name, y_pred, y_train)
+    def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, **kwargs):
+        """Plots model prediction over raw data"""
+        if use_multineuron:
+            score, model, X_train, y_train, y_pred, y_train_name = \
+                self.calc_multi_neuron_encoding(df_name, y_train=y_train)
+            y_name = f"multineuron_{y_train_name}"
+        else:
+            score, model, X_train, y_train, y_pred, y_train_name, _ = \
+                self.calc_single_neuron_encoding(df_name, y_train=y_train)
+            y_name = f"single_best_neuron_{y_train_name}"
+        self._plot(df_name, y_pred, y_train, y_name=y_name, score=score, **kwargs)
+
+    def plot_sorted_correlations(self, df_name, y_train=None, to_save=False, saving_folder=None):
+        """Does not fit a model, just raw correlation"""
+        X_train = self.all_dfs[df_name]
+        X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
+
+        corr = X_train.corrwith(y_train)
+        idx = np.argsort(corr)
+        names = get_names_from_df(X_train)
+
+        fig, ax = plt.subplots(dpi=200)
+        x = range(len(idx))
+        plt.bar(x, corr.iloc[idx.values])
+
+        labels = np.array(names)[idx.values]
+        labels = [name2int_neuron_and_tracklet(n) for n in labels]
+        # plt.xticks(x, labels="")
+        # ymin = np.min(corr) - 0.1
+        # for i, name in enumerate(labels):
+        #     plt.annotate(text=name, xy=(i, ymin), xytext=(i, ymin-0.1*(-i % 8)-0.1), xycoords='data', arrowprops={'width':1, 'headwidth':0}, annotation_clip=False)
+        # ax.xaxis.set_major_locator(MultipleLocator(10))
+        # ax.xaxis.set_minor_locator(MultipleLocator(1))
+        plt.xticks(ticks=x, labels=labels, fontsize=6)
+        # ax.xaxis.set_minor_formatter(FormatStrFormatter("%d"))
+        plt.grid(which='major', axis='x')
+        ax.set_axisbelow(True)
+        for i, tick in enumerate(ax.xaxis.get_major_ticks()):
+            tick.set_pad(8 * (i % 4))
+        plt.title(f"Sorted correlation: {df_name} traces with {y_train_name}")
+
+        if to_save:
+            fname = f"sorted_correlation_{df_name}_{y_train_name}.png"
+            self._savefig(fname, saving_folder)
 
     def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
         """
@@ -175,23 +227,32 @@ class SpeedEncoding(NeuronEncodingBase):
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
 
-    def _plot(self, df_name, y_pred, y_train, y_name=""):
-        mae = median_absolute_error(y_train, y_pred)
-        fig, ax = plt.subplots(dpi=100)
+    def _plot(self, df_name, y_pred, y_train, y_name="", score=None, to_save=False, saving_folder=None):
+        if score is None:
+            score = median_absolute_error(y_train, y_pred)
+        fig, ax = plt.subplots(dpi=200)
         opt = dict()
         if df_name == 'green' or df_name == 'red':
             opt['color'] = df_name
         ax.plot(y_pred, label='prediction', **opt)
 
-        ax.set_title(f"Regression model with error {mae:.4f} from {df_name} traces")
-        plt.ylabel("Time (mm/s)")
+        ax.set_title(f"Prediction error {score:.3f} from {df_name} traces ({self.project_data.shortened_name})")
+        plt.ylabel("Probably speed (mm/s)")
         plt.xlabel("Truths")
-        ax.plot(y_train, color='black', label='Target')
+        ax.plot(y_train, color='black', label='Target', alpha=0.8)
         plt.legend()
         self.project_data.shade_axis_using_behavior()
 
-        vis_cfg = self.project_data.project_config.get_visualization_config()
-        fname = vis_cfg.resolve_relative_path(f"regression_fit_{df_name}_{y_name}.png", prepend_subfolder=True)
+        if to_save:
+            fname = f"regression_fit_{df_name}_{y_name}.png"
+            self._savefig(fname, saving_folder)
+
+    def _savefig(self, fname, saving_folder):
+        if saving_folder is None:
+            vis_cfg = self.project_data.project_config.get_visualization_config()
+            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        else:
+            fname = os.path.join(saving_folder, f"{self.project_data.shortened_name}-{fname}")
         plt.savefig(fname)
 
     def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
@@ -251,7 +312,7 @@ class SpeedEncoding(NeuronEncodingBase):
 
 
 @dataclass
-class BehaviorPlotter(NeuronEncodingBase):
+class NeuronToMultivariateEncoding(NeuronEncodingBase):
     """Designed for single-neuron correlations to all kymograph body segments"""
 
     def __post_init__(self):
@@ -635,7 +696,7 @@ class BehaviorPlotter(NeuronEncodingBase):
 class MultiProjectBehaviorPlotter:
     all_project_paths: list
 
-    class_constructor: callable = BehaviorPlotter
+    class_constructor: callable = NeuronToMultivariateEncoding
     use_threading: bool = True
 
     _all_behavior_plotters: List[NeuronEncodingBase] = None
