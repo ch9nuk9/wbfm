@@ -24,7 +24,7 @@ def get_project_parent_folder():
     return "/scratch/neurobiology/zimmer/Charles/dlc_stacks"
 
 
-def load_paper_datasets(genotype='gcamp'):
+def load_paper_datasets(genotype='gcamp', require_behavior=True):
     """
 
     As of Dec 2022, these are the datasets we will use, with this condition:
@@ -63,10 +63,20 @@ def load_paper_datasets(genotype='gcamp'):
     elif genotype == 'gfp':
         folder_path = '/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-12-10_spacer_7b_2per_agar_GFP'
         good_projects = load_all_projects_in_folder(folder_path)
+    elif genotype == 'immob':
+        folder_path = '/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-03_immob_adj_settings_2'
+        require_behavior = False  # No annotation of behavior here
+        good_projects = load_all_projects_in_folder(folder_path)
     else:
         raise NotImplementedError
-    good_projects_filtered = [p for p in good_projects if p.worm_posture_class.has_beh_annotation]
-    if len(good_projects_filtered) < len(good_projects):
-        print("Removed some designated 'good' projects because they didn't have behavior")
+
+    if require_behavior:
+        good_projects_filtered = [p for p in good_projects if p.worm_posture_class.has_beh_annotation]
+        if len(good_projects_filtered) < len(good_projects):
+            print("Removed some designated 'good' projects because they didn't have behavior")
+    else:
+        good_projects_filtered = good_projects
+
+    print(f"Loaded {len(good_projects_filtered)} projects")
 
     return good_projects_filtered

@@ -1353,12 +1353,14 @@ def load_all_projects_in_folder(folder_name, **kwargs) -> List[ProjectData]:
 
 def load_all_projects_from_list(list_of_project_folders, **kwargs):
     all_projects = []
+    if 'verbose' not in kwargs:
+        kwargs['verbose'] = 0
     for folder in list_of_project_folders:
         if Path(folder).is_file():
             continue
         for file in Path(folder).iterdir():
             if "project_config.yaml" in file.name and not file.name.startswith('.'):
-                proj = ProjectData.load_final_project_data_from_config(file, verbose=0, **kwargs)
+                proj = ProjectData.load_final_project_data_from_config(file, **kwargs)
                 all_projects.append(proj)
     return all_projects
 
@@ -1370,12 +1372,13 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
     X = detrend(X, axis=0)
     pca = PCA(n_components=3, whiten=False)
-    pca_proj = pca.fit_transform(X)
+    pca.fit(X.T)
+    pca_modes = pca.components_.T
 
     plt.figure(dpi=200)
 
-    offsets = np.arange(3)
-    plt.plot(pca_proj / pca_proj.max() - offsets, label=[f"mode {i}" for i in offsets])
+    offsets = 1.5*np.arange(3)
+    plt.plot(pca_modes / pca_modes.max() - offsets, label=[f"mode {i}" for i in offsets])
     plt.legend(loc='lower right')
     project_data.shade_axis_using_behavior()
     plt.yticks([])
@@ -1386,3 +1389,5 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     fname = 'pca_modes.png'
     fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
     plt.savefig(fname)
+
+    return pca
