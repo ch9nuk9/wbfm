@@ -8,6 +8,7 @@ from methodtools import lru_cache
 from pathlib import Path
 from matplotlib import pyplot as plt
 from scipy.signal import detrend
+from sklearn.decomposition import PCA
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
@@ -1360,3 +1361,28 @@ def load_all_projects_from_list(list_of_project_folders, **kwargs):
                 proj = ProjectData.load_final_project_data_from_config(file, verbose=0, **kwargs)
                 all_projects.append(proj)
     return all_projects
+
+
+def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, title=""):
+    if trace_kwargs is None:
+        trace_kwargs = {}
+
+    X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
+    X = detrend(X, axis=0)
+    pca = PCA(n_components=3, whiten=False)
+    pca_proj = pca.fit_transform(X)
+
+    plt.figure(dpi=200)
+
+    offsets = np.arange(3)
+    plt.plot(pca_proj / pca_proj.max() - offsets, label=[f"mode {i}" for i in offsets])
+    plt.legend(loc='lower right')
+    project_data.shade_axis_using_behavior()
+    plt.yticks([])
+
+    plt.title(title)
+
+    vis_cfg = project_data.project_config.get_visualization_config()
+    fname = 'pca_modes.png'
+    fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+    plt.savefig(fname)
