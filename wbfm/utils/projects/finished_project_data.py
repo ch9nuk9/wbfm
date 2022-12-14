@@ -589,8 +589,9 @@ class ProjectData:
         return neuron_names
 
     @lru_cache(maxsize=128)
-    def calc_default_traces(self, min_nonnan=0.75, interpolate_nan=False, raise_error_on_empty=True,
-                            neuron_names=None, verbose=0,
+    def calc_default_traces(self, min_nonnan: float = 0.75, interpolate_nan: bool = False,
+                            raise_error_on_empty: bool = True,
+                            neuron_names: tuple = None, verbose=0,
                             **kwargs):
         """
 
@@ -608,12 +609,12 @@ class ProjectData:
 
         Parameters
         ----------
-        min_nonnan - drops neurons with too few nonnan points, in this case 75%
-        interpolate_nan - bool, see above
-        raise_error_on_empty - if empty AFTER dropping, raise an error
-        neuron_names - a subset of names to do
+        min_nonnan: drops neurons with too few nonnan points, in this case 75%
+        interpolate_nan: bool, see above
+        raise_error_on_empty: if empty AFTER dropping, raise an error
+        neuron_names: a subset of names to do
         verbose
-        kwargs - Args to pass to calculate_traces; updates the default 'opt' dict above
+        kwargs: Args to pass to calculate_traces; updates the default 'opt' dict above
 
         Returns
         -------

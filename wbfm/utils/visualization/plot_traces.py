@@ -119,7 +119,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
     if df_traces is None:
         trace_options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
                          'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct,
-                         'neuron_names': neuron_names, 'min_nonnan': min_nonnan}
+                         'neuron_names': tuple(neuron_names), 'min_nonnan': min_nonnan}
         df_traces = project_data.calc_default_traces(**trace_options)
 
     # Build functions to make a single subplot
@@ -846,7 +846,7 @@ def make_default_summary_plots_using_config(project_cfg):
         pass
 
 
-def make_default_triggered_average_plots(project_cfg):
+def make_default_triggered_average_plots(project_cfg, to_save=True):
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     vis_cfg = project_data.project_config.get_visualization_config()
@@ -873,16 +873,18 @@ def make_default_triggered_average_plots(project_cfg):
                                                                 color_significant_times=False)
         make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
 
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
-        plt.savefig(fname)
+        if to_save:
+            fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
+            plt.savefig(fname)
 
         # Second, gridplot with "significant" points marked
         func = triggered_averages_class.ax_plot_func_for_grid_plot
         make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
 
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
-                                              prepend_subfolder=True)
-        plt.savefig(fname)
+        if to_save:
+            fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
+                                                  prepend_subfolder=True)
+            plt.savefig(fname)
 
         # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
         subset_neurons = triggered_averages_class.which_neurons_are_significant()
@@ -892,5 +894,6 @@ def make_default_triggered_average_plots(project_cfg):
         make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
                                      neuron_names_to_plot=subset_neurons)
 
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
-        plt.savefig(fname)
+        if to_save:
+            fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
+            plt.savefig(fname)
