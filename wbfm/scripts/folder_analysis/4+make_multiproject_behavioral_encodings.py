@@ -76,3 +76,13 @@ def main(_config, _run):
     behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
     behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
     behavior_plotter.plot_sorted_correlations(**opt)
+
+    # Constructed pirouette state
+    behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='pirouette')
+    fname = output_folder.joinpath("encoding_pirouette.png")
+    plt.savefig(fname)
+
+    opt['y_train'] = 'pirouette'
+    behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
+    behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
+    behavior_plotter.plot_sorted_correlations(**opt)

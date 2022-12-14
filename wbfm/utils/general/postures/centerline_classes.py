@@ -196,6 +196,8 @@ class WormFullVideoPosture:
         Calculates a state that is high when there are many reversal onsets, and low otherwise
             Note: is low even during reversals if they are isolated
 
+        This time series may be entirely 0 if there are only isolated reversals
+
         Parameters
         ----------
         min_duration
@@ -224,7 +226,8 @@ class WormFullVideoPosture:
 
         mod = sm.tsa.MarkovRegression(probability_to_reverse, k_regimes=2)
         res = mod.fit()
-        predicted_pirouette_state = res.predict()
+        binarized_probability_to_reverse = res.predict()
+        predicted_pirouette_state = binarized_probability_to_reverse > 0.5
 
         return predicted_pirouette_state
 

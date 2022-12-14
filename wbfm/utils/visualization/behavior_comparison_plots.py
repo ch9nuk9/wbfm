@@ -100,6 +100,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps[:trace_len]
             elif y_train_name == 'leifer_curvature':
                 y_train = self.project_data.worm_posture_class.leifer_curvature_from_kymograph[:trace_len]
+            elif y_train_name == 'pirouette':
+                y_train = self.project_data.worm_posture_class.calc_psuedo_pirouette_state()[:trace_len]
             else:
                 raise NotImplementedError(y_train_name)
         else:
