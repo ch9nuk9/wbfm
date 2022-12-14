@@ -350,7 +350,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   fig=None,
                                   sort_using_shade_value=False,
                                   sort_without_shading=False,
-                                  ax_plot_func: Optional[callable] = None):
+                                  ax_plot_func: Optional[callable] = None,
+                                  fig_opt=None):
     """
 
     Parameters
@@ -378,6 +379,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
     -------
 
     """
+    if fig_opt is None:
+        fig_opt = {}
     if ax_plot_func is None:
         ax_plot_func = lambda t, y, ax, name, **kwargs: ax.plot(t, y, **kwargs)
 
@@ -407,11 +410,12 @@ def make_grid_plot_from_callables(get_data_func: callable,
     # Loop through neurons and plot
     num_neurons = len(neuron_names)
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
+    default_fig_opt = dict(dpi=150, figsize=(25, 25), sharey=share_y_axis, sharex=True)
+    default_fig_opt.update(fig_opt)
     if logger is not None:
         logger.info(f"Found {num_neurons} neurons; shaping to grid of shape {(num_rows, num_columns)}")
     if fig is None:
-        fig, original_axes = plt.subplots(num_rows, num_columns, dpi=150, figsize=(25, 25), sharex=True,
-                                          sharey=share_y_axis)
+        fig, original_axes = plt.subplots(num_rows, num_columns, **default_fig_opt)
         new_fig = True
     else:
         original_axes = fig.axes
