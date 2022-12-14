@@ -32,7 +32,7 @@ def cfg(project_path):
 def main(_config, _run):
     sacred.commands.print_config(_run)
     folder_path = _config['project_path']
-    if folder_path.lower() in ["good", "gfp"]:
+    if folder_path.lower() in ["gcamp", "gfp"]:
         # Save in common folder, but make a subfolder
         all_projects = load_paper_datasets(folder_path)
         output_folder = Path(get_summary_visualization_dir())
