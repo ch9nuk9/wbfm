@@ -758,7 +758,7 @@ class ClickableGridPlot:
 
 
 def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwargs=None, trace_kwargs=None,
-                               also_plot_zscore=True):
+                               also_plot_zscore=True, neuron_names_to_plot=None):
     """
     Uses seaborn to make a heatmap, including clustering of the traces
 
@@ -790,6 +790,9 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     except ValueError:
         logging.warning("Value error when interpolating traces; probably this means there wasn't enough data")
         return
+
+    if neuron_names_to_plot is not None:
+        df = df.loc[neuron_names_to_plot, :]
 
     if 'vmin' not in plot_kwargs:
         plot_kwargs['vmin'] = 2*np.nanquantile(df.values, 0.1)

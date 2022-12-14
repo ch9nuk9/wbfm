@@ -1371,17 +1371,19 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
 
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
     X = detrend(X, axis=0)
-    pca = PCA(n_components=3, whiten=False)
+    n_components = 3
+    pca = PCA(n_components=n_components, whiten=False)
     pca.fit(X.T)
     pca_modes = pca.components_.T
 
-    plt.figure(dpi=200)
+    plt.figure(dpi=100, figsize=(15, 3))
 
-    offsets = 1.5*np.arange(3)
-    plt.plot(pca_modes / pca_modes.max() - offsets, label=[f"mode {i}" for i in offsets])
+    offsets = 1.5*np.arange(n_components)
+    plt.plot(pca_modes / pca_modes.max() - offsets, label=[f"mode {i+1}" for i in range(n_components)])
     plt.legend(loc='lower right')
     project_data.shade_axis_using_behavior()
     plt.yticks([])
+    plt.xlim(0, project_data.num_frames)
 
     plt.title(title)
 
