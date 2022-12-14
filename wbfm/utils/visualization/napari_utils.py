@@ -218,7 +218,7 @@ class NapariPropertyHeatMapper:
         return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
 
-def property_vector_to_colormap(val_to_plot, vec_of_labels, cmap=plt.cm.plasma):
+def property_vector_to_colormap(val_to_plot, vec_of_labels, cmap=plt.cm.RdBu):
     prop = np.array(val_to_plot)
     prop_scaled = (
             (prop - prop.min()) / (prop.max() - prop.min())

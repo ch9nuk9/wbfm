@@ -188,7 +188,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.addReferenceHeatmap = QtWidgets.QPushButton("Add Layer")
         self.addReferenceHeatmap.pressed.connect(self.add_layer_colored_by_correlation_to_current_neuron)
-        self.formlayout3.addRow("Corr to current trace:", self.addReferenceHeatmap)
+        self.formlayout3.addRow("Correlation to current trace:", self.addReferenceHeatmap)
 
     def _setup_general_shortcut_buttons(self):
         self.groupBox3b = QtWidgets.QGroupBox("General shortcuts", self.verticalLayoutWidget)
@@ -1347,6 +1347,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.static_ax.update_params()
         self.mpl_widget.draw()
         # self.mpl_widget.canvas.draw()
+        y_min, y_max = self.y_min_max_on_plot
+        self.logger.debug(f"Autoscaled axis: {np.min(y_min)} and {np.max(y_max)}")
 
     def connect_time_line_callback(self):
         viewer = self.viewer
@@ -1508,6 +1510,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         y = self.y_trace_mode
         df = self.df_of_current_traces
         val_to_plot = df.corrwith(y)
+        # Square but keep the sign... de-emphasizes very small correlations
+        val_to_plot = val_to_plot * np.abs(val_to_plot)
         heatmap_kwargs = dict(val_to_plot=val_to_plot, t=self.t)
         self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs)
 
