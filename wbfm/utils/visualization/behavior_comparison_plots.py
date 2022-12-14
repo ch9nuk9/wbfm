@@ -79,10 +79,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """Speed by default"""
         X_train = self.all_dfs[df_name]
         X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
+        alphas = np.logspace(-10, 10, 21)  # alpha values to be chosen from by cross-validation
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            model = RidgeCV(cv=self.cv).fit(X_train, y_train)
+            model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
         score = model.best_score_
         y_pred = model.predict(X_train)
         self._last_model_calculated = model
