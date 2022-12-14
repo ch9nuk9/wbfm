@@ -351,7 +351,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   sort_using_shade_value=False,
                                   sort_without_shading=False,
                                   ax_plot_func: Optional[callable] = None,
-                                  fig_opt=None):
+                                  fig_opt = None):
     """
 
     Parameters

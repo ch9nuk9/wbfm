@@ -80,3 +80,8 @@ def load_paper_datasets(genotype='gcamp', require_behavior=True):
     print(f"Loaded {len(good_projects_filtered)} projects")
 
     return good_projects_filtered
+
+
+# def get_path_to_double_exponential_model():
+#     """Model fit to the forward duration distribution. See fit_multi_exponential_model"""
+

@@ -225,14 +225,18 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
     return block_starts, block_ends
 
 
-def remove_tiny_state_changes(column: pd.Series, min_length, replace_with_preceding_state=True):
+def remove_short_state_changes(bool_column: pd.Series, min_length, only_replace_these_states=None,
+                               replace_with_preceding_state=True):
     """
     Removes very small states from an integer series, assuming they are noise. Replaces the tiny states with the
     surrounding state index. If the before and after are not the same, chooses based on 'replace_with_preceding_state'
 
+    Note: bool_column should actually be boolean
+
     Parameters
     ----------
-    column
+    only_replace_these_states: Optional; only replace states of a certain index
+    bool_column
     min_length
     replace_with_preceding_state
 
@@ -240,17 +244,18 @@ def remove_tiny_state_changes(column: pd.Series, min_length, replace_with_preced
     -------
 
     """
-    starts, ends = get_contiguous_blocks_from_column(column)
-    new_column = column.copy()
+    starts, ends = get_contiguous_blocks_from_column(bool_column, already_boolean=True)
+    new_column = bool_column.copy()
 
     for s, e in zip(starts, ends):
         if e - s < min_length:
-            # Beginning and end are special
-            if e >= len(new_column) or (replace_with_preceding_state and s > 0):
-                replacement_state = column[s - 1]
-            else:
-                replacement_state = column[e]
-            new_column.iloc[s:e] = replacement_state
+            if only_replace_these_states is None or bool_column.iat[s] in only_replace_these_states:
+                # Beginning and end are special
+                if e >= len(new_column) or (replace_with_preceding_state and s > 0):
+                    replacement_state = bool_column.iat[s - 1]
+                else:
+                    replacement_state = bool_column.iat[e]
+                new_column.iloc[s:e] = replacement_state
     return new_column
 
 
