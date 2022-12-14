@@ -86,7 +86,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         score = model.best_score_
         y_pred = model.predict(X_train)
         self._last_model_calculated = model
-        return score, model, X_train, y_train, y_pred
+        return score, model, X_train, y_train, y_pred, y_train_name
 
     def _get_y_train_and_remove_nans(self, X_train, y_train_name):
         trace_len = X_train.shape[0]
@@ -135,16 +135,18 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         score = model.score(X, y_train)
         y_pred = model.predict(X)
         self._last_model_calculated = model
-        return score, model, X_train, y_train, y_pred, best_neuron
+        return score, model, X_train, y_train, y_pred, y_train_name, best_neuron
 
     def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, **kwargs):
         """Plots model prediction over raw data"""
         if use_multineuron:
-            score, model, X_train, y_train, y_pred = self.calc_multi_neuron_encoding(df_name, y_train=y_train)
-            y_name = "multineuron"
+            score, model, X_train, y_train, y_train_name, y_pred = \
+                self.calc_multi_neuron_encoding(df_name, y_train=y_train)
+            y_name = f"multineuron_{y_train_name}"
         else:
-            score, model, X_train, y_train, y_pred, _ = self.calc_single_neuron_encoding(df_name, y_train=y_train)
-            y_name = "single_best_neuron"
+            score, model, X_train, y_train, y_train_name, y_pred, _ = \
+                self.calc_single_neuron_encoding(df_name, y_train=y_train)
+            y_name = f"single_best_neuron_{y_train_name}"
         self._plot(df_name, y_pred, y_train, y_name=y_name, score=score, **kwargs)
 
     def plot_sorted_correlations(self, df_name, y_train=None, to_save=False, saving_folder=None):

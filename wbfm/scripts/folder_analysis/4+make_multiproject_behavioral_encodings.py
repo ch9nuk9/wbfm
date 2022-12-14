@@ -55,7 +55,7 @@ def main(_config, _run):
 
     behavior_plotter.plot_model_prediction('ratio', to_save=True, use_multineuron=True)
     behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
-    behavior_plotter.plot_sorted_correlations('ratio', to_save=True)
+    behavior_plotter.plot_sorted_correlations(**opt)
 
     # Absolute speed
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='abs_speed')
