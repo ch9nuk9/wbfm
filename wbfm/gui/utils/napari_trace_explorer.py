@@ -1047,7 +1047,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.time_line is not None:
             self.time_line.remove()
             del self.time_line
-        self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
+        # self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
+        self.time_line = self.static_ax.axvline(**self.calculate_time_line_options())
 
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
         self.color_using_behavior()
@@ -1359,21 +1360,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_time_line(self):
         # Doesn't work if the time line needs to be initialized
-        time_options = self.calculate_time_line()
-        self.time_line.set_data(time_options[:2])
-        self.time_line.set_color(time_options[-1])
+        time_options = self.calculate_time_line_options()
+        self.time_line.set_xdata(time_options['x'])
+        # self.time_line.set_data(time_options[:2])
+        self.time_line.set_color(time_options['color'])
         self.mpl_widget.draw()
 
     @property
     def t(self):
         return self.viewer.dims.current_step[0]
 
-    def calculate_time_line(self):
+    def calculate_time_line_options(self):
         t = self.t
         y_min, y_max = self.y_min_max_on_plot
         if len(y_min) == 0:
             return [t, t], [0, 30], 'r'
-        ymin, ymax = np.nanmin(y_min), np.nanmax(y_max)
+        # ymin, ymax = np.nanmin(y_min), np.nanmax(y_max)
         if t < len(y_min):
             self.tracking_is_nan = np.isnan(y_min[t])
         else:
@@ -1383,7 +1385,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             line_color = 'k'
         # print(f"Updating time line for t={t}, y[t] = {y[t]}, color={line_color}")
-        return [t, t], [ymin, ymax], line_color
+        # return [t, t], [ymin, ymax], line_color
+        return dict(x=t, color=line_color)
 
     def update_stored_trace_time_series(self):
         t, y = self.calculate_trace()
