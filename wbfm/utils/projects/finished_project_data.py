@@ -999,7 +999,7 @@ class ProjectData:
         """
         Uses sudden dips in the number of detected objects to guess where the tracking might fail
 
-        Additionally pads contiguous regions of tracking failure, assuming that the tracking was incorrect before and after
+        Additionally, pads contiguous regions of tracking failure, assuming that the tracking was incorrect before and after
         the times it was detected
 
         Parameters
@@ -1012,7 +1012,11 @@ class ProjectData:
         -------
 
         """
-        all_vol = [self.segmentation_metadata.get_all_volumes(i) for i in range(self.num_frames)]
+        try:
+            all_vol = [self.segmentation_metadata.get_all_volumes(i) for i in range(self.num_frames)]
+        except AttributeError as e:
+            self.logger.warning(f"Error with reading segmentation, may be due to python version: {e}")
+            return None
         all_num_objs = np.array(list(map(len, all_vol)))
         all_num_objs = detrend(all_num_objs)
         model = LocalOutlierFactor(contamination=contamination)
