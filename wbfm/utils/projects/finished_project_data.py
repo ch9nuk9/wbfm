@@ -1471,11 +1471,11 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     # TODO: color by fwd/rev
     # TODO: smooth
     # TODO: Remove outlier
-    c = 'tab:orange'
+    c = 'tab:red'
     for s, e in zip(starts_rev, ends_rev):
         e += 1
         ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)
-    c = 'tab:blue'
+    c = 'tab:purple'
     for s, e in zip(starts_fwd, ends_fwd):
         e += 1
         ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)

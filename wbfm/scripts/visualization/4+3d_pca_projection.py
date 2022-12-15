@@ -21,15 +21,16 @@ ex.add_config(project_path=None, t_start=None, t_end=None, include_subplot=True)
 
 @ex.config
 def cfg(project_path):
-    project_dir = str(Path(project_path).parent)
-
+    pass
 
 @ex.automain
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    trace_kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode= 'rolling_mean')
+    trace_kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode='rolling_mean')
     project_data = ProjectData.load_final_project_data_from_config(_config['project_path'])
-    del _config['project_path']
-    plot_pca_projection_3d_from_project(project_data, trace_kwargs=trace_kwargs, **_config)
+    cfg = _config.copy()
+    del cfg['project_path']
+    del cfg['seed']
+    plot_pca_projection_3d_from_project(project_data, trace_kwargs=trace_kwargs, **cfg)
     plt.show()
