@@ -6,7 +6,7 @@ import pandas as pd
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 
-from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
+from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -26,6 +26,7 @@ class TriggeredAverageIndices:
     ind_preceding: int
 
     max_duration: int = None
+    gap_size_to_remove: int = None
 
     # Postprocessing the trace matrix (per trace)
     trace_len: int = None
@@ -53,6 +54,8 @@ class TriggeredAverageIndices:
             binary_state = self.binary_state[:self.trace_len]
         else:
             binary_state = self.binary_state
+        if self.gap_size_to_remove is not None:
+            binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
         # Turn into time series
         all_ind = []
