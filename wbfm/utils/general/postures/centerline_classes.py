@@ -129,7 +129,8 @@ class WormFullVideoPosture:
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None, ind_preceding=20,
+    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None,
+                                       ind_preceding=20,
                                        **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
@@ -149,7 +150,8 @@ class WormFullVideoPosture:
 
         """
         ind_class = TriggeredAverageIndices(self.behavior_annotations_fluorescence_fps, state, min_duration,
-                                            trace_len=trace_len, ind_preceding=ind_preceding, **kwargs)
+                                            trace_len=trace_len, ind_preceding=ind_preceding,
+                                            **kwargs)
         return ind_class
 
     # def plot_triggered_average(self, state, trace):
@@ -235,6 +237,30 @@ class WormFullVideoPosture:
     def calc_fwd_counter_state(self):
         """
         Calculates an integer vector that counts the time since last reversal
+
+        Returns
+        -------
+
+        """
+        binary_fwd = self.behavior_annotations_fluorescence_fps == 0
+        all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
+
+        # Turn into time series
+        num_pts = len(self.subsample_indices)
+        state_trace = np.zeros(num_pts)
+        for start, end in zip(all_starts, all_ends):
+            state_trace[start:end] = np.arange(end - start)
+
+        return state_trace
+
+    def calc_exponential_chance_to_end_fwd_state(self):
+        """        Using a double exponential fit from a population of forward durations, estimates the probability to terminate
+        a forward state, assuming one exponential is active at once. Specifically:
+            - For short forward periods (<34 volumes), use a sharp exponential of ~2 volume decay
+            - For long forward periods, use a flat exponential of ~30 volume decay time
+
+        For now, just use a flat prediction of the tau of these two states... this might be better than an increasing
+        series that is very flat towards the end of the forward
 
         Returns
         -------
