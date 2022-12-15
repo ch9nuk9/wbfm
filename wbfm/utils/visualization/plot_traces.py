@@ -862,7 +862,7 @@ def make_default_triggered_average_plots(project_cfg, to_save=True):
     # All triggers
     trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
     df = project_data.calc_default_traces(**trace_opt)
-    trigger_opt = dict(min_lines=5, ind_preceding=20, state=None, trace_len=df.shape[0])
+    trigger_opt = dict(min_lines=5, ind_preceding=20, state=None)
     min_significant = 20
     ind_class = project_data.worm_posture_class.calc_triggered_average_indices(**trigger_opt)
     triggered_averages_class = FullDatasetTriggeredAverages(df, ind_class, min_points_for_significance=min_significant)

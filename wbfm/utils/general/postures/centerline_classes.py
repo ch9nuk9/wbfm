@@ -129,7 +129,7 @@ class WormFullVideoPosture:
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_triggered_average_indices(self, state=0, min_duration=5, trace_len=None,
+    def calc_triggered_average_indices(self, state=0, min_duration=5,
                                        ind_preceding=20,
                                        **kwargs):
         """
@@ -150,7 +150,7 @@ class WormFullVideoPosture:
 
         """
         ind_class = TriggeredAverageIndices(self.behavior_annotations_fluorescence_fps, state, min_duration,
-                                            trace_len=trace_len, ind_preceding=ind_preceding,
+                                            trace_len=self.num_frames, ind_preceding=ind_preceding,
                                             **kwargs)
         return ind_class
 
@@ -210,7 +210,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        ind_class = self.calc_triggered_average_indices(state=1, trace_len=self.num_frames, ind_preceding=0,
+        ind_class = self.calc_triggered_average_indices(state=1, ind_preceding=0,
                                                         min_duration=min_duration)
 
         onsets = np.array([vec[0] for vec in ind_class.triggered_average_indices if vec[0] > 0])

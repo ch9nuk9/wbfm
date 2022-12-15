@@ -189,6 +189,14 @@ class TriggeredAverageIndices:
             if len(x_significant) > 0:
                 ax.plot(x_significant, triggered_avg[x_significant], 'o', color='tab:orange')
 
+    def onset_vector(self):
+        local_idx_of_onset = self.ind_preceding
+        idx_onsets = np.array([vec[local_idx_of_onset] for vec in self.triggered_average_indices if
+                               vec[local_idx_of_onset] > 0])
+        onset_vec = np.zeros(self.trace_len)
+        onset_vec[idx_onsets] = 1
+        return onset_vec
+
 
 @dataclass
 class FullDatasetTriggeredAverages:
@@ -277,7 +285,7 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
     ind_preceding = 20
     worm_class = project_data.worm_posture_class
 
-    ind_class = worm_class.calc_triggered_average_indices(state=state, trace_len=len(y), ind_preceding=ind_preceding,
+    ind_class = worm_class.calc_triggered_average_indices(state=state, ind_preceding=ind_preceding,
                                                           min_lines=min_lines)
     mat = ind_class.calc_triggered_average_matrix(y)
     ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
