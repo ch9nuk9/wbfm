@@ -660,7 +660,14 @@ class ProjectData:
 
         if interpolate_nan:
             df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
-            df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
+            for i in range(5):
+                # Sometimes svd randomly doesn't converge; try again
+                try:
+                    df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
+                    break
+                except np.linalg.LinAlgError:
+                    self.logger.warning("SVD did not converge, trying again")
+                    continue
 
         return df
 
