@@ -124,6 +124,7 @@ class ProjectData:
 
     # EXPERIMENTAL (but tested)
     use_custom_padded_dataframe: bool = False
+    use_physical_x_axis: bool = False  # Relies on hardcoded volumes per second
 
     def __post_init__(self):
         """
@@ -853,7 +854,12 @@ class ProjectData:
         -------
 
         """
-        self.worm_posture_class.shade_using_behavior(ax=ax, behaviors_to_ignore=behaviors_to_ignore)
+        if self.use_physical_x_axis:
+            index_conversion = self.x_physical_time
+        else:
+            index_conversion = None
+        self.worm_posture_class.shade_using_behavior(ax=ax, behaviors_to_ignore=behaviors_to_ignore,
+                                                     index_conversion=index_conversion)
 
     def get_centroids_as_numpy(self, i_frame):
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
@@ -1156,6 +1162,20 @@ class ProjectData:
     def has_traces(self):
         return (self.red_traces is not None) and (self.green_traces is not None)
 
+    @property
+    def x_physical_time(self):
+        x = np.arange(self.num_frames)
+        x = x / self.physical_unit_conversion.volumes_per_second
+        return x
+
+    @property
+    def x_lim(self):
+        if self.use_physical_x_axis:
+            x = self.x_physical_time
+        else:
+            x = np.arange(self.num_frames)
+        return [x[0], x[-1]]
+
     def __repr__(self):
         return f"=======================================\n\
 Project data for directory:\n\
@@ -1383,16 +1403,21 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     pca.fit(X.T)
     pca_modes = pca.components_.T
 
+    # Use physical time axis
+    x = project_data.x_physical_time
+
     plt.figure(dpi=100, figsize=(15, 3))
 
     offsets = 1.5*np.arange(n_components)
-    plt.plot(pca_modes / pca_modes.max() - offsets, label=[f"mode {i+1}" for i in range(n_components)])
+    plt.plot(x, pca_modes / pca_modes.max() - offsets, label=[f"mode {i+1}" for i in range(n_components)])
     plt.legend(loc='lower right')
     project_data.shade_axis_using_behavior()
     plt.yticks([])
-    plt.xlim(0, project_data.num_frames)
+    plt.xlim(project_data.x_lim)
 
     plt.title(title)
+    plt.xlabel("Time (seconds)")
+    plt.ylabel("Normalized activity (ratio)")
 
     vis_cfg = project_data.project_config.get_visualization_config()
     fname = 'pca_modes.png'
@@ -1402,12 +1427,18 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     return pca
 
 
-def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None):
+def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_end=None):
     if trace_kwargs is None:
         trace_kwargs = {}
     fig = plt.figure(figsize=(15, 15))
     ax = fig.add_subplot(111, projection='3d')
-    c = np.arange(project_data.num_frames) / 1e6
+    # c = np.arange(project_data.num_frames) / 1e6
+    beh = project_data.worm_posture_class.behavior_annotations_fluorescence_fps
+    beh_rev = beh == 1
+    starts_rev, ends_rev = get_contiguous_blocks_from_column(beh_rev, already_boolean=True)
+
+    beh_fwd = beh == 0
+    starts_fwd, ends_fwd = get_contiguous_blocks_from_column(beh_fwd, already_boolean=True)
 
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
     X = detrend(X, axis=0)
@@ -1415,5 +1446,23 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     pca.fit(X.T)
     pca_proj = pca.components_.T
 
-    ax.scatter(pca_proj[:, 0], pca_proj[:, 1], pca_proj[:, 2], c=c)
+    # TODO: color by fwd/rev
+    # TODO: smooth
+    # TODO: Remove outlier
+    c = 'tab:orange'
+    for s, e in zip(starts_rev, ends_rev):
+        e += 1
+        if t_end is not None and s > t_end:
+            break
+        ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)
+    c = 'tab:blue'
+    for s, e in zip(starts_fwd, ends_fwd):
+        e += 1
+        if t_end is not None and s > t_end:
+            break
+        ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)
+
+    ax.set_xlabel("Mode 1")
+    ax.set_ylabel("Mode 2")
+    ax.set_zlabel("Mode 3")
     # plt.colorbar()

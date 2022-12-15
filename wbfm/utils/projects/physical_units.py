@@ -12,7 +12,7 @@ class PhysicalUnitConversion:
 
     leifer_um_per_unit: float = 84
 
-    fps: float = 3.8
+    volumes_per_second: float = None
 
     @property
     def z_to_xy_ratio(self):
