@@ -1103,7 +1103,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.initialize_trace_or_tracklet_subplot()
         # Not just updating the data because we fully cleared the axes
-        del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
+        self.invalidate_y_min_max_on_plot()  # Force invalidation, so it is recalculated
         self.init_subplot_post_clear()
         self.finish_subplot_update_and_draw(current_mode)
 
