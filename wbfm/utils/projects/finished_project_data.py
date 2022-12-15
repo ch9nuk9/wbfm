@@ -630,9 +630,6 @@ class ProjectData:
         )
         opt.update(kwargs)
 
-        if isinstance(min_nonnan, float):
-            min_nonnan = int(min_nonnan * self.num_frames)
-
         if neuron_names is None:
             neuron_names = self.neuron_names
         # Initialize the trace calculator class and get the initial dataframe
@@ -641,6 +638,8 @@ class ProjectData:
         df = pd.DataFrame(trace_dict)
 
         # Optional: check neurons to remove
+        if isinstance(min_nonnan, float):
+            min_nonnan = int(min_nonnan * df.count().max())
         if min_nonnan is not None:
             df_drop = df.dropna(axis=1, thresh=min_nonnan)
         else:
