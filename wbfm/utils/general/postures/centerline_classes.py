@@ -211,8 +211,7 @@ class WormFullVideoPosture:
         ind_class = self.calc_triggered_average_indices(state=1, trace_len=self.num_frames, ind_preceding=0,
                                                         min_duration=min_duration)
 
-        onsets = np.array([vec[0] for vec in self.calc_triggered_average_indices().triggered_average_indices
-                           if vec[0] > 0])
+        onsets = np.array([vec[0] for vec in ind_class.triggered_average_indices if vec[0] > 0])
 
         onset_vec = np.zeros(ind_class.trace_len)
         onset_vec[onsets] = 1
@@ -227,7 +226,7 @@ class WormFullVideoPosture:
         mod = sm.tsa.MarkovRegression(probability_to_reverse, k_regimes=2)
         res = mod.fit()
         binarized_probability_to_reverse = res.predict()
-        predicted_pirouette_state = binarized_probability_to_reverse > 0.5
+        predicted_pirouette_state = binarized_probability_to_reverse > 0.010
 
         return predicted_pirouette_state
 

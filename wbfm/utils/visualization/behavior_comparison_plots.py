@@ -240,7 +240,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         ax.set_title(f"Prediction error {score:.3f} from {df_name} traces ({self.project_data.shortened_name})")
         plt.ylabel("Probably speed (mm/s)")
-        plt.xlabel("Truths")
+        plt.xlabel("Time (volumes)")
         ax.plot(y_train, color='black', label='Target', alpha=0.8)
         plt.legend()
         self.project_data.shade_axis_using_behavior()
