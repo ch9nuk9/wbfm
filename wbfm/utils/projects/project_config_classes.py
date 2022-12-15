@@ -6,14 +6,12 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple, Optional, List
-
 import numpy as np
 import pandas as pd
 import pprint
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
-from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename, get_location_of_new_project_defaults
 from wbfm.utils.projects.utils_project import load_config, edit_config, safe_cd, update_project_config_path, \
@@ -230,21 +228,6 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     def get_traces_config(self) -> SubfolderConfigFile:
         fname = Path(self.config['subfolder_configs']['traces'])
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
-
-    def get_physical_unit_conversion_class(self) -> PhysicalUnitConversion:
-        from wbfm.utils.general.postures.centerline_classes import get_behavior_fluorescence_fps_conversion
-        if 'physical_units' in self.config:
-            opt = self.config['physical_units']
-            if 'volumes_per_second' not in opt:
-                logging.debug("Using hard coded camera fps; this depends on the exposure time")
-                camera_fps = opt.get('1000', 1000)
-                exposure_time = opt.get('exposure_time', 12)
-                frames_per_volume = get_behavior_fluorescence_fps_conversion(self)
-                opt['volumes_per_second'] = camera_fps / exposure_time / frames_per_volume
-            return PhysicalUnitConversion(**opt)
-        else:
-            self.logger.warning("Using default physical unit conversions")
-            return PhysicalUnitConversion()
 
     def _check_path_and_load_config(self, subconfig_path: Path,
                                     allow_config_to_not_exist: bool = False) -> Dict:

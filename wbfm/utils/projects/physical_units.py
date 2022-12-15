@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 import numpy as np
 
@@ -88,3 +89,20 @@ class PhysicalUnitConversion:
         xyz_in_zimmer -= np.min(xyz_in_zimmer, axis=0)
 
         return xyz_in_zimmer
+
+    @staticmethod
+    def load_from_config(project_cfg):
+
+        from wbfm.utils.general.postures.centerline_classes import get_behavior_fluorescence_fps_conversion
+        if 'physical_units' in project_cfg.config:
+            opt = project_cfg.config['physical_units']
+            if 'volumes_per_second' not in opt:
+                project_cfg.logger.debug("Using hard coded camera fps; this depends on the exposure time")
+                camera_fps = opt.get('1000', 1000)
+                exposure_time = opt.get('exposure_time', 12)
+                frames_per_volume = get_behavior_fluorescence_fps_conversion(project_cfg)
+                opt['volumes_per_second'] = camera_fps / exposure_time / frames_per_volume
+            return PhysicalUnitConversion(**opt)
+        else:
+            project_cfg.logger.warning("Using default physical unit conversions")
+            return PhysicalUnitConversion()

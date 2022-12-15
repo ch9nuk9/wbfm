@@ -455,7 +455,7 @@ class ProjectData:
         # Metadata uses class from segmentation package, which does lazy loading itself
         seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         obj.segmentation_metadata = DetectedNeurons(seg_metadata_fname)
-        obj.physical_unit_conversion = cfg.get_physical_unit_conversion_class()
+        obj.physical_unit_conversion = PhysicalUnitConversion.load_from_config(cfg)
 
         # Read ahead of time because they may be needed for classes in the threading environment
         _ = obj.final_tracks
