@@ -1148,7 +1148,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
         self.update_reference_trace(force_draw=False)
 
-        self.invalidate_y_on_plot()
+        self.invalidate_y_min_max_on_plot()
         self.init_subplot_post_clear()
         self.finish_subplot_update_and_draw(title, preserve_xlims=True)
 
@@ -1241,7 +1241,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
                     new_line = y[field_to_plot].plot(ax=self.static_ax, **extra_opt, **marker_opt).lines[-1]
                     self.add_tracklet_to_cache(new_line, tracklet_name)
-        self.invalidate_y_on_plot()
+        self.invalidate_y_min_max_on_plot()
 
         # self.update_stored_time_series(field_to_plot)
         title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
@@ -1258,9 +1258,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.tracklet_lines[tracklet_name].remove()
         del self.tracklet_lines[tracklet_name]
 
-    def invalidate_y_on_plot(self):
-        if 'y_on_plot' in self.__dict__:
-            del self.__dict__['y_on_plot']  # Force invalidation, so it is recalculated
+    def invalidate_y_min_max_on_plot(self):
+        if 'y_min_max_on_plot' in self.__dict__:
+            del self.__dict__['y_min_max_on_plot']  # Force invalidation, so it is recalculated
 
     def get_marker_opt(self):
         if self.changeSubplotMarkerDropdown.currentText() == 'line':
