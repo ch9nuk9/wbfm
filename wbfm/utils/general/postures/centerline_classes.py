@@ -117,11 +117,11 @@ class WormFullVideoPosture:
         fnames = [self.filename_y, self.filename_x, self.filename_curvature]
         return all([f is not None for f in fnames]) and all([os.path.exists(f) for f in fnames])
 
-    def plot_pca(self):
+    def plot_pca_eigenworms(self):
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
-        c = np.arange(self.curvature.shape[0]) / 1e6
-        plt.scatter(self.pca_projections[:, 0], self.pca_projections[:, 1], self.pca_projections[:, 2], c=c)
+        c = np.arange(self.num_frames) / 1e6
+        ax.scatter(self.pca_projections[:, 0], self.pca_projections[:, 1], self.pca_projections[:, 2], c=c)
         plt.colorbar()
 
     def get_centerline_for_time(self, t):
@@ -129,8 +129,7 @@ class WormFullVideoPosture:
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_triggered_average_indices(self, state=0, min_duration=5,
-                                       ind_preceding=20,
+    def calc_triggered_average_indices(self, state=0, min_duration=5, ind_preceding=20,
                                        **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
@@ -735,7 +734,7 @@ class WormSinglePosture:
 
 
 def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
-                         cmap=None,
+                         cmap=None, index_conversion=None,
                          DEBUG=False):
     """
     Type one:
@@ -771,7 +770,6 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
     block_start = 0
     for val, block_end in zip(block_values, block_final_indices):
         if val is None or np.isnan(val):
-            # block_start = block_end + 1
             continue
         try:
             color = cmap.get(val, None)
@@ -779,13 +777,18 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
             logging.warning(f"Ignored behavior of value: {val}")
             # Just ignore
             continue
-        # finally:
-        #     block_start = block_end + 1
 
         if DEBUG:
             print(color, val, block_start, block_end)
         if color is not None:
-            ax.axvspan(block_start, block_end, alpha=0.9, color=color, zorder=-10)
+            if index_conversion is not None:
+                ax_start = index_conversion[block_start]
+                ax_end = index_conversion[block_end]
+            else:
+                ax_start = block_start
+                ax_end = block_end
+
+            ax.axvspan(ax_start, ax_end, alpha=0.9, color=color, zorder=-10)
 
         block_start = block_end + 1
 
