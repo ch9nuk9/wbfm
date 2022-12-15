@@ -783,7 +783,8 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
         default_trace_kwargs.update(trace_kwargs)
     trace_kwargs = default_trace_kwargs
 
-    default_plot_kwargs = dict(metric="correlation", cmap='jet', figsize=(15, 10), col_cluster=False)
+    default_plot_kwargs = dict(metric="correlation", cmap='jet', figsize=(15, 10), col_cluster=False,
+                               cbar_pos=(-0.01, 0.2, 0.02, 0.4))
     if plot_kwargs is not None:
         default_plot_kwargs.update(plot_kwargs)
     plot_kwargs = default_plot_kwargs
@@ -805,7 +806,7 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
     # Plot
     fig = sns.clustermap(df, **plot_kwargs)
-    # plt.xlabel("Time")
+    fig.ax_heatmap.set_xlabel("Time (seconds)")
     # plt.ylabel("Neuron name")
 
     if also_plot_zscore:
@@ -826,6 +827,8 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
             fname = 'heatmap_zscore.png'
             fname = traces_cfg.resolve_relative_path(fname, prepend_subfolder=True)
             fig_zscore.savefig(fname)
+
+    return fig
 
 
 def make_default_summary_plots_using_config(project_cfg):
