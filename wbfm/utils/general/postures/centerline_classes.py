@@ -227,6 +227,8 @@ class WormFullVideoPosture:
         res = mod.fit()
         binarized_probability_to_reverse = res.predict()
         predicted_pirouette_state = binarized_probability_to_reverse > 0.010
+        # Remove padded indices
+        predicted_pirouette_state = predicted_pirouette_state[pad_num:-pad_num].reset_index(drop=True)
 
         return predicted_pirouette_state
 
