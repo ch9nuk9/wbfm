@@ -635,11 +635,12 @@ class ProjectData:
 
         if neuron_names is None:
             neuron_names = self.neuron_names
-        # Initialize the object
+        # Initialize the trace calculator class and get the initial dataframe
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
         trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
-
         df = pd.DataFrame(trace_dict)
+
+        # Optional: check neurons to remove
         if min_nonnan is not None:
             df_drop = df.dropna(axis=1, thresh=min_nonnan)
         else:
@@ -659,6 +660,7 @@ class ProjectData:
         else:
             df = df_drop
 
+        # Optional: fill all gaps
         if interpolate_nan:
             df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
             for i in range(5):
@@ -669,6 +671,9 @@ class ProjectData:
                 except np.linalg.LinAlgError:
                     self.logger.warning("SVD did not converge, trying again")
                     continue
+
+        # Optional: reindex to physical time
+        df.index = self.x_for_plots
 
         return df
 
@@ -1169,11 +1174,16 @@ class ProjectData:
         return x
 
     @property
-    def x_lim(self):
+    def x_for_plots(self):
         if self.use_physical_x_axis:
             x = self.x_physical_time
         else:
             x = np.arange(self.num_frames)
+        return x
+
+    @property
+    def x_lim(self):
+        x = self.x_for_plots
         return [x[0], x[-1]]
 
     def __repr__(self):
