@@ -404,13 +404,13 @@ def make_grid_plot_from_callables(get_data_func: callable,
         norm = TwoSlopeNorm(vmin=np.nanmin(all_vals), vcenter=0, vmax=np.nanmax(all_vals))
         # norm.autoscale(all_vals)
         values_normalized = norm(all_vals)
-        colors = plt.cm.PiYG(values_normalized)
+        correlation_shading_colors = plt.cm.PiYG(values_normalized)
 
     else:
-        colors = []
+        correlation_shading_colors = []
         all_vals = None
 
-    # Loop through neurons and plot
+    # Set up grid of subplots
     num_neurons = len(neuron_names)
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
     default_fig_opt = dict(dpi=150, figsize=(25, 25), sharey=share_y_axis, sharex=True)
@@ -424,6 +424,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
         original_axes = fig.axes
         new_fig = False
 
+    # Loop through neurons and: plot, label, and shade, or apply custom function
     for i in tqdm(range(len(neuron_names))):
         ax, neuron_name = fig.axes[i], neuron_names[i]
         if twinx_when_reusing_figure and not new_fig:
@@ -452,7 +453,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                 shade_plot_func(ax)
 
             if background_shading_value_func is not None and not sort_without_shading:
-                color, val = colors[i], background_shading_value_func(y, neuron_name)
+                color, val = correlation_shading_colors[i], background_shading_value_func(y, neuron_name)
                 ax.axhspan(y.min(), y.max(), xmax=len(y), facecolor=color, alpha=0.25, zorder=-100)
                 ax.set_title(f"Shaded value (below): {val:0.2f}")
 

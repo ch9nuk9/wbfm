@@ -1437,13 +1437,17 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     return pca
 
 
-def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_end=None):
+def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None):
     if trace_kwargs is None:
         trace_kwargs = {}
     fig = plt.figure(figsize=(15, 15))
     ax = fig.add_subplot(111, projection='3d')
     # c = np.arange(project_data.num_frames) / 1e6
     beh = project_data.worm_posture_class.behavior_annotations_fluorescence_fps
+    if t_end is not None:
+        beh = beh[:t_end]
+    if t_start is not None:
+        beh = beh[t_start:]
     beh_rev = beh == 1
     starts_rev, ends_rev = get_contiguous_blocks_from_column(beh_rev, already_boolean=True)
 
@@ -1451,6 +1455,10 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     starts_fwd, ends_fwd = get_contiguous_blocks_from_column(beh_fwd, already_boolean=True)
 
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
+    if t_end is not None:
+        X = X[:, t_end]
+    if t_start is not None:
+        X = X[t_start:]
     X = detrend(X, axis=0)
     pca = PCA(n_components=3, whiten=False)
     pca.fit(X.T)
@@ -1462,14 +1470,10 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     c = 'tab:orange'
     for s, e in zip(starts_rev, ends_rev):
         e += 1
-        if t_end is not None and s > t_end:
-            break
         ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)
     c = 'tab:blue'
     for s, e in zip(starts_fwd, ends_fwd):
         e += 1
-        if t_end is not None and s > t_end:
-            break
         ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)
 
     ax.set_xlabel("Mode 1")
