@@ -53,7 +53,8 @@ def filter_rolling_mean(y: pd.DataFrame, window: int = 9):
 
 
 def filter_exponential_moving_average(y: pd.DataFrame):
-    return y.ewm(span=17, min_periods=1).mean()
+    return y.rolling(center=True, window=100, win_type='gaussian', min_periods=1).mean(std=1)
+    # return y.ewm(span=17, min_periods=1).mean()
 
 
 def filter_linear_interpolation(y: pd.DataFrame, window=15):

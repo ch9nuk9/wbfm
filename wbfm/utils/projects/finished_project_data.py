@@ -1437,11 +1437,15 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     return pca
 
 
-def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None):
+def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None,
+                                        include_subplot=True):
     if trace_kwargs is None:
         trace_kwargs = {}
-    fig = plt.figure(figsize=(15, 15))
-    ax = fig.add_subplot(111, projection='3d')
+    fig = plt.figure(figsize=(15, 15), dpi=200)
+    if include_subplot:
+        ax = fig.add_subplot(211, projection='3d')
+    else:
+        ax = fig.add_subplot(111, projection='3d')
     # c = np.arange(project_data.num_frames) / 1e6
     beh = project_data.worm_posture_class.behavior_annotations_fluorescence_fps
     if t_end is not None:
@@ -1455,14 +1459,14 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     starts_fwd, ends_fwd = get_contiguous_blocks_from_column(beh_fwd, already_boolean=True)
 
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
-    if t_end is not None:
-        X = X[:, t_end]
-    if t_start is not None:
-        X = X[t_start:]
     X = detrend(X, axis=0)
     pca = PCA(n_components=3, whiten=False)
     pca.fit(X.T)
     pca_proj = pca.components_.T
+    if t_end is not None:
+        pca_proj = pca_proj[:t_end, :]
+    if t_start is not None:
+        pca_proj = pca_proj[t_start:, :]
 
     # TODO: color by fwd/rev
     # TODO: smooth
@@ -1479,4 +1483,15 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     ax.set_xlabel("Mode 1")
     ax.set_ylabel("Mode 2")
     ax.set_zlabel("Mode 3")
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_zticklabels([])
     # plt.colorbar()
+
+    # Also plot the simple time series
+    if include_subplot:
+        ax2 = fig.add_subplot(212)
+        for i in range(3):
+            ax2.plot(pca_proj[:, i] / np.max(pca_proj[:, i]) - i, label=f'mode {i+1}')
+        plt.legend()
+        ax2.set_title("PCA modes")
