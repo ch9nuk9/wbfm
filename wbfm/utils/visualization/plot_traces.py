@@ -47,6 +47,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  share_y_axis=False,
                                  to_save=True,
                                  savename_suffix="",
+                                 title_str = None,
                                  **kwargs):
     """
 
@@ -143,7 +144,9 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                            background_shading_value_func=background_shading_value_func,
                                            logger=logger,
                                            share_y_axis=share_y_axis, **kwargs)
-    plt.suptitle(project_data.shortened_name, y=1.02, fontsize='xx-large')
+    if title_str is None:
+        title_str = project_data.shortened_name
+    plt.suptitle(title_str, y=1.02, fontsize='xx-large')
     plt.tight_layout()
 
     # Save final figure and dataframe used to produce it
@@ -806,6 +809,10 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
     # Plot
     fig = sns.clustermap(df, **plot_kwargs)
+    if project_data.use_physical_x_axis:
+        x = fig.ax_heatmap.get_xticks()
+        labels = [int(project_data.x_for_plots[int(i)]) for i in x]
+        fig.ax_heatmap.set_xticks(ticks=x, labels=labels)
     fig.ax_heatmap.set_xlabel("Time (seconds)")
     # plt.ylabel("Neuron name")
 
