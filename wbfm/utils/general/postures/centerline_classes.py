@@ -540,6 +540,8 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
             if str(behavior_fname).endswith('.xlsx'):
                 # This means the user probably did it by hand... but is a fragile check
                 is_stable_style = True
+            if not os.path.exists(behavior_fname):
+                behavior_fname = None
     except FileNotFoundError:
         # Old style project
         behavior_fname = None
