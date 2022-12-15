@@ -17,7 +17,7 @@ from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neu
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 from matplotlib import transforms, pyplot as plt
-from matplotlib.ticker import NullFormatter
+from matplotlib.ticker import NullFormatter, MultipleLocator
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -810,10 +810,13 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     # Plot
     fig = sns.clustermap(df, **plot_kwargs)
     if project_data.use_physical_x_axis:
-        x = fig.ax_heatmap.get_xticks()
-        labels = [int(project_data.x_for_plots[int(i)]) for i in x]
-        fig.ax_heatmap.set_xticks(ticks=x, labels=labels)
-    fig.ax_heatmap.set_xlabel("Time (seconds)")
+        ax = fig.ax_heatmap
+        ax.xaxis.set_major_locator(MultipleLocator(project_data.physical_unit_conversion.volumes_per_second*60))
+        x = ax.get_xticks()
+        x = [int(i) for i in x if (project_data.num_frames > i >= 0)]
+        labels = [int(np.round(project_data.x_for_plots[i])) for i in x]
+        ax.set_xticks(ticks=x, labels=labels)
+        ax.set_xlabel("Time (seconds)")
     # plt.ylabel("Neuron name")
 
     if also_plot_zscore:
