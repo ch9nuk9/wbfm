@@ -66,6 +66,7 @@ def main(_config, _run):
     behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
     behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
     behavior_plotter.plot_sorted_correlations(**opt)
+    plt.close('all')
 
     # Curvature from leifer paper
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='leifer_curvature')
@@ -76,6 +77,7 @@ def main(_config, _run):
     behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
     behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
     behavior_plotter.plot_sorted_correlations(**opt)
+    plt.close('all')
 
     # Constructed pirouette state
     behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='pirouette')
@@ -86,3 +88,5 @@ def main(_config, _run):
     behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
     behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
     behavior_plotter.plot_sorted_correlations(**opt)
+    plt.close('all')
+
