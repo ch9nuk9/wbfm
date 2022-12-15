@@ -1400,3 +1400,20 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     plt.savefig(fname)
 
     return pca
+
+
+def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None):
+    if trace_kwargs is None:
+        trace_kwargs = {}
+    fig = plt.figure(figsize=(15, 15))
+    ax = fig.add_subplot(111, projection='3d')
+    c = np.arange(project_data.num_frames) / 1e6
+
+    X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
+    X = detrend(X, axis=0)
+    pca = PCA(n_components=3, whiten=False)
+    pca.fit(X.T)
+    pca_proj = pca.components_.T
+
+    ax.scatter(pca_proj[:, 0], pca_proj[:, 1], pca_proj[:, 2], c=c)
+    # plt.colorbar()
