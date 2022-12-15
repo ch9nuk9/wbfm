@@ -13,6 +13,7 @@ class PhysicalUnitConversion:
     leifer_um_per_unit: float = 84
 
     volumes_per_second: float = None
+    exposure_time: int = 12
 
     @property
     def z_to_xy_ratio(self):

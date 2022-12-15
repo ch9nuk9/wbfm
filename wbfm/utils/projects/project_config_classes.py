@@ -235,10 +235,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         from wbfm.utils.general.postures.centerline_classes import get_behavior_fluorescence_fps_conversion
         if 'physical_units' in self.config:
             opt = self.config['physical_units']
-            if 'fps' not in opt:
+            if 'volumes_per_second' not in opt:
                 logging.debug("Using hard coded camera fps; this depends on the exposure time")
-                camera_fps = 1000
-                exposure_time = 12
+                camera_fps = opt.get('1000', 1000)
+                exposure_time = opt.get('exposure_time', 12)
                 frames_per_volume = get_behavior_fluorescence_fps_conversion(self)
                 opt['volumes_per_second'] = camera_fps / exposure_time / frames_per_volume
             return PhysicalUnitConversion(**opt)
