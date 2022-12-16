@@ -859,7 +859,7 @@ class ProjectData:
 
         """
         if self.use_physical_x_axis:
-            index_conversion = self.x_physical_time
+            index_conversion = self._x_physical_time
         else:
             index_conversion = None
         self.worm_posture_class.shade_using_behavior(ax=ax, behaviors_to_ignore=behaviors_to_ignore,
@@ -1167,7 +1167,7 @@ class ProjectData:
         return (self.red_traces is not None) and (self.green_traces is not None)
 
     @property
-    def x_physical_time(self):
+    def _x_physical_time(self):
         x = np.arange(self.num_frames)
         x = x / self.physical_unit_conversion.volumes_per_second
         return x
@@ -1175,7 +1175,7 @@ class ProjectData:
     @property
     def x_for_plots(self):
         if self.use_physical_x_axis:
-            x = self.x_physical_time
+            x = self._x_physical_time
         else:
             x = np.arange(self.num_frames)
         return x
@@ -1413,7 +1413,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     pca_modes = pca.components_.T
 
     # Use physical time axis
-    x = project_data.x_physical_time
+    x = project_data.x_for_plots
 
     plt.figure(dpi=100, figsize=(15, 3))
 
