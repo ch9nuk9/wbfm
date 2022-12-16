@@ -392,6 +392,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
         # From: https://stackoverflow.com/questions/59638155/how-to-set-0-to-white-at-a-uneven-color-ramp
 
         # First get all the traces, so that the entire cmap can be scaled
+        assert len(neuron_names) > 1, "Cannot calculate a colormap for a single trace"
         all_y = [get_data_func(name)[1] for name in neuron_names]
         all_vals = [background_shading_value_func(y, name) for y, name in zip(all_y, neuron_names)]
 
@@ -937,7 +938,7 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
     trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
     df = project_data.calc_default_traces(**trace_opt)
     trigger_opt = dict(min_lines=2, ind_preceding=20)
-    min_significant = 20
+    min_significant = 5
     ind_rev_pirouette, ind_rev_non_pirouette = \
         project_data.worm_posture_class.calc_triggered_average_indices_with_pirouette_split(**trigger_opt)
     if len(ind_rev_pirouette.num_events) == 0 or len(ind_rev_non_pirouette.num_events) == 0:
