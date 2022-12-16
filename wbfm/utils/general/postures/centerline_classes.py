@@ -19,7 +19,8 @@ from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
-from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices
+from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
+    assign_id_based_on_closest_onset_in_split_lists
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -152,6 +153,45 @@ class WormFullVideoPosture:
                                             trace_len=self.num_frames, ind_preceding=ind_preceding,
                                             **kwargs)
         return ind_class
+
+    def calc_triggered_average_indices_with_pirouette_split(self, duration_threshold=34, **kwargs):
+        """
+        Calculates triggered average reversals, with a dictionary classifying them based on the previous forward state
+
+        See calc_triggered_average_indices
+
+        Parameters
+        ----------
+        duration_threshold: based on a population 2-exponential fit of forward durations
+        kwargs
+
+        Returns
+        -------
+
+        """
+        default_kwargs = dict(gap_size_to_remove=3)
+        default_kwargs.update(kwargs)
+
+        # Get the indices for each of the types of states: short/long fwd, and all reversals
+        ind_short_fwd = self.calc_triggered_average_indices(state=0, max_duration=duration_threshold, **default_kwargs)
+        ind_long_fwd = self.calc_triggered_average_indices(state=0, min_duration=duration_threshold, **default_kwargs)
+        ind_rev = self.calc_triggered_average_indices(state=1, min_duration=3, **default_kwargs)
+
+        # Classify the reversals
+        short_onsets = np.where(ind_short_fwd.onset_vector())[0]
+        long_onsets = np.where(ind_long_fwd.onset_vector())[0]
+        rev_onsets = np.where(ind_rev.onset_vector())[0]
+        dict_of_pirouette_rev = assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, rev_onsets)
+        dict_of_non_pirouette_rev = {k: int(1 - v) for k, v in dict_of_pirouette_rev.items()}
+
+        # Build new rev_onset classes based on the classes, and a flipped version
+        default_kwargs.update(state=1, min_duration=3)
+        ind_rev_pirouette = self.calc_triggered_average_indices(dict_of_events_to_keep=dict_of_pirouette_rev,
+                                                                **default_kwargs)
+        ind_rev_non_pirouette = self.calc_triggered_average_indices(dict_of_events_to_keep=dict_of_non_pirouette_rev,
+                                                                    **default_kwargs)
+
+        return ind_rev_pirouette, ind_rev_non_pirouette
 
     # def plot_triggered_average(self, state, trace):
     #     ind_class = self.calc_triggered_average_indices(state=state, trace_len=len(trace))

@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from dataclasses import dataclass
 
 import numpy as np
@@ -33,6 +34,7 @@ class TriggeredAverageIndices:
     to_nan_points_of_state_before_point: bool = True
     min_lines: int = 2
     include_censored_data: bool = True  # To include events whose termination is after the end of the data
+    dict_of_events_to_keep: dict = None
 
     DEBUG: bool = False
 
@@ -43,19 +45,28 @@ class TriggeredAverageIndices:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         return binary_state
 
-    @property
-    def triggered_average_indices(self):
+    def triggered_average_indices(self, dict_of_events_to_keep=None) -> list:
         """
+        Calculates triggered average indices based on a binary state vector saved in this class
+
         If ind_preceding > 0, then a very early event will lead to negative indices
         Thus in later steps, the trace should be padded with nan at the end to avoid wrapping
 
         Parameters
         ----------
+        dict_of_events_to_keep: Optional dict determining a subset of indices to keep. Key=state starts, value=0 or 1
+            Example:
+            all_starts = [15, 66, 114, 130]
+            dict_of_ind_to_keep = {15: 0, 66: 1, 114: 0}
+
+            Note that not all starts need to be in dict_of_ind_to_keep
 
         Returns
         -------
 
         """
+        if dict_of_events_to_keep is None:
+            dict_of_events_to_keep = self.dict_of_events_to_keep
         if self.trace_len is not None:
             binary_state = self.binary_state[:self.trace_len]
         else:
@@ -66,12 +77,12 @@ class TriggeredAverageIndices:
         for start, end in zip(all_starts, all_ends):
             if self.DEBUG:
                 print("Checking block: ", start, end)
-
             is_too_short = end - start < self.min_duration
             is_too_long = (self.max_duration is not None) and (end - start > self.max_duration)
             is_at_edge = start == 0
             starts_with_misannotation = self.behavioral_annotation.iat[start-1] == -1
-            if is_too_short or is_too_long or is_at_edge or starts_with_misannotation:
+            not_in_dict = (dict_of_events_to_keep is not None) and (dict_of_events_to_keep.get(start, 0) == 0)
+            if is_too_short or is_too_long or is_at_edge or starts_with_misannotation or not_in_dict:
                 if self.DEBUG:
                     print("Skipping because: ", is_too_short, is_too_long, is_at_edge, starts_with_misannotation)
                 continue
@@ -79,8 +90,8 @@ class TriggeredAverageIndices:
             all_ind.append(ind)
         return all_ind
 
-    def calc_triggered_average_matrix(self, trace, mean_subtract=False):
-        all_ind = self.triggered_average_indices
+    def calc_triggered_average_matrix(self, trace, mean_subtract=False, **ind_kwargs):
+        all_ind = self.triggered_average_indices(**ind_kwargs)
         max_len_subset = max(map(len, all_ind))
         # Pad with nan in case there are negative indices, but only the end
         trace = np.pad(trace, max_len_subset, mode='constant', constant_values=(np.nan, np.nan))[max_len_subset:]
@@ -106,7 +117,7 @@ class TriggeredAverageIndices:
         -------
 
         """
-        list_of_triggered_ind = self.triggered_average_indices
+        list_of_triggered_ind = self.triggered_average_indices()
         list_of_invalid_states = [self.behavioral_state, -1]
         beh_annotations = self.behavioral_annotation.values
         for i_trace in range(len(list_of_triggered_ind)):
@@ -204,7 +215,7 @@ class TriggeredAverageIndices:
 
     def onset_vector(self):
         local_idx_of_onset = self.ind_preceding
-        idx_onsets = np.array([vec[local_idx_of_onset] for vec in self.triggered_average_indices if
+        idx_onsets = np.array([vec[local_idx_of_onset] for vec in self.triggered_average_indices() if
                                vec[local_idx_of_onset] > 0])
         onset_vec = np.zeros(self.trace_len)
         onset_vec[idx_onsets] = 1
@@ -321,7 +332,7 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
 #     return axes
 
 
-def assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, rev_onsets) -> dict:
+def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets, rev_onsets) -> dict:
     """
     Assigns each reversal a class based on which list contains an event closes to that reversal
 
@@ -329,8 +340,8 @@ def assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, r
 
     Parameters
     ----------
-    short_onsets
-    long_onsets
+    class1_onsets
+    class0_onsets
     rev_onsets
 
     Returns
@@ -340,10 +351,10 @@ def assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, r
     dict_of_rev_with_id = {}
     for rev in rev_onsets:
         # For both forward lists, get the previous indices via subtraction
-        these_short = short_onsets.copy() - rev
+        these_short = class1_onsets.copy() - rev
         these_short = these_short[these_short < 0]
 
-        these_long = long_onsets.copy() - rev
+        these_long = class0_onsets.copy() - rev
         these_long = these_long[these_long < 0]
 
         # Then the smaller absolute one (closer in time) one gives the class
