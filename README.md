@@ -179,6 +179,19 @@ In addition, if creating from a windows computer, you may need to use dos2unix t
 1. RUNME_*.sh
 2. DRYRUN.sh
 
+### Errors when running GUI
+
+Some versions of napari on some versions of python on windows give this error:
+UnicodeDecodeError
+
+This can be fixed by running everything with an extra flag. Instead of:
+
+```python /path/to/code.py```
+
+Do this:
+
+```python -X utf8 /path/to/code.py```
+
 
 # More details
 
