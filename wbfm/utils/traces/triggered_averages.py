@@ -32,6 +32,9 @@ class TriggeredAverageIndices:
     trace_len: int = None
     to_nan_points_of_state_before_point: bool = True
     min_lines: int = 2
+    include_censored_data: bool = True  # To include events whose termination is after the end of the data
+
+    DEBUG: bool = False
 
     @property
     def binary_state(self):
@@ -60,10 +63,16 @@ class TriggeredAverageIndices:
         # Turn into time series
         all_ind = []
         for start, end in zip(all_starts, all_ends):
+            if self.DEBUG:
+                print("Checking block: ", start, end)
+
             is_too_short = end - start < self.min_duration
             is_too_long = (self.max_duration is not None) and (end - start > self.max_duration)
-            is_at_edge = start == 0 or self.behavioral_annotation.iat[start-1] == -1
-            if is_too_short or is_too_long or is_at_edge:
+            is_at_edge = start == 0
+            starts_with_misannotation = self.behavioral_annotation.iat[start-1] == -1
+            if is_too_short or is_too_long or is_at_edge or starts_with_misannotation:
+                if self.DEBUG:
+                    print("Skipping because: ", is_too_short, is_too_long, is_at_edge, starts_with_misannotation)
                 continue
             ind = np.arange(start - self.ind_preceding, end)
             all_ind.append(ind)

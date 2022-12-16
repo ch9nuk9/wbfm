@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from wbfm.utils.external.utils_pandas import to_sparse_multiindex, check_if_fully_sparse, \
     get_times_of_conflicting_dataframes
+from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices
 from wbfm.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df, get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
 

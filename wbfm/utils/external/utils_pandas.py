@@ -190,19 +190,25 @@ def cast_int_or_nan(i: Union[list, int]):
         return int(i)
 
 
-def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boolean=False) -> Tuple[list, list]:
+def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boolean=False,
+                                      include_end_if_censored=True) -> Tuple[list, list]:
     """
     Given a pd.Series that may have gaps, get the indices of the contiguous blocks of non-nan points
 
     Parameters
     ----------
     column_or_series
+    already_boolean
+    include_end_if_censored: include the last index if a block is still present.
+        Otherwise, len(starts) may be less than len(ends)
+
 
     Returns
     -------
 
     """
     if already_boolean:
+        assert len(np.unique(column_or_series)) <= 2, "Vector must be actually boolean"
         bool_column_or_series = column_or_series
     else:
         bool_column_or_series = column_or_series.isnull()
@@ -222,11 +228,13 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
         else:
             if not already_boolean or bool_column_or_series.iat[i]:
                 block_starts.append(i)
+    if include_end_if_censored and len(block_ends) < len(block_starts):
+        block_ends.append(len(bool_column_or_series))
     return block_starts, block_ends
 
 
 def remove_short_state_changes(bool_column: pd.Series, min_length, only_replace_these_states=None,
-                               replace_with_preceding_state=True):
+                               replace_with_next_state=True, DEBUG=False):
     """
     Removes very small states from an integer series, assuming they are noise. Replaces the tiny states with the
     surrounding state index. If the before and after are not the same, chooses based on 'replace_with_preceding_state'
@@ -238,7 +246,7 @@ def remove_short_state_changes(bool_column: pd.Series, min_length, only_replace_
     only_replace_these_states: Optional; only replace states of a certain index
     bool_column
     min_length
-    replace_with_preceding_state
+    replace_with_next_state
 
     Returns
     -------
@@ -247,15 +255,22 @@ def remove_short_state_changes(bool_column: pd.Series, min_length, only_replace_
     starts, ends = get_contiguous_blocks_from_column(bool_column, already_boolean=True)
     new_column = bool_column.copy()
 
-    for s, e in zip(starts, ends):
-        if e - s < min_length:
-            if only_replace_these_states is None or bool_column.iat[s] in only_replace_these_states:
+    # Compare the end to the next start, i.e. the gap between states
+    if DEBUG:
+        print(starts, ends)
+    for next_start, previous_end in zip(starts[1:], ends[:-1]):
+        if DEBUG:
+            print("Checking: ", next_start, previous_end)
+        if next_start - previous_end < min_length:
+            if only_replace_these_states is None or bool_column.iat[next_start] in only_replace_these_states:
                 # Beginning and end are special
-                if e >= len(new_column) or (replace_with_preceding_state and s > 0):
-                    replacement_state = bool_column.iat[s - 1]
+                if previous_end >= len(new_column) or (replace_with_next_state and next_start > 0):
+                    replacement_state = bool_column.iat[next_start]
                 else:
-                    replacement_state = bool_column.iat[e]
-                new_column.iloc[s:e] = replacement_state
+                    replacement_state = bool_column.iat[previous_end - 1]
+                if DEBUG:
+                    print("Replacing: ", next_start, previous_end, replacement_state)
+                new_column.iloc[previous_end:next_start] = replacement_state
     return new_column
 
 
