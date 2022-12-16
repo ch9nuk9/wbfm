@@ -863,7 +863,8 @@ def make_default_summary_plots_using_config(project_cfg):
     grid_opt['sort_using_shade_value'] = True
     try:
         make_grid_plot_using_project(proj_dat, **grid_opt)
-    except (NoNeuronsError, np.linalg.LinAlgError):
+    except (NoNeuronsError, np.linalg.LinAlgError, ValueError):
+        # For test projects, this will fail due to too little data
         pass
 
 
