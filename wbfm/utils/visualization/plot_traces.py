@@ -936,7 +936,7 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
     # Build triggered average class
     trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
     df = project_data.calc_default_traces(**trace_opt)
-    trigger_opt = dict(min_lines=2, ind_preceding=20, state=None)
+    trigger_opt = dict(min_lines=2, ind_preceding=20)
     min_significant = 20
     ind_rev_pirouette, ind_rev_non_pirouette = \
         project_data.worm_posture_class.calc_triggered_average_indices_with_pirouette_split(**trigger_opt)
