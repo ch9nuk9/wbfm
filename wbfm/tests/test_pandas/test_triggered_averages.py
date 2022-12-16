@@ -24,7 +24,7 @@ class TestBinaryVectors(unittest.TestCase):
         self.beh_complex = pd.Series(beh_complex)
         self.num_frames = len(beh)
 
-        self.opt = dict(trace_len=self.num_frames, ind_preceding=0, behavioral_state=1, DEBUG=True)
+        self.opt = dict(trace_len=self.num_frames, ind_preceding=0, behavioral_state=1)
 
     def test_basic_contiguous_blocks(self):
         starts, ends = get_contiguous_blocks_from_column(self.beh, already_boolean=True)
@@ -41,8 +41,7 @@ class TestBinaryVectors(unittest.TestCase):
 
     def test_complex_contiguous_blocks(self):
         starts, ends = get_contiguous_blocks_from_column(self.beh_complex == 1, already_boolean=True)
-        # print()
-        # print([int(i) for i in self.beh_complex])
+
         self.assertEqual(starts, [3, 6, 15, 18, 24])
         self.assertEqual(ends, [5, 9, 17, 21, 27])
 
@@ -59,19 +58,26 @@ class TestBinaryVectors(unittest.TestCase):
         self.assertEqual(list(np.where(onset_vec)[0]), expected)
 
     def test_remove_small_gaps(self):
-        print()
-        beh = remove_short_state_changes(self.beh_complex == 1, min_length=2, DEBUG=True)
-        print()
-        print([int(i) for i in self.beh_complex])
-        print([int(i) for i in beh])
+        beh = remove_short_state_changes(self.beh_complex == 1, min_length=2)
+        expected = [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1]
+        self.assertEqual(list(beh), expected)
 
     def test_complex_onsets_min_duration_fill_gaps(self):
-        ind = TriggeredAverageIndices(self.beh_complex, min_duration=3, gap_size_to_remove=1, **self.opt)
+        ind = TriggeredAverageIndices(self.beh_complex, min_duration=3, gap_size_to_remove=2, **self.opt)
         onset_vec = list(ind.onset_vector())
-        print()
-        print([int(i) for i in self.beh_complex])
-        print([int(i) for i in ind.binary_state])
-        print([int(i) for i in onset_vec])
-        print(np.where(onset_vec))
-        expected = [6, 24]
+        expected = [3, 15, 24]
+        self.assertEqual(list(np.where(onset_vec)[0]), expected)
+
+    def test_complex_onsets_short_only_fill_gaps(self):
+        ind = TriggeredAverageIndices(self.beh_complex, min_duration=0, max_duration=4,
+                                      gap_size_to_remove=2, **self.opt)
+        onset_vec = list(ind.onset_vector())
+        expected = [24]
+        self.assertEqual(list(np.where(onset_vec)[0]), expected)
+
+    def test_complex_onsets_long_only_fill_gaps(self):
+        ind = TriggeredAverageIndices(self.beh_complex, min_duration=4, max_duration=8,
+                                      gap_size_to_remove=2, **self.opt)
+        onset_vec = list(ind.onset_vector())
+        expected = [3, 15]
         self.assertEqual(list(np.where(onset_vec)[0]), expected)

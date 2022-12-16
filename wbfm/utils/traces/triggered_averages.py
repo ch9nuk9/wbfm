@@ -38,7 +38,10 @@ class TriggeredAverageIndices:
 
     @property
     def binary_state(self):
-        return self.behavioral_annotation == self.behavioral_state
+        binary_state = self.behavioral_annotation == self.behavioral_state
+        if self.gap_size_to_remove is not None:
+            binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
+        return binary_state
 
     @property
     def triggered_average_indices(self):
@@ -57,8 +60,6 @@ class TriggeredAverageIndices:
             binary_state = self.binary_state[:self.trace_len]
         else:
             binary_state = self.binary_state
-        if self.gap_size_to_remove is not None:
-            binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
         # Turn into time series
         all_ind = []
