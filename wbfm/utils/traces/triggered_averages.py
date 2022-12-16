@@ -213,13 +213,21 @@ class TriggeredAverageIndices:
             if len(x_significant) > 0:
                 ax.plot(x_significant, triggered_avg[x_significant], 'o', color='tab:orange')
 
-    def onset_vector(self):
+    @property
+    def idx_onsets(self):
         local_idx_of_onset = self.ind_preceding
         idx_onsets = np.array([vec[local_idx_of_onset] for vec in self.triggered_average_indices() if
                                vec[local_idx_of_onset] > 0])
+        return idx_onsets
+
+    def onset_vector(self):
         onset_vec = np.zeros(self.trace_len)
-        onset_vec[idx_onsets] = 1
+        onset_vec[self.idx_onsets] = 1
         return onset_vec
+
+    @property
+    def num_events(self):
+        return len(self.idx_onsets)
 
 
 @dataclass

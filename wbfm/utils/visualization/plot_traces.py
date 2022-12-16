@@ -870,52 +870,98 @@ def make_default_summary_plots_using_config(project_cfg):
 
 def make_default_triggered_average_plots(project_cfg, to_save=True):
 
+    # Load data class
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     vis_cfg = project_data.project_config.get_visualization_config()
     project_data.verbose = 0
     all_triggers = dict(reversal=1, forward=0)
-    # All triggers
+    # Build triggered average class
     trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
     df = project_data.calc_default_traces(**trace_opt)
-    trigger_opt = dict(min_lines=5, ind_preceding=20, state=None)
+    trigger_opt = dict(min_lines=2, ind_preceding=20, state=None)
     min_significant = 20
     ind_class = project_data.worm_posture_class.calc_triggered_average_indices(**trigger_opt)
     triggered_averages_class = FullDatasetTriggeredAverages(df, ind_class, min_points_for_significance=min_significant)
+
+    # Options for the traces within the grid plot
     trace_and_plot_opt = dict(to_save=False, color_using_behavior=False, share_y_axis=False,
                               behavioral_correlation_shading='pc1', sort_without_shading=True)
     trace_and_plot_opt.update(trace_opt)
+
+    # Loop
     for name, state in all_triggers.items():
-        # Change option within class
-        triggered_averages_class.ind_class.behavioral_state = state
+        _make_three_triggered_average_grid_plots(name, project_data, state, to_save, trace_and_plot_opt,
+                                                 triggered_averages_class, vis_cfg)
 
-        # First, simple gridplot
-        func = lambda *args, **kwargs: \
-            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
-                                                                show_individual_lines=False,
-                                                                color_significant_times=False)
-        make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
 
-        if to_save:
-            fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
-            plt.savefig(fname)
+def _make_three_triggered_average_grid_plots(name, project_data, state, to_save, trace_and_plot_opt,
+                                             triggered_averages_class, vis_cfg):
+    # Change option within class
+    triggered_averages_class.ind_class.behavioral_state = state
+    # First, simple gridplot
+    func = lambda *args, **kwargs: \
+        triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
+                                                            show_individual_lines=False,
+                                                            color_significant_times=False)
+    make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
+    if to_save:
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
+        plt.savefig(fname)
+    # Second, gridplot with "significant" points marked
+    func = triggered_averages_class.ax_plot_func_for_grid_plot
+    make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
+    if to_save:
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
+                                              prepend_subfolder=True)
+        plt.savefig(fname)
+    # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
+    subset_neurons = triggered_averages_class.which_neurons_are_significant()
+    func = lambda *args, **kwargs: \
+        triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
+                                                            color_significant_times=False)
+    make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
+                                 neuron_names_to_plot=subset_neurons)
+    if to_save:
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
+        plt.savefig(fname)
 
-        # Second, gridplot with "significant" points marked
-        func = triggered_averages_class.ax_plot_func_for_grid_plot
-        make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
 
-        if to_save:
-            fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
-                                                  prepend_subfolder=True)
-            plt.savefig(fname)
+def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
 
-        # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
-        subset_neurons = triggered_averages_class.which_neurons_are_significant()
-        func = lambda *args, **kwargs: \
-            triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
-                                                                color_significant_times=False)
-        make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
-                                     neuron_names_to_plot=subset_neurons)
+    # Load data class
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    vis_cfg = project_data.project_config.get_visualization_config()
+    project_data.verbose = 0
+    all_triggers = dict(reversal=1, forward=0)
+    # Build triggered average class
+    trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
+    df = project_data.calc_default_traces(**trace_opt)
+    trigger_opt = dict(min_lines=2, ind_preceding=20, state=None)
+    min_significant = 20
+    ind_rev_pirouette, ind_rev_non_pirouette = \
+        project_data.worm_posture_class.calc_triggered_average_indices_with_pirouette_split(**trigger_opt)
+    if len(ind_rev_pirouette.num_events) == 0 or len(ind_rev_non_pirouette.num_events) == 0:
+        project_data.logger.warning("No events found; not plotting pirouette split triggered averages")
+        return
+    triggered_averages_pirouette = FullDatasetTriggeredAverages(df, ind_rev_pirouette,
+                                                                min_points_for_significance=min_significant)
+    triggered_averages_non_pirouette = FullDatasetTriggeredAverages(df, ind_rev_non_pirouette,
+                                                                    min_points_for_significance=min_significant)
 
-        if to_save:
-            fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
-            plt.savefig(fname)
+    # Options for the traces within the grid plot
+    trace_and_plot_opt = dict(to_save=False, color_using_behavior=False, share_y_axis=False,
+                              behavioral_correlation_shading='pc1', sort_without_shading=True)
+    trace_and_plot_opt.update(trace_opt)
+
+    # Plot and save
+    name = "pirouette"
+    state = 1
+    triggered_averages_class = triggered_averages_pirouette
+    _make_three_triggered_average_grid_plots(name, project_data, state, to_save, trace_and_plot_opt,
+                                             triggered_averages_class, vis_cfg)
+
+    name = "non_pirouette"
+    state = 1
+    triggered_averages_class = triggered_averages_non_pirouette
+    _make_three_triggered_average_grid_plots(name, project_data, state, to_save, trace_and_plot_opt,
+                                             triggered_averages_class, vis_cfg)

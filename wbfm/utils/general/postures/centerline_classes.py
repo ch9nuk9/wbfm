@@ -130,8 +130,7 @@ class WormFullVideoPosture:
         c_y = self.centerlineY.iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_triggered_average_indices(self, state=0, min_duration=5, ind_preceding=20,
-                                       **kwargs):
+    def calc_triggered_average_indices(self, state=0, min_duration=5, ind_preceding=20, **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
 
@@ -178,9 +177,9 @@ class WormFullVideoPosture:
         ind_rev = self.calc_triggered_average_indices(state=1, min_duration=3, **default_kwargs)
 
         # Classify the reversals
-        short_onsets = np.where(ind_short_fwd.onset_vector())[0]
-        long_onsets = np.where(ind_long_fwd.onset_vector())[0]
-        rev_onsets = np.where(ind_rev.onset_vector())[0]
+        short_onsets = np.array(ind_short_fwd.idx_onsets)
+        long_onsets = np.array(ind_long_fwd.idx_onsets)
+        rev_onsets = np.array(ind_rev.idx_onsets)
         dict_of_pirouette_rev = assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, rev_onsets)
         dict_of_non_pirouette_rev = {k: int(1 - v) for k, v in dict_of_pirouette_rev.items()}
 
