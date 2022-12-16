@@ -304,7 +304,6 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
     ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
 
 
-
 # def plot_triggered_average_from_matrix_with_histogram(triggered_avg_matrix, show_individual_lines=True):
 #     triggered_avg, triggered_std, triggered_avg_counts = calc_triggered_average_stats(triggered_avg_matrix)
 #
@@ -320,3 +319,41 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
 #     axes[1].set_xlabel("Time (frames)")
 #
 #     return axes
+
+
+def assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, rev_onsets) -> dict:
+    """
+    Assigns each reversal a class based on which list contains an event closes to that reversal
+
+    Note if a reversal has no previous forward, it will be removed!
+
+    Parameters
+    ----------
+    short_onsets
+    long_onsets
+    rev_onsets
+
+    Returns
+    -------
+
+    """
+    dict_of_rev_with_id = {}
+    for rev in rev_onsets:
+        # For both forward lists, get the previous indices via subtraction
+        these_short = short_onsets.copy() - rev
+        these_short = these_short[these_short < 0]
+
+        these_long = long_onsets.copy() - rev
+        these_long = these_long[these_long < 0]
+
+        # Then the smaller absolute one (closer in time) one gives the class
+        no_prev_short = len(these_short) == 0
+        no_prev_long = len(these_long) == 0
+        if (no_prev_long and not no_prev_short) or np.min(np.abs(these_short)) < np.min(np.abs(these_long)):
+            dict_of_rev_with_id[rev] = 0
+        else:
+            dict_of_rev_with_id[rev] = 1
+
+        # Optimization: Finally, remove the used one from the fwd onset list
+
+    return dict_of_rev_with_id

@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
-from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices
+from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
+    assign_id_based_on_closest_onset_in_split_lists
 
 
 class TestBinaryVectors(unittest.TestCase):
@@ -81,3 +82,13 @@ class TestBinaryVectors(unittest.TestCase):
         onset_vec = list(ind.onset_vector())
         expected = [3, 15]
         self.assertEqual(list(np.where(onset_vec)[0]), expected)
+
+    def test_assignment_based_on_onsets(self):
+        short_onsets = np.array([7,  86, 121, 148])
+        long_onsets = np.array([20, 169, 333, 492, 698, 984])
+        rev_onsets = np.array([15, 66,  114,  130,  157,  288,  449,  654,  925, 1369])
+
+        rev_id = assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, rev_onsets)
+
+        expected = [0, 1, 0, 0, 0, 1, 1, 1, 1, 1]
+        self.assertEqual(rev_id, expected)
