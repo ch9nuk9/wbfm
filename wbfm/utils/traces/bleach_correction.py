@@ -102,33 +102,6 @@ def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_
 
     return y_corrected_with_nan, (y_fit, out, flag)
 
-#
-# def detrend_exponential_lmfit_give_indices(y_full, ind_iter):
-#     y = y_full[ind_iter]
-#     ind_remove_nan = np.where(~np.isnan(y_full))[0]
-#     y_no_nan = y_full[ind_remove_nan]
-#     x = ind_iter
-#
-#     exp_mod = ExponentialModel(prefix='exp_')
-#     out = None
-#
-#     try:
-#         pars = exp_mod.guess(y, x=x)
-#         out = exp_mod.fit(y, pars, x=x)
-#
-#         comps = out.eval_components(x=ind_remove_nan)
-#         y_fit = comps['exp_']
-#         y_corrected = y_no_nan / y_fit
-#
-#         y_corrected_with_nan = np.empty_like(y_full)
-#         y_corrected_with_nan[:] = np.nan
-#         y_corrected_with_nan[ind_remove_nan] = y_corrected
-#     except TypeError:
-#         # Occurs when there are too few input points
-#         y_corrected_with_nan, y_fit = y_full, y_full
-#
-#     return y_corrected_with_nan, (y_fit, out)
-
 
 def detrend_exponential_iter(trace, max_iters=100, convergence_threshold=0.01,
                              low_quantile=0.15, high_quantile=0.85, **kwargs):
