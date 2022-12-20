@@ -358,17 +358,24 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
     """
     dict_of_rev_with_id = {}
     for rev in rev_onsets:
-        # For both forward lists, get the previous indices via subtraction
-        these_short = class1_onsets.copy() - rev
-        these_short = these_short[these_short < 0]
+        # For both forward lists, get the previous indices
+        these_class0 = class1_onsets.copy() - rev
+        these_class0 = these_class0[these_class0 < 0]
 
-        these_long = class0_onsets.copy() - rev
-        these_long = these_long[these_long < 0]
+        these_class1 = class0_onsets.copy() - rev
+        these_class1 = these_class1[these_class1 < 0]
 
         # Then the smaller absolute one (closer in time) one gives the class
-        no_prev_short = len(these_short) == 0
-        no_prev_long = len(these_long) == 0
-        if (no_prev_long and not no_prev_short) or np.min(np.abs(these_short)) < np.min(np.abs(these_long)):
+        only_prev_short = len(these_class0) == 0 and len(these_class1) > 0
+        only_prev_long = len(these_class1) == 0 and len(these_class0) > 0
+        # Do not immediately calculate, because the list may be empty
+        short_is_closer = lambda: np.min(np.abs(these_class0)) < np.min(np.abs(these_class1))
+        if only_prev_short:
+            dict_of_rev_with_id[rev] = 0
+        elif only_prev_long:
+            dict_of_rev_with_id[rev] = 1
+        elif short_is_closer():
+            # Need to check the above two conditions before trying to evaluate this
             dict_of_rev_with_id[rev] = 0
         else:
             dict_of_rev_with_id[rev] = 1

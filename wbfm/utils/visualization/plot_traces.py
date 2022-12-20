@@ -891,14 +891,14 @@ def make_default_triggered_average_plots(project_cfg, to_save=True):
 
     # Loop
     for name, state in all_triggers.items():
-        _make_three_triggered_average_grid_plots(name, project_data, state, to_save, trace_and_plot_opt,
+        # Change option within class
+        triggered_averages_class.ind_class.behavioral_state = state
+        _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_and_plot_opt,
                                                  triggered_averages_class, vis_cfg)
 
 
-def _make_three_triggered_average_grid_plots(name, project_data, state, to_save, trace_and_plot_opt,
+def _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_and_plot_opt,
                                              triggered_averages_class, vis_cfg):
-    # Change option within class
-    triggered_averages_class.ind_class.behavioral_state = state
     # First, simple gridplot
     func = lambda *args, **kwargs: \
         triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
@@ -956,13 +956,11 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
 
     # Plot and save
     name = "pirouette"
-    state = 1
     triggered_averages_class = triggered_averages_pirouette
-    _make_three_triggered_average_grid_plots(name, project_data, state, to_save, trace_and_plot_opt,
+    _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_and_plot_opt,
                                              triggered_averages_class, vis_cfg)
 
     name = "non_pirouette"
-    state = 1
     triggered_averages_class = triggered_averages_non_pirouette
-    _make_three_triggered_average_grid_plots(name, project_data, state, to_save, trace_and_plot_opt,
+    _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_and_plot_opt,
                                              triggered_averages_class, vis_cfg)
