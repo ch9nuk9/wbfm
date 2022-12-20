@@ -3,7 +3,7 @@ from lmfit.models import ExponentialModel
 from matplotlib import pyplot as plt
 
 
-def fit_multi_exponential_model(x, y, to_plot=True, num_exponentials=2):
+def fit_multi_exponential_model(x, y, to_plot=True, num_exponentials=2, verbose=0):
     mymodel = ExponentialModel(prefix='e0_')
     for i in range(num_exponentials - 1):
         mymodel = mymodel + ExponentialModel(prefix=f'e{i+1}_')
@@ -17,7 +17,8 @@ def fit_multi_exponential_model(x, y, to_plot=True, num_exponentials=2):
     params = mymodel.make_params(**p_dict)
 
     result = mymodel.fit(y, params, x=x)
-    print(result.fit_report())
+    if verbose >= 1:
+        print(result.fit_report())
 
     if to_plot:
         plt.figure(dpi=100)
