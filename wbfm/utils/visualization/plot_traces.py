@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, List
 import seaborn as sns
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
@@ -353,8 +353,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   fig=None,
                                   sort_using_shade_value=False,
                                   sort_without_shading=False,
-                                  ax_plot_func: Optional[callable] = None,
-                                  fig_opt = None):
+                                  ax_plot_func: Optional[Union[callable, List[callable]]] = None,
+                                  fig_opt=None):
     """
 
     Parameters
@@ -372,6 +372,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
     sort_using_shade_value
     sort_without_shading
     fig
+    fig_opt
     logger
 
     Example:
@@ -385,7 +386,12 @@ def make_grid_plot_from_callables(get_data_func: callable,
     if fig_opt is None:
         fig_opt = {}
     if ax_plot_func is None:
-        ax_plot_func = lambda t, y, ax, name, **kwargs: ax.plot(t, y, **kwargs)
+        _ax_plot_func = lambda t, y, ax, name, **kwargs: ax.plot(t, y, **kwargs)
+    elif isinstance(ax_plot_func, list):
+        _ax_plot_func = lambda *args, **kwargs: [f(*args, **kwargs) for f in ax_plot_func]
+    else:
+        # Assume ax_plot_func has the correct signature
+        pass
 
     # Set up the colormap of the background, if any
     if background_shading_value_func is not None:
@@ -437,9 +443,9 @@ def make_grid_plot_from_callables(get_data_func: callable,
 
         if not new_fig:
             # ax.plot(t, y, **ax_opt)
-            ax_plot_func(t, y, ax, neuron_name, **ax_opt)
+            _ax_plot_func(t, y, ax, neuron_name, **ax_opt)
         else:
-            ax_plot_func(t, y, ax, neuron_name, label=neuron_name)
+            _ax_plot_func(t, y, ax, neuron_name, label=neuron_name)
             # ax.plot(t, y, label=neuron_name)
             # For removing the lines from the legends:
             # https://stackoverflow.com/questions/25123127/how-do-you-just-show-the-text-label-in-plot-legend-e-g-remove-a-labels-line
