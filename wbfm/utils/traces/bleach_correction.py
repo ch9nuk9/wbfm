@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import scipy
 import sklearn
@@ -36,7 +38,7 @@ def detrend_exponential(y_with_nan):
     return ind, y_corrected
 
 
-def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_value=False):
+def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_value=False, use_const=True):
     """
     Bleach correction via simple exponential fit, subtraction, and re-adding the mean
 
@@ -44,8 +46,9 @@ def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_
 
     Parameters
     ----------
-    x
-    y_with_nan
+    use_const: whether to add a constant to the fit (extra parameter), or use a raw exponential
+    x: optional; time-like vector
+    y_with_nan: values to fit
     restore_mean_value
 
     Returns
@@ -56,7 +59,6 @@ def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_
 
     exp_mod = ExponentialModel(prefix='exp_')
     model = exp_mod
-    use_const = False
     if use_const:
         const_mod = ConstantModel(prefix='const_')
         model = model + const_mod
@@ -88,13 +90,14 @@ def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_
 
     except (TypeError, ValueError):
         # Occurs when there are too few input points
+        logging.warning("Exponential fit failed due to too few points; returning uncorrected values")
         y_corrected_with_nan, y_fit = y_with_nan, y_with_nan
         flag = False
 
-    if out is None or not out.errorbars or 0 in y_fit:
+    if out is None or not out.errorbars:# or 0 in y_fit:
         # Crude measurement of bad convergence, even if it didn't error out
-        # Note: divide by mean to keep the magnitude similar to other bleach corrected traces
-        y_corrected_with_nan, y_fit = y_with_nan / np.mean(y_with_nan), np.mean(y_with_nan) * np.ones_like(y_with_nan)
+        logging.warning("Exponential fit failed; returning uncorrected values")
+        y_corrected_with_nan, y_fit = y_with_nan, np.mean(y_with_nan) * np.ones_like(y_with_nan)
         flag = False
 
     if restore_mean_value:

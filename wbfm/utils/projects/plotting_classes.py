@@ -64,12 +64,13 @@ class TracePlotter:
 
     def calculate_traces(self, neuron_name: str) -> pd.Series:
         """
-        First step when plotting, with the mode saved as a class variable
+        First step when plotting, with all options set in the class. Including optional steps, the analysis is:
+        1. Use trace_from_dataframe_factory to build a single trace (red or green)
+
 
         For extending with new calculation modes, make a function with the signature:
             y = f(neuron_name, df_traces)
-        Where df_traces is, for example, project_data.red_traces
-        and y is a pd.Series
+        Where df_traces is, for example, project_data.red_traces and y is a pd.Series
 
         Parameters
         ----------

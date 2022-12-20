@@ -79,7 +79,31 @@ def _check_valid(y, background_per_pixel):
 
 def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_correct,
                                  preprocess_volume_correction, column_name='intensity_image') -> callable:
-    # Way to process a single dataframe
+    """
+    Builds a function with the following signature:
+        calc_single_trace(column_name, df) -> pd.Series
+
+    In other words, takes a dataframe of metadata regarding one trace, and preprocesses the activity time series using,
+    for example, linear regression
+
+    Alternatively, can simply return one of those metadata variables
+
+    The default is calculation_mode='integration', which does the following:
+    1. Divide the trace by a fitted exponential
+    2. Subtract background_per_pixel*vol
+
+    Parameters
+    ----------
+    calculation_mode
+    background_per_pixel: More stable version of preprocess_volume_correction. Background value is measured externally
+    bleach_correct: Divide by an exponential fit. Generally True
+    preprocess_volume_correction: Experimental, generally False
+    column_name
+
+    Returns
+    -------
+
+    """
     if calculation_mode == 'integration':
         def calc_single_trace(i, df_tmp) -> pd.Series:
 
