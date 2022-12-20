@@ -1406,7 +1406,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
         trace_kwargs = {}
 
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
-    X = detrend(X, axis=0)
+    # X = detrend(X, axis=0)
     n_components = 3
     pca = PCA(n_components=n_components, whiten=False)
     pca.fit(X.T)
@@ -1458,7 +1458,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     starts_fwd, ends_fwd = get_contiguous_blocks_from_column(beh_fwd, already_boolean=True)
 
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
-    X = detrend(X, axis=0)
+    # X = detrend(X, axis=0)
     pca = PCA(n_components=3, whiten=False)
     pca.fit(X.T)
     pca_proj = pca.components_.T
