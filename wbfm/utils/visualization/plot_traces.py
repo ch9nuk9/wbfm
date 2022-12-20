@@ -1,5 +1,6 @@
 import logging
 import os
+from functools import partial
 from pathlib import Path
 from typing import Optional, Union, Callable, List
 import seaborn as sns
@@ -906,16 +907,14 @@ def make_default_triggered_average_plots(project_cfg, to_save=True):
 def _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_and_plot_opt,
                                              triggered_averages_class, vis_cfg):
     # First, simple gridplot
-    func = lambda *args, **kwargs: \
-        triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
-                                                            show_individual_lines=False,
-                                                            color_significant_times=False)
+    func = triggered_averages_class.ax_plot_func_for_grid_plot
     make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
     if to_save:
         fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
         plt.savefig(fname)
     # Second, gridplot with "significant" points marked
-    func = triggered_averages_class.ax_plot_func_for_grid_plot
+    func = partial(triggered_averages_class.ax_plot_func_for_grid_plot,
+                   show_individual_lines=True, color_significant_times=True)
     make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
     if to_save:
         fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
@@ -923,9 +922,7 @@ def _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_
         plt.savefig(fname)
     # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
     subset_neurons = triggered_averages_class.which_neurons_are_significant()
-    func = lambda *args, **kwargs: \
-        triggered_averages_class.ax_plot_func_for_grid_plot(*args, **kwargs,
-                                                            color_significant_times=False)
+    func = partial(triggered_averages_class.ax_plot_func_for_grid_plot)
     make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
                                  neuron_names_to_plot=subset_neurons)
     if to_save:

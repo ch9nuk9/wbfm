@@ -334,7 +334,8 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
         min_lines
 
     Example:
-    func = lambda *args, **kwargs: ax_plot_func_for_grid_plot(*args, project_data=p, state=1, **kwargs)
+    from functools import partial
+    func = partial(ax_plot_func_for_grid_plot, project_data=p, state=1)
 
     Parameters
     ----------
