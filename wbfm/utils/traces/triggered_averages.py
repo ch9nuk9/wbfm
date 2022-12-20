@@ -67,6 +67,8 @@ class TriggeredAverageIndices:
         """
         if dict_of_events_to_keep is None:
             dict_of_events_to_keep = self.dict_of_events_to_keep
+        else:
+            self.dict_of_events_to_keep = dict_of_events_to_keep
         if self.trace_len is not None:
             binary_state = self.binary_state[:self.trace_len]
         else:
@@ -182,6 +184,21 @@ class TriggeredAverageIndices:
                                            show_individual_lines=True,
                                            color_significant_times=False,
                                            **kwargs):
+        """
+        Core plotting function; must be passed a matrix
+
+        Parameters
+        ----------
+        triggered_avg_matrix
+        ax
+        show_individual_lines
+        color_significant_times
+        kwargs
+
+        Returns
+        -------
+
+        """
         raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
             self.prep_triggered_average_for_plotting(triggered_avg_matrix)
         if not is_valid:
@@ -212,6 +229,27 @@ class TriggeredAverageIndices:
         if color_significant_times:
             if len(x_significant) > 0:
                 ax.plot(x_significant, triggered_avg[x_significant], 'o', color='tab:orange')
+
+    def plot_ind_over_trace(self, trace):
+        """
+        Plots the indices stored here over a trace (for debugging)
+
+        Parameters
+        ----------
+        trace
+
+        Returns
+        -------
+
+        """
+
+        plt.figure(dpi=100)
+        plt.plot(trace)
+
+        for ind in self.triggered_average_indices():
+            ind = np.array(ind)
+            ind = ind[ind > 0]
+            plt.plot(ind, trace[ind], 'o', color='tab:orange')
 
     @property
     def idx_onsets(self):
