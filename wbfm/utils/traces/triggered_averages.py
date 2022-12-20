@@ -181,8 +181,9 @@ class TriggeredAverageIndices:
         return x_significant
 
     def plot_triggered_average_from_matrix(self, triggered_avg_matrix, ax=None,
-                                           show_individual_lines=True,
+                                           show_individual_lines=False,
                                            color_significant_times=False,
+                                           is_second_plot=False,
                                            **kwargs):
         """
         Core plotting function; must be passed a matrix
@@ -218,12 +219,13 @@ class TriggeredAverageIndices:
         upper_shading = triggered_avg + triggered_std
         lower_shading = triggered_avg - triggered_std
         ax.fill_between(x, upper_shading, lower_shading, alpha=0.25)
-        ax.set_ylabel("Activity")
-        ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
-        # Reference points
-        ax.axhline(raw_trace_mean, c='black', ls='--')
-        ax.axvline(x=self.ind_preceding, color='r', ls='--')
-        # ax.plot(self.ind_preceding, raw_trace_mean, "r>", markersize=10)
+
+        if not is_second_plot:
+            ax.set_ylabel("Activity")
+            ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
+            # Reference points
+            ax.axhline(raw_trace_mean, c='black', ls='--')
+            ax.axvline(x=self.ind_preceding, color='r', ls='--')
         # Optional orange points
         x_significant = self.calc_significant_points_from_triggered_matrix(triggered_avg_matrix)
         if color_significant_times:
@@ -314,7 +316,7 @@ class FullDatasetTriggeredAverages:
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""
-        plot_kwargs = dict(show_individual_lines=True, color_significant_times=True, label=name)
+        plot_kwargs = dict(label=name)
         plot_kwargs.update(kwargs)
 
         mat = self.ind_class.calc_triggered_average_matrix(y)
@@ -349,7 +351,7 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
     -------
 
     """
-    plot_kwargs = dict(show_individual_lines=True, color_significant_times=True, label=name)
+    plot_kwargs = dict(label=name)
     plot_kwargs.update(kwargs)
 
     ind_preceding = 20
