@@ -226,6 +226,8 @@ class TriggeredAverageIndices:
             # Reference points
             ax.axhline(raw_trace_mean, c='black', ls='--')
             ax.axvline(x=self.ind_preceding, color='r', ls='--')
+        else:
+            ax.autoscale()
         # Optional orange points
         x_significant = self.calc_significant_points_from_triggered_matrix(triggered_avg_matrix)
         if color_significant_times:
@@ -316,13 +318,19 @@ class FullDatasetTriggeredAverages:
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""
-        plot_kwargs = dict(label=name)
+        if kwargs.get('is_second_plot', False):
+            # Do not want two legend labels
+            if 'label' in kwargs:
+                kwargs['label'] = ''
+            plot_kwargs = dict(label='')
+        else:
+            plot_kwargs = dict(label=name)
         plot_kwargs.update(kwargs)
 
         mat = self.ind_class.calc_triggered_average_matrix(y)
         self.ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
-        ax.axhline(0, c='black', ls='--')
-        ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
+        # ax.axhline(0, c='black', ls='--')
+        # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
 
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
