@@ -180,6 +180,7 @@ class WormFullVideoPosture:
         short_onsets = np.array(ind_short_fwd.idx_onsets)
         long_onsets = np.array(ind_long_fwd.idx_onsets)
         rev_onsets = np.array(ind_rev.idx_onsets)
+        # Assigns 1 for onset type 1, i.e. short
         dict_of_pirouette_rev = assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, rev_onsets)
         dict_of_non_pirouette_rev = {k: int(1 - v) for k, v in dict_of_pirouette_rev.items()}
 

@@ -359,10 +359,10 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
     dict_of_rev_with_id = {}
     for rev in rev_onsets:
         # For both forward lists, get the previous indices
-        these_class0 = class1_onsets.copy() - rev
+        these_class0 = class0_onsets.copy() - rev
         these_class0 = these_class0[these_class0 < 0]
 
-        these_class1 = class0_onsets.copy() - rev
+        these_class1 = class1_onsets.copy() - rev
         these_class1 = these_class1[these_class1 < 0]
 
         # Then the smaller absolute one (closer in time) one gives the class
