@@ -89,8 +89,8 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
     Alternatively, can simply return one of those metadata variables
 
     The default is calculation_mode='integration', which does the following:
-    1. Divide the trace by a fitted exponential
-    2. Subtract background_per_pixel*vol
+    1. Subtract background_per_pixel*vol
+    2. Divide the trace by a fitted exponential
 
     Parameters
     ----------
@@ -115,8 +115,6 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
             else:
                 # Otherwise we manually bleach and background correct
                 y_raw, vol = _get_y_and_vol(df_tmp, i, column_name)
-                if bleach_correct:
-                    y_raw = pd.Series(detrend_exponential_lmfit(y_raw, restore_mean_value=True)[0])
 
                 if background_per_pixel > 0:
                     if vol is None:
@@ -126,6 +124,10 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
                         y = y_raw - background_per_pixel * vol
                 else:
                     y = y_raw
+
+                if bleach_correct:
+                    y = pd.Series(detrend_exponential_lmfit(y, restore_mean_value=True)[0])
+
             _check_valid(y, background_per_pixel)
             return y
 

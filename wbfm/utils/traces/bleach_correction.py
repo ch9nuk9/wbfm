@@ -38,7 +38,7 @@ def detrend_exponential(y_with_nan):
     return ind, y_corrected
 
 
-def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_value=False, use_const=True):
+def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_value=False, use_const=False):
     """
     Bleach correction via simple exponential fit, subtraction, and re-adding the mean
 
@@ -46,10 +46,11 @@ def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_
 
     Parameters
     ----------
-    use_const: whether to add a constant to the fit (extra parameter), or use a raw exponential
     x: optional; time-like vector
     y_with_nan: values to fit
     restore_mean_value
+    use_const: whether to add a constant to the fit (extra parameter), or use a raw exponential
+        NOTE: if the exponential is very shallow (i.e. almost constant), this term can destabilize the fit
 
     Returns
     -------
