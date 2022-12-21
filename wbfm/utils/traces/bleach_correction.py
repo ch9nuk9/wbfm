@@ -4,6 +4,7 @@ import numpy as np
 import scipy
 import sklearn
 from lmfit.models import ExponentialModel, ConstantModel
+from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
 
@@ -97,7 +98,11 @@ def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_
 
     if out is None or not out.errorbars:# or 0 in y_fit:
         # Crude measurement of bad convergence, even if it didn't error out
-        logging.warning("Exponential fit failed; returning uncorrected values")
+        # logging.warning("Exponential fit failed; returning uncorrected values")
+        # plt.scatter(x, y, color='gray', label='data')
+        # plt.plot(x, y_fit, label='best fit')
+        # plt.legend()
+        # plt.show()
         y_corrected_with_nan, y_fit = y_with_nan, np.mean(y_with_nan) * np.ones_like(y_with_nan)
         flag = False
 
