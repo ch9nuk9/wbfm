@@ -65,8 +65,13 @@ class TracePlotter:
     def calculate_traces(self, neuron_name: str) -> pd.Series:
         """
         First step when plotting, with all options set in the class. Including optional steps, the analysis is:
-        1. Use trace_from_dataframe_factory to build a single trace (red or green)
+        1. Use trace_from_dataframe_factory to get a function that builds a single trace (red or green)
+        2. Build a function that uses single traces or combine them, e.g. in a ratio or a linear model
+        3. Actually use the function
+        4. Postprocess (smoothing and removing outliers)
 
+        Note that correct_trace_using_linear_model can also do bleach correction, but in this function it is done first
+            See single_trace_preprocessed
 
         For extending with new calculation modes, make a function with the signature:
             y = f(neuron_name, df_traces)
@@ -105,18 +110,11 @@ class TracePlotter:
                                                                  self.bleach_correct,
                                                                  self.preprocess_volume_correction,
                                                                  column_name=column_name)
-
-        if not self.bleach_correct:
-            def calc_single_df_over_f(i, _df) -> pd.Series:
-                _y = single_trace_preprocessed(i, _df)
-                y0 = np.nanquantile(_y, 0.2)
-                return pd.Series((_y-y0) / y0)
-        else:
-            def calc_single_df_over_f(i, _df) -> pd.Series:
-                _y = single_trace_preprocessed(i, _df)
-                _y, _ = pd.Series(detrend_exponential_lmfit(_y))
-                y0 = np.nanquantile(_y, 0.2)
-                return pd.Series((_y-y0) / y0)
+        # Experimental: df over f as individual unit, not trace alone
+        def calc_single_df_over_f(i, _df) -> pd.Series:
+            _y = single_trace_preprocessed(i, _df)
+            y0 = np.nanquantile(_y, 0.2)
+            return pd.Series((_y-y0) / y0)
 
         ##
         ## Function for getting final y value from above functions
@@ -243,6 +241,7 @@ class TracePlotter:
         else:
             raise ValueError("Unknown calculation or channel mode")
 
+        # Actually calculate
         y = calc_y(neuron_name)
 
         ##
