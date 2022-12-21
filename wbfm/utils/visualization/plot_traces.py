@@ -96,9 +96,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
         # Also try to remove outliers and filter
         all_modes = ['ratio']
         opt['remove_outliers'] = True
-        # for mode in all_modes:
-        #     make_grid_plot_using_project(channel_mode=mode, **opt)
-        opt['filter_mode'] = 'rolling_mean'
+        opt['filter_mode'] = 'tvdiff'
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         # Also do share-y versions, with the filtering
