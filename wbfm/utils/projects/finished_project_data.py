@@ -634,7 +634,14 @@ class ProjectData:
             neuron_names = self.neuron_names
         # Initialize the trace calculator class and get the initial dataframe
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
-        trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
+
+        trace_dict = dict()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+            futures = {executor.submit(self._trace_plotter.calculate_traces, n): n for n in neuron_names}
+            for future in concurrent.futures.as_completed(futures):
+                name = futures[future]
+                trace_dict[name] = future.result()
+        # trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
         df = pd.DataFrame(trace_dict)
 
         # Optional: check neurons to remove
@@ -668,7 +675,8 @@ class ProjectData:
                     df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
                     break
                 except np.linalg.LinAlgError:
-                    self.logger.warning("SVD did not converge, trying again")
+                    if i == 0:
+                        self.logger.warning("SVD did not converge, trying again")
                     continue
 
         # Optional: reindex to physical time

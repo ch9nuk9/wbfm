@@ -265,6 +265,7 @@ class TracePlotter:
         elif self.filter_mode == "3d_pca":
             y = filter_exponential_moving_average(y)
         elif self.filter_mode == "tvdiff":
+            assert all(~np.isnan(y)), "tvdiff doesn't work with nans"
             y = filter_tv_diff(y)
         elif self.filter_mode == "no_filtering":
             pass
