@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import pandas as pd
+import pynumdiff
 
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
@@ -52,9 +53,18 @@ def filter_rolling_mean(y: pd.DataFrame, window: int = 9):
     return y.rolling(window, min_periods=1, center=True).mean()
 
 
-def filter_exponential_moving_average(y: pd.DataFrame):
-    return y.rolling(center=True, window=100, win_type='gaussian', min_periods=1).mean(std=1)
+def filter_exponential_moving_average(y: pd.DataFrame, std=1):
+    return y.rolling(center=True, window=100, win_type='gaussian', min_periods=1).mean(std=std)
     # return y.ewm(span=17, min_periods=1).mean()
+
+
+def filter_tv_diff(y: pd.DataFrame, gamma=0.0015):
+    """Gamma chosen by manual inspection of sharp and shallow traces"""
+    dt = 0.1
+    iterations = 1
+    params = [iterations, gamma]
+    x_hat, dxdt_hat = pynumdiff.total_variation_regularization.iterative_velocity(y, dt, params)
+    return x_hat
 
 
 def filter_linear_interpolation(y: pd.DataFrame, window=15):
