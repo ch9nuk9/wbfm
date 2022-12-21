@@ -1,7 +1,6 @@
 import logging
 import numpy as np
 import pandas as pd
-import pynumdiff
 
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
@@ -60,6 +59,7 @@ def filter_exponential_moving_average(y: pd.DataFrame, std=1):
 
 def filter_tv_diff(y: pd.DataFrame, gamma=0.0015):
     """Gamma chosen by manual inspection of sharp and shallow traces"""
+    import pynumdiff # Import locally because it has a loud warning about cvxpy
     dt = 0.1
     iterations = 1
     params = [iterations, gamma]
