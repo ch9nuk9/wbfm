@@ -52,9 +52,12 @@ def filter_rolling_mean(y: pd.DataFrame, window: int = 9):
     return y.rolling(window, min_periods=1, center=True).mean()
 
 
-def filter_exponential_moving_average(y: pd.DataFrame, std=1):
+def filter_gaussian_moving_average(y: pd.DataFrame, std=1):
     return y.rolling(center=True, window=100, win_type='gaussian', min_periods=1).mean(std=std)
-    # return y.ewm(span=17, min_periods=1).mean()
+
+
+def filter_exponential_moving_average(y: pd.DataFrame, span=17):
+    return y.ewm(span=span, min_periods=1).mean()
 
 
 def filter_tv_diff(y: pd.DataFrame, gamma=0.0015):
