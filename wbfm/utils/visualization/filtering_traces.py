@@ -48,16 +48,38 @@ def remove_outliers_large_diff(y: pd.DataFrame, outlier_threshold=None):
     return y
 
 
-def filter_rolling_mean(y: pd.DataFrame, window: int = 9):
+def filter_rolling_mean(y: pd.DataFrame, window: int = 9) -> pd.Series:
     return y.rolling(window, min_periods=1, center=True).mean()
 
 
-def filter_gaussian_moving_average(y: pd.DataFrame, std=1):
+def filter_gaussian_moving_average(y: pd.DataFrame, std=1) -> pd.Series:
     return y.rolling(center=True, window=100, win_type='gaussian', min_periods=1).mean(std=std)
 
 
-def filter_exponential_moving_average(y: pd.DataFrame, span=17):
+def filter_exponential_moving_average(y: pd.DataFrame, span=17) -> pd.Series:
     return y.ewm(span=span, min_periods=1).mean()
+
+
+def filter_bilateral(y: pd.DataFrame, win_size, sigma_d, sigma_i):
+    """
+    The default parameters work well for a dr / r20 trace with a range of approximately 0-1
+    If the range is much larger (e.g. raw green values), this will not have any effect
+
+    Parameters
+    ----------
+    y
+    win_size
+    sigma_d
+    sigma_i
+
+    Returns
+    -------
+
+    """
+    from wbfm.utils.external.ts_spatial_filter.tsfilt import BilateralFilter
+    filt = BilateralFilter(win_size=win_size, sigma_d=sigma_d, sigma_i=sigma_i)
+    y = filt.fit_transform(np.array(y))
+    return pd.Series(y)
 
 
 def filter_tv_diff(y: pd.DataFrame, gamma=0.0015):

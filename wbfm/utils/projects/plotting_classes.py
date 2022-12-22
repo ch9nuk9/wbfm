@@ -27,7 +27,7 @@ from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std, filter_exponential_moving_average, \
-    filter_tv_diff
+    filter_tv_diff, filter_bilateral
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
@@ -267,6 +267,8 @@ class TracePlotter:
         elif self.filter_mode == "tvdiff":
             assert all(~np.isnan(y)), "tvdiff doesn't work with nans"
             y = filter_tv_diff(y)
+        elif self.filter_mode == "bilateral":
+            y = filter_bilateral(y, win_size=7, sigma_d=2.0, sigma_i=0.1)
         elif self.filter_mode == "no_filtering":
             pass
         else:
