@@ -50,7 +50,7 @@ class NeuronEncodingBase:
             channel_key = key
             if '_filt' in key:
                 channel_key = key.replace('_filt', '')
-                opt['filter_mode'] = 'rolling_mean'
+                opt['filter_mode'] = 'bilateral'
             opt['channel_mode'] = channel_key
             all_dfs[key] = self.project_data.calc_default_traces(**opt, **self.df_kwargs)
 
@@ -835,7 +835,7 @@ class MarkovRegressionModel:
         project_data = ProjectData.load_final_project_data_from_config(self.project_path)
         self.project_data = project_data
 
-        kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode='rolling_mean')
+        kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode='bilateral')
         self.df = project_data.calc_default_traces(interpolate_nan=True, **kwargs)
 
     def get_valid_ind_and_trace(self) -> Tuple[np.ndarray, pd.Series]:

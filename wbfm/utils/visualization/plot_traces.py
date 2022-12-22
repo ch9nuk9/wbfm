@@ -96,7 +96,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
         # Also try to remove outliers and filter
         all_modes = ['ratio']
         opt['remove_outliers'] = True
-        opt['filter_mode'] = 'rolling_mean'
+        opt['filter_mode'] = 'bilateral'
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
         # Also do share-y versions, with the filtering
@@ -510,7 +510,7 @@ def plot_compare_two_calculation_methods(project_data, neuron_name, variable_dic
     default_kwargs = dict(
         channel_mode='dr_over_r_20',
         calculation_mode='integration',
-        filter_mode='rolling_mean',
+        filter_mode='bilateral',
         remove_outliers=True
     )
     default_kwargs.update(kwargs)
@@ -610,7 +610,7 @@ class ClickableGridPlot:
         # Set up grid plot
         opt = dict(channel_mode='ratio',
                    calculation_mode='integration',
-                   filter_mode='rolling_mean',
+                   filter_mode='bilateral',
                    to_save=False)
 
         mplstyle.use('fast')
@@ -788,7 +788,7 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
     """
 
-    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='dr_over_r_20')
+    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='bilateral', channel_mode='dr_over_r_20')
     if trace_kwargs is not None:
         default_trace_kwargs.update(trace_kwargs)
     trace_kwargs = default_trace_kwargs
@@ -864,7 +864,7 @@ def make_default_summary_plots_using_config(project_cfg):
         pass
     # Also save a PC1-correlated grid plot
     grid_opt['channel_mode'] = 'ratio'
-    grid_opt['filter_mode'] = 'rolling_mean'
+    grid_opt['filter_mode'] = 'bilateral'
     grid_opt['behavioral_correlation_shading'] = 'pc1'
     grid_opt['sort_using_shade_value'] = True
     try:
