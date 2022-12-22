@@ -1,0 +1,3 @@
+[submodule "wbfm/utils/external/ts_spatial_filter"]
+	path = wbfm/utils/external/ts_spatial_filter
+	url = git@github.com:Charles-Fieseler-Vienna/ts_spatial_filter.git
