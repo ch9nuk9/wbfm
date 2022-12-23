@@ -267,7 +267,7 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     if DEBUG:
         project_data.project_config.config['dataset_params']['num_frames'] = 3
-    physical_unit_conversion = project_cfg.get_physical_unit_conversion_class()
+    physical_unit_conversion = PhysicalUnitConversion.load_from_config(project_cfg)
     if use_zimmer_template:
         custom_template = project_data.get_centroids_as_numpy(i_template)
         custom_template = physical_unit_conversion.zimmer2leifer(custom_template)
@@ -296,7 +296,7 @@ def get_putative_names_from_config(project_config: ModularProjectConfig):
 
     project_data = ProjectData.load_final_project_data_from_config(project_config)
     prediction_options, template, template_label = load_fdnc_options_and_template()
-    physical_unit_conversion = project_config.get_physical_unit_conversion_class()
+    physical_unit_conversion = PhysicalUnitConversion.load_from_config(project_config)
 
     all_only_top_dict = defaultdict(list)
     num_templates = project_data.num_training_frames

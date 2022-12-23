@@ -82,7 +82,7 @@ class FramePairOptions:
         pairwise_matches_params = training_config.config['pairwise_matching_params'].copy()
         pairwise_matches_params = FramePairOptions(**pairwise_matches_params)
 
-        physical_unit_conversion = cfg.get_physical_unit_conversion_class()
+        physical_unit_conversion = PhysicalUnitConversion.load_from_config(cfg)
         pairwise_matches_params.physical_unit_conversion = physical_unit_conversion
 
         return pairwise_matches_params

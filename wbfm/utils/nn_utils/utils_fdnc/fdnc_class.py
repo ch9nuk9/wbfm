@@ -27,7 +27,7 @@ class fDNCTracker:
         fdnc_updates = tracks_cfg.config['leifer_params']['core_options']
         prediction_options.update(fdnc_updates)
         match_confidence_threshold = tracks_cfg.config['leifer_params']['match_confidence_threshold']
-        physical_unit_conversion = cfg.get_physical_unit_conversion_class()
+        physical_unit_conversion = PhysicalUnitConversion.load_from_config(cfg)
 
         # Actual object
         obj = fDNCTracker(prediction_options, match_confidence_threshold, physical_unit_conversion)
