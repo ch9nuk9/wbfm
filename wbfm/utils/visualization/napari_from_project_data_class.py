@@ -75,8 +75,8 @@ class NapariLayerInitializer:
         raw_red_data = np.stack([dat0, dat1])
         raw_seg_data = np.stack([seg0, seg1])
         # Scale to physical units
-        z_to_xy_ratio = 1
-        # z_to_xy_ratio = project_data.physical_unit_conversion.z_to_xy_ratio
+        # z_to_xy_ratio = 1
+        z_to_xy_ratio = project_data0.physical_unit_conversion.z_to_xy_ratio
         # n0_zxy[0, :] = z_to_xy_ratio * n0_zxy[0, :]
         # n1_zxy[0, :] = z_to_xy_ratio * n1_zxy[0, :]
 
@@ -89,14 +89,14 @@ class NapariLayerInitializer:
         v = napari.view_image(raw_red_data, ndisplay=3, scale=(1.0, z_to_xy_ratio, 1.0, 1.0))
         v.add_labels(raw_seg_data, scale=(1.0, z_to_xy_ratio, 1.0, 1.0), visible=False)
 
-        # This should not remember the original time point
+        # This should not remember the original time point (should place on t=0)
         df = project_data0.final_tracks.loc[[t0], :].set_index(pd.Index([0]))
         options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
         options['name'] = 'n0_final_id'
         options['n_dimensional'] = True
         v.add_points(**options)
 
-        # This should not remember the original time point
+        # This should not remember the original time point (should place on t=0)
         df = project_data1.final_tracks.loc[[t1], :].set_index(pd.Index([0]))
         options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
         options['name'] = 'n1_final_id'
