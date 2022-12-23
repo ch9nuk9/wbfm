@@ -74,9 +74,9 @@ class NapariLayerInitializer:
         n1_zxy = match_object.pts1
         raw_red_data = np.stack([dat0, dat1])
         raw_seg_data = np.stack([seg0, seg1])
-        # Scale to physical units
-        # z_to_xy_ratio = 1
-        z_to_xy_ratio = project_data0.physical_unit_conversion.z_to_xy_ratio
+        # Scale to physical units... not working with tracks
+        z_to_xy_ratio = 1
+        # z_to_xy_ratio = project_data0.physical_unit_conversion.z_to_xy_ratio
         # n0_zxy[0, :] = z_to_xy_ratio * n0_zxy[0, :]
         # n1_zxy[0, :] = z_to_xy_ratio * n1_zxy[0, :]
 
