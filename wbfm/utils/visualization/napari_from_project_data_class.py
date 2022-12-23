@@ -19,33 +19,59 @@ from wbfm.utils.visualization.napari_utils import napari_labels_from_traces_data
 class NapariLayerInitializer:
 
     @staticmethod
-    def napari_of_single_match(project_data,
-                               pair,
+    def napari_of_single_match(project_data0,
+                               time_pair=None,
                                which_matches='final_matches',
-                               this_match: FramePair = None,
+                               match_object: FramePair = None,
                                rigidly_align_volumetric_images=False,
-                               min_confidence=0.0) -> napari.Viewer:
-        if np.isscalar(pair):
-            pair = (pair, pair+1)
+                               min_confidence=0.0,
+                               project_data1=None) -> napari.Viewer:
+        """
+        Creates a gui to visualize the pairs between two time points
 
-        if this_match is None:
-            this_match: FramePair = project_data.raw_matches[pair]
+        Can either pass the time points (time_pair) or the FramePair object direction (match_object), but not both
 
-        t0, t1 = pair
-        dat0, dat1 = project_data.red_data[t0, ...], project_data.red_data[t1, ...]
-        seg0, seg1 = project_data.raw_segmentation[t0, ...], project_data.raw_segmentation[t1, ...]
-        this_match.load_raw_data(dat0, dat1)
+        Parameters
+        ----------
+        project_data
+        time_pair
+        which_matches
+        match_object
+        rigidly_align_volumetric_images
+        min_confidence
+        project_data1: optional second project, if the Frames come from different videos
+
+        Returns
+        -------
+
+        """
+        assert time_pair is None or match_object is None, "Cannot pass both time and pair object"
+        # Setup
+        if time_pair is None:
+            time_pair = (match_object.frame0.frame_ind, match_object.frame1.frame_ind)
+        if np.isscalar(time_pair):
+            time_pair = (time_pair, time_pair + 1)
+        if match_object is None:
+            match_object: FramePair = project_data0.raw_matches[time_pair]
+        if project_data1 is None:
+            project_data1 = project_data0
+
+        # Get data and optionally preprocess
+        t0, t1 = time_pair
+        dat0, dat1 = project_data0.red_data[t0, ...], project_data1.red_data[t1, ...]
+        seg0, seg1 = project_data0.raw_segmentation[t0, ...], project_data1.raw_segmentation[t1, ...]
+        match_object.load_raw_data(dat0, dat1)
         if rigidly_align_volumetric_images:
             # Ensure that both point cloud and data have rotations
-            this_match.preprocess_data(force_rotation=True)
+            match_object.preprocess_data(force_rotation=True)
             # Load the rotated versions
-            n0_zxy = this_match.pts0_preprocessed  # May be rotated
-            dat0 = this_match.dat0_preprocessed
+            n0_zxy = match_object.pts0_preprocessed  # May be rotated
+            dat0 = match_object.dat0_preprocessed
         else:
             # Keep the non-rotated versions
-            n0_zxy = this_match.pts0
+            n0_zxy = match_object.pts0
 
-        n1_zxy = this_match.pts1
+        n1_zxy = match_object.pts1
         raw_red_data = np.stack([dat0, dat1])
         raw_seg_data = np.stack([seg0, seg1])
         # Scale to physical units
@@ -54,7 +80,7 @@ class NapariLayerInitializer:
         # n0_zxy[0, :] = z_to_xy_ratio * n0_zxy[0, :]
         # n1_zxy[0, :] = z_to_xy_ratio * n1_zxy[0, :]
 
-        list_of_matches = getattr(this_match, which_matches)
+        list_of_matches = getattr(match_object, which_matches)
         list_of_matches = [m for m in list_of_matches if -1 not in m]
         list_of_matches = [m for m in list_of_matches if m[2] > min_confidence]
 
@@ -64,14 +90,14 @@ class NapariLayerInitializer:
         v.add_labels(raw_seg_data, scale=(1.0, z_to_xy_ratio, 1.0, 1.0), visible=False)
 
         # This should not remember the original time point
-        df = project_data.final_tracks.loc[[t0], :].set_index(pd.Index([0]))
+        df = project_data0.final_tracks.loc[[t0], :].set_index(pd.Index([0]))
         options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
         options['name'] = 'n0_final_id'
         options['n_dimensional'] = True
         v.add_points(**options)
 
         # This should not remember the original time point
-        df = project_data.final_tracks.loc[[t1], :].set_index(pd.Index([0]))
+        df = project_data1.final_tracks.loc[[t1], :].set_index(pd.Index([0]))
         options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
         options['name'] = 'n1_final_id'
         options['text']['color'] = 'green'
@@ -83,13 +109,13 @@ class NapariLayerInitializer:
         v.add_tracks(all_tracks_list, head_length=2, name=which_matches)
 
         # Add text overlay; temporarily change the neuron locations on the frame
-        original_zxy = this_match.frame0.neuron_locs
-        this_match.frame0.neuron_locs = n0_zxy
-        frames = {0: this_match.frame0, 1: this_match.frame1}
+        original_zxy = match_object.frame0.neuron_locs
+        match_object.frame0.neuron_locs = n0_zxy
+        frames = {0: match_object.frame0, 1: match_object.frame1}
         options = napari_labels_from_frames(frames, num_frames=2, to_flip_zxy=False)
         options['name'] = "Neuron ID in list"
         v.add_points(**options)
-        this_match.frame0.neuron_locs = original_zxy
+        match_object.frame0.neuron_locs = original_zxy
 
         return v
 
