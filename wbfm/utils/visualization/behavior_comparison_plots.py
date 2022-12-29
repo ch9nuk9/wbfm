@@ -98,22 +98,24 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """
         X = self.all_dfs[df_name]
         X_train, X_test, y_train, y_test, y_total, y_train_name = self._get_valid_test_train_split_from_name(X, y_train)
+        alphas = np.logspace(-10, 10, 21)  # alpha values to be chosen from by cross-validation
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            estimator = RidgeCV(cv=self.cv)
+            estimator = RidgeCV(cv=self.cv, alphas=alphas)
             # This can be parallelized, but has a pickle error on my machine
             sfs = SequentialFeatureSelector(estimator=estimator,
-                                              n_features_to_select=1, direction='forward', cv=self.cv)
+                                            n_features_to_select=1, direction='forward', cv=self.cv)
             sfs.fit(X_train, y_train)
         # Refit the model on test data
         feature_names = get_names_from_df(self.all_dfs[df_name])
         best_neuron = feature_names[np.where(sfs.get_support())[0][0]]
-        X_refit = X_test[best_neuron].values.reshape(-1, 1)
-        model = sfs.estimator.fit(X_refit, y_test)
-        score = model.score(X_refit, y_test)
+        X_test_best_single_neuron = X_test[best_neuron].values.reshape(-1, 1)
+        model = sfs.estimator.fit(X_test_best_single_neuron, y_test)
+        score = model.score(X_test_best_single_neuron, y_test)
 
-        y_pred = model.predict(X)  # Entire dataset
+        X_best_single_neuron = X[best_neuron].values.reshape(-1, 1)
+        y_pred = model.predict(X_best_single_neuron)  # Entire dataset, but still only one neuron
         self._last_model_calculated = model
         return score, model, y_total, y_pred, y_train_name, best_neuron
 
@@ -268,7 +270,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         ax.plot(y_pred, label='prediction', **opt)
 
         ax.set_title(f"Prediction error {score:.3f} from {df_name} traces ({self.project_data.shortened_name})")
-        plt.ylabel("Probably speed (mm/s)")
+        plt.ylabel(f"{y_name}")
         plt.xlabel("Time (volumes)")
         ax.plot(y_train, color='black', label='Target', alpha=0.8)
         plt.legend()
