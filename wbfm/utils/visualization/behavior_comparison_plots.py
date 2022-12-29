@@ -61,6 +61,8 @@ class NeuronEncodingBase:
         for key, to_drop in zip(all_dfs.keys(), all_to_drop):
             all_dfs[key].drop(columns=to_drop, inplace=True)
 
+        print("Finished calculating traces!")
+
         return all_dfs
 
 

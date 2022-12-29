@@ -252,7 +252,7 @@ class WormFullVideoPosture:
         ind_class = self.calc_triggered_average_indices(state=1, ind_preceding=0,
                                                         min_duration=min_duration)
 
-        onsets = np.array([vec[0] for vec in ind_class.triggered_average_indices if vec[0] > 0])
+        onsets = np.array([vec[0] for vec in ind_class.triggered_average_indices() if vec[0] > 0])
 
         onset_vec = np.zeros(ind_class.trace_len)
         onset_vec[onsets] = 1
