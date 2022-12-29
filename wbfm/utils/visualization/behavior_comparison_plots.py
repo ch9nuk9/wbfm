@@ -14,7 +14,7 @@ from scipy import stats
 from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.linear_model import RidgeCV, LassoCV
 from sklearn.metrics import median_absolute_error
-from sklearn.model_selection import cross_validate, RepeatedKFold
+from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_split
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
@@ -79,51 +79,25 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
     def calc_multi_neuron_encoding(self, df_name, y_train=None):
         """Speed by default"""
-        X_train = self.all_dfs[df_name]
-        X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
+        X = self.all_dfs[df_name]
+        X_train, X_test, y_train, y_test, y_total, y_train_name = self._get_valid_test_train_split_from_name(X, y_train)
         alphas = np.logspace(-10, 10, 21)  # alpha values to be chosen from by cross-validation
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
             model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
-        score = model.best_score_
-        y_pred = model.predict(X_train)
+        score = model.score(X_test, y_test)
+        y_pred = model.predict(X)  # For entire dataset
         self._last_model_calculated = model
-        return score, model, X_train, y_train, y_pred, y_train_name
-
-    def _get_y_train_and_remove_nans(self, X_train, y_train_name):
-        trace_len = X_train.shape[0]
-        # Get 1d series from behavior
-        if y_train_name is None:
-            y_train_name = 'signed_speed'
-            y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
-        elif isinstance(y_train_name, str):
-            if y_train_name == 'abs_speed':
-                y_train = self.project_data.worm_posture_class.worm_speed_fluorescence_fps[:trace_len]
-            elif y_train_name == 'leifer_curvature':
-                y_train = self.project_data.worm_posture_class.leifer_curvature_from_kymograph[:trace_len]
-            elif y_train_name == 'pirouette':
-                y_train = self.project_data.worm_posture_class.calc_psuedo_pirouette_state()[:trace_len]
-            else:
-                raise NotImplementedError(y_train_name)
-        else:
-            raise NotImplementedError(y_train_name)
-        y_train.reset_index(drop=True, inplace=True)
-
-        # Remove nan points, if any
-        valid_ind = np.where(~np.isnan(y_train))[0]
-        X_train = X_train.iloc[valid_ind, :]
-        y_train = y_train.iloc[valid_ind]
-
-        return X_train, y_train, y_train_name
+        return score, model, y_total, y_pred, y_train_name
 
     def calc_single_neuron_encoding(self, df_name, y_train=None):
         """
         Note that this does cross validation within the cross validation to select:
             ridge alpha (inner) and best neuron (outer)
         """
-        X_train = self.all_dfs[df_name]
-        X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
+        X = self.all_dfs[df_name]
+        X_train, X_test, y_train, y_test, y_total, y_train_name = self._get_valid_test_train_split_from_name(X, y_train)
 
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
@@ -132,36 +106,70 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             sfs = SequentialFeatureSelector(estimator=estimator,
                                               n_features_to_select=1, direction='forward', cv=self.cv)
             sfs.fit(X_train, y_train)
-        # Seems like you need to refit the model after searching
+        # Refit the model on test data
         feature_names = get_names_from_df(self.all_dfs[df_name])
         best_neuron = feature_names[np.where(sfs.get_support())[0][0]]
-        X = X_train[best_neuron].values.reshape(-1, 1)
-        model = sfs.estimator.fit(X, y_train)
-        score = model.score(X, y_train)
-        y_pred = model.predict(X)
+        X_refit = X_test[best_neuron].values.reshape(-1, 1)
+        model = sfs.estimator.fit(X_refit, y_test)
+        score = model.score(X_refit, y_test)
+
+        y_pred = model.predict(X)  # Entire dataset
         self._last_model_calculated = model
-        return score, model, X_train, y_train, y_pred, y_train_name, best_neuron
+        return score, model, y_total, y_pred, y_train_name, best_neuron
+
+    def _get_valid_test_train_split_from_name(self, X, y_train_name) -> \
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, str]:
+        trace_len = X.shape[0]
+        # Get 1d series from behavior
+        if y_train_name is None:
+            y_train_name = 'signed_speed'
+            y = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
+        elif isinstance(y_train_name, str):
+            if y_train_name == 'abs_speed':
+                y = self.project_data.worm_posture_class.worm_speed_fluorescence_fps[:trace_len]
+            elif y_train_name == 'leifer_curvature':
+                y = self.project_data.worm_posture_class.leifer_curvature_from_kymograph[:trace_len]
+            elif y_train_name == 'pirouette':
+                y = self.project_data.worm_posture_class.calc_psuedo_pirouette_state()[:trace_len]
+            else:
+                raise NotImplementedError(y_train_name)
+        else:
+            raise NotImplementedError(y_train_name)
+        y.reset_index(drop=True, inplace=True)
+
+        # Remove nan points, if any
+        valid_ind = np.where(~np.isnan(y))[0]
+        X = X.iloc[valid_ind, :]
+        y = y.iloc[valid_ind]
+        
+        # Build test train split
+        X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+        return X_train, X_test, y_train, y_test, y, y_train_name
 
     def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, **kwargs):
         """Plots model prediction over raw data"""
         if use_multineuron:
-            score, model, X_train, y_train, y_pred, y_train_name = \
+            score, model, y_total, y_pred, y_train_name = \
                 self.calc_multi_neuron_encoding(df_name, y_train=y_train)
             y_name = f"multineuron_{y_train_name}"
         else:
-            score, model, X_train, y_train, y_pred, y_train_name, _ = \
+            score, model, y_total, y_pred, y_train_name, _ = \
                 self.calc_single_neuron_encoding(df_name, y_train=y_train)
             y_name = f"single_best_neuron_{y_train_name}"
-        self._plot(df_name, y_pred, y_train, y_name=y_name, score=score, **kwargs)
+        self._plot(df_name, y_pred, y_total, y_name=y_name, score=score, **kwargs)
 
     def plot_sorted_correlations(self, df_name, y_train=None, to_save=False, saving_folder=None):
-        """Does not fit a model, just raw correlation"""
-        X_train = self.all_dfs[df_name]
-        X_train, y_train, y_train_name = self._get_y_train_and_remove_nans(X_train, y_train)
+        """
+        Does not fit a model, just raw correlation
+        """
+        X = self.all_dfs[df_name]
+        # Note: just use this function to resolve the name; do not actually use the train-test split
+        _, _, _, _, y_total, y_train_name = self._get_valid_test_train_split_from_name(X, y_train)
 
-        corr = X_train.corrwith(y_train)
+        corr = X.corrwith(y_total)
         idx = np.argsort(corr)
-        names = get_names_from_df(X_train)
+        names = get_names_from_df(X)
 
         fig, ax = plt.subplots(dpi=200)
         x = range(len(idx))
@@ -232,6 +240,25 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         self._plot(df_name, y_pred, y_train)
 
     def _plot(self, df_name, y_pred, y_train, y_name="", score=None, to_save=False, saving_folder=None):
+        """
+        Plots predictions and training data
+
+        Assumes both y_pred and y_train are the length of the entire dataset (not a train-test split)
+
+        Parameters
+        ----------
+        df_name
+        y_pred
+        y_train
+        y_name
+        score
+        to_save
+        saving_folder
+
+        Returns
+        -------
+
+        """
         if score is None:
             score = median_absolute_error(y_train, y_pred)
         fig, ax = plt.subplots(dpi=200)
