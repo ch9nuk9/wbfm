@@ -70,7 +70,7 @@ class NeuronEncodingBase:
 class NeuronToUnivariateEncoding(NeuronEncodingBase):
     """Subclass for specifically encoding a 1-d behavioral variable. By default this is speed"""
 
-    cv: int = 5
+    cv: int = None
 
     _last_model_calculated: callable = None
 
