@@ -108,10 +108,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                                             n_features_to_select=1, direction='forward', cv=self.cv)
             sfs.fit(X_train, y_train)
         # Refit the model on test data
-        feature_names = get_names_from_df(self.all_dfs[df_name])
-        best_neuron = feature_names[np.where(sfs.get_support())[0][0]]
+        feature_names = get_names_from_df(X_train)
+        best_neuron = feature_names[sfs.get_support(indices=True)[0]]
+        X_train_best_single_neuron = X_train[best_neuron].values.reshape(-1, 1)
         X_test_best_single_neuron = X_test[best_neuron].values.reshape(-1, 1)
-        model = sfs.estimator.fit(X_test_best_single_neuron, y_test)
+        model = sfs.estimator.fit(X_train_best_single_neuron, y_train)
         score = model.score(X_test_best_single_neuron, y_test)
 
         X_best_single_neuron = X[best_neuron].values.reshape(-1, 1)
@@ -147,7 +148,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y = y.iloc[valid_ind]
         
         # Build test train split
-        X_train, X_test, y_train, y_test = train_test_split(X, y)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False, test_size=0.2)
 
         return X_train, X_test, y_train, y_test, y, y_train_name
 
@@ -157,11 +158,14 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             score, model, y_total, y_pred, y_train_name = \
                 self.calc_multi_neuron_encoding(df_name, y_train=y_train)
             y_name = f"multineuron_{y_train_name}"
+            best_neuron = ""
         else:
-            score, model, y_total, y_pred, y_train_name, _ = \
+            score, model, y_total, y_pred, y_train_name, best_neuron = \
                 self.calc_single_neuron_encoding(df_name, y_train=y_train)
             y_name = f"single_best_neuron_{y_train_name}"
         self._plot(df_name, y_pred, y_total, y_name=y_name, score=score, **kwargs)
+
+        return model, best_neuron
 
     def plot_sorted_correlations(self, df_name, y_train=None, to_save=False, saving_folder=None):
         """
