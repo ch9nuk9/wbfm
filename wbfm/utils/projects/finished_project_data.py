@@ -636,13 +636,14 @@ class ProjectData:
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
 
         trace_dict = dict()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
             futures = {executor.submit(self._trace_plotter.calculate_traces, n): n for n in neuron_names}
             for future in concurrent.futures.as_completed(futures):
                 name = futures[future]
                 trace_dict[name] = future.result()
         # trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
         df = pd.DataFrame(trace_dict)
+        df = df.reindex(sorted(df.columns), axis=1)
 
         # Optional: check neurons to remove
         if isinstance(min_nonnan, float):
