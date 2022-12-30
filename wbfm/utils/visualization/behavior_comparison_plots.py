@@ -123,7 +123,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, str]:
         trace_len = X.shape[0]
         # Get 1d series from behavior
-        if y_train_name is None:
+        if y_train_name is None or y_train_name == 'signed_speed':
             y_train_name = 'signed_speed'
             y = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
         elif isinstance(y_train_name, str):
