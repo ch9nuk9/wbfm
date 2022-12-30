@@ -271,7 +271,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             opt['color'] = df_name
         ax.plot(y_pred, label='prediction', **opt)
 
-        ax.set_title(f"Prediction error {score:.3f} from {df_name} traces ({self.project_data.shortened_name})")
+        ax.set_title(f"R2 {score:.3f} from {df_name} traces ({self.project_data.shortened_name})")
         plt.ylabel(f"{y_name}")
         plt.xlabel("Time (volumes)")
         ax.plot(y_train, color='black', label='Target', alpha=0.8)
