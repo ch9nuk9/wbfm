@@ -44,49 +44,16 @@ def main(_config, _run):
 
     behavior_plotter = MultiProjectBehaviorPlotter(all_projects, NeuronToUnivariateEncoding)
     print(f"Saving all output in folder: {output_folder}")
+    plot_opt = dict(df_name='ratio', to_save=True, saving_folder=output_folder)
 
-    # Single neuron plot options
-    opt = dict(df_name='ratio', to_save=True, saving_folder=output_folder)
+    # See _get_valid_test_train_split_from_name for valid values
+    y_train_values = ['signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette']
+    for y_train_name in y_train_values:
+        behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train=y_train_name)
+        fname = output_folder.joinpath(f"encoding_{y_train_name}.png")
+        plt.savefig(fname)
 
-    # Signed speed
-    behavior_plotter.paired_boxplot_overall_multi_dataset('ratio')
-    fname = output_folder.joinpath("encoding_signed_speed.png")
-    plt.savefig(fname)
-
-    behavior_plotter.plot_model_prediction('ratio', to_save=True, use_multineuron=True)
-    behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
-    behavior_plotter.plot_sorted_correlations(**opt)
-
-    # Absolute speed
-    behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='abs_speed')
-    fname = output_folder.joinpath("encoding_absolute_speed.png")
-    plt.savefig(fname)
-
-    opt['y_train'] = 'abs_speed'
-    behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
-    behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
-    behavior_plotter.plot_sorted_correlations(**opt)
-    plt.close('all')
-
-    # Curvature from leifer paper
-    behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='leifer_curvature')
-    fname = output_folder.joinpath("encoding_leifer_curvature.png")
-    plt.savefig(fname)
-
-    opt['y_train'] = 'leifer_curvature'
-    behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
-    behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
-    behavior_plotter.plot_sorted_correlations(**opt)
-    plt.close('all')
-
-    # Constructed pirouette state
-    behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train='pirouette')
-    fname = output_folder.joinpath("encoding_pirouette.png")
-    plt.savefig(fname)
-
-    opt['y_train'] = 'pirouette'
-    behavior_plotter.plot_model_prediction(use_multineuron=True, **opt)
-    behavior_plotter.plot_model_prediction(use_multineuron=False, **opt)
-    behavior_plotter.plot_sorted_correlations(**opt)
-    plt.close('all')
-
+        behavior_plotter.plot_model_prediction(use_multineuron=True, **plot_opt)
+        behavior_plotter.plot_model_prediction(use_multineuron=False, **plot_opt)
+        behavior_plotter.plot_sorted_correlations(**plot_opt)
+        plt.close('all')

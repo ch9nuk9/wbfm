@@ -122,6 +122,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def _get_valid_test_train_split_from_name(self, X, y_train_name) -> \
             Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, str]:
         trace_len = X.shape[0]
+        possible_values = [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette']
+        assert y_train_name in possible_values, f"Must be one of {possible_values}"
         # Get 1d series from behavior
         if y_train_name is None or y_train_name == 'signed_speed':
             y_train_name = 'signed_speed'
