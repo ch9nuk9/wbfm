@@ -54,7 +54,7 @@ class NeuronEncodingBase:
             opt['channel_mode'] = channel_key
             all_dfs[key] = self.project_data.calc_default_traces(**opt, **self.df_kwargs)
 
-        # Align columns to commmon subset
+        # Align columns to common subset
         all_column_names = [df.columns for df in all_dfs.values()]
         common_column_names = reduce(np.intersect1d, all_column_names)
         all_to_drop = [set(df.columns) - set(common_column_names) for df in all_dfs.values()]

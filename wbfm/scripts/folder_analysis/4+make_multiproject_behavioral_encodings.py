@@ -57,3 +57,5 @@ def main(_config, _run):
         behavior_plotter.plot_model_prediction(use_multineuron=False, **plot_opt)
         behavior_plotter.plot_sorted_correlations(**plot_opt)
         plt.close('all')
+
+    print(f"Finished! Check output in folder: {output_folder}")
