@@ -53,7 +53,8 @@ def main(_config, _run):
     # Test different options for cross validation
     # all_cv_types = [LastBlockForwardValidation, KFold, TimeSeriesSplit, RollingOriginForwardValidation]
     all_cv_types = [KFold, TimeSeriesSplit, RollingOriginForwardValidation]
-    all_cv_names = ["{}".format(type(cv).__name__) for cv in all_cv_types]
+    all_cv_names = ["KFold", "TimeSeriesSplit", "RollingOriginForwardValidation"]
+    # all_cv_names = ["{}".format(type(cv).__name__) for cv in all_cv_types]
     if _config['cv_options'] == 'all':
         cv_to_check = all_cv_types
         cv_names = all_cv_names
@@ -61,7 +62,7 @@ def main(_config, _run):
         raise NotImplementedError
 
     for name, cv in zip(cv_names, cv_to_check):
-        this_output_folder = Path(f"{output_folder}_{name}")
+        this_output_folder = Path(f"{str(output_folder)}_{name}")
         print(f"Saving all output in folder: {this_output_folder}")
         behavior_plotter.set_for_all_classes({'cv_factory': cv})
 
