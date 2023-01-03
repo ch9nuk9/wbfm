@@ -93,7 +93,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
 
             # Also do a prediction step
-            y_pred = cross_val_predict(model, X=X, y=y, cv=outer_cv)
+            try:
+                y_pred = cross_val_predict(model, X=X, y=y, cv=outer_cv)
+            except ValueError:
+                # Fails with TimeSeriesSplit, because the first block is never part of the test set
+                y_pred = model.fit(X, y).predict(X)
 
         # score = model.score(X_test, y_test)
         # y_pred = model.predict(X)  # For entire dataset
@@ -151,7 +155,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
 
             # Also do a prediction step
-            y_pred = cross_val_predict(model, X=X_best_single_neuron, y=y, cv=outer_cv)
+            try:
+                y_pred = cross_val_predict(model, X=X_best_single_neuron, y=y, cv=outer_cv)
+            except ValueError:
+                # Fails with TimeSeriesSplit, because the first block is never part of the test set
+                y_pred = model.fit(X_best_single_neuron, y).predict(X_best_single_neuron)
 
         self._last_model_calculated = model
         if DEBUG:
