@@ -66,6 +66,7 @@ def main(_config, _run):
         this_output_folder.mkdir(exist_ok=True)
         print(f"Saving all output in folder: {this_output_folder}")
         behavior_plotter.set_for_all_classes({'cv_factory': cv})
+        plot_opt['saving_folder'] = this_output_folder
 
         for y_train_name in y_train_values:
             behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train=y_train_name)
