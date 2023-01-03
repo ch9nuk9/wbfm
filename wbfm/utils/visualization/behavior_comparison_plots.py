@@ -14,7 +14,7 @@ from scipy import stats
 from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.linear_model import RidgeCV, LassoCV
 from sklearn.metrics import median_absolute_error
-from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_split
+from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_split, cross_val_score
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
@@ -77,7 +77,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
 
-    def calc_multi_neuron_encoding(self, df_name, y_train=None):
+    def calc_multi_neuron_encoding(self, df_name, y_train=None, DEBUG=False):
         """Speed by default"""
         X = self.all_dfs[df_name]
         X_train, X_test, y_train, y_test, y_total, y_train_name = self._get_valid_test_train_split_from_name(X, y_train)
@@ -89,9 +89,18 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         score = model.score(X_test, y_test)
         y_pred = model.predict(X)  # For entire dataset
         self._last_model_calculated = model
+        if DEBUG:
+            # plt.plot(X_test, label='X')
+            plt.plot(y_test, label='y')
+            plt.plot(y_pred, label='y hat')
+            plt.legend()
+            plt.title("Test dataset")
+            scores = cross_val_score(model, X_train, y_train)
+            print(f"Cross validation scores, calculated manually: {scores}, "
+                  f"{scores.mean():.2f} +- {scores.std():.2f}")
         return score, model, y_total, y_pred, y_train_name
 
-    def calc_single_neuron_encoding(self, df_name, y_train=None):
+    def calc_single_neuron_encoding(self, df_name, y_train=None, DEBUG=False):
         """
         Note that this does cross validation within the cross validation to select:
             ridge alpha (inner) and best neuron (outer)
@@ -118,6 +127,16 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         X_best_single_neuron = X[best_neuron].values.reshape(-1, 1)
         y_pred = model.predict(X_best_single_neuron)  # Entire dataset, but still only one neuron
         self._last_model_calculated = model
+        if DEBUG:
+            x_crossval = y_test.index
+            plt.plot(x_crossval, X_test_best_single_neuron, label='X')
+            plt.plot(y_test, label='y')
+            plt.plot(y_pred, label='y hat')
+            plt.legend()
+            plt.title("Test dataset")
+            scores = cross_val_score(estimator, X_train_best_single_neuron, y_train)
+            print(f"Cross validation scores, calculated outside SequentialFeatureSelector: {scores}, "
+                  f"{scores.mean():.2f} +- {scores.std():.2f}")
         return score, model, y_total, y_pred, y_train_name, best_neuron
 
     def _get_valid_test_train_split_from_name(self, X, y_train_name) -> \
@@ -148,20 +167,20 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y = y.iloc[valid_ind]
         
         # Build test train split
-        X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False, test_size=0.2)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False, test_size=0.25)
 
         return X_train, X_test, y_train, y_test, y, y_train_name
 
-    def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, **kwargs):
+    def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, DEBUG=False, **kwargs):
         """Plots model prediction over raw data"""
         if use_multineuron:
             score, model, y_total, y_pred, y_train_name = \
-                self.calc_multi_neuron_encoding(df_name, y_train=y_train)
+                self.calc_multi_neuron_encoding(df_name, y_train=y_train, DEBUG=DEBUG)
             y_name = f"multineuron_{y_train_name}"
             best_neuron = ""
         else:
             score, model, y_total, y_pred, y_train_name, best_neuron = \
-                self.calc_single_neuron_encoding(df_name, y_train=y_train)
+                self.calc_single_neuron_encoding(df_name, y_train=y_train, DEBUG=DEBUG)
             y_name = f"single_best_neuron_{y_train_name}"
         self._plot(df_name, y_pred, y_total, y_name=y_name, score=score, **kwargs)
 
@@ -847,7 +866,7 @@ class MultiProjectBehaviorPlotter:
             plt.title(f"Decoding of {kwargs['y_train']}")
         else:
             plt.title(f"Decoding of Speed")
-        # plt.ylim(0, 0.8)
+        plt.ylim(-1.0, 1.0)
 
     def __repr__(self):
         return f"Multiproject analyzer with {len(self._all_behavior_plotters)} projects"
