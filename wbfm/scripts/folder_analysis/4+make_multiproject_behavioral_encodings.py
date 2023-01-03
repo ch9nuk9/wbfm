@@ -60,8 +60,9 @@ def main(_config, _run):
         raise NotImplementedError
 
     for name, cv in zip(cv_names, cv_to_check):
-        this_output_folder = output_folder.with_suffix(name)
+        this_output_folder = Path(f"{output_folder}_{name}")
         print(f"Saving all output in folder: {this_output_folder}")
+        behavior_plotter.set_for_all_classes({'cv_factory': cv})
 
         for y_train_name in y_train_values:
             behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train=y_train_name)

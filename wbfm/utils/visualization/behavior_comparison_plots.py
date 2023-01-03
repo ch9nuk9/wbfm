@@ -902,6 +902,12 @@ class MultiProjectBehaviorPlotter:
             plt.title(f"Decoding of Speed")
         plt.ylim(-1.0, 1.0)
 
+    def set_for_all_classes(self, updates: dict):
+        for key, val in updates.items():
+            for b in self._all_behavior_plotters:
+                b.__setattr__(key, val)
+
+
     def __repr__(self):
         return f"Multiproject analyzer with {len(self._all_behavior_plotters)} projects"
 
