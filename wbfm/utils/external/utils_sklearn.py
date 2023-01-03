@@ -1,11 +1,11 @@
 import numpy as np
-from sklearn.model_selection._split import _BaseKFold, KFold
+from sklearn.model_selection._split import _BaseKFold, KFold, _validate_shuffle_split, TimeSeriesSplit
 from sklearn.utils import indexable
 from sklearn.utils.validation import _num_samples
 
 
 class RollingOriginForwardValidation(_BaseKFold):
-    """Slight modification of TimeSeriesSplit"""
+    """Slight modification of TimeSeriesSplit to include all test data to the end of the dataset"""
     def __init__(self, n_splits=5, *, max_train_size=None, test_size=None, gap=0):
         super().__init__(n_splits, shuffle=False, random_state=None)
         self.max_train_size = max_train_size
@@ -68,8 +68,26 @@ class RollingOriginForwardValidation(_BaseKFold):
                 )
 
 
-class LastBlockForwardValidation(KFold):
-    """Wrapper around KFold that just sets n_splits=1 and shuffle=False"""
+class LastBlockForwardValidation(TimeSeriesSplit):
+    """
+    Exposes just the indexing of test_train_split, with shuffle=False
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(n_splits=1, shuffle=False, **kwargs)
+    Returns these indices twice in order to match the API of KFold
+    """
+
+    def split(self, X, y=None, groups=None):
+        n_samples = _num_samples(X)
+        test_size = 1 / self.n_splits
+        train_size = 1 - test_size
+        n_train, n_test = _validate_shuffle_split(n_samples, test_size, train_size)
+        # err
+        train = np.arange(n_train)
+        test = np.arange(n_train, n_train + n_test)
+
+        # return [(train, test)]
+
+        for i in range(2):
+            yield (
+                train,
+                test
+            )
