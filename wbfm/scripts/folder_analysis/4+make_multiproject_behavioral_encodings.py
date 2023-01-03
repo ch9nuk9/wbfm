@@ -9,7 +9,9 @@ import matplotlib.pyplot as plt
 import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
+from sklearn.model_selection import KFold, TimeSeriesSplit
 
+from wbfm.utils.external.utils_sklearn import LastBlockForwardValidation, RollingOriginForwardValidation
 from wbfm.utils.projects.finished_project_data import load_all_projects_in_folder
 # main function
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
@@ -20,7 +22,7 @@ from wbfm.utils.visualization.plot_traces import make_default_summary_plots_usin
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None)
+ex.add_config(project_path=None, cv_options='all')
 
 
 @ex.config
@@ -43,19 +45,32 @@ def main(_config, _run):
         output_folder = Path(folder_path)
 
     behavior_plotter = MultiProjectBehaviorPlotter(all_projects, NeuronToUnivariateEncoding)
-    print(f"Saving all output in folder: {output_folder}")
     plot_opt = dict(df_name='ratio', to_save=True, saving_folder=output_folder)
 
     # See _get_valid_test_train_split_from_name for valid values
     y_train_values = ['signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette']
-    for y_train_name in y_train_values:
-        behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train=y_train_name)
-        fname = output_folder.joinpath(f"encoding_{y_train_name}.png")
-        plt.savefig(fname)
 
-        behavior_plotter.plot_model_prediction(use_multineuron=True, **plot_opt)
-        behavior_plotter.plot_model_prediction(use_multineuron=False, **plot_opt)
-        behavior_plotter.plot_sorted_correlations(**plot_opt)
-        plt.close('all')
+    # Test different options for cross validation
+    all_cv_types = [LastBlockForwardValidation, KFold, TimeSeriesSplit, RollingOriginForwardValidation]
+    all_cv_names = ["{}".format(type(cv).__name__) for cv in all_cv_types]
+    if _config['cv_options'] == 'all':
+        cv_to_check = all_cv_types
+        cv_names = all_cv_names
+    else:
+        raise NotImplementedError
 
-    print(f"Finished! Check output in folder: {output_folder}")
+    for name, cv in zip(cv_names, cv_to_check):
+        this_output_folder = output_folder.with_suffix(name)
+        print(f"Saving all output in folder: {this_output_folder}")
+
+        for y_train_name in y_train_values:
+            behavior_plotter.paired_boxplot_overall_multi_dataset('ratio', y_train=y_train_name)
+            fname = this_output_folder.joinpath(f"encoding_{y_train_name}.png")
+            plt.savefig(fname)
+
+            behavior_plotter.plot_model_prediction(use_multineuron=True, **plot_opt)
+            behavior_plotter.plot_model_prediction(use_multineuron=False, **plot_opt)
+            behavior_plotter.plot_sorted_correlations(**plot_opt)
+            plt.close('all')
+
+        print(f"Finished! Check output in folder: {this_output_folder}")

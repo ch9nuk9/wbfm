@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.model_selection._split import _BaseKFold
+from sklearn.model_selection._split import _BaseKFold, KFold
 from sklearn.utils import indexable
 from sklearn.utils.validation import _num_samples
 
@@ -66,3 +66,10 @@ class RollingOriginForwardValidation(_BaseKFold):
                     indices[:train_end],
                     indices[test_start:],
                 )
+
+
+class LastBlockForwardValidation(KFold):
+    """Wrapper around KFold that just sets n_splits=1 and shuffle=False"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(n_splits=1, shuffle=False, **kwargs)
