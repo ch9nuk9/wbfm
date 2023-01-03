@@ -10,11 +10,14 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --partition=himem
 
-pwd; hostname; date
+# Example, after you are in the right directory:
+# sbatch custom_step_dispatcher.sbatch -t project/path -s folder_analysis/4+make_multiproject_behavioral_encodings.py
+#
+# Optionally, -k can be used to add keywords (should be in quotes)
+#
+# Note that the subfolder is needed
 
-# Necessary because the default home directory is not writable from the cluster
-# UPDATE: as of August 2022 this is not necessary
-#export HOME="/scratch/neurobiology/zimmer/Charles"
+pwd; hostname; date
 
 # Get all user flags
 while getopts t:n:s:k: flag
