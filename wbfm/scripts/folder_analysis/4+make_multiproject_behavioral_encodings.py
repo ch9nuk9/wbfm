@@ -63,6 +63,7 @@ def main(_config, _run):
 
     for name, cv in zip(cv_names, cv_to_check):
         this_output_folder = Path(f"{str(output_folder)}_{name}")
+        this_output_folder.mkdir(exist_ok=True)
         print(f"Saving all output in folder: {this_output_folder}")
         behavior_plotter.set_for_all_classes({'cv_factory': cv})
 
