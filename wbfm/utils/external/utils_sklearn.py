@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.model_selection._split import _BaseKFold
 from sklearn.utils import indexable
 from sklearn.utils.validation import _num_samples
@@ -57,11 +58,11 @@ class RollingOriginForwardValidation(_BaseKFold):
             train_end = test_start - gap
             if self.max_train_size and self.max_train_size < train_end:
                 yield (
-                    indices[train_end - self.max_train_size : train_end],
-                    indices[test_start : ],
+                    indices[train_end - self.max_train_size:train_end],
+                    indices[test_start:],
                 )
             else:
                 yield (
                     indices[:train_end],
-                    indices[test_start : ],
+                    indices[test_start:],
                 )
