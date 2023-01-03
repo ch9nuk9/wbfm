@@ -12,9 +12,10 @@ from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy import stats
 from sklearn.feature_selection import SequentialFeatureSelector
-from sklearn.linear_model import RidgeCV, LassoCV
+from sklearn.linear_model import RidgeCV, LassoCV, Ridge
 from sklearn.metrics import median_absolute_error
-from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_split, cross_val_score
+from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_split, cross_val_score, GridSearchCV, \
+    cross_val_predict, KFold
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
@@ -70,7 +71,8 @@ class NeuronEncodingBase:
 class NeuronToUnivariateEncoding(NeuronEncodingBase):
     """Subclass for specifically encoding a 1-d behavioral variable. By default this is speed"""
 
-    cv: int = None
+    cv_factory: callable = KFold
+    estimator: callable = Ridge
 
     _last_model_calculated: callable = None
 
@@ -80,67 +82,91 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def calc_multi_neuron_encoding(self, df_name, y_train=None, DEBUG=False):
         """Speed by default"""
         X = self.all_dfs[df_name]
-        X_train, X_test, y_train, y_test, y_total, y_train_name = self._get_valid_test_train_split_from_name(X, y_train)
-        alphas = np.logspace(-10, 10, 21)  # alpha values to be chosen from by cross-validation
+        X, y, y_train_name = self._unpack_data_from_name(X, y_train)
+        model = self._setup_inner_cross_validation()
 
         with warnings.catch_warnings():
-            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
-        score = model.score(X_test, y_test)
-        y_pred = model.predict(X)  # For entire dataset
+            # Outer cross validation: get score
+            outer_cv = self.cv_factory()
+            nested_scores = cross_val_score(model, X=X, y=y, cv=outer_cv)
+            score = nested_scores.mean()
+            # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
+
+            # Also do a prediction step
+            y_pred = cross_val_predict(model, X=X, y=y, cv=outer_cv)
+
+        # score = model.score(X_test, y_test)
+        # y_pred = model.predict(X)  # For entire dataset
         self._last_model_calculated = model
         if DEBUG:
             # plt.plot(X_test, label='X')
-            plt.plot(y_test, label='y')
+            plt.plot(y, label='y')
             plt.plot(y_pred, label='y hat')
             plt.legend()
             plt.title("Test dataset")
-            scores = cross_val_score(model, X_train, y_train)
+            scores = cross_val_score(model, X, y)
             print(f"Cross validation scores, calculated manually: {scores}, "
                   f"{scores.mean():.2f} +- {scores.std():.2f}")
-        return score, model, y_total, y_pred, y_train_name
+        return score, model, y, y_pred, y_train_name
+
+    def _setup_inner_cross_validation(self):
+        alphas = np.logspace(-10, 10, 21)  # alpha values to be chosen from by cross-validation
+        p_grid = {"alpha": alphas}
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
+            inner_cv = self.cv_factory()
+            estimator = self.estimator()
+
+            # Inner cross validation: get parameter
+            model = GridSearchCV(estimator=estimator, param_grid=p_grid, cv=inner_cv)
+        return model
 
     def calc_single_neuron_encoding(self, df_name, y_train=None, DEBUG=False):
         """
-        Note that this does cross validation within the cross validation to select:
+        Note that this does nested cross validation to select:
             ridge alpha (inner) and best neuron (outer)
         """
         X = self.all_dfs[df_name]
-        X_train, X_test, y_train, y_test, y_total, y_train_name = self._get_valid_test_train_split_from_name(X, y_train)
-        alphas = np.logspace(-10, 10, 21)  # alpha values to be chosen from by cross-validation
+        X, y, y_train_name = self._unpack_data_from_name(X, y_train)
+        model = self._setup_inner_cross_validation()
 
         with warnings.catch_warnings():
-            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            estimator = RidgeCV(cv=self.cv, alphas=alphas)
-            # This can be parallelized, but has a pickle error on my machine
-            sfs = SequentialFeatureSelector(estimator=estimator,
-                                            n_features_to_select=1, direction='forward', cv=self.cv)
-            sfs.fit(X_train, y_train)
-        # Refit the model on test data
-        feature_names = get_names_from_df(X_train)
-        best_neuron = feature_names[sfs.get_support(indices=True)[0]]
-        X_train_best_single_neuron = X_train[best_neuron].values.reshape(-1, 1)
-        X_test_best_single_neuron = X_test[best_neuron].values.reshape(-1, 1)
-        model = sfs.estimator.fit(X_train_best_single_neuron, y_train)
-        score = model.score(X_test_best_single_neuron, y_test)
 
-        X_best_single_neuron = X[best_neuron].values.reshape(-1, 1)
-        y_pred = model.predict(X_best_single_neuron)  # Entire dataset, but still only one neuron
+            # Outer cross validation: get best neuron
+            # Note that this takes a while because it has to redo the inner cross validation for each feature
+            # It can be parallelized but has a pickle error on my machine
+            sfs_cv = self.cv_factory()
+            sfs = SequentialFeatureSelector(estimator=model,
+                                            n_features_to_select=1, direction='forward', cv=sfs_cv)
+            sfs.fit(X, y)
+
+            feature_names = get_names_from_df(X)
+            best_neuron = [feature_names[s] for s in sfs.get_support(indices=True)]
+            X_best_single_neuron = X[best_neuron].values.reshape(-1, 1)
+
+            # Calculate the error using this neuron (CV again)
+            outer_cv = self.cv_factory()
+            nested_scores = cross_val_score(model, X=X_best_single_neuron, y=y, cv=outer_cv)
+            score = nested_scores.mean()
+            # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
+
+            # Also do a prediction step
+            y_pred = cross_val_predict(model, X=X_best_single_neuron, y=y, cv=outer_cv)
+
         self._last_model_calculated = model
         if DEBUG:
-            x_crossval = y_test.index
-            plt.plot(x_crossval, X_test_best_single_neuron, label='X')
-            plt.plot(y_test, label='y')
+            plt.plot(X_best_single_neuron, label='X')
+            plt.plot(y, label='y')
             plt.plot(y_pred, label='y hat')
             plt.legend()
             plt.title("Test dataset")
-            scores = cross_val_score(estimator, X_train_best_single_neuron, y_train)
-            print(f"Cross validation scores, calculated outside SequentialFeatureSelector: {scores}, "
-                  f"{scores.mean():.2f} +- {scores.std():.2f}")
-        return score, model, y_total, y_pred, y_train_name, best_neuron
+            # scores = cross_val_score(estimator, X_train_best_single_neuron, y_train)
+            print(f"Cross validation scores, calculated outside SequentialFeatureSelector: {nested_scores}, "
+                  f"{nested_scores.mean():.2f} +- {nested_scores.std():.2f}")
+        return score, model, y, y_pred, y_train_name, best_neuron
 
-    def _get_valid_test_train_split_from_name(self, X, y_train_name) -> \
-            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, str]:
+    def _unpack_data_from_name(self, X, y_train_name) -> \
+            Tuple[np.ndarray, np.ndarray, str]:
         trace_len = X.shape[0]
         possible_values = [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette']
         assert y_train_name in possible_values, f"Must be one of {possible_values}"
@@ -167,9 +193,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y = y.iloc[valid_ind]
         
         # Build test train split
-        X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False, test_size=0.25)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False, test_size=0.25)
 
-        return X_train, X_test, y_train, y_test, y, y_train_name
+        return X, y, y_train_name
 
     def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, DEBUG=False, **kwargs):
         """Plots model prediction over raw data"""
@@ -192,7 +218,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """
         X = self.all_dfs[df_name]
         # Note: just use this function to resolve the name; do not actually use the train-test split
-        _, _, _, _, y_total, y_train_name = self._get_valid_test_train_split_from_name(X, y_train)
+        _, y_total, y_train_name = self._unpack_data_from_name(X, y_train)
 
         corr = X.corrwith(y_total)
         idx = np.argsort(corr)
