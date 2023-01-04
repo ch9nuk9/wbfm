@@ -31,7 +31,7 @@ class NeuronEncodingBase:
     """General class for behavioral encoding or correlations"""
     project_path: str
 
-    dataframes_to_load: List[str] = field(default_factory=lambda: ['red', 'green', 'ratio', 'ratio_filt'])
+    dataframes_to_load: List[str] = field(default_factory=lambda: ['red', 'green', 'ratio'])  # , 'ratio_filt'])
 
     is_valid: bool = True
     df_kwargs: dict = field(default_factory=dict)
@@ -47,7 +47,7 @@ class NeuronEncodingBase:
         all_dfs = dict()
         for key in self.dataframes_to_load:
             # Assumes keys are a basic data mode, perhaps with a _filt suffix
-            opt = dict()
+            opt = dict(filter_mode='rolling_mean')
             channel_key = key
             if '_filt' in key:
                 channel_key = key.replace('_filt', '')
@@ -56,6 +56,7 @@ class NeuronEncodingBase:
             all_dfs[key] = self.project_data.calc_default_traces(**opt, **self.df_kwargs)
 
         # Align columns to common subset
+        # If I didn't have this block, then I could just use the project data cache directly
         all_column_names = [df.columns for df in all_dfs.values()]
         common_column_names = reduce(np.intersect1d, all_column_names)
         all_to_drop = [set(df.columns) - set(common_column_names) for df in all_dfs.values()]
