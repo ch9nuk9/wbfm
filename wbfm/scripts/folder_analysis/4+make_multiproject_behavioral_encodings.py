@@ -73,8 +73,11 @@ def main(_config, _run):
             fname = this_output_folder.joinpath(f"encoding_{y_train_name}.png")
             plt.savefig(fname)
 
+            plot_opt['y_train'] = y_train_name
             behavior_plotter.plot_model_prediction(use_multineuron=True, **plot_opt)
+            plt.close('all')
             behavior_plotter.plot_model_prediction(use_multineuron=False, **plot_opt)
+            plt.close('all')
             behavior_plotter.plot_sorted_correlations(**plot_opt)
             plt.close('all')
 
