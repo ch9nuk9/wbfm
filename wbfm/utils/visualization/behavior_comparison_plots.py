@@ -177,16 +177,19 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         possible_values = [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette']
         assert y_train_name in possible_values, f"Must be one of {possible_values}"
         # Get 1d series from behavior
+        worm = self.project_data.worm_posture_class
         if y_train_name is None or y_train_name == 'signed_speed':
             y_train_name = 'signed_speed'
-            y = self.project_data.worm_posture_class.worm_speed_fluorescence_fps_signed[:trace_len]
+            y = worm.worm_speed_fluorescence_fps_signed.iloc[:trace_len]
         elif isinstance(y_train_name, str):
             if y_train_name == 'abs_speed':
-                y = self.project_data.worm_posture_class.worm_speed_fluorescence_fps[:trace_len]
+                y = worm.worm_speed_fluorescence_fps.iloc[:trace_len]
             elif y_train_name == 'leifer_curvature':
-                y = self.project_data.worm_posture_class.leifer_curvature_from_kymograph[:trace_len]
+                assert worm.has_full_kymograph, \
+                    f"No kymograph found for project {self.project_data}"
+                y = worm.leifer_curvature_from_kymograph.iloc[:trace_len]
             elif y_train_name == 'pirouette':
-                y = self.project_data.worm_posture_class.calc_psuedo_pirouette_state()[:trace_len]
+                y = worm.calc_psuedo_pirouette_state().iloc[:trace_len]
             else:
                 raise NotImplementedError(y_train_name)
         else:
@@ -199,7 +202,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y = y.iloc[valid_ind]
 
         # Also build a binary class variable; used for cross validation
-        y_binary = self.project_data.worm_posture_class.beh_annotation == 1
+        y_binary = worm.beh_annotation == 1
         
         # Build test train split
         # X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False, test_size=0.25)
