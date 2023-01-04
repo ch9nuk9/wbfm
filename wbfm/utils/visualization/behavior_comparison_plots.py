@@ -82,14 +82,14 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def calc_multi_neuron_encoding(self, df_name, y_train=None, DEBUG=False):
         """Speed by default"""
         X = self.all_dfs[df_name]
-        X, y, y_train_name = self._unpack_data_from_name(X, y_train)
-        model = self._setup_inner_cross_validation()
+        X, y, y_binary, y_train_name = self._unpack_data_from_name(X, y_train)
+        inner_cv = self.cv_factory() #.split(X, y_binary)
+        model = self._setup_inner_cross_validation(inner_cv)
 
         with warnings.catch_warnings():
             # Outer cross validation: get score
-            outer_cv = self.cv_factory()
+            outer_cv = self.cv_factory() #.split(X, y=y_binary)
             nested_scores = cross_val_score(model, X=X, y=y, cv=outer_cv)
-            score = nested_scores.mean()
             # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
 
             # Also do a prediction step
@@ -111,14 +111,13 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             scores = cross_val_score(model, X, y)
             print(f"Cross validation scores, calculated manually: {scores}, "
                   f"{scores.mean():.2f} +- {scores.std():.2f}")
-        return score, model, y, y_pred, y_train_name
+        return nested_scores, model, y, y_pred, y_train_name
 
-    def _setup_inner_cross_validation(self):
+    def _setup_inner_cross_validation(self, inner_cv):
         alphas = np.logspace(-10, 10, 21)  # alpha values to be chosen from by cross-validation
         p_grid = {"alpha": alphas}
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            inner_cv = self.cv_factory()
             estimator = self.estimator()
 
             # Inner cross validation: get parameter
@@ -151,7 +150,6 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             # Calculate the error using this neuron (CV again)
             outer_cv = self.cv_factory()
             nested_scores = cross_val_score(model, X=X_best_single_neuron, y=y, cv=outer_cv)
-            score = nested_scores.mean()
             # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
 
             # Also do a prediction step
@@ -171,10 +169,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             # scores = cross_val_score(estimator, X_train_best_single_neuron, y_train)
             print(f"Cross validation scores, calculated outside SequentialFeatureSelector: {nested_scores}, "
                   f"{nested_scores.mean():.2f} +- {nested_scores.std():.2f}")
-        return score, model, y, y_pred, y_train_name, best_neuron
+        return nested_scores, model, y, y_pred, y_train_name, best_neuron
 
     def _unpack_data_from_name(self, X, y_train_name) -> \
-            Tuple[np.ndarray, np.ndarray, str]:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, str]:
         trace_len = X.shape[0]
         possible_values = [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette']
         assert y_train_name in possible_values, f"Must be one of {possible_values}"
@@ -199,24 +197,27 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         valid_ind = np.where(~np.isnan(y))[0]
         X = X.iloc[valid_ind, :]
         y = y.iloc[valid_ind]
+
+        # Also build a binary class variable; used for cross validation
+        y_binary = self.project_data.worm_posture_class.beh_annotation == 1
         
         # Build test train split
         # X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False, test_size=0.25)
 
-        return X, y, y_train_name
+        return X, y, y_binary, y_train_name
 
     def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, DEBUG=False, **kwargs):
         """Plots model prediction over raw data"""
         if use_multineuron:
-            score, model, y_total, y_pred, y_train_name = \
+            score_list, model, y_total, y_pred, y_train_name = \
                 self.calc_multi_neuron_encoding(df_name, y_train=y_train, DEBUG=DEBUG)
             y_name = f"multineuron_{y_train_name}"
             best_neuron = ""
         else:
-            score, model, y_total, y_pred, y_train_name, best_neuron = \
+            score_list, model, y_total, y_pred, y_train_name, best_neuron = \
                 self.calc_single_neuron_encoding(df_name, y_train=y_train, DEBUG=DEBUG)
             y_name = f"single_best_neuron_{y_train_name}"
-        self._plot(df_name, y_pred, y_total, y_name=y_name, score=score, **kwargs)
+        self._plot(df_name, y_pred, y_total, y_name=y_name, score_list=score_list, **kwargs)
 
         return model, best_neuron
 
@@ -270,10 +271,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         """
 
-        multi = self.calc_multi_neuron_encoding(name, **kwargs)[0]
-        single = self.calc_single_neuron_encoding(name, **kwargs)[0]
+        multi_list = self.calc_multi_neuron_encoding(name, **kwargs)[0]
+        single_list = self.calc_single_neuron_encoding(name, **kwargs)[0]
 
-        df_dict = {'best_single_neuron': single, 'multi_neuron': multi,
+        df_dict = {'best_single_neuron': np.mean(single_list), 'multi_neuron': np.mean(multi_list),
                    'dataset_name': self.project_data.shortened_name}
         df = pd.DataFrame(df_dict, index=[0])
         return df
@@ -300,7 +301,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
 
-    def _plot(self, df_name, y_pred, y_train, y_name="", score=None, to_save=False, saving_folder=None):
+    def _plot(self, df_name, y_pred, y_train, y_name="", score_list: list = None, to_save=False, saving_folder=None):
         """
         Plots predictions and training data
 
@@ -320,15 +321,20 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         -------
 
         """
-        if score is None:
-            score = median_absolute_error(y_train, y_pred)
+        if score_list is None:
+            score_mean = median_absolute_error(y_train, y_pred)
+            score_std = score_mean
+        else:
+            score_mean = np.mean(score_list)
+            score_std = np.std(score_list)
+
         fig, ax = plt.subplots(dpi=200)
         opt = dict()
         if df_name == 'green' or df_name == 'red':
             opt['color'] = df_name
         ax.plot(y_pred, label='prediction', **opt)
 
-        ax.set_title(f"R2 {score:.3f} from {df_name} traces ({self.project_data.shortened_name})")
+        ax.set_title(f"R2 {score_mean:.2f}+-{score_std:.2f} ({df_name}; {self.project_data.shortened_name})")
         plt.ylabel(f"{y_name}")
         plt.xlabel("Time (volumes)")
         ax.plot(y_train, color='black', label='Target', alpha=0.8)
