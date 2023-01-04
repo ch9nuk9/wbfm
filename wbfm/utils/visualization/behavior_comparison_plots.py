@@ -130,8 +130,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             ridge alpha (inner) and best neuron (outer)
         """
         X = self.all_dfs[df_name]
-        X, y, y_train_name = self._unpack_data_from_name(X, y_train)
-        model = self._setup_inner_cross_validation()
+        X, y, y_binary, y_train_name = self._unpack_data_from_name(X, y_train)
+        inner_cv = self.cv_factory() #.split(X, y_binary)
+        model = self._setup_inner_cross_validation(inner_cv)
 
         with warnings.catch_warnings():
 
@@ -316,7 +317,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y_pred
         y_train
         y_name
-        score
+        score_list
         to_save
         saving_folder
 
