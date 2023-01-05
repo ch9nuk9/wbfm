@@ -52,7 +52,7 @@ def main(_config, _run):
 
     # Test different options for cross validation
     # all_cv_types = [LastBlockForwardValidation, KFold, TimeSeriesSplit, RollingOriginForwardValidation]
-    all_cv_types = [partial(KFold, n_splits=10), TimeSeriesSplit, RollingOriginForwardValidation]
+    all_cv_types = [partial(KFold, n_splits=3), TimeSeriesSplit, RollingOriginForwardValidation]
     all_cv_names = ["KFold", "TimeSeriesSplit", "RollingOriginForwardValidation"]
     # all_cv_names = ["{}".format(type(cv).__name__) for cv in all_cv_types]
     if _config['cv_options'] == 'all':
