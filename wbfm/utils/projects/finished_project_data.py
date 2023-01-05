@@ -831,6 +831,8 @@ class ProjectData:
 
         self.logger.info("Updating affected tracklets, but NOT writing to disk")
         for m in affected_masks:
+            if m == 0:
+                continue
             # Explicitly check to see if there actually was a tracklet before the segmentation was changed
             # Note that this metadata refers to the old masks, even if the mask is deleted above
             tracklet_name = self.tracklets_and_neurons_class.get_tracklet_from_segmentation_index(t, m)
@@ -852,7 +854,7 @@ class ProjectData:
         See: modify_segmentation_using_manual_correction
 
         """
-
+        self.logger.info(f"Updating masks at t = {self.tracklet_annotator.t_buffer_masks}")
         for t in self.tracklet_annotator.t_buffer_masks:
             self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
 

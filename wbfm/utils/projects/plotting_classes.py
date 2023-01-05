@@ -997,12 +997,14 @@ class TrackletAndSegmentationAnnotator:
         self.t_buffer_masks.append(t)
 
     def update_segmentation_layer_using_buffer(self, layer, t=None):
+        """WARNING: this will update the data on disk unless Napari is opened with a zarr copy"""
         if t is None:
             # Default to most recent buffer change
             t = self.t_buffer_masks[-1]
         elif t not in self.t_buffer_masks:
             self.logger.warning(f"Tried to update segmentation layer at t={t}, but no buffer mask found")
             return
+        self.logger.warning("This will update the data on disk unless Napari is opened with a zarr copy")
         layer.data[t] = self.buffer_masks[t]
 
     def clear_currently_selected_segmentations(self, do_callbacks=True):

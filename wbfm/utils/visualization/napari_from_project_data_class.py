@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Union, List
 import numpy as np
 import pandas as pd
+import zarr
 from tqdm.auto import tqdm
 
 from wbfm.gui.utils.utils_gui import change_viewer_time_point
@@ -153,22 +154,19 @@ class NapariLayerInitializer:
                              experimental_clipping_planes=clipping_list)
             layers_actually_added.append('Red data')
         if 'Green data' in which_layers:
-            visibility = force_all_visible
             viewer.add_image(project_data.green_data, name="Green data", opacity=0.5, colormap='green',
-                             visible=visibility,
+                             visible=force_all_visible,
                              contrast_limits=[0, 2*np.max(project_data.green_data[0]+1)],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
             layers_actually_added.append('Green data')
         if 'Raw segmentation' in which_layers:
-            visibility = force_all_visible
-            seg_array = project_data.raw_segmentation
+            seg_array = zarr.array(project_data.raw_segmentation)
             viewer.add_labels(seg_array, name="Raw segmentation",
-                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=visibility,
+                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=force_all_visible,
                               rendering='translucent')
             layers_actually_added.append('Raw segmentation')
         if 'Colored segmentation' in which_layers and project_data.segmentation is not None:
-            visibility = force_all_visible
             viewer.add_labels(project_data.segmentation, name="Colored segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
             layers_actually_added.append('Colored segmentation')

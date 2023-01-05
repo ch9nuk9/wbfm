@@ -519,7 +519,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             widget.setEnabled(to_be_interactive)
 
     def modify_segmentation_using_manual_correction(self):
-        # Uses candidate mask layer
+        """Uses candidate mask layer to modify the segmentation in the GUI, but not on disk"""
         self.dat.modify_segmentation_using_manual_correction()
         self.dat.tracklet_annotator.update_segmentation_layer_using_buffer(self.seg_layer)
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
@@ -527,7 +527,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.set_segmentation_layer_visible()
 
     def modify_segmentation_and_tracklets_on_disk(self):
-        # Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe
+        """Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe"""
         self.dat.segmentation_metadata.overwrite_original_detection_file()
         self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
         self.dat.modify_segmentation_on_disk_using_buffer()
