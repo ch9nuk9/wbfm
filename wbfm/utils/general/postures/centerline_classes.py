@@ -526,7 +526,7 @@ class WormFullVideoPosture:
     @property
     def leifer_curvature_from_kymograph(self) -> pd.Series:
         # Signed average over segments 10 to 90
-        return self.remove_invalid_idx(self.curvature_fluorescence_fps.loc[:, 5:90].mean(axis=1))
+        return self.remove_invalid_idx(self.curvature_fluorescence_fps.loc[:, 15:80].mean(axis=1))
 
     @property
     def subsample_indices(self):
