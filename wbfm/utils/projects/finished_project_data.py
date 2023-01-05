@@ -818,7 +818,8 @@ class ProjectData:
         if len(affected_masks) == 0:
             self.logger.info("No saved affected masks found; this is fine if masks were changed manually")
             this_seg = self.raw_segmentation[t, ...]
-            affected_masks = np.unique(this_seg[(this_seg - new_mask) != 0])
+            affected_ind = (this_seg - new_mask) != 0
+            affected_masks = np.hstack([np.unique(this_seg[affected_ind]),np.unique(new_mask[affected_ind])])
 
         self.logger.info(f"Updating raw segmentation at t = {t}; affected masks={affected_masks}")
         self.tracklet_annotator.modify_buffer_segmentation(t, new_mask)
