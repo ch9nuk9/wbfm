@@ -232,7 +232,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """
         X = self.all_dfs[df_name]
         # Note: just use this function to resolve the name; do not actually use the train-test split
-        _, y_total, y_train_name = self._unpack_data_from_name(X, y_train)
+        _, y_total, y_binary, y_train_name = self._unpack_data_from_name(X, y_train)
 
         corr = X.corrwith(y_total)
         idx = np.argsort(corr)
