@@ -552,8 +552,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.set_segmentation_layer_invisible()
 
     def add_candidate_mask_layer(self):
-        # Produces simply copy of segmentation as candidate mask layer
+        # Produces simple copy of segmentation as candidate mask layer
         self.remove_layer_of_candidate_segmentation()
+        self.dat.tracklet_annotator.update_time_of_candidate_mask(self.t)
         self.dat.tracklet_annotator.add_candidate_mask_layer(self.viewer, new_full_mask=None)
         self.set_segmentation_layer_invisible()
 

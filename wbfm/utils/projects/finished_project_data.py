@@ -786,7 +786,7 @@ class ProjectData:
         Modifies single segmentation, but does NOT update the disk, but rather a buffer zarr array in the
         tracklet_annotator class
 
-        NOTE: will invalidate raw_frames and raw_matches!!
+        NOTE: will invalidate raw_frames and raw_matches if a new mask is created (not if one is just modified)
 
         Parameters
         ----------
@@ -803,7 +803,17 @@ class ProjectData:
         if new_mask is None:
             self.logger.warning("Modification attempted, but no valid candidate mask exists; aborting")
             self.logger.warning("HINT: if you produce a mask but then click different neurons, it invalidates the mask!")
+            self.logger.warning("===================================================================")
+            self.logger.warning("DID NOT SAVE ANYTHING!!!")
+            self.logger.warning("===================================================================")
             return
+        if t is None:
+            self.logger.warning("Modification attempted, but no valid time exists; aborting")
+            self.logger.warning("===================================================================")
+            self.logger.warning("DID NOT SAVE ANYTHING!!!")
+            self.logger.warning("===================================================================")
+            return
+
         affected_masks = self.tracklet_annotator.indices_of_original_neurons
         # this_seg = self.raw_segmentation[t, ...]
         # affected_masks = np.unique(this_seg[(this_seg - new_mask) != 0])

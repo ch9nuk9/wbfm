@@ -834,6 +834,21 @@ class TrackletAndSegmentationAnnotator:
             self.click_callback(event, layer, viewer)
 
     def click_callback(self, event, layer, viewer):
+        """
+        Callback for click (select tracklet), or:
+            control click (select segmentation)
+            alt click (select segmentation and split)
+
+        Parameters
+        ----------
+        event
+        layer
+        viewer
+
+        Returns
+        -------
+
+        """
         self.last_clicked_position = event.position
         invalid_target, seg_index, time_index = self._unpack_click_event(event, layer)
         if invalid_target:
@@ -950,14 +965,30 @@ class TrackletAndSegmentationAnnotator:
         # self.set_selected_segmentation(self.time_of_candidate, target_index)
 
     def add_candidate_mask_layer(self, viewer, new_full_mask=None):
+        """
+        Adds a new layer to the napari viewer. Either a passed new mask, or a copy of the mask at the current time
+
+        Parameters
+        ----------
+        viewer
+        new_full_mask
+        t
+
+        Returns
+        -------
+
+        """
         if new_full_mask is None:
             # Add copy of current point
-            t = viewer.dims.current_step[0]
+            t = self.time_of_candidate
+            if t is None:
+                self.logger.warning("Attempted to add a mask, but no time was saved; aborting")
+                return
             new_full_mask = viewer.layers['Raw segmentation'].data[t].copy()
+            self.logger.debug(f"Adding segmentation mask candidate at t={t}")
         # Add as a new candidate layer
         layer_name = f"Candidate_mask"
-        viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0,
-                          scale=(self.z_to_xy_ratio, 1.0, 1.0))
+        viewer.add_labels(new_full_mask, name=layer_name, opacity=1.0, scale=(self.z_to_xy_ratio, 1.0, 1.0))
         # Save for later combining with original mask
         self.candidate_mask = new_full_mask
 
@@ -975,15 +1006,29 @@ class TrackletAndSegmentationAnnotator:
         layer.data[t] = self.buffer_masks[t]
 
     def clear_currently_selected_segmentations(self, do_callbacks=True):
-        self.time_of_candidate = None
+        self.update_time_of_candidate_mask(None)
         self.indices_of_original_neurons = []
         self.invalidate_candidate_mask()
         if do_callbacks:
             self.segmentation_updated_callbacks()
 
     def append_segmentation_to_list(self, time_index, seg_index):
+        """
+        Keeps track of which neuron is being modified, and at which time point
+
+        Note that creating a direct mask copy and manually modifying is different
+
+        Parameters
+        ----------
+        time_index
+        seg_index
+
+        Returns
+        -------
+
+        """
         if self.time_of_candidate is None:
-            self.time_of_candidate = time_index
+            self.update_time_of_candidate_mask(time_index)
             self.indices_of_original_neurons = [seg_index]
             self.invalidate_candidate_mask()
             self.segmentation_updated_callbacks()
@@ -995,6 +1040,10 @@ class TrackletAndSegmentationAnnotator:
                 self.logger.info(f"Added neuron to list; current neurons: {self.indices_of_original_neurons}")
             else:
                 self.logger.warning("Attempt to add segmentations of different time points; not supported")
+
+    def update_time_of_candidate_mask(self, time_index):
+        """Called when creating a new mask copy or when splitting a mask"""
+        self.time_of_candidate = time_index
 
     def invalidate_candidate_mask(self):
         # Make sure the metadata and so on is synced to the saved mask
