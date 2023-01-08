@@ -45,6 +45,7 @@ dependencies:
     - hashfs
     - tinydb==3.15.2
     - tinydb-serialization
+    - methodtools
     - pytorch-lightning
     - openpyxl
     - pytest
