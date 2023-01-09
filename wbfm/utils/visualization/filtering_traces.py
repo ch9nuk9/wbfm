@@ -23,11 +23,18 @@ def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshol
     return y
 
 
-def remove_outliers_using_std(y: pd.Series, std_factor: float, verbose=0):
+def remove_outliers_using_std(y: pd.Series, std_factor: float, verbose=0, fill_value='nan'):
+    if isinstance(fill_value, str):
+        if fill_value == 'nan':
+            fill_value = np.nan
+        elif fill_value == 'mean':
+            fill_value = np.mean(y)
+        else:
+            raise NotImplementedError
     y = y.copy()
     outlier_threshold = std_factor * np.std(y)
     is_outlier = np.abs(y - y.mean()) > outlier_threshold
-    y[is_outlier] = np.nan
+    y[is_outlier] = fill_value
     if verbose >= 1:
         print(f"Removed {len(np.where(is_outlier)[0])} outliers")
 

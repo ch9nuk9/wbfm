@@ -10,7 +10,6 @@ import pandas as pd
 import sklearn.exceptions
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
-from scipy import stats
 from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.linear_model import RidgeCV, LassoCV, Ridge
 from sklearn.metrics import median_absolute_error
