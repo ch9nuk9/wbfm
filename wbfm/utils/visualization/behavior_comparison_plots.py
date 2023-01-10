@@ -339,9 +339,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             opt['color'] = df_name
         ax.plot(y_pred, label='prediction', **opt)
 
-        title_str = f"R2 {score_mean:.2f}+-{score_std:.2f} ({df_name}; {self.project_data.shortened_name})"
+        title_str = f"R2={score_mean:.2f}+-{score_std:.2f} ({df_name}; {self.project_data.shortened_name})"
         if best_neuron != "":
-            title_str = f"{best_neuron} {title_str}"
+            title_str = f"{best_neuron}: {title_str}"
         ax.set_title(title_str)
         plt.ylabel(f"{y_name}")
         plt.xlabel("Time (volumes)")
