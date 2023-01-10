@@ -221,7 +221,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             score_list, model, y_total, y_pred, y_train_name, best_neuron = \
                 self.calc_single_neuron_encoding(df_name, y_train=y_train, DEBUG=DEBUG)
             y_name = f"single_best_neuron_{y_train_name}"
-        self._plot(df_name, y_pred, y_total, y_name=y_name, score_list=score_list, **kwargs)
+        self._plot(df_name, y_pred, y_total, y_name=y_name, score_list=score_list, best_neuron=best_neuron, **kwargs)
 
         return model, best_neuron
 
@@ -305,7 +305,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y_pred = model.predict(X_train)
         self._plot(df_name, y_pred, y_train)
 
-    def _plot(self, df_name, y_pred, y_train, y_name="", score_list: list = None, to_save=False, saving_folder=None):
+    def _plot(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
+              to_save=False, saving_folder=None):
         """
         Plots predictions and training data
 
@@ -338,7 +339,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             opt['color'] = df_name
         ax.plot(y_pred, label='prediction', **opt)
 
-        ax.set_title(f"R2 {score_mean:.2f}+-{score_std:.2f} ({df_name}; {self.project_data.shortened_name})")
+        title_str = f"R2 {score_mean:.2f}+-{score_std:.2f} ({df_name}; {self.project_data.shortened_name})"
+        if best_neuron != "":
+            title_str = f"[{best_neuron}] {title_str}"
+        ax.set_title(title_str)
         plt.ylabel(f"{y_name}")
         plt.xlabel("Time (volumes)")
         ax.plot(y_train, color='black', label='Target', alpha=0.8)
