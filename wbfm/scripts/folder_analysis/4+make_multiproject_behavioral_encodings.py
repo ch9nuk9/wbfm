@@ -48,7 +48,7 @@ def main(_config, _run):
     plot_opt = dict(df_name='ratio', to_save=True, saving_folder=output_folder)
 
     # See _get_valid_test_train_split_from_name for valid values
-    y_train_values = ['signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette']
+    y_train_values = ['signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed']
 
     # Test different options for cross validation
     # all_cv_types = [LastBlockForwardValidation, KFold, TimeSeriesSplit, RollingOriginForwardValidation]

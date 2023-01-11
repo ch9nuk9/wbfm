@@ -177,7 +177,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def _unpack_data_from_name(self, X, y_train_name, only_model_single_state=None) -> \
             Tuple[pd.DataFrame, pd.Series, pd.Series, str]:
         trace_len = X.shape[0]
-        possible_values = [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette']
+        possible_values = [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed']
         assert y_train_name in possible_values, f"Must be one of {possible_values}"
         # Get 1d series from behavior
         worm = self.project_data.worm_posture_class
@@ -193,6 +193,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 y = worm.leifer_curvature_from_kymograph.iloc[:trace_len]
             elif y_train_name == 'pirouette':
                 y = worm.calc_psuedo_pirouette_state().iloc[:trace_len]
+            elif y_train_name == 'signed_speed_smoothed':
+                y = worm.worm_speed_signed_smoothed_fluorescence_fps.iloc[:trace_len]
             else:
                 raise NotImplementedError(y_train_name)
         else:
