@@ -102,6 +102,20 @@ class WormFullVideoPosture:
         df.index = pd.DatetimeIndex(df.index)
         return df
 
+    @cached_property
+    def centerline_absolute_coordinates(self):
+        # Depends on camera and magnification
+        mm_per_pixel = 0.00245
+        # Offset depends on camera and frame size
+        x = (self.centerlineX - 340) * mm_per_pixel
+        y = (self.centerlineY - 324) * mm_per_pixel
+
+        # Rotation depends on Ulises' pipeline and camera
+        x_abs = self.stage_position.values[:, 0] - y.T
+        y_abs = self.stage_position.values[:, 1] + x.T
+
+        return x_abs, y_abs
+
     @property
     def beh_annotation(self):
         """Name is shortened to avoid US-UK spelling confusion"""
