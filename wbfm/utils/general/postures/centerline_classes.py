@@ -22,6 +22,7 @@ from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std
 
 
 @dataclass
@@ -533,9 +534,22 @@ class WormFullVideoPosture:
         return pd.Series(self.worm_speed).rolling(window=window, center=True).mean()
 
     @property
+    def worm_speed_signed_smoothed(self) -> pd.Series:
+        rev_ind = (self.beh_annotation == 1).reset_index(drop=True)
+        velocity = copy.copy(self.worm_speed)
+        velocity = remove_outliers_using_std(velocity, 10)
+        velocity[:-1][rev_ind] *= -1
+        window = 20*24
+        return pd.Series(velocity).rolling(window=window, center=True).mean()
+
+    @property
+    def worm_speed_signed_smoothed_fluorescence_fps(self) -> pd.Series:
+        return pd.Series(self.worm_speed_signed_smoothed).loc[self.subsample_indices]
+
+    @property
     def worm_speed_smoothed_fluorescence_fps(self) -> pd.Series:
-        window = 5
-        return pd.Series(self.worm_speed_fluorescence_fps).rolling(window=window, center=True).mean()
+        window = 30
+        return pd.Series(self.worm_speed_fluorescence_fps).rolling(window=window, center=True, min_periods=5).mean()
 
     @property
     def leifer_curvature_from_kymograph(self) -> pd.Series:
