@@ -10,7 +10,7 @@ DLC_Projects/
 
 # Many figures for presentations
 Presentations/
-Scratch/
+notebooks/Scratch/
 *.eps
 
 # Too large
@@ -50,3 +50,4 @@ wbfm/new_project_defaults/snakemake/.snakemake/
 /wbfm/notebooks/debugging/*.ipynb
 
 *.json
+/wbfm/scratch/

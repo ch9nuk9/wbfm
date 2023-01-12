@@ -191,15 +191,17 @@ def apply_function_to_red_and_green_dataframes(red, green, func, **kwargs):
     return df_filtered
 
 
-def rolling_filter_trace_using_func(y, x, func, window, delta, **kwargs):
+def rolling_filter_trace_using_func(y, x, func, window, delta, filtfilt=True, **kwargs):
     """
+    Applies a filter function (func) to the trace in a rolling window fashion
 
     Parameters
     ----------
     y - trace (target)
     x - noise or predictor
-    func - function for filtering. Takes y and x and kwargs
+    func - function for filtering. Signature: f(y, x, **kwargs)
     window - size of rolling window
+    filtfilt - to apply twice (forward and backward), and average
     kwargs
 
     Returns
@@ -211,6 +213,16 @@ def rolling_filter_trace_using_func(y, x, func, window, delta, **kwargs):
                                                                                                noise_trace=x,
                                                                                                **kwargs)
     y_filt = combine_trace_fragments(filtered_fragments, used_edges, len(y))
+
+    if filtfilt:
+        y = np.flip(y)
+        if x is not None:
+            x = np.flip(x)
+        filtered_fragments, noise_fragments, raw_fragments, used_edges = apply_function_to_windows(y, edges, func,
+                                                                                                   noise_trace=x,
+                                                                                                   **kwargs)
+        y_filt2 = np.flip(combine_trace_fragments(filtered_fragments, used_edges, len(y)))
+        y_filt = (y_filt + y_filt2) / 2.0
 
     return y_filt
 

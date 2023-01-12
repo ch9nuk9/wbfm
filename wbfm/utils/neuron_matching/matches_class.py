@@ -146,6 +146,20 @@ class MatchesWithConfidence:
 
     @staticmethod
     def matches_from_array(matches_with_conf, confidence=None, minimum_confidence=0.0, invalid_value=-1):
+        """
+        Initialize object from a nx2 array that lists the matches
+
+        Parameters
+        ----------
+        matches_with_conf
+        confidence
+        minimum_confidence
+        invalid_value
+
+        Returns
+        -------
+
+        """
         if len(matches_with_conf) == 0:
             raise NoMatchesError
         # if minimum_confidence > 0.0:
