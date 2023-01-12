@@ -12,7 +12,7 @@ def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshol
     y_filt = y.rolling(window, min_periods=1, center=True).mean()
     error = np.abs(y - y_filt)
     if outlier_threshold is None:
-        logging.warning("not working very well")
+        # logging.warning("not working very well")
         outlier_threshold = 2*error.std() + error.mean()
         if verbose >= 1:
             print(f"Calculated error threshold at {outlier_threshold}")
@@ -55,19 +55,19 @@ def remove_outliers_large_diff(y: pd.DataFrame, outlier_threshold=None):
     return y
 
 
-def filter_rolling_mean(y: pd.DataFrame, window: int = 9) -> pd.Series:
+def filter_rolling_mean(y: pd.Series, window: int = 9) -> pd.Series:
     return y.rolling(window, min_periods=1, center=True).mean()
 
 
-def filter_gaussian_moving_average(y: pd.DataFrame, std=1) -> pd.Series:
+def filter_gaussian_moving_average(y: pd.Series, std=1) -> pd.Series:
     return y.rolling(center=True, window=100, win_type='gaussian', min_periods=1).mean(std=std)
 
 
-def filter_exponential_moving_average(y: pd.DataFrame, span=17) -> pd.Series:
+def filter_exponential_moving_average(y: pd.Series, span=17) -> pd.Series:
     return y.ewm(span=span, min_periods=1).mean()
 
 
-def filter_bilateral(y: pd.DataFrame, win_size, sigma_d, sigma_i):
+def filter_bilateral(y: pd.Series, win_size, sigma_d, sigma_i):
     """
     The default parameters work well for a dr / r20 trace with a range of approximately 0-1
     If the range is much larger (e.g. raw green values), this will not have any effect
@@ -89,7 +89,7 @@ def filter_bilateral(y: pd.DataFrame, win_size, sigma_d, sigma_i):
     return pd.Series(y)
 
 
-def filter_tv_diff(y: pd.DataFrame, gamma=0.0015):
+def filter_tv_diff(y: pd.Series, gamma=0.0015):
     """Gamma chosen by manual inspection of sharp and shallow traces"""
     import pynumdiff # Import locally because it has a loud warning about cvxpy
     dt = 0.1
@@ -99,7 +99,7 @@ def filter_tv_diff(y: pd.DataFrame, gamma=0.0015):
     return x_hat
 
 
-def filter_linear_interpolation(y: pd.DataFrame, window=15):
+def filter_linear_interpolation(y: pd.Series, window=15):
     return y.interpolate(method='linear', limit=window, limit_direction='both')
 
 

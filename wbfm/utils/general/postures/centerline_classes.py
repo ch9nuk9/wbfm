@@ -22,7 +22,8 @@ from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std
+from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std, remove_outliers_via_rolling_mean, \
+    filter_gaussian_moving_average
 
 
 @dataclass
@@ -494,6 +495,23 @@ class WormFullVideoPosture:
     @property
     def stage_position_fluorescence_fps(self):
         return self.stage_position.iloc[self.subsample_indices, :]
+
+    @property
+    def worm_angular_velocity(self):
+        """Using angular velocity in 2d pca space"""
+
+        xyz_pca = self.pca_projections
+        window = 3
+        x = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 0]), window)
+        y = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 1]), window)
+
+        x = pd.Series(x).interpolate()
+        y = pd.Series(y).interpolate()
+        # Note: arctan2 is required to give the proper sign
+        angles = np.unwrap(np.arctan2(y, x))
+        smoothed_angles = filter_gaussian_moving_average(pd.Series(angles), std=12)
+
+        return np.gradient(smoothed_angles)
 
     @cached_property
     def worm_speed(self) -> pd.Series:
