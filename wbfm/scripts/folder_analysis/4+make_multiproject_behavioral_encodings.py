@@ -47,13 +47,15 @@ def main(_config, _run):
     behavior_plotter = MultiProjectBehaviorPlotter(all_projects, NeuronToUnivariateEncoding)
     plot_opt = dict(df_name='ratio', to_save=True, saving_folder=output_folder)
 
-    # See _get_valid_test_train_split_from_name for valid values
-    y_train_values = ['signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed']
+    # See _unpack_data_from_name for valid values
+    y_train_values = ['signed_speed', 'abs_speed', 'signed_speed_smoothed', 'signed_speed_angular']
+    # y_train_values = ['signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed']
 
     # Test different options for cross validation
-    # all_cv_types = [LastBlockForwardValidation, KFold, TimeSeriesSplit, RollingOriginForwardValidation]
-    all_cv_types = [partial(KFold, n_splits=3), TimeSeriesSplit, RollingOriginForwardValidation]
-    all_cv_names = ["KFold", "TimeSeriesSplit", "RollingOriginForwardValidation"]
+    # all_cv_types = [partial(KFold, n_splits=3), TimeSeriesSplit, RollingOriginForwardValidation]
+    # all_cv_names = ["KFold", "TimeSeriesSplit", "RollingOriginForwardValidation"]
+    all_cv_types = [partial(KFold, n_splits=3), partial(KFold, n_splits=10, shuffle=True)]
+    all_cv_names = ["KFold", "KFold_shuffle"]
     # all_cv_names = ["{}".format(type(cv).__name__) for cv in all_cv_types]
     if _config['cv_options'] == 'all':
         cv_to_check = all_cv_types
