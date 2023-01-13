@@ -508,8 +508,11 @@ class WormFullVideoPosture:
         x = pd.Series(x).interpolate()
         y = pd.Series(y).interpolate()
         # Note: arctan2 is required to give the proper sign
+        # x = filter_gaussian_moving_average(pd.Series(x), std=12)
+        # y = filter_gaussian_moving_average(pd.Series(y), std=12)
         angles = np.unwrap(np.arctan2(y, x))
         smoothed_angles = filter_gaussian_moving_average(pd.Series(angles), std=12)
+        # smoothed_angles = filter_gaussian_moving_average(pd.Series(angles), std=12)
 
         velocity = np.gradient(smoothed_angles)
         velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
@@ -589,7 +592,9 @@ class WormFullVideoPosture:
     @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
-        return range(self.bigtiff_start_volume*self.frames_per_volume, len(self.worm_speed), self.frames_per_volume)
+        offset = self.frames_per_volume // 2  # Take the middle frame
+        return range(self.bigtiff_start_volume*self.frames_per_volume + offset, len(self.worm_speed),
+                     self.frames_per_volume)
 
     def remove_invalid_idx(self, vec: pd.Series) -> pd.Series:
         if self.tracking_failure_idx is not None:
