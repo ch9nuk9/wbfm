@@ -89,7 +89,7 @@ class WormFullVideoPosture:
 
     def _validate_and_subset(self, df, fluorescence_fps):
         if df is not None:
-            df = self.remove_invalid_idx(df)
+            df = self.remove_idx_of_tracking_failures(df)
             if fluorescence_fps:
                 df = df.iloc[self.subsample_indices, :]
         return df
@@ -214,6 +214,27 @@ class WormFullVideoPosture:
             velocity = pd.Series(velocity).interpolate()
         return velocity
 
+    @cached_property
+    def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True) -> pd.Series:
+        if subsample_before_derivative:
+            df = self.stage_position(fluorescence_fps=fluorescence_fps)
+        else:
+            df = self.stage_position(fluorescence_fps=False)
+        speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
+
+        tdelta = pd.Series(df.index).diff().mean()
+        tdelta_s = tdelta.delta / 1e9
+        speed_mm_per_s = pd.Series(speed / tdelta_s)
+
+        if not subsample_before_derivative:
+            speed_mm_per_s = self._validate_and_subset(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
+
+        return speed_mm_per_s
+
+    ##
+    ## Basic data validation
+    ##
+
     @property
     def has_beh_annotation(self):
         return self.filename_beh_annotation is not None and os.path.exists(self.filename_beh_annotation)
@@ -222,6 +243,10 @@ class WormFullVideoPosture:
     def has_full_kymograph(self):
         fnames = [self.filename_y, self.filename_x, self.filename_curvature]
         return all([f is not None for f in fnames]) and all([os.path.exists(f) for f in fnames])
+
+    ##
+    ## Other complex states
+    ##
 
     def plot_pca_eigenworms(self):
         fig = plt.figure(figsize=(15, 15))
@@ -565,38 +590,15 @@ class WormFullVideoPosture:
             self.beh_annotation_is_stable_style = True
             return self.beh_annotation()
 
-    @cached_property
-    def worm_speed(self) -> pd.Series:
-        df = self.stage_position()
-        speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
-
-        tdelta = pd.Series(df.index).diff().mean()
-        tdelta_s = tdelta.delta / 1e9
-        speed_mm_per_s = speed / tdelta_s
-
-        return pd.Series(speed_mm_per_s)
-
-    @cached_property
-    def worm_speed_fluorescence_fps(self) -> pd.Series:
-        # Don't subset the speed directly, but go back to the positions
-        df = self.stage_position(fluorescence_fps=True)
-        speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
-
-        tdelta = pd.Series(df.index).diff().mean()
-        tdelta_s = tdelta.delta / 1e9
-        speed_mm_per_s = speed / tdelta_s
-
-        return self.remove_invalid_idx(pd.Series(speed_mm_per_s))
-
     @property
     def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
         """Just sets the speed to be negative when the behavior is annotated as reversal"""
-        speed = self.worm_speed_fluorescence_fps
+        speed = self.worm_speed(fluorescence_fps=True)
         rev_ind = (self.behavior_annotations(fluorescence_fps=True)  == 1).reset_index(drop=True)
         velocity = copy.copy(speed)
         velocity[rev_ind] *= -1
 
-        return self.remove_invalid_idx(velocity)
+        return self.remove_idx_of_tracking_failures(velocity)
 
     @property
     def worm_speed_smoothed(self) -> pd.Series:
@@ -619,12 +621,12 @@ class WormFullVideoPosture:
     @property
     def worm_speed_smoothed_fluorescence_fps(self) -> pd.Series:
         window = 30
-        return pd.Series(self.worm_speed_fluorescence_fps).rolling(window=window, center=True, min_periods=5).mean()
+        return pd.Series(self.worm_speed(fluorescence_fps=True) ).rolling(window=window, center=True, min_periods=5).mean()
 
     @property
     def leifer_curvature_from_kymograph(self) -> pd.Series:
         # Signed average over segments 10 to 90
-        return self.remove_invalid_idx(self.curvature(fluorescence_fps=True) .loc[:, 15:80].mean(axis=1))
+        return self.remove_idx_of_tracking_failures(self.curvature(fluorescence_fps=True) .loc[:, 15:80].mean(axis=1))
 
     @property
     def subsample_indices(self):
@@ -633,10 +635,15 @@ class WormFullVideoPosture:
         return range(self.bigtiff_start_volume*self.frames_per_volume + offset, len(self.worm_speed),
                      self.frames_per_volume)
 
-    def remove_invalid_idx(self, vec: pd.Series) -> pd.Series:
+    def remove_idx_of_tracking_failures(self, vec: pd.Series) -> pd.Series:
+        """
+        Removes indices of known tracking failures, if any
+
+        Assumes the high frame rate index
+        """
         if self.tracking_failure_idx is not None:
             vec = vec.copy()
-            vec.iloc[self.tracking_failure_idx] = np.nan
+            vec.loc[self.tracking_failure_idx] = np.nan
         return vec
 
     def __repr__(self):

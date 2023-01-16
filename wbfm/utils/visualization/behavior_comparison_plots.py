@@ -187,7 +187,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             y = worm.worm_speed_fluorescence_fps_signed.iloc[:trace_len]
         elif isinstance(y_train_name, str):
             if y_train_name == 'abs_speed':
-                y = worm.worm_speed_fluorescence_fps.iloc[:trace_len]
+                y = worm.worm_speed(fluorescence_fps=True) .iloc[:trace_len]
             elif y_train_name == 'leifer_curvature':
                 assert worm.has_full_kymograph, \
                     f"No kymograph found for project {self.project_data}"
