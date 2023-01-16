@@ -88,7 +88,7 @@ class WormFullVideoPosture:
         return pca_proj
 
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
-                                 reset_index=True) -> Union[pd.DataFrame, pd.Series]:
+                                 reset_index=False) -> Union[pd.DataFrame, pd.Series]:
         if df is not None:
             df = self.remove_idx_of_tracking_failures(df)
             if fluorescence_fps:
@@ -267,24 +267,27 @@ class WormFullVideoPosture:
         else:
             df = get_positions(fluorescence_fps=False)
 
-        # Derivative, then convert to physical units
+        # Derivative, then convert to physical units (note that subsampling might not have happened yet)
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
-        tdelta_s = self.get_time_delta_in_s(fluorescence_fps)
+        tdelta_s = self.get_time_delta_in_s(fluorescence_fps and subsample_before_derivative)
         speed_mm_per_s = pd.Series(speed / tdelta_s)
-        speed_mm_per_s.reset_index(drop=True, inplace=True)
+        # print(speed)
+        # print(speed_mm_per_s)
+        # print(tdelta_s)
 
         # Postprocessing
         if not subsample_before_derivative:
-            speed_mm_per_s = self._validate_and_downsample(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
+            speed_mm_per_s = self._validate_and_downsample(speed_mm_per_s, fluorescence_fps=fluorescence_fps,
+                                                           reset_index=True)
         if strong_smoothing:
             window = 50
             speed_mm_per_s = pd.Series(speed_mm_per_s).rolling(window=window, center=True).mean()
-        if signed:
-            speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
         if remove_outliers:
             window = 10
             speed_mm_per_s = remove_outliers_via_rolling_mean(pd.Series(speed_mm_per_s), window)
             speed_mm_per_s = pd.Series(speed_mm_per_s).interpolate()
+        if signed:
+            speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
 
         return speed_mm_per_s
 
