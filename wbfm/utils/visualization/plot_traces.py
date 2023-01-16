@@ -345,7 +345,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   shade_plot_func: callable = None,
                                   background_shading_value_func: callable = None,
                                   color_using_behavior: bool = True,
-                                  share_y_axis: bool = True,
+                                  share_y_axis: bool = False,
                                   logger: logging.Logger = None,
                                   num_columns: int = 5,
                                   twinx_when_reusing_figure: bool = False,
@@ -358,7 +358,6 @@ def make_grid_plot_from_callables(get_data_func: callable,
 
     Parameters
     ----------
-    color_using_behavior: boolean for actually shading
     get_data_func: function that accepts a neuron name and returns a tuple of (t, y)
     neuron_names: list of neurons to plot
     shade_plot_func: function that accepts an axis object and shades the plot
@@ -455,7 +454,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
             ax.set_axis_off()
 
             # Additional layers of information on the axes
-            if color_using_behavior:
+            if color_using_behavior and shade_plot_func is not None:
                 shade_plot_func(ax)
 
             if background_shading_value_func is not None and not sort_without_shading:
