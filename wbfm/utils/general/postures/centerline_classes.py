@@ -214,7 +214,7 @@ class WormFullVideoPosture:
             velocity = pd.Series(velocity).interpolate()
         return velocity
 
-    @cached_property
+    @lru_cache(maxsize=8)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True) -> pd.Series:
         if subsample_before_derivative:
             df = self.stage_position(fluorescence_fps=fluorescence_fps)
@@ -230,6 +230,16 @@ class WormFullVideoPosture:
             speed_mm_per_s = self._validate_and_subset(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
 
         return speed_mm_per_s
+
+    @property
+    def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
+        """Just sets the speed to be negative when the behavior is annotated as reversal"""
+        speed = self.worm_speed(fluorescence_fps=True)
+        rev_ind = (self.behavior_annotations(fluorescence_fps=True)  == 1).reset_index(drop=True)
+        velocity = copy.copy(speed)
+        velocity[rev_ind] *= -1
+
+        return self.remove_idx_of_tracking_failures(velocity)
 
     ##
     ## Basic data validation
@@ -591,24 +601,14 @@ class WormFullVideoPosture:
             return self.beh_annotation()
 
     @property
-    def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
-        """Just sets the speed to be negative when the behavior is annotated as reversal"""
-        speed = self.worm_speed(fluorescence_fps=True)
-        rev_ind = (self.behavior_annotations(fluorescence_fps=True)  == 1).reset_index(drop=True)
-        velocity = copy.copy(speed)
-        velocity[rev_ind] *= -1
-
-        return self.remove_idx_of_tracking_failures(velocity)
-
-    @property
     def worm_speed_smoothed(self) -> pd.Series:
         window = 50
-        return pd.Series(self.worm_speed).rolling(window=window, center=True).mean()
+        return pd.Series(self.worm_speed()).rolling(window=window, center=True).mean()
 
     @property
     def worm_speed_signed_smoothed(self) -> pd.Series:
         rev_ind = (self.beh_annotation() == 1).reset_index(drop=True)
-        velocity = copy.copy(self.worm_speed)
+        velocity = copy.copy(self.worm_speed())
         velocity = remove_outliers_using_std(velocity, 10)
         velocity[:-1][rev_ind] *= -1
         window = 20*24
@@ -632,7 +632,8 @@ class WormFullVideoPosture:
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
         offset = self.frames_per_volume // 2  # Take the middle frame
-        return range(self.bigtiff_start_volume*self.frames_per_volume + offset, len(self.worm_speed),
+        return range(self.bigtiff_start_volume*self.frames_per_volume + offset,
+                     len(self.curvature(fluorescence_fps=False)),
                      self.frames_per_volume)
 
     def remove_idx_of_tracking_failures(self, vec: pd.Series) -> pd.Series:
