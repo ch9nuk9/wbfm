@@ -195,7 +195,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             elif y_train_name == 'pirouette':
                 y = worm.calc_psuedo_pirouette_state().iloc[:trace_len]
             elif y_train_name == 'signed_speed_smoothed':
-                y = worm.worm_speed_signed_smoothed_fluorescence_fps.iloc[:trace_len]
+                y = worm.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True).iloc[:trace_len]
             elif y_train_name == 'signed_speed_angular':
                 y = worm.worm_angular_velocity(fluorescence_fps=True).iloc[:trace_len]
             else:

@@ -223,7 +223,8 @@ class WormFullVideoPosture:
         return velocity
 
     @lru_cache(maxsize=8)
-    def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False) -> pd.Series:
+    def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
+                   strong_smoothing=False) -> pd.Series:
         if subsample_before_derivative:
             df = self.stage_position(fluorescence_fps=fluorescence_fps)
         else:
@@ -236,6 +237,9 @@ class WormFullVideoPosture:
 
         if not subsample_before_derivative:
             speed_mm_per_s = self._validate_and_subset(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
+        if strong_smoothing:
+            window = 50
+            speed_mm_per_s = pd.Series(speed_mm_per_s).rolling(window=window, center=True).mean()
         if signed:
             speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
 
@@ -607,28 +611,6 @@ class WormFullVideoPosture:
             self.beh_annotation_is_stable_style = True
             return self.beh_annotation()
 
-    @property
-    def worm_speed_smoothed(self) -> pd.Series:
-        window = 50
-        return pd.Series(self.worm_speed()).rolling(window=window, center=True).mean()
-
-    @property
-    def worm_speed_signed_smoothed(self) -> pd.Series:
-        rev_ind = (self.beh_annotation() == 1).reset_index(drop=True)
-        velocity = copy.copy(self.worm_speed())
-        velocity = remove_outliers_using_std(velocity, 10)
-        velocity[:-1][rev_ind] *= -1
-        window = 20*24
-        return pd.Series(velocity).rolling(window=window, center=True).mean()
-
-    @property
-    def worm_speed_signed_smoothed_fluorescence_fps(self) -> pd.Series:
-        return pd.Series(self.worm_speed_signed_smoothed).loc[self.subsample_indices]
-
-    @property
-    def worm_speed_smoothed_fluorescence_fps(self) -> pd.Series:
-        window = 30
-        return pd.Series(self.worm_speed(fluorescence_fps=True) ).rolling(window=window, center=True, min_periods=5).mean()
     @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
