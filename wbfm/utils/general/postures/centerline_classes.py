@@ -3,7 +3,7 @@ import glob
 import logging
 import os
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 import statsmodels.api as sm
 
 import numpy as np
@@ -155,13 +155,15 @@ class WormFullVideoPosture:
         return x_abs, y_abs
 
     @cached_property
-    def _raw_beh_annotation(self):
+    def _raw_beh_annotation(self) -> pd.Series:
         if self._beh_annotation is None:
             self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
+        if isinstance(self._beh_annotation, pd.DataFrame):
+            self._beh_annotation = self._beh_annotation.annotation
         return self._beh_annotation
 
     @lru_cache(maxsize=8)
-    def beh_annotation(self, fluorescence_fps=False) -> pd.Series:
+    def beh_annotation(self, fluorescence_fps=False) -> Optional[pd.Series]:
         """Name is shortened to avoid US-UK spelling confusion"""
         beh = self._raw_beh_annotation
         if fluorescence_fps:
