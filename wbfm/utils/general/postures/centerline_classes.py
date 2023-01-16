@@ -89,18 +89,35 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def centerlineX(self):
+        return self._raw_centerlineX()
+
+    @cached_property
+    def _raw_centerlineX(self):
         return read_if_exists(self.filename_x, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
     def centerlineY(self):
+        return self._raw_centerlineY()
+
+    @cached_property
+    def _raw_centerlineY(self):
         return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
     def curvature(self):
+        return self._raw_curvature()
+
+    @cached_property
+    def _raw_curvature(self):
         return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
     def stage_position(self):
+        df = self._raw_stage_position()
+        return df
+
+    @cached_property
+    def _raw_stage_position(self):
         df = pd.read_csv(self.filename_table_position, index_col='time')
         df.index = pd.DatetimeIndex(df.index)
         return df
