@@ -210,12 +210,12 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y = y.iloc[valid_ind]
 
         # Also build a binary class variable; possibly used for cross validation
-        y_binary = worm.behavior_annotations(fluorescence_fps=True)  == 1
+        y_binary = worm.beh_annotation(fluorescence_fps=True)  == 1
         y_binary = y_binary.reindex_like(y)
 
         # Optionally subset the data to be only a specific state
         if only_model_single_state is not None:
-            beh = worm.behavior_annotations(fluorescence_fps=True) .reset_index(drop=True)
+            beh = worm.beh_annotation(fluorescence_fps=True) .reset_index(drop=True)
             ind = beh == only_model_single_state
             X = X.loc[ind, :]
             y = y.loc[ind]

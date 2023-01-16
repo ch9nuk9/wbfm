@@ -862,7 +862,7 @@ class ProjectData:
         """
         Shades the currently active matplotlib axis using externally annotated behavior annotation
 
-        Note: only works if self.behavior_annotations is found
+        Note: only works if self.beh_annotation is found
 
         Example with a loaded project:
 
@@ -1470,7 +1470,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     else:
         ax = fig.add_subplot(111, projection='3d')
     # c = np.arange(project_data.num_frames) / 1e6
-    beh = project_data.worm_posture_class.behavior_annotations(fluorescence_fps=True) 
+    beh = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True) 
     if t_end is not None:
         beh = beh[:t_end]
     if t_start is not None:

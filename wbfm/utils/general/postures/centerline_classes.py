@@ -235,7 +235,7 @@ class WormFullVideoPosture:
     def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
         """Just sets the speed to be negative when the behavior is annotated as reversal"""
         speed = self.worm_speed(fluorescence_fps=True)
-        rev_ind = (self.behavior_annotations(fluorescence_fps=True)  == 1).reset_index(drop=True)
+        rev_ind = (self.beh_annotation(fluorescence_fps=True) == 1).reset_index(drop=True)
         velocity = copy.copy(speed)
         velocity[rev_ind] *= -1
 
@@ -288,7 +288,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        ind_class = TriggeredAverageIndices(self.behavior_annotations(fluorescence_fps=True) , state, min_duration,
+        ind_class = TriggeredAverageIndices(self.beh_annotation(fluorescence_fps=True) , state, min_duration,
                                             trace_len=self.num_frames, ind_preceding=ind_preceding,
                                             **kwargs)
         return ind_class
@@ -349,7 +349,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.behavior_annotations(fluorescence_fps=True)  == 0
+        binary_fwd = self.beh_annotation(fluorescence_fps=True)  == 0
         all_durations = get_durations_from_column(binary_fwd, already_boolean=True, remove_edges=False)
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
         start2duration_and_end_dict = {}
@@ -421,7 +421,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.behavior_annotations(fluorescence_fps=True)  == 0
+        binary_fwd = self.beh_annotation(fluorescence_fps=True)  == 0
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
 
         # Turn into time series
@@ -445,7 +445,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.behavior_annotations(fluorescence_fps=True)  == 0
+        binary_fwd = self.beh_annotation(fluorescence_fps=True)  == 0
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
 
         # Turn into time series
@@ -464,7 +464,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_rev = self.behavior_annotations(fluorescence_fps=True)  == 1
+        binary_rev = self.beh_annotation(fluorescence_fps=True)  == 1
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_rev, already_boolean=True)
 
         # Turn into time series
@@ -559,7 +559,7 @@ class WormFullVideoPosture:
 
     def shade_using_behavior(self, **kwargs):
         """Takes care of fps conversion and new vs. old annotation format"""
-        bh = self.behavior_annotations(fluorescence_fps=True) 
+        bh = self.beh_annotation(fluorescence_fps=True) 
         if bh is not None:
             shade_using_behavior(bh, **kwargs)
 
