@@ -87,8 +87,8 @@ class WormFullVideoPosture:
 
         return pca_proj
 
-    def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool) \
-            -> Union[pd.DataFrame, pd.Series]:
+    def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
+                                 reset_index=True) -> Union[pd.DataFrame, pd.Series]:
         if df is not None:
             df = self.remove_idx_of_tracking_failures(df)
             if fluorescence_fps:
@@ -98,6 +98,8 @@ class WormFullVideoPosture:
                     df = df.iloc[self.subsample_indices]
                 else:
                     raise NotImplementedError
+            if reset_index:
+                df.reset_index(drop=True, inplace=True)
         return df
 
     ##
@@ -260,16 +262,18 @@ class WormFullVideoPosture:
             # Use segment 50 out of 100
             get_positions = lambda fluorescence_fps: \
                 self.centerline_absolute_coordinates(fluorescence_fps=fluorescence_fps)[50]
-
         if subsample_before_derivative:
             df = get_positions(fluorescence_fps=fluorescence_fps)
         else:
             df = get_positions(fluorescence_fps=False)
-        speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
+        # Derivative, then convert to physical units
+        speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
         tdelta_s = self.get_time_delta_in_s(fluorescence_fps)
         speed_mm_per_s = pd.Series(speed / tdelta_s)
+        speed_mm_per_s.reset_index(drop=True, inplace=True)
 
+        # Postprocessing
         if not subsample_before_derivative:
             speed_mm_per_s = self._validate_and_downsample(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
         if strong_smoothing:
