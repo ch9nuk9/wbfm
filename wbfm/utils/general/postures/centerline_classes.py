@@ -87,7 +87,8 @@ class WormFullVideoPosture:
 
         return pca_proj
 
-    def _validate_and_subset(self, df: Union[pd.DataFrame, pd.Series], fluorescence_fps: bool) -> pd.DataFrame:
+    def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool) \
+            -> Union[pd.DataFrame, pd.Series]:
         if df is not None:
             df = self.remove_idx_of_tracking_failures(df)
             if fluorescence_fps:
@@ -106,7 +107,7 @@ class WormFullVideoPosture:
     @lru_cache(maxsize=8)
     def centerlineX(self, fluorescence_fps=False) -> pd.DataFrame:
         df = self._raw_centerlineX
-        df = self._validate_and_subset(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps)
         return df
 
     @cached_property
@@ -116,7 +117,7 @@ class WormFullVideoPosture:
     @lru_cache(maxsize=8)
     def centerlineY(self, fluorescence_fps=False) -> pd.DataFrame:
         df = self._raw_centerlineY
-        df = self._validate_and_subset(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps)
         return df
 
     @cached_property
@@ -126,7 +127,7 @@ class WormFullVideoPosture:
     @lru_cache(maxsize=8)
     def curvature(self, fluorescence_fps=False) -> pd.DataFrame:
         df = self._raw_curvature
-        df = self._validate_and_subset(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps)
         return df
 
     @cached_property
@@ -136,7 +137,7 @@ class WormFullVideoPosture:
     @lru_cache(maxsize=8)
     def stage_position(self, fluorescence_fps=False) -> pd.DataFrame:
         df = self._raw_stage_position
-        df = self._validate_and_subset(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps)
         return df
 
     @cached_property
@@ -175,7 +176,7 @@ class WormFullVideoPosture:
             if beh is None or self.beh_annotation_already_converted_to_fluorescence_fps:
                 return beh
             else:
-                return self._validate_and_subset(beh, fluorescence_fps=fluorescence_fps)
+                return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps)
         else:
             if self.beh_annotation_already_converted_to_fluorescence_fps:
                 raise ValueError("Full fps behavioral annotation requested, but only low resolution exists")
@@ -185,7 +186,7 @@ class WormFullVideoPosture:
     def leifer_curvature_from_kymograph(self, fluorescence_fps=False) -> pd.Series:
         """Signed average over segments 15 to 80"""
         curvature = self.curvature().loc[:, 15:80].mean(axis=1)
-        curvature = self._validate_and_subset(curvature, fluorescence_fps=fluorescence_fps)
+        curvature = self._validate_and_downsample(curvature, fluorescence_fps=fluorescence_fps)
         return curvature
 
     ##
@@ -242,7 +243,7 @@ class WormFullVideoPosture:
         speed_mm_per_s = pd.Series(speed / tdelta_s)
 
         if not subsample_before_derivative:
-            speed_mm_per_s = self._validate_and_subset(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
+            speed_mm_per_s = self._validate_and_downsample(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
         if strong_smoothing:
             window = 50
             speed_mm_per_s = pd.Series(speed_mm_per_s).rolling(window=window, center=True).mean()
