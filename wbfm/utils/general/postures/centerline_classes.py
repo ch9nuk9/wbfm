@@ -147,7 +147,8 @@ class WormFullVideoPosture:
         return df
 
     @lru_cache(maxsize=8)
-    def centerline_absolute_coordinates(self, fluorescence_fps=False):
+    def centerline_absolute_coordinates(self, fluorescence_fps=False) -> pd.DataFrame:
+        """Returns a multi-index dataframe, where each body segment looks like the stage_position dataframe"""
         # Depends on camera and magnification
         mm_per_pixel = 0.00245
         # Offset depends on camera and frame size
@@ -158,7 +159,8 @@ class WormFullVideoPosture:
         x_abs = self.stage_position(fluorescence_fps).values[:, 0] - y.T
         y_abs = self.stage_position(fluorescence_fps).values[:, 1] + x.T
 
-        return x_abs, y_abs
+        df = pd.concat([x_abs, y_abs], keys=['X', 'Y']).swaplevel().T
+        return df
 
     @cached_property
     def _raw_beh_annotation(self) -> pd.Series:
@@ -219,7 +221,10 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True):
-        """Note: remove outliers by default"""
+        """
+        This is the angular velocity in PCA space (first two modes)
+
+        Note: remove outliers by default"""
         velocity = self._raw_worm_angular_velocity
         if fluorescence_fps:
             velocity = velocity[self.subsample_indices]
@@ -231,15 +236,36 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
-                   strong_smoothing=False) -> pd.Series:
-        if subsample_before_derivative:
-            df = self.stage_position(fluorescence_fps=fluorescence_fps)
+                   strong_smoothing=False, use_stage_position=True) -> pd.Series:
+        """
+        Calculates derivative of position
+
+        Parameters
+        ----------
+        fluorescence_fps - Whether to downsample
+        subsample_before_derivative - Order of downsampling operation
+        signed - whether to multiply by -1 when a reversal is annotated
+        strong_smoothing - whether to apply a strong smoothing
+        use_stage_position - whether to use the stage position (default) or body segment 50
+
+        Returns
+        -------
+
+        """
+        if use_stage_position:
+            get_positions = self.stage_position
         else:
-            df = self.stage_position(fluorescence_fps=False)
+            # Use segment 50 out of 100
+            get_positions = lambda fluorescence_fps: \
+                self.centerline_absolute_coordinates(fluorescence_fps=fluorescence_fps)[50]
+
+        if subsample_before_derivative:
+            df = get_positions(fluorescence_fps=fluorescence_fps)
+        else:
+            df = get_positions(fluorescence_fps=False)
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
-        tdelta = pd.Series(df.index).diff().mean()
-        tdelta_s = tdelta.delta / 1e9
+        tdelta_s = self.get_time_delta_in_s(fluorescence_fps)
         speed_mm_per_s = pd.Series(speed / tdelta_s)
 
         if not subsample_before_derivative:
@@ -251,6 +277,12 @@ class WormFullVideoPosture:
             speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
 
         return speed_mm_per_s
+
+    def get_time_delta_in_s(self, fluorescence_fps):
+        df = self.stage_position(fluorescence_fps=fluorescence_fps)
+        tdelta = pd.Series(df.index).diff().mean()
+        tdelta_s = tdelta.delta / 1e9
+        return tdelta_s
 
     def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=1) -> pd.Series:
         """By default changes sign during reversal"""
