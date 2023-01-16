@@ -21,6 +21,7 @@ from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, 
 from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
+from wbfm.utils.traces.residuals import calculate_residual_subtract_pca
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 
@@ -34,6 +35,8 @@ class NeuronEncodingBase:
 
     is_valid: bool = True
     df_kwargs: dict = field(default_factory=dict)
+
+    use_residual_traces: bool = False
 
     @cached_property
     def project_data(self) -> ProjectData:
@@ -51,6 +54,8 @@ class NeuronEncodingBase:
             if '_filt' in key:
                 channel_key = key.replace('_filt', '')
                 opt['filter_mode'] = 'bilateral'
+            if self.use_residual_traces:
+                opt['interpolate_nan'] = True
             opt['channel_mode'] = channel_key
             all_dfs[key] = self.project_data.calc_default_traces(**opt, **self.df_kwargs)
 
@@ -61,6 +66,9 @@ class NeuronEncodingBase:
         all_to_drop = [set(df.columns) - set(common_column_names) for df in all_dfs.values()]
         for key, to_drop in zip(all_dfs.keys(), all_to_drop):
             all_dfs[key].drop(columns=to_drop, inplace=True)
+
+        if self.use_residual_traces:
+            all_dfs = {k: calculate_residual_subtract_pca(df) for k, df in all_dfs.items()}
 
         print("Finished calculating traces!")
 

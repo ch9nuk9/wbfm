@@ -3,7 +3,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 
-def calculate_residual_subtract_pca(df: pd.DataFrame, n_components=1) -> pd.DataFrame:
+def calculate_residual_subtract_pca(df: pd.DataFrame, n_components=2) -> pd.DataFrame:
     """Note: must not contain nan"""
     pca = PCA(n_components=n_components, whiten=False)
 
