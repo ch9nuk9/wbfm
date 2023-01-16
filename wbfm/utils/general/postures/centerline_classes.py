@@ -226,8 +226,9 @@ class WormFullVideoPosture:
 
         Note: remove outliers by default"""
         velocity = self._raw_worm_angular_velocity
+        velocity = self._validate_and_downsample(velocity, fluorescence_fps=fluorescence_fps)
         if fluorescence_fps:
-            velocity = velocity[self.subsample_indices]
+            velocity.reset_index(drop=True, inplace=True)
         if remove_outliers:
             window = 10
             velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
@@ -236,7 +237,7 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
-                   strong_smoothing=False, use_stage_position=True) -> pd.Series:
+                   strong_smoothing=False, use_stage_position=True, remove_outliers=True) -> pd.Series:
         """
         Calculates derivative of position
 
@@ -247,6 +248,7 @@ class WormFullVideoPosture:
         signed - whether to multiply by -1 when a reversal is annotated
         strong_smoothing - whether to apply a strong smoothing
         use_stage_position - whether to use the stage position (default) or body segment 50
+        remove_outliers - whether to remove outliers (replace with nan and interpolate)
 
         Returns
         -------
@@ -275,6 +277,10 @@ class WormFullVideoPosture:
             speed_mm_per_s = pd.Series(speed_mm_per_s).rolling(window=window, center=True).mean()
         if signed:
             speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
+        if remove_outliers:
+            window = 10
+            speed_mm_per_s = remove_outliers_via_rolling_mean(pd.Series(speed_mm_per_s), window)
+            speed_mm_per_s = pd.Series(speed_mm_per_s).interpolate()
 
         return speed_mm_per_s
 
