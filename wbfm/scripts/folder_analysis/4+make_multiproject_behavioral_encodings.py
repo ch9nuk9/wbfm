@@ -55,8 +55,12 @@ def main(_config, _run):
     # all_cv_types = [partial(KFold, n_splits=3), TimeSeriesSplit, RollingOriginForwardValidation]
     # all_cv_names = ["KFold", "TimeSeriesSplit", "RollingOriginForwardValidation"]
     all_cv_types = [partial(KFold, n_splits=3), partial(KFold, n_splits=10, shuffle=True)]
-    all_cv_names = ["KFold", "KFold_shuffle"]
-    # all_cv_names = ["{}".format(type(cv).__name__) for cv in all_cv_types]
+    # all_cv_names = ["KFold", "KFold_shuffle"]
+
+    # New: residuals!
+    all_cv_names = ["KFold_residual", "KFold_shuffle_residual"]
+    behavior_plotter.set_for_all_classes({'use_residual_traces': True})
+
     if _config['cv_options'] == 'all':
         cv_to_check = all_cv_types
         cv_names = all_cv_names

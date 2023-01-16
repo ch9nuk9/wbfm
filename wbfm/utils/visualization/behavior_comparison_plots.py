@@ -946,7 +946,6 @@ class MultiProjectBehaviorPlotter:
             for b in self._all_behavior_plotters:
                 b.__setattr__(key, val)
 
-
     def __repr__(self):
         return f"Multiproject analyzer with {len(self._all_behavior_plotters)} projects"
 
