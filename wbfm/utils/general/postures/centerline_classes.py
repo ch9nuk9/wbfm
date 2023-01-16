@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 from matplotlib import pyplot as plt
+from methodtools import lru_cache
 from scipy.ndimage import gaussian_filter1d
 from skimage import transform
 from sklearn.decomposition import PCA
@@ -81,44 +82,43 @@ class WormFullVideoPosture:
     @cached_property
     def pca_projections(self):
         pca = PCA(n_components=3, whiten=True)
-        curvature_nonan = self.curvature.replace(np.nan, 0.0)
+        curvature_nonan = self.curvature().replace(np.nan, 0.0)
         pca_proj = pca.fit_transform(curvature_nonan.iloc[:, self.pca_i_start:self.pca_i_end])
 
         return pca_proj
 
-    @cached_property
+    @lru_cache(maxsize=8)
     def centerlineX(self):
         return read_if_exists(self.filename_x, reader=pd.read_csv, header=None)
 
-    @cached_property
+    @lru_cache(maxsize=8)
     def centerlineY(self):
         return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
-    @cached_property
+    @lru_cache(maxsize=8)
     def curvature(self):
         return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
 
-    @cached_property
+    @lru_cache(maxsize=8)
     def stage_position(self):
         df = pd.read_csv(self.filename_table_position, index_col='time')
         df.index = pd.DatetimeIndex(df.index)
         return df
 
-    @cached_property
+    @lru_cache(maxsize=8)
     def centerline_absolute_coordinates(self):
         # Depends on camera and magnification
         mm_per_pixel = 0.00245
         # Offset depends on camera and frame size
-        x = (self.centerlineX - 340) * mm_per_pixel
-        y = (self.centerlineY - 324) * mm_per_pixel
+        x = (self.centerlineX() - 340) * mm_per_pixel
+        y = (self.centerlineY() - 324) * mm_per_pixel
 
         # Rotation depends on Ulises' pipeline and camera
-        x_abs = self.stage_position.values[:, 0] - y.T
-        y_abs = self.stage_position.values[:, 1] + x.T
+        x_abs = self.stage_position().values[:, 0] - y.T
+        y_abs = self.stage_position().values[:, 1] + x.T
 
         return x_abs, y_abs
 
-    @property
     def beh_annotation(self):
         """Name is shortened to avoid US-UK spelling confusion"""
         if self._beh_annotation is None:
@@ -142,8 +142,8 @@ class WormFullVideoPosture:
         plt.colorbar()
 
     def get_centerline_for_time(self, t):
-        c_x = self.centerlineX.iloc[t * self.frames_per_volume]
-        c_y = self.centerlineY.iloc[t * self.frames_per_volume]
+        c_x = self.centerlineX().iloc[t * self.frames_per_volume]
+        c_y = self.centerlineY().iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
     def calc_triggered_average_indices(self, state=0, min_duration=5, ind_preceding=20, **kwargs):
@@ -452,8 +452,8 @@ class WormFullVideoPosture:
 
         """
         if self.beh_annotation_is_stable_style:
-            return self.beh_annotation
-        if self.beh_annotation is None:
+            return self.beh_annotation()
+        if self.beh_annotation() is None:
             return None
 
         # Define a lookup table from tmp to stable
@@ -468,33 +468,33 @@ class WormFullVideoPosture:
         try:
             vec_lut = np.vectorize(lut)
 
-            self._beh_annotation = pd.Series(np.squeeze(vec_lut(self.beh_annotation.to_numpy())))
+            self._beh_annotation = pd.Series(np.squeeze(vec_lut(self.beh_annotation() .to_numpy())))
             self.beh_annotation_is_stable_style = True
-            return self.beh_annotation
+            return self.beh_annotation()
         except KeyError:
             logging.warning("Could not correct behavior annotations; returning them as they are")
             self.beh_annotation_is_stable_style = True
-            return self.beh_annotation
+            return self.beh_annotation()
 
     @property
     def behavior_annotations_fluorescence_fps(self):
-        if self.beh_annotation is None:
+        if self.beh_annotation() is None:
             return None
         if self.beh_annotation_already_converted_to_fluorescence_fps:
-            return self.beh_annotation
+            return self.beh_annotation()
         else:
-            return self.beh_annotation.loc[self.subsample_indices]
+            return self.beh_annotation() .loc[self.subsample_indices]
 
     @property
     def curvature_fluorescence_fps(self):
-        if self.curvature is not None:
-            return self.remove_invalid_idx(self.curvature.iloc[self.subsample_indices, :])
+        if self.curvature() is not None:
+            return self.remove_invalid_idx(self.curvature().iloc[self.subsample_indices, :])
         else:
             return None
 
     @property
     def stage_position_fluorescence_fps(self):
-        return self.stage_position.iloc[self.subsample_indices, :]
+        return self.stage_position().iloc[self.subsample_indices, :]
 
     @property
     def worm_angular_velocity(self):
@@ -530,7 +530,7 @@ class WormFullVideoPosture:
 
     @cached_property
     def worm_speed(self) -> pd.Series:
-        df = self.stage_position
+        df = self.stage_position()
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
         tdelta = pd.Series(df.index).diff().mean()
@@ -568,7 +568,7 @@ class WormFullVideoPosture:
 
     @property
     def worm_speed_signed_smoothed(self) -> pd.Series:
-        rev_ind = (self.beh_annotation == 1).reset_index(drop=True)
+        rev_ind = (self.beh_annotation() == 1).reset_index(drop=True)
         velocity = copy.copy(self.worm_speed)
         velocity = remove_outliers_using_std(velocity, 10)
         velocity[:-1][rev_ind] *= -1
