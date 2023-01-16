@@ -142,13 +142,13 @@ class NapariPropertyHeatMapper:
         return tmp1 / tmp2
 
     def corrcoef_kymo(self):
-        if self.curvature_fluorescence_fps.isnull().values.all():
+        if self.curvature(fluorescence_fps=True) .isnull().values.all():
             return [np.nan]
 
-        if not self.curvature_fluorescence_fps.isnull().values.all():
+        if not self.curvature(fluorescence_fps=True) .isnull().values.all():
             corrcoefs = []
             for neuron in self.names:
-                vector = np.abs(np.corrcoef(self.curvature_fluorescence_fps.assign(
+                vector = np.abs(np.corrcoef(self.curvature(fluorescence_fps=True) .assign(
                     neuron_to_test=self.red_traces[neuron]["intensity_image"]).dropna(axis="rows").T)[100, :99])
                 c = np.max(vector)
                 corrcoefs.append(c)

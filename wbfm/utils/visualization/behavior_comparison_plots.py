@@ -448,7 +448,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
 
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
-        kymo = self.project_data.worm_posture_class.curvature_fluorescence_fps.reset_index(drop=True, inplace=False)
+        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True) .reset_index(drop=True, inplace=False)
         kymo_smaller = kymo.loc[:, 3:60].copy()
 
         all_dfs_corr = {key: pd.concat([df, kymo_smaller], axis=1).corr() for key, df in self.all_dfs.items()}
@@ -461,7 +461,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
     def all_dfs_corr_fwd(self) -> Dict[str, pd.DataFrame]:
         assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
 
-        kymo = self.project_data.worm_posture_class.curvature_fluorescence_fps.reset_index(drop=True, inplace=False)
+        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True) .reset_index(drop=True, inplace=False)
 
         # New: only do certain indices
         ind = self.project_data.worm_posture_class.beh_annotation == 0
@@ -476,7 +476,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
     def all_dfs_corr_rev(self) -> Dict[str, pd.DataFrame]:
         assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
 
-        kymo = self.project_data.worm_posture_class.curvature_fluorescence_fps.reset_index(drop=True, inplace=False)
+        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True) .reset_index(drop=True, inplace=False)
 
         # New: only do certain indices
         ind = self.project_data.worm_posture_class.beh_annotation == 1

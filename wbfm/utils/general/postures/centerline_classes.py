@@ -518,17 +518,6 @@ class WormFullVideoPosture:
             return self.beh_annotation() .loc[self.subsample_indices]
 
     @property
-    def curvature_fluorescence_fps(self):
-        if self.curvature() is not None:
-            return self.remove_invalid_idx(self.curvature().iloc[self.subsample_indices, :])
-        else:
-            return None
-
-    @property
-    def stage_position_fluorescence_fps(self):
-        return self.stage_position().iloc[self.subsample_indices, :]
-
-    @property
     def worm_angular_velocity(self):
         """Using angular velocity in 2d pca space"""
 
@@ -574,7 +563,7 @@ class WormFullVideoPosture:
     @cached_property
     def worm_speed_fluorescence_fps(self) -> pd.Series:
         # Don't subset the speed directly, but go back to the positions
-        df = self.stage_position_fluorescence_fps
+        df = self.stage_position(fluorescence_fps=True)
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
 
         tdelta = pd.Series(df.index).diff().mean()
@@ -619,7 +608,7 @@ class WormFullVideoPosture:
     @property
     def leifer_curvature_from_kymograph(self) -> pd.Series:
         # Signed average over segments 10 to 90
-        return self.remove_invalid_idx(self.curvature_fluorescence_fps.loc[:, 15:80].mean(axis=1))
+        return self.remove_invalid_idx(self.curvature(fluorescence_fps=True) .loc[:, 15:80].mean(axis=1))
 
     @property
     def subsample_indices(self):

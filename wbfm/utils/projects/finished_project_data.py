@@ -699,7 +699,7 @@ class ProjectData:
         """
         t, y = self.calculate_traces(channel_mode='ratio', calculation_mode='integration',
                                      neuron_name=neuron_name)
-        df_kymo = self.worm_posture_class.curvature_fluorescence_fps
+        df_kymo = self.worm_posture_class.curvature(fluorescence_fps=True) 
 
         fig, axes = plt.subplots(nrows=2, figsize=(30, 10), sharex=True)
         axes[0].imshow(df_kymo.T, origin="upper", cmap='seismic', extent=[0, df_kymo.shape[0], df_kymo.shape[1], 0],
