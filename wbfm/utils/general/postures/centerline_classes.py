@@ -100,7 +100,7 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def centerlineX(self, fluorescence_fps=False):
-        df = self._raw_centerlineX()
+        df = self._raw_centerlineX
         df = self._validate_and_subset(df, fluorescence_fps)
         return df
 
@@ -110,7 +110,7 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def centerlineY(self, fluorescence_fps=False):
-        df = self._raw_centerlineY()
+        df = self._raw_centerlineY
         df = self._validate_and_subset(df, fluorescence_fps)
         return df
 
@@ -120,7 +120,7 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def curvature(self, fluorescence_fps=False):
-        df = self._raw_curvature()
+        df = self._raw_curvature
         df = self._validate_and_subset(df, fluorescence_fps)
         return df
 
@@ -130,7 +130,7 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def stage_position(self, fluorescence_fps=False):
-        df = self._raw_stage_position()
+        df = self._raw_stage_position
         df = self._validate_and_subset(df, fluorescence_fps)
         return df
 
@@ -168,7 +168,7 @@ class WormFullVideoPosture:
             if beh is None or self.beh_annotation_already_converted_to_fluorescence_fps:
                 return beh
             else:
-                return beh.loc[self.subsample_indices]
+                return self._validate_and_subset(beh, fluorescence_fps=fluorescence_fps)
         else:
             if self.beh_annotation_already_converted_to_fluorescence_fps:
                 raise ValueError("Full fps behavioral annotation requested, but only low resolution exists")
@@ -627,7 +627,7 @@ class WormFullVideoPosture:
         """
         if self.tracking_failure_idx is not None:
             vec = vec.copy()
-            vec.loc[self.tracking_failure_idx] = np.nan
+            vec.iloc[self.tracking_failure_idx] = np.nan
         return vec
 
     def __repr__(self):
