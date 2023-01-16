@@ -258,14 +258,14 @@ def factory_correlate_trace_to_behavior_variable(project_data,
     elif behavioral_correlation_shading == 'absolute_speed':
         y = posture_class.worm_speed(fluorescence_fps=True)
     elif behavioral_correlation_shading == 'speed':
-        y = posture_class.worm_speed_fluorescence_fps_signed
+        y = posture_class..worm_speed(fluorescence_fps=True, signed=True)
     elif behavioral_correlation_shading == 'positive_speed':
-        y = posture_class.worm_speed_fluorescence_fps_signed
+        y = posture_class..worm_speed(fluorescence_fps=True, signed=True)
         if posture_class.beh_annotation is not None:
             reversal_ind = posture_class.beh_annotation == 1
             y[reversal_ind] = 0
     elif behavioral_correlation_shading == 'negative_speed':
-        y = posture_class.worm_speed_fluorescence_fps_signed
+        y = posture_class..worm_speed(fluorescence_fps=True, signed=True)
         if posture_class.beh_annotation is not None:
             forward_ind = posture_class.beh_annotation == 0
             y[forward_ind] = 0

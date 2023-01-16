@@ -215,7 +215,7 @@ class WormFullVideoPosture:
         return velocity
 
     @lru_cache(maxsize=8)
-    def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True) -> pd.Series:
+    def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False) -> pd.Series:
         if subsample_before_derivative:
             df = self.stage_position(fluorescence_fps=fluorescence_fps)
         else:
@@ -228,18 +228,17 @@ class WormFullVideoPosture:
 
         if not subsample_before_derivative:
             speed_mm_per_s = self._validate_and_subset(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
+        if signed:
+            speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
 
         return speed_mm_per_s
 
-    @property
-    def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
-        """Just sets the speed to be negative when the behavior is annotated as reversal"""
-        speed = self.worm_speed(fluorescence_fps=True)
-        rev_ind = (self.beh_annotation(fluorescence_fps=True) == 1).reset_index(drop=True)
-        velocity = copy.copy(speed)
+    def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=1):
+        """By default changes sign during reversal"""
+        rev_ind = (self.beh_annotation(fluorescence_fps=fluorescence_fps) == state).reset_index(drop=True)
+        velocity = copy.copy(vector)
         velocity[rev_ind] *= -1
-
-        return self.remove_idx_of_tracking_failures(velocity)
+        return velocity
 
     ##
     ## Basic data validation
