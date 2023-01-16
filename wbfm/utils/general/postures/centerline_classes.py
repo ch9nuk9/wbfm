@@ -94,12 +94,15 @@ class WormFullVideoPosture:
                 df = df.iloc[self.subsample_indices, :]
         return df
 
+    ##
+    ## Basic properties
+    ##
+
     @lru_cache(maxsize=8)
     def centerlineX(self, fluorescence_fps=False):
         df = self._raw_centerlineX()
         df = self._validate_and_subset(df, fluorescence_fps)
         return df
-
 
     @cached_property
     def _raw_centerlineX(self):
@@ -170,6 +173,46 @@ class WormFullVideoPosture:
             if self.beh_annotation_already_converted_to_fluorescence_fps:
                 raise ValueError("Full fps behavioral annotation requested, but only low resolution exists")
             return beh
+
+    ##
+    ## Speed properties (derivatives)
+    ##
+
+    @cached_property
+    def _raw_worm_angular_velocity(self):
+        """Using angular velocity in 2d pca space. Note: interpolates by default"""
+
+        xyz_pca = self.pca_projections
+        window = 5
+        x = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 0]), window)
+        y = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 1]), window)
+
+        x = pd.Series(x).interpolate()
+        y = pd.Series(y).interpolate()
+        # Note: arctan2 is required to give the proper sign
+        # x = filter_gaussian_moving_average(pd.Series(x), std=12)
+        # y = filter_gaussian_moving_average(pd.Series(y), std=12)
+        angles = np.unwrap(np.arctan2(y, x))
+        smoothed_angles = filter_gaussian_moving_average(pd.Series(angles), std=12)
+        # smoothed_angles = filter_gaussian_moving_average(pd.Series(angles), std=12)
+
+        velocity = np.gradient(smoothed_angles)
+        velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
+        velocity = pd.Series(velocity).interpolate()
+
+        return velocity
+
+    @property
+    def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True):
+        """Note: remove outliers by default"""
+        velocity = self._raw_worm_angular_velocity
+        if fluorescence_fps:
+            velocity = velocity[self.subsample_indices]
+        if remove_outliers:
+            window = 10
+            velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
+            velocity = pd.Series(velocity).interpolate()
+        return velocity
 
     @property
     def has_beh_annotation(self):
@@ -521,38 +564,6 @@ class WormFullVideoPosture:
             logging.warning("Could not correct behavior annotations; returning them as they are")
             self.beh_annotation_is_stable_style = True
             return self.beh_annotation()
-
-    @property
-    def worm_angular_velocity(self):
-        """Using angular velocity in 2d pca space"""
-
-        xyz_pca = self.pca_projections
-        window = 5
-        x = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 0]), window)
-        y = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 1]), window)
-
-        x = pd.Series(x).interpolate()
-        y = pd.Series(y).interpolate()
-        # Note: arctan2 is required to give the proper sign
-        # x = filter_gaussian_moving_average(pd.Series(x), std=12)
-        # y = filter_gaussian_moving_average(pd.Series(y), std=12)
-        angles = np.unwrap(np.arctan2(y, x))
-        smoothed_angles = filter_gaussian_moving_average(pd.Series(angles), std=12)
-        # smoothed_angles = filter_gaussian_moving_average(pd.Series(angles), std=12)
-
-        velocity = np.gradient(smoothed_angles)
-        velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
-        velocity = pd.Series(velocity).interpolate()
-
-        return velocity
-
-    @property
-    def worm_angular_velocity_fluorescence_fps(self):
-        window = 10
-        velocity = self.worm_angular_velocity[self.subsample_indices]
-        velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
-        velocity = pd.Series(velocity).interpolate()
-        return velocity
 
     @cached_property
     def worm_speed(self) -> pd.Series:

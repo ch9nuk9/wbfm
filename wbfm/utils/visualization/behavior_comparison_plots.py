@@ -197,7 +197,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             elif y_train_name == 'signed_speed_smoothed':
                 y = worm.worm_speed_signed_smoothed_fluorescence_fps.iloc[:trace_len]
             elif y_train_name == 'signed_speed_angular':
-                y = worm.worm_angular_velocity_fluorescence_fps.iloc[:trace_len]
+                y = worm.worm_angular_velocity(fluorescence_fps=True).iloc[:trace_len]
             else:
                 raise NotImplementedError(y_train_name)
         else:
