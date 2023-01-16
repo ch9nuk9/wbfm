@@ -191,7 +191,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             elif y_train_name == 'leifer_curvature':
                 assert worm.has_full_kymograph, \
                     f"No kymograph found for project {self.project_data}"
-                y = worm.leifer_curvature_from_kymograph.iloc[:trace_len]
+                y = worm.leifer_curvature_from_kymograph(fluorescence_fps=True).iloc[:trace_len]
             elif y_train_name == 'pirouette':
                 y = worm.calc_psuedo_pirouette_state().iloc[:trace_len]
             elif y_train_name == 'signed_speed_smoothed':
@@ -971,7 +971,7 @@ class MarkovRegressionModel:
             trace = pd.Series(trace)
         elif self.behavior_to_predict == 'leifer_curvature':
             worm = self.project_data.worm_posture_class
-            trace = worm.leifer_curvature_from_kymograph[worm.subsample_indices].copy().reset_index(drop=True)
+            trace = worm.leifer_curvature_from_kymograph(fluorescence_fps=True)[worm.subsample_indices].copy().reset_index(drop=True)
         else:
             raise NotImplementedError(self.behavior_to_predict)
 

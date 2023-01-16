@@ -174,6 +174,14 @@ class WormFullVideoPosture:
                 raise ValueError("Full fps behavioral annotation requested, but only low resolution exists")
             return beh
 
+    @lru_cache(maxsize=8)
+    def leifer_curvature_from_kymograph(self, fluorescence_fps=False) -> pd.Series:
+        """Signed average over segments 15 to 80"""
+        curvature = self.curvature().loc[:, 15:80].mean(axis=1)
+        curvature = self._validate_and_subset(curvature, fluorescence_fps=fluorescence_fps)
+        return curvature
+
+
     ##
     ## Speed properties (derivatives)
     ##
@@ -621,12 +629,6 @@ class WormFullVideoPosture:
     def worm_speed_smoothed_fluorescence_fps(self) -> pd.Series:
         window = 30
         return pd.Series(self.worm_speed(fluorescence_fps=True) ).rolling(window=window, center=True, min_periods=5).mean()
-
-    @property
-    def leifer_curvature_from_kymograph(self) -> pd.Series:
-        # Signed average over segments 10 to 90
-        return self.remove_idx_of_tracking_failures(self.curvature(fluorescence_fps=True) .loc[:, 15:80].mean(axis=1))
-
     @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
