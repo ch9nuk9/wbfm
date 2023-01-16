@@ -151,11 +151,25 @@ class WormFullVideoPosture:
 
         return x_abs, y_abs
 
-    def beh_annotation(self):
-        """Name is shortened to avoid US-UK spelling confusion"""
+    @cached_property
+    def _raw_beh_annotation(self):
         if self._beh_annotation is None:
             self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         return self._beh_annotation
+
+    @lru_cache(maxsize=8)
+    def beh_annotation(self, fluorescence_fps=False):
+        """Name is shortened to avoid US-UK spelling confusion"""
+        beh = self._raw_beh_annotation
+        if fluorescence_fps:
+            if beh is None or self.beh_annotation_already_converted_to_fluorescence_fps:
+                return beh
+            else:
+                return beh.loc[self.subsample_indices]
+        else:
+            if self.beh_annotation_already_converted_to_fluorescence_fps:
+                raise ValueError("Full fps behavioral annotation requested, but only low resolution exists")
+            return beh
 
     @property
     def has_beh_annotation(self):
@@ -196,7 +210,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        ind_class = TriggeredAverageIndices(self.behavior_annotations_fluorescence_fps, state, min_duration,
+        ind_class = TriggeredAverageIndices(self.behavior_annotations(fluorescence_fps=True) , state, min_duration,
                                             trace_len=self.num_frames, ind_preceding=ind_preceding,
                                             **kwargs)
         return ind_class
@@ -257,7 +271,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.behavior_annotations_fluorescence_fps == 0
+        binary_fwd = self.behavior_annotations(fluorescence_fps=True)  == 0
         all_durations = get_durations_from_column(binary_fwd, already_boolean=True, remove_edges=False)
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
         start2duration_and_end_dict = {}
@@ -329,7 +343,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.behavior_annotations_fluorescence_fps == 0
+        binary_fwd = self.behavior_annotations(fluorescence_fps=True)  == 0
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
 
         # Turn into time series
@@ -353,7 +367,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.behavior_annotations_fluorescence_fps == 0
+        binary_fwd = self.behavior_annotations(fluorescence_fps=True)  == 0
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
 
         # Turn into time series
@@ -372,7 +386,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_rev = self.behavior_annotations_fluorescence_fps == 1
+        binary_rev = self.behavior_annotations(fluorescence_fps=True)  == 1
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_rev, already_boolean=True)
 
         # Turn into time series
@@ -467,7 +481,7 @@ class WormFullVideoPosture:
 
     def shade_using_behavior(self, **kwargs):
         """Takes care of fps conversion and new vs. old annotation format"""
-        bh = self.behavior_annotations_fluorescence_fps
+        bh = self.behavior_annotations(fluorescence_fps=True) 
         if bh is not None:
             shade_using_behavior(bh, **kwargs)
 
@@ -507,15 +521,6 @@ class WormFullVideoPosture:
             logging.warning("Could not correct behavior annotations; returning them as they are")
             self.beh_annotation_is_stable_style = True
             return self.beh_annotation()
-
-    @property
-    def behavior_annotations_fluorescence_fps(self):
-        if self.beh_annotation() is None:
-            return None
-        if self.beh_annotation_already_converted_to_fluorescence_fps:
-            return self.beh_annotation()
-        else:
-            return self.beh_annotation() .loc[self.subsample_indices]
 
     @property
     def worm_angular_velocity(self):
@@ -576,7 +581,7 @@ class WormFullVideoPosture:
     def worm_speed_fluorescence_fps_signed(self) -> pd.Series:
         """Just sets the speed to be negative when the behavior is annotated as reversal"""
         speed = self.worm_speed_fluorescence_fps
-        rev_ind = (self.behavior_annotations_fluorescence_fps == 1).reset_index(drop=True)
+        rev_ind = (self.behavior_annotations(fluorescence_fps=True)  == 1).reset_index(drop=True)
         velocity = copy.copy(speed)
         velocity[rev_ind] *= -1
 

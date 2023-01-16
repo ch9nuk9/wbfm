@@ -1470,7 +1470,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     else:
         ax = fig.add_subplot(111, projection='3d')
     # c = np.arange(project_data.num_frames) / 1e6
-    beh = project_data.worm_posture_class.behavior_annotations_fluorescence_fps
+    beh = project_data.worm_posture_class.behavior_annotations(fluorescence_fps=True) 
     if t_end is not None:
         beh = beh[:t_end]
     if t_start is not None:
