@@ -184,7 +184,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         worm = self.project_data.worm_posture_class
         if y_train_name is None or y_train_name == 'signed_speed':
             y_train_name = 'signed_speed'
-            y = worm..worm_speed(fluorescence_fps=True, signed=True).iloc[:trace_len]
+            y = worm.worm_speed(fluorescence_fps=True, signed=True).iloc[:trace_len]
         elif isinstance(y_train_name, str):
             if y_train_name == 'abs_speed':
                 y = worm.worm_speed(fluorescence_fps=True) .iloc[:trace_len]
@@ -316,7 +316,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """
         X_train = self.all_dfs[df_name]
         if y_train is None:
-            y_train = self.project_data.worm_posture_class..worm_speed(fluorescence_fps=True, signed=True)[:X_train.shape[0]]
+            y_train = self.project_data.worm_posture_class.worm_speed(fluorescence_fps=True, signed=True)[:X_train.shape[0]]
         cv_model = self._plot_linear_regression_coefficients(X_train, y_train, df_name, y_name=y_name)[0]
         model = cv_model['estimator'][0]  # Just predict using a single model?
         y_pred = model.predict(X_train)
@@ -967,7 +967,7 @@ class MarkovRegressionModel:
 
     def get_valid_ind_and_trace(self) -> Tuple[np.ndarray, pd.Series]:
         if self.behavior_to_predict == 'speed':
-            trace = self.project_data.worm_posture_class..worm_speed(fluorescence_fps=True, signed=True)
+            trace = self.project_data.worm_posture_class.worm_speed(fluorescence_fps=True, signed=True)
             trace = pd.Series(trace)
         elif self.behavior_to_predict == 'leifer_curvature':
             worm = self.project_data.worm_posture_class
