@@ -87,7 +87,7 @@ class WormFullVideoPosture:
 
         return pca_proj
 
-    def _validate_and_subset(self, df, fluorescence_fps):
+    def _validate_and_subset(self, df: pd.DataFrame, fluorescence_fps: bool) -> pd.DataFrame:
         if df is not None:
             df = self.remove_idx_of_tracking_failures(df)
             if fluorescence_fps:
@@ -99,7 +99,7 @@ class WormFullVideoPosture:
     ##
 
     @lru_cache(maxsize=8)
-    def centerlineX(self, fluorescence_fps=False):
+    def centerlineX(self, fluorescence_fps=False) -> pd.DataFrame:
         df = self._raw_centerlineX
         df = self._validate_and_subset(df, fluorescence_fps)
         return df
@@ -109,7 +109,7 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_x, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def centerlineY(self, fluorescence_fps=False):
+    def centerlineY(self, fluorescence_fps=False) -> pd.DataFrame:
         df = self._raw_centerlineY
         df = self._validate_and_subset(df, fluorescence_fps)
         return df
@@ -119,7 +119,7 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def curvature(self, fluorescence_fps=False):
+    def curvature(self, fluorescence_fps=False) -> pd.DataFrame:
         df = self._raw_curvature
         df = self._validate_and_subset(df, fluorescence_fps)
         return df
@@ -129,7 +129,7 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def stage_position(self, fluorescence_fps=False):
+    def stage_position(self, fluorescence_fps=False) -> pd.DataFrame:
         df = self._raw_stage_position
         df = self._validate_and_subset(df, fluorescence_fps)
         return df
@@ -161,7 +161,7 @@ class WormFullVideoPosture:
         return self._beh_annotation
 
     @lru_cache(maxsize=8)
-    def beh_annotation(self, fluorescence_fps=False):
+    def beh_annotation(self, fluorescence_fps=False) -> pd.Series:
         """Name is shortened to avoid US-UK spelling confusion"""
         beh = self._raw_beh_annotation
         if fluorescence_fps:
@@ -180,7 +180,6 @@ class WormFullVideoPosture:
         curvature = self.curvature().loc[:, 15:80].mean(axis=1)
         curvature = self._validate_and_subset(curvature, fluorescence_fps=fluorescence_fps)
         return curvature
-
 
     ##
     ## Speed properties (derivatives)
@@ -210,7 +209,7 @@ class WormFullVideoPosture:
 
         return velocity
 
-    @property
+    @lru_cache(maxsize=8)
     def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True):
         """Note: remove outliers by default"""
         velocity = self._raw_worm_angular_velocity
@@ -245,11 +244,18 @@ class WormFullVideoPosture:
 
         return speed_mm_per_s
 
-    def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=1):
+    def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=1) -> pd.Series:
         """By default changes sign during reversal"""
         rev_ind = (self.beh_annotation(fluorescence_fps=fluorescence_fps) == state).reset_index(drop=True)
         velocity = copy.copy(vector)
-        velocity[rev_ind] *= -1
+        if len(velocity) == len(rev_ind):
+            velocity[rev_ind] *= -1
+        elif len(velocity) == len(rev_ind) + 1:
+            velocity = velocity.iloc[:-1]
+            velocity[rev_ind] *= -1
+        else:
+            raise ValueError("Velocity and reversal indices are desynchronized")
+
         return velocity
 
     ##
@@ -616,7 +622,7 @@ class WormFullVideoPosture:
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
         offset = self.frames_per_volume // 2  # Take the middle frame
         return range(self.bigtiff_start_volume*self.frames_per_volume + offset,
-                     len(self.curvature(fluorescence_fps=False)),
+                     len(self._raw_stage_position),
                      self.frames_per_volume)
 
     def remove_idx_of_tracking_failures(self, vec: pd.Series) -> pd.Series:
