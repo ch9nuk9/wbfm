@@ -87,33 +87,48 @@ class WormFullVideoPosture:
 
         return pca_proj
 
+    def _validate_and_subset(self, df, fluorescence_fps):
+        if df is not None:
+            df = self.remove_invalid_idx(df)
+            if fluorescence_fps:
+                df = df.iloc[self.subsample_indices, :]
+        return df
+
     @lru_cache(maxsize=8)
-    def centerlineX(self):
-        return self._raw_centerlineX()
+    def centerlineX(self, fluorescence_fps=False):
+        df = self._raw_centerlineX()
+        df = self._validate_and_subset(df, fluorescence_fps)
+        return df
+
 
     @cached_property
     def _raw_centerlineX(self):
         return read_if_exists(self.filename_x, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def centerlineY(self):
-        return self._raw_centerlineY()
+    def centerlineY(self, fluorescence_fps=False):
+        df = self._raw_centerlineY()
+        df = self._validate_and_subset(df, fluorescence_fps)
+        return df
 
     @cached_property
     def _raw_centerlineY(self):
         return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def curvature(self):
-        return self._raw_curvature()
+    def curvature(self, fluorescence_fps=False):
+        df = self._raw_curvature()
+        df = self._validate_and_subset(df, fluorescence_fps)
+        return df
 
     @cached_property
     def _raw_curvature(self):
         return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def stage_position(self):
+    def stage_position(self, fluorescence_fps=False):
         df = self._raw_stage_position()
+        df = self._validate_and_subset(df, fluorescence_fps)
         return df
 
     @cached_property
@@ -123,16 +138,16 @@ class WormFullVideoPosture:
         return df
 
     @lru_cache(maxsize=8)
-    def centerline_absolute_coordinates(self):
+    def centerline_absolute_coordinates(self, fluorescence_fps=False):
         # Depends on camera and magnification
         mm_per_pixel = 0.00245
         # Offset depends on camera and frame size
-        x = (self.centerlineX() - 340) * mm_per_pixel
-        y = (self.centerlineY() - 324) * mm_per_pixel
+        x = (self.centerlineX(fluorescence_fps) - 340) * mm_per_pixel
+        y = (self.centerlineY(fluorescence_fps) - 324) * mm_per_pixel
 
         # Rotation depends on Ulises' pipeline and camera
-        x_abs = self.stage_position().values[:, 0] - y.T
-        y_abs = self.stage_position().values[:, 1] + x.T
+        x_abs = self.stage_position(fluorescence_fps).values[:, 0] - y.T
+        y_abs = self.stage_position(fluorescence_fps).values[:, 1] + x.T
 
         return x_abs, y_abs
 
