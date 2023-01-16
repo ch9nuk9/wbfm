@@ -87,11 +87,16 @@ class WormFullVideoPosture:
 
         return pca_proj
 
-    def _validate_and_subset(self, df: pd.DataFrame, fluorescence_fps: bool) -> pd.DataFrame:
+    def _validate_and_subset(self, df: Union[pd.DataFrame, pd.Series], fluorescence_fps: bool) -> pd.DataFrame:
         if df is not None:
             df = self.remove_idx_of_tracking_failures(df)
             if fluorescence_fps:
-                df = df.iloc[self.subsample_indices, :]
+                if len(df.shape) == 2:
+                    df = df.iloc[self.subsample_indices, :]
+                elif len(df.shape) == 1:
+                    df = df.iloc[self.subsample_indices]
+                else:
+                    raise NotImplementedError
         return df
 
     ##
