@@ -23,6 +23,8 @@ def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: li
     Parameters
     ----------
     df_before_and_after: 2 x n Dataframe. Index is the x position on the boxplot (i.e. long form data)
+        Note that more rows can be present, but they will be ignored
+        Rows are compared based on position (0th row is before, 1st row is after)
     labels
 
     Returns

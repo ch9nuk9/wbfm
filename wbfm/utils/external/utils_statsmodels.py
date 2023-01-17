@@ -1,15 +1,20 @@
-from typing import Optional
+from typing import Optional, List
 import pandas as pd
+import statsmodels
 import statsmodels.api as sm
 
 
-def ols_groupby(df: pd.DataFrame, x: str, y: str, hue: Optional[str] = None):
+def ols_groupby(df: pd.DataFrame, x: str, y: str, hue: Optional[str] = None) -> \
+        List[statsmodels.regression.linear_model.RegressionResultsWrapper]:
     """
     Does ols, separating by hue, as used by seaborn
 
     Parameters
     ----------
     df
+    x
+    y
+    hue
 
     Returns
     -------
