@@ -49,15 +49,18 @@ class NeuronEncodingBase:
         all_dfs = dict()
         for key in self.dataframes_to_load:
             # Assumes keys are a basic data mode, perhaps with a _filt suffix
-            opt = dict(filter_mode='rolling_mean')
+            new_opt = dict(filter_mode='rolling_mean')
             channel_key = key
             if '_filt' in key:
                 channel_key = key.replace('_filt', '')
-                opt['filter_mode'] = 'bilateral'
+                new_opt['filter_mode'] = 'bilateral'
             if self.use_residual_traces:
-                opt['interpolate_nan'] = True
-            opt['channel_mode'] = channel_key
-            all_dfs[key] = self.project_data.calc_default_traces(**opt, **self.df_kwargs)
+                new_opt['interpolate_nan'] = True
+            new_opt['channel_mode'] = channel_key
+
+            opt = self.df_kwargs.copy()
+            opt.update(new_opt)
+            all_dfs[key] = self.project_data.calc_default_traces(**opt)
 
         # Align columns to common subset
         # If I didn't have this block, then I could just use the project data cache directly
