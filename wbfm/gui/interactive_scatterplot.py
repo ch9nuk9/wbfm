@@ -1,111 +1,75 @@
-import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib.patheffects import withSimplePatchShadow
+from dataclasses import dataclass
 import mplcursors
-import pandas as pd
+import numpy as np
+from backports.cached_property import cached_property
+from matplotlib import pyplot as plt
+from wbfm.gui.examples.interactive_scatterplot_examples import get_nice_cursor_opts
+from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding
 
 
-def example():
-    # From: https://mplcursors.readthedocs.io/en/stable/examples/dataframe.html
-    df = pd.DataFrame(
-        dict(
-            Suburb=["Ames", "Somerset", "Sawyer"],
-            Area=[1023, 2093, 723],
-            SalePrice=[507500, 647000, 546999],
-        )
-    )
+@dataclass
+class InteractiveScatterplot:
 
-    df.plot.scatter(x="Area", y="SalePrice", s=100)
+    project_path: str
+    encoder_model: NeuronToUnivariateEncoding = None
 
-    def show_hover_panel(get_text_func=None):
-        cursor = mplcursors.cursor(
-            hover=2,  # Transient
-            annotation_kwargs=dict(
-                bbox=dict(
-                    boxstyle="square,pad=0.5",
-                    facecolor="white",
-                    edgecolor="#ddd",
-                    linewidth=0.5,
-                    path_effects=[withSimplePatchShadow(offset=(1.5, -1.5))],
-                ),
-                linespacing=1.5,
-                arrowprops=None,
-            ),
-            highlight=True,
-            highlight_kwargs=dict(linewidth=2),
-        )
+    def __post_init__(self):
+        self.encoder_model = NeuronToUnivariateEncoding(self.project_path)
 
-        if get_text_func:
-            cursor.connect(
-                event="add",
-                func=lambda sel: sel.annotation.set_text(get_text_func(sel.index)),
-            )
+    @cached_property
+    def df_coefficients(self):
+        return self.encoder_model.calc_dataset_per_neuron_summary_df('ratio', 'signed_speed')
 
-        return cursor
+    @property
+    def df_traces(self):
+        return self.encoder_model.all_dfs['ratio']
 
-    def on_add(index):
-        item = df.iloc[index]
-        parts = [
-            f"Suburb: {item.Suburb}",
-            f"Area: {item.Area:,.0f}m²",
-            f"Sale price: ${item.SalePrice:,.0f}",
-        ]
+    def make_interactive_scatterplot(self):
+        df = self.df_coefficients
 
-        return "\n".join(parts)
+        ones = np.ones(len(df)) + 0.01 * np.random.random(len(df))
 
-    show_hover_panel(on_add)
-    plt.show()
+        fig = plt.figure(dpi=100)
+        plt.scatter(x=ones, y=df.coefficient, s=100)
+        plt.xlabel("Dummy index")
+        plt.ylabel("Regression coefficient")
+        # plt.title("Size is 1/std of regression")
 
+        def annotation_text(sel):
+            index = sel.index
+            item = df.iloc[index]
+            parts = [
+                f"neuron_name: {item.neuron_name}",
+                f"coefficient: {item.coefficient:,.1f}",
+                f"coefficient_std: {item.coefficient_std:,.4f}"
+            ]
+            return "\n".join(parts)
 
-def example_correlation():
-    fname = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data/df_correlations.h5"
-    df = pd.read_hdf(fname)
-    ones = np.ones(len(df)) + 0.01*np.random.random(len(df))
+        # First cursor, for hovering
+        hover_cursor = mplcursors.cursor(fig, **get_nice_cursor_opts())
 
-    plt.scatter(x=ones, y=df.coefficient, s=100)
-    plt.xlabel("Dummy index")
-    plt.ylabel("Regression coefficient")
-    # plt.title("Size is 1/std of regression")
+        @hover_cursor.connect("add")
+        def on_hover(sel):
+            annotation_text(sel)
 
-    def show_hover_panel(get_text_func=None):
-        cursor = mplcursors.cursor(
-            hover=2,  # Transient
-            annotation_kwargs=dict(
-                bbox=dict(
-                    boxstyle="square,pad=0.5",
-                    facecolor="white",
-                    edgecolor="#ddd",
-                    linewidth=0.5,
-                    path_effects=[withSimplePatchShadow(offset=(1.5, -1.5))],
-                ),
-                linespacing=1.5,
-                arrowprops=None,
-            ),
-            highlight=True,
-            highlight_kwargs=dict(linewidth=2),
-        )
+        # Second cursor for clicking, not hovering
+        click_cursor = mplcursors.cursor(fig, hover=False)
 
-        if get_text_func:
-            cursor.connect(
-                event="add",
-                func=lambda sel: sel.annotation.set_text(get_text_func(sel.index)),
-            )
+        @click_cursor.connect("add")
+        def on_click(sel):
+            index = sel.index
+            item = df.iloc[index]
+            # Also set a persistent tooltip with the same text
+            sel.annotation.set_text(annotation_text(sel))
+            print("CLICK")
+            print(item)
 
-        return cursor
-
-    def on_add(index):
-        item = df.iloc[index]
-        parts = [
-            f"neuron_name: {item.neuron_name}",
-            f"coefficient: {item.coefficient:,.1f}",
-            f"coefficient_std: {item.coefficient_std:,.4f}"
-        ]
-
-        return "\n".join(parts)
-
-    show_hover_panel(on_add)
-    plt.show()
+        # Finish
+        plt.show()
 
 
 if __name__ == "__main__":
-    example_correlation()
+    fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28"
+
+    obj = InteractiveScatterplot(fname)
+    obj.make_interactive_scatterplot()
