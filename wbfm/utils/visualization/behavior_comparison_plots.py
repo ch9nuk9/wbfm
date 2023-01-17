@@ -208,17 +208,22 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         # Remove nan points, if any
         valid_ind = np.where(~np.isnan(y))[0]
-        X = X.iloc[valid_ind, :]
-        y = y.iloc[valid_ind]
+        for tmp in [X, y]:
+            if len(tmp.shape) == 2:
+                tmp = tmp.iloc[valid_ind, :]
+            elif len(tmp.shape) == 1:
+                tmp = tmp.iloc[valid_ind]
+            else:
+                raise NotImplementedError("Must be 1d or 2d")
 
         # Also build a binary class variable; possibly used for cross validation
         worm = self.project_data.worm_posture_class
-        y_binary = worm.beh_annotation(fluorescence_fps=True) == 1
-        y_binary = y_binary.reindex_like(y)
+        y_binary = (worm.beh_annotation(fluorescence_fps=True) == 1).copy()
+        y_binary = y_binary.index = y.index
 
         # Optionally subset the data to be only a specific state
         if only_model_single_state is not None:
-            beh = worm.beh_annotation(fluorescence_fps=True) .reset_index(drop=True)
+            beh = worm.beh_annotation(fluorescence_fps=True).reset_index(drop=True)
             ind = beh == only_model_single_state
             X = X.loc[ind, :]
             y = y.loc[ind]
