@@ -219,7 +219,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         # Also build a binary class variable; possibly used for cross validation
         worm = self.project_data.worm_posture_class
         y_binary = (worm.beh_annotation(fluorescence_fps=True) == 1).copy()
-        y_binary = y_binary.index = y.index
+        y_binary.index = y.index
 
         # Optionally subset the data to be only a specific state
         if only_model_single_state is not None:
