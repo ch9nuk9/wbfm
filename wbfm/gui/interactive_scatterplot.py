@@ -57,11 +57,19 @@ class InteractiveScatterplot:
 
         @click_cursor.connect("add")
         def on_click(sel):
+            sel.annotation.set_text(annotation_text(sel))
             index = sel.index
             item = df.iloc[index]
+            neuron_name = item.neuron_name
+            trace = self.df_traces[neuron_name]
+            newfig, newax = plt.subplots()
+            newax.plot(trace)
+            newax.set_title(neuron_name)
+            self.encoder_model.project_data.shade_axis_using_behavior(ax=newax)
+            newfig.show()
             # Also set a persistent tooltip with the same text
-            sel.annotation.set_text(annotation_text(sel))
-            print("CLICK")
+            print("===========================================")
+            print("Clicked neuron with this information:")
             print(item)
 
         # Finish

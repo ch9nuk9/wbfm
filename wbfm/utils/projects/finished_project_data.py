@@ -1223,7 +1223,7 @@ manual_tracking:          {self.df_manual_tracking is not None}\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
 ============Traces=====================\n\
-traces:               {self.has_traces()}\n"
+traces:                   {self.has_traces()}\n"
 
 
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:

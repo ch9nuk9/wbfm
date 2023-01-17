@@ -34,7 +34,7 @@ class NeuronEncodingBase:
     """General class for behavioral encoding or correlations"""
     project_path: str
 
-    dataframes_to_load: List[str] = field(default_factory=lambda: ['red', 'green', 'ratio'])  # , 'ratio_filt'])
+    dataframes_to_load: List[str] = field(default_factory=lambda: ['ratio'])  # 'red', 'green', 'ratio_filt'])
 
     is_valid: bool = True
     df_kwargs: dict = field(default_factory=dict)
