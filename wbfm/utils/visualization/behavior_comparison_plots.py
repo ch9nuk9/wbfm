@@ -1,6 +1,7 @@
 import logging
 import os
 import warnings
+from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import reduce
 from typing import List, Dict, Tuple
@@ -17,6 +18,8 @@ from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_sp
     cross_val_predict, KFold
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
+
+from wbfm.utils.external.utils_statsmodels import ols_groupby
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
 from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
@@ -354,6 +357,46 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         df = pd.DataFrame(df_dict, index=[0])
         return df
 
+    def calc_dataset_per_neuron_summary_df(self, df_name, x_name):
+        """
+        Like calc_dataset_summary_df, but summarizes activity per neuron (index), not the entire dataset in one number
+
+        Currently just computes the correlations, both overall and rectified. Thus the output is n x 7, with columns:
+            ['correlation', 'rev_correlation', 'fwd_correlation',
+                     'correlation_std', 'rev_correlation_std', 'fwd_correlation_std',
+                     'neuron_name']
+        Parameters
+        ----------
+        df_name - e.g. 'ratio'
+        x_name - e.g. 'signed_speed'
+
+        Returns
+        -------
+
+        """
+
+        col_names = ['correlation', 'rev_correlation', 'fwd_correlation',
+                     'correlation_std', 'rev_correlation_std', 'fwd_correlation_std',
+                     'neuron_name']
+        df_dict = {n: list() for n in col_names}
+        for neuron_name in tqdm(self.retained_neuron_names, leave=False):
+            df, x_train_name = self.build_df_for_correlation(df_name, neuron_name, x_name)
+
+            df_dict['neuron_name'].append(neuron_name)
+            # Full correlation, no subsetting
+            res = ols_groupby(df, x=x_train_name, y=neuron_name)[0]
+            df_dict['correlation'].append(res.params[x_name])
+            df_dict['correlation_std'].append(res.bse[x_name])
+            # Rectified correlation
+            res_fwd, res_rev = ols_groupby(df, x=x_train_name, y=neuron_name, hue='reversal')
+            df_dict['fwd_correlation'].append(res_fwd.params[x_name])
+            df_dict['fwd_correlation_std'].append(res_fwd.bse[x_name])
+            df_dict['rev_correlation'].append(res_rev.params[x_name])
+            df_dict['rev_correlation_std'].append(res_rev.bse[x_name])
+
+        df = pd.DataFrame(df_dict)
+        return df
+
     def plot_encoding_and_weights(self, df_name, y_train=None, y_name="speed"):
         """
         Plots the fit, regression weights, and grid plot for a Lasso model
@@ -440,17 +483,25 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         -------
 
         """
+        df, x_train_name = self.build_df_for_correlation(df_name, neuron_name, x_name)
+
+        plot_opt = dict(data=df, x=x_train_name, y=neuron_name)
+        reg_opt = dict(scatter=False, robust=True, n_boot=10)
+        if do_rectified:
+            plot_opt['hue'] = 'reversal'
+            sns.lmplot(**plot_opt, **reg_opt)
+        else:
+            sns.regplot(**plot_opt, **reg_opt)
+
+        sns.kdeplot(**plot_opt)
+        plt.ylim(0, 1)
+
+    def build_df_for_correlation(self, df_name, neuron_name, x_name):
         df_traces = self.all_dfs[df_name]
         y = df_traces[neuron_name]
-
         y, x, binary_state, x_train_name = self.prepare_training_data(y, x_name)
-
-        df = pd.DataFrame({x_name: x, neuron_name: y, 'binary_state': binary_state})
-
-        if do_rectified:
-            sns.lmplot(data=df, x=x_train_name, y=neuron_name, hue='binary_state')
-        else:
-            sns.regplot(data=df, x=x_train_name, y=neuron_name)
+        df = pd.DataFrame({x_name: x, neuron_name: y, 'reversal': binary_state})
+        return df, x_train_name
 
     def _savefig(self, fname, saving_folder):
         if saving_folder is None:
