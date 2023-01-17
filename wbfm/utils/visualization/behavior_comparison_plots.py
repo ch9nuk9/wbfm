@@ -37,6 +37,7 @@ class NeuronEncodingBase:
     df_kwargs: dict = field(default_factory=dict)
 
     use_residual_traces: bool = False
+    retained_neuron_names: list = None
 
     @cached_property
     def project_data(self) -> ProjectData:
@@ -65,10 +66,12 @@ class NeuronEncodingBase:
         # Align columns to common subset
         # If I didn't have this block, then I could just use the project data cache directly
         all_column_names = [df.columns for df in all_dfs.values()]
-        common_column_names = reduce(np.intersect1d, all_column_names)
+        common_column_names = list(reduce(np.intersect1d, all_column_names))
         all_to_drop = [set(df.columns) - set(common_column_names) for df in all_dfs.values()]
         for key, to_drop in zip(all_dfs.keys(), all_to_drop):
             all_dfs[key].drop(columns=to_drop, inplace=True)
+
+        self.retained_neuron_names = common_column_names
 
         if self.use_residual_traces:
             all_dfs = {k: calculate_residual_subtract_pca(df) for k, df in all_dfs.items()}
@@ -232,6 +235,20 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         return X, y, y_binary, y_train_name
 
     def unpack_behavioral_time_series_from_name(self, y_train_name, trace_len):
+        """
+        Valid values for y_train_name:
+        [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed',
+                           'signed_speed_angular']
+
+        Parameters
+        ----------
+        y_train_name
+        trace_len
+
+        Returns
+        -------
+
+        """
         possible_values = [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed',
                            'signed_speed_angular']
         assert y_train_name in possible_values, f"Must be one of {possible_values}"
@@ -407,7 +424,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             fname = f"regression_fit_{df_name}_{y_name}.png"
             self._savefig(fname, saving_folder)
 
-    def plot_single_neuron_scatter(self, df_name, neuron_name, add_linear_regression=True, do_rectified=True):
+    def plot_single_neuron_scatter(self, df_name, neuron_name, x_name,
+                                   do_rectified=True):
         """
         Plots a scatter plot of behavior and neural activity
 
@@ -415,13 +433,24 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         ----------
         df_name
         neuron_name
-        add_linear_regression
+        x_name - Name of behavior to be on the x axis. See unpack_behavioral_time_series_from_name
         do_rectified
 
         Returns
         -------
 
         """
+        df_traces = self.all_dfs[df_name]
+        y = df_traces[neuron_name]
+
+        y, x, binary_state, x_train_name = self.prepare_training_data(y, x_name)
+
+        df = pd.DataFrame({x_name: x, neuron_name: y, 'binary_state': binary_state})
+
+        if do_rectified:
+            sns.lmplot(data=df, x=x_train_name, y=neuron_name, hue='binary_state')
+        else:
+            sns.regplot(data=df, x=x_train_name, y=neuron_name)
 
     def _savefig(self, fname, saving_folder):
         if saving_folder is None:
