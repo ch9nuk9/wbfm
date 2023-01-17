@@ -375,24 +375,24 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         """
 
-        col_names = ['correlation', 'rev_correlation', 'fwd_correlation',
-                     'correlation_std', 'rev_correlation_std', 'fwd_correlation_std',
+        col_names = ['coefficient', 'rev_coefficient', 'fwd_coefficient',
+                     'coefficient_std', 'rev_coefficient_std', 'fwd_coefficient_std',
                      'neuron_name']
         df_dict = {n: list() for n in col_names}
         for neuron_name in tqdm(self.retained_neuron_names, leave=False):
             df, x_train_name = self.build_df_for_correlation(df_name, neuron_name, x_name)
 
             df_dict['neuron_name'].append(neuron_name)
-            # Full correlation, no subsetting
+            # Full coefficient, no subsetting
             res = ols_groupby(df, x=x_train_name, y=neuron_name)[0]
-            df_dict['correlation'].append(res.params[x_name])
-            df_dict['correlation_std'].append(res.bse[x_name])
-            # Rectified correlation
+            df_dict['coefficient'].append(res.params[x_name])
+            df_dict['coefficient_std'].append(res.bse[x_name])
+            # Rectified coefficient
             res_fwd, res_rev = ols_groupby(df, x=x_train_name, y=neuron_name, hue='reversal')
-            df_dict['fwd_correlation'].append(res_fwd.params[x_name])
-            df_dict['fwd_correlation_std'].append(res_fwd.bse[x_name])
-            df_dict['rev_correlation'].append(res_rev.params[x_name])
-            df_dict['rev_correlation_std'].append(res_rev.bse[x_name])
+            df_dict['fwd_coefficient'].append(res_fwd.params[x_name])
+            df_dict['fwd_coefficient_std'].append(res_fwd.bse[x_name])
+            df_dict['rev_coefficient'].append(res_rev.params[x_name])
+            df_dict['rev_coefficient_std'].append(res_rev.bse[x_name])
 
         df = pd.DataFrame(df_dict)
         return df

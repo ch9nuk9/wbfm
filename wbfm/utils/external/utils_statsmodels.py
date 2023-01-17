@@ -7,7 +7,7 @@ import statsmodels.api as sm
 def ols_groupby(df: pd.DataFrame, x: str, y: str, hue: Optional[str] = None) -> \
         List[statsmodels.regression.linear_model.RegressionResultsWrapper]:
     """
-    Does ols, separating by hue, as used by seaborn
+    Does ols, separating by hue (as used by seaborn)
 
     Parameters
     ----------
