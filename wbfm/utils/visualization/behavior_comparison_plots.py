@@ -93,7 +93,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def calc_multi_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
         """Speed by default"""
         X = self.all_dfs[df_name]
-        X, y, y_binary, y_train_name = self._unpack_data_from_name(X, y_train, only_model_single_state)
+        X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
         inner_cv = self.cv_factory() #.split(X, y_binary)
         model = self._setup_inner_cross_validation(inner_cv)
 
@@ -138,11 +138,13 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
     def calc_single_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
         """
+        Best single neuron encoding
+
         Note that this does nested cross validation to select:
             ridge alpha (inner) and best neuron (outer)
         """
         X = self.all_dfs[df_name]
-        X, y, y_binary, y_train_name = self._unpack_data_from_name(X, y_train, only_model_single_state)
+        X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
         inner_cv = self.cv_factory() #.split(X, y_binary)
         model = self._setup_inner_cross_validation(inner_cv)
 
@@ -185,9 +187,46 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                   f"{nested_scores.mean():.2f} +- {nested_scores.std():.2f}")
         return nested_scores, model, y, y_pred, y_train_name, best_neuron
 
-    def _unpack_data_from_name(self, X, y_train_name, only_model_single_state=None) -> \
+    def prepare_training_data(self, X, y_train_name, only_model_single_state=None) -> \
             Tuple[pd.DataFrame, pd.Series, pd.Series, str]:
+        """
+        Converts a string describing a behavioral time series into the appropriate series, and aligns with the neural
+        data (which may have fewer frames)
+
+        Parameters
+        ----------
+        X
+        y_train_name
+        only_model_single_state
+
+        Returns
+        -------
+
+        """
         trace_len = X.shape[0]
+        y, y_train_name = self.unpack_behavioral_time_series_from_name(y_train_name, trace_len)
+
+        # Remove nan points, if any
+        valid_ind = np.where(~np.isnan(y))[0]
+        X = X.iloc[valid_ind, :]
+        y = y.iloc[valid_ind]
+
+        # Also build a binary class variable; possibly used for cross validation
+        worm = self.project_data.worm_posture_class
+        y_binary = worm.beh_annotation(fluorescence_fps=True) == 1
+        y_binary = y_binary.reindex_like(y)
+
+        # Optionally subset the data to be only a specific state
+        if only_model_single_state is not None:
+            beh = worm.beh_annotation(fluorescence_fps=True) .reset_index(drop=True)
+            ind = beh == only_model_single_state
+            X = X.loc[ind, :]
+            y = y.loc[ind]
+            y_binary = y_binary.loc[ind]
+
+        return X, y, y_binary, y_train_name
+
+    def unpack_behavioral_time_series_from_name(self, y_train_name, trace_len):
         possible_values = [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed',
                            'signed_speed_angular']
         assert y_train_name in possible_values, f"Must be one of {possible_values}"
@@ -198,7 +237,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             y = worm.worm_speed(fluorescence_fps=True, signed=True).iloc[:trace_len]
         elif isinstance(y_train_name, str):
             if y_train_name == 'abs_speed':
-                y = worm.worm_speed(fluorescence_fps=True) .iloc[:trace_len]
+                y = worm.worm_speed(fluorescence_fps=True).iloc[:trace_len]
             elif y_train_name == 'leifer_curvature':
                 assert worm.has_full_kymograph, \
                     f"No kymograph found for project {self.project_data}"
@@ -214,25 +253,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         else:
             raise NotImplementedError(y_train_name)
         y.reset_index(drop=True, inplace=True)
-
-        # Remove nan points, if any
-        valid_ind = np.where(~np.isnan(y))[0]
-        X = X.iloc[valid_ind, :]
-        y = y.iloc[valid_ind]
-
-        # Also build a binary class variable; possibly used for cross validation
-        y_binary = worm.beh_annotation(fluorescence_fps=True)  == 1
-        y_binary = y_binary.reindex_like(y)
-
-        # Optionally subset the data to be only a specific state
-        if only_model_single_state is not None:
-            beh = worm.beh_annotation(fluorescence_fps=True) .reset_index(drop=True)
-            ind = beh == only_model_single_state
-            X = X.loc[ind, :]
-            y = y.loc[ind]
-            y_binary = y_binary.loc[ind]
-
-        return X, y, y_binary, y_train_name
+        return y, y_train_name
 
     def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
                               DEBUG=False, **plot_kwargs):
@@ -248,8 +269,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 self.calc_single_neuron_encoding(df_name, y_train=y_train,
                                                  only_model_single_state=only_model_single_state, DEBUG=DEBUG)
             y_name = f"single_best_neuron_{y_train_name}"
-        self._plot(df_name, y_pred, y_total, y_name=y_name, score_list=score_list, best_neuron=best_neuron,
-                   **plot_kwargs)
+        self._plot_predictions(df_name, y_pred, y_total, y_name=y_name, score_list=score_list, best_neuron=best_neuron,
+                               **plot_kwargs)
 
         return model, best_neuron
 
@@ -259,7 +280,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """
         X = self.all_dfs[df_name]
         # Note: just use this function to resolve the name; do not actually use the train-test split
-        _, y_total, y_binary, y_train_name = self._unpack_data_from_name(X, y_train)
+        _, y_total, y_binary, y_train_name = self.prepare_training_data(X, y_train)
 
         corr = X.corrwith(y_total)
         idx = np.argsort(corr)
@@ -331,10 +352,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         cv_model = self._plot_linear_regression_coefficients(X_train, y_train, df_name, y_name=y_name)[0]
         model = cv_model['estimator'][0]  # Just predict using a single model?
         y_pred = model.predict(X_train)
-        self._plot(df_name, y_pred, y_train)
+        self._plot_predictions(df_name, y_pred, y_train)
 
-    def _plot(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
-              to_save=False, saving_folder=None):
+    def _plot_predictions(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
+                          to_save=False, saving_folder=None):
         """
         Plots predictions and training data
 
@@ -380,6 +401,22 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         if to_save:
             fname = f"regression_fit_{df_name}_{y_name}.png"
             self._savefig(fname, saving_folder)
+
+    def plot_single_neuron_scatter(self, df_name, neuron_name, add_linear_regression=True, do_rectified=True):
+        """
+        Plots a scatter plot of behavior and neural activity
+
+        Parameters
+        ----------
+        df_name
+        neuron_name
+        add_linear_regression
+        do_rectified
+
+        Returns
+        -------
+
+        """
 
     def _savefig(self, fname, saving_folder):
         if saving_folder is None:
