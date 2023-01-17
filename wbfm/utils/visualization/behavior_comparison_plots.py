@@ -40,7 +40,13 @@ class NeuronEncodingBase:
     df_kwargs: dict = field(default_factory=dict)
 
     use_residual_traces: bool = False
-    retained_neuron_names: list = None
+    _retained_neuron_names: list = None
+
+    @property
+    def retained_neuron_names(self):
+        if not self._retained_neuron_names:
+            _ = self.all_dfs
+        return self._retained_neuron_names
 
     @cached_property
     def project_data(self) -> ProjectData:
@@ -74,7 +80,7 @@ class NeuronEncodingBase:
         for key, to_drop in zip(all_dfs.keys(), all_to_drop):
             all_dfs[key].drop(columns=to_drop, inplace=True)
 
-        self.retained_neuron_names = common_column_names
+        self._retained_neuron_names = common_column_names
 
         if self.use_residual_traces:
             all_dfs = {k: calculate_residual_subtract_pca(df) for k, df in all_dfs.items()}
