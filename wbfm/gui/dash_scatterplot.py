@@ -30,7 +30,7 @@ def main():
 
     # Define layout
     app.layout = html.Div([
-        build_dropdowns(df_correlation, _df_behavior),
+        build_dropdowns(df_correlation, _df_behavior, _df_traces),
         build_regression_menu(),
         build_plots_html(),
         build_plots_curvature(df_curvature)
@@ -43,55 +43,36 @@ def main():
         Input('scatter-xaxis', 'value'),
         Input('scatter-yaxis', 'value')
     )
-    def update_scatter_plot(x_name, y_name):
-        # Top scatter plot
-        _fig = px.scatter(df_correlation, x=x_name, y=y_name, hover_name="neuron_name",
-                          custom_data=["neuron_name"],
-                          marginal_y='histogram',
-                          title="Interactive Scatterplot")
-        # Half as tall
-        _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
+    def _update_scatter_plot(x_name, y_name):
+        _fig = update_scatter_plot(df_correlation, x_name, y_name)
         return _fig
 
     # Neuron selection updates
+    # Logic: everything goes through the dropdown menu. A click will update that, which updates other things
+    @app.callback(
+        Output('neuron-select-dropdown', 'value'),
+        Input('correlation-scatterplot', 'clickData')
+    )
+    def _use_click_to_update_dropdown(clickData):
+        neuron_name = clickData["points"][0]["customdata"][0]
+        return neuron_name
+
     @app.callback(
         Output('neuron-trace', 'figure'),
-        Input('correlation-scatterplot', 'clickData'),
+        Input('neuron-select-dropdown', 'value'),
         Input('regression-type', 'value')
     )
-    def _update_neuron_trace(clickData, regression_type):
-        if regression_type == 'Rectified regression':
-            opt = {'color': 'reversal'}
-            px_func = px.scatter
-        else:
-            opt = {}
-            px_func = px.line
-        neuron_name = clickData["points"][0]["customdata"][0]
-        _fig = px_func(df_behavior_and_traces, x='time', y=neuron_name,
-                       title=f"Trace for {neuron_name}",
-                       range_x=[0, len(df_behavior_and_traces)], **opt)
-        _fig.update_layout(height=325, margin={'l': 40, 'b': 40, 't': 30, 'r': 0})
-        return _fig
+    def _update_neuron_trace(neuron_name, regression_type):
+        return update_neuron_trace_plot(df_behavior_and_traces, neuron_name, regression_type)
 
     @app.callback(
         Output('trace-and-behavior-scatterplot', 'figure'),
-        Input('correlation-scatterplot', 'clickData'),
+        Input('neuron-select-dropdown', 'value'),
         Input('behavior-scatter-yaxis', 'value'),
         Input('regression-type', 'value')
     )
-    def _update_behavior_scatter(clickData, behavior_name, regression_type):
-        if regression_type == 'Rectified regression':
-            opt = {'color': 'reversal'}
-        else:
-            opt = {}
-        neuron_name = clickData["points"][0]["customdata"][0]
-        _fig = px.scatter(df_behavior_and_traces, x=behavior_name, y=neuron_name,
-                          title=f"Behavior-neuron scatterplot",
-                          trendline='ols', **opt)
-        results = px.get_trendline_results(_fig)
-        print([result.summary() for result in results.px_fit_results])
-        _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
-        return _fig
+    def _update_behavior_scatter(neuron_name, behavior_name, regression_type):
+        return update_behavior_scatter_plot(df_behavior_and_traces, behavior_name, neuron_name, regression_type)
 
     # Behavior updates
     @app.callback(
@@ -100,17 +81,7 @@ def main():
         Input('regression-type', 'value')
     )
     def _update_behavior_trace(behavior_name, regression_type):
-        if regression_type == 'Rectified regression':
-            opt = {'color': 'reversal'}
-            px_func = px.scatter
-        else:
-            opt = {}
-            px_func = px.line
-        _fig = px_func(df_behavior_and_traces, x='time', y=behavior_name,
-                       range_x=[0, len(df_behavior_and_traces)],
-                       title=f"Trace of {behavior_name}", **opt)
-        _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
-        return _fig
+        return update_behavior_trace_plot(df_behavior_and_traces, behavior_name, regression_type)
 
     if __name__ == '__main__':
         app.run_server(debug=True)
@@ -145,7 +116,62 @@ def build_plots_curvature(df_curvature) -> html.Div:
     return image
 
 
-def build_dropdowns(df_correlation, df_behavior) -> html.Div:
+def update_scatter_plot(df_correlation, x_name, y_name):
+    # Top scatter plot
+    _fig = px.scatter(df_correlation, x=x_name, y=y_name, hover_name="neuron_name",
+                      custom_data=["neuron_name"],
+                      marginal_y='histogram',
+                      title="Interactive Scatterplot")
+    # Half as tall
+    _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
+    return _fig
+
+
+def update_neuron_trace_plot(df_behavior_and_traces, neuron_name, regression_type):
+    if regression_type == 'Rectified regression':
+        opt = {'color': 'reversal'}
+        px_func = px.scatter
+    else:
+        opt = {}
+        px_func = px.line
+    _fig = px_func(df_behavior_and_traces, x='time', y=neuron_name,
+                   title=f"Trace for {neuron_name}",
+                   range_x=[0, len(df_behavior_and_traces)], **opt)
+    _fig.update_layout(height=325, margin={'l': 40, 'b': 40, 't': 30, 'r': 0})
+    return _fig
+
+
+def update_behavior_scatter_plot(df_behavior_and_traces, behavior_name, neuron_name, regression_type):
+    if regression_type == 'Rectified regression':
+        opt = {'color': 'reversal'}
+    else:
+        opt = {}
+    _fig = px.scatter(df_behavior_and_traces, x=behavior_name, y=neuron_name,
+                      title=f"Behavior-neuron scatterplot",
+                      trendline='ols', **opt)
+    results = px.get_trendline_results(_fig)
+    print([result.summary() for result in results.px_fit_results])
+    _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
+    return _fig
+
+
+def update_behavior_trace_plot(df_behavior_and_traces, behavior_name, regression_type):
+    if regression_type == 'Rectified regression':
+        opt = {'color': 'reversal'}
+        px_func = px.scatter
+    else:
+        opt = {}
+        px_func = px.line
+    _fig = px_func(df_behavior_and_traces, x='time', y=behavior_name,
+                   range_x=[0, len(df_behavior_and_traces)],
+                   title=f"Trace of {behavior_name}", **opt)
+    _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
+    return _fig
+
+
+def build_dropdowns(df_correlation, df_behavior, df_traces) -> html.Div:
+    neuron_names = get_names_from_df(df_traces)
+    neuron_initial = neuron_names[0]
     correlation_names = get_names_from_df(df_correlation)
     correlation_names.remove('neuron_name')
     correlation_names_no_dummy = correlation_names.copy()
@@ -157,6 +183,8 @@ def build_dropdowns(df_correlation, df_behavior) -> html.Div:
     x_initial = 'dummy'
     behavior_initial = 'signed_speed'
 
+    style = {'width': '24%'}
+
     return html.Div(children=[
         html.Div([
             html.Label(['Scatter y axis'], style={'font-weight': 'bold', "text-align": "center"}),
@@ -167,7 +195,7 @@ def build_dropdowns(df_correlation, df_behavior) -> html.Div:
                     id='scatter-yaxis',
                 ),
             ])],
-            style={'width': '33%'}),
+            style=style),
 
         html.Div([
             html.Label(['Scatter x axis'], style={'font-weight': 'bold', "text-align": "center"}),
@@ -178,7 +206,7 @@ def build_dropdowns(df_correlation, df_behavior) -> html.Div:
                     id='scatter-xaxis'
                 ),
             ])],
-            style={'width': '33%'}),
+            style=style),
 
         html.Div([
             html.Label(["Behavior to show and correlate"], style={'font-weight': 'bold', "text-align": "center"}),
@@ -189,7 +217,18 @@ def build_dropdowns(df_correlation, df_behavior) -> html.Div:
                     id='behavior-scatter-yaxis',
                 ),
             ])],
-            style={'width': '33%'})
+            style=style),
+
+        html.Div([
+            html.Label(["Select neuron"], style={'font-weight': 'bold', "text-align": "center"}),
+            html.Div([
+                dcc.Dropdown(
+                    neuron_names,
+                    neuron_initial,
+                    id='neuron-select-dropdown',
+                ),
+            ])],
+            style=style)
 
         ], style={'display': 'flex', 'padding': '10px 5px'}
     )
