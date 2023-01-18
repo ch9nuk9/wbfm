@@ -22,18 +22,18 @@ def main():
         elif 'df_behavior' in file.name:
             _df_behavior = pd.read_hdf(file)
         elif 'df_curvature' in file.name:
-            df_curvature = pd.read_hdf(file)
+            _df_curvature = pd.read_hdf(file)
 
     # Combine everything, including an index column
-    df_behavior_and_traces = pd.concat([_df_behavior, _df_traces], axis=1).reset_index()
-    df_behavior_and_traces.rename(columns={'index': 'time'}, inplace=True, copy=False)
+    df_all_time_series = pd.concat([_df_behavior, _df_traces, _df_curvature], axis=1).reset_index()
+    df_all_time_series.rename(columns={'index': 'time'}, inplace=True, copy=False)
 
     # Define layout
     app.layout = html.Div([
         build_dropdowns(df_correlation, _df_behavior, _df_traces),
         build_regression_menu(),
         build_plots_html(),
-        build_plots_curvature(df_curvature)
+        build_plots_curvature(_df_curvature)
         ]
     )
 
@@ -63,7 +63,7 @@ def main():
         Input('regression-type', 'value')
     )
     def _update_neuron_trace(neuron_name, regression_type):
-        return update_neuron_trace_plot(df_behavior_and_traces, neuron_name, regression_type)
+        return update_neuron_trace_plot(df_all_time_series, neuron_name, regression_type)
 
     @app.callback(
         Output('trace-and-behavior-scatterplot', 'figure'),
@@ -72,7 +72,7 @@ def main():
         Input('regression-type', 'value')
     )
     def _update_behavior_scatter(neuron_name, behavior_name, regression_type):
-        return update_behavior_scatter_plot(df_behavior_and_traces, behavior_name, neuron_name, regression_type)
+        return update_behavior_scatter_plot(df_all_time_series, behavior_name, neuron_name, regression_type)
 
     # Behavior updates
     @app.callback(
@@ -81,7 +81,7 @@ def main():
         Input('regression-type', 'value')
     )
     def _update_behavior_trace(behavior_name, regression_type):
-        return update_behavior_trace_plot(df_behavior_and_traces, behavior_name, regression_type)
+        return update_behavior_trace_plot(df_all_time_series, behavior_name, regression_type)
 
     if __name__ == '__main__':
         app.run_server(debug=True)
@@ -101,7 +101,7 @@ def build_plots_html() -> html.Div:
     additional_rows = html.Div([
             dcc.Graph(id='neuron-trace'),
             dcc.Graph(id='behavior-trace')
-    ], style={'width': '100%', 'display': 'inline-block', 'padding': '0 20'}
+    ], style={'width': '100%', 'display': 'inline-block'}
     )
 
     return html.Div([top_row, additional_rows])
@@ -127,26 +127,26 @@ def update_scatter_plot(df_correlation, x_name, y_name):
     return _fig
 
 
-def update_neuron_trace_plot(df_behavior_and_traces, neuron_name, regression_type):
+def update_neuron_trace_plot(df_all_time_series, neuron_name, regression_type):
     if regression_type == 'Rectified regression':
         opt = {'color': 'reversal'}
         px_func = px.scatter
     else:
         opt = {}
         px_func = px.line
-    _fig = px_func(df_behavior_and_traces, x='time', y=neuron_name,
+    _fig = px_func(df_all_time_series, x='time', y=neuron_name,
                    title=f"Trace for {neuron_name}",
-                   range_x=[0, len(df_behavior_and_traces)], **opt)
+                   range_x=[0, len(df_all_time_series)], **opt)
     _fig.update_layout(height=325, margin={'l': 40, 'b': 40, 't': 30, 'r': 0})
     return _fig
 
 
-def update_behavior_scatter_plot(df_behavior_and_traces, behavior_name, neuron_name, regression_type):
+def update_behavior_scatter_plot(df_all_time_series, behavior_name, neuron_name, regression_type):
     if regression_type == 'Rectified regression':
         opt = {'color': 'reversal'}
     else:
         opt = {}
-    _fig = px.scatter(df_behavior_and_traces, x=behavior_name, y=neuron_name,
+    _fig = px.scatter(df_all_time_series, x=behavior_name, y=neuron_name,
                       title=f"Behavior-neuron scatterplot",
                       trendline='ols', **opt)
     results = px.get_trendline_results(_fig)
@@ -155,15 +155,15 @@ def update_behavior_scatter_plot(df_behavior_and_traces, behavior_name, neuron_n
     return _fig
 
 
-def update_behavior_trace_plot(df_behavior_and_traces, behavior_name, regression_type):
+def update_behavior_trace_plot(df_all_time_series, behavior_name, regression_type):
     if regression_type == 'Rectified regression':
         opt = {'color': 'reversal'}
         px_func = px.scatter
     else:
         opt = {}
         px_func = px.line
-    _fig = px_func(df_behavior_and_traces, x='time', y=behavior_name,
-                   range_x=[0, len(df_behavior_and_traces)],
+    _fig = px_func(df_all_time_series, x='time', y=behavior_name,
+                   range_x=[0, len(df_all_time_series)],
                    title=f"Trace of {behavior_name}", **opt)
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
@@ -193,6 +193,7 @@ def build_dropdowns(df_correlation, df_behavior, df_traces) -> html.Div:
                     correlation_names_no_dummy,
                     y_initial,
                     id='scatter-yaxis',
+                    clearable=False
                 ),
             ])],
             style=style),
@@ -203,7 +204,8 @@ def build_dropdowns(df_correlation, df_behavior, df_traces) -> html.Div:
                 dcc.Dropdown(
                     correlation_names,
                     x_initial,
-                    id='scatter-xaxis'
+                    id='scatter-xaxis',
+                    clearable=False
                 ),
             ])],
             style=style),
@@ -215,6 +217,7 @@ def build_dropdowns(df_correlation, df_behavior, df_traces) -> html.Div:
                     behavior_names,
                     behavior_initial,
                     id='behavior-scatter-yaxis',
+                    clearable=False
                 ),
             ])],
             style=style),
@@ -226,6 +229,7 @@ def build_dropdowns(df_correlation, df_behavior, df_traces) -> html.Div:
                     neuron_names,
                     neuron_initial,
                     id='neuron-select-dropdown',
+                    clearable=False
                 ),
             ])],
             style=style)
