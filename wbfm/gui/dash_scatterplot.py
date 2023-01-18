@@ -59,11 +59,13 @@ def main():
     def _update_neuron_trace(clickData, regression_type):
         if regression_type == 'Rectified regression':
             opt = {'color': 'reversal'}
+            px_func = px.scatter
         else:
             opt = {}
+            px_func = px.line
         neuron_name = clickData["points"][0]["customdata"][0]
-        _fig = px.line(df_behavior_and_traces, x='time', y=neuron_name, title=f"Trace for {neuron_name}",
-                       **opt).update_traces(connectgaps=False)
+        _fig = px_func(df_behavior_and_traces, x='time', y=neuron_name, title=f"Trace for {neuron_name}",
+                       **opt)
         _fig.update_layout(height=325, margin={'l': 40, 'b': 40, 't': 30, 'r': 0})
         return _fig
 
@@ -90,11 +92,18 @@ def main():
     # Behavior updates
     @app.callback(
         Output('behavior-trace', 'figure'),
-        Input('behavior-scatter-yaxis', 'value')
+        Input('behavior-scatter-yaxis', 'value'),
+        Input('regression-type', 'value')
     )
-    def _update_behavior_trace(behavior_name):
-        _fig = px.line(df_behavior_and_traces, x='time', y=behavior_name,
-                       title=f"Trace of {behavior_name}")
+    def _update_behavior_trace(behavior_name, regression_type):
+        if regression_type == 'Rectified regression':
+            opt = {'color': 'reversal'}
+            px_func = px.scatter
+        else:
+            opt = {}
+            px_func = px.line
+        _fig = px_func(df_behavior_and_traces, x='time', y=behavior_name,
+                       title=f"Trace of {behavior_name}", **opt)
         _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
         return _fig
 
