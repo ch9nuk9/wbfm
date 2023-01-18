@@ -21,6 +21,8 @@ def main():
             df_correlation = pd.read_hdf(file)
         elif 'df_behavior' in file.name:
             _df_behavior = pd.read_hdf(file)
+        elif 'df_curvature' in file.name:
+            df_curvature = pd.read_hdf(file)
 
     # Combine everything, including an index column
     df_behavior_and_traces = pd.concat([_df_behavior, _df_traces], axis=1).reset_index()
@@ -30,7 +32,8 @@ def main():
     app.layout = html.Div([
         build_dropdowns(df_correlation, _df_behavior),
         build_regression_menu(),
-        build_plots_html()
+        build_plots_html(),
+        build_plots_curvature(df_curvature)
         ]
     )
 
@@ -127,6 +130,15 @@ def build_plots_html() -> html.Div:
     )
 
     return html.Div([left_side, right_side])
+
+
+def build_plots_curvature(df_curvature) -> html.Div:
+    fig = px.imshow(df_curvature.T, zmin=-0.05, zmax=0.05, aspect=3, color_continuous_scale='RdBu')
+
+    image = html.Div([
+        dcc.Graph(id='kymograph-image', figure=fig)
+    ], style={'width': '100%', 'display': 'inline-block'})
+    return image
 
 
 def build_dropdowns(df_correlation, df_behavior) -> html.Div:
