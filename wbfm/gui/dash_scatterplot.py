@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import List
 
+import numpy as np
 from dash import Dash, dcc, html, Output, Input
 import plotly.express as px
 import pandas as pd
@@ -15,17 +16,19 @@ def main():
     app = Dash(__name__)
     for file in Path(DATA_FOLDER).iterdir():
         if 'df_traces' in file.name:
-            df_traces = pd.read_hdf(file)
+            _df_traces = pd.read_hdf(file)
         elif 'df_correlation' in file.name:
             df_correlation = pd.read_hdf(file)
         elif 'df_behavior' in file.name:
-            df_behavior = pd.read_hdf(file)
+            _df_behavior = pd.read_hdf(file)
 
-    df_behavior_and_traces = pd.concat([df_behavior, df_traces], axis=1)
+    # Combine everything, including an index column
+    df_behavior_and_traces = pd.concat([_df_behavior, _df_traces], axis=1).reset_index()
+    df_behavior_and_traces.rename(columns={'index': 'time'}, inplace=True, copy=False)
 
     # Define layout
     app.layout = html.Div([
-        build_dropdowns(df_correlation, df_behavior),
+        build_dropdowns(df_correlation, _df_behavior),
         build_regression_menu(),
         build_plots_html()
         ]
@@ -50,10 +53,17 @@ def main():
     # Neuron selection updates
     @app.callback(
         Output('neuron-trace', 'figure'),
-        Input('correlation-scatterplot', 'clickData'))
-    def _update_neuron_trace(clickData):
+        Input('correlation-scatterplot', 'clickData'),
+        Input('regression-type', 'value')
+    )
+    def _update_neuron_trace(clickData, regression_type):
+        if regression_type == 'Rectified regression':
+            opt = {'color': 'reversal'}
+        else:
+            opt = {}
         neuron_name = clickData["points"][0]["customdata"][0]
-        _fig = make_neuron_trace_plot(df_behavior_and_traces, neuron_name)
+        _fig = px.line(df_behavior_and_traces, x='time', y=neuron_name, title=f"Trace for {neuron_name}",
+                       **opt).update_traces(connectgaps=False)
         _fig.update_layout(height=325, margin={'l': 40, 'b': 40, 't': 30, 'r': 0})
         return _fig
 
@@ -72,7 +82,8 @@ def main():
         _fig = px.scatter(df_behavior_and_traces, x=behavior_name, y=neuron_name,
                           title=f"Behavior-neuron scatterplot",
                           trendline='ols', **opt)
-        # Half as tall
+        results = px.get_trendline_results(_fig)
+        print([result.summary() for result in results.px_fit_results])
         _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
         return _fig
 
@@ -82,7 +93,7 @@ def main():
         Input('behavior-scatter-yaxis', 'value')
     )
     def _update_behavior_trace(behavior_name):
-        _fig = px.line(df_behavior_and_traces, x=df_behavior_and_traces.index, y=behavior_name,
+        _fig = px.line(df_behavior_and_traces, x='time', y=behavior_name,
                        title=f"Trace of {behavior_name}")
         _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
         return _fig
@@ -170,11 +181,6 @@ def build_regression_menu() -> html.Div:
         )
         ]
     )
-
-
-def make_neuron_trace_plot(df_traces, neuron_name):
-    fig_trace = px.line(df_traces, x=df_traces.index, y=neuron_name, title=f"Trace for {neuron_name}")
-    return fig_trace
 
 
 if __name__ == "__main__":
