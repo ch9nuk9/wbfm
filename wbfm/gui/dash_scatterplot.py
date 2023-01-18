@@ -67,8 +67,9 @@ def main():
             opt = {}
             px_func = px.line
         neuron_name = clickData["points"][0]["customdata"][0]
-        _fig = px_func(df_behavior_and_traces, x='time', y=neuron_name, title=f"Trace for {neuron_name}",
-                       **opt)
+        _fig = px_func(df_behavior_and_traces, x='time', y=neuron_name,
+                       title=f"Trace for {neuron_name}",
+                       range_x=[0, len(df_behavior_and_traces)], **opt)
         _fig.update_layout(height=325, margin={'l': 40, 'b': 40, 't': 30, 'r': 0})
         return _fig
 
@@ -106,6 +107,7 @@ def main():
             opt = {}
             px_func = px.line
         _fig = px_func(df_behavior_and_traces, x='time', y=behavior_name,
+                       range_x=[0, len(df_behavior_and_traces)],
                        title=f"Trace of {behavior_name}", **opt)
         _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
         return _fig
@@ -118,18 +120,20 @@ def build_plots_html() -> html.Div:
     # Second trace plot, which is actually initialized through a clickData field on the scatterplot
     initial_clickData = {'points': [{'customdata': ['neuron_001']}]}
 
-    left_side = html.Div([
-            dcc.Graph(id='correlation-scatterplot', clickData=initial_clickData),
-            dcc.Graph(id='trace-and-behavior-scatterplot')
-    ], style={'width': '49%', 'display': 'inline-block'})
+    top_row = html.Div([
+            html.Div([dcc.Graph(id='correlation-scatterplot', clickData=initial_clickData)],
+                     style={'width': '49%', 'display': 'inline-block'}),
+        html.Div([dcc.Graph(id='trace-and-behavior-scatterplot')],
+                     style={'width': '49%', 'display': 'inline-block'}),
+    ], style={'width': '100%', 'display': 'inline-block'})
 
-    right_side = html.Div([
+    additional_rows = html.Div([
             dcc.Graph(id='neuron-trace'),
-            dcc.Graph(id='behavior-trace')],
-        style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}
+            dcc.Graph(id='behavior-trace')
+    ], style={'width': '100%', 'display': 'inline-block', 'padding': '0 20'}
     )
 
-    return html.Div([left_side, right_side])
+    return html.Div([top_row, additional_rows])
 
 
 def build_plots_curvature(df_curvature) -> html.Div:
