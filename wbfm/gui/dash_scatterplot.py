@@ -92,6 +92,14 @@ def main():
     def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type):
         return update_kymograph_scatter_plot(df_all_time_series, kymograph_segment_name, neuron_name, regression_type)
 
+    @app.callback(
+        Output('kymograph-per-segment-correlation', 'figure'),
+        Input('neuron-select-dropdown', 'value'),
+        Input('regression-type', 'value')
+    )
+    def _update_kymograph_correlation(neuron_name, regression_type):
+        return update_kymograph_correlation_per_segment(df_all_time_series, _df_curvature, neuron_name, regression_type)
+
     if __name__ == '__main__':
         app.run_server(debug=True)
 
@@ -100,12 +108,13 @@ def build_plots_html() -> html.Div:
     # Second trace plot, which is actually initialized through a clickData field on the scatterplot
     initial_clickData = {'points': [{'customdata': ['neuron_001']}]}
 
-    top_row_style = {'width': '33%', 'display': 'inline-block'}
+    top_row_style = {'width': '25%', 'display': 'inline-block'}
 
     top_row = html.Div([
         html.Div([dcc.Graph(id='correlation-scatterplot', clickData=initial_clickData)], style=top_row_style),
         html.Div([dcc.Graph(id='trace-and-behavior-scatterplot')], style=top_row_style),
-        html.Div([dcc.Graph(id='kymograph-scatter')], style=top_row_style)
+        html.Div([dcc.Graph(id='kymograph-scatter')], style=top_row_style),
+        html.Div([dcc.Graph(id='kymograph-per-segment-correlation')], style=top_row_style)
     ], style={'width': '100%', 'display': 'inline-block'})
 
     additional_rows = html.Div([
@@ -154,6 +163,7 @@ def update_behavior_scatter_plot(df_all_time_series, behavior_name, neuron_name,
     _fig = px.scatter(df_all_time_series, x=behavior_name, y=neuron_name,
                       title=f"Behavior-neuron scatterplot",
                       trendline='ols', **opt)
+    _fig.update_layout(showlegend=False)
     results = px.get_trendline_results(_fig)
     print([result.summary() for result in results.px_fit_results])
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
@@ -168,6 +178,30 @@ def update_kymograph_scatter_plot(df_all_time_series, kymograph_segment_name, ne
     _fig = px.scatter(df_all_time_series, x=kymograph_segment_name, y=neuron_name,
                       title=f"Kymograph-neuron scatterplot",
                       trendline='ols', **opt)
+    _fig.update_layout(showlegend=False)
+    # results = px.get_trendline_results(_fig)
+    # print([result.summary() for result in results.px_fit_results])
+    _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
+    return _fig
+
+
+def update_kymograph_correlation_per_segment(df_all_time_series, df_curvature, neuron_name, regression_type):
+    if regression_type == 'Rectified regression':
+        rev_idx = df_all_time_series.reversal
+        corr_rev = df_curvature.corrwith(df_all_time_series[neuron_name][rev_idx])
+        corr_fwd = df_curvature.corrwith(df_all_time_series[neuron_name][~rev_idx])
+        # Combine in a dataframe for plotting
+        df_dict = {'rev': corr_rev, 'fwd': corr_fwd}
+        df_corr = pd.DataFrame(df_dict)
+        y_names = ['rev', 'fwd']
+    else:
+        corr = df_curvature.corrwith(df_all_time_series[neuron_name])
+        # Combine in a dataframe for plotting
+        df_dict = {'correlation': corr}
+        df_corr = pd.DataFrame(df_dict)
+        y_names = ['correlation']
+    _fig = px.line(df_corr, y=y_names, title=f"Per-segment correlation", range_y=[-0.8, 0.8])
+    _fig.update_layout(showlegend=False)
     # results = px.get_trendline_results(_fig)
     # print([result.summary() for result in results.px_fit_results])
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
