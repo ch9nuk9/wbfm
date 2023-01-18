@@ -30,7 +30,7 @@ def main():
 
     # Define layout
     app.layout = html.Div([
-        build_dropdowns(df_correlation, _df_behavior, _df_traces),
+        build_dropdowns(df_correlation, _df_behavior, _df_traces, _df_curvature),
         build_regression_menu(),
         build_plots_html(),
         build_plots_curvature(_df_curvature)
@@ -83,6 +83,15 @@ def main():
     def _update_behavior_trace(behavior_name, regression_type):
         return update_behavior_trace_plot(df_all_time_series, behavior_name, regression_type)
 
+    @app.callback(
+        Output('kymograph-scatter', 'figure'),
+        Input('kymograph-select-dropdown', 'value'),
+        Input('neuron-select-dropdown', 'value'),
+        Input('regression-type', 'value')
+    )
+    def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type):
+        return update_kymograph_scatter_plot(df_all_time_series, kymograph_segment_name, neuron_name, regression_type)
+
     if __name__ == '__main__':
         app.run_server(debug=True)
 
@@ -91,16 +100,17 @@ def build_plots_html() -> html.Div:
     # Second trace plot, which is actually initialized through a clickData field on the scatterplot
     initial_clickData = {'points': [{'customdata': ['neuron_001']}]}
 
+    top_row_style = {'width': '33%', 'display': 'inline-block'}
+
     top_row = html.Div([
-            html.Div([dcc.Graph(id='correlation-scatterplot', clickData=initial_clickData)],
-                     style={'width': '49%', 'display': 'inline-block'}),
-        html.Div([dcc.Graph(id='trace-and-behavior-scatterplot')],
-                     style={'width': '49%', 'display': 'inline-block'}),
+        html.Div([dcc.Graph(id='correlation-scatterplot', clickData=initial_clickData)], style=top_row_style),
+        html.Div([dcc.Graph(id='trace-and-behavior-scatterplot')], style=top_row_style),
+        html.Div([dcc.Graph(id='kymograph-scatter')], style=top_row_style)
     ], style={'width': '100%', 'display': 'inline-block'})
 
     additional_rows = html.Div([
-            dcc.Graph(id='neuron-trace'),
-            dcc.Graph(id='behavior-trace')
+        dcc.Graph(id='neuron-trace'),
+        dcc.Graph(id='behavior-trace')
     ], style={'width': '100%', 'display': 'inline-block'}
     )
 
@@ -128,12 +138,7 @@ def update_scatter_plot(df_correlation, x_name, y_name):
 
 
 def update_neuron_trace_plot(df_all_time_series, neuron_name, regression_type):
-    if regression_type == 'Rectified regression':
-        opt = {'color': 'reversal'}
-        px_func = px.scatter
-    else:
-        opt = {}
-        px_func = px.line
+    opt, px_func = switch_plot_func_using_rectification(regression_type)
     _fig = px_func(df_all_time_series, x='time', y=neuron_name,
                    title=f"Trace for {neuron_name}",
                    range_x=[0, len(df_all_time_series)], **opt)
@@ -155,13 +160,22 @@ def update_behavior_scatter_plot(df_all_time_series, behavior_name, neuron_name,
     return _fig
 
 
-def update_behavior_trace_plot(df_all_time_series, behavior_name, regression_type):
+def update_kymograph_scatter_plot(df_all_time_series, kymograph_segment_name, neuron_name, regression_type):
     if regression_type == 'Rectified regression':
         opt = {'color': 'reversal'}
-        px_func = px.scatter
     else:
         opt = {}
-        px_func = px.line
+    _fig = px.scatter(df_all_time_series, x=kymograph_segment_name, y=neuron_name,
+                      title=f"Kymograph-neuron scatterplot",
+                      trendline='ols', **opt)
+    # results = px.get_trendline_results(_fig)
+    # print([result.summary() for result in results.px_fit_results])
+    _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
+    return _fig
+
+
+def update_behavior_trace_plot(df_all_time_series, behavior_name, regression_type):
+    opt, px_func = switch_plot_func_using_rectification(regression_type)
     _fig = px_func(df_all_time_series, x='time', y=behavior_name,
                    range_x=[0, len(df_all_time_series)],
                    title=f"Trace of {behavior_name}", **opt)
@@ -169,7 +183,19 @@ def update_behavior_trace_plot(df_all_time_series, behavior_name, regression_typ
     return _fig
 
 
-def build_dropdowns(df_correlation, df_behavior, df_traces) -> html.Div:
+def switch_plot_func_using_rectification(regression_type):
+    if regression_type == 'Rectified regression':
+        opt = {'color': 'reversal'}
+        px_func = px.scatter
+    else:
+        opt = {}
+        px_func = px.line
+    return opt, px_func
+
+
+def build_dropdowns(df_correlation, df_behavior, df_traces, df_curvature) -> html.Div:
+    curvature_names = get_names_from_df(df_curvature)
+    curvature_initial = curvature_names[0]
     neuron_names = get_names_from_df(df_traces)
     neuron_initial = neuron_names[0]
     correlation_names = get_names_from_df(df_correlation)
@@ -229,6 +255,18 @@ def build_dropdowns(df_correlation, df_behavior, df_traces) -> html.Div:
                     neuron_names,
                     neuron_initial,
                     id='neuron-select-dropdown',
+                    clearable=False
+                ),
+            ])],
+            style=style),
+
+        html.Div([
+            html.Label(["Select kymograph segment"], style={'font-weight': 'bold', "text-align": "center"}),
+            html.Div([
+                dcc.Dropdown(
+                    curvature_names,
+                    curvature_initial,
+                    id='kymograph-select-dropdown',
                     clearable=False
                 ),
             ])],
