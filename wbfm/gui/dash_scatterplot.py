@@ -58,6 +58,17 @@ def main():
         return neuron_name
 
     @app.callback(
+        Output('kymograph-select-dropdown', 'value'),
+        Input('kymograph-per-segment-correlation', 'clickData')
+    )
+    def _use_click_to_update_kymograph_segment(clickData):
+        print(clickData)
+        if clickData is None:
+            return 'segment_001'
+        kymograph_segment_name = clickData["points"][0]["x"]
+        return kymograph_segment_name
+
+    @app.callback(
         Output('neuron-trace', 'figure'),
         Input('neuron-select-dropdown', 'value'),
         Input('regression-type', 'value')
@@ -164,8 +175,8 @@ def update_behavior_scatter_plot(df_all_time_series, behavior_name, neuron_name,
                       title=f"Behavior-neuron scatterplot",
                       trendline='ols', **opt)
     _fig.update_layout(showlegend=False)
-    results = px.get_trendline_results(_fig)
-    print([result.summary() for result in results.px_fit_results])
+    # results = px.get_trendline_results(_fig)
+    # print([result.summary() for result in results.px_fit_results])
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
 
@@ -193,7 +204,7 @@ def update_kymograph_correlation_per_segment(df_all_time_series, df_curvature, n
         # Combine in a dataframe for plotting
         df_dict = {'rev': corr_rev, 'fwd': corr_fwd}
         df_corr = pd.DataFrame(df_dict)
-        y_names = ['rev', 'fwd']
+        y_names = ['fwd', 'rev']
     else:
         corr = df_curvature.corrwith(df_all_time_series[neuron_name])
         # Combine in a dataframe for plotting
