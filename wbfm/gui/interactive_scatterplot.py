@@ -50,7 +50,7 @@ class InteractiveScatterplot:
 
         @hover_cursor.connect("add")
         def on_hover(sel):
-            annotation_text(sel)
+            sel.annotation.set_text(annotation_text(sel))
 
         # Second cursor for clicking, not hovering
         click_cursor = mplcursors.cursor(fig, hover=False)
