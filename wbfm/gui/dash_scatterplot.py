@@ -8,14 +8,12 @@ import pandas as pd
 from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
-DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data"
 
-
-def main():
+def build_wbfm_dashboard(data_folder):
 
     app = Dash(__name__)
     _df_curvature, _df_behavior, _df_traces = None, None, None
-    for file in Path(DATA_FOLDER).iterdir():
+    for file in Path(data_folder).iterdir():
         if 'df_traces_ratio' in file.name:
             _df_traces = pd.read_hdf(file)
         # elif 'df_correlation' in file.name:
@@ -397,4 +395,8 @@ def build_regression_menu() -> html.Div:
 
 
 if __name__ == "__main__":
-    main()
+
+    # DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data"
+    data_cfg = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
+    data_folder = Path(data_cfg).parent.joinpath('final_dataframes')
+    build_wbfm_dashboard(data_folder)

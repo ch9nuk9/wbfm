@@ -92,12 +92,17 @@ class WormFullVideoPosture:
         if df is not None:
             df = self.remove_idx_of_tracking_failures(df)
             if fluorescence_fps:
-                if len(df.shape) == 2:
-                    df = df.iloc[self.subsample_indices, :]
-                elif len(df.shape) == 1:
-                    df = df.iloc[self.subsample_indices]
-                else:
-                    raise NotImplementedError
+                try:
+                    if len(df.shape) == 2:
+                        df = df.iloc[self.subsample_indices, :]
+                    elif len(df.shape) == 1:
+                        df = df.iloc[self.subsample_indices]
+                    else:
+                        raise NotImplementedError
+                except IndexError as e:
+                    print(df.shape)
+                    print(self.subsample_indices)
+                    raise e
             if reset_index:
                 df.reset_index(drop=True, inplace=True)
         return df
