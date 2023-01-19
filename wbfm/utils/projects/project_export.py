@@ -26,7 +26,7 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     # Trace dataframes
     # Note: more efficient if these options align with the NeuronToUnivariateEncoding calculations below
     channel_modes = ['ratio', 'red', 'green']
-    trace_opt = {'filter_mode': 'rolling_mean', 'minnonnan': 0.9}
+    trace_opt = {'filter_mode': 'rolling_mean', 'min_nonnan': 0.9}
     for c in channel_modes:
         fname = os.path.join(output_folder, 'traces', f'df_traces_{c}.h5')
         if os.path.exists(project_config.resolve_relative_path(fname)):
@@ -39,7 +39,8 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     if not os.path.exists(project_config.resolve_relative_path(fname)):
         model = NeuronToUnivariateEncoding(project_path=project_data)
         _ = model.all_dfs
-        cols = ['signed_speed', 'abs_speed', 'leifer_curvature', 'signed_speed_smoothed', 'signed_speed_angular']
+        cols = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'pirouette',
+                'signed_stage_speed_smoothed', 'signed_speed_angular', 'signed_middle_body_speed']
         trace_len = project_data.num_frames
         df_behavior_dict = {c: model.unpack_behavioral_time_series_from_name(c, trace_len)[0] for c in cols}
         df_behavior_dict['reversal'] = (worm.beh_annotation(fluorescence_fps=True) == 1).reset_index(drop=True)

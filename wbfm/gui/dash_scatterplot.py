@@ -332,7 +332,7 @@ def build_dropdowns(df_behavior, df_curvature, dict_of_trace_dataframes) -> html
     behavior_names = get_names_from_df(df_behavior)
 
     x_initial = 'signed_speed_angular'
-    behavior_initial = 'signed_speed'
+    behavior_initial = 'signed_middle_body_speed'
 
     header = html.H1("Dropdowns for changing all plots")
 

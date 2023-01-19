@@ -259,24 +259,27 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         -------
 
         """
-        possible_values = [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed',
-                           'signed_speed_angular']
+        if y_train_name is None:
+            y_train_name = 'signed_stage_speed'
+        possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'pirouette',
+                           'signed_stage_speed_smoothed', 'signed_speed_angular',
+                           'signed_middle_body_speed']
         assert y_train_name in possible_values, f"Must be one of {possible_values}"
         # Get 1d series from behavior
         worm = self.project_data.worm_posture_class
-        if y_train_name is None or y_train_name == 'signed_speed':
-            y_train_name = 'signed_speed'
-            y = worm.worm_speed(fluorescence_fps=True, signed=True).iloc[:trace_len]
-        elif isinstance(y_train_name, str):
-            if y_train_name == 'abs_speed':
+        if isinstance(y_train_name, str):
+            if y_train_name == 'signed_stage_speed':
+                y = worm.worm_speed(fluorescence_fps=True, signed=True).iloc[:trace_len]
+            elif y_train_name == 'abs_stage_speed':
                 y = worm.worm_speed(fluorescence_fps=True).iloc[:trace_len]
+            elif y_train_name == 'signed_middle_body_speed':
+                y = worm.worm_speed(fluorescence_fps=True, use_stage_position=False).iloc[:trace_len]
             elif y_train_name == 'leifer_curvature':
-                assert worm.has_full_kymograph, \
-                    f"No kymograph found for project {self.project_data}"
+                assert worm.has_full_kymograph, f"No kymograph found for project {self.project_data}"
                 y = worm.leifer_curvature_from_kymograph(fluorescence_fps=True).iloc[:trace_len]
             elif y_train_name == 'pirouette':
                 y = worm.calc_psuedo_pirouette_state().iloc[:trace_len]
-            elif y_train_name == 'signed_speed_smoothed':
+            elif y_train_name == 'signed_stage_speed_smoothed':
                 y = worm.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True).iloc[:trace_len]
             elif y_train_name == 'signed_speed_angular':
                 y = worm.worm_angular_velocity(fluorescence_fps=True).iloc[:trace_len]
