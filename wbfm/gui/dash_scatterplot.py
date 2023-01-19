@@ -1,30 +1,18 @@
 from pathlib import Path
-from typing import List
 
 from dash import Dash, dcc, html, Output, Input
 import plotly.express as px
 import pandas as pd
 
 from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
+from wbfm.utils.projects.project_export import read_dataframes_from_exported_folder
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def build_wbfm_dashboard(data_folder):
 
     app = Dash(__name__)
-    _df_curvature, _df_behavior, _df_traces = None, None, None
-    for file in Path(data_folder).iterdir():
-        if 'df_traces_ratio' in file.name:
-            _df_traces = pd.read_hdf(file)
-        # elif 'df_correlation' in file.name:
-        #     df_correlation = pd.read_hdf(file)
-        elif 'df_behavior' in file.name:
-            _df_behavior = pd.read_hdf(file)
-        elif 'df_curvature' in file.name:
-            _df_curvature = pd.read_hdf(file)
-
-    assert (_df_curvature is not None and _df_behavior is not None and _df_traces is not None), \
-        "Did not find all files!"
+    _df_behavior, _df_curvature, _df_traces = read_dataframes_from_exported_folder(data_folder)
 
     # Combine everything, including an index column
     df_all_time_series = pd.concat([_df_behavior, _df_traces, _df_curvature], axis=1).reset_index()

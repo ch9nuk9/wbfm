@@ -330,6 +330,11 @@ class WormFullVideoPosture:
         fnames = [self.filename_y, self.filename_x, self.filename_curvature]
         return all([f is not None for f in fnames]) and all([os.path.exists(f) for f in fnames])
 
+    def validate_dataframes_of_correct_size(self):
+        dfs = [self.centerlineX(), self.centerlineY(), self.curvature(), self.stage_position()]
+        shapes = [df.shape for df in dfs]
+        assert np.allclose(*shapes), "Found invalid shape for some dataframes"
+
     ##
     ## Other complex states
     ##
