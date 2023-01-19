@@ -9,19 +9,19 @@ from wbfm.utils.projects.project_export import read_dataframes_from_exported_fol
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
-def build_wbfm_dashboard(data_folder):
+def build_wbfm_dashboard(project_path):
 
     app = Dash(__name__)
-    dict_of_dataframes = read_dataframes_from_exported_folder(data_folder)
+    dict_of_dataframes = read_dataframes_from_exported_folder(project_path)
     df_behavior = dict_of_dataframes['behavior']['behavior']
     df_curvature = dict_of_dataframes['behavior']['curvature']
     dict_of_traces_dfs = dict_of_dataframes['traces']
     # _df_traces = dict_of_dataframes['traces']['ratio']
 
     # Add a time column
-    dict_of_traces_dfs = {k: df.reset_index().rename(columns={'index': 'time'}, inplace=True, copy=False)
+    dict_of_traces_dfs = {k: df.reset_index().rename(columns={'index': 'time'}, copy=False)
                           for k, df in dict_of_traces_dfs.items()}
-    df_behavior.reset_index().rename(columns={'index': 'time'}, inplace=True, copy=False)
+    df_behavior = df_behavior.reset_index().rename(columns={'index': 'time'}, copy=False)
     # df_all_time_series = pd.concat([_df_behavior, _df_traces, _df_curvature], axis=1).reset_index()
     # df_all_time_series.rename(columns={'index': 'time'}, inplace=True, copy=False)
 
@@ -419,6 +419,5 @@ def build_regression_menu() -> html.Div:
 if __name__ == "__main__":
 
     # DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data"
-    data_cfg = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
-    data_folder = Path(data_cfg).parent.joinpath('final_dataframes')
-    build_wbfm_dashboard(data_folder)
+    project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
+    build_wbfm_dashboard(project_path)

@@ -26,7 +26,7 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     # Trace dataframes
     # Note: more efficient if these options align with the NeuronToUnivariateEncoding calculations below
     channel_modes = ['ratio', 'red', 'green']
-    trace_opt = {'filter_mode': 'rolling_mean'}
+    trace_opt = {'filter_mode': 'rolling_mean', 'minnonnan': 0.9}
     for c in channel_modes:
         fname = os.path.join(output_folder, 'traces', f'df_traces_{c}.h5')
         if os.path.exists(project_config.resolve_relative_path(fname)):
@@ -61,7 +61,8 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     print("Finished saving all dataframes")
 
 
-def read_dataframes_from_exported_folder(data_folder: str) -> Dict[str, Dict[str, pd.DataFrame]]:
+def read_dataframes_from_exported_folder(project_path: str) -> Dict[str, Dict[str, pd.DataFrame]]:
+    data_folder = Path(project_path).parent.joinpath('final_dataframes')
     dict_of_dataframes = dict(traces={}, behavior={})
     for subfolder in Path(data_folder).iterdir():
         if subfolder.name == 'traces':
