@@ -26,12 +26,20 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     # Trace dataframes
     # Note: more efficient if these options align with the NeuronToUnivariateEncoding calculations below
     channel_modes = ['ratio', 'red', 'green']
+    residual_modes = ['pca', 'nmf']
     trace_opt = {'filter_mode': 'rolling_mean', 'min_nonnan': 0.9}
     for c in channel_modes:
-        fname = os.path.join(output_folder, 'traces', f'df_traces_{c}.h5')
+        fname = os.path.join(output_folder, 'traces', f'df_traces-{c}.h5')
         if os.path.exists(project_config.resolve_relative_path(fname)):
             continue
         df = project_data.calc_default_traces(channel_mode=c, **trace_opt)
+        project_config.h5_data_in_local_project(df, fname)
+
+    for r in residual_modes:
+        fname = os.path.join(output_folder, 'traces', f'df_traces-ratio_residual_subtracted_{r}.h5')
+        if os.path.exists(project_config.resolve_relative_path(fname)):
+            continue
+        df = project_data.calc_default_traces(channel_mode='ratio', residual_mode=r, **trace_opt)
         project_config.h5_data_in_local_project(df, fname)
 
     # Behavioral dataframe
@@ -68,8 +76,9 @@ def read_dataframes_from_exported_folder(project_path: str) -> Dict[str, Dict[st
     for subfolder in Path(data_folder).iterdir():
         if subfolder.name == 'traces':
             for file in Path(subfolder).iterdir():
-                if 'df_traces_' in file.name:
-                    key = file.name.split('df_traces_')[1].split('.')[0]
+                if 'df_traces' in file.name:
+                    # Assumes filename like df_traces-ratio.h5 or df_traces-ratio_residual.h5
+                    key = file.name.split('-')[1].split('.')[0]
                     dict_of_dataframes['traces'][key] = pd.read_hdf(file)
         elif subfolder.name == 'behavior':
             for file in Path(subfolder).iterdir():

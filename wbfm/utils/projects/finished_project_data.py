@@ -539,6 +539,7 @@ class ProjectData:
                          remove_outliers: bool = False,
                          filter_mode: str = 'no_filtering',
                          bleach_correct: bool = True,
+                         residual_mode: str = None,
                          **kwargs) -> Tuple[list, pd.Series]:
         """
         Uses TracePlotter class to calculate traces
@@ -553,6 +554,7 @@ class ProjectData:
         remove_outliers - try to remove spiking outliers
         filter_mode - try to filter; not currently working
         min_confidence - if confidence below this, plot a gap
+        residual_mode - for compatibility; intentionally unused here
 
         Returns
         -------
