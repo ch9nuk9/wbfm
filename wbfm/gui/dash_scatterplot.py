@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import List
 
-import numpy as np
 from dash import Dash, dcc, html, Output, Input
 import plotly.express as px
 import pandas as pd
@@ -15,6 +14,7 @@ DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alte
 def main():
 
     app = Dash(__name__)
+    _df_curvature, _df_behavior, _df_traces = None, None, None
     for file in Path(DATA_FOLDER).iterdir():
         if 'df_traces_ratio' in file.name:
             _df_traces = pd.read_hdf(file)
