@@ -213,7 +213,7 @@ def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, reg
                       custom_data=["neuron_name"],
                       size='selected',
                       marginal_y='histogram',
-                      title="Interactive CORRELATIONS between 2 behaviors",
+                      title="Are neurons correlated to 2 behaviors?",
                       trendline="ols")
     # _fig.update_layout(clickmode='event+select')
     # selected_points = [int(neuron_name.split('_')[1]) - 1]
@@ -239,7 +239,7 @@ def update_behavior_scatter_plot(df_behavior_and_neurons, behavior_name, neuron_
     else:
         opt = {}
     _fig = px.scatter(df_behavior_and_neurons, x=behavior_name, y=neuron_name,
-                      title=f"Behavior-neuron scatterplot",
+                      title=f"Is {neuron_name} correlated to behavior?",
                       trendline='ols', **opt)
     _fig.update_layout(showlegend=False)
     # results = px.get_trendline_results(_fig)
@@ -254,7 +254,7 @@ def update_kymograph_scatter_plot(df_all, kymograph_segment_name, neuron_name, r
     else:
         opt = {}
     _fig = px.scatter(df_all, x=kymograph_segment_name, y=neuron_name,
-                      title=f"Kymograph-neuron scatterplot",
+                      title=f"Is {neuron_name} correlated to behavior?",
                       trendline='ols', **opt)
     _fig.update_layout(showlegend=False)
     # results = px.get_trendline_results(_fig)
@@ -278,7 +278,7 @@ def update_kymograph_correlation_per_segment(df_traces, df_behavior, df_curvatur
         df_dict = {'correlation': corr}
         df_corr = pd.DataFrame(df_dict)
         y_names = ['correlation']
-    _fig = px.line(df_corr, y=y_names, title=f"Interactive per-segment correlation", range_y=[-0.8, 0.8])
+    _fig = px.line(df_corr, y=y_names, title=f"Which body segment correlates to {neuron_name}?", range_y=[-0.8, 0.8])
     _fig.update_layout(showlegend=False)
     # results = px.get_trendline_results(_fig)
     # print([result.summary() for result in results.px_fit_results])
@@ -306,7 +306,7 @@ def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curv
     # For setting custom data
     df_corr_max['index'] = df_corr_max.index
 
-    _fig = px.scatter(df_corr_max, y=y_names, title=f"Interactive per-neuron max correlation", range_y=[0, 0.8],
+    _fig = px.scatter(df_corr_max, y=y_names, title=f"Max curvature correlation over whole body", range_y=[0, 0.8],
                       marginal_y='histogram', custom_data=['index'])
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
