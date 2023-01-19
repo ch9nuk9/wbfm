@@ -25,6 +25,9 @@ def main():
         elif 'df_curvature' in file.name:
             _df_curvature = pd.read_hdf(file)
 
+    assert (_df_curvature is not None and _df_behavior is not None and _df_traces is not None), \
+        "Did not find all files!"
+
     # Combine everything, including an index column
     df_all_time_series = pd.concat([_df_behavior, _df_traces, _df_curvature], axis=1).reset_index()
     df_all_time_series.rename(columns={'index': 'time'}, inplace=True, copy=False)
