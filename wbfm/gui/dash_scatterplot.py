@@ -19,9 +19,10 @@ def build_wbfm_dashboard(project_path):
     # _df_traces = dict_of_dataframes['traces']['ratio']
 
     # Add a time column
-    dict_of_traces_dfs = {k: df.reset_index().rename(columns={'index': 'time'}, copy=False)
-                          for k, df in dict_of_traces_dfs.items()}
-    df_behavior = df_behavior.reset_index().rename(columns={'index': 'time'}, copy=False)
+    # df_time = df_behavior.index
+    # dict_of_traces_dfs = {k: df.reset_index().rename(columns={'index': 'time'}, copy=False)
+    #                       for k, df in dict_of_traces_dfs.items()}
+    # df_behavior = df_behavior.reset_index().rename(columns={'index': 'time'}, copy=False)
     # df_all_time_series = pd.concat([_df_behavior, _df_traces, _df_curvature], axis=1).reset_index()
     # df_all_time_series.rename(columns={'index': 'time'}, inplace=True, copy=False)
 
@@ -39,12 +40,13 @@ def build_wbfm_dashboard(project_path):
         Output('correlation-scatterplot', 'figure'),
         Input('scatter-xaxis', 'value'),
         Input('behavior-scatter-yaxis', 'value'),
+        Input('neuron-select-dropdown', 'value'),
         Input('regression-type', 'value'),
         Input('trace-select-dropdown', 'value')
     )
-    def _update_scatter_plot(x_name, y_name, regression_type, trace_type):
+    def _update_scatter_plot(x_name, y_name, neuron_name, regression_type, trace_type):
         df_traces = dict_of_traces_dfs[trace_type]
-        return update_scatter_plot(df_behavior, df_traces, x_name, y_name, regression_type)
+        return update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, regression_type)
 
     # Neuron selection updates
     # Logic: everything goes through the dropdown menu. A click will update that, which updates other things
@@ -57,6 +59,7 @@ def build_wbfm_dashboard(project_path):
     )
     def _use_click_to_update_neuron_dropdown(correlation_clickData, kymograph_clickData):
         # Resets the clickData of each plot (multiple outputs)
+        print(correlation_clickData)
         if correlation_clickData:
             neuron_name = correlation_clickData["points"][0]["customdata"][0]
         elif kymograph_clickData:
@@ -179,7 +182,7 @@ def build_plots_curvature(df_curvature) -> html.Div:
     return image
 
 
-def update_scatter_plot(df_behavior, df_traces, x_name, y_name, regression_type):
+def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, regression_type):
     if regression_type == 'Rectified regression':
         rev_idx = df_behavior.reversal
         y_corr_rev = df_traces.corrwith(df_behavior[y_name][rev_idx])
@@ -202,12 +205,20 @@ def update_scatter_plot(df_behavior, df_traces, x_name, y_name, regression_type)
         y_names = y_name
     x_name = x_name
     df_corr['neuron_name'] = get_names_from_df(df_traces)
+    # Create a fake "selected" column, because the default doesn't work when you return a new figure
+    df_corr['selected'] = 1
+    df_corr.loc[neuron_name, 'selected'] = 5
     # Top scatter plot
     _fig = px.scatter(df_corr, x=x_name, y=y_names, hover_name="neuron_name",
                       custom_data=["neuron_name"],
+                      size='selected',
                       marginal_y='histogram',
                       title="Interactive CORRELATIONS between 2 behaviors",
                       trendline="ols")
+    # _fig.update_layout(clickmode='event+select')
+    # selected_points = [int(neuron_name.split('_')[1]) - 1]
+    # print(df_corr, selected_points)
+    # _fig.update_traces(selectedpoints=[selected_points])
     # Half as tall
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
@@ -215,7 +226,6 @@ def update_scatter_plot(df_behavior, df_traces, x_name, y_name, regression_type)
 
 def update_neuron_trace_plot(df_behavior_and_neurons, neuron_name, regression_type):
     opt, px_func = switch_plot_func_using_rectification(regression_type)
-    # For some reason, x='time' isn't working...
     _fig = px_func(df_behavior_and_neurons, x=df_behavior_and_neurons.index, y=neuron_name,
                    title=f"Trace for {neuron_name}",
                    range_x=[0, df_behavior_and_neurons.shape[0]], **opt)
@@ -304,7 +314,7 @@ def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curv
 
 def update_behavior_trace_plot(df_behavior, behavior_name, regression_type):
     opt, px_func = switch_plot_func_using_rectification(regression_type)
-    _fig = px_func(df_behavior, x='time', y=behavior_name,
+    _fig = px_func(df_behavior, x=df_behavior.index, y=behavior_name,
                    range_x=[0, len(df_behavior)],
                    title=f"Trace of {behavior_name}", **opt)
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
