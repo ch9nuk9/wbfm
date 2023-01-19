@@ -52,11 +52,20 @@ def main():
     # Logic: everything goes through the dropdown menu. A click will update that, which updates other things
     @app.callback(
         Output('neuron-select-dropdown', 'value'),
-        Input('correlation-scatterplot', 'clickData')
+        Output('correlation-scatterplot', 'clickData'),
+        Output('kymograph-all-neuron-max-segment-correlation', 'clickData'),
+        Input('correlation-scatterplot', 'clickData'),
+        Input('kymograph-all-neuron-max-segment-correlation', 'clickData')
     )
-    def _use_click_to_update_dropdown(clickData):
-        neuron_name = clickData["points"][0]["customdata"][0]
-        return neuron_name
+    def _use_click_to_update_neuron_dropdown(correlation_clickData, kymograph_clickData):
+        # Resets the clickData of each plot (multiple outputs)
+        if correlation_clickData:
+            neuron_name = correlation_clickData["points"][0]["customdata"][0]
+        elif kymograph_clickData:
+            neuron_name = kymograph_clickData["points"][0]["customdata"][0]
+        else:
+            neuron_name = None
+        return neuron_name, None, None
 
     @app.callback(
         Output('kymograph-select-dropdown', 'value'),
@@ -135,7 +144,8 @@ def build_plots_html() -> html.Div:
         html.Div([dcc.Graph(id='trace-and-behavior-scatterplot')], style=top_row_style),
         html.Div([dcc.Graph(id='kymograph-scatter')], style=top_row_style),
         html.Div([dcc.Graph(id='kymograph-per-segment-correlation')], style=top_row_style),
-        html.Div([dcc.Graph(id='kymograph-all-neuron-max-segment-correlation')], style=top_row_style)
+        html.Div([dcc.Graph(id='kymograph-all-neuron-max-segment-correlation',
+                            clickData=initial_neuron_clickData)], style=top_row_style)
     ], style={'width': '100%', 'display': 'inline-block'})
 
     time_series_header = html.H2("Time Series plots")
@@ -162,7 +172,8 @@ def update_scatter_plot(df_correlation, x_name, y_name):
     _fig = px.scatter(df_correlation, x=x_name, y=y_name, hover_name="neuron_name",
                       custom_data=["neuron_name"],
                       marginal_y='histogram',
-                      title="Interactive Scatterplot")
+                      title="Interactive Behavior Scatterplot",
+                      trendline="ols")
     # Half as tall
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
@@ -247,9 +258,11 @@ def update_max_correlation_over_all_segment_plot(df_all_time_series, df_traces, 
         df_corr = correlate_return_cross_terms(df_traces, df_curvature)
         df_corr_max = pd.DataFrame(df_corr.max(axis=1), columns=['correlation'])
         y_names = 'correlation'
-    # print(df_corr_max, y_names)
+    # For setting custom data
+    df_corr_max['index'] = df_corr_max.index
+
     _fig = px.scatter(df_corr_max, y=y_names, title=f"Interactive per-neuron max correlation", range_y=[0, 0.8],
-                      marginal_y='histogram')
+                      marginal_y='histogram', custom_data=['index'])
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
 
