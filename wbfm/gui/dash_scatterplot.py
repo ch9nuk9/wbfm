@@ -29,7 +29,7 @@ def build_wbfm_dashboard(project_path):
     # Define layout
     app.layout = html.Div([
         build_dropdowns(df_behavior, df_curvature, dict_of_traces_dfs),
-        build_regression_menu(),
+        build_second_row_options(),
         build_plots_html(),
         build_plots_curvature(df_curvature)
         ]
@@ -136,49 +136,16 @@ def build_wbfm_dashboard(project_path):
     @app.callback(
         Output('kymograph-all-neuron-max-segment-correlation', 'figure'),
         Input('regression-type', 'value'),
-        Input('trace-select-dropdown', 'value')
+        Input('trace-select-dropdown', 'value'),
+        Input('kymograph-range-slider', 'value')
     )
-    def _update_kymograph_max_segment(regression_type, trace_type):
+    def _update_kymograph_max_segment(regression_type, trace_type, kymograph_range):
         df_traces = dict_of_traces_dfs[trace_type]
-        return update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type)
+        return update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type,
+                                                            kymograph_range)
 
     if __name__ == '__main__':
         app.run_server(debug=True)
-
-
-def build_plots_html() -> html.Div:
-    # Second trace plot, which is actually initialized through a clickData field on the scatterplot
-    initial_neuron_clickData = {'points': [{'customdata': ['neuron_001']}]}
-
-    top_header = html.H2("Summary plots (some interactive)")
-
-    top_row_style = {'width': '20%', 'display': 'inline-block'}
-    top_row = html.Div([
-        html.Div([dcc.Graph(id='correlation-scatterplot', clickData=initial_neuron_clickData)], style=top_row_style),
-        html.Div([dcc.Graph(id='trace-and-behavior-scatterplot')], style=top_row_style),
-        html.Div([dcc.Graph(id='kymograph-scatter')], style=top_row_style),
-        html.Div([dcc.Graph(id='kymograph-per-segment-correlation')], style=top_row_style),
-        html.Div([dcc.Graph(id='kymograph-all-neuron-max-segment-correlation',
-                            clickData=initial_neuron_clickData)], style=top_row_style)
-    ], style={'width': '100%', 'display': 'inline-block'})
-
-    time_series_header = html.H2("Time Series plots")
-    time_series_rows = html.Div([
-        dcc.Graph(id='neuron-trace'),
-        dcc.Graph(id='behavior-trace')
-    ], style={'width': '100%', 'display': 'inline-block'}
-    )
-
-    return html.Div([top_header, top_row, time_series_header, time_series_rows])
-
-
-def build_plots_curvature(df_curvature) -> html.Div:
-    fig = px.imshow(df_curvature.T, zmin=-0.05, zmax=0.05, aspect=3, color_continuous_scale='RdBu')
-
-    image = html.Div([
-        dcc.Graph(id='kymograph-image', figure=fig)
-    ], style={'width': '100%', 'display': 'inline-block'})
-    return image
 
 
 def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, regression_type):
@@ -285,27 +252,29 @@ def update_kymograph_correlation_per_segment(df_traces, df_behavior, df_curvatur
     return _fig
 
 
-def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type):
+def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type,
+                                                 kymograph_range):
     # Will not actually be updated, except for changing the rectification
+    df_curvature_subset = df_curvature.iloc[:, kymograph_range[0]:kymograph_range[1]]
     if regression_type == 'Rectified regression':
         rev_idx = df_behavior.reversal
-        df_corr = correlate_return_cross_terms(df_traces[rev_idx], df_curvature)
+        df_corr = correlate_return_cross_terms(df_traces[rev_idx], df_curvature_subset)
         df_max_rev = df_corr.abs().max(axis=1)
 
-        df_corr = correlate_return_cross_terms(df_traces[~rev_idx], df_curvature)
+        df_corr = correlate_return_cross_terms(df_traces[~rev_idx], df_curvature_subset)
         df_max_fwd = df_corr.abs().max(axis=1)
 
         df_dict = {'rev': df_max_rev, 'fwd': df_max_fwd}
         df_corr_max = pd.DataFrame(df_dict)
         y_names = ['fwd', 'rev']
     else:
-        df_corr = correlate_return_cross_terms(df_traces, df_curvature)
+        df_corr = correlate_return_cross_terms(df_traces, df_curvature_subset)
         df_corr_max = pd.DataFrame(df_corr.max(axis=1), columns=['correlation'])
         y_names = 'correlation'
     # For setting custom data
     df_corr_max['index'] = df_corr_max.index
 
-    _fig = px.scatter(df_corr_max, y=y_names, title=f"Max curvature correlation over whole body", range_y=[0, 0.8],
+    _fig = px.scatter(df_corr_max, y=y_names, title=f"Max curvature correlation over selected body segments", range_y=[0, 0.8],
                       marginal_y='histogram', custom_data=['index'])
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
@@ -413,17 +382,60 @@ def build_dropdowns(df_behavior, df_curvature, dict_of_trace_dataframes) -> html
     return html.Div([header, dropdowns])
 
 
-def build_regression_menu() -> html.Div:
+def build_second_row_options() -> html.Div:
+
+    row_style = {'display': 'inline-block', 'width': '50%'}
+
     return html.Div([
-        html.Label(['Style of regression line']),
-        dcc.RadioItems(
-            ['Overall regression', 'Rectified regression'],
-            'Overall regression',
-            id='regression-type',
-            labelStyle={'display': 'inline-block', 'width': '33%'}
-        )
+        html.Div([
+            html.Label(['Style of regression line'], style={'font-weight': 'bold', "text-align": "center"}),
+            dcc.RadioItems(
+                ['Overall regression', 'Rectified regression'],
+                'Overall regression',
+                id='regression-type'),
+        ], style=row_style),
+
+        html.Div([
+            html.Label(['Range for kymograph max plot'], style={'font-weight': 'bold', "text-align": "center"}),
+            dcc.RangeSlider(0, 99, 1, value=[5, 95], id='kymograph-range-slider', allowCross=False)
+        ], style=row_style)
         ]
     )
+
+
+def build_plots_html() -> html.Div:
+    # Second trace plot, which is actually initialized through a clickData field on the scatterplot
+    initial_neuron_clickData = {'points': [{'customdata': ['neuron_001']}]}
+
+    top_header = html.H2("Summary plots (some interactive)")
+
+    top_row_style = {'width': '20%', 'display': 'inline-block'}
+    top_row = html.Div([
+        html.Div([dcc.Graph(id='correlation-scatterplot', clickData=initial_neuron_clickData)], style=top_row_style),
+        html.Div([dcc.Graph(id='trace-and-behavior-scatterplot')], style=top_row_style),
+        html.Div([dcc.Graph(id='kymograph-scatter')], style=top_row_style),
+        html.Div([dcc.Graph(id='kymograph-per-segment-correlation')], style=top_row_style),
+        html.Div([dcc.Graph(id='kymograph-all-neuron-max-segment-correlation',
+                            clickData=initial_neuron_clickData)], style=top_row_style)
+    ], style={'width': '100%', 'display': 'inline-block'})
+
+    time_series_header = html.H2("Time Series plots")
+    time_series_rows = html.Div([
+        dcc.Graph(id='neuron-trace'),
+        dcc.Graph(id='behavior-trace')
+    ], style={'width': '100%', 'display': 'inline-block'}
+    )
+
+    return html.Div([top_header, top_row, time_series_header, time_series_rows])
+
+
+def build_plots_curvature(df_curvature) -> html.Div:
+    fig = px.imshow(df_curvature.T, zmin=-0.05, zmax=0.05, aspect=3, color_continuous_scale='RdBu')
+
+    image = html.Div([
+        dcc.Graph(id='kymograph-image', figure=fig)
+    ], style={'width': '100%', 'display': 'inline-block'})
+    return image
 
 
 if __name__ == "__main__":
