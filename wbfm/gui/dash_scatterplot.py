@@ -62,7 +62,7 @@ def main():
         Input('kymograph-per-segment-correlation', 'clickData')
     )
     def _use_click_to_update_kymograph_segment(clickData):
-        print(clickData)
+        # print(clickData)
         if clickData is None:
             return 'segment_001'
         kymograph_segment_name = clickData["points"][0]["x"]
@@ -119,8 +119,9 @@ def build_plots_html() -> html.Div:
     # Second trace plot, which is actually initialized through a clickData field on the scatterplot
     initial_clickData = {'points': [{'customdata': ['neuron_001']}]}
 
-    top_row_style = {'width': '25%', 'display': 'inline-block'}
+    top_header = html.H2("Summary plots (some interactive)")
 
+    top_row_style = {'width': '25%', 'display': 'inline-block'}
     top_row = html.Div([
         html.Div([dcc.Graph(id='correlation-scatterplot', clickData=initial_clickData)], style=top_row_style),
         html.Div([dcc.Graph(id='trace-and-behavior-scatterplot')], style=top_row_style),
@@ -128,13 +129,14 @@ def build_plots_html() -> html.Div:
         html.Div([dcc.Graph(id='kymograph-per-segment-correlation')], style=top_row_style)
     ], style={'width': '100%', 'display': 'inline-block'})
 
-    additional_rows = html.Div([
+    time_series_header = html.H2("Time Series plots")
+    time_series_rows = html.Div([
         dcc.Graph(id='neuron-trace'),
         dcc.Graph(id='behavior-trace')
     ], style={'width': '100%', 'display': 'inline-block'}
     )
 
-    return html.Div([top_row, additional_rows])
+    return html.Div([top_header, top_row, time_series_header, time_series_rows])
 
 
 def build_plots_curvature(df_curvature) -> html.Div:
@@ -211,7 +213,7 @@ def update_kymograph_correlation_per_segment(df_all_time_series, df_curvature, n
         df_dict = {'correlation': corr}
         df_corr = pd.DataFrame(df_dict)
         y_names = ['correlation']
-    _fig = px.line(df_corr, y=y_names, title=f"Per-segment correlation", range_y=[-0.8, 0.8])
+    _fig = px.line(df_corr, y=y_names, title=f"Interactive per-segment correlation", range_y=[-0.8, 0.8])
     _fig.update_layout(showlegend=False)
     # results = px.get_trendline_results(_fig)
     # print([result.summary() for result in results.px_fit_results])
@@ -254,9 +256,10 @@ def build_dropdowns(df_correlation, df_behavior, df_traces, df_curvature) -> htm
     x_initial = 'dummy'
     behavior_initial = 'signed_speed'
 
-    style = {'width': '24%'}
+    header = html.H1("Dropdowns for changing all plots")
 
-    return html.Div(children=[
+    dropdown_style = {'width': '24%'}
+    dropdowns = html.Div([
         html.Div([
             html.Label(['Scatter y axis'], style={'font-weight': 'bold', "text-align": "center"}),
             html.Div([
@@ -267,7 +270,7 @@ def build_dropdowns(df_correlation, df_behavior, df_traces, df_curvature) -> htm
                     clearable=False
                 ),
             ])],
-            style=style),
+            style=dropdown_style),
 
         html.Div([
             html.Label(['Scatter x axis'], style={'font-weight': 'bold', "text-align": "center"}),
@@ -279,7 +282,7 @@ def build_dropdowns(df_correlation, df_behavior, df_traces, df_curvature) -> htm
                     clearable=False
                 ),
             ])],
-            style=style),
+            style=dropdown_style),
 
         html.Div([
             html.Label(["Behavior to show and correlate"], style={'font-weight': 'bold', "text-align": "center"}),
@@ -291,7 +294,7 @@ def build_dropdowns(df_correlation, df_behavior, df_traces, df_curvature) -> htm
                     clearable=False
                 ),
             ])],
-            style=style),
+            style=dropdown_style),
 
         html.Div([
             html.Label(["Select neuron"], style={'font-weight': 'bold', "text-align": "center"}),
@@ -303,7 +306,7 @@ def build_dropdowns(df_correlation, df_behavior, df_traces, df_curvature) -> htm
                     clearable=False
                 ),
             ])],
-            style=style),
+            style=dropdown_style),
 
         html.Div([
             html.Label(["Select kymograph segment"], style={'font-weight': 'bold', "text-align": "center"}),
@@ -315,10 +318,11 @@ def build_dropdowns(df_correlation, df_behavior, df_traces, df_curvature) -> htm
                     clearable=False
                 ),
             ])],
-            style=style)
+            style=dropdown_style)
+        ], style={'display': 'flex', 'padding': '10px 5px'})
 
-        ], style={'display': 'flex', 'padding': '10px 5px'}
-    )
+    # return html.Div(dropdowns, style={'display': 'flex', 'padding': '10px 5px'})
+    return html.Div([header, dropdowns])
 
 
 def build_regression_menu() -> html.Div:
