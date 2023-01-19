@@ -84,7 +84,8 @@ def build_wbfm_dashboard(project_path):
     )
     def _update_neuron_trace(neuron_name, regression_type, trace_type):
         df_traces = dict_of_traces_dfs[trace_type]
-        return update_neuron_trace_plot(df_traces, neuron_name, regression_type)
+        df_behavior_and_neurons = pd.concat([df_behavior, df_traces], axis=1)
+        return update_neuron_trace_plot(df_behavior_and_neurons, neuron_name, regression_type)
 
     @app.callback(
         Output('trace-and-behavior-scatterplot', 'figure'),
@@ -116,9 +117,8 @@ def build_wbfm_dashboard(project_path):
     )
     def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type, trace_type):
         df_traces = dict_of_traces_dfs[trace_type]
-        df_curvature_and_neurons = pd.concat([df_curvature, df_traces], axis=1)
-        return update_kymograph_scatter_plot(df_curvature_and_neurons, kymograph_segment_name, neuron_name,
-                                             regression_type)
+        df_all = pd.concat([df_behavior, df_curvature, df_traces], axis=1)
+        return update_kymograph_scatter_plot(df_all, kymograph_segment_name, neuron_name, regression_type)
 
     @app.callback(
         Output('kymograph-per-segment-correlation', 'figure'),
@@ -213,11 +213,12 @@ def update_scatter_plot(df_behavior, df_traces, x_name, y_name, regression_type)
     return _fig
 
 
-def update_neuron_trace_plot(df_traces, neuron_name, regression_type):
+def update_neuron_trace_plot(df_behavior_and_neurons, neuron_name, regression_type):
     opt, px_func = switch_plot_func_using_rectification(regression_type)
-    _fig = px_func(df_traces, x='time', y=neuron_name,
+    # For some reason, x='time' isn't working...
+    _fig = px_func(df_behavior_and_neurons, x=df_behavior_and_neurons.index, y=neuron_name,
                    title=f"Trace for {neuron_name}",
-                   range_x=[0, len(df_traces)], **opt)
+                   range_x=[0, df_behavior_and_neurons.shape[0]], **opt)
     _fig.update_layout(height=325, margin={'l': 40, 'b': 40, 't': 30, 'r': 0})
     return _fig
 
@@ -237,12 +238,12 @@ def update_behavior_scatter_plot(df_behavior_and_neurons, behavior_name, neuron_
     return _fig
 
 
-def update_kymograph_scatter_plot(df_all_time_series, kymograph_segment_name, neuron_name, regression_type):
+def update_kymograph_scatter_plot(df_all, kymograph_segment_name, neuron_name, regression_type):
     if regression_type == 'Rectified regression':
         opt = {'color': 'reversal'}
     else:
         opt = {}
-    _fig = px.scatter(df_all_time_series, x=kymograph_segment_name, y=neuron_name,
+    _fig = px.scatter(df_all, x=kymograph_segment_name, y=neuron_name,
                       title=f"Kymograph-neuron scatterplot",
                       trendline='ols', **opt)
     _fig.update_layout(showlegend=False)

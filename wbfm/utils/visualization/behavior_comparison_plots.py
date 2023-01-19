@@ -273,7 +273,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             elif y_train_name == 'abs_stage_speed':
                 y = worm.worm_speed(fluorescence_fps=True).iloc[:trace_len]
             elif y_train_name == 'signed_middle_body_speed':
-                y = worm.worm_speed(fluorescence_fps=True, use_stage_position=False).iloc[:trace_len]
+                y = worm.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True).iloc[:trace_len]
             elif y_train_name == 'leifer_curvature':
                 assert worm.has_full_kymograph, f"No kymograph found for project {self.project_data}"
                 y = worm.leifer_curvature_from_kymograph(fluorescence_fps=True).iloc[:trace_len]
