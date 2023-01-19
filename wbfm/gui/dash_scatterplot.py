@@ -6,6 +6,7 @@ from dash import Dash, dcc, html, Output, Input
 import plotly.express as px
 import pandas as pd
 
+from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data"
@@ -111,22 +112,30 @@ def main():
     def _update_kymograph_correlation(neuron_name, regression_type):
         return update_kymograph_correlation_per_segment(df_all_time_series, _df_curvature, neuron_name, regression_type)
 
+    @app.callback(
+        Output('kymograph-all-neuron-max-segment-correlation', 'figure'),
+        Input('regression-type', 'value')
+    )
+    def _update_kymograph_max_segment(regression_type):
+        return update_max_correlation_over_all_segment_plot(df_all_time_series, _df_traces, _df_curvature, regression_type)
+
     if __name__ == '__main__':
         app.run_server(debug=True)
 
 
 def build_plots_html() -> html.Div:
     # Second trace plot, which is actually initialized through a clickData field on the scatterplot
-    initial_clickData = {'points': [{'customdata': ['neuron_001']}]}
+    initial_neuron_clickData = {'points': [{'customdata': ['neuron_001']}]}
 
     top_header = html.H2("Summary plots (some interactive)")
 
-    top_row_style = {'width': '25%', 'display': 'inline-block'}
+    top_row_style = {'width': '20%', 'display': 'inline-block'}
     top_row = html.Div([
-        html.Div([dcc.Graph(id='correlation-scatterplot', clickData=initial_clickData)], style=top_row_style),
+        html.Div([dcc.Graph(id='correlation-scatterplot', clickData=initial_neuron_clickData)], style=top_row_style),
         html.Div([dcc.Graph(id='trace-and-behavior-scatterplot')], style=top_row_style),
         html.Div([dcc.Graph(id='kymograph-scatter')], style=top_row_style),
-        html.Div([dcc.Graph(id='kymograph-per-segment-correlation')], style=top_row_style)
+        html.Div([dcc.Graph(id='kymograph-per-segment-correlation')], style=top_row_style),
+        html.Div([dcc.Graph(id='kymograph-all-neuron-max-segment-correlation')], style=top_row_style)
     ], style={'width': '100%', 'display': 'inline-block'})
 
     time_series_header = html.H2("Time Series plots")
@@ -217,6 +226,30 @@ def update_kymograph_correlation_per_segment(df_all_time_series, df_curvature, n
     _fig.update_layout(showlegend=False)
     # results = px.get_trendline_results(_fig)
     # print([result.summary() for result in results.px_fit_results])
+    _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
+    return _fig
+
+
+def update_max_correlation_over_all_segment_plot(df_all_time_series, df_traces, df_curvature, regression_type):
+    # Will not actually be updated, except for changing the rectification
+    if regression_type == 'Rectified regression':
+        rev_idx = df_all_time_series.reversal
+        df_corr = correlate_return_cross_terms(df_traces[rev_idx], df_curvature)
+        df_max_rev = df_corr.abs().max(axis=1)
+
+        df_corr = correlate_return_cross_terms(df_traces[~rev_idx], df_curvature)
+        df_max_fwd = df_corr.abs().max(axis=1)
+
+        df_dict = {'rev': df_max_rev, 'fwd': df_max_fwd}
+        df_corr_max = pd.DataFrame(df_dict)
+        y_names = ['fwd', 'rev']
+    else:
+        df_corr = correlate_return_cross_terms(df_traces, df_curvature)
+        df_corr_max = pd.DataFrame(df_corr.max(axis=1), columns=['correlation'])
+        y_names = 'correlation'
+    # print(df_corr_max, y_names)
+    _fig = px.scatter(df_corr_max, y=y_names, title=f"Interactive per-neuron max correlation", range_y=[0, 0.8],
+                      marginal_y='histogram')
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
 
