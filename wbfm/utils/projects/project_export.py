@@ -1,4 +1,5 @@
 import os
+from types import Union
 
 import numpy as np
 import pandas as pd
@@ -7,7 +8,7 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding
 
 
-def save_all_final_dataframes(project_data: ProjectData):
+def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     """
     For now, saves several dataframes in a final_dataframes folder within the project
 
@@ -17,6 +18,7 @@ def save_all_final_dataframes(project_data: ProjectData):
     """
     # Will be local to the project
     output_folder = 'final_dataframes'
+    project_data = ProjectData.load_final_project_data_from_config(project_data)
 
     # Trace dataframes
     # Note: more efficient if these options align with the NeuronToUnivariateEncoding calculations below
