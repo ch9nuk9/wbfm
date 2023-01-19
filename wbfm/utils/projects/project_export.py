@@ -39,7 +39,7 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
         fname = os.path.join(output_folder, 'traces', f'df_traces-ratio_residual_subtracted_{r}.h5')
         if os.path.exists(project_config.resolve_relative_path(fname)):
             continue
-        df = project_data.calc_default_traces(channel_mode='ratio', residual_mode=r, **trace_opt)
+        df = project_data.calc_default_traces(channel_mode='ratio', residual_mode=r, interpolate_nan=True, **trace_opt)
         project_config.h5_data_in_local_project(df, fname)
 
     # Behavioral dataframe

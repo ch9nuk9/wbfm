@@ -59,7 +59,6 @@ def build_wbfm_dashboard(project_path):
     )
     def _use_click_to_update_neuron_dropdown(correlation_clickData, kymograph_clickData):
         # Resets the clickData of each plot (multiple outputs)
-        print(correlation_clickData)
         if correlation_clickData:
             neuron_name = correlation_clickData["points"][0]["customdata"][0]
         elif kymograph_clickData:
