@@ -397,7 +397,7 @@ def build_second_row_options() -> html.Div:
 
         html.Div([
             html.Label(['Range for kymograph max plot'], style={'font-weight': 'bold', "text-align": "center"}),
-            dcc.RangeSlider(0, 99, 1, value=[5, 95], id='kymograph-range-slider', allowCross=False)
+            dcc.RangeSlider(0, 99, 3, value=[5, 95], id='kymograph-range-slider', allowCross=False)
         ], style=row_style)
         ]
     )
