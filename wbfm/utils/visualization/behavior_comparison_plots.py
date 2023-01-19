@@ -19,6 +19,7 @@ from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_sp
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 
+from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
 from wbfm.utils.external.utils_statsmodels import ols_groupby
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -588,49 +589,37 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
         kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True) .reset_index(drop=True, inplace=False)
-        kymo_smaller = kymo.loc[:, 3:60].copy()
 
-        all_dfs_corr = {key: pd.concat([df, kymo_smaller], axis=1).corr() for key, df in self.all_dfs.items()}
-
-        # Only get the corner we care about: traces vs. kymo
-        all_dfs_corr = self.get_corner_from_corr_df(all_dfs_corr)
+        all_dfs = self.all_dfs
+        df_kymo = kymo.loc[:, 3:60].copy()
+        all_dfs_corr = {key: correlate_return_cross_terms(df, df_kymo) for key, df in all_dfs.items()}
         return all_dfs_corr
 
     @cached_property
     def all_dfs_corr_fwd(self) -> Dict[str, pd.DataFrame]:
         assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
 
-        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True) .reset_index(drop=True, inplace=False)
+        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
 
         # New: only do certain indices
         ind = self.project_data.worm_posture_class.beh_annotation == 0
-        kymo_smaller = kymo.loc[ind, 3:60].copy()
-        all_dfs_corr = {key: pd.concat([df.loc[ind, :], kymo_smaller], axis=1).corr() for key, df in self.all_dfs.items()}
-
-        # Only get the corner we care about: traces vs. kymo
-        all_dfs_corr = self.get_corner_from_corr_df(all_dfs_corr)
+        all_dfs = self.all_dfs
+        df_kymo = kymo.loc[ind, 3:60].copy()
+        all_dfs_corr = {key: correlate_return_cross_terms(df.loc[ind, :], df_kymo) for key, df in all_dfs.items()}
         return all_dfs_corr
 
     @cached_property
     def all_dfs_corr_rev(self) -> Dict[str, pd.DataFrame]:
         assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
 
-        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True) .reset_index(drop=True, inplace=False)
+        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
 
         # New: only do certain indices
         ind = self.project_data.worm_posture_class.beh_annotation == 1
-        kymo_smaller = kymo.loc[ind, 3:60].copy()
-        all_dfs_corr = {key: pd.concat([df.loc[ind, :], kymo_smaller], axis=1).corr() for key, df in self.all_dfs.items()}
+        all_dfs = self.all_dfs
 
-        # Only get the corner we care about: traces vs. kymo
-        all_dfs_corr = self.get_corner_from_corr_df(all_dfs_corr)
-        return all_dfs_corr
-
-    def get_corner_from_corr_df(self, all_dfs_corr):
-        label0 = self.all_labels[0]
-        ind_nonneuron = np.arange(self.all_dfs[label0].shape[1], all_dfs_corr[label0].shape[1])
-        ind_neurons = np.arange(0, self.all_dfs[label0].shape[1])
-        all_dfs_corr = {key: df.iloc[ind_neurons, ind_nonneuron] for key, df in all_dfs_corr.items()}
+        df_kymo = kymo.loc[ind, 3:60].copy()
+        all_dfs_corr = {key: correlate_return_cross_terms(df.loc[ind, :], df_kymo) for key, df in all_dfs.items()}
         return all_dfs_corr
 
     @property

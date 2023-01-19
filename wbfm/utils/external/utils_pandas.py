@@ -414,3 +414,39 @@ def get_column_name_from_time_and_column_value(df: pd.DataFrame, i_time: int, co
         return ind, mask.index.get_level_values(0)[mask][0]
     except IndexError:
         return None, None
+
+
+def correlate_return_cross_terms(df0: pd.DataFrame, df1: pd.DataFrame) -> pd.DataFrame:
+    """
+    Like df.corr(), but acts on two dataframes, returning only the cross terms
+
+    Parameters
+    ----------
+    df0
+    df1
+
+    Returns
+    -------
+
+    """
+    df_corr = pd.concat([df0, df1], axis=1).corr()
+    return get_corner_from_corr_df(df0, df_corr)
+
+
+def get_corner_from_corr_df(df0: pd.DataFrame, df_corr: pd.DataFrame):
+    """
+    If correlations are calculated between a concatenated version of df_trace and something else, this gets only the
+    cross terms from df_corr
+
+    Parameters
+    ----------
+    df0
+    df_corr
+
+    Returns
+    -------
+
+    """
+    ind_nonneuron = np.arange(df0.shape[1], df_corr.shape[1])
+    ind_neurons = np.arange(0, df0.shape[1])
+    return df_corr.iloc[ind_neurons, ind_nonneuron]
