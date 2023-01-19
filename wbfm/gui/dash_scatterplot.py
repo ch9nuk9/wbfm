@@ -328,7 +328,7 @@ def build_dropdowns(df_behavior, df_traces, df_curvature) -> html.Div:
     dropdown_style = {'width': '24%'}
     dropdowns = html.Div([
         html.Div([
-            html.Label(['Scatter x axis'], style={'font-weight': 'bold', "text-align": "center"}),
+            html.Label(["Behavior to correlate (x axis)"], style={'font-weight': 'bold', "text-align": "center"}),
             html.Div([
                 dcc.Dropdown(
                     behavior_names,
@@ -340,7 +340,7 @@ def build_dropdowns(df_behavior, df_traces, df_curvature) -> html.Div:
             style=dropdown_style),
 
         html.Div([
-            html.Label(["Behavior to show and correlate"], style={'font-weight': 'bold', "text-align": "center"}),
+            html.Label(["Behavior to show and correlate (y axis)"], style={'font-weight': 'bold', "text-align": "center"}),
             html.Div([
                 dcc.Dropdown(
                     behavior_names,
