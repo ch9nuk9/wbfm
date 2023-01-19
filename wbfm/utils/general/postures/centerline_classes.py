@@ -100,6 +100,7 @@ class WormFullVideoPosture:
                     else:
                         raise NotImplementedError
                 except IndexError as e:
+                    print(df)
                     print(df.shape)
                     print(self.subsample_indices)
                     raise e
