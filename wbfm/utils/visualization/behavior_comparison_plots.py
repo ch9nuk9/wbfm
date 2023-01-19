@@ -4,7 +4,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 import seaborn as sns
 import numpy as np
 import pandas as pd
@@ -33,7 +33,7 @@ from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 @dataclass
 class NeuronEncodingBase:
     """General class for behavioral encoding or correlations"""
-    project_path: str
+    project_path: Union[str, ProjectData]
 
     dataframes_to_load: List[str] = field(default_factory=lambda: ['ratio'])  # 'red', 'green', 'ratio_filt'])
 

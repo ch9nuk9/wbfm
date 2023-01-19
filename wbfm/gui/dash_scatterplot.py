@@ -16,7 +16,7 @@ def main():
 
     app = Dash(__name__)
     for file in Path(DATA_FOLDER).iterdir():
-        if 'df_traces' in file.name:
+        if 'df_traces_ratio' in file.name:
             _df_traces = pd.read_hdf(file)
         # elif 'df_correlation' in file.name:
         #     df_correlation = pd.read_hdf(file)
