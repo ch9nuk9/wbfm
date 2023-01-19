@@ -33,6 +33,7 @@ from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
+from wbfm.utils.traces.residuals import calculate_residual_subtract_pca, calculate_residual_subtract_nmf
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
 from sklearn.neighbors import NearestNeighbors, LocalOutlierFactor
@@ -593,7 +594,9 @@ class ProjectData:
     @lru_cache(maxsize=128)
     def calc_default_traces(self, min_nonnan: float = 0.75, interpolate_nan: bool = False,
                             raise_error_on_empty: bool = True,
-                            neuron_names: tuple = None, verbose=0,
+                            neuron_names: tuple = None,
+                            residual_mode: Optional[str] = None,
+                            verbose=0,
                             **kwargs):
         """
 
@@ -682,6 +685,16 @@ class ProjectData:
 
         # Optional: reindex to physical time
         df.index = self.x_for_plots
+
+        # Optional: substract a dominant mode to get a residual
+        if residual_mode is not None:
+            assert interpolate_nan, "Residual mode only works if nan are interpolated!"
+            if residual_mode == 'pca':
+                df = calculate_residual_subtract_pca(df, n_components=2)
+            elif residual_mode == 'nmf':
+                df = calculate_residual_subtract_nmf(df, n_components=2)
+            else:
+                raise NotImplementedError(f"Unrecognized residual mode: {residual_mode}")
 
         return df
 

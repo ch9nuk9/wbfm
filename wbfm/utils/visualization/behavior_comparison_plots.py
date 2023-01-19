@@ -67,6 +67,7 @@ class NeuronEncodingBase:
                 new_opt['filter_mode'] = 'bilateral'
             if self.use_residual_traces:
                 new_opt['interpolate_nan'] = True
+                new_opt['residual_mode'] = 'pca'
             new_opt['channel_mode'] = channel_key
 
             opt = self.df_kwargs.copy()
@@ -83,11 +84,7 @@ class NeuronEncodingBase:
 
         self._retained_neuron_names = common_column_names
 
-        if self.use_residual_traces:
-            all_dfs = {k: calculate_residual_subtract_pca(df) for k, df in all_dfs.items()}
-
         print("Finished calculating traces!")
-
         return all_dfs
 
 
