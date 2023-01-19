@@ -18,8 +18,8 @@ def main():
     for file in Path(DATA_FOLDER).iterdir():
         if 'df_traces' in file.name:
             _df_traces = pd.read_hdf(file)
-        elif 'df_correlation' in file.name:
-            df_correlation = pd.read_hdf(file)
+        # elif 'df_correlation' in file.name:
+        #     df_correlation = pd.read_hdf(file)
         elif 'df_behavior' in file.name:
             _df_behavior = pd.read_hdf(file)
         elif 'df_curvature' in file.name:
@@ -31,7 +31,7 @@ def main():
 
     # Define layout
     app.layout = html.Div([
-        build_dropdowns(df_correlation, _df_behavior, _df_traces, _df_curvature),
+        build_dropdowns(_df_behavior, _df_traces, _df_curvature),
         build_regression_menu(),
         build_plots_html(),
         build_plots_curvature(_df_curvature)
@@ -42,11 +42,11 @@ def main():
     @app.callback(
         Output('correlation-scatterplot', 'figure'),
         Input('scatter-xaxis', 'value'),
-        Input('scatter-yaxis', 'value')
+        Input('behavior-scatter-yaxis', 'value'),
+        Input('regression-type', 'value')
     )
-    def _update_scatter_plot(x_name, y_name):
-        _fig = update_scatter_plot(df_correlation, x_name, y_name)
-        return _fig
+    def _update_scatter_plot(x_name, y_name, regression_type):
+        return update_scatter_plot(df_all_time_series, _df_traces, x_name, y_name, regression_type)
 
     # Neuron selection updates
     # Logic: everything goes through the dropdown menu. A click will update that, which updates other things
@@ -167,12 +167,34 @@ def build_plots_curvature(df_curvature) -> html.Div:
     return image
 
 
-def update_scatter_plot(df_correlation, x_name, y_name):
+def update_scatter_plot(df_all_time_series, df_traces, x_name, y_name, regression_type):
+    if regression_type == 'Rectified regression':
+        rev_idx = df_all_time_series.reversal
+        y_corr_rev = df_traces.corrwith(df_all_time_series[y_name][rev_idx])
+        y_corr_fwd = df_traces.corrwith(df_all_time_series[y_name][~rev_idx])
+        x_corr = df_traces.corrwith(df_all_time_series[x_name])
+        # x_corr_rev = df_traces.corrwith(df_all_time_series[x_name][rev_idx])
+        # x_corr_fwd = df_traces.corrwith(df_all_time_series[x_name][~rev_idx])
+        # Combine in a dataframe for plotting
+        # df_dict = {'y_rev': y_corr_rev, 'y_fwd': y_corr_fwd, 'x_rev': x_corr_rev, 'x_fwd': x_corr_fwd}
+        df_dict = {'y_rev': y_corr_rev, 'y_fwd': y_corr_fwd, x_name: x_corr}
+        df_corr = pd.DataFrame(df_dict)
+        y_names = ['y_fwd', 'y_rev']
+        # x_names = ['x_fwd', 'x_rev']
+    else:
+        y_corr = df_traces.corrwith(df_all_time_series[y_name])
+        x_corr = df_traces.corrwith(df_all_time_series[x_name])
+        # Combine in a dataframe for plotting
+        df_dict = {y_name: y_corr, x_name: x_corr}
+        df_corr = pd.DataFrame(df_dict)
+        y_names = y_name
+    x_name = x_name
+    df_corr['neuron_name'] = get_names_from_df(df_traces)
     # Top scatter plot
-    _fig = px.scatter(df_correlation, x=x_name, y=y_name, hover_name="neuron_name",
+    _fig = px.scatter(df_corr, x=x_name, y=y_names, hover_name="neuron_name",
                       custom_data=["neuron_name"],
                       marginal_y='histogram',
-                      title="Interactive Behavior Scatterplot",
+                      title="Interactive CORRELATIONS between 2 behaviors",
                       trendline="ols")
     # Half as tall
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
@@ -286,20 +308,19 @@ def switch_plot_func_using_rectification(regression_type):
     return opt, px_func
 
 
-def build_dropdowns(df_correlation, df_behavior, df_traces, df_curvature) -> html.Div:
+def build_dropdowns(df_behavior, df_traces, df_curvature) -> html.Div:
     curvature_names = get_names_from_df(df_curvature)
     curvature_initial = curvature_names[0]
     neuron_names = get_names_from_df(df_traces)
     neuron_initial = neuron_names[0]
-    correlation_names = get_names_from_df(df_correlation)
-    correlation_names.remove('neuron_name')
-    correlation_names_no_dummy = correlation_names.copy()
-    correlation_names_no_dummy.remove('dummy')
+    # correlation_names = get_names_from_df(df_correlation)
+    # correlation_names.remove('neuron_name')
+    # correlation_names_no_dummy = correlation_names.copy()
+    # correlation_names_no_dummy.remove('dummy')
 
     behavior_names = get_names_from_df(df_behavior)
 
-    y_initial = 'coefficient'
-    x_initial = 'dummy'
+    x_initial = 'signed_speed_angular'
     behavior_initial = 'signed_speed'
 
     header = html.H1("Dropdowns for changing all plots")
@@ -307,22 +328,10 @@ def build_dropdowns(df_correlation, df_behavior, df_traces, df_curvature) -> htm
     dropdown_style = {'width': '24%'}
     dropdowns = html.Div([
         html.Div([
-            html.Label(['Scatter y axis'], style={'font-weight': 'bold', "text-align": "center"}),
-            html.Div([
-                dcc.Dropdown(
-                    correlation_names_no_dummy,
-                    y_initial,
-                    id='scatter-yaxis',
-                    clearable=False
-                ),
-            ])],
-            style=dropdown_style),
-
-        html.Div([
             html.Label(['Scatter x axis'], style={'font-weight': 'bold', "text-align": "center"}),
             html.Div([
                 dcc.Dropdown(
-                    correlation_names,
+                    behavior_names,
                     x_initial,
                     id='scatter-xaxis',
                     clearable=False
