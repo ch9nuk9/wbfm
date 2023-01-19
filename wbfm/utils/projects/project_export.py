@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Union
+from typing import Union, List, Dict
 
 import numpy as np
 import pandas as pd
@@ -61,19 +61,19 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     print("Finished saving all dataframes")
 
 
-def read_dataframes_from_exported_folder(data_folder):
-    _df_curvature, _df_behavior, _df_traces = None, None, None
+def read_dataframes_from_exported_folder(data_folder: str) -> Dict[str, Dict[str, pd.DataFrame]]:
+    dict_of_dataframes = dict(traces={}, behavior={})
     for subfolder in Path(data_folder).iterdir():
         if subfolder.name == 'traces':
             for file in Path(subfolder).iterdir():
-                if 'df_traces_ratio' in file.name:
-                    _df_traces = pd.read_hdf(file)
+                if 'df_traces_' in file.name:
+                    key = file.name.split('df_traces_')[1].split('.')[0]
+                    dict_of_dataframes['traces'][key] = pd.read_hdf(file)
         elif subfolder.name == 'behavior':
             for file in Path(subfolder).iterdir():
                 if 'df_behavior' in file.name:
-                    _df_behavior = pd.read_hdf(file)
+                    dict_of_dataframes['behavior']['behavior'] = pd.read_hdf(file)
                 elif 'df_curvature' in file.name:
-                    _df_curvature = pd.read_hdf(file)
-    assert (_df_curvature is not None and _df_behavior is not None and _df_traces is not None), \
-        "Did not find all files!"
-    return _df_behavior, _df_curvature, _df_traces
+                    dict_of_dataframes['behavior']['curvature'] = pd.read_hdf(file)
+
+    return dict_of_dataframes

@@ -12,18 +12,25 @@ from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 def build_wbfm_dashboard(data_folder):
 
     app = Dash(__name__)
-    _df_behavior, _df_curvature, _df_traces = read_dataframes_from_exported_folder(data_folder)
+    dict_of_dataframes = read_dataframes_from_exported_folder(data_folder)
+    df_behavior = dict_of_dataframes['behavior']['behavior']
+    df_curvature = dict_of_dataframes['behavior']['curvature']
+    dict_of_traces_dfs = dict_of_dataframes['traces']
+    # _df_traces = dict_of_dataframes['traces']['ratio']
 
-    # Combine everything, including an index column
-    df_all_time_series = pd.concat([_df_behavior, _df_traces, _df_curvature], axis=1).reset_index()
-    df_all_time_series.rename(columns={'index': 'time'}, inplace=True, copy=False)
+    # Add a time column
+    dict_of_traces_dfs = {k: df.reset_index().rename(columns={'index': 'time'}, inplace=True, copy=False)
+                          for k, df in dict_of_traces_dfs.items()}
+    df_behavior.reset_index().rename(columns={'index': 'time'}, inplace=True, copy=False)
+    # df_all_time_series = pd.concat([_df_behavior, _df_traces, _df_curvature], axis=1).reset_index()
+    # df_all_time_series.rename(columns={'index': 'time'}, inplace=True, copy=False)
 
     # Define layout
     app.layout = html.Div([
-        build_dropdowns(_df_behavior, _df_traces, _df_curvature),
+        build_dropdowns(df_behavior, df_curvature, dict_of_traces_dfs),
         build_regression_menu(),
         build_plots_html(),
-        build_plots_curvature(_df_curvature)
+        build_plots_curvature(df_curvature)
         ]
     )
 
@@ -32,10 +39,12 @@ def build_wbfm_dashboard(data_folder):
         Output('correlation-scatterplot', 'figure'),
         Input('scatter-xaxis', 'value'),
         Input('behavior-scatter-yaxis', 'value'),
-        Input('regression-type', 'value')
+        Input('regression-type', 'value'),
+        Input('trace-select-dropdown', 'value')
     )
-    def _update_scatter_plot(x_name, y_name, regression_type):
-        return update_scatter_plot(df_all_time_series, _df_traces, x_name, y_name, regression_type)
+    def _update_scatter_plot(x_name, y_name, regression_type, trace_type):
+        df_traces = dict_of_traces_dfs[trace_type]
+        return update_scatter_plot(df_behavior, df_traces, x_name, y_name, regression_type)
 
     # Neuron selection updates
     # Logic: everything goes through the dropdown menu. A click will update that, which updates other things
@@ -70,19 +79,24 @@ def build_wbfm_dashboard(data_folder):
     @app.callback(
         Output('neuron-trace', 'figure'),
         Input('neuron-select-dropdown', 'value'),
-        Input('regression-type', 'value')
+        Input('regression-type', 'value'),
+        Input('trace-select-dropdown', 'value')
     )
-    def _update_neuron_trace(neuron_name, regression_type):
-        return update_neuron_trace_plot(df_all_time_series, neuron_name, regression_type)
+    def _update_neuron_trace(neuron_name, regression_type, trace_type):
+        df_traces = dict_of_traces_dfs[trace_type]
+        return update_neuron_trace_plot(df_traces, neuron_name, regression_type)
 
     @app.callback(
         Output('trace-and-behavior-scatterplot', 'figure'),
         Input('neuron-select-dropdown', 'value'),
         Input('behavior-scatter-yaxis', 'value'),
-        Input('regression-type', 'value')
+        Input('regression-type', 'value'),
+        Input('trace-select-dropdown', 'value')
     )
-    def _update_behavior_scatter(neuron_name, behavior_name, regression_type):
-        return update_behavior_scatter_plot(df_all_time_series, behavior_name, neuron_name, regression_type)
+    def _update_behavior_scatter(neuron_name, behavior_name, regression_type, trace_type):
+        df_traces = dict_of_traces_dfs[trace_type]
+        df_behavior_and_neurons = pd.concat([df_behavior, df_traces], axis=1)
+        return update_behavior_scatter_plot(df_behavior_and_neurons, behavior_name, neuron_name, regression_type)
 
     # Behavior updates
     @app.callback(
@@ -91,31 +105,40 @@ def build_wbfm_dashboard(data_folder):
         Input('regression-type', 'value')
     )
     def _update_behavior_trace(behavior_name, regression_type):
-        return update_behavior_trace_plot(df_all_time_series, behavior_name, regression_type)
+        return update_behavior_trace_plot(df_behavior, behavior_name, regression_type)
 
     @app.callback(
         Output('kymograph-scatter', 'figure'),
         Input('kymograph-select-dropdown', 'value'),
         Input('neuron-select-dropdown', 'value'),
-        Input('regression-type', 'value')
+        Input('regression-type', 'value'),
+        Input('trace-select-dropdown', 'value')
     )
-    def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type):
-        return update_kymograph_scatter_plot(df_all_time_series, kymograph_segment_name, neuron_name, regression_type)
+    def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type, trace_type):
+        df_traces = dict_of_traces_dfs[trace_type]
+        df_curvature_and_neurons = pd.concat([df_curvature, df_traces], axis=1)
+        return update_kymograph_scatter_plot(df_curvature_and_neurons, kymograph_segment_name, neuron_name,
+                                             regression_type)
 
     @app.callback(
         Output('kymograph-per-segment-correlation', 'figure'),
         Input('neuron-select-dropdown', 'value'),
-        Input('regression-type', 'value')
+        Input('regression-type', 'value'),
+        Input('trace-select-dropdown', 'value')
     )
-    def _update_kymograph_correlation(neuron_name, regression_type):
-        return update_kymograph_correlation_per_segment(df_all_time_series, _df_curvature, neuron_name, regression_type)
+    def _update_kymograph_correlation(neuron_name, regression_type, trace_type):
+        df_traces = dict_of_traces_dfs[trace_type]
+        return update_kymograph_correlation_per_segment(df_traces, df_behavior, df_curvature, neuron_name,
+                                                        regression_type)
 
     @app.callback(
         Output('kymograph-all-neuron-max-segment-correlation', 'figure'),
-        Input('regression-type', 'value')
+        Input('regression-type', 'value'),
+        Input('trace-select-dropdown', 'value')
     )
-    def _update_kymograph_max_segment(regression_type):
-        return update_max_correlation_over_all_segment_plot(df_all_time_series, _df_traces, _df_curvature, regression_type)
+    def _update_kymograph_max_segment(regression_type, trace_type):
+        df_traces = dict_of_traces_dfs[trace_type]
+        return update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type)
 
     if __name__ == '__main__':
         app.run_server(debug=True)
@@ -156,12 +179,12 @@ def build_plots_curvature(df_curvature) -> html.Div:
     return image
 
 
-def update_scatter_plot(df_all_time_series, df_traces, x_name, y_name, regression_type):
+def update_scatter_plot(df_behavior, df_traces, x_name, y_name, regression_type):
     if regression_type == 'Rectified regression':
-        rev_idx = df_all_time_series.reversal
-        y_corr_rev = df_traces.corrwith(df_all_time_series[y_name][rev_idx])
-        y_corr_fwd = df_traces.corrwith(df_all_time_series[y_name][~rev_idx])
-        x_corr = df_traces.corrwith(df_all_time_series[x_name])
+        rev_idx = df_behavior.reversal
+        y_corr_rev = df_traces.corrwith(df_behavior[y_name][rev_idx])
+        y_corr_fwd = df_traces.corrwith(df_behavior[y_name][~rev_idx])
+        x_corr = df_traces.corrwith(df_behavior[x_name])
         # x_corr_rev = df_traces.corrwith(df_all_time_series[x_name][rev_idx])
         # x_corr_fwd = df_traces.corrwith(df_all_time_series[x_name][~rev_idx])
         # Combine in a dataframe for plotting
@@ -171,8 +194,8 @@ def update_scatter_plot(df_all_time_series, df_traces, x_name, y_name, regressio
         y_names = ['y_fwd', 'y_rev']
         # x_names = ['x_fwd', 'x_rev']
     else:
-        y_corr = df_traces.corrwith(df_all_time_series[y_name])
-        x_corr = df_traces.corrwith(df_all_time_series[x_name])
+        y_corr = df_traces.corrwith(df_behavior[y_name])
+        x_corr = df_traces.corrwith(df_behavior[x_name])
         # Combine in a dataframe for plotting
         df_dict = {y_name: y_corr, x_name: x_corr}
         df_corr = pd.DataFrame(df_dict)
@@ -190,21 +213,21 @@ def update_scatter_plot(df_all_time_series, df_traces, x_name, y_name, regressio
     return _fig
 
 
-def update_neuron_trace_plot(df_all_time_series, neuron_name, regression_type):
+def update_neuron_trace_plot(df_traces, neuron_name, regression_type):
     opt, px_func = switch_plot_func_using_rectification(regression_type)
-    _fig = px_func(df_all_time_series, x='time', y=neuron_name,
+    _fig = px_func(df_traces, x='time', y=neuron_name,
                    title=f"Trace for {neuron_name}",
-                   range_x=[0, len(df_all_time_series)], **opt)
+                   range_x=[0, len(df_traces)], **opt)
     _fig.update_layout(height=325, margin={'l': 40, 'b': 40, 't': 30, 'r': 0})
     return _fig
 
 
-def update_behavior_scatter_plot(df_all_time_series, behavior_name, neuron_name, regression_type):
+def update_behavior_scatter_plot(df_behavior_and_neurons, behavior_name, neuron_name, regression_type):
     if regression_type == 'Rectified regression':
         opt = {'color': 'reversal'}
     else:
         opt = {}
-    _fig = px.scatter(df_all_time_series, x=behavior_name, y=neuron_name,
+    _fig = px.scatter(df_behavior_and_neurons, x=behavior_name, y=neuron_name,
                       title=f"Behavior-neuron scatterplot",
                       trendline='ols', **opt)
     _fig.update_layout(showlegend=False)
@@ -229,17 +252,17 @@ def update_kymograph_scatter_plot(df_all_time_series, kymograph_segment_name, ne
     return _fig
 
 
-def update_kymograph_correlation_per_segment(df_all_time_series, df_curvature, neuron_name, regression_type):
+def update_kymograph_correlation_per_segment(df_traces, df_behavior, df_curvature, neuron_name, regression_type):
     if regression_type == 'Rectified regression':
-        rev_idx = df_all_time_series.reversal
-        corr_rev = df_curvature.corrwith(df_all_time_series[neuron_name][rev_idx])
-        corr_fwd = df_curvature.corrwith(df_all_time_series[neuron_name][~rev_idx])
+        rev_idx = df_behavior.reversal
+        corr_rev = df_curvature.corrwith(df_traces[neuron_name][rev_idx])
+        corr_fwd = df_curvature.corrwith(df_traces[neuron_name][~rev_idx])
         # Combine in a dataframe for plotting
         df_dict = {'rev': corr_rev, 'fwd': corr_fwd}
         df_corr = pd.DataFrame(df_dict)
         y_names = ['fwd', 'rev']
     else:
-        corr = df_curvature.corrwith(df_all_time_series[neuron_name])
+        corr = df_curvature.corrwith(df_traces[neuron_name])
         # Combine in a dataframe for plotting
         df_dict = {'correlation': corr}
         df_corr = pd.DataFrame(df_dict)
@@ -252,10 +275,10 @@ def update_kymograph_correlation_per_segment(df_all_time_series, df_curvature, n
     return _fig
 
 
-def update_max_correlation_over_all_segment_plot(df_all_time_series, df_traces, df_curvature, regression_type):
+def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type):
     # Will not actually be updated, except for changing the rectification
     if regression_type == 'Rectified regression':
-        rev_idx = df_all_time_series.reversal
+        rev_idx = df_behavior.reversal
         df_corr = correlate_return_cross_terms(df_traces[rev_idx], df_curvature)
         df_max_rev = df_corr.abs().max(axis=1)
 
@@ -278,10 +301,10 @@ def update_max_correlation_over_all_segment_plot(df_all_time_series, df_traces, 
     return _fig
 
 
-def update_behavior_trace_plot(df_all_time_series, behavior_name, regression_type):
+def update_behavior_trace_plot(df_behavior, behavior_name, regression_type):
     opt, px_func = switch_plot_func_using_rectification(regression_type)
-    _fig = px_func(df_all_time_series, x='time', y=behavior_name,
-                   range_x=[0, len(df_all_time_series)],
+    _fig = px_func(df_behavior, x='time', y=behavior_name,
+                   range_x=[0, len(df_behavior)],
                    title=f"Trace of {behavior_name}", **opt)
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
@@ -297,15 +320,14 @@ def switch_plot_func_using_rectification(regression_type):
     return opt, px_func
 
 
-def build_dropdowns(df_behavior, df_traces, df_curvature) -> html.Div:
+def build_dropdowns(df_behavior, df_curvature, dict_of_trace_dataframes) -> html.Div:
     curvature_names = get_names_from_df(df_curvature)
     curvature_initial = curvature_names[0]
+    trace_names = list(dict_of_trace_dataframes.keys())
+    trace_initial = 'ratio'
+    df_traces = dict_of_trace_dataframes[trace_initial]
     neuron_names = get_names_from_df(df_traces)
     neuron_initial = neuron_names[0]
-    # correlation_names = get_names_from_df(df_correlation)
-    # correlation_names.remove('neuron_name')
-    # correlation_names_no_dummy = correlation_names.copy()
-    # correlation_names_no_dummy.remove('dummy')
 
     behavior_names = get_names_from_df(df_behavior)
 
@@ -359,6 +381,18 @@ def build_dropdowns(df_behavior, df_traces, df_curvature) -> html.Div:
                     curvature_names,
                     curvature_initial,
                     id='kymograph-select-dropdown',
+                    clearable=False
+                ),
+            ])],
+            style=dropdown_style),
+
+        html.Div([
+            html.Label(["Select trace type"], style={'font-weight': 'bold', "text-align": "center"}),
+            html.Div([
+                dcc.Dropdown(
+                    trace_names,
+                    trace_initial,
+                    id='trace-select-dropdown',
                     clearable=False
                 ),
             ])],
