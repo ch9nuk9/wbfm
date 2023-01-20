@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 
 from dash import Dash, dcc, html, Output, Input
@@ -449,7 +450,14 @@ def build_plots_curvature(df_curvature) -> html.Div:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Build GUI with a project')
+    parser.add_argument('--project_path', '-p', default=None,
+                        help='path to config file')
+    parser.add_argument('--DEBUG', default=False, help='')
+    args = parser.parse_args()
+    project_path = args.project_path
+    DEBUG = args.DEBUG
 
     # DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data"
-    project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
+    # project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
     build_wbfm_dashboard(project_path)
