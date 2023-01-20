@@ -10,7 +10,7 @@ from wbfm.utils.projects.project_export import read_dataframes_from_exported_fol
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
-def build_wbfm_dashboard(project_path: str):
+def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
 
     app = Dash(__name__)
 
@@ -152,7 +152,10 @@ def build_wbfm_dashboard(project_path: str):
                                                             kymograph_range)
 
     if __name__ == '__main__':
-        app.run_server(debug=True)
+        if allow_public_access:
+            app.run_server(debug=False, host="0.0.0.0")
+        else:
+            app.run_server(debug=False)
 
 
 def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, regression_type):
@@ -407,9 +410,9 @@ def build_second_row_options(path_to_grid_plot) -> html.Div:
             dcc.RangeSlider(0, 99, 3, value=[5, 95], id='kymograph-range-slider', allowCross=False)
         ], style=row_style),
 
-        html.Div([
-            html.A("Link to grid plot", href=path_to_grid_plot, target="_blank")
-        ])
+        # html.Div([
+        #     html.A("Link to grid plot", href=path_to_grid_plot, target="_blank")
+        # ])
         ]
     )
 
@@ -453,11 +456,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')
     parser.add_argument('--project_path', '-p', default=None,
                         help='path to config file')
+    parser.add_argument('--allow_public_access', default=False,
+                        help='allow access using the intranet (NOT SECURE)')
     parser.add_argument('--DEBUG', default=False, help='')
     args = parser.parse_args()
     project_path = args.project_path
+    allow_public_access = args.allow_public_access
     DEBUG = args.DEBUG
 
     # DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data"
     # project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
-    build_wbfm_dashboard(project_path)
+    build_wbfm_dashboard(project_path, allow_public_access)
