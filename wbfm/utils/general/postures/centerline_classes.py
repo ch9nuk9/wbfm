@@ -178,6 +178,35 @@ class WormFullVideoPosture:
             self._beh_annotation = self._beh_annotation.annotation
         return self._beh_annotation
 
+    def calc_speed_from_alias(self, speed_alias: str) -> pd.Series:
+
+        possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'summed_curvature', 'pirouette',
+                           'signed_stage_speed_smoothed', 'signed_speed_angular',
+                           'signed_middle_body_speed']
+        assert speed_alias in possible_values, f"Must be one of {possible_values}"
+
+        if speed_alias == 'signed_stage_speed':
+            y = self.worm_speed(fluorescence_fps=True, signed=True)
+        elif speed_alias == 'abs_stage_speed':
+            y = self.worm_speed(fluorescence_fps=True)
+        elif speed_alias == 'signed_middle_body_speed':
+            y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True)
+        elif speed_alias == 'leifer_curvature' or speed_alias == 'summed_curvature':
+            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True)
+        elif speed_alias == 'pirouette':
+            y = self.calc_psuedo_pirouette_state()
+        elif speed_alias == 'signed_stage_speed_smoothed':
+            y = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True)
+        elif speed_alias == 'signed_speed_angular':
+            y = self.worm_angular_velocity(fluorescence_fps=True)
+        elif speed_alias == 'worm_speed_average_all_segments':
+            y = self.worm_speed_average_all_segments(fluorescence_fps=True)
+        else:
+            raise NotImplementedError(speed_alias)
+
+        return y
+
     @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False) -> Optional[pd.Series]:
         """Name is shortened to avoid US-UK spelling confusion"""
