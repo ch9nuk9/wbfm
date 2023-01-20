@@ -49,7 +49,7 @@ def main(_config, _run):
 
     # See _unpack_data_from_name for valid values
     y_train_values = ['signed_speed', 'abs_speed', 'signed_speed_smoothed', 'signed_speed_angular']
-    # y_train_values = ['signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed']
+    # y_train_values = ['signed_speed', 'abs_speed', 'summed_curvature', 'pirouette', 'signed_speed_smoothed']
 
     # Test different options for cross validation
     # all_cv_types = [partial(KFold, n_splits=3), TimeSeriesSplit, RollingOriginForwardValidation]

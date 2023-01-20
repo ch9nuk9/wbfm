@@ -270,7 +270,7 @@ def factory_correlate_trace_to_behavior_variable(project_data,
             forward_ind = posture_class.beh_annotation == 0
             y[forward_ind] = 0
     elif behavioral_correlation_shading == 'curvature':
-        y = posture_class.leifer_curvature_from_kymograph(fluorescence_fps=True)
+        y = posture_class.summed_curvature_from_kymograph(fluorescence_fps=True)
     elif behavioral_correlation_shading == 'pc1':
         # Note: this does not require the kymograph
         model = PCA(n_components=1)

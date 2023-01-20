@@ -47,8 +47,7 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     if not os.path.exists(project_config.resolve_relative_path(fname)):
         model = NeuronToUnivariateEncoding(project_path=project_data)
         _ = model.all_dfs
-        cols = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature',
-                'signed_stage_speed_smoothed', 'signed_speed_angular', 'signed_middle_body_speed']
+        cols = ['summed_curvature', 'signed_speed_angular', 'signed_middle_body_speed']
         trace_len = project_data.num_frames
         df_behavior_dict = {c: model.unpack_behavioral_time_series_from_name(c, trace_len)[0] for c in cols}
         df_behavior_dict['reversal'] = (worm.beh_annotation(fluorescence_fps=True) == 1).reset_index(drop=True)

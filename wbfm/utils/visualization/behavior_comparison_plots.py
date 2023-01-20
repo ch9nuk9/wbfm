@@ -244,7 +244,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def unpack_behavioral_time_series_from_name(self, y_train_name, trace_len):
         """
         Valid values for y_train_name:
-        [None, 'signed_speed', 'abs_speed', 'leifer_curvature', 'pirouette', 'signed_speed_smoothed',
+        [None, 'signed_speed', 'abs_speed', 'summed_curvature', 'pirouette', 'signed_speed_smoothed',
                            'signed_speed_angular']
 
         Parameters
@@ -258,7 +258,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """
         if y_train_name is None:
             y_train_name = 'signed_stage_speed'
-        possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'pirouette',
+        possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'summed_curvature', 'pirouette',
                            'signed_stage_speed_smoothed', 'signed_speed_angular',
                            'signed_middle_body_speed']
         assert y_train_name in possible_values, f"Must be one of {possible_values}"
@@ -271,9 +271,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 y = worm.worm_speed(fluorescence_fps=True).iloc[:trace_len]
             elif y_train_name == 'signed_middle_body_speed':
                 y = worm.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True).iloc[:trace_len]
-            elif y_train_name == 'leifer_curvature':
+            elif y_train_name == 'leifer_curvature' or y_train_name == 'summed_curvature':
                 assert worm.has_full_kymograph, f"No kymograph found for project {self.project_data}"
-                y = worm.leifer_curvature_from_kymograph(fluorescence_fps=True).iloc[:trace_len]
+                y = worm.summed_curvature_from_kymograph(fluorescence_fps=True).iloc[:trace_len]
             elif y_train_name == 'pirouette':
                 y = worm.calc_psuedo_pirouette_state().iloc[:trace_len]
             elif y_train_name == 'signed_stage_speed_smoothed':
@@ -1096,9 +1096,9 @@ class MarkovRegressionModel:
         if self.behavior_to_predict == 'speed':
             trace = self.project_data.worm_posture_class.worm_speed(fluorescence_fps=True, signed=True)
             trace = pd.Series(trace)
-        elif self.behavior_to_predict == 'leifer_curvature':
+        elif self.behavior_to_predict == 'summed_curvature':
             worm = self.project_data.worm_posture_class
-            trace = worm.leifer_curvature_from_kymograph(fluorescence_fps=True)[worm.subsample_indices].copy().reset_index(drop=True)
+            trace = worm.summed_curvature_from_kymograph(fluorescence_fps=True)[worm.subsample_indices].copy().reset_index(drop=True)
         else:
             raise NotImplementedError(self.behavior_to_predict)
 

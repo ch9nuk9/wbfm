@@ -193,7 +193,7 @@ class WormFullVideoPosture:
             return beh
 
     @lru_cache(maxsize=8)
-    def leifer_curvature_from_kymograph(self, fluorescence_fps=False) -> pd.Series:
+    def summed_curvature_from_kymograph(self, fluorescence_fps=False) -> pd.Series:
         """Signed average over segments 15 to 80"""
         curvature = self.curvature().loc[:, 15:80].mean(axis=1)
         curvature = self._validate_and_downsample(curvature, fluorescence_fps=fluorescence_fps)
