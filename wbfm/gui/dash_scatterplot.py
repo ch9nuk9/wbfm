@@ -9,14 +9,20 @@ from wbfm.utils.projects.project_export import read_dataframes_from_exported_fol
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
-def build_wbfm_dashboard(project_path):
+def build_wbfm_dashboard(project_path: str):
 
     app = Dash(__name__)
+
+    # Read data
     dict_of_dataframes = read_dataframes_from_exported_folder(project_path)
     df_behavior = dict_of_dataframes['behavior']['behavior']
     df_curvature = dict_of_dataframes['behavior']['curvature']
     dict_of_traces_dfs = dict_of_dataframes['traces']
     # _df_traces = dict_of_dataframes['traces']['ratio']
+
+    # Initialize hardcoded paths to files (will open in new tab)
+    path_to_grid_plot = Path(project_path).parent.joinpath('traces').\
+        joinpath('ratio_integration_rolling_mean_beh_pc1-grid-.png')
 
     # Add a time column
     # df_time = df_behavior.index
@@ -29,7 +35,7 @@ def build_wbfm_dashboard(project_path):
     # Define layout
     app.layout = html.Div([
         build_dropdowns(df_behavior, df_curvature, dict_of_traces_dfs),
-        build_second_row_options(),
+        build_second_row_options(path_to_grid_plot),
         build_plots_html(),
         build_plots_curvature(df_curvature)
         ]
@@ -161,7 +167,6 @@ def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, reg
         df_dict = {'y_rev': y_corr_rev, 'y_fwd': y_corr_fwd, x_name: x_corr}
         df_corr = pd.DataFrame(df_dict)
         y_names = ['y_fwd', 'y_rev']
-        # x_names = ['x_fwd', 'x_rev']
     else:
         y_corr = df_traces.corrwith(df_behavior[y_name])
         x_corr = df_traces.corrwith(df_behavior[x_name])
@@ -169,7 +174,8 @@ def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, reg
         df_dict = {y_name: y_corr, x_name: x_corr}
         df_corr = pd.DataFrame(df_dict)
         y_names = y_name
-    x_name = x_name
+    xaxis_title = f"Correlation with {x_name}"
+    yaxis_title = f"Correlation with {y_name}"
     df_corr['neuron_name'] = get_names_from_df(df_traces)
     # Create a fake "selected" column, because the default doesn't work when you return a new figure
     df_corr['selected'] = 1
@@ -180,7 +186,7 @@ def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, reg
                       size='selected',
                       marginal_y='histogram',
                       title="Are neurons correlated to 2 behaviors?",
-                      trendline="ols")
+                      trendline="ols").update_layout(xaxis_title=xaxis_title, yaxis_title=yaxis_title)
     # _fig.update_layout(clickmode='event+select')
     # selected_points = [int(neuron_name.split('_')[1]) - 1]
     # print(df_corr, selected_points)
@@ -382,7 +388,7 @@ def build_dropdowns(df_behavior, df_curvature, dict_of_trace_dataframes) -> html
     return html.Div([header, dropdowns])
 
 
-def build_second_row_options() -> html.Div:
+def build_second_row_options(path_to_grid_plot) -> html.Div:
 
     row_style = {'display': 'inline-block', 'width': '50%'}
 
@@ -398,7 +404,11 @@ def build_second_row_options() -> html.Div:
         html.Div([
             html.Label(['Range for kymograph max plot'], style={'font-weight': 'bold', "text-align": "center"}),
             dcc.RangeSlider(0, 99, 3, value=[5, 95], id='kymograph-range-slider', allowCross=False)
-        ], style=row_style)
+        ], style=row_style),
+
+        html.Div([
+            html.A("Link to grid plot", href=path_to_grid_plot, target="_blank")
+        ])
         ]
     )
 
