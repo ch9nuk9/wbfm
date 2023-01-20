@@ -313,7 +313,7 @@ class WormFullVideoPosture:
             velocity = velocity.iloc[:-1]
             velocity[rev_ind] *= -1
         else:
-            raise ValueError("Velocity and reversal indices are desynchronized")
+            raise ValueError(f"Velocity ({len(velocity)}) and reversal indices ({len(rev_ind)}) are desynchronized")
 
         return velocity
 
