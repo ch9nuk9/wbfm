@@ -245,7 +245,7 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
-                   strong_smoothing=False, use_stage_position=True, remove_outliers=True) -> pd.Series:
+                   strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50) -> pd.Series:
         """
         Calculates derivative of position
 
@@ -257,6 +257,7 @@ class WormFullVideoPosture:
         strong_smoothing - whether to apply a strong smoothing
         use_stage_position - whether to use the stage position (default) or body segment 50
         remove_outliers - whether to remove outliers (replace with nan and interpolate)
+        body_segment - only used if use_stage_position=False
 
         Returns
         -------
@@ -265,9 +266,9 @@ class WormFullVideoPosture:
         if use_stage_position:
             get_positions = self.stage_position
         else:
-            # Use segment 50 out of 100
+            # Use segment 50 out of 100 by default
             get_positions = lambda fluorescence_fps: \
-                self.centerline_absolute_coordinates(fluorescence_fps=fluorescence_fps)[50]
+                self.centerline_absolute_coordinates(fluorescence_fps=fluorescence_fps)[body_segment]
         if subsample_before_derivative:
             df = get_positions(fluorescence_fps=fluorescence_fps)
         else:
@@ -296,6 +297,38 @@ class WormFullVideoPosture:
             speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
 
         return speed_mm_per_s
+
+    @lru_cache(maxsize=8)
+    def worm_speed_average_all_segments(self, **kwargs):
+        """
+        Computes the speed of each individual segment (absolute magnitude), then takes an average
+
+        See worm_speed for options
+
+        Parameters
+        ----------
+        kwargs
+
+        Returns
+        -------
+
+        """
+        single_segment_opt = kwargs.copy()
+        single_segment_opt['use_stage_position'] = False
+        sign_after_mean = single_segment_opt.get('signed', False)
+        single_segment_opt['signed'] = False
+
+        all_speeds = []
+        for i in range(100):
+            single_segment_opt['body_segment'] = i
+            all_speeds.append(self.worm_speed(**single_segment_opt))
+        mean_speed = pd.DataFrame(all_speeds).mean(axis=0)
+
+        if sign_after_mean:
+            fluorescence_fps = single_segment_opt.get('fluorescence_fps', False)
+            mean_speed = self.flip_of_vector_during_state(mean_speed, fluorescence_fps)
+
+        return mean_speed
 
     def get_time_delta_in_s(self, fluorescence_fps):
         df = self.stage_position(fluorescence_fps=fluorescence_fps)

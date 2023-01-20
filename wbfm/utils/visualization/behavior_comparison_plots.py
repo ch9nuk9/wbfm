@@ -280,6 +280,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 y = worm.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True).iloc[:trace_len]
             elif y_train_name == 'signed_speed_angular':
                 y = worm.worm_angular_velocity(fluorescence_fps=True).iloc[:trace_len]
+            elif y_train_name == 'worm_speed_average_all_segments':
+                y = worm.worm_speed_average_all_segments(fluorescence_fps=True).iloc[:trace_len]
             else:
                 raise NotImplementedError(y_train_name)
         else:
