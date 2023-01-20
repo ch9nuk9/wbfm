@@ -179,10 +179,25 @@ class WormFullVideoPosture:
         return self._beh_annotation
 
     def calc_speed_from_alias(self, speed_alias: str) -> pd.Series:
+        """
+        Basically this calls worm_speed with defined key word arguments
+
+        Note: always has fluorescence_fps=True
+
+        Parameters
+        ----------
+        speed_alias
+        kwargs
+
+        Returns
+        -------
+
+        """
 
         possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'summed_curvature', 'pirouette',
                            'signed_stage_speed_smoothed', 'signed_speed_angular',
-                           'signed_middle_body_speed']
+                           'signed_middle_body_speed', 'worm_speed_average_all_segments',
+                           'worm_speed_average_all_segments']
         assert speed_alias in possible_values, f"Must be one of {possible_values}"
 
         if speed_alias == 'signed_stage_speed':
@@ -201,6 +216,8 @@ class WormFullVideoPosture:
         elif speed_alias == 'signed_speed_angular':
             y = self.worm_angular_velocity(fluorescence_fps=True)
         elif speed_alias == 'worm_speed_average_all_segments':
+            y = self.worm_speed_average_all_segments(fluorescence_fps=True)
+        elif speed_alias == 'worm_nose_residual_speed':
             y = self.worm_speed_average_all_segments(fluorescence_fps=True)
         else:
             raise NotImplementedError(speed_alias)
@@ -272,7 +289,7 @@ class WormFullVideoPosture:
             velocity = pd.Series(velocity).interpolate()
         return velocity
 
-    @lru_cache(maxsize=8)
+    @lru_cache(maxsize=256)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
                    strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50) -> pd.Series:
         """
@@ -327,7 +344,6 @@ class WormFullVideoPosture:
 
         return speed_mm_per_s
 
-    @lru_cache(maxsize=8)
     def worm_speed_average_all_segments(self, **kwargs):
         """
         Computes the speed of each individual segment (absolute magnitude), then takes an average
@@ -358,6 +374,35 @@ class WormFullVideoPosture:
             mean_speed = self.flip_of_vector_during_state(mean_speed, fluorescence_fps)
 
         return mean_speed
+
+    def worm_nose_residual_speed(self, **kwargs):
+        """
+        Computes the difference of the nose and the middle body segment
+
+        See worm_speed for options
+
+        Parameters
+        ----------
+        kwargs
+
+        Returns
+        -------
+
+        """
+        single_segment_opt = kwargs.copy()
+        single_segment_opt['use_stage_position'] = False
+        sign_after_mean = single_segment_opt.get('signed', False)
+        single_segment_opt['signed'] = False
+
+        nose_speed = self.worm_speed(body_segment=2, **single_segment_opt)
+        middle_speed = self.worm_speed(body_segment=50, **single_segment_opt)
+        residual_speed = nose_speed - middle_speed
+
+        if sign_after_mean:
+            fluorescence_fps = single_segment_opt.get('fluorescence_fps', False)
+            residual_speed = self.flip_of_vector_during_state(residual_speed, fluorescence_fps)
+
+        return residual_speed
 
     def get_time_delta_in_s(self, fluorescence_fps):
         df = self.stage_position(fluorescence_fps=fluorescence_fps)
