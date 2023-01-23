@@ -18,8 +18,12 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
     dict_of_dataframes = read_dataframes_from_exported_folder(project_path)
     df_behavior = dict_of_dataframes['behavior']['behavior']
     df_curvature = dict_of_dataframes['behavior']['curvature']
+    # df_curvature = dict_of_dataframes['behavior']['curvature_high_fps']
     dict_of_traces_dfs = dict_of_dataframes['traces']
-    # _df_traces = dict_of_dataframes['traces']['ratio']
+
+    # Align indices with traces
+    # volumes_per_second = int(df_curvature.shape[0] / dict_of_traces_dfs['ratio'].shape[0])
+    # df_curvature.index = df_curvature.index / volumes_per_second
 
     # Initialize hardcoded paths to files (will open in new tab)
     path_to_grid_plot = Path(project_path).parent.joinpath('traces').\
