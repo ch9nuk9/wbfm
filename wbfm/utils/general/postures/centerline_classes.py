@@ -90,20 +90,21 @@ class WormFullVideoPosture:
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
                                  reset_index=False) -> Union[pd.DataFrame, pd.Series]:
         if df is not None:
-            df = self.remove_idx_of_tracking_failures(df)
-            if fluorescence_fps:
-                try:
+            try:
+                df = self.remove_idx_of_tracking_failures(df)
+                if fluorescence_fps:
                     if len(df.shape) == 2:
                         df = df.iloc[self.subsample_indices, :]
                     elif len(df.shape) == 1:
                         df = df.iloc[self.subsample_indices]
                     else:
                         raise NotImplementedError
-                except IndexError as e:
-                    print(df)
-                    print(df.shape)
-                    print(self.subsample_indices)
-                    raise e
+            except IndexError as e:
+                print(df)
+                print(df.shape)
+                print(self.tracking_failure_idx)
+                print(self.subsample_indices)
+                raise e
             if reset_index:
                 df.reset_index(drop=True, inplace=True)
         return df
@@ -802,7 +803,7 @@ class WormFullVideoPosture:
 
         Assumes the high frame rate index
         """
-        if self.tracking_failure_idx is not None:
+        if self.tracking_failure_idx is not None and len(self.tracking_failure_idx) > 0 and vec is not None:
             vec = vec.copy()
             logging.debug(f"Setting these indices as tracking failures: {self.tracking_failure_idx}")
             vec.iloc[self.tracking_failure_idx] = np.nan
