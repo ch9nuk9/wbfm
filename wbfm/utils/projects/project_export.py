@@ -41,7 +41,7 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
         project_config.h5_data_in_local_project(df, fname)
         dict_all_trace_dfs[r] = df
 
-    df_all_traces = pd.concat(dict_all_trace_dfs.values(), axis=1, keys=dict_all_trace_dfs['traces'].keys())
+    df_all_traces = pd.concat(dict_all_trace_dfs.values(), axis=1, keys=dict_all_trace_dfs.keys())
 
     # Behavioral dataframe, fluorescence_fps
     model = NeuronToUnivariateEncoding(project_path=project_data)
@@ -62,7 +62,7 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
 
     df_behavior_dict['curvature'] = df_curvature
 
-    df_all_behaviors = pd.concat(df_behavior_dict.values(), axis=1, keys=df_behavior_dict['traces'].keys())
+    df_all_behaviors = pd.concat(df_behavior_dict.values(), axis=1, keys=df_behavior_dict.keys())
 
     # Combine all into full multi-level dataframe and save
     df_final = pd.concat([df_all_traces, df_all_behaviors], axis=1, keys=['traces', 'behavior'])
