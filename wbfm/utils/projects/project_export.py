@@ -81,19 +81,8 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     print("Finished saving all dataframes")
 
 
-def read_dataframes_from_exported_folder(project_path: str) -> Dict[str, Dict[str, pd.DataFrame]]:
-    data_folder = Path(project_path).parent.joinpath('final_dataframes')
-    dict_of_dataframes = dict(traces={}, behavior={})
-    for subfolder in Path(data_folder).iterdir():
-        if subfolder.name == 'traces':
-            for file in Path(subfolder).iterdir():
-                # Assumes filename like df_traces-ratio.h5 or df_traces-ratio_residual.h5
-                key = file.name.split('-')[1].split('.')[0]
-                dict_of_dataframes['traces'][key] = pd.read_hdf(file)
-        elif subfolder.name == 'behavior':
-            for file in Path(subfolder).iterdir():
-                # Assumes filename like df_curvature.h5 or df_curvature_high_fps.h5
-                key = file.name.split('df_')[1].split('.')[0]
-                dict_of_dataframes['behavior'][key] = pd.read_hdf(file)
+def read_dataframes_from_exported_folder(project_path: str) -> pd.DataFrame:
+    fname = Path(project_path).parent.joinpath('final_dataframes/df_final.h5')
+    df_final = pd.read_hdf(fname)
 
-    return dict_of_dataframes
+    return df_final
