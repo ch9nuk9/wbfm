@@ -460,7 +460,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')
     parser.add_argument('--project_path', '-p', default=None,
                         help='path to config file')
-    parser.add_argument('--allow_public_access', default=False,
+    parser.add_argument('--allow_public_access', action='store_true',
                         help='allow access using the intranet (NOT SECURE)')
     parser.add_argument('--DEBUG', default=False, help='')
     args = parser.parse_args()
