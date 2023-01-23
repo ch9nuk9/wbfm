@@ -82,15 +82,13 @@ def read_dataframes_from_exported_folder(project_path: str) -> Dict[str, Dict[st
     for subfolder in Path(data_folder).iterdir():
         if subfolder.name == 'traces':
             for file in Path(subfolder).iterdir():
-                if 'df_traces' in file.name:
-                    # Assumes filename like df_traces-ratio.h5 or df_traces-ratio_residual.h5
-                    key = file.name.split('-')[1].split('.')[0]
-                    dict_of_dataframes['traces'][key] = pd.read_hdf(file)
+                # Assumes filename like df_traces-ratio.h5 or df_traces-ratio_residual.h5
+                key = file.name.split('-')[1].split('.')[0]
+                dict_of_dataframes['traces'][key] = pd.read_hdf(file)
         elif subfolder.name == 'behavior':
             for file in Path(subfolder).iterdir():
-                if 'df_behavior' in file.name:
-                    dict_of_dataframes['behavior']['behavior'] = pd.read_hdf(file)
-                elif 'df_curvature' in file.name:
-                    dict_of_dataframes['behavior']['curvature'] = pd.read_hdf(file)
+                # Assumes filename like df_curvature.h5 or df_curvature_high_fps.h5
+                key = file.name.split('df_')[1].split('.')[0]
+                dict_of_dataframes['behavior'][key] = pd.read_hdf(file)
 
     return dict_of_dataframes
