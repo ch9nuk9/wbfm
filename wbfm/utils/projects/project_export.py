@@ -42,7 +42,7 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
         df = project_data.calc_default_traces(channel_mode='ratio', residual_mode=r, interpolate_nan=True, **trace_opt)
         project_config.h5_data_in_local_project(df, fname)
 
-    # Behavioral dataframe
+    # Behavioral dataframe, fluorescence_fps
     fname = os.path.join(output_folder, 'behavior', 'df_behavior.h5')
     if not os.path.exists(project_config.resolve_relative_path(fname)):
         model = NeuronToUnivariateEncoding(project_path=project_data)
@@ -56,10 +56,17 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
 
         project_config.h5_data_in_local_project(df_behavior, fname)
 
-    # Kymograph (curvature)
+    # Kymograph (curvature), fluorescence_fps and not
     fname = os.path.join(output_folder, 'behavior', 'df_curvature.h5')
     if not os.path.exists(project_config.resolve_relative_path(fname)):
         df_curvature = worm.curvature(fluorescence_fps=True)
+        df_curvature = df_curvature.reset_index(drop=True)
+        df_curvature.columns = [f"segment_{i:03d}" for i in range(df_curvature.shape[1])]
+
+        project_config.h5_data_in_local_project(df_curvature, fname)
+
+        fname = os.path.join(output_folder, 'behavior', 'df_curvature_high_fps.h5')
+        df_curvature = worm.curvature(fluorescence_fps=False)
         df_curvature = df_curvature.reset_index(drop=True)
         df_curvature.columns = [f"segment_{i:03d}" for i in range(df_curvature.shape[1])]
 
