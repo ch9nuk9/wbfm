@@ -15,11 +15,11 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
     app = Dash(__name__)
 
     # Read data
-    dict_of_dataframes = read_dataframes_from_exported_folder(project_path)
-    df_behavior = dict_of_dataframes['behavior']['behavior']
-    df_curvature = dict_of_dataframes['behavior']['curvature']
+    df_final = read_dataframes_from_exported_folder(project_path)
+    df_behavior = df_final['behavior']['behavior']
+    df_curvature = df_final['behavior']['curvature']
     # df_curvature = dict_of_dataframes['behavior']['curvature_high_fps']
-    dict_of_traces_dfs = dict_of_dataframes['traces']
+    df_all_traces = df_final['traces']
 
     # Align indices with traces
     # volumes_per_second = int(df_curvature.shape[0] / dict_of_traces_dfs['ratio'].shape[0])
@@ -39,7 +39,7 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
 
     # Define layout
     app.layout = html.Div([
-        build_dropdowns(df_behavior, df_curvature, dict_of_traces_dfs),
+        build_dropdowns(df_behavior, df_curvature, df_all_traces),
         build_second_row_options(path_to_grid_plot),
         build_plots_html(),
         build_plots_curvature(df_curvature)
@@ -56,7 +56,7 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
         Input('trace-select-dropdown', 'value')
     )
     def _update_scatter_plot(x_name, y_name, neuron_name, regression_type, trace_type):
-        df_traces = dict_of_traces_dfs[trace_type]
+        df_traces = df_all_traces[trace_type]
         return update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, regression_type)
 
     # Neuron selection updates
@@ -96,7 +96,7 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
         Input('trace-select-dropdown', 'value')
     )
     def _update_neuron_trace(neuron_name, regression_type, trace_type):
-        df_traces = dict_of_traces_dfs[trace_type]
+        df_traces = df_all_traces[trace_type]
         df_behavior_and_neurons = pd.concat([df_behavior, df_traces], axis=1)
         return update_neuron_trace_plot(df_behavior_and_neurons, neuron_name, regression_type)
 
@@ -108,7 +108,7 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
         Input('trace-select-dropdown', 'value')
     )
     def _update_behavior_scatter(neuron_name, behavior_name, regression_type, trace_type):
-        df_traces = dict_of_traces_dfs[trace_type]
+        df_traces = df_all_traces[trace_type]
         df_behavior_and_neurons = pd.concat([df_behavior, df_traces], axis=1)
         return update_behavior_scatter_plot(df_behavior_and_neurons, behavior_name, neuron_name, regression_type)
 
@@ -129,7 +129,7 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
         Input('trace-select-dropdown', 'value')
     )
     def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type, trace_type):
-        df_traces = dict_of_traces_dfs[trace_type]
+        df_traces = df_all_traces[trace_type]
         df_all = pd.concat([df_behavior, df_curvature, df_traces], axis=1)
         return update_kymograph_scatter_plot(df_all, kymograph_segment_name, neuron_name, regression_type)
 
@@ -140,7 +140,7 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
         Input('trace-select-dropdown', 'value')
     )
     def _update_kymograph_correlation(neuron_name, regression_type, trace_type):
-        df_traces = dict_of_traces_dfs[trace_type]
+        df_traces = df_all_traces[trace_type]
         return update_kymograph_correlation_per_segment(df_traces, df_behavior, df_curvature, neuron_name,
                                                         regression_type)
 
@@ -151,7 +151,7 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
         Input('kymograph-range-slider', 'value')
     )
     def _update_kymograph_max_segment(regression_type, trace_type, kymograph_range):
-        df_traces = dict_of_traces_dfs[trace_type]
+        df_traces = df_all_traces[trace_type]
         return update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type,
                                                             kymograph_range)
 
@@ -313,12 +313,14 @@ def switch_plot_func_using_rectification(regression_type):
     return opt, px_func
 
 
-def build_dropdowns(df_behavior, df_curvature, dict_of_trace_dataframes) -> html.Div:
+def build_dropdowns(df_behavior: pd.DataFrame, df_curvature: pd.DataFrame, df_all_traces: pd.DataFrame) -> html.Div:
     curvature_names = get_names_from_df(df_curvature)
     curvature_initial = curvature_names[0]
-    trace_names = list(dict_of_trace_dataframes.keys())
+    # TODO: does this work if df_all_traces is a a 3-level multiindex?
+    trace_names = list(df_all_traces.columns.levels[0])
+    # trace_names = list(dict_of_trace_dataframes.keys())
     trace_initial = 'ratio'
-    df_traces = dict_of_trace_dataframes[trace_initial]
+    df_traces = df_all_traces[trace_initial]
     neuron_names = get_names_from_df(df_traces)
     neuron_initial = neuron_names[0]
 
