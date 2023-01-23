@@ -25,15 +25,13 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
 
     # Trace dataframes
     # Note: more efficient if these options align with the NeuronToUnivariateEncoding calculations below
+    dict_all_trace_dfs = {}
     channel_modes = ['ratio', 'red', 'green']
     residual_modes = ['pca', 'nmf']
     trace_opt = {'filter_mode': 'rolling_mean', 'min_nonnan': 0.9}
     for c in channel_modes:
-        fname = os.path.join(output_folder, 'traces', f'df_traces-{c}.h5')
-        if os.path.exists(project_config.resolve_relative_path(fname)):
-            continue
         df = project_data.calc_default_traces(channel_mode=c, **trace_opt)
-        project_config.h5_data_in_local_project(df, fname)
+        dict_all_trace_dfs[c] = df
 
     for r in residual_modes:
         fname = os.path.join(output_folder, 'traces', f'df_traces-ratio_residual_subtracted_{r}.h5')
@@ -41,36 +39,43 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
             continue
         df = project_data.calc_default_traces(channel_mode='ratio', residual_mode=r, interpolate_nan=True, **trace_opt)
         project_config.h5_data_in_local_project(df, fname)
+        dict_all_trace_dfs[r] = df
+
+    df_all_traces = pd.concat(dict_all_trace_dfs.values(), axis=1, keys=dict_all_trace_dfs['traces'].keys())
 
     # Behavioral dataframe, fluorescence_fps
-    fname = os.path.join(output_folder, 'behavior', 'df_behavior.h5')
-    if not os.path.exists(project_config.resolve_relative_path(fname)):
-        model = NeuronToUnivariateEncoding(project_path=project_data)
-        _ = model.all_dfs
-        cols = ['summed_curvature', 'signed_speed_angular', 'signed_middle_body_speed']
-        trace_len = project_data.num_frames
-        df_behavior_dict = {c: model.unpack_behavioral_time_series_from_name(c, trace_len)[0] for c in cols}
-        df_behavior_dict['reversal'] = (worm.beh_annotation(fluorescence_fps=True) == 1).reset_index(drop=True)
-        df_behavior = pd.DataFrame(df_behavior_dict)
-        df_behavior.reversal.replace(np.nan, False, inplace=True)
+    model = NeuronToUnivariateEncoding(project_path=project_data)
+    _ = model.all_dfs
+    cols = ['summed_curvature', 'signed_speed_angular', 'signed_middle_body_speed']
+    trace_len = project_data.num_frames
+    df_behavior_dict = {c: model.unpack_behavioral_time_series_from_name(c, trace_len)[0] for c in cols}
+    df_behavior_dict['reversal'] = (worm.beh_annotation(fluorescence_fps=True) == 1).reset_index(drop=True)
+    df_behavior = pd.DataFrame(df_behavior_dict)
+    df_behavior.reversal.replace(np.nan, False, inplace=True)
 
-        project_config.h5_data_in_local_project(df_behavior, fname)
+    # project_config.h5_data_in_local_project(df_behavior, fname)
 
     # Kymograph (curvature), fluorescence_fps and not
-    fname = os.path.join(output_folder, 'behavior', 'df_curvature.h5')
-    if not os.path.exists(project_config.resolve_relative_path(fname)):
-        df_curvature = worm.curvature(fluorescence_fps=True)
-        df_curvature = df_curvature.reset_index(drop=True)
-        df_curvature.columns = [f"segment_{i:03d}" for i in range(df_curvature.shape[1])]
+    df_curvature = worm.curvature(fluorescence_fps=True)
+    df_curvature = df_curvature.reset_index(drop=True)
+    df_curvature.columns = [f"segment_{i:03d}" for i in range(df_curvature.shape[1])]
 
-        project_config.h5_data_in_local_project(df_curvature, fname)
+    df_behavior_dict['curvature'] = df_curvature
 
-        fname = os.path.join(output_folder, 'behavior', 'df_curvature_high_fps.h5')
-        df_curvature = worm.curvature(fluorescence_fps=False)
-        df_curvature = df_curvature.reset_index(drop=True)
-        df_curvature.columns = [f"segment_{i:03d}" for i in range(df_curvature.shape[1])]
+    df_all_behaviors = pd.concat(df_behavior_dict.values(), axis=1, keys=df_behavior_dict['traces'].keys())
 
-        project_config.h5_data_in_local_project(df_curvature, fname)
+    # Combine all into full multi-level dataframe and save
+    df_final = pd.concat([df_all_traces, df_all_behaviors], axis=1, keys=['traces', 'behavior'])
+
+    fname = os.path.join(output_folder, 'df_final.h5')
+    project_config.h5_data_in_local_project(df_final, fname)
+
+    # fname = os.path.join(output_folder, 'behavior', 'df_curvature_high_fps.h5')
+    # df_curvature = worm.curvature(fluorescence_fps=False)
+    # df_curvature = df_curvature.reset_index(drop=True)
+    # df_curvature.columns = [f"segment_{i:03d}" for i in range(df_curvature.shape[1])]
+    #
+    # project_config.h5_data_in_local_project(df_curvature, fname)
 
     #
     print("Finished saving all dataframes")
