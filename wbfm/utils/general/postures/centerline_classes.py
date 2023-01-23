@@ -804,6 +804,7 @@ class WormFullVideoPosture:
         """
         if self.tracking_failure_idx is not None:
             vec = vec.copy()
+            logging.debug(f"Setting these indices as tracking failures: {self.tracking_failure_idx}")
             vec.iloc[self.tracking_failure_idx] = np.nan
         return vec
 
