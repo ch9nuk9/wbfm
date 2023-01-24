@@ -27,19 +27,16 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     # Note: more efficient if these options align with the NeuronToUnivariateEncoding calculations below
     dict_all_trace_dfs = {}
     channel_modes = ['ratio', 'red', 'green']
-    residual_modes = ['pca', 'nmf']
     trace_opt = {'filter_mode': 'rolling_mean', 'min_nonnan': 0.9}
     for c in channel_modes:
         df = project_data.calc_default_traces(channel_mode=c, **trace_opt)
         dict_all_trace_dfs[c] = df
 
+    residual_modes = ['pca', 'nmf']
     for r in residual_modes:
-        fname = os.path.join(output_folder, 'traces', f'df_traces-ratio_residual_subtracted_{r}.h5')
-        if os.path.exists(project_config.resolve_relative_path(fname)):
-            continue
+        key = f"ratio_residual_{r}"
         df = project_data.calc_default_traces(channel_mode='ratio', residual_mode=r, interpolate_nan=True, **trace_opt)
-        project_config.h5_data_in_local_project(df, fname)
-        dict_all_trace_dfs[r] = df
+        dict_all_trace_dfs[key] = df
 
     df_all_traces = pd.concat(dict_all_trace_dfs.values(), axis=1, keys=dict_all_trace_dfs.keys())
 
