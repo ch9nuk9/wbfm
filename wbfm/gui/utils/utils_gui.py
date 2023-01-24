@@ -44,22 +44,25 @@ def _fix_dimension_for_plt(crop_sz, dat_crop):
     return np.array(dat_crop)
 
 
-def get_crop_from_zarr(zarr_array, t, zxy, crop_sz):
+def get_crop_from_zarr(zarr_array, t, zxy, crop_sz, force_2d=False):
     if crop_sz is not None:
         crop_coords = get_crop_coords3d(zxy, crop_sz)
         z, x, y = crop_coords
         if len(z) > 1:
-            start_slice, end_slice = z[0], z[-1]
+            start_slice, end_slice = z[0], z[-1] + 1
         else:
             start_slice, end_slice = z[0], z[0] + 1
         # print(f"Zarr size before crop: {zarr_array.shape}")
         this_volume = np.array(zarr_array[t, ...])
-        dat_crop = this_volume[start_slice:end_slice, x[0]:x[-1], y[0]:y[-1]]
+        dat_crop = this_volume[start_slice:end_slice, x[0]:x[-1]+1, y[0]:y[-1]+1]
         # print(f"Zarr size after crop: {dat_crop.shape}")
     else:
         dat_crop = zarr_array[t, :, :, :]
 
-    return _fix_dimension_for_plt(crop_sz, dat_crop)
+    if force_2d:
+        return _fix_dimension_for_plt(crop_sz, dat_crop)
+    else:
+        return dat_crop
 
 
 def array2qt(img):
