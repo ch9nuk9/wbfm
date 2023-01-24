@@ -1,21 +1,74 @@
 import argparse
 from pathlib import Path
 
+import numpy as np
 from dash import Dash, dcc, html, Output, Input
 import plotly.express as px
 import pandas as pd
 
-from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
-from wbfm.utils.projects.project_export import read_dataframes_from_exported_folder
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+
+def correlate_return_cross_terms(df0: pd.DataFrame, df1: pd.DataFrame) -> pd.DataFrame:
+    """
+    Like df.corr(), but acts on two dataframes, returning only the cross terms
+
+    Parameters
+    ----------
+    df0
+    df1
+
+    Returns
+    -------
+
+    """
+    df_corr = pd.concat([df0, df1], axis=1).corr()
+    return get_corner_from_corr_df(df0, df_corr)
+
+
+def get_corner_from_corr_df(df0: pd.DataFrame, df_corr: pd.DataFrame):
+    """
+    If correlations are calculated between a concatenated version of df_trace and something else, this gets only the
+    cross terms from df_corr
+
+    Parameters
+    ----------
+    df0
+    df_corr
+
+    Returns
+    -------
+
+    """
+    ind_nonneuron = np.arange(df0.shape[1], df_corr.shape[1])
+    ind_neurons = np.arange(0, df0.shape[1])
+    return df_corr.iloc[ind_neurons, ind_nonneuron]
+
+
+def get_names_from_df(df, level=0):
+    """
+    Simpler copy of get_names_from_df utility
+    """
+    return list(set(df.columns.get_level_values(level)))
 
 
 def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
+    """
+    Builds a dash/plotly dashboard for exploring single neuron correlations to behavior
+
+    Parameters
+    ----------
+    project_path
+    allow_public_access
+
+    Returns
+    -------
+
+    """
 
     app = Dash(__name__)
 
     # Read data
-    df_final = read_dataframes_from_exported_folder(project_path)
+    fname = Path(project_path).parent.joinpath('final_dataframes/df_final.h5')
+    df_final: pd.DataFrame = pd.read_hdf(fname)
     df_behavior = df_final['behavior']['behavior']
     df_curvature = df_final['behavior']['curvature']
     # df_curvature = dict_of_dataframes['behavior']['curvature_high_fps']
@@ -316,7 +369,7 @@ def switch_plot_func_using_rectification(regression_type):
 def build_dropdowns(df_behavior: pd.DataFrame, df_curvature: pd.DataFrame, df_all_traces: pd.DataFrame) -> html.Div:
     curvature_names = get_names_from_df(df_curvature)
     curvature_initial = curvature_names[0]
-    trace_names = list(set(df_all_traces.columns.get_level_values(0)))
+    trace_names = get_names_from_df(df_all_traces)
     trace_initial = 'ratio'
     df_traces = df_all_traces[trace_initial]
     neuron_names = get_names_from_df(df_traces)
