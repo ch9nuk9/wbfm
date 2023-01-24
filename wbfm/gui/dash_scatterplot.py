@@ -316,9 +316,7 @@ def switch_plot_func_using_rectification(regression_type):
 def build_dropdowns(df_behavior: pd.DataFrame, df_curvature: pd.DataFrame, df_all_traces: pd.DataFrame) -> html.Div:
     curvature_names = get_names_from_df(df_curvature)
     curvature_initial = curvature_names[0]
-    # TODO: does this work if df_all_traces is a a 3-level multiindex?
-    trace_names = list(df_all_traces.columns.levels[0])
-    # trace_names = list(dict_of_trace_dataframes.keys())
+    trace_names = list(set(df_all_traces.columns.get_level_values(0)))
     trace_initial = 'ratio'
     df_traces = df_all_traces[trace_initial]
     neuron_names = get_names_from_df(df_traces)
