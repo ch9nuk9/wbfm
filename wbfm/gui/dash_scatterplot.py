@@ -209,6 +209,7 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
                                                             kymograph_range)
 
     if __name__ == '__main__':
+        allow_public_access = False
         if allow_public_access:
             app.run_server(debug=False, host="0.0.0.0")
         else:
