@@ -47,7 +47,9 @@ def get_names_from_df(df, level=0):
     """
     Simpler copy of get_names_from_df utility
     """
-    return list(set(df.columns.get_level_values(level)))
+    names = list(set(df.columns.get_level_values(level)))
+    names.sort()
+    return names
 
 
 def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
