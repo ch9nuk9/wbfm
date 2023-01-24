@@ -48,21 +48,24 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     _ = model.all_dfs
     cols = ['summed_curvature', 'signed_speed_angular', 'signed_middle_body_speed']
     trace_len = project_data.num_frames
-    df_behavior_dict = {c: model.unpack_behavioral_time_series_from_name(c, trace_len)[0] for c in cols}
-    df_behavior_dict['reversal'] = (worm.beh_annotation(fluorescence_fps=True) == 1).reset_index(drop=True)
-    df_behavior = pd.DataFrame(df_behavior_dict)
+    df_behavior_single_columns = {c: model.unpack_behavioral_time_series_from_name(c, trace_len)[0] for c in cols}
+    df_behavior_single_columns['reversal'] = (worm.beh_annotation(fluorescence_fps=True) == 1).reset_index(drop=True)
+    df_behavior = pd.DataFrame(df_behavior_single_columns)
     df_behavior.reversal.replace(np.nan, False, inplace=True)
 
-    # project_config.h5_data_in_local_project(df_behavior, fname)
+    # Intermediate behavioral dataframe, because these are not multiindex, but curvature already is multiindex
+    df_all_behavior_single_columns = pd.concat(df_behavior_single_columns.values(), axis=1, keys=df_behavior_single_columns.keys())
 
+    df_behavior_multi_column = {}
     # Kymograph (curvature), fluorescence_fps and not
     df_curvature = worm.curvature(fluorescence_fps=True)
     df_curvature = df_curvature.reset_index(drop=True)
     df_curvature.columns = [f"segment_{i:03d}" for i in range(df_curvature.shape[1])]
 
-    df_behavior_dict['curvature'] = df_curvature
+    df_behavior_multi_column['curvature'] = df_curvature
+    df_behavior_multi_column['behavior'] = df_all_behavior_single_columns
 
-    df_all_behaviors = pd.concat(df_behavior_dict.values(), axis=1, keys=df_behavior_dict.keys())
+    df_all_behaviors = pd.concat(df_behavior_multi_column.values(), axis=1, keys=df_behavior_multi_column.keys())
 
     # Combine all into full multi-level dataframe and save
     df_final = pd.concat([df_all_traces, df_all_behaviors], axis=1, keys=['traces', 'behavior'])
