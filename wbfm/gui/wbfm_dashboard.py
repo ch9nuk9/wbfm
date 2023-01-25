@@ -168,6 +168,19 @@ class DashboardDataset:
             ]
         )
 
+        @app.callback(
+            Output('neuron-select-dropdown', 'options'),
+            Input('dataset-dropdown', 'value')
+        )
+        def _update_neuron_dropdown(current_dataset):
+            # Get any trace type; assume they have the same names
+            print("Trying to set neuron dropdown options")
+            self.current_dataset = current_dataset
+            new_neuron_names = get_names_from_df(self.get_trace_type('ratio'))
+            # new_neuron_selected = new_neuron_names[0]
+            print(new_neuron_names)
+            return new_neuron_names
+
         # Main scatter plot changing callback (change axes)
         @app.callback(
             Output('correlation-scatterplot', 'figure'),
@@ -190,32 +203,30 @@ class DashboardDataset:
             Output('correlation-scatterplot', 'clickData'),
             Output('kymograph-all-neuron-max-segment-correlation', 'clickData'),
             Input('correlation-scatterplot', 'clickData'),
-            Input('kymograph-all-neuron-max-segment-correlation', 'clickData')
+            Input('kymograph-all-neuron-max-segment-correlation', 'clickData'),
+            Input('neuron-select-dropdown', 'value'),
+            Input('neuron-select-dropdown', 'options')
         )
-        def _use_click_to_update_neuron_dropdown(correlation_clickData, kymograph_clickData):
+        def _use_click_to_update_neuron_dropdown(correlation_clickData, kymograph_clickData,
+                                                 previous_neuron_name, neuron_options):
+            # Note: needs neuron_options as input because this is the only function that can change the
+            # neuron-select-dropdown value
+
             # Resets the clickData of each plot (multiple outputs)
             if correlation_clickData:
                 neuron_name = correlation_clickData["points"][0]["customdata"][0]
             elif kymograph_clickData:
                 neuron_name = kymograph_clickData["points"][0]["customdata"][0]
             else:
-                neuron_name = None
+                neuron_name = previous_neuron_name
+
+            if neuron_name not in neuron_options:
+                neuron_name = list(neuron_options)[0]
 
             if neuron_name:
                 self.current_neuron = neuron_name
 
             return neuron_name, None, None
-
-        @app.callback(
-            Output('neuron-select-dropdown', 'options'),
-            Output('neuron-select-dropdown', 'value'),
-            Input('dataset-dropdown', 'value')
-        )
-        def _update_neuron_dropdown(dataset_type):
-            # Get any trace type; assume they have the same names
-            new_neuron_names = self.get_trace_type('ratio')
-            new_neuron_selected = new_neuron_names[0]
-            return new_neuron_names, new_neuron_selected
 
         @app.callback(
             Output('kymograph-select-dropdown', 'value'),
