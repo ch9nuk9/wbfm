@@ -352,11 +352,14 @@ def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, reg
         y_names = y_name
     xaxis_title = f"Correlation with {x_name}"
     yaxis_title = f"Correlation with {y_name}"
-    df_corr['neuron_name'] = df_corr.index
+
     # Create a fake "selected" column, because the default doesn't work when you return a new figure
     df_corr['selected'] = 1
     df_corr.loc[neuron_name, 'selected'] = 5
-    # print(f"Selecting {df_corr.loc[neuron_name]}")
+
+    # Reset index to make x ticks smaller
+    df_corr.reset_index(inplace=True)
+    df_corr.rename(columns={'index': 'neuron_name'}, inplace=True)
     # Top scatter plot
     _fig = px.scatter(df_corr, x=x_name, y=y_names, hover_name="neuron_name",
                       custom_data=["neuron_name"],
@@ -427,7 +430,11 @@ def update_kymograph_correlation_per_segment(df_traces, df_behavior, df_curvatur
         df_dict = {'correlation': corr}
         df_corr = pd.DataFrame(df_dict)
         y_names = ['correlation']
-    _fig = px.line(df_corr, y=y_names, title=f"Which body segment correlates to {neuron_name}?", range_y=[-0.8, 0.8])
+
+    df_corr.reset_index(inplace=True)
+    df_corr.rename(columns={'index': 'neuron_name'}, inplace=True)
+    _fig = px.line(df_corr, y=y_names, title=f"Which body segment correlates to {neuron_name}?", range_y=[-0.8, 0.8],
+                   hover_name='neuron_name', custom_data=['neuron_name'])
     _fig.update_layout(showlegend=False)
     # results = px.get_trendline_results(_fig)
     # print([result.summary() for result in results.px_fit_results])
@@ -455,17 +462,20 @@ def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curv
         df_corr_max = pd.DataFrame(df_corr.max(axis=1), columns=['correlation'])
         y_names = 'correlation'
     # For setting custom data
-    df_corr_max['index'] = df_corr_max.index
-    # df_corr_max['neuron_name'] = get_names_from_df(df_traces)
+
     # Create a fake "selected" column, because the default doesn't work when you return a new figure
     df_corr_max['selected'] = 1
     df_corr_max.loc[neuron_name, 'selected'] = 5
-    print(f"Selecting {neuron_name}")
+
+    # Shrink x ticks
+    df_corr_max.reset_index(inplace=True)
+    df_corr_max.rename(columns={'index': 'neuron_name'}, inplace=True)
 
     _fig = px.scatter(df_corr_max, y=y_names, title=f"Max curvature correlation over selected body segments",
                       range_y=[0, 0.8],
                       size='selected',
-                      marginal_y='histogram', custom_data=['index'])
+                      hover_name='neuron_name',
+                      marginal_y='histogram', custom_data=['neuron_name']).update_traces()
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
 
