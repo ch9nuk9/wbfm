@@ -88,3 +88,13 @@ def read_dataframes_from_exported_folder(project_path: str) -> pd.DataFrame:
     df_final = pd.read_hdf(fname)
 
     return df_final
+
+
+def concat_df_final_from_multiple_projects(all_project_paths: List[str]) -> pd.DataFrame:
+
+    all_project_data = [ProjectData.load_final_project_data_from_config(p) for p in all_project_paths]
+    all_dfs = [p.df_exported_format for p in all_project_data]
+    keys = [p.more_shortened_name for p in all_project_data]
+
+    df_multiproject = pd.concat(all_dfs, axis=1, keys=keys)
+    return df_multiproject

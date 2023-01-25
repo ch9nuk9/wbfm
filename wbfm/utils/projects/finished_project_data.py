@@ -1174,6 +1174,11 @@ class ProjectData:
     def shortened_name(self):
         return str(Path(self.project_dir).name)
 
+    @property
+    def more_shortened_name(self):
+        # Expects a name like 'ZIM2319_GFP_worm1-2022-12-10', and removes the date
+        return self.shortened_name.split('-')[0]
+
     # Functions for printing analysis statistics
     def print_seg_statistics(self):
         print("=======================================\n")

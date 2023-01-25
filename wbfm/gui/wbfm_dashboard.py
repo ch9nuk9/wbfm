@@ -95,6 +95,7 @@ class DashboardDataset:
 
     @property
     def df_behavior(self):
+        # Always a single dataset
         if self.current_dataset is None:
             return self.df_final['behavior']['behavior']
         else:
@@ -102,6 +103,7 @@ class DashboardDataset:
 
     @property
     def df_curvature(self):
+        # Always a single dataset
         if self.current_dataset is None:
             return self.df_final['behavior']['curvature']
         else:
@@ -113,6 +115,7 @@ class DashboardDataset:
 
     @property
     def df_all_traces(self):
+        # May be a joined version of multiple datasets
         if self.current_dataset is None:
             return self.df_final['traces']
         elif self.current_dataset == 'all':
@@ -143,8 +146,8 @@ class DashboardDataset:
         app = Dash(__name__)
 
         # Initialize hardcoded paths to files (will open in new tab)
-        # path_to_grid_plot = Path(project_path).parent.joinpath('traces').\
-        #     joinpath('ratio_integration_rolling_mean_beh_pc1-grid-.png')
+        path_to_grid_plot = Path(project_path).parent.joinpath('traces').\
+            joinpath('ratio_integration_rolling_mean_beh_pc1-grid-.png')
 
         # Define layout
         curvature_names = get_names_from_df(self.df_curvature)
