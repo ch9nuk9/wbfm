@@ -259,14 +259,12 @@ class WormFullVideoPosture:
         x = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 0]), window)
         y = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 1]), window)
 
-        x = pd.Series(x).interpolate()
-        y = pd.Series(y).interpolate()
+        # Second interpolation to get rid of nan at position 0
+        x = pd.Series(x).interpolate().interpolate(method='bfill')
+        y = pd.Series(y).interpolate().interpolate(method='bfill')
         # Note: arctan2 is required to give the proper sign
-        # x = filter_gaussian_moving_average(pd.Series(x), std=12)
-        # y = filter_gaussian_moving_average(pd.Series(y), std=12)
         angles = np.unwrap(np.arctan2(y, x))
         smoothed_angles = filter_gaussian_moving_average(pd.Series(angles), std=12)
-        # smoothed_angles = filter_gaussian_moving_average(pd.Series(angles), std=12)
 
         velocity = np.gradient(smoothed_angles)
         velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)

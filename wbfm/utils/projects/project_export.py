@@ -80,6 +80,8 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     #
     print("Finished saving all dataframes")
 
+    return df_final
+
 
 def read_dataframes_from_exported_folder(project_path: str) -> pd.DataFrame:
     fname = Path(project_path).parent.joinpath('final_dataframes/df_final.h5')
