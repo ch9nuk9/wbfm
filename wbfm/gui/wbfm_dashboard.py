@@ -1,6 +1,7 @@
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from dash import Dash, dcc, html, Output, Input
@@ -60,6 +61,9 @@ class DashboardDataset:
 
     df_final: pd.DataFrame = None
 
+    current_dataset: Optional[str] = None
+    dataset_of_current_neuron: str = None  # In case current_dataset == 'all'
+
     def __post_init__(self):
         # Read data
         if isinstance(project_path, str) and project_path.endswith('.h5'):
@@ -69,20 +73,48 @@ class DashboardDataset:
             fname = Path(project_path).parent.joinpath('final_dataframes/df_final.h5')
         self.df_final = pd.read_hdf(fname)
 
+        # TODO: Check if this is for multiple datasets or not
+        if self.df_final.columns.nlevels == 4:
+            # Multi dataset
+            self.dataset_names = get_names_from_df(self.df_final)
+            self.current_dataset = self.dataset_names[0]
+        elif self.df_final.columns.nlevels == 3:
+            # Single dataset
+            self.dataset_names = None
+            self.current_dataset = None
+        else:
+            raise NotImplementedError
+
     @property
     def df_behavior(self):
-        return self.df_final['behavior']['behavior']
+        if self.current_dataset is None:
+            return self.df_final['behavior']['behavior']
+        else:
+            return self.df_final[self.current_dataset]['behavior']['behavior']
 
     @property
     def df_curvature(self):
-        return self.df_final['behavior']['curvature']
+        if self.current_dataset is None:
+            return self.df_final['behavior']['curvature']
+        else:
+            return self.df_final[self.current_dataset]['behavior']['curvature']
 
     @property
     def df_all_traces(self):
-        return self.df_final['traces']
+        if self.current_dataset is None:
+            return self.df_final['traces']
+        elif self.current_dataset == 'all':
+            # Build the dataset from all individual dataframes
+
+            raise NotImplementedError
+        else:
+            return self.df_final[self.current_dataset]['traces']
 
     def get_trace_type(self, trace_type: str):
-        df = self.df_all_traces[trace_type]
+        if trace_type in self.df_all_traces:
+            df = self.df_all_traces[trace_type]
+        else:
+            raise NotImplementedError
         return df
 
     def serve_wbfm_dashboard(self):
@@ -93,12 +125,17 @@ class DashboardDataset:
         app = Dash(__name__)
 
         # Initialize hardcoded paths to files (will open in new tab)
-        path_to_grid_plot = Path(project_path).parent.joinpath('traces').\
-            joinpath('ratio_integration_rolling_mean_beh_pc1-grid-.png')
+        # path_to_grid_plot = Path(project_path).parent.joinpath('traces').\
+        #     joinpath('ratio_integration_rolling_mean_beh_pc1-grid-.png')
 
         # Define layout
+        curvature_names = get_names_from_df(self.df_curvature)
+        behavior_names = get_names_from_df(self.df_behavior)
+        trace_names = get_names_from_df(self.df_all_traces)
+        neuron_names = get_names_from_df(self.df_all_traces[trace_names[0]])
+
         app.layout = html.Div([
-            build_dropdowns(self.df_behavior, self.df_curvature, self.df_all_traces),
+            build_dropdowns(behavior_names, curvature_names, trace_names, neuron_names),
             build_second_row_options(path_to_grid_plot),
             build_plots_html(),
             build_plots_curvature(self.df_curvature)
@@ -379,17 +416,10 @@ def switch_plot_func_using_rectification(regression_type):
     return opt, px_func
 
 
-def build_dropdowns(df_behavior: pd.DataFrame, df_curvature: pd.DataFrame, df_all_traces: pd.DataFrame) -> html.Div:
-    curvature_names = get_names_from_df(df_curvature)
+def build_dropdowns(behavior_names: list, curvature_names: list, trace_names: list, neuron_names: list) -> html.Div:
     curvature_initial = curvature_names[0]
-    trace_names = get_names_from_df(df_all_traces)
     trace_initial = 'ratio'
-    df_traces = df_all_traces[trace_initial]
-    neuron_names = get_names_from_df(df_traces)
     neuron_initial = neuron_names[0]
-
-    behavior_names = get_names_from_df(df_behavior)
-
     x_initial = 'signed_speed_angular'
     behavior_initial = 'signed_middle_body_speed'
 
