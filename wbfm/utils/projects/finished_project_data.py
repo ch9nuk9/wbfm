@@ -1098,6 +1098,14 @@ class ProjectData:
         return invalid_idx
 
     @cached_property
+    def df_exported_format(self) -> pd.DataFrame:
+        """See project_export.save_all_final_dataframes"""
+
+        fname = Path(self.project_dir).joinpath('final_dataframes/df_final.h5')
+        df_final = pd.read_hdf(fname)
+        return df_final
+
+    @cached_property
     def finished_neuron_names(self) -> List[str]:
         """
         Uses df_manual_tracking to get a list of the neuron names that have been fully corrected
