@@ -1177,7 +1177,10 @@ class ProjectData:
     @property
     def more_shortened_name(self):
         # Expects a name like 'ZIM2319_GFP_worm1-2022-12-10', and removes the date
-        return self.shortened_name.split('-')[0]
+        name = self.shortened_name.split('-')[0]
+        if len(name.split('_')) > 1:
+            name = name.split('_')[-1]
+        return name
 
     # Functions for printing analysis statistics
     def print_seg_statistics(self):
