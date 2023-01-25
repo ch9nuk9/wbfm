@@ -154,9 +154,10 @@ class DashboardDataset:
         behavior_names = get_names_from_df(self.df_behavior)
         trace_names = get_names_from_df(self.df_all_traces)
         neuron_names = get_names_from_df(self.df_all_traces[trace_names[0]])
+        dataset_names = self.dataset_names
 
         app.layout = html.Div([
-            build_dropdowns(behavior_names, curvature_names, trace_names, neuron_names),
+            build_dropdowns(behavior_names, curvature_names, trace_names, neuron_names, dataset_names),
             build_second_row_options(path_to_grid_plot),
             build_plots_html(),
             build_plots_curvature(self.df_curvature)
@@ -170,9 +171,11 @@ class DashboardDataset:
             Input('behavior-scatter-yaxis', 'value'),
             Input('neuron-select-dropdown', 'value'),
             Input('regression-type', 'value'),
-            Input('trace-select-dropdown', 'value')
+            Input('trace-select-dropdown', 'value'),
+            Input('dataset-dropdown', 'value')
         )
-        def _update_scatter_plot(x_name, y_name, neuron_name, regression_type, trace_type):
+        def _update_scatter_plot(x_name, y_name, neuron_name, regression_type, trace_type, current_dataset):
+            self.current_dataset = current_dataset
             df_traces = self.get_trace_type(trace_type)
             return update_scatter_plot(self.df_behavior, df_traces, x_name, y_name, neuron_name, regression_type)
 
@@ -200,7 +203,6 @@ class DashboardDataset:
             Input('kymograph-per-segment-correlation', 'clickData')
         )
         def _use_click_to_update_kymograph_segment(clickData):
-            # print(clickData)
             if clickData is None:
                 return 'segment_001'
             kymograph_segment_name = clickData["points"][0]["x"]
@@ -210,9 +212,11 @@ class DashboardDataset:
             Output('neuron-trace', 'figure'),
             Input('neuron-select-dropdown', 'value'),
             Input('regression-type', 'value'),
-            Input('trace-select-dropdown', 'value')
+            Input('trace-select-dropdown', 'value'),
+            Input('dataset-dropdown', 'value')
         )
-        def _update_neuron_trace(neuron_name, regression_type, trace_type):
+        def _update_neuron_trace(neuron_name, regression_type, trace_type, current_dataset):
+            self.current_dataset = current_dataset
             df_traces = self.get_trace_type(trace_type)
             self.df_behavior_and_neurons = pd.concat([self.df_behavior, df_traces], axis=1)
             return update_neuron_trace_plot(self.df_behavior_and_neurons, neuron_name, regression_type)
@@ -222,9 +226,11 @@ class DashboardDataset:
             Input('neuron-select-dropdown', 'value'),
             Input('behavior-scatter-yaxis', 'value'),
             Input('regression-type', 'value'),
-            Input('trace-select-dropdown', 'value')
+            Input('trace-select-dropdown', 'value'),
+            Input('dataset-dropdown', 'value')
         )
-        def _update_behavior_scatter(neuron_name, behavior_name, regression_type, trace_type):
+        def _update_behavior_scatter(neuron_name, behavior_name, regression_type, trace_type, current_dataset):
+            self.current_dataset = current_dataset
             df_traces = self.get_trace_type(trace_type)
             self.df_behavior_and_neurons = pd.concat([self.df_behavior, df_traces], axis=1)
             return update_behavior_scatter_plot(self.df_behavior_and_neurons, behavior_name, neuron_name, regression_type)
@@ -233,9 +239,11 @@ class DashboardDataset:
         @app.callback(
             Output('behavior-trace', 'figure'),
             Input('behavior-scatter-yaxis', 'value'),
-            Input('regression-type', 'value')
+            Input('regression-type', 'value'),
+            Input('dataset-dropdown', 'value')
         )
-        def _update_behavior_trace(behavior_name, regression_type):
+        def _update_behavior_trace(behavior_name, regression_type, current_dataset):
+            self.current_dataset = current_dataset
             return update_behavior_trace_plot(self.df_behavior, behavior_name, regression_type)
 
         @app.callback(
@@ -243,9 +251,12 @@ class DashboardDataset:
             Input('kymograph-select-dropdown', 'value'),
             Input('neuron-select-dropdown', 'value'),
             Input('regression-type', 'value'),
-            Input('trace-select-dropdown', 'value')
+            Input('trace-select-dropdown', 'value'),
+            Input('dataset-dropdown', 'value')
         )
-        def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type, trace_type):
+        def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type, trace_type,
+                                      current_dataset):
+            self.current_dataset = current_dataset
             df_traces = self.get_trace_type(trace_type)
             df_all = pd.concat([self.df_behavior, self.df_curvature, df_traces], axis=1)
             return update_kymograph_scatter_plot(df_all, kymograph_segment_name, neuron_name, regression_type)
@@ -254,9 +265,11 @@ class DashboardDataset:
             Output('kymograph-per-segment-correlation', 'figure'),
             Input('neuron-select-dropdown', 'value'),
             Input('regression-type', 'value'),
-            Input('trace-select-dropdown', 'value')
+            Input('trace-select-dropdown', 'value'),
+            Input('dataset-dropdown', 'value')
         )
-        def _update_kymograph_correlation(neuron_name, regression_type, trace_type):
+        def _update_kymograph_correlation(neuron_name, regression_type, trace_type, current_dataset):
+            self.current_dataset = current_dataset
             df_traces = self.get_trace_type(trace_type)
             return update_kymograph_correlation_per_segment(df_traces, self.df_behavior, self.df_curvature, neuron_name,
                                                             regression_type)
@@ -266,9 +279,11 @@ class DashboardDataset:
             Input('regression-type', 'value'),
             Input('trace-select-dropdown', 'value'),
             Input('neuron-select-dropdown', 'value'),
-            Input('kymograph-range-slider', 'value')
+            Input('kymograph-range-slider', 'value'),
+            Input('dataset-dropdown', 'value')
         )
-        def _update_kymograph_max_segment(regression_type, trace_type, neuron_name, kymograph_range):
+        def _update_kymograph_max_segment(regression_type, trace_type, neuron_name, kymograph_range, current_dataset):
+            self.current_dataset = current_dataset
             df_traces = self.get_trace_type(trace_type)
             return update_max_correlation_over_all_segment_plot(self.df_behavior, df_traces, self.df_curvature,
                                                                 regression_type,
@@ -437,17 +452,31 @@ def switch_plot_func_using_rectification(regression_type):
     return opt, px_func
 
 
-def build_dropdowns(behavior_names: list, curvature_names: list, trace_names: list, neuron_names: list) -> html.Div:
+def build_dropdowns(behavior_names: list, curvature_names: list, trace_names: list, neuron_names: list,
+                    dataset_names: list) -> html.Div:
     curvature_initial = curvature_names[0]
     trace_initial = 'ratio'
     neuron_initial = neuron_names[0]
+    dataset_initial = dataset_names[0]
     x_initial = 'signed_speed_angular'
     behavior_initial = 'signed_middle_body_speed'
 
     header = html.H1("Dropdowns for changing all plots")
 
-    dropdown_style = {'width': '24%'}
+    dropdown_style = {'width': '20%'}
     dropdowns = html.Div([
+        html.Div([
+            html.Label(["Dataset"], style={'font-weight': 'bold', "text-align": "center"}),
+            html.Div([
+                dcc.Dropdown(
+                    dataset_names,
+                    dataset_initial,
+                    id='dataset-dropdown',
+                    clearable=False
+                ),
+            ])],
+            style=dropdown_style),
+
         html.Div([
             html.Label(["Behavior to correlate (x axis)"], style={'font-weight': 'bold', "text-align": "center"}),
             html.Div([
