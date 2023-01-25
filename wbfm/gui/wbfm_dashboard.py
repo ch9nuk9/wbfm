@@ -115,24 +115,26 @@ class DashboardDataset:
 
     @property
     def df_all_traces(self):
-        # May be a joined version of multiple datasets
         if self.current_dataset is None:
             return self.df_final['traces']
-        elif self.current_dataset == 'all':
-            # Build the dataset from all individual dataframes
-            dataset_name = self.dataset_names[0]
-            mapper = partial(self.rename_joined_neurons, dataset_name=dataset_name)
-            df_joined = self.df_final[dataset_name].copy().rename(columns=mapper)
-            for dataset_name in self.dataset_names[1:]:
-                mapper = partial(self.rename_joined_neurons, dataset_name=dataset_name)
-                df_to_join = self.df_final[dataset_name].copy().rename(columns=mapper)
-                df_joined = df_joined.join(df_to_join)
-            return df_joined
         else:
             return self.df_final[self.dataset_of_current_neuron()]['traces']
 
     def get_trace_type(self, trace_type: str):
-        if trace_type in self.df_all_traces:
+        # May be a joined version of multiple datasets
+        if self.current_dataset == 'all':
+            # Build the dataset from all individual dataframes
+            dataset_name = self.dataset_names[0]
+            mapper = partial(self.rename_joined_neurons, dataset_name=dataset_name)
+            df_joined = self.df_final[dataset_name]['traces'][trace_type].copy().rename(columns=mapper)
+            for dataset_name in self.dataset_names[1:]:
+                mapper = partial(self.rename_joined_neurons, dataset_name=dataset_name)
+                df_to_join = self.df_final[dataset_name]['traces'][trace_type].copy().rename(columns=mapper)
+                df_joined = df_joined.join(df_to_join)
+
+            df = df_joined
+
+        elif trace_type in self.df_all_traces:
             df = self.df_all_traces[trace_type]
         else:
             raise NotImplementedError
@@ -154,7 +156,9 @@ class DashboardDataset:
         behavior_names = get_names_from_df(self.df_behavior)
         trace_names = get_names_from_df(self.df_all_traces)
         neuron_names = get_names_from_df(self.df_all_traces[trace_names[0]])
-        dataset_names = self.dataset_names
+        dataset_names = self.dataset_names.copy()
+        if dataset_names is not None:
+            dataset_names.append('all')
 
         app.layout = html.Div([
             build_dropdowns(behavior_names, curvature_names, trace_names, neuron_names, dataset_names),
@@ -196,7 +200,22 @@ class DashboardDataset:
                 neuron_name = kymograph_clickData["points"][0]["customdata"][0]
             else:
                 neuron_name = None
+
+            if neuron_name:
+                self.current_neuron = neuron_name
+
             return neuron_name, None, None
+
+        @app.callback(
+            Output('neuron-select-dropdown', 'options'),
+            Output('neuron-select-dropdown', 'value'),
+            Input('dataset-dropdown', 'value')
+        )
+        def _update_neuron_dropdown(dataset_type):
+            # Get any trace type; assume they have the same names
+            new_neuron_names = self.get_trace_type('ratio')
+            new_neuron_selected = new_neuron_names[0]
+            return new_neuron_names, new_neuron_selected
 
         @app.callback(
             Output('kymograph-select-dropdown', 'value'),
