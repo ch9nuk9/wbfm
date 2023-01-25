@@ -203,12 +203,13 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
         Output('kymograph-all-neuron-max-segment-correlation', 'figure'),
         Input('regression-type', 'value'),
         Input('trace-select-dropdown', 'value'),
+        Input('neuron-select-dropdown', 'value'),
         Input('kymograph-range-slider', 'value')
     )
-    def _update_kymograph_max_segment(regression_type, trace_type, kymograph_range):
+    def _update_kymograph_max_segment(regression_type, trace_type, neuron_name, kymograph_range):
         df_traces = df_all_traces[trace_type]
         return update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type,
-                                                            kymograph_range)
+                                                            neuron_name, kymograph_range)
 
     if __name__ == '__main__':
         allow_public_access = False
@@ -323,7 +324,7 @@ def update_kymograph_correlation_per_segment(df_traces, df_behavior, df_curvatur
 
 
 def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type,
-                                                 kymograph_range):
+                                                 neuron_name, kymograph_range):
     # Will not actually be updated, except for changing the rectification
     df_curvature_subset = df_curvature.iloc[:, kymograph_range[0]:kymograph_range[1]]
     if regression_type == 'Rectified regression':
@@ -343,8 +344,14 @@ def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curv
         y_names = 'correlation'
     # For setting custom data
     df_corr_max['index'] = df_corr_max.index
+    df_corr['neuron_name'] = get_names_from_df(df_traces)
+    # Create a fake "selected" column, because the default doesn't work when you return a new figure
+    df_corr['selected'] = 1
+    df_corr.loc[neuron_name, 'selected'] = 5
 
-    _fig = px.scatter(df_corr_max, y=y_names, title=f"Max curvature correlation over selected body segments", range_y=[0, 0.8],
+    _fig = px.scatter(df_corr_max, y=y_names, title=f"Max curvature correlation over selected body segments",
+                      range_y=[0, 0.8],
+                      size='selected',
                       marginal_y='histogram', custom_data=['index'])
     _fig.update_layout(height=325, margin={'l': 20, 'b': 30, 'r': 10, 't': 30})
     return _fig
