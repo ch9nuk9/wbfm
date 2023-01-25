@@ -1,5 +1,6 @@
 import argparse
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Optional
 
@@ -62,7 +63,7 @@ class DashboardDataset:
     df_final: pd.DataFrame = None
 
     current_dataset: Optional[str] = None
-    dataset_of_current_neuron: str = None  # In case current_dataset == 'all'
+    current_neuron: str = None
 
     def __post_init__(self):
         # Read data
@@ -73,7 +74,6 @@ class DashboardDataset:
             fname = Path(project_path).parent.joinpath('final_dataframes/df_final.h5')
         self.df_final = pd.read_hdf(fname)
 
-        # TODO: Check if this is for multiple datasets or not
         if self.df_final.columns.nlevels == 4:
             # Multi dataset
             self.dataset_names = get_names_from_df(self.df_final)
@@ -85,19 +85,31 @@ class DashboardDataset:
         else:
             raise NotImplementedError
 
+    def dataset_of_current_neuron(self) -> str:
+        # In case current_dataset == 'all'
+        if self.current_dataset != 'all':
+            return self.current_dataset
+        else:
+            # Hacky: attempt to get it from the current neuron name
+            return self.current_neuron.split('-')[1]
+
     @property
     def df_behavior(self):
         if self.current_dataset is None:
             return self.df_final['behavior']['behavior']
         else:
-            return self.df_final[self.current_dataset]['behavior']['behavior']
+            return self.df_final[self.dataset_of_current_neuron()]['behavior']['behavior']
 
     @property
     def df_curvature(self):
         if self.current_dataset is None:
             return self.df_final['behavior']['curvature']
         else:
-            return self.df_final[self.current_dataset]['behavior']['curvature']
+            return self.df_final[self.dataset_of_current_neuron()]['behavior']['curvature']
+
+    @staticmethod
+    def rename_joined_neurons(neuron_name, dataset_name):
+        return f"{neuron_name}-{dataset_name}"
 
     @property
     def df_all_traces(self):
@@ -105,10 +117,16 @@ class DashboardDataset:
             return self.df_final['traces']
         elif self.current_dataset == 'all':
             # Build the dataset from all individual dataframes
-
-            raise NotImplementedError
+            dataset_name = self.dataset_names[0]
+            mapper = partial(self.rename_joined_neurons, dataset_name=dataset_name)
+            df_joined = self.df_final[dataset_name].copy().rename(columns=mapper)
+            for dataset_name in self.dataset_names[1:]:
+                mapper = partial(self.rename_joined_neurons, dataset_name=dataset_name)
+                df_to_join = self.df_final[dataset_name].copy().rename(columns=mapper)
+                df_joined = df_joined.join(df_to_join)
+            return df_joined
         else:
-            return self.df_final[self.current_dataset]['traces']
+            return self.df_final[self.dataset_of_current_neuron()]['traces']
 
     def get_trace_type(self, trace_type: str):
         if trace_type in self.df_all_traces:
