@@ -344,10 +344,10 @@ def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curv
         y_names = 'correlation'
     # For setting custom data
     df_corr_max['index'] = df_corr_max.index
-    df_corr['neuron_name'] = get_names_from_df(df_traces)
+    # df_corr_max['neuron_name'] = get_names_from_df(df_traces)
     # Create a fake "selected" column, because the default doesn't work when you return a new figure
-    df_corr['selected'] = 1
-    df_corr.loc[neuron_name, 'selected'] = 5
+    df_corr_max['selected'] = 1
+    df_corr_max.loc[neuron_name, 'selected'] = 5
 
     _fig = px.scatter(df_corr_max, y=y_names, title=f"Max curvature correlation over selected body segments",
                       range_y=[0, 0.8],
