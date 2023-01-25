@@ -1,4 +1,5 @@
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -52,159 +53,170 @@ def get_names_from_df(df, level=0):
     return names
 
 
-def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
-    """
-    Builds a dash/plotly dashboard for exploring single neuron correlations to behavior
+@dataclass
+class DashboardDataset:
+    project_path: str
+    allow_public_access: bool = False
 
-    Parameters
-    ----------
-    project_path
-    allow_public_access
+    df_final: pd.DataFrame = None
 
-    Returns
-    -------
-
-    """
-
-    app = Dash(__name__)
-
-    # Read data
-    if isinstance(project_path, str) and project_path.endswith('.h5'):
-        # Maybe the user passed the filename, not the project config name
-        fname = project_path
-    else:
-        fname = Path(project_path).parent.joinpath('final_dataframes/df_final.h5')
-    df_final: pd.DataFrame = pd.read_hdf(fname)
-    df_behavior = df_final['behavior']['behavior']
-    df_curvature = df_final['behavior']['curvature']
-    df_all_traces = df_final['traces']
-
-    # Initialize hardcoded paths to files (will open in new tab)
-    path_to_grid_plot = Path(project_path).parent.joinpath('traces').\
-        joinpath('ratio_integration_rolling_mean_beh_pc1-grid-.png')
-
-    # Define layout
-    app.layout = html.Div([
-        build_dropdowns(df_behavior, df_curvature, df_all_traces),
-        build_second_row_options(path_to_grid_plot),
-        build_plots_html(),
-        build_plots_curvature(df_curvature)
-        ]
-    )
-
-    # Main scatter plot changing callback (change axes)
-    @app.callback(
-        Output('correlation-scatterplot', 'figure'),
-        Input('scatter-xaxis', 'value'),
-        Input('behavior-scatter-yaxis', 'value'),
-        Input('neuron-select-dropdown', 'value'),
-        Input('regression-type', 'value'),
-        Input('trace-select-dropdown', 'value')
-    )
-    def _update_scatter_plot(x_name, y_name, neuron_name, regression_type, trace_type):
-        df_traces = df_all_traces[trace_type]
-        return update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, regression_type)
-
-    # Neuron selection updates
-    # Logic: everything goes through the dropdown menu. A click will update that, which updates other things
-    @app.callback(
-        Output('neuron-select-dropdown', 'value'),
-        Output('correlation-scatterplot', 'clickData'),
-        Output('kymograph-all-neuron-max-segment-correlation', 'clickData'),
-        Input('correlation-scatterplot', 'clickData'),
-        Input('kymograph-all-neuron-max-segment-correlation', 'clickData')
-    )
-    def _use_click_to_update_neuron_dropdown(correlation_clickData, kymograph_clickData):
-        # Resets the clickData of each plot (multiple outputs)
-        if correlation_clickData:
-            neuron_name = correlation_clickData["points"][0]["customdata"][0]
-        elif kymograph_clickData:
-            neuron_name = kymograph_clickData["points"][0]["customdata"][0]
+    def __post_init__(self):
+        # Read data
+        if isinstance(project_path, str) and project_path.endswith('.h5'):
+            # Maybe the user passed the filename, not the project config name
+            fname = project_path
         else:
-            neuron_name = None
-        return neuron_name, None, None
+            fname = Path(project_path).parent.joinpath('final_dataframes/df_final.h5')
+        self.df_final = pd.read_hdf(fname)
 
-    @app.callback(
-        Output('kymograph-select-dropdown', 'value'),
-        Input('kymograph-per-segment-correlation', 'clickData')
-    )
-    def _use_click_to_update_kymograph_segment(clickData):
-        # print(clickData)
-        if clickData is None:
-            return 'segment_001'
-        kymograph_segment_name = clickData["points"][0]["x"]
-        return kymograph_segment_name
+    @property
+    def df_behavior(self):
+        return self.df_final['behavior']['behavior']
 
-    @app.callback(
-        Output('neuron-trace', 'figure'),
-        Input('neuron-select-dropdown', 'value'),
-        Input('regression-type', 'value'),
-        Input('trace-select-dropdown', 'value')
-    )
-    def _update_neuron_trace(neuron_name, regression_type, trace_type):
-        df_traces = df_all_traces[trace_type]
-        df_behavior_and_neurons = pd.concat([df_behavior, df_traces], axis=1)
-        return update_neuron_trace_plot(df_behavior_and_neurons, neuron_name, regression_type)
+    @property
+    def df_curvature(self):
+        return self.df_final['behavior']['curvature']
 
-    @app.callback(
-        Output('trace-and-behavior-scatterplot', 'figure'),
-        Input('neuron-select-dropdown', 'value'),
-        Input('behavior-scatter-yaxis', 'value'),
-        Input('regression-type', 'value'),
-        Input('trace-select-dropdown', 'value')
-    )
-    def _update_behavior_scatter(neuron_name, behavior_name, regression_type, trace_type):
-        df_traces = df_all_traces[trace_type]
-        df_behavior_and_neurons = pd.concat([df_behavior, df_traces], axis=1)
-        return update_behavior_scatter_plot(df_behavior_and_neurons, behavior_name, neuron_name, regression_type)
+    @property
+    def df_all_traces(self):
+        return self.df_final['traces']
 
-    # Behavior updates
-    @app.callback(
-        Output('behavior-trace', 'figure'),
-        Input('behavior-scatter-yaxis', 'value'),
-        Input('regression-type', 'value')
-    )
-    def _update_behavior_trace(behavior_name, regression_type):
-        return update_behavior_trace_plot(df_behavior, behavior_name, regression_type)
+    def get_trace_type(self, trace_type: str):
+        df = self.df_all_traces[trace_type]
+        return df
 
-    @app.callback(
-        Output('kymograph-scatter', 'figure'),
-        Input('kymograph-select-dropdown', 'value'),
-        Input('neuron-select-dropdown', 'value'),
-        Input('regression-type', 'value'),
-        Input('trace-select-dropdown', 'value')
-    )
-    def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type, trace_type):
-        df_traces = df_all_traces[trace_type]
-        df_all = pd.concat([df_behavior, df_curvature, df_traces], axis=1)
-        return update_kymograph_scatter_plot(df_all, kymograph_segment_name, neuron_name, regression_type)
+    def serve_wbfm_dashboard(self):
+        """
+        Builds a dash/plotly dashboard for exploring single neuron correlations to behavior
+        """
 
-    @app.callback(
-        Output('kymograph-per-segment-correlation', 'figure'),
-        Input('neuron-select-dropdown', 'value'),
-        Input('regression-type', 'value'),
-        Input('trace-select-dropdown', 'value')
-    )
-    def _update_kymograph_correlation(neuron_name, regression_type, trace_type):
-        df_traces = df_all_traces[trace_type]
-        return update_kymograph_correlation_per_segment(df_traces, df_behavior, df_curvature, neuron_name,
-                                                        regression_type)
+        app = Dash(__name__)
 
-    @app.callback(
-        Output('kymograph-all-neuron-max-segment-correlation', 'figure'),
-        Input('regression-type', 'value'),
-        Input('trace-select-dropdown', 'value'),
-        Input('neuron-select-dropdown', 'value'),
-        Input('kymograph-range-slider', 'value')
-    )
-    def _update_kymograph_max_segment(regression_type, trace_type, neuron_name, kymograph_range):
-        df_traces = df_all_traces[trace_type]
-        return update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curvature, regression_type,
-                                                            neuron_name, kymograph_range)
+        # Initialize hardcoded paths to files (will open in new tab)
+        path_to_grid_plot = Path(project_path).parent.joinpath('traces').\
+            joinpath('ratio_integration_rolling_mean_beh_pc1-grid-.png')
 
-    if __name__ == '__main__':
-        allow_public_access = False
-        if allow_public_access:
+        # Define layout
+        app.layout = html.Div([
+            build_dropdowns(self.df_behavior, self.df_curvature, self.df_all_traces),
+            build_second_row_options(path_to_grid_plot),
+            build_plots_html(),
+            build_plots_curvature(self.df_curvature)
+            ]
+        )
+
+        # Main scatter plot changing callback (change axes)
+        @app.callback(
+            Output('correlation-scatterplot', 'figure'),
+            Input('scatter-xaxis', 'value'),
+            Input('behavior-scatter-yaxis', 'value'),
+            Input('neuron-select-dropdown', 'value'),
+            Input('regression-type', 'value'),
+            Input('trace-select-dropdown', 'value')
+        )
+        def _update_scatter_plot(x_name, y_name, neuron_name, regression_type, trace_type):
+            df_traces = self.get_trace_type(trace_type)
+            return update_scatter_plot(self.df_behavior, df_traces, x_name, y_name, neuron_name, regression_type)
+
+        # Neuron selection updates
+        # Logic: everything goes through the dropdown menu. A click will update that, which updates other things
+        @app.callback(
+            Output('neuron-select-dropdown', 'value'),
+            Output('correlation-scatterplot', 'clickData'),
+            Output('kymograph-all-neuron-max-segment-correlation', 'clickData'),
+            Input('correlation-scatterplot', 'clickData'),
+            Input('kymograph-all-neuron-max-segment-correlation', 'clickData')
+        )
+        def _use_click_to_update_neuron_dropdown(correlation_clickData, kymograph_clickData):
+            # Resets the clickData of each plot (multiple outputs)
+            if correlation_clickData:
+                neuron_name = correlation_clickData["points"][0]["customdata"][0]
+            elif kymograph_clickData:
+                neuron_name = kymograph_clickData["points"][0]["customdata"][0]
+            else:
+                neuron_name = None
+            return neuron_name, None, None
+
+        @app.callback(
+            Output('kymograph-select-dropdown', 'value'),
+            Input('kymograph-per-segment-correlation', 'clickData')
+        )
+        def _use_click_to_update_kymograph_segment(clickData):
+            # print(clickData)
+            if clickData is None:
+                return 'segment_001'
+            kymograph_segment_name = clickData["points"][0]["x"]
+            return kymograph_segment_name
+
+        @app.callback(
+            Output('neuron-trace', 'figure'),
+            Input('neuron-select-dropdown', 'value'),
+            Input('regression-type', 'value'),
+            Input('trace-select-dropdown', 'value')
+        )
+        def _update_neuron_trace(neuron_name, regression_type, trace_type):
+            df_traces = self.get_trace_type(trace_type)
+            self.df_behavior_and_neurons = pd.concat([self.df_behavior, df_traces], axis=1)
+            return update_neuron_trace_plot(self.df_behavior_and_neurons, neuron_name, regression_type)
+
+        @app.callback(
+            Output('trace-and-behavior-scatterplot', 'figure'),
+            Input('neuron-select-dropdown', 'value'),
+            Input('behavior-scatter-yaxis', 'value'),
+            Input('regression-type', 'value'),
+            Input('trace-select-dropdown', 'value')
+        )
+        def _update_behavior_scatter(neuron_name, behavior_name, regression_type, trace_type):
+            df_traces = self.get_trace_type(trace_type)
+            self.df_behavior_and_neurons = pd.concat([self.df_behavior, df_traces], axis=1)
+            return update_behavior_scatter_plot(self.df_behavior_and_neurons, behavior_name, neuron_name, regression_type)
+
+        # Behavior updates
+        @app.callback(
+            Output('behavior-trace', 'figure'),
+            Input('behavior-scatter-yaxis', 'value'),
+            Input('regression-type', 'value')
+        )
+        def _update_behavior_trace(behavior_name, regression_type):
+            return update_behavior_trace_plot(self.df_behavior, behavior_name, regression_type)
+
+        @app.callback(
+            Output('kymograph-scatter', 'figure'),
+            Input('kymograph-select-dropdown', 'value'),
+            Input('neuron-select-dropdown', 'value'),
+            Input('regression-type', 'value'),
+            Input('trace-select-dropdown', 'value')
+        )
+        def _update_kymograph_scatter(kymograph_segment_name, neuron_name, regression_type, trace_type):
+            df_traces = self.get_trace_type(trace_type)
+            df_all = pd.concat([self.df_behavior, self.df_curvature, df_traces], axis=1)
+            return update_kymograph_scatter_plot(df_all, kymograph_segment_name, neuron_name, regression_type)
+
+        @app.callback(
+            Output('kymograph-per-segment-correlation', 'figure'),
+            Input('neuron-select-dropdown', 'value'),
+            Input('regression-type', 'value'),
+            Input('trace-select-dropdown', 'value')
+        )
+        def _update_kymograph_correlation(neuron_name, regression_type, trace_type):
+            df_traces = self.get_trace_type(trace_type)
+            return update_kymograph_correlation_per_segment(df_traces, self.df_behavior, self.df_curvature, neuron_name,
+                                                            regression_type)
+
+        @app.callback(
+            Output('kymograph-all-neuron-max-segment-correlation', 'figure'),
+            Input('regression-type', 'value'),
+            Input('trace-select-dropdown', 'value'),
+            Input('neuron-select-dropdown', 'value'),
+            Input('kymograph-range-slider', 'value')
+        )
+        def _update_kymograph_max_segment(regression_type, trace_type, neuron_name, kymograph_range):
+            df_traces = self.get_trace_type(trace_type)
+            return update_max_correlation_over_all_segment_plot(self.df_behavior, df_traces, self.df_curvature,
+                                                                regression_type,
+                                                                neuron_name, kymograph_range)
+
+        if self.allow_public_access:
             app.run_server(debug=False, host="0.0.0.0")
         else:
             app.run_server(debug=False)
@@ -524,4 +536,6 @@ if __name__ == "__main__":
 
     # DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data"
     # project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
-    build_wbfm_dashboard(project_path, allow_public_access)
+    dashboard = DashboardDataset(project_path)
+    dashboard.serve_wbfm_dashboard()
+    # build_wbfm_dashboard(project_path, allow_public_access)
