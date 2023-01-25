@@ -174,11 +174,8 @@ class DashboardDataset:
         )
         def _update_neuron_dropdown(current_dataset):
             # Get any trace type; assume they have the same names
-            print("Trying to set neuron dropdown options")
             self.current_dataset = current_dataset
             new_neuron_names = get_names_from_df(self.get_trace_type('ratio'))
-            # new_neuron_selected = new_neuron_names[0]
-            print(new_neuron_names)
             return new_neuron_names
 
         # Main scatter plot changing callback (change axes)
@@ -355,10 +352,11 @@ def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, reg
         y_names = y_name
     xaxis_title = f"Correlation with {x_name}"
     yaxis_title = f"Correlation with {y_name}"
-    df_corr['neuron_name'] = get_names_from_df(df_traces)
+    df_corr['neuron_name'] = df_corr.index
     # Create a fake "selected" column, because the default doesn't work when you return a new figure
     df_corr['selected'] = 1
     df_corr.loc[neuron_name, 'selected'] = 5
+    # print(f"Selecting {df_corr.loc[neuron_name]}")
     # Top scatter plot
     _fig = px.scatter(df_corr, x=x_name, y=y_names, hover_name="neuron_name",
                       custom_data=["neuron_name"],
@@ -462,6 +460,7 @@ def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curv
     # Create a fake "selected" column, because the default doesn't work when you return a new figure
     df_corr_max['selected'] = 1
     df_corr_max.loc[neuron_name, 'selected'] = 5
+    print(f"Selecting {neuron_name}")
 
     _fig = px.scatter(df_corr_max, y=y_names, title=f"Max curvature correlation over selected body segments",
                       range_y=[0, 0.8],
