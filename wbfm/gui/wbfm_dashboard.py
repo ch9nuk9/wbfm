@@ -160,7 +160,7 @@ class DashboardDataset:
             build_dropdowns(behavior_names, curvature_names, trace_names, neuron_names, dataset_names),
             build_second_row_options(path_to_grid_plot),
             build_plots_html(),
-            build_plots_curvature(self.df_curvature)
+            build_kymograph(self.df_curvature)
             ]
         )
 
@@ -288,6 +288,14 @@ class DashboardDataset:
             return update_max_correlation_over_all_segment_plot(self.df_behavior, df_traces, self.df_curvature,
                                                                 regression_type,
                                                                 neuron_name, kymograph_range)
+
+        @app.callback(
+            Output('kymograph-image', 'figure'),
+            Input('dataset-dropdown', 'value')
+        )
+        def _update_kymograph(current_dataset):
+            self.current_dataset = current_dataset
+            return update_kymograph(self.df_curvature)
 
         if self.allow_public_access:
             app.run_server(debug=False, host="0.0.0.0")
@@ -593,13 +601,18 @@ def build_plots_html() -> html.Div:
     return html.Div([top_header, top_row, time_series_header, time_series_rows])
 
 
-def build_plots_curvature(df_curvature) -> html.Div:
-    fig = px.imshow(df_curvature.T, zmin=-0.05, zmax=0.05, aspect=3, color_continuous_scale='RdBu')
+def build_kymograph(df_curvature) -> html.Div:
+    fig = update_kymograph(df_curvature)
 
     image = html.Div([
         dcc.Graph(id='kymograph-image', figure=fig)
     ], style={'width': '100%', 'display': 'inline-block'})
     return image
+
+
+def update_kymograph(df_curvature):
+    fig = px.imshow(df_curvature.T, zmin=-0.05, zmax=0.05, aspect=3, color_continuous_scale='RdBu')
+    return fig
 
 
 if __name__ == "__main__":
