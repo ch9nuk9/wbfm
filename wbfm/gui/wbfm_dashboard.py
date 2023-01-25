@@ -69,28 +69,19 @@ def build_wbfm_dashboard(project_path: str, allow_public_access: bool = False):
     app = Dash(__name__)
 
     # Read data
-    fname = Path(project_path).parent.joinpath('final_dataframes/df_final.h5')
+    if isinstance(project_path, str) and project_path.endswith('.h5'):
+        # Maybe the user passed the filename, not the project config name
+        fname = project_path
+    else:
+        fname = Path(project_path).parent.joinpath('final_dataframes/df_final.h5')
     df_final: pd.DataFrame = pd.read_hdf(fname)
     df_behavior = df_final['behavior']['behavior']
     df_curvature = df_final['behavior']['curvature']
-    # df_curvature = dict_of_dataframes['behavior']['curvature_high_fps']
     df_all_traces = df_final['traces']
-
-    # Align indices with traces
-    # volumes_per_second = int(df_curvature.shape[0] / dict_of_traces_dfs['ratio'].shape[0])
-    # df_curvature.index = df_curvature.index / volumes_per_second
 
     # Initialize hardcoded paths to files (will open in new tab)
     path_to_grid_plot = Path(project_path).parent.joinpath('traces').\
         joinpath('ratio_integration_rolling_mean_beh_pc1-grid-.png')
-
-    # Add a time column
-    # df_time = df_behavior.index
-    # dict_of_traces_dfs = {k: df.reset_index().rename(columns={'index': 'time'}, copy=False)
-    #                       for k, df in dict_of_traces_dfs.items()}
-    # df_behavior = df_behavior.reset_index().rename(columns={'index': 'time'}, copy=False)
-    # df_all_time_series = pd.concat([_df_behavior, _df_traces, _df_curvature], axis=1).reset_index()
-    # df_all_time_series.rename(columns={'index': 'time'}, inplace=True, copy=False)
 
     # Define layout
     app.layout = html.Div([
