@@ -24,13 +24,12 @@ def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
-
     segment_cfg = cfg.get_segmentation_config()
 
-    if not DEBUG:
-        using_monkeypatch()
-        log_dir = cfg.get_log_dir()
-        ex.observers.append(TinyDbObserver(log_dir))
+    # if not DEBUG:
+    #     using_monkeypatch()
+    #     log_dir = cfg.get_log_dir()
+    #     ex.observers.append(TinyDbObserver(log_dir))
 
 @ex.automain
 def main(_config, _run):
