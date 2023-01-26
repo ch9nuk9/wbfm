@@ -405,7 +405,12 @@ class WormFullVideoPosture:
 
     def get_time_delta_in_s(self, fluorescence_fps):
         df = self.stage_position(fluorescence_fps=fluorescence_fps)
-        tdelta = pd.Series(df.index).diff().mean()
+        all_diffs = pd.Series(df.index).diff()
+        # If the recording crossed a day or daylight saving boundary, then it will have a large jump
+        half_hour = pd.to_timedelta(30 * 60 * 1e9)
+        invalid_ind = np.where(np.abs(all_diffs) > half_hour)[0]
+        all_diffs[invalid_ind[0]-1:invalid_ind[-1]+1] = pd.to_timedelta(0)
+        tdelta = all_diffs.mean()
         tdelta_s = tdelta.delta / 1e9
         return tdelta_s
 
