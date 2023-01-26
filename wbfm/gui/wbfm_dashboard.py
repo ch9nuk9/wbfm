@@ -157,7 +157,10 @@ class DashboardDataset:
         behavior_names = get_names_from_df(self.df_behavior)
         trace_names = get_names_from_df(self.df_all_traces)
         neuron_names = get_names_from_df(self.df_all_traces[trace_names[0]])
-        dataset_names = self.dataset_names.copy()
+        if self.dataset_names is None:
+            dataset_names = [None]
+        else:
+            dataset_names = self.dataset_names.copy()
         if dataset_names is not None:
             dataset_names.append('all')
 
