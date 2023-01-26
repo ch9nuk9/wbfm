@@ -88,7 +88,6 @@ If you changed the name of your project or you changed operating systems, you mu
 update the 'project_dir' variable in the snakemake/config.yaml file.
 This variable should be matched to the operating system you are running on, for example starting with 'S:' for windows or '/' for linux (cluster).
 
-
 ### Running the rest of the workflow
 
 This code is designed in several different scripts, which can be running using a single command.
@@ -124,6 +123,21 @@ Almost all errors will crash the program (display a lot of red text), but if you
 8. If the program crashes and you fix the problem, then you should be able to start again from step 3 (DRYRUN). This should rerun only the steps that failed and after, not the steps that succeeded. 
 
 Note: at any point you can look at the output of the pipeline using the GUIs described below.
+
+### Manual annotation and rerunning
+
+Tracking can be checked and corrected using the main trace_explorer [GUI](#Summary of GUIs).
+However, this does not automatically regenerate the final trace dataframes.
+For this, some steps must be rerun.
+The steps are the same as running steps within an incomplete project, but in short:
+
+1. Run step 3b
+2. Run step 4
+
+These two steps can be run using multi_step_dispatcher.sh
+A full example 
+
+Note that it is possible to use snakemake to "know" which files need to be updated, if any files were copied to/from a local machine, snakemake will become confused and attempt to rerun the entire pipeline.
 
 ### Advanced: running steps within an incomplete project
 
