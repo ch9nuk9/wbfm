@@ -1052,7 +1052,7 @@ class ProjectData:
         # df_manual_tracking = pd.read_csv(fname)
         return df_manual_tracking
 
-    def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto'):
+    def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto', DEBUG=False):
         """
         Uses sudden dips in the number of detected objects to guess where the tracking might fail
 
@@ -1078,11 +1078,17 @@ class ProjectData:
         all_num_objs = detrend(all_num_objs)
         model = LocalOutlierFactor(contamination=contamination)
         vals = model.fit_predict(all_num_objs.reshape(-1, 1))
+        # Get outliers, but only care about decreases in objects, not increases
+        vals[all_num_objs > 0] = 1
+        if DEBUG:
+            print(np.where(vals == -1))
 
         # Pad the discovered blocks
         if pad_nan_points is not None:
             df_vals = pd.Series(vals == -1)
             starts, ends = get_contiguous_blocks_from_column(df_vals, already_boolean=True)
+            if DEBUG:
+                print(starts, ends)
             idx_boolean = np.zeros_like(vals, dtype=bool)
             for s, e in zip(starts, ends):
                 s = np.clip(s - pad_nan_points, a_min=0, a_max=len(vals))
