@@ -132,9 +132,12 @@ For this, some steps must be rerun.
 The steps are the same as running steps within an incomplete project, but in short:
 
 1. Run step 3b
+   - Note that setting only_use_previous_matches=True in tracking_config.yaml is suggested, and will speed the process dramatically
+2. Possible: run step 1-alt (rebuild the segmentation metadata)
+   - This is only necessary if segmentation was changed in the manual annotation step 
 2. Run step 4
 
-These two steps can be run using multi_step_dispatcher.sh
+All steps can be run using multi_step_dispatcher.sh
 Example usage is given within that file.
 
 Note that it is possible to use snakemake to "know" which files need to be updated, if any files were copied to/from a local machine, snakemake will become confused and attempt to rerun the entire pipeline.
