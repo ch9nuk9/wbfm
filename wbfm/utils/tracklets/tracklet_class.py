@@ -513,6 +513,12 @@ class TrackedWorm:
                 tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
                 new_neuron.add_tracklet(confidence, tracklet, metadata=tracklet_name)
 
+        self.logger.info("Initialized using previous matches:")
+        v = self.verbose
+        self.verbose = 1
+        self.logger.info(self)
+        self.verbose = v
+
     def initialize_neurons_from_training_data(self, df_training_data):
         training_tracklet_names = translate_training_names_to_raw_names(df_training_data)
         # TODO: do these match up with the fdnc tracking names?
