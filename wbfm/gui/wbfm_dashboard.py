@@ -58,6 +58,7 @@ def get_names_from_df(df, level=0):
 @dataclass
 class DashboardDataset:
     project_path: str
+    port: int = None
     allow_public_access: bool = False
 
     df_final: pd.DataFrame = None
@@ -324,10 +325,15 @@ class DashboardDataset:
             self.current_dataset = current_dataset
             return update_kymograph(self.df_curvature)
 
-        if self.allow_public_access:
-            app.run_server(debug=False, host="0.0.0.0")
+        if self.port is None:
+            port = 8050
         else:
-            app.run_server(debug=False)
+            port = self.port
+        opt = dict(debug=False, port=port)
+        if self.allow_public_access:
+            app.run_server(**opt, host="0.0.0.0")
+        else:
+            app.run_server(**opt)
 
 
 def update_scatter_plot(df_behavior, df_traces, x_name, y_name, neuron_name, regression_type):
@@ -660,14 +666,17 @@ if __name__ == "__main__":
                         help='path to config file')
     parser.add_argument('--allow_public_access', action='store_true',
                         help='allow access using the intranet (NOT SECURE)')
+    parser.add_argument('--port', default=None,
+                        help='port')
     parser.add_argument('--DEBUG', default=False, help='')
     args = parser.parse_args()
     project_path = args.project_path
+    port = args.port
     allow_public_access = args.allow_public_access
     DEBUG = args.DEBUG
 
     # DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data"
     # project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
-    dashboard = DashboardDataset(project_path)
+    dashboard = DashboardDataset(project_path, port)
     dashboard.serve_wbfm_dashboard()
     # build_wbfm_dashboard(project_path, allow_public_access)
