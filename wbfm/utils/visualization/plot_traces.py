@@ -33,8 +33,8 @@ import matplotlib.style as mplstyle
 ##
 
 def make_grid_plot_using_project(project_data: ProjectData,
-                                 channel_mode: str,
-                                 calculation_mode: str,
+                                 channel_mode: str = 'ratio',
+                                 calculation_mode: str = 'integration',
                                  neuron_names_to_plot: list = None,
                                  filter_mode: str = 'no_filtering',
                                  color_using_behavior=True,
@@ -180,9 +180,9 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
 def make_grid_plot_from_dataframe(df: pd.DataFrame, neuron_names_to_plot: list = None, **kwargs):
     """
-    See make_grid_plot_from_project for a more high-level function
+    See make_grid_plot_using_project for a more high-level function
 
-    Note: this function does NOT accept a project object; use make_grid_plot_from_project for that
+    Note: this function does NOT accept a project object; use make_grid_plot_using_project for that
 
     Parameters
     ----------
