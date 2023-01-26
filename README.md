@@ -135,7 +135,7 @@ The steps are the same as running steps within an incomplete project, but in sho
 2. Run step 4
 
 These two steps can be run using multi_step_dispatcher.sh
-A full example 
+Example usage is given within that file.
 
 Note that it is possible to use snakemake to "know" which files need to be updated, if any files were copied to/from a local machine, snakemake will become confused and attempt to rerun the entire pipeline.
 
