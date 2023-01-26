@@ -412,6 +412,7 @@ class WormFullVideoPosture:
         all_diffs[invalid_ind[0]-1:invalid_ind[-1]+1] = pd.to_timedelta(0)
         tdelta = all_diffs.mean()
         tdelta_s = tdelta.delta / 1e9
+        assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
         return tdelta_s
 
     def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=1) -> pd.Series:
