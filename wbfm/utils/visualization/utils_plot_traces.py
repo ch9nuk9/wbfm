@@ -226,6 +226,9 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name):
     Plotly can't handle gaps in a dataframe when splitting by state, so new columns should be created with explicit gaps
     where the state is off
 
+    See:
+    https://stackoverflow.com/questions/70407755/plotly-express-conditional-coloring-doesnt-work-properly/70408557#70408557
+
     Parameters
     ----------
     df
@@ -236,6 +239,12 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name):
     -------
 
     """
+    if isinstance(x_name, list):
+        all_dfs_and_names = [modify_dataframe_to_allow_gaps_for_plotly(df, x, state_name) for x in x_name]
+        all_dfs = [tmp[0] for tmp in all_dfs_and_names]
+        all_names = [tmp[1] for tmp in all_dfs_and_names]
+        df_concat = pd.concat(all_dfs, axis=1, ignore_index=False)
+        return df_concat, all_names
 
     new_x_names = []
     new_columns = {}
@@ -244,7 +253,7 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name):
     for val in all_values:
         new_x_name = f"{x_name}-{val}"
         new_x_names.append(new_x_name)
-        new_col = df[x_name].values
+        new_col = df[x_name].values.copy()
         new_col[df[state_name] == val] = np.nan
         new_columns[new_x_name] = new_col
 
