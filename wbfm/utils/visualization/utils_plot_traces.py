@@ -5,7 +5,7 @@ import pandas as pd
 import sklearn
 from matplotlib import pyplot as plt
 
-from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
+from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_contiguous_blocks_from_column
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
@@ -221,7 +221,7 @@ def get_lower_bound_values(x, y, min_vals_per_bin=10, num_bins=100):
     return x_mins, y_mins
 
 
-def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name):
+def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at_transition=True):
     """
     Plotly can't handle gaps in a dataframe when splitting by state, so new columns should be created with explicit gaps
     where the state is off
@@ -234,6 +234,7 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name):
     df
     x_name
     state_name - Should be the name of a binary column
+    connect_at_transition
 
     Returns
     -------
@@ -254,7 +255,15 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name):
         new_x_name = f"{x_name}-{val}"
         new_x_names.append(new_x_name)
         new_col = df[x_name].values.copy()
-        new_col[df[state_name] == val] = np.nan
+        nan_ind = df[state_name] != val
+        new_col[nan_ind] = np.nan
+
+        if connect_at_transition:
+            starts, ends = get_contiguous_blocks_from_column(nan_ind, already_boolean=True)
+            for s in starts:
+                if s > 0:
+                    new_col[s] = df[x_name].at[s]
+
         new_columns[new_x_name] = new_col
 
     df_gaps = pd.DataFrame(new_columns)
