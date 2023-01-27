@@ -48,7 +48,6 @@ class WormFullVideoPosture:
 
     # This will be true for old manual annotations
     beh_annotation_already_converted_to_fluorescence_fps: bool = False
-    beh_annotation_is_stable_style: bool = False
     _beh_annotation: pd.Series = None
 
     pca_i_start: int = 10
@@ -64,8 +63,6 @@ class WormFullVideoPosture:
     tracking_failure_idx: np.ndarray = None
 
     def __post_init__(self):
-        self.fix_temporary_annotation_format()
-
         if self.filename_curvature is not None:
             self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature, verbose=0)
             self.filename_x = resolve_mounted_path_in_current_os(self.filename_x, verbose=0)
@@ -178,6 +175,7 @@ class WormFullVideoPosture:
             self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         if isinstance(self._beh_annotation, pd.DataFrame):
             self._beh_annotation = self._beh_annotation.annotation
+        BehaviorCodes.assert_all_are_valid(self._beh_annotation)
         return self._beh_annotation
 
     def calc_speed_from_alias(self, speed_alias: str) -> pd.Series:
@@ -739,9 +737,8 @@ class WormFullVideoPosture:
         # Get the manual behavior annotations if automatic wasn't found
         if all_files.get('filename_beh_annotation', None) is None:
             try:
-                filename_beh_annotation, is_stable_style = get_manual_behavior_annotation_fname(project_config)
-                opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_stable_style,
-                           beh_annotation_is_stable_style=is_stable_style))
+                filename_beh_annotation, is_manual_style = get_manual_behavior_annotation_fname(project_config)
+                opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_manual_style))
             except FileNotFoundError:
                 # Many projects won't have either annotation
                 project_config.logger.warning("Did not find behavioral annotations")
@@ -756,27 +753,6 @@ class WormFullVideoPosture:
         bh = self.beh_annotation(fluorescence_fps=True) 
         if bh is not None:
             shade_using_behavior(bh, **kwargs)
-
-    def fix_temporary_annotation_format(self):
-        """
-        This is the format that Ulises produces, and it is different from mine
-
-        Temporary types:
-            nan - Invalid data (no shade)
-            -1 - FWD (no shade)
-            0 - Turn (unknown)
-            1 - REV (gray)
-            [no quiescent for now]
-        Returns
-        -------
-
-        """
-        if self.beh_annotation_is_stable_style:
-            return self.beh_annotation()
-        if self.beh_annotation() is None:
-            return None
-
-        raise NotImplementedError("Non-ulises behavior annotation is deprecated")
 
     @property
     def subsample_indices(self):
@@ -829,7 +805,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
     """First tries to read from the config file, and if that fails, goes searching"""
 
     # Initial checks are all in project local folders
-    is_stable_style = False
+    is_likely_manually_annotated = False
     try:
         behavior_cfg = cfg.get_behavior_config()
         behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
@@ -838,7 +814,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
             behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname, prepend_subfolder=True)
             if str(behavior_fname).endswith('.xlsx'):
                 # This means the user probably did it by hand... but is a fragile check
-                is_stable_style = True
+                is_likely_manually_annotated = True
             if not os.path.exists(behavior_fname):
                 behavior_fname = None
     except FileNotFoundError:
@@ -847,10 +823,10 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
 
     if behavior_fname is not None:
         logging.warning("Note: all annotation should be in the Ulises format")
-        return behavior_fname, is_stable_style
+        return behavior_fname, is_likely_manually_annotated
 
     # Otherwise, check for other local places I used to put it
-    is_stable_style = True
+    is_likely_manually_annotated = True
     behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
     behavior_fname = cfg.resolve_relative_path(behavior_fname)
     if not os.path.exists(behavior_fname):
@@ -860,13 +836,13 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
         behavior_fname = None
     if behavior_fname is not None:
         logging.warning("Note: all annotation should be in the Ulises format")
-        return behavior_fname, is_stable_style
+        return behavior_fname, is_likely_manually_annotated
 
     # Final checks are all in raw behavior data folders, implying they are not the stable style
-    is_stable_style = False
+    is_likely_manually_annotated = False
     raw_behavior_folder, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()
     if not flag:
-        return behavior_fname, is_stable_style
+        return behavior_fname, is_likely_manually_annotated
 
     # Could be named this, or have this as a suffix
     behavior_suffix = "beh_annotation.csv"
@@ -881,7 +857,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
             logging.warning(f"Found multiple possible behavior annotations {behavior_fname}; taking the first one")
             behavior_fname = behavior_fname[0]
 
-    return behavior_fname, is_stable_style
+    return behavior_fname, is_likely_manually_annotated
 
 
 def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fname: str = None):
