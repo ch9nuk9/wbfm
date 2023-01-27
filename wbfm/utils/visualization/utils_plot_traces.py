@@ -221,6 +221,32 @@ def get_lower_bound_values(x, y, min_vals_per_bin=10, num_bins=100):
     return x_mins, y_mins
 
 
-# def plot_colored_pca(pca_modes: np.ndarray):
-#     fig = plt.figure(dpi=100)
-#     ax = fig.add_subplot(111, projection='3d')
+def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name):
+    """
+    Plotly can't handle gaps in a dataframe when splitting by state, so new columns should be created with explicit gaps
+    where the state is off
+
+    Parameters
+    ----------
+    df
+    x_name
+    state_name - Should be the name of a binary column
+
+    Returns
+    -------
+
+    """
+
+    new_x_names = []
+    new_columns = {}
+    all_values = df[state_name].unique()
+
+    for val in all_values:
+        new_x_name = f"{x_name}-{val}"
+        new_x_names.append(new_x_name)
+        new_col = df[x_name].values
+        new_col[df[state_name] == val] = np.nan
+        new_columns[new_x_name] = new_col
+
+    df_gaps = pd.DataFrame(new_columns)
+    return df_gaps, new_x_names
