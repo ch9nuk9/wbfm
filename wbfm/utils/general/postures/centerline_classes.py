@@ -669,21 +669,21 @@ class WormFullVideoPosture:
         return state_trace
 
     @staticmethod
-    def load_from_config(project_config: ModularProjectConfig):
-        # Get the relevant foldernames from a config file
+    def load_from_project(project_data):
+        # Get the relevant foldernames from the project
+        project_config = project_data.project_config
         # The exact files may not be in the config, so try to find them
 
         # Before anything, load metadata
         frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
         # Use the project data class to check for tracking failures
-        from wbfm.utils.projects.finished_project_data import ProjectData
-        proj = ProjectData.load_final_project_data_from_config(project_config, to_load_segmentation_metadata=True)
-        invalid_idx = proj.estimate_tracking_failures_from_project()
+        # proj = ProjectData.load_final_project_data_from_config(project_config, to_load_segmentation_metadata=True)
+        invalid_idx = project_data.estimate_tracking_failures_from_project()
 
         bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
         opt = dict(frames_per_volume=frames_per_volume,
                    bigtiff_start_volume=bigtiff_start_volume,
-                   num_frames=proj.num_frames,
+                   num_frames=project_data.num_frames,
                    project_config=project_config,
                    tracking_failure_idx=invalid_idx)
 
@@ -758,6 +758,8 @@ class WormFullVideoPosture:
 
     def fix_temporary_annotation_format(self):
         """
+        This is the format that Ulises produces, and it is different from mine
+
         Temporary types:
             nan - Invalid data (no shade)
             -1 - FWD (no shade)
@@ -840,7 +842,7 @@ def get_behavior_fluorescence_fps_conversion(project_config):
     return raw_number_of_planes
 
 
-def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
+def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
     """First tries to read from the config file, and if that fails, goes searching"""
 
     # Initial checks are all in project local folders
@@ -863,7 +865,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     if behavior_fname is not None:
         return behavior_fname, is_stable_style
 
-    # Otherwise, check for other places I used to put it
+    # Otherwise, check for other local places I used to put it
     is_stable_style = True
     behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
     behavior_fname = cfg.resolve_relative_path(behavior_fname)
@@ -881,10 +883,18 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig):
     if not flag:
         return behavior_fname, is_stable_style
 
-    behavior_fname = "beh_annotation.csv"
-    behavior_fname = os.path.join(raw_behavior_folder, behavior_fname)
-    if not os.path.exists(behavior_fname):
-        behavior_fname = None
+    # Could be named this, or have this as a suffix
+    behavior_suffix = "beh_annotation.csv"
+    behavior_fname = Path(raw_behavior_folder).joinpath(behavior_suffix)
+    if not behavior_fname.exists():
+        behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix)]
+        if len(behavior_fname) == 0:
+            behavior_fname = None
+        elif len(behavior_fname) == 1:
+            behavior_fname = behavior_fname[0]
+        else:
+            logging.warning(f"Found multiple possible behavior annotations {behavior_fname}; taking the first one")
+            behavior_fname = behavior_fname[0]
 
     return behavior_fname, is_stable_style
 
