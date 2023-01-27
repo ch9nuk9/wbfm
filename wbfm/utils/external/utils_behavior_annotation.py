@@ -1,13 +1,18 @@
 from enum import IntEnum
-
 import numpy as np
 
 
 class BehaviorCodes(IntEnum):
-    """Top-level behaviors that are discretely annotated. Designed to work with Ulises' automatic annotations"""
+    """
+    Top-level behaviors that are discretely annotated. Designed to work with Ulises' automatic annotations
+
+    Note that float adds comparison operators
+    """
     FWD = -1
     REV = 1
-    UNKNOWN = 0
+    NOT_ANNOTATED = 0
+    UNKNOWN = -99
+    # UNKNOWN = NOT_ANNOTATED | GAP
 
     @classmethod
     def cmap(cls):

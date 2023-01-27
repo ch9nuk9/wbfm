@@ -225,14 +225,14 @@ class WormFullVideoPosture:
         return y
 
     @lru_cache(maxsize=8)
-    def beh_annotation(self, fluorescence_fps=False) -> Optional[pd.Series]:
+    def beh_annotation(self, fluorescence_fps=False, reset_index=False) -> Optional[pd.Series]:
         """Name is shortened to avoid US-UK spelling confusion"""
         beh = self._raw_beh_annotation
         if fluorescence_fps:
             if beh is None or self.beh_annotation_already_converted_to_fluorescence_fps:
                 return beh
             else:
-                return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps)
+                return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
         else:
             if self.beh_annotation_already_converted_to_fluorescence_fps:
                 raise ValueError("Full fps behavioral annotation requested, but only low resolution exists")
@@ -872,7 +872,7 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
             behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
             if behavior_annotations.shape[1] > 1:
                 # Sometimes there is a messed up extra column
-                behavior_annotations = pd.Series(behavior_annotations.iloc[:, 0])
+                behavior_annotations = pd.Series(behavior_annotations.iloc[:, 0]).fillna(BehaviorCodes.UNKNOWN)
         else:
             try:
                 behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']

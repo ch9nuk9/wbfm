@@ -1500,7 +1500,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
 
 
 def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None,
-                                        include_subplot=True):
+                                        include_subplot=True, verbose=0):
     if trace_kwargs is None:
         trace_kwargs = {}
     fig = plt.figure(figsize=(15, 15), dpi=200)
@@ -1520,8 +1520,9 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     beh_fwd = beh == BehaviorCodes.FWD
     starts_fwd, ends_fwd = get_contiguous_blocks_from_column(beh_fwd, already_boolean=True)
 
-    print("Forward blocks: ", starts_fwd, ends_fwd)
-    print("Reversal blocks: ", starts_rev, ends_rev)
+    if verbose:
+        print("Forward blocks: ", starts_fwd, ends_fwd)
+        print("Reversal blocks: ", starts_rev, ends_rev)
 
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
     X = detrend(X, axis=0)
