@@ -311,8 +311,7 @@ class WormFullVideoPosture:
             get_positions = self.stage_position
         else:
             # Use segment 50 out of 100 by default
-            get_positions = lambda fluorescence_fps: \
-                self.centerline_absolute_coordinates(fluorescence_fps=fluorescence_fps)[body_segment]
+            get_positions = lambda f: self.centerline_absolute_coordinates(fluorescence_fps=f)[body_segment]
         if subsample_before_derivative:
             df = get_positions(fluorescence_fps=fluorescence_fps)
         else:
@@ -322,9 +321,6 @@ class WormFullVideoPosture:
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
         tdelta_s = self.get_time_delta_in_s(fluorescence_fps and subsample_before_derivative)
         speed_mm_per_s = pd.Series(speed / tdelta_s)
-        # print(speed)
-        # print(speed_mm_per_s)
-        # print(tdelta_s)
 
         # Postprocessing
         if not subsample_before_derivative:
@@ -408,7 +404,8 @@ class WormFullVideoPosture:
         # If the recording crossed a day or daylight saving boundary, then it will have a large jump
         half_hour = pd.to_timedelta(30 * 60 * 1e9)
         invalid_ind = np.where(np.abs(all_diffs) > half_hour)[0]
-        all_diffs[invalid_ind[0]-1:invalid_ind[-1]+1] = pd.to_timedelta(0)
+        if len(invalid_ind) > 0:
+            all_diffs[invalid_ind[0]-1:invalid_ind[-1]+1] = pd.to_timedelta(0)
         tdelta = all_diffs.mean()
         tdelta_s = tdelta.delta / 1e9
         assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
