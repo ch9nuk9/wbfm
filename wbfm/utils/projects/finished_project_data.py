@@ -331,7 +331,7 @@ class ProjectData:
     @cached_property
     def worm_posture_class(self) -> WormFullVideoPosture:
         """Allows coloring the traces using behavioral annotation, and general correlations to behavior"""
-        return WormFullVideoPosture.load_from_config(self.project_config)
+        return WormFullVideoPosture.load_from_project(self)
 
     @cached_property
     def tracked_worm_class(self):
@@ -1507,7 +1507,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     else:
         ax = fig.add_subplot(111, projection='3d')
     # c = np.arange(project_data.num_frames) / 1e6
-    beh = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True) 
+    beh = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True).reset_index(drop=True)
     if t_end is not None:
         beh = beh[:t_end]
     if t_start is not None:
@@ -1518,8 +1518,11 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     beh_fwd = beh == 0
     starts_fwd, ends_fwd = get_contiguous_blocks_from_column(beh_fwd, already_boolean=True)
 
+    print("Forward blocks: ", starts_fwd, ends_fwd)
+    print("Reversal blocks: ", starts_rev, ends_rev)
+
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
-    # X = detrend(X, axis=0)
+    X = detrend(X, axis=0)
     pca = PCA(n_components=3, whiten=False)
     pca.fit(X.T)
     pca_proj = pca.components_.T
@@ -1535,7 +1538,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     for s, e in zip(starts_rev, ends_rev):
         e += 1
         ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)
-    c = 'tab:purple'
+    c = 'tab:blue'
     for s, e in zip(starts_fwd, ends_fwd):
         e += 1
         ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)
