@@ -870,12 +870,14 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
     if behavior_fname is not None:
         if str(behavior_fname).endswith('.csv'):
             behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
+            behavior_annotations.fillna(BehaviorCodes.UNKNOWN, inplace=True)
             if behavior_annotations.shape[1] > 1:
                 # Sometimes there is a messed up extra column
-                behavior_annotations = pd.Series(behavior_annotations.iloc[:, 0]).fillna(BehaviorCodes.UNKNOWN)
+                behavior_annotations = pd.Series(behavior_annotations.iloc[:, 0])
         else:
             try:
                 behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
+                behavior_annotations.fillna(BehaviorCodes.UNKNOWN, inplace=True)
             except PermissionError:
                 logging.warning(f"Permission error when reading {behavior_fname} "
                                 f"Do you have the excel sheet open elsewhere?")
