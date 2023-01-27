@@ -5,6 +5,7 @@ from typing import Union, List, Dict
 import numpy as np
 import pandas as pd
 
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding
 
@@ -46,7 +47,8 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     cols = ['summed_curvature', 'signed_speed_angular', 'signed_middle_body_speed']
     trace_len = project_data.num_frames
     df_behavior_single_columns = {c: model.unpack_behavioral_time_series_from_name(c, trace_len)[0] for c in cols}
-    df_behavior_single_columns['reversal'] = (worm.beh_annotation(fluorescence_fps=True) == 1).reset_index(drop=True)
+    reversal_col = worm.beh_annotation(fluorescence_fps=True) == BehaviorCodes.REV
+    df_behavior_single_columns['reversal'] = reversal_col.reset_index(drop=True)
     df_behavior = pd.DataFrame(df_behavior_single_columns)
     df_behavior.reversal.replace(np.nan, False, inplace=True)
 

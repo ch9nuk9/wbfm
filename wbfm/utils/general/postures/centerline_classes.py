@@ -17,6 +17,7 @@ from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
 
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
@@ -415,8 +416,9 @@ class WormFullVideoPosture:
         assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
         return tdelta_s
 
-    def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=1) -> pd.Series:
+    def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=BehaviorCodes.REV) -> pd.Series:
         """By default changes sign during reversal"""
+        BehaviorCodes.assert_is_valid(state)
         rev_ind = pd.Series(self.beh_annotation(fluorescence_fps=fluorescence_fps) == state).reset_index(drop=True)
         velocity = copy.copy(vector)
         if len(velocity) == len(rev_ind):
@@ -481,7 +483,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        ind_class = TriggeredAverageIndices(self.beh_annotation(fluorescence_fps=True) , state, min_duration,
+        ind_class = TriggeredAverageIndices(self.beh_annotation(fluorescence_fps=True), state, min_duration,
                                             trace_len=self.num_frames, ind_preceding=ind_preceding,
                                             **kwargs)
         return ind_class
@@ -542,7 +544,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.beh_annotation(fluorescence_fps=True)  == 0
+        binary_fwd = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.FWD
         all_durations = get_durations_from_column(binary_fwd, already_boolean=True, remove_edges=False)
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
         start2duration_and_end_dict = {}
@@ -614,7 +616,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.beh_annotation(fluorescence_fps=True)  == 0
+        binary_fwd = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.FWD
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
 
         # Turn into time series
@@ -638,7 +640,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.beh_annotation(fluorescence_fps=True)  == 0
+        binary_fwd = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.FWD
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
 
         # Turn into time series
@@ -657,7 +659,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_rev = self.beh_annotation(fluorescence_fps=True)  == 1
+        binary_rev = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.REV
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_rev, already_boolean=True)
 
         # Turn into time series
@@ -671,13 +673,12 @@ class WormFullVideoPosture:
     @staticmethod
     def load_from_project(project_data):
         # Get the relevant foldernames from the project
-        project_config = project_data.project_config
         # The exact files may not be in the config, so try to find them
+        project_config = project_data.project_config
 
         # Before anything, load metadata
         frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
         # Use the project data class to check for tracking failures
-        # proj = ProjectData.load_final_project_data_from_config(project_config, to_load_segmentation_metadata=True)
         invalid_idx = project_data.estimate_tracking_failures_from_project()
 
         bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
@@ -775,25 +776,7 @@ class WormFullVideoPosture:
         if self.beh_annotation() is None:
             return None
 
-        # Define a lookup table from tmp to stable
-        def lut(val):
-            _lut = {-1: 0, 0: -1, 1: 1}
-            if not np.isscalar(val):
-                val = val[0]
-            if np.isnan(val):
-                return -1
-            else:
-                return _lut[val]
-        try:
-            vec_lut = np.vectorize(lut)
-
-            self._beh_annotation = pd.Series(np.squeeze(vec_lut(self.beh_annotation() .to_numpy())))
-            self.beh_annotation_is_stable_style = True
-            return self.beh_annotation()
-        except KeyError:
-            logging.warning("Could not correct behavior annotations; returning them as they are")
-            self.beh_annotation_is_stable_style = True
-            return self.beh_annotation()
+        raise NotImplementedError("Non-ulises behavior annotation is deprecated")
 
     @property
     def subsample_indices(self):
@@ -863,6 +846,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
         behavior_fname = None
 
     if behavior_fname is not None:
+        logging.warning("Note: all annotation should be in the Ulises format")
         return behavior_fname, is_stable_style
 
     # Otherwise, check for other local places I used to put it
@@ -875,6 +859,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
     if not os.path.exists(behavior_fname):
         behavior_fname = None
     if behavior_fname is not None:
+        logging.warning("Note: all annotation should be in the Ulises format")
         return behavior_fname, is_stable_style
 
     # Final checks are all in raw behavior data folders, implying they are not the stable style
@@ -1065,19 +1050,15 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
     """
     Type one:
         Shades current plot using a 3-code behavioral annotation:
-        -1 - Invalid data (no shade)
-        0 - FWD (no shade)
+        0 - Invalid data (no shade)
+        -1 - FWD (no shade)
         1 - REV (gray)
-        2 - Turn (red)
-        3 - Quiescent (light blue)
 
+    See BehaviorCodes for valid codes
     """
 
     if cmap is None:
-        cmap = {0: None,
-                1: 'lightgray',
-                2: 'pink',
-                3: 'lightblue'}
+        cmap = BehaviorCodes.cmap()
     if ax is None:
         ax = plt.gca()
     bh = np.array(bh)

@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
+
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.general.custom_errors import NoNeuronsError
 
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
@@ -262,12 +264,12 @@ def factory_correlate_trace_to_behavior_variable(project_data,
     elif behavioral_correlation_shading == 'positive_speed':
         y = posture_class.worm_speed(fluorescence_fps=True, signed=True)
         if posture_class.beh_annotation is not None:
-            reversal_ind = posture_class.beh_annotation == 1
+            reversal_ind = posture_class.beh_annotation == BehaviorCodes.REV
             y[reversal_ind] = 0
     elif behavioral_correlation_shading == 'negative_speed':
         y = posture_class.worm_speed(fluorescence_fps=True, signed=True)
         if posture_class.beh_annotation is not None:
-            forward_ind = posture_class.beh_annotation == 0
+            forward_ind = posture_class.beh_annotation == BehaviorCodes.FWD
             y[forward_ind] = 0
     elif behavioral_correlation_shading == 'curvature':
         y = posture_class.summed_curvature_from_kymograph(fluorescence_fps=True)

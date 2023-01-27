@@ -3,6 +3,8 @@ from typing import Union, Optional
 import numpy as np
 import pandas as pd
 import sklearn
+from matplotlib import pyplot as plt
+
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -217,3 +219,8 @@ def get_lower_bound_values(x, y, min_vals_per_bin=10, num_bins=100):
     x_mins = x_mins[nonzero_ind]
 
     return x_mins, y_mins
+
+
+# def plot_colored_pca(pca_modes: np.ndarray):
+#     fig = plt.figure(dpi=100)
+#     ax = fig.add_subplot(111, projection='3d')

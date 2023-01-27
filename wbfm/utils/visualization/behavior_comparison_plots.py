@@ -19,6 +19,7 @@ from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_sp
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
 from wbfm.utils.external.utils_statsmodels import ols_groupby
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
@@ -207,7 +208,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         ----------
         X
         y_train_name
-        only_model_single_state
+        only_model_single_state - See BehaviorCodes
 
         Returns
         -------
@@ -228,11 +229,12 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         # Also build a binary class variable; possibly used for cross validation
         worm = self.project_data.worm_posture_class
-        y_binary = (worm.beh_annotation(fluorescence_fps=True) == 1).copy()
+        y_binary = (worm.beh_annotation(fluorescence_fps=True) == BehaviorCodes.REV).copy()
         y_binary.index = y.index
 
         # Optionally subset the data to be only a specific state
         if only_model_single_state is not None:
+            BehaviorCodes.assert_is_valid(only_model_single_state)
             beh = worm.beh_annotation(fluorescence_fps=True).reset_index(drop=True)
             ind = beh == only_model_single_state
             X = X.loc[ind, :]
@@ -577,7 +579,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
 
         # New: only do certain indices
-        ind = self.project_data.worm_posture_class.beh_annotation == 0
+        ind = self.project_data.worm_posture_class.beh_annotation == BehaviorCodes.FWD
         all_dfs = self.all_dfs
         df_kymo = kymo.loc[ind, 3:60].copy()
         all_dfs_corr = {key: correlate_return_cross_terms(df.loc[ind, :], df_kymo) for key, df in all_dfs.items()}
@@ -590,7 +592,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
 
         # New: only do certain indices
-        ind = self.project_data.worm_posture_class.beh_annotation == 1
+        ind = self.project_data.worm_posture_class.beh_annotation == BehaviorCodes.REV
         all_dfs = self.all_dfs
 
         df_kymo = kymo.loc[ind, 3:60].copy()

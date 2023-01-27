@@ -9,6 +9,8 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 from scipy.signal import detrend
 from sklearn.decomposition import PCA
+
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
@@ -1512,10 +1514,10 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         beh = beh[:t_end]
     if t_start is not None:
         beh = beh[t_start:]
-    beh_rev = beh == 1
+    beh_rev = beh == BehaviorCodes.REV
     starts_rev, ends_rev = get_contiguous_blocks_from_column(beh_rev, already_boolean=True)
 
-    beh_fwd = beh == 0
+    beh_fwd = beh == BehaviorCodes.FWD
     starts_fwd, ends_fwd = get_contiguous_blocks_from_column(beh_fwd, already_boolean=True)
 
     print("Forward blocks: ", starts_fwd, ends_fwd)
