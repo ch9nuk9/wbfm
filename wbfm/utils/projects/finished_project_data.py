@@ -1308,33 +1308,6 @@ colored_segmentation:     {self.segmentation is not None}\n\
 traces:                   {self.has_traces()}\n"
 
 
-def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
-    """GUI to look at just the reference frames"""
-
-    project_data = ProjectData.load_final_project_data_from_config(cfg)
-    training_cfg = cfg.get_training_config()
-
-    z_dat = project_data.red_data
-    raw_seg = project_data.raw_segmentation
-    z_seg = project_data.reindexed_masks_training
-
-    # Training data doesn't usually start at i=0, so align
-    num_frames = training_cfg.config['training_data_3d']['num_training_frames']
-    i_seg_start = training_cfg.config['training_data_3d']['which_frames'][0]
-    i_seg_end = i_seg_start + num_frames
-    z_dat = z_dat[i_seg_start:i_seg_end, ...]
-    raw_seg = raw_seg[i_seg_start:i_seg_end, ...]
-
-    cfg.logger.info(f"Size of reindexed_masks: {z_dat.shape}")
-
-    viewer = napari.view_labels(z_seg, ndisplay=3)
-    viewer.add_labels(raw_seg, visible=False)
-    viewer.add_image(z_dat)
-    viewer.show()
-
-    return viewer, z_dat, z_seg
-
-
 def template_matches_to_dataframe(project_data: ProjectData,
                                   all_matches: list,
                                   null_value=-1):

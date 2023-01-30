@@ -24,7 +24,7 @@ from wbfm.gui.utils.file_dialog_widget import FileDialog
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.projects.utils_project_status import check_segmentation, check_tracking, \
     check_traces, check_training_final, check_training_only_tracklets
-from wbfm.utils.projects.finished_project_data import napari_of_training_data, ProjectData
+from wbfm.utils.projects.finished_project_data import ProjectData
 from backports.cached_property import cached_property
 
 
@@ -233,11 +233,6 @@ class UiMainWindow(object):
         which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Intermediate global IDs']
         self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
         self.viewer.show()
-
-    def napari_for_masks_training(self):
-        """Open napari window for segmentation for just the training data"""
-        raise NotImplementedError
-        self.viewer, _, _ = napari_of_training_data(self.cfg)
 
     def open_traces_gui(self):
         self.viewer = napari.Viewer(ndisplay=3)
