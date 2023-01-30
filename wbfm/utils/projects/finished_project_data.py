@@ -1361,6 +1361,9 @@ def calc_mismatch_between_ground_truth_and_pairs(all_matches: Dict[tuple, FrameP
                                                  df_gt: pd.DataFrame,
                                                  t0: int,
                                                  minimum_confidence: float):
+    """
+    Helper function for calculating the mismatches between a dict of matches (t to t+1), and a ground truth dataframe
+    """
     pair = (t0, t0 + 1)
 
     model_matches = all_matches[pair].final_matches
@@ -1384,6 +1387,8 @@ def calc_all_mismatches_between_ground_truth_and_pairs(project_data: ProjectData
         (time, neuron_name, tracklet_name) = bool
 
     (In principle this could be a list)
+
+    See: calc_mismatch_between_ground_truth_and_pairs
 
     Parameters
     ----------
@@ -1461,13 +1466,19 @@ def print_project_statistics(project_config: ModularProjectConfig):
         getattr(project_data, func_name)()
 
 
-def load_all_projects_in_folder(folder_name, **kwargs) -> List[ProjectData]:
+def load_all_projects_in_folder(folder_name: str, **kwargs) -> List[ProjectData]:
+    """
+    Loads all projects from a folder with the given options
+
+    Uses load_all_projects_from_list
+    """
     list_of_project_folders = list(Path(folder_name).iterdir())
     all_projects = load_all_projects_from_list(list_of_project_folders, **kwargs)
     return all_projects
 
 
-def load_all_projects_from_list(list_of_project_folders, **kwargs):
+def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]], **kwargs):
+    """Loads all projects from a list"""
     all_projects = []
     if 'verbose' not in kwargs:
         kwargs['verbose'] = 0
@@ -1482,6 +1493,11 @@ def load_all_projects_from_list(list_of_project_folders, **kwargs):
 
 
 def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, title=""):
+    """
+    Plots 2d pca modes of traces.
+
+    Interpolates nan by default, but does not remove estimated tracking errors
+    """
     if trace_kwargs is None:
         trace_kwargs = {}
 
@@ -1518,6 +1534,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
 
 def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None,
                                         include_subplot=True, verbose=0):
+    """Similar to plot_pca_modes_from_project, but 3d. Plots times series and 3d axis"""
     if trace_kwargs is None:
         trace_kwargs = {}
     fig = plt.figure(figsize=(15, 15), dpi=200)
