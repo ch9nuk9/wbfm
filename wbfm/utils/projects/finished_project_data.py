@@ -332,7 +332,11 @@ class ProjectData:
 
     @cached_property
     def worm_posture_class(self) -> WormFullVideoPosture:
-        """Allows coloring the traces using behavioral annotation, and general correlations to behavior"""
+        """
+        Class with all functionality related to behavior
+
+        For example, allows coloring the traces using behavioral annotation, and correlations to behavioral time series
+        """
         return WormFullVideoPosture.load_from_project(self)
 
     @cached_property
@@ -348,17 +352,21 @@ class ProjectData:
         return self.project_config.logger
 
     def load_tracklet_related_properties(self):
+        """Helper function for loading cached properties"""
         _ = self.df_all_tracklets
         _ = self.tracked_worm_class
 
     def load_interactive_properties(self):
+        """Helper function for loading cached properties"""
         _ = self.tracklet_annotator
 
     def load_frame_related_properties(self):
+        """Helper function for loading cached properties"""
         _ = self.raw_frames
         _ = self.raw_matches
 
     def load_segmentation_related_properties(self):
+        """Helper function for loading cached properties"""
         _ = self.segmentation_metadata.segmentation_metadata
         self.all_used_fnames.append(self.segmentation_metadata.detection_fname)
 
@@ -381,6 +389,7 @@ class ProjectData:
 
     @property
     def which_training_frames(self) -> list:
+        """Used to determine reference frames for posture matching during tracking"""
         train_cfg = self.project_config.get_training_config()
         return train_cfg.config['training_data_3d']['which_frames']
 
@@ -586,9 +595,13 @@ class ProjectData:
 
     @property
     def neuron_names(self):
+        """All names of neurons"""
         return get_names_from_df(self.red_traces)
 
     def well_tracked_neuron_names(self, min_nonnan=0.5):
+        """
+        Subset of neurons that pass a given tracking threshold
+        """
 
         min_nonnan = int(min_nonnan * self.num_frames)
         df_tmp = self.red_traces.dropna(axis=1, thresh=min_nonnan)
@@ -603,6 +616,7 @@ class ProjectData:
                             verbose=0,
                             **kwargs):
         """
+        Core function for calculating dataframes of traces using various preprocessing options
 
         Uses the currently recommended 'best' settings:
         opt = dict(
@@ -973,6 +987,7 @@ class ProjectData:
         return v
 
     def napari_tracks_layer_of_single_neuron_match(self, neuron_name, t):
+        """Helper function to get tracks layer between t and t+1. See also napari_of_single_match"""
         neuron_ind_in_list = self.final_tracks.loc[t, (neuron_name, 'raw_neuron_ind_in_list')]
         if np.isnan(neuron_ind_in_list):
             self.logger.debug(f"No match for {neuron_name} at t={t}")
@@ -1033,7 +1048,11 @@ class ProjectData:
         return v
 
     def get_desynced_seg_and_frame_object_frames(self, verbose=1) -> List[int]:
-        """Return frame objects that are obviously desynced from the segmentation"""
+        """
+        Return frame objects that are obviously desynced from the segmentation
+
+        Desyncing is flagged by two different numbers of objects stored in the different metadata
+        """
         desynced_frames = []
         for t in range(self.num_frames):
             pts_from_seg = self.get_centroids_as_numpy(t)
@@ -1106,12 +1125,21 @@ class ProjectData:
         return invalid_idx
 
     @cached_property
-    def df_exported_format(self) -> pd.DataFrame:
-        """See project_export.save_all_final_dataframes"""
+    def df_exported_format(self) -> Optional[pd.DataFrame]:
+        """
+        Loads a previously exported summary dataframe, including behavior and multiple calculations of traces
+
+        returns None if the file doesn't exist
+
+        See project_export.save_all_final_dataframes
+        """
 
         fname = Path(self.project_dir).joinpath('final_dataframes/df_final.h5')
-        df_final = pd.read_hdf(fname)
-        return df_final
+        try:
+            df_final = pd.read_hdf(fname)
+            return df_final
+        except FileNotFoundError:
+            return None
 
     @cached_property
     def finished_neuron_names(self) -> List[str]:
@@ -1180,11 +1208,17 @@ class ProjectData:
 
     @property
     def shortened_name(self):
+        """Returns the project directory name of the project"""
         return str(Path(self.project_dir).name)
 
     @property
     def more_shortened_name(self):
-        # Expects a name like 'ZIM2319_GFP_worm1-2022-12-10', and removes the date
+        """
+        Returns a shortened version project directory name of the project
+
+        Expects a name like 'ZIM2319_GFP_worm1-2022-12-10', and removes the date and splits by underscores
+        In that example, returns 'worm1'
+        """
         name = self.shortened_name.split('-')[0]
         if len(name.split('_')) > 1:
             name = name.split('_')[-1]
@@ -1231,12 +1265,18 @@ class ProjectData:
 
     @property
     def _x_physical_time(self):
+        """Helper for reindexing plots from volumes to seconds"""
         x = np.arange(self.num_frames)
         x = x / self.physical_unit_conversion.volumes_per_second
         return x
 
     @property
     def x_for_plots(self):
+        """
+        Helper for reindexing plots from volumes to seconds
+
+        Uses self._x_physical_time and self.use_physical_x_axis to return the desired time
+        """
         if self.use_physical_x_axis:
             x = self._x_physical_time
         else:
@@ -1245,6 +1285,9 @@ class ProjectData:
 
     @property
     def x_lim(self):
+        """
+        Returns first and last element of self.x_for_plots
+        """
         x = self.x_for_plots
         return [x[0], x[-1]]
 
@@ -1266,6 +1309,7 @@ traces:                   {self.has_traces()}\n"
 
 
 def napari_of_training_data(cfg: ModularProjectConfig) -> Tuple[napari.Viewer, np.ndarray, np.ndarray]:
+    """GUI to look at just the reference frames"""
 
     project_data = ProjectData.load_final_project_data_from_config(cfg)
     training_cfg = cfg.get_training_config()
