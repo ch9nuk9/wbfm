@@ -7,6 +7,7 @@ import pandas as pd
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
@@ -45,7 +46,7 @@ class TriggeredAverageIndices:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         return binary_state
 
-    def triggered_average_indices(self, dict_of_events_to_keep=None) -> list:
+    def triggered_average_indices(self, dict_of_events_to_keep=None, DEBUG=False) -> list:
         """
         Calculates triggered average indices based on a binary state vector saved in this class
 
@@ -77,15 +78,15 @@ class TriggeredAverageIndices:
         # Turn into time series
         all_ind = []
         for start, end in zip(all_starts, all_ends):
-            if self.DEBUG:
+            if DEBUG:
                 print("Checking block: ", start, end)
             is_too_short = end - start < self.min_duration
             is_too_long = (self.max_duration is not None) and (end - start > self.max_duration)
             is_at_edge = start == 0
-            starts_with_misannotation = self.behavioral_annotation.iat[start-1] == -1
+            starts_with_misannotation = self.behavioral_annotation.iat[start-1] == BehaviorCodes.UNKNOWN
             not_in_dict = (dict_of_events_to_keep is not None) and (dict_of_events_to_keep.get(start, 0) == 0)
             if is_too_short or is_too_long or is_at_edge or starts_with_misannotation or not_in_dict:
-                if self.DEBUG:
+                if DEBUG:
                     print("Skipping because: ", is_too_short, is_too_long, is_at_edge, starts_with_misannotation)
                 continue
             ind = np.arange(start - self.ind_preceding, end)
