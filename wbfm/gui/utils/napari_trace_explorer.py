@@ -531,6 +531,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         """Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe"""
         progress = QProgressDialog("Saving to disk, you may quit when finished", None, 0, 3, self)
         progress.setWindowModality(Qt.WindowModal)
+        progress.setValue(0)
         progress.forceShow()
         self.dat.segmentation_metadata.overwrite_original_detection_file()
         progress.setValue(1)
