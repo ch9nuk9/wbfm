@@ -489,7 +489,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
     def _savefig(self, fname, saving_folder):
         if saving_folder is None:
-            vis_cfg = self.project_data.project_config.get_visualization_config()
+            vis_cfg = self.project_data.project_config.get_visualization_config(make_subfolder=True)
             fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         else:
             fname = os.path.join(saving_folder, f"{self.project_data.shortened_name}-{fname}")
@@ -534,9 +534,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         plt.subplots_adjust(left=0.3)
         plt.grid(axis='y', which='both')
 
-        vis_cfg = self.project_data.project_config.get_visualization_config()
-        fname = vis_cfg.resolve_relative_path(f"lasso_coefficients_{df_name}_{y_name}.png", prepend_subfolder=True)
-        plt.savefig(fname)
+        fname = f"lasso_coefficients_{df_name}_{y_name}.png"
+        self.project_data.save_fig_in_project(fname)
 
         # gridplot of traces
         if also_plot_traces:
@@ -753,11 +752,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         plt.legend()
 
         if to_save:
-            vis_cfg = self.project_data.project_config.get_visualization_config()
             fname = f'maximum_correlation_kymograph_histogram.png'
-            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-
-            plt.savefig(fname)
+            self.project_data.save_fig_in_project(fname)
 
     def plot_histogram_difference_after_ratio(self, df_start_names=None, df_final_name='ratio', to_save=True):
         plt.figure(dpi=100)
@@ -780,10 +776,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         plt.title(title_str)
 
         if to_save:
-            vis_cfg = self.project_data.project_config.get_visualization_config()
             fname = f'{title_str}.png'
-            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            plt.savefig(fname)
+            self.project_data.save_fig_in_project(suffix=fname)
 
     def plot_paired_boxplot_difference_after_ratio(self, df_start_name='red', df_final_name='ratio', to_save=True):
         plt.figure(dpi=100)
@@ -799,10 +793,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         plt.title(title_str)
 
         if to_save:
-            vis_cfg = self.project_data.project_config.get_visualization_config()
             fname = f'{title_str}.png'
-            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            plt.savefig(fname)
+            self.project_data.save_fig_in_project(suffix=fname)
 
     def get_data_for_paired_boxplot(self, df_final_name, df_start_name):
         df_start = self.all_dfs_corr[df_start_name]
@@ -842,10 +834,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         plt.xlabel("Phase shift (body segments)")
 
         if to_save:
-            vis_cfg = self.project_data.project_config.get_visualization_config()
             fname = f'{title_str.replace(">", "ge")}.png'
-            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            plt.savefig(fname)
+            self.project_data.save_fig_in_project(suffix=fname)
 
     @staticmethod
     def _multi_plot(all_dfs_list, all_dfs_corr_list, all_labels, all_colors, ax_locations=None,
@@ -909,11 +899,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
             fig.tight_layout()
 
             if to_save:
-                vis_cfg = project_data.project_config.get_visualization_config()
                 fname = f'traces_kymo_correlation_{neuron_name}.png'
-                fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-
-                plt.savefig(fname)
+                self.project_data.save_fig_in_project(suffix=fname)
 
             if max_num_plots is not None and num_open_plots >= max_num_plots:
                 break
@@ -1088,10 +1075,6 @@ class MarkovRegressionModel:
     def trace_len(self):
         return self.df.shape[0]
 
-    @cached_property
-    def vis_cfg(self):
-        return self.project_data.project_config.get_visualization_config()
-
     def plot_no_neuron_markov_model(self, to_save=True):
         valid_ind, trace = self.get_valid_ind_and_trace()
         mod = sm.tsa.MarkovRegression(trace, k_regimes=2)
@@ -1110,8 +1093,8 @@ class MarkovRegressionModel:
         plt.title(f"Correlation: {r:.2f}")
 
         if to_save:
-            fname = self.vis_cfg.resolve_relative_path(f'{self.behavior_to_predict}_no_neurons.png', prepend_subfolder=True)
-            plt.savefig(fname)
+            fname = f'{self.behavior_to_predict}_no_neurons.png'
+            self.project_data.save_fig_in_project(suffix=fname)
 
         plt.show()
 
@@ -1187,9 +1170,8 @@ class MarkovRegressionModel:
         plt.xlabel("Neuron selected each iteration")
 
         if to_save:
-            fname = self.vis_cfg.resolve_relative_path(f'{self.behavior_to_predict}_error_across_neurons.png',
-                                                       prepend_subfolder=True)
-            plt.savefig(fname)
+            fname = f'{self.behavior_to_predict}_error_across_neurons.png'
+            self.project_data.save_fig_in_project(fname)
 
         # Plot 2
         all_pred = [r.predict() for r in results_list]
@@ -1208,9 +1190,8 @@ class MarkovRegressionModel:
         plt.title(f"Best correlation: {r:.2f}")
 
         if to_save:
-            fname = self.vis_cfg.resolve_relative_path(
-                f'{self.behavior_to_predict}_with_all_neurons_aic_feature_selected.png', prepend_subfolder=True)
-            plt.savefig(fname)
+            fname = f'{self.behavior_to_predict}_with_all_neurons_aic_feature_selected.png'
+            self.project_data.save_fig_in_project(fname)
 
         # Plot 3
         all_traces = [self.df[n][valid_ind] for n in neuron_list]
@@ -1223,8 +1204,7 @@ class MarkovRegressionModel:
         plt.title("Neurons selected as predictive (top is best)")
 
         if to_save:
-            fname = self.vis_cfg.resolve_relative_path(
-                f'{self.behavior_to_predict}_aic_predictive_traces.png', prepend_subfolder=True)
-            plt.savefig(fname)
+            fname = f'{self.behavior_to_predict}_aic_predictive_traces.png'
+            self.project_data.save_fig_in_project(fname)
 
         plt.show()
