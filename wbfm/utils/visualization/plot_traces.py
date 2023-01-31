@@ -391,7 +391,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
         _ax_plot_func = lambda *args, **kwargs: [f(*args, **kwargs) for f in ax_plot_func]
     else:
         # Assume ax_plot_func has the correct signature
-        pass
+        _ax_plot_func = ax_plot_func
 
     # Set up the colormap of the background, if any
     if background_shading_value_func is not None:
