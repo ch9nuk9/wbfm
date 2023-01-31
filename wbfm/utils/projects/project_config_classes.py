@@ -265,17 +265,18 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             pass
         return str(foldername)
 
-    def get_visualization_config(self):
+    def get_visualization_config(self, make_subfolder=False):
         fname = self.config['subfolder_configs'].get('visualization', None)
         if fname is None:
             # Assume the local folder is correct
             fname = os.path.join(self._get_visualization_dir(), 'visualization_config.yaml')
         fname = Path(fname)
         cfg = SubfolderConfigFile(**self._check_path_and_load_config(fname, allow_config_to_not_exist=True))
-        try:
-            Path(cfg.subfolder).mkdir(exist_ok=True)
-        except PermissionError:
-            pass
+        if make_subfolder:
+            try:
+                Path(cfg.subfolder).mkdir(exist_ok=True)
+            except PermissionError:
+                pass
         return cfg
 
     def resolve_mounted_path_in_current_os(self, key) -> Optional[Path]:

@@ -756,7 +756,7 @@ class ProjectData:
 
         """
         out_fname = f'fig-{suffix}.png'
-        foldername = self.project_config.get_visualization_config().absolute_subfolder
+        foldername = self.project_config.get_visualization_config(make_subfolder=True).absolute_subfolder
         out_fname = os.path.join(foldername, out_fname)
         out_fname = get_sequential_filename(out_fname)
 
@@ -1524,7 +1524,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     plt.xlabel("Time (seconds)")
     plt.ylabel("Normalized activity (ratio)")
 
-    vis_cfg = project_data.project_config.get_visualization_config()
+    vis_cfg = project_data.project_config.get_visualization_config(make_subfolder=True)
     fname = 'pca_modes.png'
     fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
     plt.savefig(fname)

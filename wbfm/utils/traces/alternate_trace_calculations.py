@@ -100,7 +100,7 @@ def save_alternate_trace_dataframes(project_data, percentage_list=None):
     if percentage_list is None:
         percentage_list = [0.1, 0.25, 0.5]
 
-    dirname = project_data.project_config.get_visualization_config().absolute_subfolder
+    dirname = project_data.project_config.get_visualization_config(make_subfolder=True).absolute_subfolder
 
     red_fname = os.path.join(dirname, 'pixel_values_all_neurons_red.pickle')
     red_dict = pickle_load_binary(red_fname)

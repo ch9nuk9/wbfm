@@ -726,7 +726,7 @@ class ClickableGridPlot:
             # ax.patches = []
 
     def write_file(self, event):
-        log_dir = self.project_data.project_config.get_visualization_config().absolute_subfolder
+        log_dir = self.project_data.project_config.get_visualization_config(make_subfolder=True).absolute_subfolder
         fname = os.path.join(log_dir, 'selected_neurons.csv')
         # fname = get_sequential_filename(fname)
         print(f"Saving: {fname}")
