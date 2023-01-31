@@ -12,9 +12,10 @@ import napari
 import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
 from backports.cached_property import cached_property
 from tqdm.auto import tqdm
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QProgressDialog
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
@@ -528,9 +529,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def modify_segmentation_and_tracklets_on_disk(self):
         """Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe"""
+        progress = QProgressDialog("Saving to disk, you may quit when finished", None, 0, 3, self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.forceShow()
         self.dat.segmentation_metadata.overwrite_original_detection_file()
+        progress.setValue(1)
         self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
+        progress.setValue(2)
         self.dat.modify_segmentation_on_disk_using_buffer()
+        progress.setValue(3)
         logging.info("Successfully saved to disk!")
 
     def split_segmentation_manual(self):
