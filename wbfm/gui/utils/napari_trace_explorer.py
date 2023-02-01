@@ -271,9 +271,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.list_of_tracklet_correction_widgets = [
             self.recentTrackletSelector,
             self.zoom5Button,
+            self.zoom6Button,
             self.toggleSegButton,
             self.splitTrackletButton1,
             self.splitTrackletButton2,
+            self.clearTrackletButton,
             self.removeTrackletButton1,
             self.removeTrackletButton2,
             self.appendTrackletButton,
@@ -336,14 +338,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.saveSegmentationStatusLabel = QtWidgets.QLabel("No segmentation loaded")
         self.formlayout6.addRow("STATUS: ", self.saveSegmentationStatusLabel)
 
-        self.update_segmentation_options()
+        # self.update_segmentation_options()
 
         self.list_of_segmentation_correction_widgets = [
-            self.splitSegmentationManualSliceButton,
-            self.splitSegmentationKeepOriginalIndexButton,
+            # self.splitSegmentationManualSliceButton,
+            # self.splitSegmentationKeepOriginalIndexButton,
             self.clearSelectedSegmentationsButton,
-            self.splitSegmentationManualButton,
-            self.splitSegmentationAutomaticButton,
+            # self.splitSegmentationManualButton,
+            # self.splitSegmentationAutomaticButton,
             self.candidateMaskButton,
             self.mergeSegmentationButton,
             self.splitSegmentationSaveButton1,
@@ -459,12 +461,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_neuron_in_tracklet_annotator(self):
         self.dat.tracklet_annotator.current_neuron = self.changeNeuronsDropdown.currentText()
 
-    def update_segmentation_options(self):
-        self.dat.tracklet_annotator.segmentation_options = dict(
-            which_neuron_keeps_original=self.splitSegmentationKeepOriginalIndexButton.currentText(),
-            # method=self.splitSegmentationMethodButton.currentText(),
-            x_split_local_coord=self.splitSegmentationManualSliceButton.value()
-        )
+    # def update_segmentation_options(self):
+    #     self.dat.tracklet_annotator.segmentation_options = dict(
+    #         which_neuron_keeps_original=self.splitSegmentationKeepOriginalIndexButton.currentText(),
+    #         # method=self.splitSegmentationMethodButton.currentText(),
+    #         x_split_local_coord=self.splitSegmentationManualSliceButton.value()
+    #     )
 
     def update_interactivity(self):
         to_be_interactive = self.changeInteractivityCheckbox.isChecked()
