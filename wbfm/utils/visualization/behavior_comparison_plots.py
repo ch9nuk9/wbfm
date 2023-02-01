@@ -259,7 +259,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         if y_train_name is None:
             y_train_name = 'signed_stage_speed'
         # Get 1d series from behavior
-        y = self.project_data.worm_posture_class.calc_speed_from_alias(y_train_name)
+        y = self.project_data.worm_posture_class.calc_behavior_from_alias(y_train_name)
         y = y.iloc[:trace_len]
         y.reset_index(drop=True, inplace=True)
         return y, y_train_name

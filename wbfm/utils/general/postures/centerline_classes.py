@@ -178,9 +178,9 @@ class WormFullVideoPosture:
         BehaviorCodes.assert_all_are_valid(self._beh_annotation)
         return self._beh_annotation
 
-    def calc_speed_from_alias(self, speed_alias: str) -> pd.Series:
+    def calc_behavior_from_alias(self, speed_alias: str) -> pd.Series:
         """
-        Basically this calls worm_speed with defined key word arguments
+        This calls worm_speed or summed_curvature_from_kymograph with defined key word arguments
 
         Note: always has fluorescence_fps=True
 
@@ -311,7 +311,8 @@ class WormFullVideoPosture:
             get_positions = self.stage_position
         else:
             # Use segment 50 out of 100 by default
-            get_positions = lambda f: self.centerline_absolute_coordinates(fluorescence_fps=f)[body_segment]
+            get_positions = lambda fluorescence_fps: self.centerline_absolute_coordinates(
+                fluorescence_fps=fluorescence_fps)[body_segment]
         if subsample_before_derivative:
             df = get_positions(fluorescence_fps=fluorescence_fps)
         else:
