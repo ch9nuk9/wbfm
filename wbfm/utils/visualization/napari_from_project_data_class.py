@@ -208,8 +208,8 @@ class NapariLayerInitializer:
                 continue
             test_neuron = project_data.neuron_names[0]
             num_frames = project_data.red_traces[test_neuron].shape[0]
-            if project_data.worm_posture_class.curvature(fluorescence_fps=True)  is not None:
-                curvature = project_data.worm_posture_class.curvature(fluorescence_fps=True) .iloc[0:num_frames]
+            if project_data.worm_posture_class.curvature(fluorescence_fps=True) is not None:
+                curvature = project_data.worm_posture_class.curvature(fluorescence_fps=True).iloc[0:num_frames]
             else:
                 curvature = None
             heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces,
@@ -219,8 +219,12 @@ class NapariLayerInitializer:
                 logging.warning(f"Skipping tuple: {layer_tuple}")
                 continue
             else:
-                layer_name = layer_tuple[1]
+                method_name = layer_tuple[1]
                 layers_actually_added.append(layer_tuple)
+                if len(layer_tuple) > 2:
+                    layer_name = layer_tuple[2]
+                else:
+                    layer_name = method_name
 
             if heatmap_kwargs.get('t', None) is not None:
                 seg = project_data.segmentation[heatmap_kwargs['t']]
@@ -228,7 +232,7 @@ class NapariLayerInitializer:
             else:
                 seg = project_data.segmentation
 
-            prop_dict = getattr(heat_mapper, layer_name)(**heatmap_kwargs)
+            prop_dict = getattr(heat_mapper, method_name)(**heatmap_kwargs)
             # Note: this layer must be visible for the prop_dict to work correctly
             _layer = viewer.add_labels(seg, name=layer_name, scale=(z_to_xy_ratio, 1.0, 1.0),
                                        opacity=0.4, visible=True, rendering='translucent')

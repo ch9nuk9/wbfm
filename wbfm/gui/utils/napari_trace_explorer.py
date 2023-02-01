@@ -1491,7 +1491,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         Get the correlation between the current neuron and the rest...
         for now the dataframe needs to be recalculated
         """
-        which_layers = [('heatmap', 'custom_val_to_plot')]
+        which_layers = [('heatmap', 'custom_val_to_plot', f'correlation_to_{self.current_neuron_name}_at_t_{self.t}')]
         y = self.y_trace_mode
         df = self.df_of_current_traces
         val_to_plot = df.corrwith(y)
