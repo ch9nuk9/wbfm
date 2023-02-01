@@ -92,19 +92,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.current_neuron_name = neuron_names[0]
 
         # BOX 1: Change neurons (dropdown)
-        self.groupBox1 = QtWidgets.QGroupBox("Selection", self.verticalLayoutWidget)
-        self.vbox1 = QtWidgets.QVBoxLayout(self.groupBox1)
+        self.groupBox1NeuronSelection = QtWidgets.QGroupBox("Selection", self.verticalLayoutWidget)
+        self.vbox1 = QtWidgets.QVBoxLayout(self.groupBox1NeuronSelection)
         self.changeNeuronsDropdown = QtWidgets.QComboBox()
         self.changeNeuronsDropdown.addItems(neuron_names)
         self.changeNeuronsDropdown.setItemText(0, self.current_neuron_name)
         self.changeNeuronsDropdown.currentIndexChanged.connect(self.change_neurons)
-        # self.verticalLayout.addWidget(self.changeNeuronsDropdown)
         self.vbox1.addWidget(self.changeNeuronsDropdown)
-
-        # BOX 2: overall mode options
-        # Change traces (dropdown)
-        # self.groupBox2 = QtWidgets.QGroupBox("Channel and Mode selection", self.verticalLayoutWidget)
-        # self.vbox2 = QtWidgets.QVBoxLayout(self.groupBox2)
 
         self.changeChannelDropdown = QtWidgets.QComboBox()
         self.changeChannelDropdown.addItems(['green', 'red', 'ratio', 'linear_model', 'df_over_f_20', 'dr_over_r_20'])
@@ -122,20 +116,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeInteractivityCheckbox.stateChanged.connect(self.update_interactivity)
         self.vbox1.addWidget(self.changeInteractivityCheckbox)
 
-        # More complex boxes:
-        self._setup_trace_filtering_buttons()  # Box 3
-        # self._setup_general_shortcut_buttons()
+        # More complex groupBoxes:
+        self._setup_trace_filtering_buttons()
         self._setup_tracklet_correction_shortcut_buttons()
-        self._setup_gt_correction_shortcut_buttons()
+        # self._setup_gt_correction_shortcut_buttons()
         self._setup_segmentation_correction_buttons()
 
-        self.verticalLayout.addWidget(self.groupBox1)
-        # self.verticalLayout.addWidget(self.groupBox2)
-        self.verticalLayout.addWidget(self.groupBox3)
-        # self.verticalLayout.addWidget(self.groupBox3b)
-        self.verticalLayout.addWidget(self.groupBox4)
-        self.verticalLayout.addWidget(self.groupBox5)
-        self.verticalLayout.addWidget(self.groupBox6)
+        self.verticalLayout.addWidget(self.groupBox1NeuronSelection)
+        self.verticalLayout.addWidget(self.groupBox2TraceCalculation)
+        self.verticalLayout.addWidget(self.groupBox3TrackletCorrection)
+        # self.verticalLayout.addWidget(self.groupBox5)
+        self.verticalLayout.addWidget(self.groupBox6SegmentationCorrection)
 
         self.initialize_track_layers()
         self.initialize_shortcuts()
@@ -147,8 +138,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def _setup_trace_filtering_buttons(self):
         # Change traces (dropdown)
-        self.groupBox3 = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
-        self.formlayout3 = QtWidgets.QFormLayout(self.groupBox3)
+        self.groupBox2TraceCalculation = QtWidgets.QGroupBox("Trace calculation options", self.verticalLayoutWidget)
+        self.formlayout3 = QtWidgets.QFormLayout(self.groupBox2TraceCalculation)
 
         self.changeSubplotMarkerDropdown = QtWidgets.QComboBox()
         self.changeSubplotMarkerDropdown.addItems(['line', 'dots'])
@@ -219,8 +210,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def _setup_tracklet_correction_shortcut_buttons(self):
         # BOX 4: tracklet shortcuts
-        self.groupBox4 = QtWidgets.QGroupBox("Tracklet Correction", self.verticalLayoutWidget)
-        self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox4)
+        self.groupBox3TrackletCorrection = QtWidgets.QGroupBox("Tracklet Correction", self.verticalLayoutWidget)
+        self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox3TrackletCorrection)
 
         # self.trackletHint1 = QtWidgets.QLabel("Normal Click: Select tracklet attached to neuron")
         # self.vbox4.addWidget(self.trackletHint1)
@@ -317,15 +308,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_gt_correction_interactivity()
 
     def _setup_segmentation_correction_buttons(self):
-        self.groupBox6 = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
-        self.formlayout6 = QtWidgets.QFormLayout(self.groupBox6)
-
-        # self.splitSegmentationHint1 = QtWidgets.QLabel()
-        # self.splitSegmentationHint1.setText("Select segmentation")
-        # self.formlayout5.addRow("Control-click:", self.splitSegmentationHint1)
-        # self.splitSegmentationHint2 = QtWidgets.QLabel()
-        # self.splitSegmentationHint2.setText("Select segmentation and try to split")
-        # self.formlayout5.addRow("Alt-click:", self.splitSegmentationHint2)
+        self.groupBox6SegmentationCorrection = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
+        self.formlayout6 = QtWidgets.QFormLayout(self.groupBox6SegmentationCorrection)
 
         self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
         self.splitSegmentationManualSliceButton.setRange(1, 20)  # Future: look at actual z depth of neuron
@@ -499,11 +483,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.tracklet_annotator.is_currently_interactive = to_be_interactive
 
         if to_be_interactive:
-            self.groupBox4.setTitle("Tracklet Correction (currently enabled)")
-            self.groupBox6.setTitle("Segmentation Correction (currently enabled)")
+            self.groupBox3TrackletCorrection.setTitle("Tracklet Correction (currently enabled)")
+            self.groupBox6SegmentationCorrection.setTitle("Segmentation Correction (currently enabled)")
         else:
-            self.groupBox4.setTitle("Tracklet Correction (currently disabled)")
-            self.groupBox6.setTitle("Segmentation Correction (currently disabled)")
+            self.groupBox3TrackletCorrection.setTitle("Tracklet Correction (currently disabled)")
+            self.groupBox6SegmentationCorrection.setTitle("Segmentation Correction (currently disabled)")
 
         for widget in self.list_of_segmentation_correction_widgets:
             widget.setEnabled(to_be_interactive)
