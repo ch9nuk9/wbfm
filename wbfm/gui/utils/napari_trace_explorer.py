@@ -118,7 +118,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # More complex groupBoxes:
         self._setup_trace_filtering_buttons()
-        self._setup_tracklet_correction_shortcut_buttons()
+        self._setup_tracklet_correction_buttons()
         # self._setup_gt_correction_shortcut_buttons()
         self._setup_segmentation_correction_buttons()
 
@@ -208,7 +208,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom3Button.pressed.connect(self.zoom_to_next_nan)
         self.vbox3b.addWidget(self.zoom3Button)
 
-    def _setup_tracklet_correction_shortcut_buttons(self):
+    def _setup_tracklet_correction_buttons(self):
         # BOX 4: tracklet shortcuts
         self.groupBox3TrackletCorrection = QtWidgets.QGroupBox("Tracklet Correction", self.verticalLayoutWidget)
         self.vbox4 = QtWidgets.QVBoxLayout(self.groupBox3TrackletCorrection)
@@ -226,9 +226,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.zoom4Button.setToolTip("Note: does nothing if there is no tracklet selected")
         # self.vbox4.addWidget(self.zoom4Button)
         self.zoom5Button = QtWidgets.QPushButton("Jump to end of current tracklet (j)")
-        self.zoom5Button.setToolTip("Alternative: jump to beginning of current tracklet (h)")
         self.zoom5Button.pressed.connect(self.zoom_to_end_of_current_tracklet)
         self.vbox4.addWidget(self.zoom5Button)
+        self.zoom6Button = QtWidgets.QPushButton("Jump to beginning of current tracklet (h)")
+        self.zoom6Button.pressed.connect(self.zoom_to_start_of_current_tracklet)
+        self.vbox4.addWidget(self.zoom6Button)
 
         # Splitting and removing shortcuts
         self.toggleSegButton = QtWidgets.QPushButton("Toggle Raw segmentation layer (s)")
@@ -239,9 +241,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.splitTrackletButton2 = QtWidgets.QPushButton("Split current tracklet (keep future) (e)")
         self.splitTrackletButton2.pressed.connect(self.split_current_tracklet_keep_right)
         self.vbox4.addWidget(self.splitTrackletButton2)
-        # self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (w)")
-        # self.clearTrackletButton.pressed.connect(self.clear_current_tracklet)
-        # self.vbox4.addWidget(self.clearTrackletButton)
+        self.clearTrackletButton = QtWidgets.QPushButton("Clear current tracklet (w)")
+        self.clearTrackletButton.pressed.connect(self.clear_current_tracklet)
+        self.vbox4.addWidget(self.clearTrackletButton)
         self.removeTrackletButton1 = QtWidgets.QPushButton("Remove OTHER tracklets with time conflicts")
         self.removeTrackletButton1.pressed.connect(self.remove_time_conflicts)
         self.vbox4.addWidget(self.removeTrackletButton1)
@@ -311,37 +313,23 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.groupBox6SegmentationCorrection = QtWidgets.QGroupBox("Segmentation Correction", self.verticalLayoutWidget)
         self.formlayout6 = QtWidgets.QFormLayout(self.groupBox6SegmentationCorrection)
 
-        self.splitSegmentationManualSliceButton = QtWidgets.QSpinBox()
-        self.splitSegmentationManualSliceButton.setRange(1, 20)  # Future: look at actual z depth of neuron
-        self.splitSegmentationManualSliceButton.valueChanged.connect(self.update_segmentation_options)
-        self.formlayout6.addRow("Manual slice index: ", self.splitSegmentationManualSliceButton)
-
-        self.splitSegmentationKeepOriginalIndexButton = QtWidgets.QComboBox()
-        self.splitSegmentationKeepOriginalIndexButton.addItems(["Top", "Bottom"])
-        self.splitSegmentationKeepOriginalIndexButton.currentIndexChanged.connect(self.update_segmentation_options)
-        self.formlayout6.addRow("Which side keeps original index: ", self.splitSegmentationKeepOriginalIndexButton)
+        self.candidateMaskButton = QtWidgets.QPushButton("Make copy of segmentation")
+        self.candidateMaskButton.pressed.connect(self.add_candidate_mask_layer)
+        self.formlayout6.addRow("Produce candidate mask: ", self.candidateMaskButton)
 
         self.clearSelectedSegmentationsButton = QtWidgets.QPushButton("Clear (r)")
         self.clearSelectedSegmentationsButton.pressed.connect(self.clear_current_segmentations)
         self.formlayout6.addRow("Remove selected segmentations: ", self.clearSelectedSegmentationsButton)
 
-        self.splitSegmentationManualButton = QtWidgets.QPushButton("Try to manually split")
-        self.splitSegmentationManualButton.pressed.connect(self.split_segmentation_manual)
-        self.formlayout6.addRow("Produce candidate mask: ", self.splitSegmentationManualButton)
-        self.splitSegmentationAutomaticButton = QtWidgets.QPushButton("Try to automatically split")
-        self.splitSegmentationAutomaticButton.pressed.connect(self.split_segmentation_automatic)
-        self.formlayout6.addRow("Produce candidate mask: ", self.splitSegmentationAutomaticButton)
         self.mergeSegmentationButton = QtWidgets.QPushButton("Try to merge selected")
         self.mergeSegmentationButton.pressed.connect(self.merge_segmentation)
         self.formlayout6.addRow("Produce candidate mask: ", self.mergeSegmentationButton)
-        self.candidateMaskButton = QtWidgets.QPushButton("Make copy of segmentation")
-        self.candidateMaskButton.pressed.connect(self.add_candidate_mask_layer)
-        self.formlayout6.addRow("Produce candidate mask: ", self.candidateMaskButton)
 
         self.splitSegmentationSaveButton1 = QtWidgets.QPushButton("Save to RAM")
         self.splitSegmentationSaveButton1.pressed.connect(self.modify_segmentation_using_manual_correction)
         self.formlayout6.addRow("Save candidate mask: ", self.splitSegmentationSaveButton1)
-        self.mainSaveButton = QtWidgets.QPushButton("SAVE TO DISK")
+
+        self.mainSaveButton = QtWidgets.QPushButton("SAVE ALL TO DISK")
         self.mainSaveButton.pressed.connect(self.modify_segmentation_and_tracklets_on_disk)
         self.formlayout6.addRow("***Masks and Tracklets***", self.mainSaveButton)
 
@@ -697,7 +685,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.bind_key('s', overwrite=True)
         def toggle_seg(viewer):
-            # self.save_annotations_to_disk()
             self.toggle_raw_segmentation_layer()
 
         @viewer.bind_key('c', overwrite=True)
