@@ -121,7 +121,7 @@ class TriggeredAverageIndices:
 
         """
         list_of_triggered_ind = self.triggered_average_indices()
-        list_of_invalid_states = [self.behavioral_state, -1]
+        list_of_invalid_states = [self.behavioral_state, BehaviorCodes.UNKNOWN]
         beh_annotations = self.behavioral_annotation.values
         for i_trace in range(len(list_of_triggered_ind)):
             these_ind = list_of_triggered_ind[i_trace]
