@@ -319,13 +319,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.candidateMaskButton.pressed.connect(self.add_candidate_mask_layer)
         self.formlayout6.addRow("Produce candidate mask: ", self.candidateMaskButton)
 
-        self.clearSelectedSegmentationsButton = QtWidgets.QPushButton("Clear (r)")
-        self.clearSelectedSegmentationsButton.pressed.connect(self.clear_current_segmentations)
-        self.formlayout6.addRow("Remove selected segmentations: ", self.clearSelectedSegmentationsButton)
-
         self.mergeSegmentationButton = QtWidgets.QPushButton("Try to merge selected")
         self.mergeSegmentationButton.pressed.connect(self.merge_segmentation)
         self.formlayout6.addRow("Produce candidate mask: ", self.mergeSegmentationButton)
+
+        self.clearSelectedSegmentationsButton = QtWidgets.QPushButton("Clear (r)")
+        self.clearSelectedSegmentationsButton.pressed.connect(self.clear_current_segmentations)
+        self.formlayout6.addRow("Remove selected segmentations: ", self.clearSelectedSegmentationsButton)
 
         self.splitSegmentationSaveButton1 = QtWidgets.QPushButton("Save to RAM")
         self.splitSegmentationSaveButton1.pressed.connect(self.modify_segmentation_using_manual_correction)
