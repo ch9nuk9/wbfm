@@ -6,7 +6,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Optional, List
 
-import numba
 import numpy as np
 import pandas as pd
 from pytorch_lightning import LightningDataModule

@@ -1,7 +1,6 @@
 import logging
 from typing import Tuple
 
-import numba
 import numpy as np
 import scipy.special
 from scipy.optimize import linear_sum_assignment
@@ -112,6 +111,8 @@ def calc_bipartite_from_positions(xyz0: np.ndarray, xyz1: np.ndarray,
         #     raise ValueError
 
         # Slower, so don't use by default
+        import numba
+
         @numba.jit(nopython=True)
         def nandist(u, v):
             return np.sqrt(np.nansum((u - v) ** 2))
