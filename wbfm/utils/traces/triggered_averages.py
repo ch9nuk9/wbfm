@@ -1,14 +1,17 @@
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import List
 
 import numpy as np
 import pandas as pd
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
+from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
+from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -60,7 +63,7 @@ class TriggeredAverageIndices:
             all_starts = [15, 66, 114, 130]
             dict_of_ind_to_keep = {15: 0, 66: 1, 114: 0}
 
-            Note that not all starts need to be in dict_of_ind_to_keep
+            Note that not all starts need to be in dict_of_ind_to_keep; missing entries are dropped by default
 
         Returns
         -------
@@ -93,22 +96,28 @@ class TriggeredAverageIndices:
             all_ind.append(ind)
         return all_ind
 
-    def calc_triggered_average_matrix(self, trace, mean_subtract=False, **ind_kwargs):
+    def calc_triggered_average_matrix(self, trace, mean_subtract=False, custom_ind: List[np.ndarray]=None,
+                                      **ind_kwargs):
         """
         Uses triggered_average_indices to extract a matrix of traces at each index, with nan padding to equalize the
         lengths of the traces
+
 
         Parameters
         ----------
         trace
         mean_subtract
+        custom_ind - instead of using self.triggered_average_indices. If not None, ind_kwargs are not used
         ind_kwargs
 
         Returns
         -------
 
         """
-        all_ind = self.triggered_average_indices(**ind_kwargs)
+        if custom_ind is None:
+            all_ind = self.triggered_average_indices(**ind_kwargs)
+        else:
+            all_ind = custom_ind
         max_len_subset = max(map(len, all_ind))
         # Pad with nan in case there are negative indices, but only the end
         trace = np.pad(trace, max_len_subset, mode='constant', constant_values=(np.nan, np.nan))[max_len_subset:]
@@ -194,6 +203,45 @@ class TriggeredAverageIndices:
         lower_shading = triggered_avg - triggered_std
         x_significant = np.where(np.logical_or(lower_shading > raw_trace_mean, upper_shading < raw_trace_mean))[0]
         return x_significant
+
+    def calc_p_value_using_zeta(self, trace, num_baseline_lines=1000):
+        """
+        See utils_zeta_statistics. Following:
+        https://elifesciences.org/articles/71969#
+
+        Returns
+        -------
+
+        """
+        # Original matrix
+        triggered_average_indices = self.triggered_average_indices()
+        mat = self.calc_triggered_average_matrix(trace, custom_ind=triggered_average_indices)
+        zeta_line_dat = calculate_zeta_cumsum(mat)
+
+        # Null distribution
+        baseline_lines = np.zeros((num_baseline_lines, mat.shape[1]))
+        for i in tqdm(range(num_baseline_lines), leave=False):
+            ind_jitter = jitter_indices(triggered_average_indices, max_jitter=len(trace), max_len=len(trace))
+            mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter)
+            zeta_line = calculate_zeta_cumsum(mat_jitter)
+            baseline_lines[i, :] = zeta_line
+
+        # Normalize by the std of the baseline
+        # Note: calc the std across trials, then average across time
+        baseline_per_line_std = np.std(baseline_lines, axis=0)
+        baseline_std = np.mean(baseline_per_line_std)
+
+        zeta_line_dat /= baseline_std
+        baseline_lines /= baseline_std
+
+        # Calculate individual zeta values (max deviation)
+        zeta_dat = np.max(np.abs(zeta_line_dat))
+        zetas_baseline = np.max(np.abs(baseline_lines), axis=1)
+
+        # Final p value
+        p = calculate_p_value_from_zeta(zeta_dat, zetas_baseline)
+
+        return p
 
     def plot_triggered_average_from_matrix(self, triggered_avg_matrix, ax=None,
                                            show_individual_lines=False,
