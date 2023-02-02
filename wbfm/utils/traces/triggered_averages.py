@@ -94,6 +94,20 @@ class TriggeredAverageIndices:
         return all_ind
 
     def calc_triggered_average_matrix(self, trace, mean_subtract=False, **ind_kwargs):
+        """
+        Uses triggered_average_indices to extract a matrix of traces at each index, with nan padding to equalize the
+        lengths of the traces
+
+        Parameters
+        ----------
+        trace
+        mean_subtract
+        ind_kwargs
+
+        Returns
+        -------
+
+        """
         all_ind = self.triggered_average_indices(**ind_kwargs)
         max_len_subset = max(map(len, all_ind))
         # Pad with nan in case there are negative indices, but only the end
