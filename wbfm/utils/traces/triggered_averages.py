@@ -1,18 +1,13 @@
 import logging
-from collections import defaultdict
 from dataclasses import dataclass
 from typing import List
-
 import numpy as np
 import pandas as pd
-from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
-from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 @dataclass
@@ -168,7 +163,6 @@ class TriggeredAverageIndices:
         xmax = pd.Series(triggered_avg).last_valid_index()
         triggered_avg = triggered_avg[:xmax]
         raw_trace_mean = np.nanmean(triggered_avg)
-        # triggered_avg -= raw_trace_mean  # No y axis is shown, so this is only for later calculation cleanup
         triggered_std = triggered_std[:xmax]
         is_valid = len(triggered_avg) > 0 and np.count_nonzero(~np.isnan(triggered_avg)) > 0
         return raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid
@@ -189,7 +183,6 @@ class TriggeredAverageIndices:
         Parameters
         ----------
         triggered_avg_matrix
-        min_lines
 
         Returns
         -------
@@ -364,7 +357,9 @@ class FullDatasetTriggeredAverages:
 
     @property
     def neuron_names(self):
-        return get_names_from_df(self.df_traces)
+        names = list(set(self.df_traces.columns.get_level_values(0)))
+        names.sort()
+        return names
 
     def triggered_average_matrix(self, name):
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
