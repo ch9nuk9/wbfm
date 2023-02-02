@@ -204,10 +204,15 @@ class TriggeredAverageIndices:
         x_significant = np.where(np.logical_or(lower_shading > raw_trace_mean, upper_shading < raw_trace_mean))[0]
         return x_significant
 
-    def calc_p_value_using_zeta(self, trace, num_baseline_lines=1000):
+    def calc_p_value_using_zeta(self, trace, num_baseline_lines=1000) -> float:
         """
         See utils_zeta_statistics. Following:
         https://elifesciences.org/articles/71969#
+
+        Parameters
+        ----------
+        trace
+        num_baseline_lines
 
         Returns
         -------
@@ -220,7 +225,7 @@ class TriggeredAverageIndices:
 
         # Null distribution
         baseline_lines = np.zeros((num_baseline_lines, mat.shape[1]))
-        for i in tqdm(range(num_baseline_lines), leave=False):
+        for i in range(num_baseline_lines):
             ind_jitter = jitter_indices(triggered_average_indices, max_jitter=len(trace), max_len=len(trace))
             mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter)
             zeta_line = calculate_zeta_cumsum(mat_jitter)
