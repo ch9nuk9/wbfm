@@ -613,6 +613,7 @@ class ProjectData:
                             raise_error_on_empty: bool = True,
                             neuron_names: tuple = None,
                             residual_mode: Optional[str] = None,
+                            nan_tracking_failure_points: bool = False,
                             verbose=0,
                             **kwargs):
         """
@@ -713,6 +714,14 @@ class ProjectData:
                 df = calculate_residual_subtract_nmf(df, n_components=2)
             else:
                 raise NotImplementedError(f"Unrecognized residual mode: {residual_mode}")
+
+        # Optional: nan time points that are estimated to have a tracking error
+        if nan_tracking_failure_points:
+            invalid_ind = self.estimate_tracking_failures_from_project(pad_nan_points=5)
+            if invalid_ind is not None:
+                df.loc[invalid_ind, :] = np.nan
+                if interpolate_nan:
+                    self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
 
         return df
 
