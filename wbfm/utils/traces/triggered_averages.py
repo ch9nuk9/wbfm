@@ -410,6 +410,20 @@ class FullDatasetTriggeredAverages:
         # ax.axhline(0, c='black', ls='--')
         # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
 
+    @staticmethod
+    def load_from_project(project_data, trigger_opt: dict, trace_opt: dict):
+        trigger_opt_default = dict(min_lines=3, ind_preceding=20)
+        trigger_opt_default.update(trigger_opt)
+        ind_class = project_data.worm_posture_class.calc_triggered_average_indices(**trigger_opt_default)
+
+        trace_opt_default = dict(channel_mode='dr_over_r_20', calculation_mode='integration', min_nonnan=0.9)
+        trace_opt_default.update(trace_opt)
+        df_traces = project_data.calc_default_traces(**trace_opt_default)
+
+        triggered_averages_class = FullDatasetTriggeredAverages(df_traces, ind_class)
+
+        return triggered_averages_class
+
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
     """
