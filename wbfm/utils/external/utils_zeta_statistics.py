@@ -1,6 +1,7 @@
 import math
 from typing import List
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 # Functions all following the paper:
@@ -27,7 +28,7 @@ def jitter_indices(triggered_average_indices: List[np.ndarray], max_jitter: int,
     return ind_jittered
 
 
-def calculate_zeta_cumsum(mat: np.ndarray):
+def calculate_zeta_cumsum(mat: np.ndarray, DEBUG=False):
     """
     Calculates the cumulative sum minus a baseline. See:
     https://elifesciences.org/articles/71969#s4
@@ -41,14 +42,25 @@ def calculate_zeta_cumsum(mat: np.ndarray):
 
     """
     # Equation 3
-    trace_sum = np.nansum(mat, axis=0)
+    trace_sum = np.nanmean(mat, axis=0)  # New: take a mean to remove influence of variable length subsets
+    # trace_sum = np.nansum(mat, axis=0)
     trace_cumsum = np.nancumsum(trace_sum)
+    # New: weight to remove influence of variable length subsets
+    # num_lines_contributing = np.sum(~np.isnan(mat), axis=0)
+    # trace_cumsum /= num_lines_contributing
     # Equation 4
     base_cumsum = np.linspace(trace_cumsum[0], trace_cumsum[-1], num=len(trace_cumsum))
     # Equation 5
     delta = trace_cumsum - base_cumsum
     # Equation 6
     delta_corrected = delta - np.nanmean(delta)
+
+    if DEBUG:
+        plt.figure(dpi=100)
+        plt.plot(trace_cumsum)
+        plt.plot(base_cumsum)
+        plt.title("Zeta line and baseline")
+        plt.show()
 
     return delta_corrected
 

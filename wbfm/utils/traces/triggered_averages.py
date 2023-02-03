@@ -214,15 +214,34 @@ class TriggeredAverageIndices:
         # Original matrix
         triggered_average_indices = self.triggered_average_indices()
         mat = self.calc_triggered_average_matrix(trace, custom_ind=triggered_average_indices)
-        zeta_line_dat = calculate_zeta_cumsum(mat)
+        zeta_line_dat = calculate_zeta_cumsum(mat, DEBUG=DEBUG)
+
+        if DEBUG:
+            plt.figure(dpi=100)
+            self.plot_triggered_average_from_matrix(mat, show_individual_lines=True)
+            plt.title("Triggered average")
+
+            plt.figure(dpi=100)
+            plt.plot(np.sum(~np.isnan(mat), axis=0))
+            plt.title("Number of lines contributing to each point")
+            plt.show()
 
         # Null distribution
         baseline_lines = np.zeros((num_baseline_lines, mat.shape[1]))
+        all_ind_jitter = []
         for i in range(num_baseline_lines):
             ind_jitter = jitter_indices(triggered_average_indices, max_jitter=len(trace), max_len=len(trace))
             mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter)
             zeta_line = calculate_zeta_cumsum(mat_jitter)
             baseline_lines[i, :] = zeta_line
+            all_ind_jitter.extend(ind_jitter)
+
+        # if DEBUG:
+        #     plt.figure(dpi=100)
+        #     all_ind_jitter = np.hstack(all_ind_jitter)
+        #     plt.hist(all_ind_jitter)
+        #     plt.title("Number of times each data point is selected")
+        #     plt.show()
 
         # Normalize by the std of the baseline
         # Note: calc the std across trials, then average across time
@@ -240,19 +259,21 @@ class TriggeredAverageIndices:
                 plt.plot(line, 'gray', alpha=0.1)
             plt.ylabel("Deviation (std of baseline)")
             plt.title("Trace zeta line and null distribution")
+            plt.show()
 
         # Calculate individual zeta values (max deviation)
         zeta_dat = np.max(np.abs(zeta_line_dat))
         zetas_baseline = np.max(np.abs(baseline_lines), axis=1)
 
+        # Final p value
+        p = calculate_p_value_from_zeta(zeta_dat, zetas_baseline)
+
         if DEBUG:
             plt.figure(dpi=100)
             plt.hist(zetas_baseline)
-            plt.vlines(zeta_dat, 0, 200, colors='red')
-            plt.title("Distribution of maxima of null, with data")
-
-        # Final p value
-        p = calculate_p_value_from_zeta(zeta_dat, zetas_baseline)
+            plt.vlines(zeta_dat, 0, len(zetas_baseline) / 2, colors='red')
+            plt.title(f"Distribution of maxima of null, with p value: {p}")
+            plt.show()
 
         return p
 
