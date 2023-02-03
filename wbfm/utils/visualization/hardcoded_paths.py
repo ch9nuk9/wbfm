@@ -44,10 +44,11 @@ def load_paper_datasets(genotype='gcamp', require_behavior=True):
     # Build a dictionary of all
     if genotype == 'gcamp':
         folder_and_id_dict = {
-            "2022-11-30_spacer_7b_2per_agar": [1, 2],
-            "2022-11-27_spacer_7b_2per_agar": [1, 3, 4, 6],
             "2022-11-23_spacer_7b_2per_agar": [8, 9, 10, 11, 12],
-            "2022-12-05_spacer_7b_2per_agar": [3, 9, 10]
+            "2022-11-27_spacer_7b_2per_agar": [1, 3, 4, 6],
+            "2022-11-30_spacer_7b_2per_agar": [1, 2],
+            "2022-12-05_spacer_7b_2per_agar": [3, 9, 10],
+            "2022-12-10_spacer_7b_2per_agar": [1, 2, 3, 4, 5, 6, 7, 8]
         }
         list_of_all_projects = []
         parent_folder = Path(get_project_parent_folder())
