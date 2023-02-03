@@ -197,7 +197,7 @@ class TriggeredAverageIndices:
         x_significant = np.where(np.logical_or(lower_shading > raw_trace_mean, upper_shading < raw_trace_mean))[0]
         return x_significant
 
-    def calc_p_value_using_zeta(self, trace, num_baseline_lines=1000) -> float:
+    def calc_p_value_using_zeta(self, trace, num_baseline_lines=100) -> float:
         """
         See utils_zeta_statistics. Following:
         https://elifesciences.org/articles/71969#
@@ -411,7 +411,12 @@ class FullDatasetTriggeredAverages:
         # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
 
     @staticmethod
-    def load_from_project(project_data, trigger_opt: dict, trace_opt: dict):
+    def load_from_project(project_data, trigger_opt=None, trace_opt=None):
+        if trigger_opt is None:
+            trigger_opt = {}
+        if trace_opt is None:
+            trace_opt = {}
+
         trigger_opt_default = dict(min_lines=3, ind_preceding=20)
         trigger_opt_default.update(trigger_opt)
         ind_class = project_data.worm_posture_class.calc_triggered_average_indices(**trigger_opt_default)

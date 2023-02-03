@@ -20,6 +20,8 @@ def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: li
     """
     Plots a pair of boxplots with red (green) lines showing points that lost (gained) value between conditions
 
+    Note that conditions must be paired for this to work
+
     Parameters
     ----------
     df_before_and_after: 2 x n Dataframe. Index is the x position on the boxplot (i.e. long form data)
