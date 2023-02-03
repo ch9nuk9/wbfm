@@ -350,6 +350,7 @@ class FullDatasetTriggeredAverages:
     mean_subtract_each_trace: bool = False
     min_lines: int = 2
     min_points_for_significance: int = 5
+    significance_calculation_method: str = 'zeta'  # Or: 'num_points'
 
     # Plotting
     show_individual_lines: bool = True
@@ -369,9 +370,20 @@ class FullDatasetTriggeredAverages:
             self.min_points_for_significance = min_points_for_significance
         names_to_keep = []
         for name in self.neuron_names:
-            mat = self.triggered_average_matrix(name)
-            x_significant = self.ind_class.calc_significant_points_from_triggered_matrix(mat)
-            if len(x_significant) > self.min_points_for_significance:
+
+            if self.significance_calculation_method == 'zeta':
+                trace = self.df_traces[name]
+                p = self.ind_class.calc_p_value_using_zeta(trace)
+                to_keep = p < 0.05
+            elif self.significance_calculation_method == 'num_points':
+                mat = self.triggered_average_matrix(name)
+                x_significant = self.ind_class.calc_significant_points_from_triggered_matrix(mat)
+                to_keep = len(x_significant) > self.min_points_for_significance
+            else:
+                raise NotImplementedError(f"Unrecognized significance_calculation_method: "
+                                          f"{self.significance_calculation_method}")
+
+            if to_keep:
                 names_to_keep.append(name)
 
         if len(names_to_keep) == 0:
