@@ -369,15 +369,18 @@ class FullDatasetTriggeredAverages:
         if min_points_for_significance is not None:
             self.min_points_for_significance = min_points_for_significance
         names_to_keep = []
+        all_p_values = {}
         for name in self.neuron_names:
 
             if self.significance_calculation_method == 'zeta':
                 trace = self.df_traces[name]
                 p = self.ind_class.calc_p_value_using_zeta(trace)
+                all_p_values[name] = p
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
                 mat = self.triggered_average_matrix(name)
                 x_significant = self.ind_class.calc_significant_points_from_triggered_matrix(mat)
+                all_p_values[name] = x_significant
                 to_keep = len(x_significant) > self.min_points_for_significance
             else:
                 raise NotImplementedError(f"Unrecognized significance_calculation_method: "
@@ -389,7 +392,7 @@ class FullDatasetTriggeredAverages:
         if len(names_to_keep) == 0:
             logging.warning("Found no significant neurons, subsequent steps may not work")
 
-        return names_to_keep
+        return names_to_keep, all_p_values
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""
