@@ -197,7 +197,7 @@ class TriggeredAverageIndices:
         x_significant = np.where(np.logical_or(lower_shading > raw_trace_mean, upper_shading < raw_trace_mean))[0]
         return x_significant
 
-    def calc_p_value_using_zeta(self, trace, num_baseline_lines=100) -> float:
+    def calc_p_value_using_zeta(self, trace, num_baseline_lines=100, DEBUG=False) -> float:
         """
         See utils_zeta_statistics. Following:
         https://elifesciences.org/articles/71969#
@@ -232,9 +232,24 @@ class TriggeredAverageIndices:
         zeta_line_dat /= baseline_std
         baseline_lines /= baseline_std
 
+        if DEBUG:
+            plt.figure(dpi=100)
+            plt.plot(zeta_line_dat)
+            for i_row in range(baseline_lines.shape[0]):
+                line = baseline_lines[i_row, :]
+                plt.plot(line, 'gray', alpha=0.1)
+            plt.ylabel("Deviation (std of baseline)")
+            plt.title("Trace zeta line and null distribution")
+
         # Calculate individual zeta values (max deviation)
         zeta_dat = np.max(np.abs(zeta_line_dat))
         zetas_baseline = np.max(np.abs(baseline_lines), axis=1)
+
+        if DEBUG:
+            plt.figure(dpi=100)
+            plt.hist(zetas_baseline)
+            plt.vlines(zeta_dat, 0, 200, colors='red')
+            plt.title("Distribution of maxima of null, with data")
 
         # Final p value
         p = calculate_p_value_from_zeta(zeta_dat, zetas_baseline)
