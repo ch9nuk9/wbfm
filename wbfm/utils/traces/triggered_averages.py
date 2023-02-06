@@ -1,4 +1,5 @@
 import logging
+import time
 from dataclasses import dataclass
 from typing import List
 import numpy as np
@@ -244,6 +245,8 @@ class TriggeredAverageIndices:
             zeta_line = calculate_zeta_cumsum(mat_jitter)
             baseline_lines[i, :] = zeta_line
             all_ind_jitter.extend(ind_jitter)
+            # if DEBUG:
+            #     time.sleep(2)
 
         # if DEBUG:
         #     plt.figure(dpi=100)

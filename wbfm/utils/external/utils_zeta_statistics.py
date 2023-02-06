@@ -48,16 +48,19 @@ def calculate_zeta_cumsum(mat: np.ndarray, DEBUG=False):
         warnings.simplefilter("ignore", category=RuntimeWarning)
         trace_sum = np.nanmean(mat, axis=0)  # New: take a mean to remove influence of variable length subsets
     # trace_sum = np.nansum(mat, axis=0)
+    # New: drop time points that are entirely nan, to make the baseline make sense
+    trace_sum = trace_sum[~np.isnan(trace_sum)]
     trace_cumsum = np.nancumsum(trace_sum)
-    # New: weight to remove influence of variable length subsets
-    # num_lines_contributing = np.sum(~np.isnan(mat), axis=0)
-    # trace_cumsum /= num_lines_contributing
     # Equation 4
     base_cumsum = np.linspace(trace_cumsum[0], trace_cumsum[-1], num=len(trace_cumsum))
     # Equation 5
     delta = trace_cumsum - base_cumsum
     # Equation 6
     delta_corrected = delta - np.nanmean(delta)
+    # New: pad with zeros to fix dropped points above
+    num_to_pad = mat.shape[1] - len(delta_corrected)
+    if num_to_pad > 0:
+        delta_corrected = np.pad(delta_corrected, (0, num_to_pad), 'constant')
 
     if DEBUG:
         plt.figure(dpi=100)
