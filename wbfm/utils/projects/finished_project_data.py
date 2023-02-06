@@ -1,5 +1,6 @@
 import concurrent
 import logging
+import multiprocessing
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
@@ -1475,7 +1476,7 @@ def print_project_statistics(project_config: ModularProjectConfig):
         getattr(project_data, func_name)()
 
 
-def load_all_projects_in_folder(folder_name: str, **kwargs) -> List[ProjectData]:
+def load_all_projects_in_folder(folder_name: str, **kwargs) -> Dict[str, ProjectData]:
     """
     Loads all projects from a folder with the given options
 
@@ -1486,19 +1487,32 @@ def load_all_projects_in_folder(folder_name: str, **kwargs) -> List[ProjectData]
     return all_projects
 
 
-def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]], **kwargs):
-    """Loads all projects from a list"""
-    all_projects = []
+def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]], **kwargs) -> Dict[str, ProjectData]:
+    """
+    Loads all projects from a list.
+
+    Note: can't be easily multithreaded because each project loads itself using multiple threads
+    """
+    all_projects_dict = {}
+    max_workers = 4
     if 'verbose' not in kwargs:
         kwargs['verbose'] = 0
-    for folder in list_of_project_folders:
-        if Path(folder).is_file():
-            continue
-        for file in Path(folder).iterdir():
+
+    def check_folder_and_load(_folder):
+        if Path(_folder).is_file():
+            return None
+        for file in Path(_folder).iterdir():
             if "project_config.yaml" in file.name and not file.name.startswith('.'):
                 proj = ProjectData.load_final_project_data_from_config(file, **kwargs)
-                all_projects.append(proj)
-    return all_projects
+                return proj
+        return None
+
+    for folder in tqdm(list_of_project_folders, leave=False):
+        proj = check_folder_and_load(folder)
+        if proj is not None:
+            all_projects_dict[proj.shortened_name] = proj
+
+    return all_projects_dict
 
 
 def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, title=""):
