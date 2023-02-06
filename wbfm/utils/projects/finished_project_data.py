@@ -1494,7 +1494,6 @@ def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]],
     Note: can't be easily multithreaded because each project loads itself using multiple threads
     """
     all_projects_dict = {}
-    max_workers = 4
     if 'verbose' not in kwargs:
         kwargs['verbose'] = 0
 

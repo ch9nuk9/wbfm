@@ -3,7 +3,9 @@ from dataclasses import dataclass
 from typing import List
 import numpy as np
 import pandas as pd
+from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
+from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
@@ -44,6 +46,13 @@ class TriggeredAverageIndices:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         return binary_state
 
+    @cached_property
+    def cleaned_binary_state(self):
+        if self.trace_len is not None:
+            return self.binary_state.iloc[:self.trace_len]
+        else:
+            return self.binary_state
+
     def triggered_average_indices(self, dict_of_events_to_keep=None, DEBUG=False) -> list:
         """
         Calculates triggered average indices based on a binary state vector saved in this class
@@ -68,11 +77,9 @@ class TriggeredAverageIndices:
             dict_of_events_to_keep = self.dict_of_events_to_keep
         else:
             self.dict_of_events_to_keep = dict_of_events_to_keep
-        if self.trace_len is not None:
-            binary_state = self.binary_state.iloc[:self.trace_len]
-        else:
-            binary_state = self.binary_state
-        all_starts, all_ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
+        binary_state = self.cleaned_binary_state
+        all_starts, all_ends = get_contiguous_blocks_from_column(binary_state,
+                                                                 already_boolean=True, skip_boolean_check=True)
         # Turn into time series
         all_ind = []
         for start, end in zip(all_starts, all_ends):
@@ -123,10 +130,10 @@ class TriggeredAverageIndices:
         if mean_subtract:
             triggered_avg_matrix -= np.nanmean(triggered_avg_matrix, axis=1, keepdims=True)
         if self.to_nan_points_of_state_before_point:
-            triggered_avg_matrix = self.nan_points_of_state_before_point(triggered_avg_matrix)
+            triggered_avg_matrix = self.nan_points_of_state_before_point(triggered_avg_matrix, all_ind)
         return triggered_avg_matrix
 
-    def nan_points_of_state_before_point(self, triggered_average_mat):
+    def nan_points_of_state_before_point(self, triggered_average_mat, list_of_triggered_ind):
         """
         Checks points up to a certain level, and nans them if they are invalid. Only checks up to a certain threshold
 
@@ -138,7 +145,6 @@ class TriggeredAverageIndices:
         -------
 
         """
-        list_of_triggered_ind = self.triggered_average_indices()
         list_of_invalid_states = [self.behavioral_state, BehaviorCodes.UNKNOWN]
         beh_annotations = self.behavioral_annotation.values
         for i_trace in range(len(list_of_triggered_ind)):
@@ -406,7 +412,7 @@ class FullDatasetTriggeredAverages:
             self.min_points_for_significance = min_points_for_significance
         names_to_keep = []
         all_p_values = {}
-        for name in self.neuron_names:
+        for name in tqdm(self.neuron_names, leave=False):
 
             if self.significance_calculation_method == 'zeta':
                 trace = self.df_traces[name]

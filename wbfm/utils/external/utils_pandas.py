@@ -191,7 +191,7 @@ def cast_int_or_nan(i: Union[list, int]):
 
 
 def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boolean=False,
-                                      include_end_if_censored=True) -> Tuple[list, list]:
+                                      include_end_if_censored=True, skip_boolean_check=False) -> Tuple[list, list]:
     """
     Given a pd.Series that may have gaps, get the indices of the contiguous blocks of non-nan points
 
@@ -201,6 +201,7 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
     already_boolean
     include_end_if_censored: include the last index if a block is still present.
         Otherwise, len(starts) may be less than len(ends)
+    skip_boolean_check
 
 
     Returns
@@ -208,25 +209,28 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
 
     """
     if already_boolean:
-        assert len(np.unique(column_or_series)) <= 2, "Vector must be actually boolean"
+        if not skip_boolean_check:
+            assert len(np.unique(column_or_series)) <= 2, "Vector must be actually boolean"
         bool_column_or_series = column_or_series
     else:
         bool_column_or_series = column_or_series.isnull()
 
     if hasattr(column_or_series, 'sparse'):
-        change_ind = np.where(bool_column_or_series.sparse.to_dense().diff().values)[0]
+        bool_values = bool_column_or_series.sparse.to_dense().to_numpy()
     else:
-        change_ind = np.where(bool_column_or_series.diff().values)[0]
+        bool_values = bool_column_or_series.to_numpy()
+
+    change_ind = np.where(np.diff(bool_values))[0]
 
     block_starts = []
     block_ends = []
     for i in change_ind:
-        if np.isnan(column_or_series.iat[i]) or (already_boolean and not bool_column_or_series.iat[i]):
+        if np.isnan(bool_values[i]) or (already_boolean and not bool_values[i]):
             if i > 0:
                 # Diff always has a value here, but it can only be a start, not an end
                 block_ends.append(i)
         else:
-            if not already_boolean or bool_column_or_series.iat[i]:
+            if not already_boolean or bool_values[i]:
                 block_starts.append(i)
     if include_end_if_censored and len(block_ends) < len(block_starts):
         block_ends.append(len(bool_column_or_series))
