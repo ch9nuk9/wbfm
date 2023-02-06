@@ -69,7 +69,7 @@ class TriggeredAverageIndices:
         else:
             self.dict_of_events_to_keep = dict_of_events_to_keep
         if self.trace_len is not None:
-            binary_state = self.binary_state[:self.trace_len]
+            binary_state = self.binary_state.iloc[:self.trace_len]
         else:
             binary_state = self.binary_state
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
