@@ -190,8 +190,58 @@ def cast_int_or_nan(i: Union[list, int]):
         return int(i)
 
 
+def legacy_get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boolean=False,
+                                      include_end_if_censored=True, skip_boolean_check=False,
+                                      DEBUG=False) -> Tuple[list, list]:
+    """
+    Slower pandas-only version of get_contiguous_blocks_from_column
+
+    Parameters
+    ----------
+    column_or_series
+    already_boolean
+    include_end_if_censored: include the last index if a block is still present.
+        Otherwise, len(starts) may be less than len(ends)
+    skip_boolean_check
+
+
+    Returns
+    -------
+
+    """
+    if already_boolean:
+        if not skip_boolean_check:
+            assert len(np.unique(column_or_series)) <= 2, "Vector must be actually boolean"
+        bool_column_or_series = column_or_series
+    else:
+        bool_column_or_series = column_or_series.isnull()
+
+    if hasattr(column_or_series, 'sparse'):
+        change_ind = np.where(bool_column_or_series.sparse.to_dense().diff().values)[0]
+    else:
+        change_ind = np.where(bool_column_or_series.diff().values)[0]
+    if DEBUG:
+        print(change_ind)
+        print(bool_column_or_series.iloc[change_ind])
+
+    block_starts = []
+    block_ends = []
+    for i in change_ind:
+        if np.isnan(column_or_series.iat[i]) or (already_boolean and not bool_column_or_series.iat[i]):
+            if i > 0:
+                # Diff always has a value here, but it can only be a start, not an end
+                block_ends.append(i)
+        else:
+            if not already_boolean or bool_column_or_series.iat[i]:
+                block_starts.append(i)
+    if include_end_if_censored and len(block_ends) < len(block_starts):
+        block_ends.append(len(bool_column_or_series))
+    return block_starts, block_ends
+
+
 def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boolean=False,
-                                      include_end_if_censored=True, skip_boolean_check=False) -> Tuple[list, list]:
+                                      include_end_if_censored=True, skip_boolean_check=False,
+                                      DEBUG=False) -> Tuple[list, list]:
     """
     Given a pd.Series that may have gaps, get the indices of the contiguous blocks of non-nan points
 
@@ -220,14 +270,19 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
     else:
         bool_values = bool_column_or_series.to_numpy()
 
+    # Align with pandas version
     change_ind = np.where(np.diff(bool_values))[0]
+    change_ind = np.hstack([0, change_ind + 1])
+    if DEBUG:
+        print(change_ind)
+        print(bool_values[change_ind])
 
     block_starts = []
     block_ends = []
     for i in change_ind:
         if np.isnan(bool_values[i]) or (already_boolean and not bool_values[i]):
             if i > 0:
-                # Diff always has a value here, but it can only be a start, not an end
+                # Pandas diff always has a value here, but it can only be a start, not an end
                 block_ends.append(i)
         else:
             if not already_boolean or bool_values[i]:

@@ -77,7 +77,7 @@ class TriggeredAverageIndices:
             dict_of_events_to_keep = self.dict_of_events_to_keep
         else:
             self.dict_of_events_to_keep = dict_of_events_to_keep
-        binary_state = self.cleaned_binary_state
+        binary_state = self.cleaned_binary_state.copy()
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_state,
                                                                  already_boolean=True, skip_boolean_check=True)
         # Turn into time series
@@ -94,6 +94,8 @@ class TriggeredAverageIndices:
                 if DEBUG:
                     print("Skipping because: ", is_too_short, is_too_long, is_at_edge, starts_with_misannotation)
                 continue
+            elif DEBUG:
+                print("***Keeping***")
             ind = np.arange(start - self.ind_preceding, end)
             all_ind.append(ind)
         return all_ind
@@ -544,6 +546,7 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
     -------
 
     """
+    raise ValueError("Not working! See test")
     dict_of_rev_with_id = {}
     for rev in rev_onsets:
         # For both forward lists, get the previous indices
