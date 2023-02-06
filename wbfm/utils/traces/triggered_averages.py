@@ -82,13 +82,14 @@ class TriggeredAverageIndices:
                                                                  already_boolean=True, skip_boolean_check=True)
         # Turn into time series
         all_ind = []
+        beh_vec = self.behavioral_annotation.to_numpy()
         for start, end in zip(all_starts, all_ends):
             if DEBUG:
                 print("Checking block: ", start, end)
             is_too_short = end - start < self.min_duration
             is_too_long = (self.max_duration is not None) and (end - start > self.max_duration)
             is_at_edge = start == 0
-            starts_with_misannotation = self.behavioral_annotation.iat[start-1] == BehaviorCodes.UNKNOWN
+            starts_with_misannotation = beh_vec[start-1] == BehaviorCodes.UNKNOWN
             not_in_dict = (dict_of_events_to_keep is not None) and (dict_of_events_to_keep.get(start, 0) == 0)
             if is_too_short or is_too_long or is_at_edge or starts_with_misannotation or not_in_dict:
                 if DEBUG:
@@ -147,8 +148,8 @@ class TriggeredAverageIndices:
         -------
 
         """
-        list_of_invalid_states = [self.behavioral_state, BehaviorCodes.UNKNOWN]
-        beh_annotations = self.behavioral_annotation.values
+        invalid_states = {self.behavioral_state, BehaviorCodes.UNKNOWN}
+        beh_annotations = self.behavioral_annotation.to_numpy()
         for i_trace in range(len(list_of_triggered_ind)):
             these_ind = list_of_triggered_ind[i_trace]
             for i_local, i_global in enumerate(these_ind):
@@ -156,7 +157,7 @@ class TriggeredAverageIndices:
                     continue
                 if i_local >= self.ind_preceding:
                     break
-                if beh_annotations[i_global] in list_of_invalid_states:
+                if beh_annotations[i_global] in invalid_states:
                     # Remove all points before this
                     for i_to_remove in range(i_local):
                         triggered_average_mat[i_trace, i_to_remove] = np.nan
