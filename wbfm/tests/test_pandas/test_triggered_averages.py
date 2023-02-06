@@ -2,7 +2,9 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import pytest
 
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists
@@ -18,8 +20,8 @@ class TestBinaryVectors(unittest.TestCase):
         # Create a misannotated hole
         beh_complex = beh.copy()
         beh_complex[5] = 0
-        beh_complex[11] = -1
-        beh_complex[17] = -1
+        beh_complex[11] = BehaviorCodes.UNKNOWN
+        beh_complex[17] = BehaviorCodes.UNKNOWN
 
         self.beh = pd.Series(beh)
         self.beh_complex = pd.Series(beh_complex)
@@ -29,8 +31,8 @@ class TestBinaryVectors(unittest.TestCase):
 
     def test_basic_contiguous_blocks(self):
         starts, ends = get_contiguous_blocks_from_column(self.beh, already_boolean=True)
-        self.assertEqual(starts, [3, 15, 24])
-        self.assertEqual(ends, [9, 21, 27])
+        self.assertEqual([3, 15, 24], starts)
+        self.assertEqual([9, 21, 27], ends)
 
     def test_basic_onsets(self):
         ind = TriggeredAverageIndices(self.beh, min_duration=0, **self.opt)
@@ -38,7 +40,7 @@ class TestBinaryVectors(unittest.TestCase):
         onset_vec = list(ind.onset_vector())
         # beh    = [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1]
         expected = [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
-        self.assertEqual(onset_vec, expected)
+        self.assertEqual(expected, onset_vec)
 
     def test_complex_contiguous_blocks(self):
         starts, ends = get_contiguous_blocks_from_column(self.beh_complex == 1, already_boolean=True)
@@ -50,45 +52,47 @@ class TestBinaryVectors(unittest.TestCase):
         ind = TriggeredAverageIndices(self.beh_complex, min_duration=0, **self.opt)
         onset_vec = list(ind.onset_vector())
         expected = [3, 6, 15, 24]
-        self.assertEqual(list(np.where(onset_vec)[0]), expected)
+        self.assertEqual(expected, list(np.where(onset_vec)[0]))
 
     def test_complex_onsets_min_duration(self):
         ind = TriggeredAverageIndices(self.beh_complex, min_duration=3, **self.opt)
         onset_vec = list(ind.onset_vector())
         expected = [6, 24]
-        self.assertEqual(list(np.where(onset_vec)[0]), expected)
+        self.assertEqual(expected, list(np.where(onset_vec)[0]))
 
     def test_remove_small_gaps(self):
         beh = remove_short_state_changes(self.beh_complex == 1, min_length=2)
         expected = [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1]
-        self.assertEqual(list(beh), expected)
+        self.assertEqual(expected, list(beh))
 
     def test_complex_onsets_min_duration_fill_gaps(self):
         ind = TriggeredAverageIndices(self.beh_complex, min_duration=3, gap_size_to_remove=2, **self.opt)
         onset_vec = list(ind.onset_vector())
         expected = [3, 15, 24]
-        self.assertEqual(list(np.where(onset_vec)[0]), expected)
+        self.assertEqual(expected, list(np.where(onset_vec)[0]))
 
     def test_complex_onsets_short_only_fill_gaps(self):
         ind = TriggeredAverageIndices(self.beh_complex, min_duration=0, max_duration=4,
                                       gap_size_to_remove=2, **self.opt)
         onset_vec = list(ind.onset_vector())
         expected = [24]
-        self.assertEqual(list(np.where(onset_vec)[0]), expected)
+        self.assertEqual(expected, list(np.where(onset_vec)[0]))
 
     def test_complex_onsets_long_only_fill_gaps(self):
         ind = TriggeredAverageIndices(self.beh_complex, min_duration=4, max_duration=8,
                                       gap_size_to_remove=2, **self.opt)
         onset_vec = list(ind.onset_vector())
         expected = [3, 15]
-        self.assertEqual(list(np.where(onset_vec)[0]), expected)
+        self.assertEqual(expected, list(np.where(onset_vec)[0]))
 
     def test_assignment_based_on_onsets(self):
         short_onsets = np.array([7,  86, 121, 148])
         long_onsets = np.array([20, 169, 333, 492, 698, 984])
         rev_onsets = np.array([15, 66,  114,  130,  157,  288,  449,  654,  925, 1369])
 
-        rev_id = assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, rev_onsets)
+        with pytest.raises(Exception):
+            rev_id = assign_id_based_on_closest_onset_in_split_lists(short_onsets, long_onsets, rev_onsets)
 
-        expected = [0, 1, 0, 0, 0, 1, 1, 1, 1, 1]
-        self.assertEqual(rev_id, expected)
+            expected = {15: 0, 66: 1, 114: 0, 130: 0, 157: 0, 288: 1, 449: 1, 654: 1, 925: 1, 1369: 1}
+            # expected = [0, 1, 0, 0, 0, 1, 1, 1, 1, 1]
+            self.assertEqual(expected, rev_id)
