@@ -44,7 +44,8 @@ def main(_config, _run):
         all_projects = load_all_projects_in_folder(folder_path)
         output_folder = Path(folder_path)
 
-    behavior_plotter = MultiProjectBehaviorPlotter(all_projects, NeuronToUnivariateEncoding)
+    behavior_plotter = MultiProjectBehaviorPlotter(all_projects=all_projects,
+                                                   class_constructor=NeuronToUnivariateEncoding)
     plot_opt = dict(df_name='ratio', to_save=True, saving_folder=output_folder)
 
     # See _unpack_data_from_name for valid values

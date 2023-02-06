@@ -23,7 +23,7 @@ from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
 from wbfm.utils.external.utils_statsmodels import ols_groupby
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
-from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.finished_project_data import ProjectData, load_all_projects_from_list
 import statsmodels.api as sm
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 from wbfm.utils.traces.residuals import calculate_residual_subtract_pca
@@ -909,7 +909,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
 
 @dataclass
 class MultiProjectBehaviorPlotter:
-    all_project_paths: list
+    all_project_paths: list = None
+    all_projects: Dict[str, ProjectData] = None
 
     class_constructor: callable = NeuronToMultivariateEncoding
     use_threading: bool = True
@@ -917,8 +918,11 @@ class MultiProjectBehaviorPlotter:
     _all_behavior_plotters: List[NeuronEncodingBase] = None
 
     def __post_init__(self):
+        if self.all_projects is None:
+            assert self.all_project_paths is not None, "Must pass either projects or paths"
+            self.all_projects = load_all_projects_from_list(self.all_project_paths)
         # Initialize the behavior plotters
-        self._all_behavior_plotters = [self.class_constructor(p) for p in self.all_project_paths]
+        self._all_behavior_plotters = [self.class_constructor(p) for p in self.all_projects.values()]
 
     def __getattr__(self, item):
         # Transform all unknown function calls into a loop of calls to the subobjects
