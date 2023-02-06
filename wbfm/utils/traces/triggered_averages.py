@@ -401,7 +401,7 @@ class FullDatasetTriggeredAverages:
     def triggered_average_matrix(self, name):
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
-    def which_neurons_are_significant(self, min_points_for_significance=None):
+    def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100):
         if min_points_for_significance is not None:
             self.min_points_for_significance = min_points_for_significance
         names_to_keep = []
@@ -410,7 +410,7 @@ class FullDatasetTriggeredAverages:
 
             if self.significance_calculation_method == 'zeta':
                 trace = self.df_traces[name]
-                p = self.ind_class.calc_p_value_using_zeta(trace)
+                p = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines)
                 all_p_values[name] = p
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':

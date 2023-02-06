@@ -1,4 +1,5 @@
 import math
+import warnings
 from typing import List
 import numpy as np
 from matplotlib import pyplot as plt
@@ -42,7 +43,10 @@ def calculate_zeta_cumsum(mat: np.ndarray, DEBUG=False):
 
     """
     # Equation 3
-    trace_sum = np.nanmean(mat, axis=0)  # New: take a mean to remove influence of variable length subsets
+    with warnings.catch_warnings():
+        # Empty slices don't matter
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        trace_sum = np.nanmean(mat, axis=0)  # New: take a mean to remove influence of variable length subsets
     # trace_sum = np.nansum(mat, axis=0)
     trace_cumsum = np.nancumsum(trace_sum)
     # New: weight to remove influence of variable length subsets
