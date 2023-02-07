@@ -177,7 +177,7 @@ class TriggeredAverageIndices:
                     break
                 if beh_annotations[i_global] in invalid_states:
                     # Remove all points before this
-                    for i_to_remove in range(i_local):
+                    for i_to_remove in range(i_local + 1):
                         triggered_average_mat[i_trace, i_to_remove] = np.nan
         return triggered_average_mat
 
