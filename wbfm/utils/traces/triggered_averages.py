@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import List
 import numpy as np
 import pandas as pd
+import scipy
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
@@ -103,6 +104,7 @@ class TriggeredAverageIndices:
         return all_ind
 
     def calc_triggered_average_matrix(self, trace, mean_subtract=False, custom_ind: List[np.ndarray]=None,
+                                      nan_times_with_too_few=False, max_len=None,
                                       **ind_kwargs):
         """
         Uses triggered_average_indices to extract a matrix of traces at each index, with nan padding to equalize the
@@ -113,7 +115,9 @@ class TriggeredAverageIndices:
         ----------
         trace
         mean_subtract
-        custom_ind - instead of using self.triggered_average_indices. If not None, ind_kwargs are not used
+        custom_ind: instead of using self.triggered_average_indices. If not None, ind_kwargs are not used
+        nan_times_with_too_few
+        max_len: Cut off matrix at a time point. Usually if there aren't enough data points that far
         ind_kwargs
 
         Returns
@@ -124,17 +128,30 @@ class TriggeredAverageIndices:
             all_ind = self.triggered_average_indices(**ind_kwargs)
         else:
             all_ind = custom_ind
-        max_len_subset = max(map(len, all_ind))
+        if max_len is None:
+            max_len_subset = max(map(len, all_ind))
+        else:
+            max_len_subset = max_len
         # Pad with nan in case there are negative indices, but only the end
         trace = np.pad(trace, max_len_subset, mode='constant', constant_values=(np.nan, np.nan))[max_len_subset:]
         triggered_avg_matrix = np.zeros((len(all_ind), max_len_subset))
         triggered_avg_matrix[:] = np.nan
+        # Save either entire traces, or traces up to a point
         for i, ind in enumerate(all_ind):
+            if max_len is not None:
+                ind = ind.copy()[:max_len]
             triggered_avg_matrix[i, np.arange(len(ind))] = trace[ind]
+
+        # Postprocessing
         if mean_subtract:
             triggered_avg_matrix -= np.nanmean(triggered_avg_matrix, axis=1, keepdims=True)
         if self.to_nan_points_of_state_before_point:
             triggered_avg_matrix = self.nan_points_of_state_before_point(triggered_avg_matrix, all_ind)
+        if nan_times_with_too_few:
+            num_lines_at_each_time = np.sum(~np.isnan(triggered_avg_matrix), axis=0)
+            times_to_remove = num_lines_at_each_time < self.min_lines
+            triggered_avg_matrix[:, times_to_remove] = np.nan
+
         return triggered_avg_matrix
 
     def nan_points_of_state_before_point(self, triggered_average_mat, list_of_triggered_ind):
@@ -221,12 +238,23 @@ class TriggeredAverageIndices:
         -------
 
         """
-        # Original matrix
+        # Original triggered average matrix
         triggered_average_indices = self.triggered_average_indices()
-        mat = self.calc_triggered_average_matrix(trace, custom_ind=triggered_average_indices)
+        # Set max number of time points based on number of lines present
+        # In other words, find the max point in time when there are still enough lines
+        if self.min_lines > 0:
+            all_lens = np.array(list(map(len, triggered_average_indices)))
+            ind_lens_enough = np.argsort(all_lens)[:-self.min_lines]
+            max_matrix_length = np.max(all_lens[ind_lens_enough])
+        else:
+            max_matrix_length = None
+        mat = self.calc_triggered_average_matrix(trace, custom_ind=triggered_average_indices,
+                                                 max_len=max_matrix_length)
         zeta_line_dat = calculate_zeta_cumsum(mat, DEBUG=DEBUG)
 
         if DEBUG:
+            print(max_matrix_length)
+
             plt.figure(dpi=100)
             self.plot_triggered_average_from_matrix(mat, show_individual_lines=True)
             plt.title("Triggered average")
@@ -241,7 +269,8 @@ class TriggeredAverageIndices:
         all_ind_jitter = []
         for i in range(num_baseline_lines):
             ind_jitter = jitter_indices(triggered_average_indices, max_jitter=len(trace), max_len=len(trace))
-            mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter)
+            mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter,
+                                                            max_len=max_matrix_length)
             zeta_line = calculate_zeta_cumsum(mat_jitter)
             baseline_lines[i, :] = zeta_line
             all_ind_jitter.extend(ind_jitter)
@@ -276,6 +305,22 @@ class TriggeredAverageIndices:
         # Calculate individual zeta values (max deviation)
         zeta_dat = np.max(np.abs(zeta_line_dat))
         zetas_baseline = np.max(np.abs(baseline_lines), axis=1)
+
+        # ALT: calculate sum of squares, and plot
+        # Idea: maybe I can do chi squared instead
+        # Following: https://stats.stackexchange.com/questions/200886/what-is-the-distribution-of-sum-of-squared-errors
+        # if DEBUG:
+        #     zeta2_dat = np.sum(np.abs(zeta_line_dat)**2.0)
+        #     zetas2_baseline = np.sum(np.abs(baseline_lines)**2.0, axis=1)
+        #
+        #     # What is the df for time series errors?
+        #     p2 = 1 - scipy.stats.chi2.cdf(zeta2_dat, 2)
+        #
+        #     plt.figure(dpi=100)
+        #     plt.hist(zetas2_baseline)#, bins=np.arange(0, np.max(zetas2_baseline)))
+        #     plt.vlines(zeta2_dat, 0, len(zetas_baseline) / 2, colors='red')
+        #     plt.title(f"Distribution of sum of squares, with p={p2}")
+        #     plt.show()
 
         # Final p value
         p = calculate_p_value_from_zeta(zeta_dat, zetas_baseline)

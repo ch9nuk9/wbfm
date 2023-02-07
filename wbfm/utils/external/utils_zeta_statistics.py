@@ -3,6 +3,7 @@ import warnings
 from typing import List
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.signal import detrend
 
 
 # Functions all following the paper:
@@ -23,7 +24,7 @@ def jitter_indices(triggered_average_indices: List[np.ndarray], max_jitter: int,
         # Do not allow jitters that would put the window fully outside the recording
         this_max_jitter = np.min([max_len - vec[-1], max_jitter + 1])
         this_min_jitter = np.max([-vec[0], -max_jitter])
-        new_vec = vec + np.random.randint(this_min_jitter, this_max_jitter)
+        new_vec = vec.copy() + np.random.randint(this_min_jitter, this_max_jitter)
         # new_vec = np.array([v for v in new_vec if v < max_len])
         ind_jittered.append(new_vec)
     return ind_jittered
@@ -50,11 +51,21 @@ def calculate_zeta_cumsum(mat: np.ndarray, DEBUG=False):
     # trace_sum = np.nansum(mat, axis=0)
     # New: drop time points that are entirely nan, to make the baseline make sense
     trace_sum = trace_sum[~np.isnan(trace_sum)]
-    trace_cumsum = np.nancumsum(trace_sum)
-    # Equation 4
-    base_cumsum = np.linspace(trace_cumsum[0], trace_cumsum[-1], num=len(trace_cumsum))
-    # Equation 5
-    delta = trace_cumsum - base_cumsum
+    alternate_methods = False
+    if alternate_methods:
+        # Alternate: detrend instead of subtracting a cumulative sum
+        # delta = detrend(trace_sum)
+
+        # Alternate: subtract mean before taking cumsum
+        # Then the base is by "definition" 0, so it is already the delta
+        delta = np.nancumsum(trace_sum - np.nanmean(trace_sum))
+
+    else:
+        trace_cumsum = np.nancumsum(trace_sum)
+        # Equation 4
+        base_cumsum = np.linspace(trace_cumsum[0], trace_cumsum[-1], num=len(trace_cumsum))
+        # Equation 5
+        delta = trace_cumsum - base_cumsum
     # Equation 6
     delta_corrected = delta - np.nanmean(delta)
     # New: pad with zeros to fix dropped points above
@@ -63,11 +74,13 @@ def calculate_zeta_cumsum(mat: np.ndarray, DEBUG=False):
         delta_corrected = np.pad(delta_corrected, (0, num_to_pad), 'constant')
 
     if DEBUG:
+        trace_cumsum = np.nancumsum(trace_sum)
+        base_cumsum = np.linspace(trace_cumsum[0], trace_cumsum[-1], num=len(trace_cumsum))
+
         plt.figure(dpi=100)
         plt.plot(trace_cumsum)
         plt.plot(base_cumsum)
-        plt.title("Zeta line and baseline")
-        plt.show()
+        plt.title("Precorrection, cumulative sums")
 
     return delta_corrected
 
