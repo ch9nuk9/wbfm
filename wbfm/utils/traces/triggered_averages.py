@@ -334,6 +334,40 @@ class TriggeredAverageIndices:
 
         return p
 
+    def calc_p_value_using_ttest(self, trace, gap=5, DEBUG=False) -> float:
+        """
+        Calculates a p value using a paired t-test on the pre- and post-stimulus time periods
+
+        Note that this is generally sensitive to ind_preceding (in addition to other arguments0
+
+        Parameters
+        ----------
+        trace
+        num_baseline_lines
+
+        Returns
+        -------
+
+        """
+        mat = self.calc_triggered_average_matrix(trace)
+        means_before, means_after = self.split_means_from_triggered_average_matrix(mat, gap=gap)
+        p = scipy.stats.ttest_rel(means_before, means_after, nan_policy='omit').pvalue
+
+        if DEBUG:
+            self.plot_triggered_average_from_matrix(mat, show_individual_lines=True)
+            plt.title(f"P value: {p}")
+            plt.show()
+
+        return p
+
+    def split_means_from_triggered_average_matrix(self, mat, gap):
+        """Gets mean of trace before and after the trigger (same window length)"""
+        i_trigger = self.ind_preceding
+        num_pts = i_trigger - gap
+        means_before = np.nanmean(mat[:, 0:num_pts], axis=1)
+        means_after = np.nanmean(mat[:, i_trigger:i_trigger + num_pts], axis=1)
+        return means_before, means_after
+
     def plot_triggered_average_from_matrix(self, triggered_avg_matrix, ax=None,
                                            show_individual_lines=False,
                                            color_significant_times=False,
@@ -458,7 +492,8 @@ class FullDatasetTriggeredAverages:
     def triggered_average_matrix(self, name):
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
-    def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100):
+    def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
+                                      ttest_gap=5):
         if min_points_for_significance is not None:
             self.min_points_for_significance = min_points_for_significance
         names_to_keep = []
@@ -466,15 +501,22 @@ class FullDatasetTriggeredAverages:
         for name in tqdm(self.neuron_names, leave=False):
 
             if self.significance_calculation_method == 'zeta':
+                logging.warning("Zeta calculation is unstable for calcium imaging!")
                 trace = self.df_traces[name]
                 p = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines)
                 all_p_values[name] = p
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
+                logging.warning("Number of points calculation is not statistically justified!")
                 mat = self.triggered_average_matrix(name)
                 x_significant = self.ind_class.calc_significant_points_from_triggered_matrix(mat)
                 all_p_values[name] = x_significant
                 to_keep = len(x_significant) > self.min_points_for_significance
+            elif self.significance_calculation_method == 'ttest':
+                trace = self.df_traces[name]
+                p = self.ind_class.calc_p_value_using_ttest(trace, ttest_gap)
+                all_p_values[name] = p
+                to_keep = p < 0.05
             else:
                 raise NotImplementedError(f"Unrecognized significance_calculation_method: "
                                           f"{self.significance_calculation_method}")
