@@ -581,7 +581,7 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
 
 def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets, rev_onsets) -> dict:
     """
-    Assigns each reversal a class based on which list contains an event closes to that reversal
+    Assigns each reversal a class based on which list contains an event close to that reversal
 
     Note if a reversal has no previous forward, it will be removed!
 
@@ -595,7 +595,6 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
     -------
 
     """
-    raise ValueError("Not working! See test")
     dict_of_rev_with_id = {}
     for rev in rev_onsets:
         # For both forward lists, get the previous indices
