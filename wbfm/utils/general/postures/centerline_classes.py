@@ -521,7 +521,7 @@ class WormFullVideoPosture:
         dict_of_non_pirouette_rev = {k: int(1 - v) for k, v in dict_of_pirouette_rev.items()}
 
         # Build new rev_onset classes based on the classes, and a flipped version
-        default_kwargs.update(state=1, min_duration=3)
+        default_kwargs.update(state=BehaviorCodes.REV, min_duration=3)
         ind_rev_pirouette = self.calc_triggered_average_indices(dict_of_events_to_keep=dict_of_pirouette_rev,
                                                                 **default_kwargs)
         ind_rev_non_pirouette = self.calc_triggered_average_indices(dict_of_events_to_keep=dict_of_non_pirouette_rev,
