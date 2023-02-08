@@ -581,9 +581,10 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
 
 def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets, rev_onsets) -> dict:
     """
-    Assigns each reversal a class based on which list contains an event close to that reversal
+    Assigns each reversal a class based on which list contains an event close to and before that reversal
 
-    Note if a reversal has no previous forward, it will be removed!
+    Returns a dictionary with keys = rev_onsets, and 0 or 1 based on class0_onsets and class1_onsets
+        Note if a reversal has no previous forward, it will be removed (it will not be a key in the dict)
 
     Parameters
     ----------
@@ -604,16 +605,20 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
         these_class1 = class1_onsets.copy() - rev
         these_class1 = these_class1[these_class1 < 0]
 
+        if len(these_class0) == 0 and len(these_class1) == 0:
+            continue
+
         # Then the smaller absolute one (closer in time) one gives the class
-        only_prev_short = len(these_class0) == 0 and len(these_class1) > 0
-        only_prev_long = len(these_class1) == 0 and len(these_class0) > 0
+        # First check to see if there is only one possibility
+        only_prev_class0 = len(these_class0) == 0 and len(these_class1) > 0
+        only_prev_class1 = len(these_class1) == 0 and len(these_class0) > 0
         # Do not immediately calculate, because the list may be empty
-        short_is_closer = lambda: np.min(np.abs(these_class0)) < np.min(np.abs(these_class1))
-        if only_prev_short:
+        class0_is_closer = lambda: np.min(np.abs(these_class0)) < np.min(np.abs(these_class1))
+        if only_prev_class0:
             dict_of_rev_with_id[rev] = 0
-        elif only_prev_long:
+        elif only_prev_class1:
             dict_of_rev_with_id[rev] = 1
-        elif short_is_closer():
+        elif class0_is_closer():
             # Need to check the above two conditions before trying to evaluate this
             dict_of_rev_with_id[rev] = 0
         else:
