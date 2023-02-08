@@ -175,7 +175,8 @@ class WormFullVideoPosture:
             self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         if isinstance(self._beh_annotation, pd.DataFrame):
             self._beh_annotation = self._beh_annotation.annotation
-        BehaviorCodes.assert_all_are_valid(self._beh_annotation)
+        if self._beh_annotation is not None:
+            BehaviorCodes.assert_all_are_valid(self._beh_annotation)
         return self._beh_annotation
 
     def calc_behavior_from_alias(self, speed_alias: str) -> pd.Series:
