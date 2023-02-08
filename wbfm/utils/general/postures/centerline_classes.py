@@ -502,9 +502,12 @@ class WormFullVideoPosture:
         default_kwargs.update(kwargs)
 
         # Get the indices for each of the types of states: short/long fwd, and all reversals
-        ind_short_fwd = self.calc_triggered_average_indices(state=0, max_duration=duration_threshold, **default_kwargs)
-        ind_long_fwd = self.calc_triggered_average_indices(state=0, min_duration=duration_threshold, **default_kwargs)
-        ind_rev = self.calc_triggered_average_indices(state=1, min_duration=3, **default_kwargs)
+        ind_short_fwd = self.calc_triggered_average_indices(state=BehaviorCodes.FWD, max_duration=duration_threshold,
+                                                            **default_kwargs)
+        ind_long_fwd = self.calc_triggered_average_indices(state=BehaviorCodes.FWD, min_duration=duration_threshold,
+                                                           **default_kwargs)
+        ind_rev = self.calc_triggered_average_indices(state=BehaviorCodes.REV, min_duration=3,
+                                                      **default_kwargs)
 
         # Classify the reversals
         short_onsets = np.array(ind_short_fwd.idx_onsets)
