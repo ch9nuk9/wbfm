@@ -487,6 +487,9 @@ class WormFullVideoPosture:
         """
         Calculates triggered average reversals, with a dictionary classifying them based on the previous forward state
 
+        Specifically, if the previous forward state was longer than duration_threshold, it is an event in the
+        ind_rev_pirouette return class, and if the forward was short it is in ind_rev_non_pirouette
+
         See calc_triggered_average_indices
 
         Parameters
