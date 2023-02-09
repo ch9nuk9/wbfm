@@ -265,17 +265,13 @@ class TriggeredAverageIndices:
             plt.show()
 
         # Null distribution
-        baseline_lines = np.zeros((num_baseline_lines, mat.shape[1]))
-        all_ind_jitter = []
-        for i in range(num_baseline_lines):
-            ind_jitter = jitter_indices(triggered_average_indices, max_jitter=len(trace), max_len=len(trace))
-            mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter,
-                                                            max_len=max_matrix_length)
-            zeta_line = calculate_zeta_cumsum(mat_jitter)
-            baseline_lines[i, :] = zeta_line
-            all_ind_jitter.extend(ind_jitter)
-            # if DEBUG:
-            #     time.sleep(2)
+        if max_matrix_length is None:
+            mat_len = mat.shape[1]
+        else:
+            mat_len = max_matrix_length
+        baseline_lines = self.calc_null_distribution_of_triggered_lines(mat_len,
+                                                                        num_baseline_lines, trace,
+                                                                        triggered_average_indices)
 
         # if DEBUG:
         #     plt.figure(dpi=100)
@@ -334,6 +330,21 @@ class TriggeredAverageIndices:
 
         return p
 
+    def calc_null_distribution_of_triggered_lines(self, max_matrix_length, num_baseline_lines, trace,
+                                                  triggered_average_indices):
+        baseline_lines = np.zeros((num_baseline_lines, max_matrix_length))
+        all_ind_jitter = []
+        for i in range(num_baseline_lines):
+            ind_jitter = jitter_indices(triggered_average_indices, max_jitter=len(trace), max_len=len(trace))
+            mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter,
+                                                            max_len=max_matrix_length)
+            zeta_line = calculate_zeta_cumsum(mat_jitter)
+            baseline_lines[i, :] = zeta_line
+            all_ind_jitter.extend(ind_jitter)
+            # if DEBUG:
+            #     time.sleep(2)
+        return baseline_lines
+
     def plot_triggered_average_from_matrix(self, triggered_avg_matrix, ax=None,
                                            show_individual_lines=False,
                                            color_significant_times=False,
@@ -387,6 +398,8 @@ class TriggeredAverageIndices:
         if color_significant_times:
             if len(x_significant) > 0:
                 ax.plot(x_significant, triggered_avg[x_significant], 'o', color='tab:orange')
+
+        return ax
 
     def plot_ind_over_trace(self, trace):
         """
