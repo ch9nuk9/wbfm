@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
+from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
 
 
 @dataclass
@@ -153,6 +154,13 @@ class TriggeredAverageIndices:
             triggered_avg_matrix[:, times_to_remove] = np.nan
 
         return triggered_avg_matrix
+
+    def calc_null_triggered_average_matrix(self, trace, **kwargs):
+        """Similar to calc_triggered_average_matrix, but jitters the indices"""
+        triggered_average_indices = self.triggered_average_indices()
+        ind_jitter = jitter_indices(triggered_average_indices, max_jitter=len(trace), max_len=len(trace))
+        mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter, **kwargs)
+        return mat_jitter
 
     def nan_points_of_state_before_point(self, triggered_average_mat, list_of_triggered_ind):
         """
@@ -356,6 +364,11 @@ class TriggeredAverageIndices:
         if DEBUG:
             self.plot_triggered_average_from_matrix(mat, show_individual_lines=True)
             plt.title(f"P value: {p}")
+
+            df = pd.DataFrame([means_before, means_after]).dropna(axis=1)
+            paired_boxplot_from_dataframes(df)
+            plt.title(f"P value: {p}")
+
             plt.show()
 
         return p
