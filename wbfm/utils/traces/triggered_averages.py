@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
+from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
 
 
 @dataclass
@@ -153,6 +154,13 @@ class TriggeredAverageIndices:
             triggered_avg_matrix[:, times_to_remove] = np.nan
 
         return triggered_avg_matrix
+
+    def calc_null_triggered_average_matrix(self, trace, **kwargs):
+        """Similar to calc_triggered_average_matrix, but jitters the indices"""
+        triggered_average_indices = self.triggered_average_indices()
+        ind_jitter = jitter_indices(triggered_average_indices, max_jitter=len(trace), max_len=len(trace))
+        mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter, **kwargs)
+        return mat_jitter
 
     def nan_points_of_state_before_point(self, triggered_average_mat, list_of_triggered_ind):
         """
@@ -345,6 +353,45 @@ class TriggeredAverageIndices:
             #     time.sleep(2)
         return baseline_lines
 
+    def calc_p_value_using_ttest(self, trace, gap=5, DEBUG=False) -> float:
+        """
+        Calculates a p value using a paired t-test on the pre- and post-stimulus time periods
+
+        Note that this is generally sensitive to ind_preceding (in addition to other arguments0
+
+        Parameters
+        ----------
+        trace
+        num_baseline_lines
+
+        Returns
+        -------
+
+        """
+        mat = self.calc_triggered_average_matrix(trace)
+        means_before, means_after = self.split_means_from_triggered_average_matrix(mat, gap=gap)
+        p = scipy.stats.ttest_rel(means_before, means_after, nan_policy='omit').pvalue
+
+        if DEBUG:
+            self.plot_triggered_average_from_matrix(mat, show_individual_lines=True)
+            plt.title(f"P value: {p}")
+
+            df = pd.DataFrame([means_before, means_after]).dropna(axis=1)
+            paired_boxplot_from_dataframes(df)
+            plt.title(f"P value: {p}")
+
+            plt.show()
+
+        return p
+
+    def split_means_from_triggered_average_matrix(self, mat, gap):
+        """Gets mean of trace before and after the trigger (same window length)"""
+        i_trigger = self.ind_preceding
+        num_pts = i_trigger - gap
+        means_before = np.nanmean(mat[:, 0:num_pts], axis=1)
+        means_after = np.nanmean(mat[:, i_trigger:i_trigger + num_pts], axis=1)
+        return means_before, means_after
+
     def plot_triggered_average_from_matrix(self, triggered_avg_matrix, ax=None,
                                            show_individual_lines=False,
                                            color_significant_times=False,
@@ -398,8 +445,6 @@ class TriggeredAverageIndices:
         if color_significant_times:
             if len(x_significant) > 0:
                 ax.plot(x_significant, triggered_avg[x_significant], 'o', color='tab:orange')
-
-        return ax
 
     def plot_ind_over_trace(self, trace):
         """

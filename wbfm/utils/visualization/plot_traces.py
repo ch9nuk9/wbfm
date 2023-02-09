@@ -611,7 +611,7 @@ class ClickableGridPlot:
         # Set up grid plot
         opt = dict(channel_mode='ratio',
                    calculation_mode='integration',
-                   filter_mode='bilateral',
+                   filter_mode='rolling_mean',
                    to_save=False)
 
         mplstyle.use('fast')

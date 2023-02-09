@@ -175,7 +175,8 @@ class WormFullVideoPosture:
             self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         if isinstance(self._beh_annotation, pd.DataFrame):
             self._beh_annotation = self._beh_annotation.annotation
-        BehaviorCodes.assert_all_are_valid(self._beh_annotation)
+        if self._beh_annotation is not None:
+            BehaviorCodes.assert_all_are_valid(self._beh_annotation)
         return self._beh_annotation
 
     def calc_behavior_from_alias(self, speed_alias: str) -> pd.Series:
@@ -487,6 +488,9 @@ class WormFullVideoPosture:
         """
         Calculates triggered average reversals, with a dictionary classifying them based on the previous forward state
 
+        Specifically, if the previous forward state was longer than duration_threshold, it is an event in the
+        ind_rev_pirouette return class, and if the forward was short it is in ind_rev_non_pirouette
+
         See calc_triggered_average_indices
 
         Parameters
@@ -502,9 +506,12 @@ class WormFullVideoPosture:
         default_kwargs.update(kwargs)
 
         # Get the indices for each of the types of states: short/long fwd, and all reversals
-        ind_short_fwd = self.calc_triggered_average_indices(state=0, max_duration=duration_threshold, **default_kwargs)
-        ind_long_fwd = self.calc_triggered_average_indices(state=0, min_duration=duration_threshold, **default_kwargs)
-        ind_rev = self.calc_triggered_average_indices(state=1, min_duration=3, **default_kwargs)
+        ind_short_fwd = self.calc_triggered_average_indices(state=BehaviorCodes.FWD, max_duration=duration_threshold,
+                                                            **default_kwargs)
+        ind_long_fwd = self.calc_triggered_average_indices(state=BehaviorCodes.FWD, min_duration=duration_threshold,
+                                                           **default_kwargs)
+        ind_rev = self.calc_triggered_average_indices(state=BehaviorCodes.REV, min_duration=3,
+                                                      **default_kwargs)
 
         # Classify the reversals
         short_onsets = np.array(ind_short_fwd.idx_onsets)
@@ -515,7 +522,7 @@ class WormFullVideoPosture:
         dict_of_non_pirouette_rev = {k: int(1 - v) for k, v in dict_of_pirouette_rev.items()}
 
         # Build new rev_onset classes based on the classes, and a flipped version
-        default_kwargs.update(state=1, min_duration=3)
+        default_kwargs.update(state=BehaviorCodes.REV, min_duration=3)
         ind_rev_pirouette = self.calc_triggered_average_indices(dict_of_events_to_keep=dict_of_pirouette_rev,
                                                                 **default_kwargs)
         ind_rev_non_pirouette = self.calc_triggered_average_indices(dict_of_events_to_keep=dict_of_non_pirouette_rev,
