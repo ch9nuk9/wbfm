@@ -516,23 +516,32 @@ class FullDatasetTriggeredAverages:
     def triggered_average_matrix(self, name):
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
-    def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100):
+    def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
+                                      ttest_gap=5):
         if min_points_for_significance is not None:
             self.min_points_for_significance = min_points_for_significance
         names_to_keep = []
         all_p_values = {}
+        all_effect_sizes = {}
         for name in tqdm(self.neuron_names, leave=False):
 
             if self.significance_calculation_method == 'zeta':
+                logging.warning("Zeta calculation is unstable for calcium imaging!")
                 trace = self.df_traces[name]
                 p = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines)
                 all_p_values[name] = p
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
+                logging.warning("Number of points calculation is not statistically justified!")
                 mat = self.triggered_average_matrix(name)
                 x_significant = self.ind_class.calc_significant_points_from_triggered_matrix(mat)
                 all_p_values[name] = x_significant
                 to_keep = len(x_significant) > self.min_points_for_significance
+            elif self.significance_calculation_method == 'ttest':
+                trace = self.df_traces[name]
+                p = self.ind_class.calc_p_value_using_ttest(trace, ttest_gap)
+                all_p_values[name] = p
+                to_keep = p < 0.05
             else:
                 raise NotImplementedError(f"Unrecognized significance_calculation_method: "
                                           f"{self.significance_calculation_method}")
@@ -543,7 +552,7 @@ class FullDatasetTriggeredAverages:
         if len(names_to_keep) == 0:
             logging.warning("Found no significant neurons, subsequent steps may not work")
 
-        return names_to_keep, all_p_values
+        return names_to_keep, all_p_values, all_effect_sizes
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""

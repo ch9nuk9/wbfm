@@ -920,7 +920,7 @@ def _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_
                                               prepend_subfolder=True)
         plt.savefig(fname)
     # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
-    subset_neurons, _ = triggered_averages_class.which_neurons_are_significant()
+    subset_neurons, _, _ = triggered_averages_class.which_neurons_are_significant()
     func = partial(triggered_averages_class.ax_plot_func_for_grid_plot)
     make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
                                  neuron_names_to_plot=subset_neurons)
