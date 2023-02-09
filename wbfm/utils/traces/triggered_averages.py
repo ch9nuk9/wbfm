@@ -477,7 +477,7 @@ class FullDatasetTriggeredAverages:
     mean_subtract_each_trace: bool = False
     min_lines: int = 2
     min_points_for_significance: int = 5
-    significance_calculation_method: str = 'zeta'  # Or: 'num_points'
+    significance_calculation_method: str = 'zeta'  # Or: 'num_points' or 'ttest'
 
     # Plotting
     show_individual_lines: bool = True
@@ -528,6 +528,10 @@ class FullDatasetTriggeredAverages:
             logging.warning("Found no significant neurons, subsequent steps may not work")
 
         return names_to_keep, all_p_values
+
+    def plot_triggered_average(self, name):
+        trace = self.df_traces[name]
+        self.ax_plot_func_for_grid_plot(None, trace, None, name)
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""
