@@ -1,7 +1,8 @@
 import logging
 import time
+import warnings
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 import numpy as np
 import pandas as pd
 import scipy
@@ -353,7 +354,7 @@ class TriggeredAverageIndices:
             #     time.sleep(2)
         return baseline_lines
 
-    def calc_p_value_using_ttest(self, trace, gap=5, DEBUG=False) -> float:
+    def calc_p_value_using_ttest(self, trace, gap=5, DEBUG=False) -> Tuple[float, float]:
         """
         Calculates a p value using a paired t-test on the pre- and post-stimulus time periods
 
@@ -371,6 +372,7 @@ class TriggeredAverageIndices:
         mat = self.calc_triggered_average_matrix(trace)
         means_before, means_after = self.split_means_from_triggered_average_matrix(mat, gap=gap)
         p = scipy.stats.ttest_rel(means_before, means_after, nan_policy='omit').pvalue
+        effect_size = np.nanmean(means_after) - np.nanmean(means_before)
 
         if DEBUG:
             self.plot_triggered_average_from_matrix(mat, show_individual_lines=True)
@@ -382,14 +384,16 @@ class TriggeredAverageIndices:
 
             plt.show()
 
-        return p
+        return p, effect_size
 
     def split_means_from_triggered_average_matrix(self, mat, gap):
         """Gets mean of trace before and after the trigger (same window length)"""
         i_trigger = self.ind_preceding
         num_pts = i_trigger - gap
-        means_before = np.nanmean(mat[:, 0:num_pts], axis=1)
-        means_after = np.nanmean(mat[:, i_trigger:i_trigger + num_pts], axis=1)
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=RuntimeWarning)
+            means_before = np.nanmean(mat[:, 0:num_pts], axis=1)
+            means_after = np.nanmean(mat[:, i_trigger:i_trigger + num_pts], axis=1)
         return means_before, means_after
 
     def plot_triggered_average_from_matrix(self, triggered_avg_matrix, ax=None,
@@ -539,8 +543,9 @@ class FullDatasetTriggeredAverages:
                 to_keep = len(x_significant) > self.min_points_for_significance
             elif self.significance_calculation_method == 'ttest':
                 trace = self.df_traces[name]
-                p = self.ind_class.calc_p_value_using_ttest(trace, ttest_gap)
+                p, effect_size = self.ind_class.calc_p_value_using_ttest(trace, ttest_gap)
                 all_p_values[name] = p
+                all_effect_sizes[name] = effect_size
                 to_keep = p < 0.05
             else:
                 raise NotImplementedError(f"Unrecognized significance_calculation_method: "
