@@ -50,8 +50,9 @@ class TriggeredAverageIndices:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         return binary_state
 
-    @cached_property
+    @property
     def cleaned_binary_state(self):
+        # I can make this cached, but then it has to be cleared if the binary_state changes
         if self.trace_len is not None:
             return self.binary_state.iloc[:self.trace_len]
         else:
