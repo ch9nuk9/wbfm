@@ -505,7 +505,7 @@ class FullDatasetTriggeredAverages:
     mean_subtract_each_trace: bool = False
     min_lines: int = 2
     min_points_for_significance: int = 5
-    significance_calculation_method: str = 'zeta'  # Or: 'num_points'
+    significance_calculation_method: str = 'ttest'  # Or: 'num_points'
 
     # Plotting
     show_individual_lines: bool = True
@@ -521,18 +521,21 @@ class FullDatasetTriggeredAverages:
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
     def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
-                                      ttest_gap=5):
+                                      ttest_gap=5, DEBUG=False):
         if min_points_for_significance is not None:
             self.min_points_for_significance = min_points_for_significance
         names_to_keep = []
         all_p_values = {}
         all_effect_sizes = {}
         for name in tqdm(self.neuron_names, leave=False):
+            if DEBUG:
+                print("======================================")
+                print(name)
 
             if self.significance_calculation_method == 'zeta':
                 logging.warning("Zeta calculation is unstable for calcium imaging!")
                 trace = self.df_traces[name]
-                p = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines)
+                p = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines, DEBUG=DEBUG)
                 all_p_values[name] = p
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
@@ -543,7 +546,7 @@ class FullDatasetTriggeredAverages:
                 to_keep = len(x_significant) > self.min_points_for_significance
             elif self.significance_calculation_method == 'ttest':
                 trace = self.df_traces[name]
-                p, effect_size = self.ind_class.calc_p_value_using_ttest(trace, ttest_gap)
+                p, effect_size = self.ind_class.calc_p_value_using_ttest(trace, ttest_gap, DEBUG=DEBUG)
                 all_p_values[name] = p
                 all_effect_sizes[name] = effect_size
                 to_keep = p < 0.05
