@@ -62,6 +62,9 @@ class WormFullVideoPosture:
     # Postprocessing the time series
     tracking_failure_idx: np.ndarray = None
 
+    # If additional files are needed
+    behavior_subfolder: str = None
+
     def __post_init__(self):
         if self.filename_curvature is not None:
             self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature, verbose=0)
@@ -748,6 +751,7 @@ class WormFullVideoPosture:
                 project_config.logger.warning("Did not find behavioral annotations")
                 filename_beh_annotation = None
             all_files['filename_beh_annotation'] = filename_beh_annotation
+        all_files['behavior_subfolder'] = behavior_subfolder
 
         # Even if no files found, at least save the fps
         return WormFullVideoPosture(**all_files, **opt)
@@ -777,6 +781,15 @@ class WormFullVideoPosture:
             logging.debug(f"Setting these indices as tracking failures: {self.tracking_failure_idx}")
             vec.iloc[self.tracking_failure_idx] = np.nan
         return vec
+
+    # Raw videos
+    def behavior_video_avi_fname(self):
+        for file in Path(self.behavior_subfolder).iterdir():
+            if file.is_dir():
+                continue
+            if file.name.endswith('Ch0-BHbigtiff_AVG_background_subtracted.avi'):
+                return file
+        return None
 
     def __repr__(self):
         return f"=======================================\n\
