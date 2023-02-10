@@ -1,3 +1,4 @@
+import dask.array
 import napari
 import tifffile
 import zarr
@@ -17,7 +18,12 @@ def main():
     video_fname = project_data.worm_posture_class.behavior_video_avi_fname()
     video_fname = video_fname.with_suffix('.btf')
     store = tifffile.imread(video_fname, aszarr=True)
-    video = zarr.open(store, mode='r')
+    video_zarr = zarr.open(store, mode='r')
+    video = video_zarr
+
+    # dask_chunk = list(video_zarr.chunks).copy()
+    # dask_chunk[0] = 1000
+    # video = dask.array.from_zarr(video_zarr, chunks=dask_chunk)
 
     # Main viewer
     viewer = napari.view_image(video)
