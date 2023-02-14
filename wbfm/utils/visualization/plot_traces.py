@@ -28,6 +28,11 @@ from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 import matplotlib.style as mplstyle
+from plotly.subplots import make_subplots
+from plotly import graph_objects as go
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
+import plotly.express as px
 
 
 ##
@@ -966,3 +971,138 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
     triggered_averages_class = triggered_averages_non_pirouette
     _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_and_plot_opt,
                                              triggered_averages_class, vis_cfg)
+
+
+def make_summary_interactive_heatmap_with_pca(project_cfg):
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+
+    df_traces = project_data.calc_default_traces(interpolate_nan=True, filter_mode='rolling_mean',
+                                                 min_nonnan=0.9,
+                                                 nan_tracking_failure_points=True,
+                                                 channel_mode='dr_over_r_50')
+    df_traces_no_nan = df_traces.copy()
+    df_traces_no_nan.fillna(df_traces.mean(), inplace=True)
+    # Calculate pca modes, and use them to sort
+    pca_weights = PCA(n_components=20)
+    pca_modes = PCA(n_components=20)
+    df_mean_subtracted = df_traces_no_nan - df_traces_no_nan.mean()
+    pca_weights.fit(df_mean_subtracted)
+    pca_modes.fit(df_mean_subtracted.T)
+
+    num_pca_modes_to_plot = 3
+
+    # Preprocess
+    df_tmp = df_traces.copy()
+    df_tmp -= df_tmp.min()
+    ind_sort = np.argsort(pca_weights.components_[0, :])
+    dat = df_tmp.T.iloc[ind_sort, :]
+
+    neuron_names = list(dat.index)
+
+    df_pca_modes = pd.DataFrame(pca_modes.components_[0:num_pca_modes_to_plot, :].T)
+    col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
+    df_pca_modes.columns = col_names
+
+    speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
+                                                       signed=True)
+
+    df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)
+    col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
+    df_pca_weights.columns = col_names
+    df_pca_weights.index = neuron_names
+
+    df_pca_weights = df_pca_weights.iloc[ind_sort, :].reset_index(drop=True)
+
+    var_explained = pca_modes.explained_variance_ratio_[:7]
+
+    # Initialize options for all subplots
+    base_colormap = px.colors.qualitative.Plotly
+
+    subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '',
+                      'PCA modes', 'Phase plot', '', '', 'Middle Body Speed', 'Variance Explained']
+    row_heights = [0.6, 0.1, 0.1, 0.1, 0.1]
+    column_widths = [0.7, 0.1, 0.1, 0.1]
+    rows = 1 + num_pca_modes_to_plot + 1
+    cols = 1 + num_pca_modes_to_plot
+
+    ### Main heatmap
+    heatmap = go.Heatmap(y=dat.index, z=dat, zmin=0, zmax=1, colorscale='jet', xaxis="x", yaxis="y")
+    heatmap_opt = dict(row=1, col=1)
+
+    ### PCA modes
+    trace_list = []
+    trace_opt_list = []
+    for i, col in enumerate(col_names):
+        trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index))
+        trace_opt_list.append(dict(row=i + 2, col=1, secondary_y=False))
+
+    ### Speed plot (below pca modes)
+    trace_list.append(go.Scatter(y=speed, x=speed.index))
+    trace_opt_list.append(dict(row=num_pca_modes_to_plot + 2, col=1, secondary_y=False))
+
+    ### PCA weights (same names as pca modes)
+    weights_list = []
+    weights_opt_list = []
+    for i, col in enumerate(col_names):
+        weights_list.append(go.Bar(x=df_pca_weights[col], y=df_pca_weights.index, orientation='h',
+                                   marker=dict(color=base_colormap[i]),
+                                   hovertext=neuron_names,
+                                   hoverinfo="text"))
+        weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
+
+    ### 3d phase plot
+    beh_trace = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+    df_pca_modes['behavior'] = beh_trace == BehaviorCodes.REV
+
+    df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
+                                                                  ['mode 0', 'mode 1', 'mode 2'],
+                                                                  'behavior')
+
+    state_names = ['FWD', 'REV']
+    phase_plot_list = []
+    for i, state_name in enumerate(state_names):
+        phase_plot_list.append(
+            go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
+                         name=state_name))
+    phase_plot_list_opt = dict(rows=2, cols=2)
+
+    ### Variance explained
+    var_explained_line = go.Scatter(y=var_explained)
+    var_explained_line_opt = dict(row=5, col=2, secondary_y=False)
+
+    # Build figure
+
+    ### First column: x axis is time
+    fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
+                        row_heights=row_heights, column_widths=column_widths,
+                        subplot_titles=subplot_titles,
+                        specs=[[{}, {}, {}, {}],
+                               [{}, {"rowspan": 3, "colspan": 3, "type": "scene"}, None, None],
+                               [{}, None, None, None],
+                               [{}, None, None, None],
+                               [{}, {"rowspan": 1, "colspan": 3}, None, None]])
+
+    fig.add_trace(heatmap, **heatmap_opt)
+    for trace, trace_opt in zip(trace_list, trace_opt_list):
+        fig.add_trace(trace, **trace_opt)
+
+    ### Second column
+    for trace, trace_opt in zip(weights_list, weights_opt_list):
+        fig.add_trace(trace, **trace_opt)
+    fig.add_traces(phase_plot_list, **phase_plot_list_opt)
+    fig.add_trace(var_explained_line, **var_explained_line_opt)
+
+    ### Final updates
+    fig.update_xaxes(dict(showticklabels=False), col=1, overwrite=True, matches='x')
+    fig.update_yaxes(dict(showticklabels=False), col=1, overwrite=True)
+
+    fig.update_xaxes(dict(showticklabels=False), row=1, overwrite=True)
+    fig.update_yaxes(dict(showticklabels=False), row=1, overwrite=True, matches='y')
+
+    fig.update_xaxes(dict(showticklabels=True), row=5, col=1, overwrite=True)
+    fig.update_yaxes(dict(showticklabels=True), row=5, col=1, overwrite=True)
+
+    fig.update_layout(showlegend=False)
+    fig.update_layout(autosize=False, width=1000, height=800)
+
+    fig.show()
