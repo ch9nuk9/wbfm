@@ -31,6 +31,7 @@ dependencies:
   - natsort
   - snakemake
   - tsnecuda
+  - plotly
   - pip:
     - tifffile
     - tables
@@ -59,3 +60,4 @@ dependencies:
     - psf
     - setuptools==59.8.0
     - ppca
+    - kaleido

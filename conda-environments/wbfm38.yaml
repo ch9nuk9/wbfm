@@ -36,6 +36,7 @@ dependencies:
   - torchaudio=0.13.0
   - torchmetrics=0.10.3
   - pytorch-cuda=11.6
+  - plotly
   - pip:
     - tifffile
     - tables
@@ -58,3 +59,4 @@ dependencies:
     - statsmodels
     - ppca
     - methodtools
+    - kaleido
