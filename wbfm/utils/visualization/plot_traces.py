@@ -973,7 +973,7 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
                                              triggered_averages_class, vis_cfg)
 
 
-def make_summary_interactive_heatmap_with_pca(project_cfg):
+def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
     df_traces = project_data.calc_default_traces(interpolate_nan=True, filter_mode='rolling_mean',
@@ -1105,4 +1105,14 @@ def make_summary_interactive_heatmap_with_pca(project_cfg):
     fig.update_layout(showlegend=False)
     fig.update_layout(autosize=False, width=1000, height=800)
 
-    fig.show()
+    if to_save:
+        trace_cfg = project_data.project_config.get_traces_config()
+        fname = 'summary_trace_plot.html'
+        fname = trace_cfg.resolve_relative_path(fname)
+        fig.to_html(fname)
+        fname = Path(fname).with_suffix('.png')
+        fig.to_image(fname)
+
+    if to_show:
+        fig.show()
+
