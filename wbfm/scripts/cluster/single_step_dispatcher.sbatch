@@ -47,6 +47,7 @@ CMD_DICT["4-grid"]="visualization/4+make_summary_grid_plots.py"
 CMD_DICT["4-export"]="visualization/4+save_final_dataframe.py"
 CMD_DICT["4-trigger"]="visualization/4+make_triggered_average_grid_plot.py"
 CMD_DICT["4-encoding"]="folder_analysis/4+make_multiproject_behavioral_encodings.py"
+CMD_DICT["4-summary"]="folder_analysis/4+make_summary_interactive_plot.py"
 CMD_DICT["check_gpu"]="examples/check_gpu.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
