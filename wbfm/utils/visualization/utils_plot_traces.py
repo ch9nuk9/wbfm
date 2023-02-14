@@ -233,7 +233,7 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
     ----------
     df
     x_name
-    state_name - Should be the name of a binary column
+    state_name: Should be the name of a binary column
     connect_at_transition
 
     Returns
