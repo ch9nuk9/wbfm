@@ -983,8 +983,8 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     df_traces_no_nan = df_traces.copy()
     df_traces_no_nan.fillna(df_traces.mean(), inplace=True)
     # Calculate pca modes, and use them to sort
-    pca_weights = PCA(n_components=20)
-    pca_modes = PCA(n_components=20)
+    pca_weights = PCA(n_components=10)
+    pca_modes = PCA(n_components=10)
     df_mean_subtracted = df_traces_no_nan - df_traces_no_nan.mean()
     pca_weights.fit(df_mean_subtracted)
     pca_modes.fit(df_mean_subtracted.T)
@@ -1103,16 +1103,16 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     fig.update_yaxes(dict(showticklabels=True), row=5, col=1, overwrite=True)
 
     fig.update_layout(showlegend=False)
-    fig.update_layout(autosize=False, width=1000, height=800)
+    fig.update_layout(autosize=False, width=1.5*1000, height=1.5*800)
+
+    if to_show:
+        fig.show()
 
     if to_save:
         trace_cfg = project_data.project_config.get_traces_config()
         fname = 'summary_trace_plot.html'
-        fname = trace_cfg.resolve_relative_path(fname)
-        fig.to_html(fname)
+        fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        fig.write_html(str(fname))
         fname = Path(fname).with_suffix('.png')
-        fig.to_image(fname)
-
-    if to_show:
-        fig.show()
+        fig.write_image(str(fname))
 
