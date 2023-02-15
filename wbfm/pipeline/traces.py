@@ -1,14 +1,18 @@
+import os
 from collections import defaultdict
 
 import numpy as np
 
+from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from wbfm.utils.general.postprocessing.utils_metadata import region_props_all_volumes, \
     _convert_nested_dict_to_dataframe
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
+from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.traces.traces_pipeline import _unpack_configs_for_traces, match_segmentation_and_tracks, \
     _unpack_configs_for_extraction, _save_traces_as_hdf_and_update_configs
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.visualization.plot_traces import make_default_summary_plots_using_config
 from wbfm.utils.visualization.utils_segmentation import _unpack_config_reindexing, reindex_segmentation
 
 
@@ -96,3 +100,35 @@ def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
     reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks, min_confidence)
 
     return out_fname
+
+
+def full_step_4_make_traces_from_config(project_cfg, DEBUG):
+    project_dir = cfg.project_dir
+    seg_cfg = cfg.get_segmentation_config()
+    track_cfg = cfg.get_tracking_config()
+    traces_cfg = cfg.get_traces_config()
+    # Set environment variables to (try to) deal with rare blosc decompression errors
+    os.environ["BLOSC_NOLOCK"] = "1"
+    os.environ["BLOSC_NTHREADS"] = "1"
+    with safe_cd(project_dir):
+        # Overwrites matching pickle object; nothing needs to be reloaded
+        match_segmentation_and_tracks_using_config(seg_cfg,
+                                                   track_cfg,
+                                                   traces_cfg,
+                                                   project_cfg,
+                                                   DEBUG=DEBUG)
+
+        # Creates segmentations indexed to tracking
+        new_mask_fname = reindex_segmentation_using_config(traces_cfg, seg_cfg, project_cfg)
+
+        # Zips the reindexed segmentations to shrink requirements
+        out_fname_zip = zip_raw_data_zarr(new_mask_fname)
+        relative_fname = traces_cfg.unresolve_absolute_path(out_fname_zip)
+        traces_cfg.config['reindexed_masks'] = relative_fname
+        traces_cfg.update_self_on_disk()
+
+        # Reads masks from disk, and writes traces
+        extract_traces_using_config(project_cfg, traces_cfg, name_mode='neuron', DEBUG=DEBUG)
+
+        # By default make some visualizations
+        make_default_summary_plots_using_config(project_cfg)
