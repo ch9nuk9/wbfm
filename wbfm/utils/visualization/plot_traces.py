@@ -816,9 +816,9 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
         df = df.loc[neuron_names_to_plot, :]
 
     if 'vmin' not in plot_kwargs:
-        plot_kwargs['vmin'] = 2*np.nanquantile(df.values, 0.1)
+        plot_kwargs['vmin'] = 2*np.quantile(df.values, 0.1)
     if 'vmax' not in plot_kwargs:
-        plot_kwargs['vmax'] = 2*np.nanquantile(df.values, 0.95)
+        plot_kwargs['vmax'] = 2*np.quantile(df.values, 0.95)
 
     # Plot
     fig = sns.clustermap(df, **plot_kwargs)
@@ -866,7 +866,7 @@ def make_default_summary_plots_using_config(project_cfg):
     # Also save a heatmap and a colored plot
     try:
         make_heatmap_using_project(proj_dat, to_save=True)
-    except NoNeuronsError:
+    except (NoNeuronsError, ValueError):
         pass
     # Also save a PC1-correlated grid plot
     grid_opt['channel_mode'] = 'ratio'
