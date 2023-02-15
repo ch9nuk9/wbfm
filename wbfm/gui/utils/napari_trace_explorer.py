@@ -83,6 +83,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.dict_of_saved_times = dict()
 
+        self.list_of_gt_correction_widgets = []
+
     def setupUi(self, viewer: napari.Viewer):
 
         self.logger.debug("Starting main UI setup")
