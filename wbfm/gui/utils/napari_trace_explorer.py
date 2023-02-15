@@ -153,7 +153,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.formlayout3.addRow("Trace calculation (y axis):", self.changeTraceCalculationDropdown)
         # Change trace filtering (checkbox)
         self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
-        self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation', 'bilateral'])
+        self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation',
+                                                    'strong_rolling_mean', 'bilateral'])
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Trace filtering:", self.changeTraceFilteringDropdown)
         # Change trace outlier removal (checkbox)

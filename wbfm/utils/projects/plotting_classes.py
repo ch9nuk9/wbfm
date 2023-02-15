@@ -27,7 +27,7 @@ from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std, filter_exponential_moving_average, \
-    filter_tv_diff, filter_bilateral
+    filter_tv_diff, filter_bilateral, filter_gaussian_moving_average
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
@@ -260,6 +260,8 @@ class TracePlotter:
 
         if self.filter_mode == "rolling_mean":
             y = filter_rolling_mean(y, window=5)
+        elif self.filter_mode == "strong_rolling_mean":
+            y = filter_gaussian_moving_average(y, std=5)
         elif self.filter_mode == "linear_interpolation":
             y = filter_linear_interpolation(y, window=15)
         elif self.filter_mode == "3d_pca":
