@@ -232,6 +232,8 @@ def make_grid_plot_from_two_dataframes(df0, df1, twinx_when_reusing_figure=True,
 
     """
     fig, original_axes = make_grid_plot_from_dataframe(df0, **kwargs)
+    if 'neuron_names_to_plot' not in kwargs:
+        kwargs['neuron_names_to_plot'] = get_names_from_df(df0)
     fig, _ = make_grid_plot_from_dataframe(df1, fig=fig, twinx_when_reusing_figure=twinx_when_reusing_figure, **kwargs)
     if kwargs.get('share_y_axis', False):
         twinned_axes = [get_twin_axis(ax) for ax in original_axes]
