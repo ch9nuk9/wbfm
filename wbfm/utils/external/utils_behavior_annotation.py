@@ -10,6 +10,8 @@ class BehaviorCodes(IntEnum):
     """
     FWD = -1
     REV = 1
+    TURN = 2 # Not currently used by Ulises
+    PAUSE = 3 # Not currently used by Ulises
     NOT_ANNOTATED = 0
     UNKNOWN = -99
     # UNKNOWN = NOT_ANNOTATED | GAP
