@@ -12,6 +12,8 @@ from ppca import PPCA
 from sklearn.metrics.pairwise import nan_euclidean_distances
 from tqdm.auto import tqdm
 
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+
 
 def normalize_3d(all_dist):
 
@@ -45,8 +47,6 @@ class OutlierRemoval:
     @staticmethod
     def load_from_project(project_data, verbose=0, **kwargs):
 
-        if verbose > 0:
-            print("Calculating distances...")
         coords = ['z', 'x', 'y']
         names = project_data.well_tracked_neuron_names(min_nonnan=0.9)
         df_traces = project_data.calc_default_traces(channel_mode='ratio', min_nonnan=0.9)
@@ -54,11 +54,14 @@ class OutlierRemoval:
         all_zxy = project_data.green_traces.loc[:, (names, coords)].copy()
         z_to_xy_ratio = project_data.physical_unit_conversion.z_to_xy_ratio
         all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
+
+        obj = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces, names, verbose, **kwargs)
+        return obj
+
+    @staticmethod
+    def load_from_arrays(all_zxy, coords, df_traces, names, verbose, **kwargs):
         all_zxy = all_zxy.sort_index(axis='columns')
-
-        all_zxy_3d = all_zxy.to_numpy().reshape(project_data.num_frames, -1, len(coords))
-
-
+        all_zxy_3d = all_zxy.to_numpy().reshape(all_zxy.shape[0], -1, len(coords))
         # Save
         obj = OutlierRemoval(names,
                              verbose=verbose,
@@ -67,6 +70,16 @@ class OutlierRemoval:
                              _all_zxy_3d=all_zxy_3d,
                              **kwargs)
         obj.get_pairwise_distances()
+        return obj
+
+    @staticmethod
+    def load_from_df(df_tracks, df_traces=None, verbose=0, **kwargs):
+
+        coords = ['z', 'x', 'y']
+        names = get_names_from_df(df_tracks)
+
+        all_zxy = df_tracks.loc[:, (names, coords)].copy()
+        obj = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces, names, verbose, **kwargs)
         return obj
 
     def get_pairwise_distances(self):
