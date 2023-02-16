@@ -16,7 +16,7 @@ from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def normalize_3d(all_dist):
-
+    # Normalize a t x n x n matrix by a neuron dimension
     with warnings.catch_warnings():
         warnings.simplefilter(action='ignore', category=RuntimeWarning)
         all_dist_mean = np.nanmean(all_dist, axis=0)
@@ -29,8 +29,13 @@ def normalize_3d(all_dist):
 class OutlierRemoval:
     names: List[str]
 
-    d: int = 10
+    ppca_dimension: int = 10
     learning_rate: float = 0.4
+    std_threshold_min: float = 2.0
+    std_threshold_factor: float = 3.0
+    immediate_removal_threshold: float = 4.0
+
+    num_outliers_tol: int = 20
 
     verbose: int = 1
 
@@ -42,6 +47,7 @@ class OutlierRemoval:
     _all_dist: np.ndarray = None
     _next_matrix_to_remove: np.ndarray = None
     _outlier_values: np.ndarray = None
+    _all_dist_diff: np.ndarray = None
     total_matrix_to_remove: np.ndarray = None
 
     @staticmethod
@@ -96,7 +102,7 @@ class OutlierRemoval:
         return all_dist, all_dist_flattened
 
     def calc_outlier_indices_using_ppca(self):
-        d = self.d
+        ppca_dimension = self.ppca_dimension
         learning_rate = self.learning_rate
         verbose = self.verbose
 
@@ -113,7 +119,7 @@ class OutlierRemoval:
         ppca = PPCA()
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=RuntimeWarning)
-            ppca.fit(data=dat_normalized, d=d, tol=0.02, verbose=(verbose > 1))
+            ppca.fit(data=dat_normalized, d=ppca_dimension, tol=0.02, verbose=(verbose > 1))
 
         if verbose > 0:
             print("Project data to that manifold...")
@@ -124,11 +130,14 @@ class OutlierRemoval:
         all_dist_imputed = dat_imputed_flattened.reshape(all_dist.shape)
 
         # Calculate the sum of distances over all paired neurons
-        # But normalize each pairwise distance by the std
+        # But normalize the total pairwise distance by the std across time
         all_dist_imputed_norm = normalize_3d(all_dist_imputed)
         all_dist_norm = normalize_3d(all_dist)
+        all_dist_diff = (all_dist_imputed_norm - all_dist_norm) ** 2.0
 
-        all_dist_diff = np.abs(all_dist_imputed_norm - all_dist_norm)
+        # all_dist_diff = (all_dist_imputed - all_dist) ** 2.0
+        # all_dist_diff = normalize_3d(all_dist_diff)
+
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=RuntimeWarning)
             dat_outliers = np.nanmedian(all_dist_diff, axis=2)
@@ -136,11 +145,19 @@ class OutlierRemoval:
         # Get individual outliers, and decide which to remove in this iteration
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=RuntimeWarning)
-            all_thresholds = 3*np.nanstd(dat_outliers, axis=0)
+            all_thresholds = self.std_threshold_factor * np.nanstd(dat_outliers, axis=0)
+            all_thresholds = np.stack([all_thresholds, self.std_threshold_min * np.ones(len(all_thresholds))])
+            all_thresholds = np.max(all_thresholds, axis=0)
         matrix_to_remove = np.zeros_like(dat_outliers, dtype=bool)
         for i, name in enumerate(names):
-            # Take the top percentage of the time points over the threshold
             these_values = dat_outliers[:, i]
+            # First immediately remove some
+            ind_immediate = np.where(these_values - np.nanmean(these_values) > self.immediate_removal_threshold)[0]
+            if len(ind_immediate) > 0:
+                matrix_to_remove[ind_immediate, i] = True
+            these_values[ind_immediate] = np.nan
+
+            # Take the top percentage of the time points over the threshold
             num_outliers = np.sum(these_values - np.nanmean(these_values) > all_thresholds[i])
             if num_outliers == 0:
                 continue
@@ -157,6 +174,7 @@ class OutlierRemoval:
 
         self._next_matrix_to_remove = matrix_to_remove
         self._outlier_values = dat_outliers
+        self._all_dist_diff = all_dist_diff
         if self.total_matrix_to_remove is None:
             self.total_matrix_to_remove = matrix_to_remove
         else:
@@ -168,7 +186,7 @@ class OutlierRemoval:
         matrix_to_remove = self._next_matrix_to_remove
         self._all_zxy_3d[matrix_to_remove, :] = np.nan
 
-    def iteratively_remove_outliers_using_ppca(self, max_iter=5, DEBUG=False):
+    def iteratively_remove_outliers_using_ppca(self, max_iter=5, DEBUG=False, DEBUG_name='neuron_017'):
         # Do not assume it was set up initially; start from all_zxy_3d
         for i in tqdm(range(max_iter)):
             self.get_pairwise_distances()
@@ -176,10 +194,19 @@ class OutlierRemoval:
             self.remove_outliers_from_zxy()
 
             if DEBUG:
-                self.plot_outlier_values('neuron_060')
+                # self.plot_outlier_all_lines(DEBUG_name)
+                self.plot_outlier_values(DEBUG_name)
 
-            print(f"Removed {np.sum(self._next_matrix_to_remove)} outliers "
+            num_removed = np.sum(self._next_matrix_to_remove)
+
+            print(f"Removed {num_removed} outliers "
                   f"(total={np.sum(self.total_matrix_to_remove)})")
+
+            if num_removed <= self.num_outliers_tol:
+                print("Reached tolerance")
+                break
+        else:
+            print("Outlier removal ended before convergence")
 
     def plot_before_after(self, neuron_name, z_not_traces=True):
         i_trace = self.names.index(neuron_name)
@@ -214,6 +241,22 @@ class OutlierRemoval:
 
         fig = px.line(trace, title=f"Num removed = {len(ind_remove)}")
         # print(ind_remove)
-        fig.add_hline(3 * np.nanstd(trace))
+        fig.add_hline(np.max([self.std_threshold_factor * np.nanstd(trace), self.std_threshold_min]))
+        fig.add_trace(go.Scatter(x=ind_remove, y=y_remove, mode='markers'))
+        fig.show()
+
+    def plot_outlier_all_lines(self, neuron_name):
+        i_trace = self.names.index(neuron_name)
+
+        trace_mat = self._all_dist_diff[:, i_trace, :].copy()
+        trace_mat = trace_mat - np.nanmean(trace_mat, axis=0)
+        trace_mat = pd.DataFrame(trace_mat, columns=self.names)
+
+        mask_remove = self.total_matrix_to_remove[:, i_trace]
+        y_remove = trace_mat[neuron_name][mask_remove]
+        ind_remove = np.where(mask_remove)[0]
+
+        fig = px.line(trace_mat, title=f"Num removed = {len(ind_remove)}")
+        fig.add_hline(self.std_threshold_min)
         fig.add_trace(go.Scatter(x=ind_remove, y=y_remove, mode='markers'))
         fig.show()
