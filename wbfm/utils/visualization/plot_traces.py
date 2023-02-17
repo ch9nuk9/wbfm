@@ -796,7 +796,7 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
     """
 
-    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='bilateral', channel_mode='dr_over_r_20')
+    default_trace_kwargs = dict(interpolate_nan=True, filter_mode='rolling_mean', channel_mode='dr_over_r_20')
     if trace_kwargs is not None:
         default_trace_kwargs.update(trace_kwargs)
     trace_kwargs = default_trace_kwargs
