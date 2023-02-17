@@ -103,10 +103,10 @@ def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
 
 
 def full_step_4_make_traces_from_config(project_cfg, DEBUG):
-    project_dir = cfg.project_dir
-    seg_cfg = cfg.get_segmentation_config()
-    track_cfg = cfg.get_tracking_config()
-    traces_cfg = cfg.get_traces_config()
+    project_dir = project_cfg.project_dir
+    seg_cfg = project_cfg.get_segmentation_config()
+    track_cfg = project_cfg.get_tracking_config()
+    traces_cfg = project_cfg.get_traces_config()
     # Set environment variables to (try to) deal with rare blosc decompression errors
     os.environ["BLOSC_NOLOCK"] = "1"
     os.environ["BLOSC_NTHREADS"] = "1"
