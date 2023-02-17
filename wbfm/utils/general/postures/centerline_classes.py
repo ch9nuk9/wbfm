@@ -145,9 +145,10 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def stage_position(self, fluorescence_fps=False) -> pd.DataFrame:
+    def stage_position(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """Units of mm?"""
         df = self._raw_stage_position
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
