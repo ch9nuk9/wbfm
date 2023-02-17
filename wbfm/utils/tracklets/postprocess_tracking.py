@@ -29,11 +29,11 @@ def normalize_3d(all_dist):
 class OutlierRemoval:
     names: List[str]
 
-    ppca_dimension: int = 10
-    learning_rate: float = 0.4
+    ppca_dimension: int = 3  # Chosen via swaps on ground truth tracks
+    learning_rate: float = 1.0
     std_threshold_min: float = 2.0
     std_threshold_factor: float = 3.0
-    immediate_removal_threshold: float = 4.0
+    immediate_removal_threshold: float = 6.0
 
     num_outliers_tol: int = 20
 
@@ -45,14 +45,15 @@ class OutlierRemoval:
     _all_zxy_3d: np.ndarray = None
     _all_dist_flattened: np.ndarray = None
     _all_dist: np.ndarray = None
-    _outlier_values: np.ndarray = None
     _all_dist_diff: np.ndarray = None
     total_matrix_to_remove: np.ndarray = None
 
     all_matrices_to_remove: List[np.ndarray] = None
+    all_outlier_values: List[np.ndarray] = None
 
     def __post_init__(self):
         self.all_matrices_to_remove = []
+        self.all_outlier_values = []
 
     @staticmethod
     def load_from_project(project_data, verbose=0, **kwargs):
@@ -86,7 +87,7 @@ class OutlierRemoval:
     def load_from_df(df_tracks, df_traces=None, verbose=0, **kwargs):
 
         coords = ['z', 'x', 'y']
-        names = get_names_from_df(df_tracks)
+        names = get_names_from_df(df_tracks, to_sort=False)
 
         all_zxy = df_tracks.loc[:, (names, coords)].copy()
         obj = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces, names, verbose, **kwargs)
@@ -127,9 +128,10 @@ class OutlierRemoval:
 
         if verbose > 0:
             print("Project data to that manifold...")
-        V = ma.masked_invalid(ppca.C)
-        full_time_mode_weights = ma.dot(ma.masked_invalid(dat_normalized), V)
-        full_time_reconstruction = ma.dot(full_time_mode_weights, V.T)
+        full_time_reconstruction = np.dot(ppca.transform(), ppca.C.T)
+        # V = ma.masked_invalid(ppca.C)
+        # full_time_mode_weights = ma.dot(ma.masked_invalid(dat_normalized), V)
+        # full_time_reconstruction = ma.dot(full_time_mode_weights, V.T)
         dat_imputed_flattened = scaler.inverse_transform(full_time_reconstruction)
         all_dist_imputed = dat_imputed_flattened.reshape(all_dist.shape)
 
@@ -154,6 +156,7 @@ class OutlierRemoval:
             all_thresholds = self.std_threshold_factor * np.nanstd(dat_outliers, axis=0)
             all_thresholds = np.stack([all_thresholds, self.std_threshold_min * np.ones(len(all_thresholds))])
             all_thresholds = np.max(all_thresholds, axis=0)
+
         matrix_to_remove = np.zeros_like(dat_outliers, dtype=bool)
         for i, name in enumerate(names):
             these_values = dat_outliers[:, i]
@@ -161,7 +164,7 @@ class OutlierRemoval:
             ind_immediate = np.where(these_values - np.nanmean(these_values) > self.immediate_removal_threshold)[0]
             if len(ind_immediate) > 0:
                 matrix_to_remove[ind_immediate, i] = True
-            these_values[ind_immediate] = np.nan
+                these_values[ind_immediate] = np.nan
 
             # Take the top percentage of the time points over the threshold
             num_outliers = np.sum(these_values - np.nanmean(these_values) > all_thresholds[i])
@@ -179,10 +182,10 @@ class OutlierRemoval:
             #     print(num_outliers, num_to_remove)
 
         self.all_matrices_to_remove.append(matrix_to_remove)
-        self._outlier_values = dat_outliers
+        self.all_outlier_values.append(dat_outliers)
         self._all_dist_diff = all_dist_diff
         if self.total_matrix_to_remove is None:
-            self.total_matrix_to_remove = matrix_to_remove
+            self.total_matrix_to_remove = matrix_to_remove.copy()
         else:
             self.total_matrix_to_remove = self.total_matrix_to_remove | matrix_to_remove
 
@@ -192,7 +195,19 @@ class OutlierRemoval:
         matrix_to_remove = self.all_matrices_to_remove[-1]
         self._all_zxy_3d[matrix_to_remove, :] = np.nan
 
-    def iteratively_remove_outliers_using_ppca(self, max_iter=5, DEBUG=False, DEBUG_name='neuron_017'):
+    def iteratively_remove_outliers_using_ppca(self, max_iter=4, DEBUG=False, DEBUG_name='neuron_017'):
+        """
+
+        Parameters
+        ----------
+        max_iter: Chosen based on ground truth swaps
+        DEBUG
+        DEBUG_name
+
+        Returns
+        -------
+
+        """
         # Do not assume it was set up initially; start from all_zxy_3d
         for i in tqdm(range(max_iter)):
             self.get_pairwise_distances()
@@ -238,17 +253,19 @@ class OutlierRemoval:
     def plot_outlier_values(self, neuron_name):
         i_trace = self.names.index(neuron_name)
 
-        trace = self._outlier_values[:, i_trace].copy()
+        trace = self.all_outlier_values[0][:, i_trace].copy()
         trace -= np.nanmean(trace)
 
-        mask_remove = self.total_matrix_to_remove[:, i_trace]
-        y_remove = trace[mask_remove]
-        ind_remove = np.where(mask_remove)[0]
-
-        fig = px.line(trace, title=f"Num removed = {len(ind_remove)}")
-        # print(ind_remove)
+        fig = px.line(trace)
         fig.add_hline(np.max([self.std_threshold_factor * np.nanstd(trace), self.std_threshold_min]))
-        fig.add_trace(go.Scatter(x=ind_remove, y=y_remove, mode='markers'))
+
+        # Show which points were removed in which iteration
+        for i, iteration_mask_remove in enumerate(self.all_matrices_to_remove):
+            mask_remove = iteration_mask_remove[:, i_trace]
+            y_remove = trace[mask_remove]
+            ind_remove = np.where(mask_remove)[0]
+            fig.add_trace(go.Scatter(x=ind_remove, y=y_remove, mode='markers', name=f'iteration {i}'))
+
         fig.show()
 
     def plot_outlier_all_lines(self, neuron_name):
