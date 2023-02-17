@@ -57,7 +57,7 @@ class OutlierRemoval:
         names = project_data.well_tracked_neuron_names(min_nonnan=0.9)
         df_traces = project_data.calc_default_traces(channel_mode='ratio', min_nonnan=0.9)
 
-        all_zxy = project_data.green_traces.loc[:, (names, coords)].copy()
+        all_zxy = project_data.red_traces.loc[:, (names, coords)].copy()
         z_to_xy_ratio = project_data.physical_unit_conversion.z_to_xy_ratio
         all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
 
@@ -130,10 +130,12 @@ class OutlierRemoval:
         all_dist_imputed = dat_imputed_flattened.reshape(all_dist.shape)
 
         # Calculate the sum of distances over all paired neurons
-        # But normalize the total pairwise distance by the std across time
+        # But normalize the pairwise distances by the std across time (reduce importance of far away neurons)
         all_dist_imputed_norm = normalize_3d(all_dist_imputed)
         all_dist_norm = normalize_3d(all_dist)
-        all_dist_diff = (all_dist_imputed_norm - all_dist_norm) ** 2.0
+        all_dist_diff = np.abs(all_dist_imputed_norm - all_dist_norm)
+        # Normalize again (reduce importance of highly variable neurons)
+        all_dist_diff = normalize_3d(all_dist_diff)
 
         # all_dist_diff = (all_dist_imputed - all_dist) ** 2.0
         # all_dist_diff = normalize_3d(all_dist_diff)
