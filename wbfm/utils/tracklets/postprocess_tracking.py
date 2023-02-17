@@ -45,10 +45,14 @@ class OutlierRemoval:
     _all_zxy_3d: np.ndarray = None
     _all_dist_flattened: np.ndarray = None
     _all_dist: np.ndarray = None
-    _next_matrix_to_remove: np.ndarray = None
     _outlier_values: np.ndarray = None
     _all_dist_diff: np.ndarray = None
     total_matrix_to_remove: np.ndarray = None
+
+    all_matrices_to_remove: List[np.ndarray] = None
+
+    def __post_init__(self):
+        self.all_matrices_to_remove = []
 
     @staticmethod
     def load_from_project(project_data, verbose=0, **kwargs):
@@ -171,10 +175,10 @@ class OutlierRemoval:
 
             matrix_to_remove[ind_to_remove, i] = True
 
-            if name == 'neuron_060':
-                print(num_outliers, num_to_remove)
+            # if name == 'neuron_060':
+            #     print(num_outliers, num_to_remove)
 
-        self._next_matrix_to_remove = matrix_to_remove
+        self.all_matrices_to_remove.append(matrix_to_remove)
         self._outlier_values = dat_outliers
         self._all_dist_diff = all_dist_diff
         if self.total_matrix_to_remove is None:
@@ -185,7 +189,7 @@ class OutlierRemoval:
         return matrix_to_remove
 
     def remove_outliers_from_zxy(self):
-        matrix_to_remove = self._next_matrix_to_remove
+        matrix_to_remove = self.all_matrices_to_remove[-1]
         self._all_zxy_3d[matrix_to_remove, :] = np.nan
 
     def iteratively_remove_outliers_using_ppca(self, max_iter=5, DEBUG=False, DEBUG_name='neuron_017'):
@@ -199,7 +203,7 @@ class OutlierRemoval:
                 # self.plot_outlier_all_lines(DEBUG_name)
                 self.plot_outlier_values(DEBUG_name)
 
-            num_removed = np.sum(self._next_matrix_to_remove)
+            num_removed = np.sum(self.all_matrices_to_remove[-1])
 
             print(f"Removed {num_removed} outliers "
                   f"(total={np.sum(self.total_matrix_to_remove)})")
