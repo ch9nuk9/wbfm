@@ -400,19 +400,29 @@ def make_grid_plot_from_callables(get_data_func: callable,
         # Assume ax_plot_func has the correct signature
         _ax_plot_func = ax_plot_func
 
+    # Get the data in the beginning, to make sure there are no errors
+    all_y_t = {}
+    for name in neuron_names:
+        try:
+            t, y = get_data_func(name)
+            all_y_t[name] = [t, y]
+        except ValueError:
+            continue
+
     # Set up the colormap of the background, if any
     if background_shading_value_func is not None:
         # From: https://stackoverflow.com/questions/59638155/how-to-set-0-to-white-at-a-uneven-color-ramp
 
         # First get all the traces, so that the entire cmap can be scaled
-        assert len(neuron_names) > 1, "Cannot calculate a colormap for a single trace"
-        all_y = [get_data_func(name)[1] for name in neuron_names]
-        all_vals = [background_shading_value_func(y, name) for y, name in zip(all_y, neuron_names)]
+        assert len(all_y_t) > 1, "Cannot calculate a colormap for a single trace"
+        all_vals = [background_shading_value_func(yt[1], name) for name, yt in all_y_t.items()]
 
         if sort_using_shade_value or sort_without_shading:
             # Sort descending
             ind = np.argsort(-np.array(all_vals))
-            neuron_names = [neuron_names[i] for i in ind]
+            # neuron_names = [neuron_names[i] for i in ind]
+            keys = list(all_y_t.keys())
+            all_y_t = {keys[i]: all_y_t[keys[i]] for i in ind}
             all_vals = [all_vals[i] for i in ind]
 
         norm = TwoSlopeNorm(vmin=np.nanmin(all_vals), vcenter=0, vmax=np.nanmax(all_vals))
@@ -425,7 +435,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
         all_vals = None
 
     # Set up grid of subplots
-    num_neurons = len(neuron_names)
+    num_neurons = len(all_y_t)
     num_rows = int(np.ceil(num_neurons / float(num_columns)))
     default_fig_opt = dict(dpi=150, figsize=(25, 25), sharey=share_y_axis, sharex=True)
     default_fig_opt.update(fig_opt)
@@ -439,14 +449,14 @@ def make_grid_plot_from_callables(get_data_func: callable,
         new_fig = False
 
     # Loop through neurons and: plot, label, and shade, or apply custom function
-    for i in tqdm(range(len(neuron_names))):
-        ax, neuron_name = fig.axes[i], neuron_names[i]
+    for i, (neuron_name, yt) in tqdm(enumerate(all_y_t.items())):
+        ax = fig.axes[i]
         if twinx_when_reusing_figure and not new_fig:
             ax = ax.twinx().twiny()
             ax_opt = dict(color='tab:orange')
         else:
             ax_opt = dict()
-        t, y = get_data_func(neuron_name)
+        t, y = yt
 
         if not new_fig:
             # ax.plot(t, y, **ax_opt)
