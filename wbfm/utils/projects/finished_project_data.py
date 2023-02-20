@@ -38,6 +38,7 @@ from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
 from wbfm.utils.traces.residuals import calculate_residual_subtract_pca, calculate_residual_subtract_nmf
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.tracklets.postprocess_tracking import OutlierRemoval
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
 from sklearn.neighbors import NearestNeighbors, LocalOutlierFactor
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
@@ -615,6 +616,7 @@ class ProjectData:
                             neuron_names: tuple = None,
                             residual_mode: Optional[str] = None,
                             nan_tracking_failure_points: bool = False,
+                            nan_using_ppca_manifold: bool = False,
                             verbose=0,
                             **kwargs):
         """
@@ -638,6 +640,10 @@ class ProjectData:
         interpolate_nan: bool, see above
         raise_error_on_empty: if empty AFTER dropping, raise an error
         neuron_names: a subset of names to do
+        nan_tracking_failure_points: Uses a simple heuristic (count number of neurons) to determine points of complete
+            tracking failure, and removes all activity at those times
+        nan_using_ppca_manifold: Uses a dimensionality heuristic to remove single-neuron mistakes. See OutlierRemover
+            Note: iterative algorithm that takes around a minute
         verbose
         kwargs: Args to pass to calculate_traces; updates the default 'opt' dict above
 
@@ -664,17 +670,13 @@ class ProjectData:
             for future in concurrent.futures.as_completed(futures):
                 name = futures[future]
                 trace_dict[name] = future.result()
-        # trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
         df = pd.DataFrame(trace_dict)
         df = df.reindex(sorted(df.columns), axis=1)
 
         # Optional: check neurons to remove
-        # if isinstance(min_nonnan, float):
-        #     min_nonnan = int(min_nonnan * df.count().max())
         if min_nonnan is not None:
             names = self.well_tracked_neuron_names(min_nonnan)
             df_drop = df[names]
-            # df_drop = df.dropna(axis=1, thresh=min_nonnan)
         else:
             df_drop = df
 
@@ -718,13 +720,19 @@ class ProjectData:
             else:
                 raise NotImplementedError(f"Unrecognized residual mode: {residual_mode}")
 
-        # Optional: nan time points that are estimated to have a tracking error
+        # Optional: nan time points that are estimated to have a tracking error (either global or per-neuron)
         if nan_tracking_failure_points:
             invalid_ind = self.estimate_tracking_failures_from_project(pad_nan_points=5)
             if invalid_ind is not None:
                 df.loc[invalid_ind, :] = np.nan
                 if interpolate_nan:
                     self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
+
+        if nan_using_ppca_manifold:
+            names = get_names_from_df(df)
+            outlier_remover = OutlierRemoval.load_from_project(self, names=names, verbose=1)
+            outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=10)
+            df[outlier_remover.total_matrix_to_remove] = np.nan
 
         return df
 

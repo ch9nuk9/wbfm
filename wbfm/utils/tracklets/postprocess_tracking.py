@@ -6,7 +6,6 @@ import pandas as pd
 import plotly.express as px
 import dask
 import numpy as np
-from numpy import ma
 from sklearn.preprocessing import StandardScaler
 from ppca import PPCA
 from sklearn.metrics.pairwise import nan_euclidean_distances
@@ -56,11 +55,12 @@ class OutlierRemoval:
         self.all_outlier_values = []
 
     @staticmethod
-    def load_from_project(project_data, verbose=0, **kwargs):
+    def load_from_project(project_data, names=None, verbose=0, **kwargs):
 
         coords = ['z', 'x', 'y']
-        names = project_data.well_tracked_neuron_names(min_nonnan=0.9)
-        df_traces = project_data.calc_default_traces(channel_mode='ratio', min_nonnan=0.9)
+        if names is None:
+            names = project_data.well_tracked_neuron_names(min_nonnan=0.9)
+        df_traces = project_data.calc_default_traces(channel_mode='ratio', neuron_names=tuple(names))
 
         all_zxy = project_data.red_traces.loc[:, (names, coords)].copy()
         z_to_xy_ratio = project_data.physical_unit_conversion.z_to_xy_ratio
@@ -195,7 +195,7 @@ class OutlierRemoval:
         matrix_to_remove = self.all_matrices_to_remove[-1]
         self._all_zxy_3d[matrix_to_remove, :] = np.nan
 
-    def iteratively_remove_outliers_using_ppca(self, max_iter=4, DEBUG=False, DEBUG_name='neuron_017'):
+    def iteratively_remove_outliers_using_ppca(self, max_iter=8, DEBUG=False, DEBUG_name='neuron_017'):
         """
 
         Parameters
