@@ -734,7 +734,7 @@ class ProjectData:
             all_zxy = self.red_traces.loc[:, (names, coords)].copy()
             z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
             all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
-            outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=1)
+            outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=0)
             outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
             df[outlier_remover.total_matrix_to_remove] = np.nan
 
