@@ -55,11 +55,11 @@ class OutlierRemoval:
         self.all_outlier_values = []
 
     @staticmethod
-    def load_from_project(project_data, names=None, verbose=0, **kwargs):
+    def load_from_project(project_data, names=None, min_nonnan=None, verbose=0, **kwargs):
 
         coords = ['z', 'x', 'y']
         if names is None:
-            names = project_data.well_tracked_neuron_names(min_nonnan=0.9)
+            names = project_data.well_tracked_neuron_names(min_nonnan=min_nonnan)
         df_traces = project_data.calc_default_traces(channel_mode='ratio', neuron_names=tuple(names))
 
         all_zxy = project_data.red_traces.loc[:, (names, coords)].copy()
