@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -107,15 +107,17 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
 
 @dataclass
 class NapariPropertyHeatMapper:
-    """Builds dictionaries to map segmentation labels to various neuron properties (e.g. average or max brightness)"""
+    """
+    Builds dictionaries to map segmentation labels to various neuron properties (e.g. average or max brightness)
+
+    NOTE: any custom values should be sorted according to names
+    """
 
     red_traces: pd.DataFrame
     green_traces: pd.DataFrame
     curvature_fluorescence_fps: pd.DataFrame = pd.DataFrame([np.nan])
 
-    @property
-    def names(self):
-        return get_names_from_df(self.red_traces)
+    names: List[str] = None
 
     @property
     def vec_of_labels(self):
@@ -123,21 +125,21 @@ class NapariPropertyHeatMapper:
 
     @property
     def df_labels(self) -> pd.DataFrame:
-        return self.red_traces.loc[:, (slice(None), 'label')]
+        return self.red_traces.loc[:, (self.names, 'label')]
 
     @property
     def mean_red(self):
-        tmp1 = self.red_traces.loc[:, (slice(None), 'intensity_image')]
+        tmp1 = self.red_traces.loc[:, (self.names, 'intensity_image')]
         tmp1.columns = self.names
-        tmp2 = self.red_traces.loc[:, (slice(None), 'area')]
+        tmp2 = self.red_traces.loc[:, (self.names, 'area')]
         tmp2.columns = self.names
         return tmp1 / tmp2
 
     @property
     def mean_green(self):
-        tmp1 = self.green_traces.loc[:, (slice(None), 'intensity_image')]
+        tmp1 = self.green_traces.loc[:, (self.names, 'intensity_image')]
         tmp1.columns = self.names
-        tmp2 = self.green_traces.loc[:, (slice(None), 'area')]
+        tmp2 = self.green_traces.loc[:, (self.names, 'area')]
         tmp2.columns = self.names
         return tmp1 / tmp2
 
@@ -178,7 +180,7 @@ class NapariPropertyHeatMapper:
 
                 corrcoefs.append(np.corrcoef(anchor_trace_corrected, neuron_trace_corrected)[0][1])
             except ValueError:
-                print(neuron, "skiped")
+                print(neuron, "skipped")
                 corrcoefs.append(0)
 
             val_to_plot = np.array(corrcoefs)

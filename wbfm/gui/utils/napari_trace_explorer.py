@@ -1399,6 +1399,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                          min_confidence=min_confidence,
                          bleach_correct=bleach_correct)
         return trace_opt
+
     @property
     def df_of_current_traces(self):
         """
@@ -1498,9 +1499,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         y = self.y_trace_mode
         df = self.df_of_current_traces
         val_to_plot = df.corrwith(y)
-        # Square but keep the sign... de-emphasizes very small correlations
+        # Square but keep the sign; de-emphasizes very small correlations
         val_to_plot = val_to_plot * np.abs(val_to_plot)
         heatmap_kwargs = dict(val_to_plot=val_to_plot, t=self.t)
+        self.logger.debug(f'Calculated correlation values: {val_to_plot}')
         self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs)
 
 

@@ -213,7 +213,8 @@ class NapariLayerInitializer:
             else:
                 curvature = None
             heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces,
-                                                   curvature_fluorescence_fps=curvature)
+                                                   curvature_fluorescence_fps=curvature,
+                                                   names=project_data.neuron_names)
 
             if 'heatmap' not in layer_tuple:
                 logging.warning(f"Skipping tuple: {layer_tuple}")
