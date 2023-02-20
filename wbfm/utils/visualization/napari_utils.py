@@ -216,7 +216,7 @@ class NapariPropertyHeatMapper:
         val_to_plot = list((self.mean_green / self.mean_red).std())
         return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
-    def custom_val_to_plot(self, val_to_plot):
+    def custom_val_to_plot(self, val_to_plot: pd.Series):
         return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
 

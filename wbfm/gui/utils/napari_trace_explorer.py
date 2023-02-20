@@ -1408,7 +1408,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         Note that the project data class caches these dataframes, so they should only be slow once
         """
         trace_opt = self.get_trace_opt()
-        return self.dat.calc_default_traces(**trace_opt)
+        return self.dat.calc_default_traces(**trace_opt, min_nonnan=None)
 
     def update_stored_tracklets_for_plotting(self):
         name = self.current_neuron_name

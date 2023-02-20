@@ -610,7 +610,7 @@ class ProjectData:
         return neuron_names
 
     @lru_cache(maxsize=128)
-    def calc_default_traces(self, min_nonnan: float = 0.75, interpolate_nan: bool = False,
+    def calc_default_traces(self, min_nonnan: Optional[float] = 0.75, interpolate_nan: bool = False,
                             raise_error_on_empty: bool = True,
                             neuron_names: tuple = None,
                             residual_mode: Optional[str] = None,
