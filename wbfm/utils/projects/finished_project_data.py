@@ -669,10 +669,12 @@ class ProjectData:
         df = df.reindex(sorted(df.columns), axis=1)
 
         # Optional: check neurons to remove
-        if isinstance(min_nonnan, float):
-            min_nonnan = int(min_nonnan * df.count().max())
+        # if isinstance(min_nonnan, float):
+        #     min_nonnan = int(min_nonnan * df.count().max())
         if min_nonnan is not None:
-            df_drop = df.dropna(axis=1, thresh=min_nonnan)
+            names = self.well_tracked_neuron_names(min_nonnan)
+            df_drop = df[names]
+            # df_drop = df.dropna(axis=1, thresh=min_nonnan)
         else:
             df_drop = df
 
