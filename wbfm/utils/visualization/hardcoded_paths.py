@@ -65,7 +65,7 @@ def load_paper_datasets(genotype='gcamp', require_behavior=True) -> dict:
         folder_path = '/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-12-10_spacer_7b_2per_agar_GFP'
         good_projects = load_all_projects_in_folder(folder_path)
     elif genotype == 'immob':
-        folder_path = '/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-03_immob_adj_settings_2'
+        folder_path = '/scratch/neurobiology/zimmer/Charles/dlc_stacks/immobilization_tests/2022-11-03_immob_adj_settings_2'
         require_behavior = False  # No annotation of behavior here
         good_projects = load_all_projects_in_folder(folder_path)
     else:
