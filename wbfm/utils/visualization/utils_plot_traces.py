@@ -268,3 +268,18 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
 
     df_gaps = pd.DataFrame(new_columns)
     return df_gaps, new_x_names
+
+
+def plot_with_shading(triggered_avg, triggered_std, xmax=None, ax=None, **kwargs):
+    if ax is None:
+        fig, ax = plt.subplots(dpi=100)
+    if xmax is None:
+        xmax = len(triggered_avg)
+    x = np.arange(xmax)
+    # Main line
+    ax.plot(triggered_avg, **kwargs)
+    # Shading
+    upper_shading = triggered_avg + triggered_std
+    lower_shading = triggered_avg - triggered_std
+    ax.fill_between(x, upper_shading, lower_shading, alpha=0.25)
+    return ax, lower_shading, upper_shading

@@ -1,12 +1,10 @@
 import logging
-import time
 import warnings
 from dataclasses import dataclass
 from typing import List, Tuple
 import numpy as np
 import pandas as pd
 import scipy
-from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 
@@ -14,6 +12,7 @@ from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 
 @dataclass
@@ -424,18 +423,11 @@ class TriggeredAverageIndices:
             return
 
         # Plot
-        if ax is None:
-            fig, ax = plt.subplots(dpi=100)
-        x = np.arange(xmax)
-        # Lines
-        ax.plot(triggered_avg, **kwargs)
+        ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_std, xmax, ax, **kwargs)
+
         if show_individual_lines:
             for trace in triggered_avg_matrix:
                 ax.plot(trace[:xmax], 'black', alpha=0.2)
-        # Shading
-        upper_shading = triggered_avg + triggered_std
-        lower_shading = triggered_avg - triggered_std
-        ax.fill_between(x, upper_shading, lower_shading, alpha=0.25)
 
         if not is_second_plot:
             ax.set_ylabel("Activity")

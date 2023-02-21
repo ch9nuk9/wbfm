@@ -209,7 +209,7 @@ class OutlierRemoval:
 
         """
         # Do not assume it was set up initially; start from all_zxy_3d
-        for _ in tqdm(range(max_iter)):
+        for _ in tqdm(range(max_iter), leave=False):
             self.get_pairwise_distances()
             self.calc_outlier_indices_using_ppca()
             self.remove_outliers_from_zxy()
