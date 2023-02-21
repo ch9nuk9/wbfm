@@ -44,6 +44,11 @@ class WormFullVideoPosture:
     filename_y: str = None
     filename_beh_annotation: str = None
 
+    filename_hilbert_amplitude: str = None
+    filename_hilbert_frequency: str = None
+    filename_hilbert_phase: str = None
+    filename_hilbert_carrier: str = None
+
     filename_table_position: str = None
 
     # This will be true for old manual annotations
@@ -711,23 +716,27 @@ class WormFullVideoPosture:
         if behavior_subfolder is not None:
 
             # Second get the centerline-specific files
-            filename_curvature, filename_x, filename_y, filename_beh_annotation = None, None, None, None
+            all_files = dict(filename_curvature=None, filename_x=None, filename_y=None, filename_beh_annotation=None,
+                             filename_hilbert_amplitude=None, filename_hilbert_phase=None,
+                             filename_hilbert_frequency=None, filename_hilbert_carrier=None)
             for file in Path(behavior_subfolder).iterdir():
                 if not file.is_file() or file.name.startswith('.'):
                     # Skip hidden files and directories
                     continue
                 if file.name.endswith('skeleton_spline_K_signed.csv'):
-                    filename_curvature = str(file)
+                    all_files['filename_curvature'] = str(file)
                 elif file.name.endswith('skeleton_spline_X_coords.csv'):
-                    filename_x = str(file)
+                    all_files['filename_x'] = str(file)
                 elif file.name.endswith('skeleton_spline_Y_coords.csv'):
-                    filename_y = str(file)
-                elif file.name.endswith('beh_annotation.csv'):
-                    filename_beh_annotation = str(file)
-            all_files = dict(filename_curvature=filename_curvature,
-                             filename_x=filename_x,
-                             filename_y=filename_y,
-                             filename_beh_annotation=filename_beh_annotation)
+                    all_files['filename_y'] = str(file)
+                elif file.name.endswith('hilbert_inst_amplitude.csv'):
+                    all_files['filename_hilbert_amplitude'] = str(file)
+                elif file.name.endswith('hilbert_inst_freq.csv'):
+                    all_files['filename_hilbert_frequency'] = str(file)
+                elif file.name.endswith('hilbert_inst_phase.csv'):
+                    all_files['filename_hilbert_phase'] = str(file)
+                elif file.name.endswith('hilbert_regenerated_carrier.csv'):
+                    all_files['filename_hilbert_carrier'] = str(file)
 
             # Third, get the table stage position
             # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
