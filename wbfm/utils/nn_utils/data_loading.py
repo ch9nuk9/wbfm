@@ -97,7 +97,7 @@ def get_bbox_data_for_volume_only_labeled(project_data, t, target_sz=np.array([8
     Instead of returning a list of arrays, returns a dict indexed by the string name as found in project_data
     """
     if which_neurons is None:
-        which_neurons = project_data.finished_neuron_names
+        which_neurons = project_data.finished_neuron_names()
     if which_neurons is None:
         logging.warning("Found no explicitly tracked neurons, assuming all are correct")
         which_neurons = project_data.neuron_names

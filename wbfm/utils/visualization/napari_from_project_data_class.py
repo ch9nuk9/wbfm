@@ -183,7 +183,7 @@ class NapariLayerInitializer:
             # Not added by default!
             df = project_data.final_tracks
             if gt_neuron_name_dict is None:
-                neurons_that_are_finished = project_data.finished_neuron_names
+                neurons_that_are_finished = project_data.finished_neuron_names()
                 gt_neuron_name_dict = {name: f"GT_{name.split('_')[1]}" for name in neurons_that_are_finished}
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
                                                           neuron_name_dict=gt_neuron_name_dict)

@@ -198,7 +198,7 @@ class ProjectData:
     def get_list_of_finished_neurons(self):
         """Get the finished neurons and dataframe that will be subset-ed"""
         df_gt = self.final_tracks
-        finished_neurons = self.finished_neuron_names
+        finished_neurons = self.finished_neuron_names()
         return df_gt, finished_neurons
 
     @cached_property
@@ -1098,12 +1098,11 @@ class ProjectData:
         return desynced_frames
 
     @cached_property
-    def df_manual_tracking(self) -> pd.DataFrame:
+    def df_manual_tracking(self) -> Optional[pd.DataFrame]:
         """Load a dataframe corresponding to manual tracking, i.e. which neurons have been manually corrected"""
         track_cfg = self.project_config.get_tracking_config()
-        fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
+        fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.csv", prepend_subfolder=True)
         df_manual_tracking = read_if_exists(fname, reader=pd.read_csv)
-        # df_manual_tracking = pd.read_csv(fname)
         return df_manual_tracking
 
     def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto', DEBUG=False):
@@ -1174,15 +1173,18 @@ class ProjectData:
         except FileNotFoundError:
             return None
 
-    @cached_property
-    def finished_neuron_names(self) -> List[str]:
+    @lru_cache(maxsize=2)
+    def finished_neuron_names(self, finished_not_invalid=True) -> List[str]:
         """
-        Uses df_manual_tracking to get a list of the neuron names that have been fully corrected
+        Uses df_manual_tracking to get a list of the neuron names that have been fully corrected, or are invalid
+
+        By default, returns the finished neurons, corresponding to the column 'Finished?'
+            Otherwise, uses the column 'Invalid?'
 
         The manual annotation file is expected to be a .csv in the following format:
-        Neuron ID, Finished?
-        neuron_001, False
-        neuron_002, True
+        Neuron ID, Finished?, Invalid?
+        neuron_001, False, True
+        neuron_002, True, False
         ...
 
         Extra columns are not a problem, but extra rows are
@@ -1191,8 +1193,13 @@ class ProjectData:
         if df_manual_tracking is None:
             return []
 
+        if finished_not_invalid:
+            column_name = None
+        else:
+            column_name = 'Invalid?'
+
         try:
-            neurons_finished_mask = self._check_format_and_unpack(df_manual_tracking)
+            neurons_finished_mask = self._check_format_and_unpack(df_manual_tracking, column_name=column_name)
             neurons_that_are_finished = list(df_manual_tracking[neurons_finished_mask]['Neuron ID'])
 
             # Filter to make sure they are the proper format
@@ -1228,8 +1235,10 @@ class ProjectData:
         else:
             return None
 
-    def _check_format_and_unpack(self, df_manual_tracking):
-        neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name]
+    def _check_format_and_unpack(self, df_manual_tracking, column_name=None):
+        if column_name is None:
+            column_name = self.finished_neurons_column_name
+        neurons_finished_mask = df_manual_tracking[column_name]
         if neurons_finished_mask.dtype != bool:
             self.logger.warning("Found non-boolean entries in manual annotation column; this may be a data error: "
                                 f"{np.unique(neurons_finished_mask)}")
