@@ -601,7 +601,7 @@ class ProjectData:
         """All names of neurons"""
         return get_names_from_df(self.red_traces)
 
-    def well_tracked_neuron_names(self, min_nonnan=0.5):
+    def well_tracked_neuron_names(self, min_nonnan=0.5, remove_invalid_neurons=False):
         """
         Subset of neurons that pass a given tracking threshold
         """
@@ -609,6 +609,9 @@ class ProjectData:
         min_nonnan = int(min_nonnan * self.num_frames)
         df_tmp = self.red_traces.dropna(axis=1, thresh=min_nonnan)
         neuron_names = get_names_from_df(df_tmp)
+        if remove_invalid_neurons:
+            invalid_names = self.finished_neuron_names(finished_not_invalid=False)
+            neuron_names = [n for n in neuron_names if n not in invalid_names]
         return neuron_names
 
     @lru_cache(maxsize=128)
@@ -688,7 +691,7 @@ class ProjectData:
 
         # Optional: check neurons to remove
         if min_nonnan is not None:
-            names = self.well_tracked_neuron_names(min_nonnan)
+            names = self.well_tracked_neuron_names(min_nonnan, remove_invalid_neurons)
             df_drop = df[names]
         else:
             df_drop = df

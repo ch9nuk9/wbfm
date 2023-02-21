@@ -211,3 +211,10 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
         raise ValueError(f"Unknown calculation mode {calculation_mode}")
 
     return calc_single_trace
+
+
+def fill_nan_in_dataframe(df):
+    df = filter_rolling_mean(df.copy(), window=3)
+    df = df.copy().interpolate()
+    df.fillna(df.mean(), inplace=True)
+    return df
