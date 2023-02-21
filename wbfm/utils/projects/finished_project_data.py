@@ -618,7 +618,7 @@ class ProjectData:
                             residual_mode: Optional[str] = None,
                             nan_tracking_failure_points: bool = False,
                             nan_using_ppca_manifold: bool = False,
-                            high_pass_bleach_correct: bool = False,
+                            remove_invalid_neurons: bool = True,
                             verbose=0,
                             **kwargs):
         """
@@ -670,6 +670,10 @@ class ProjectData:
 
         if neuron_names is None:
             neuron_names = self.neuron_names
+        if remove_invalid_neurons:
+            invalid_names = self.finished_neuron_names(finished_not_invalid=False)
+            neuron_names = [n for n in neuron_names if n not in invalid_names]
+
         # Initialize the trace calculator class and get the initial dataframe
         _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
 
@@ -1200,20 +1204,20 @@ class ProjectData:
 
         try:
             neurons_finished_mask = self._check_format_and_unpack(df_manual_tracking, column_name=column_name)
-            neurons_that_are_finished = list(df_manual_tracking[neurons_finished_mask]['Neuron ID'])
+            neurons_in_column = list(df_manual_tracking[neurons_finished_mask]['Neuron ID'])
 
             # Filter to make sure they are the proper format
             tmp = []
-            for col_name in neurons_that_are_finished:
+            for col_name in neurons_in_column:
                 if isinstance(col_name, str):
                     tmp.append(col_name)
                 else:
                     self.logger.warning(f"Found and removed improper column name in manual annotation : {col_name}")
-            neurons_that_are_finished = tmp
+            neurons_in_column = tmp
         except KeyError:
-            neurons_that_are_finished = []
+            neurons_in_column = []
 
-        return neurons_that_are_finished
+        return neurons_in_column
 
     @cached_property
     def neurons_with_ids(self) -> Optional[pd.DataFrame]:
