@@ -716,13 +716,13 @@ class WormFullVideoPosture:
                 if not file.is_file() or file.name.startswith('.'):
                     # Skip hidden files and directories
                     continue
-                if file.name.endswith('skeleton_spline_K.csv'):
+                if file.name.endswith('skeleton_spline_K_signed.csv'):
                     filename_curvature = str(file)
                 elif file.name.endswith('skeleton_spline_X_coords.csv'):
                     filename_x = str(file)
                 elif file.name.endswith('skeleton_spline_Y_coords.csv'):
                     filename_y = str(file)
-                elif file.name.endswith('_beh_annotation.csv'):
+                elif file.name.endswith('beh_annotation.csv'):
                     filename_beh_annotation = str(file)
             all_files = dict(filename_curvature=filename_curvature,
                              filename_x=filename_x,
