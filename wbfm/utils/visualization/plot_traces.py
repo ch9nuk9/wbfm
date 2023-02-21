@@ -12,7 +12,7 @@ import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
 
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes, options_for_ethogram
 from wbfm.utils.general.custom_errors import NoNeuronsError
 
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
@@ -988,9 +988,11 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
 def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
-    df_traces = project_data.calc_default_traces(interpolate_nan=True, filter_mode='rolling_mean',
+    df_traces = project_data.calc_default_traces(interpolate_nan=True,
+                                                 filter_mode='rolling_mean',
                                                  min_nonnan=0.9,
                                                  nan_tracking_failure_points=True,
+                                                 nan_using_ppca_manifold=True,
                                                  channel_mode='dr_over_r_50')
     df_traces_no_nan = df_traces.copy()
     df_traces_no_nan.fillna(df_traces.mean(), inplace=True)
@@ -1030,11 +1032,11 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     # Initialize options for all subplots
     base_colormap = px.colors.qualitative.Plotly
 
-    subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '',
-                      'PCA modes', 'Phase plot', '', '', 'Middle Body Speed', 'Variance Explained']
-    row_heights = [0.6, 0.1, 0.1, 0.1, 0.1]
+    subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '', 'Ethogram', 'Phase plot',
+                      'PCA modes', '', '', 'Middle Body Speed', 'Variance Explained']
+    row_heights = [0.55, 0.05, 0.1, 0.1, 0.1, 0.1]
     column_widths = [0.7, 0.1, 0.1, 0.1]
-    rows = 1 + num_pca_modes_to_plot + 1
+    rows = 1 + num_pca_modes_to_plot + 2
     cols = 1 + num_pca_modes_to_plot
 
     ### Main heatmap
@@ -1062,6 +1064,10 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
                                    hoverinfo="text"))
         weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
 
+    ### Ethogram
+    beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+    all_shape_opt = options_for_ethogram(beh_vec)
+
     ### 3d phase plot
     beh_trace = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
     df_pca_modes['behavior'] = beh_trace == BehaviorCodes.REV
@@ -1087,14 +1093,18 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     ### First column: x axis is time
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
                         row_heights=row_heights, column_widths=column_widths,
+                        horizontal_spacing=0.02, vertical_spacing=0.05,
                         subplot_titles=subplot_titles,
                         specs=[[{}, {}, {}, {}],
-                               [{}, {"rowspan": 3, "colspan": 3, "type": "scene"}, None, None],
+                               [{}, {"rowspan": 4, "colspan": 3, "type": "scene"}, None, None],
+                               [{}, None, None, None],
                                [{}, None, None, None],
                                [{}, None, None, None],
                                [{}, {"rowspan": 1, "colspan": 3}, None, None]])
 
     fig.add_trace(heatmap, **heatmap_opt)
+    for opt in all_shape_opt:
+        fig.add_shape(**opt, row=2, col=1)
     for trace, trace_opt in zip(trace_list, trace_opt_list):
         fig.add_trace(trace, **trace_opt)
 
