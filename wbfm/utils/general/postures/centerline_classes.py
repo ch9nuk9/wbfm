@@ -150,6 +150,46 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
+    def hilbert_amplitude(self, fluorescence_fps=False) -> pd.DataFrame:
+        df = self._raw_hilbert_amplitude
+        df = self._validate_and_downsample(df, fluorescence_fps)
+        return df
+
+    @cached_property
+    def _raw_hilbert_amplitude(self):
+        return read_if_exists(self.filename_hilbert_amplitude, reader=pd.read_csv, header=None)
+
+    @lru_cache(maxsize=8)
+    def hilbert_phase(self, fluorescence_fps=False) -> pd.DataFrame:
+        df = self._raw_hilbert_phase
+        df = self._validate_and_downsample(df, fluorescence_fps)
+        return df
+
+    @cached_property
+    def _raw_hilbert_phase(self):
+        return read_if_exists(self.filename_hilbert_phase, reader=pd.read_csv, header=None)
+
+    @lru_cache(maxsize=8)
+    def hilbert_frequency(self, fluorescence_fps=False) -> pd.DataFrame:
+        df = self._raw_hilbert_frequency
+        df = self._validate_and_downsample(df, fluorescence_fps)
+        return df
+
+    @cached_property
+    def _raw_hilbert_frequency(self):
+        return read_if_exists(self.filename_hilbert_frequency, reader=pd.read_csv, header=None)
+
+    @lru_cache(maxsize=8)
+    def hilbert_carrier(self, fluorescence_fps=False) -> pd.DataFrame:
+        df = self._raw_hilbert_carrier
+        df = self._validate_and_downsample(df, fluorescence_fps)
+        return df
+
+    @cached_property
+    def _raw_hilbert_carrier(self):
+        return read_if_exists(self.filename_hilbert_carrier, reader=pd.read_csv, header=None)
+
+    @lru_cache(maxsize=8)
     def stage_position(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         """Units of mm?"""
         df = self._raw_stage_position
