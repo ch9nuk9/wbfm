@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+import pandas as pd
 import scipy
 import sklearn
 from lmfit.models import ExponentialModel, ConstantModel
@@ -197,3 +198,12 @@ def full_lm_with_windowed_regression_vol(project_data, neuron, window_size=5):
 
     res = green_corrected - x_pred
     return res
+
+
+def bleach_correct_gaussian_moving_average(y: pd.Series, std=300) -> pd.Series:
+    """
+    Subtracts traces from a gaussian filtered version of the trace
+
+    See filter_gaussian_moving_average
+    """
+    return y - y.rolling(center=True, window=800, win_type='gaussian', min_periods=1).mean(std=std)

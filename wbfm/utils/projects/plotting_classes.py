@@ -28,7 +28,7 @@ from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_bina
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std, filter_exponential_moving_average, \
     filter_tv_diff, filter_bilateral, filter_gaussian_moving_average
-from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
+from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit, bleach_correct_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
 
@@ -46,6 +46,7 @@ class TracePlotter:
     remove_outliers: bool = False
     filter_mode: str = 'no_filtering'
     bleach_correct: bool = True
+    high_pass_bleach_correct: bool = False
     min_confidence: float = None
     background_per_pixel: float = None
     preprocess_volume_correction: bool = False  # Alternate way to subtract background
@@ -275,6 +276,11 @@ class TracePlotter:
             pass
         else:
             logging.warning(f"Unrecognized filter mode: {self.filter_mode}")
+
+        # Optional: final postprocessing to remove very slow drifts
+        if self.high_pass_bleach_correct:
+            std = len(y) / 5.0
+            y = bleach_correct_gaussian_moving_average(y, std=std)
 
         return y
 

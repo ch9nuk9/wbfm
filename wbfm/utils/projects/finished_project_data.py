@@ -36,6 +36,7 @@ from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
+from wbfm.utils.traces.bleach_correction import bleach_correct_gaussian_moving_average
 from wbfm.utils.traces.residuals import calculate_residual_subtract_pca, calculate_residual_subtract_nmf
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.postprocess_tracking import OutlierRemoval
@@ -617,17 +618,22 @@ class ProjectData:
                             residual_mode: Optional[str] = None,
                             nan_tracking_failure_points: bool = False,
                             nan_using_ppca_manifold: bool = False,
+                            high_pass_bleach_correct: bool = False,
                             verbose=0,
                             **kwargs):
         """
         Core function for calculating dataframes of traces using various preprocessing options
+
+        Note that all steps that can be calculated per-trace are implemented in the TracePlotter class.
+            Other steps that require the full dataframe are implemented in this function
 
         Uses the currently recommended 'best' settings:
         opt = dict(
             channel_mode='ratio',
             calculation_mode='integration',
             remove_outliers=True,
-            filter_mode='no_filtering'
+            filter_mode='no_filtering',
+            high_pass_bleach_correct=True
         )
 
         if interpolate_nan is True, then additionally (after dropping empty neurons and removing outliers):
@@ -644,8 +650,10 @@ class ProjectData:
             tracking failure, and removes all activity at those times
         nan_using_ppca_manifold: Uses a dimensionality heuristic to remove single-neuron mistakes. See OutlierRemover
             Note: iterative algorithm that takes around a minute
+        high_pass_bleach_correct: Filters by removing very slow drifts, i.e. a gaussian of sigma = num_frames / 5
         verbose
         kwargs: Args to pass to calculate_traces; updates the default 'opt' dict above
+            See TracePlotter for options
 
         Returns
         -------
@@ -655,7 +663,8 @@ class ProjectData:
             channel_mode='ratio',
             calculation_mode='integration',
             remove_outliers=True,
-            filter_mode='no_filtering'
+            filter_mode='no_filtering',
+            high_pass_bleach_correct=True
         )
         opt.update(kwargs)
 
