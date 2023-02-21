@@ -31,6 +31,7 @@ import matplotlib.style as mplstyle
 from plotly.subplots import make_subplots
 from plotly import graph_objects as go
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.visualization.filtering_traces import filter_rolling_mean, fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 import plotly.express as px
 
@@ -994,8 +995,8 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
                                                  nan_tracking_failure_points=True,
                                                  nan_using_ppca_manifold=True,
                                                  channel_mode='dr_over_r_50')
-    df_traces_no_nan = df_traces.copy()
-    df_traces_no_nan.fillna(df_traces.mean(), inplace=True)
+    df_traces = filter_rolling_mean(df_traces, window=3)
+    df_traces_no_nan = fill_nan_in_dataframe(df_traces)
     # Calculate pca modes, and use them to sort
     pca_weights = PCA(n_components=10)
     pca_modes = PCA(n_components=10)
