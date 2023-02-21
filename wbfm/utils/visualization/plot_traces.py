@@ -1049,11 +1049,11 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     trace_opt_list = []
     for i, col in enumerate(col_names):
         trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index))
-        trace_opt_list.append(dict(row=i + 2, col=1, secondary_y=False))
+        trace_opt_list.append(dict(row=i+3, col=1, secondary_y=False))
 
     ### Speed plot (below pca modes)
     trace_list.append(go.Scatter(y=speed, x=speed.index))
-    trace_opt_list.append(dict(row=num_pca_modes_to_plot + 2, col=1, secondary_y=False))
+    trace_opt_list.append(dict(row=num_pca_modes_to_plot+3, col=1, secondary_y=False))
 
     ### PCA weights (same names as pca modes)
     weights_list = []
@@ -1063,7 +1063,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
                                    marker=dict(color=base_colormap[i]),
                                    hovertext=neuron_names,
                                    hoverinfo="text"))
-        weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
+        weights_opt_list.append(dict(row=1, col=2+i, secondary_y=False))
 
     ### Ethogram
     beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
@@ -1087,7 +1087,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
 
     ### Variance explained
     var_explained_line = go.Scatter(y=var_explained)
-    var_explained_line_opt = dict(row=5, col=2, secondary_y=False)
+    var_explained_line_opt = dict(row=6, col=2, secondary_y=False)
 
     # Build figure
 
