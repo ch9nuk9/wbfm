@@ -33,9 +33,6 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
     else:
         app = dash.Dash(__name__)
 
-    # Dash Bootstrap Components
-    # https://dash-bootstrap-components.opensource.faculty.ai/docs/components/layout/
-
     # Get the column names of the summary dataframe
     column_names = df_summary.columns
     column_names_with_none = ['None'] + list(column_names)

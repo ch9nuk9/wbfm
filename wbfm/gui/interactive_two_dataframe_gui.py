@@ -6,7 +6,9 @@ import pandas as pd
 from wbfm.gui.utils.utils_dash import dashboard_from_two_dataframes
 
 
-def main(folder_name: str, port: int = 8070, allow_public_access: bool = False, DEBUG: bool = False):
+def main(folder_name: str, port: int = None, allow_public_access: bool = False, DEBUG: bool = False):
+    if port is None:
+        port = 8070
 
     # Load the data from the folder.
     # There should be two files: a .h5 file for df_summary, and a .pickle file for the raw_dfs
@@ -36,10 +38,10 @@ if __name__ == "__main__":
                         help='port')
     parser.add_argument('--DEBUG', default=False, help='')
     args = parser.parse_args()
-    project_path = args.project_path
+    folder_path = args.folder_path
     port = args.port
     allow_public_access = args.allow_public_access
     allow_public_access = True if allow_public_access == "True" else False
     DEBUG = args.DEBUG
 
-    main(project_path, port, allow_public_access, DEBUG)
+    main(folder_path, port, allow_public_access, DEBUG)
