@@ -48,12 +48,23 @@ def dashboard_from_two_dataframes(df: pd.DataFrame, df_summary: pd.DataFrame):
     row_style = {'display': 'inline-block', 'width': '100%'}
     # Create the layout
     app.layout = html.Div([
+        # Create two rows, with a label on top of a dropdown menu
         html.Div([
-            dropdown_menu_x
-        ], style=dropdown_style),
+            html.Div([
+                html.Label("X axis (scatterplot)"),
+            ], style=dropdown_style),
+            html.Div([
+                html.Label("Y axis (scatterplot)"),
+            ], style=dropdown_style),
+        ]),
         html.Div([
-            dropdown_menu_y
-        ], style=dropdown_style),
+            html.Div([
+                dropdown_menu_x
+            ], style=dropdown_style),
+            html.Div([
+                dropdown_menu_y
+            ], style=dropdown_style),
+        ]),
 
         html.Div([
             dcc.Graph(id="scatter", figure=px.scatter(df_summary, x="std", y="avg", hover_data=["stock"],
