@@ -322,13 +322,13 @@ class WormFullVideoPosture:
         return velocity
 
     @lru_cache(maxsize=8)
-    def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True):
+    def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True, **kwargs):
         """
         This is the angular velocity in PCA space (first two modes)
 
         Note: remove outliers by default"""
         velocity = self._raw_worm_angular_velocity
-        velocity = self._validate_and_downsample(velocity, fluorescence_fps=fluorescence_fps)
+        velocity = self._validate_and_downsample(velocity, fluorescence_fps=fluorescence_fps, **kwargs)
         if fluorescence_fps:
             velocity.reset_index(drop=True, inplace=True)
         if remove_outliers:
