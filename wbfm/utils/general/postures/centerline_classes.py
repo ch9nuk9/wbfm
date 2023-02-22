@@ -915,7 +915,8 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
     behavior_suffix = "beh_annotation.csv"
     behavior_fname = Path(raw_behavior_folder).joinpath(behavior_suffix)
     if not behavior_fname.exists():
-        behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix)]
+        behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix) and
+                          not f.name.startswith('.')]
         if len(behavior_fname) == 0:
             behavior_fname = None
         elif len(behavior_fname) == 1:
