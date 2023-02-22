@@ -137,7 +137,7 @@ def _build_scatter_plot(df_summary, x, y, selected_row, **kwargs):
     fig = px.scatter(df_summary, x=x, y=y, hover_data=["index"], custom_data=["index"],
                      size='selected',
                      title="Click on a point to update the line plot",
-                     marginal_y="histogram",
+                     marginal_y="violin",
                      **kwargs)
     fig.update_layout(font=dict(size=18))
     return fig
