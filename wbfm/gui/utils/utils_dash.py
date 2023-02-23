@@ -1,3 +1,5 @@
+import os
+import pickle
 from typing import Dict
 
 import dash
@@ -19,14 +21,15 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
 
     In other words:
         df_summary.columns = variables that can be used in the scatter plot
-        df_summary['index'] = identifier of each point in the scatter plot
+        df_summary.index = identifier of each point in the scatter plot
             (e.g. neuron name, or neuron name concatenated with dataset name)
 
-        raw_dfs[key].columns = df_summary['index']
+        raw_dfs[key].columns = df_summary.index
         raw_dfs[key].index = time-like variable (e.g. time, frame number, etc.)
 
-
-    df_summary must have a column called 'index' which is the column name of each raw_dfs dataframe
+    In addition,
+        df_summary must have a column called 'index' which is the column name of each raw_dfs dataframe
+        i.e. df_summary['index'] = df_summary.index = raw_dfs[key].columns
 
     Parameters
     ----------
@@ -178,3 +181,24 @@ if __name__ == "__main__":
 
     app = dashboard_from_two_dataframes(df_summary, raw_dfs)
     app.run_server(debug=True)
+
+
+def save_folder_for_two_dataframe_dashboard(output_folder, df_summary: pd.DataFrame, raw_dfs: Dict[str, pd.DataFrame]):
+    """
+    See the docstring of dashboard_from_two_dataframes for more information
+
+    Parameters
+    ----------
+    output_folder
+    df_summary
+    raw_dfs
+
+    Returns
+    -------
+
+    """
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+    df_summary.to_hdf(os.path.join(output_folder, 'df_summary.h5'), key='df_summary')
+    with open(os.path.join(output_folder, 'raw_dfs.pickle'), 'wb') as handle:
+        pickle.dump(raw_dfs, handle, protocol=pickle.HIGHEST_PROTOCOL)
