@@ -564,7 +564,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
 
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
-        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True) .reset_index(drop=True, inplace=False)
+        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
 
         all_dfs = self.all_dfs
         df_kymo = kymo.loc[:, 3:60].copy()
@@ -578,7 +578,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
 
         # New: only do certain indices
-        ind = self.project_data.worm_posture_class.beh_annotation == BehaviorCodes.FWD
+        ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) \
+              == BehaviorCodes.FWD
         all_dfs = self.all_dfs
         df_kymo = kymo.loc[ind, 3:60].copy()
         all_dfs_corr = {key: correlate_return_cross_terms(df.loc[ind, :], df_kymo) for key, df in all_dfs.items()}
@@ -591,7 +592,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
 
         # New: only do certain indices
-        ind = self.project_data.worm_posture_class.beh_annotation == BehaviorCodes.REV
+        ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) \
+              == BehaviorCodes.REV
         all_dfs = self.all_dfs
 
         df_kymo = kymo.loc[ind, 3:60].copy()
@@ -607,7 +609,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         cols = ['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple']
         return cols[:len(self.all_labels)]
 
-    def calc_per_neuron_df(self, name: str) -> pd.DataFrame:
+    def calc_per_neuron_df(self, name: str, rectification_variable=None) -> pd.DataFrame:
         """
         Calculates a summary dataframe of information per neuron.
             Rows: neuron names
@@ -618,12 +620,18 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         Parameters
         ----------
         name - str, one of self.all_labels
+        rectification_variable - optional str, one of None, 'rev', 'fwd'
 
         Returns
         -------
 
         """
-        df_corr = self.all_dfs_corr[name]
+        if rectification_variable is None:
+            df_corr = self.all_dfs_corr[name]
+        elif rectification_variable == 'rev':
+            df_corr = self.all_dfs_corr_rev[name]
+        elif rectification_variable == 'fwd':
+            df_corr = self.all_dfs_corr_fwd[name]
         df_traces = self.all_dfs[name]
 
         body_segment_argmax = df_corr.columns[df_corr.abs().apply(pd.Series.argmax, axis=1)]
