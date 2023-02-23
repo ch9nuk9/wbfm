@@ -6,7 +6,8 @@ import pandas as pd
 from wbfm.gui.utils.utils_dash import dashboard_from_two_dataframes
 
 
-def main(folder_name: str, port: int = None, allow_public_access: bool = False, DEBUG: bool = False):
+def main(folder_name: str, port: int = None, allow_public_access: bool = False, DEBUG: bool = False,
+         **kwargs):
     if port is None:
         port = 8070
 
@@ -21,7 +22,7 @@ def main(folder_name: str, port: int = None, allow_public_access: bool = False, 
             with open(os.path.join(folder_name, f), 'rb') as handle:
                 raw_dfs = pickle.load(handle)
 
-    app = dashboard_from_two_dataframes(df_summary, raw_dfs)
+    app = dashboard_from_two_dataframes(df_summary, raw_dfs, **kwargs)
     if allow_public_access:
         app.run_server(debug=DEBUG, port=port, host="0.0.0.0")
     else:
@@ -36,12 +37,20 @@ if __name__ == "__main__":
                         help='allow access using the intranet (NOT SECURE)')
     parser.add_argument('--port', default=None,
                         help='port')
+    parser.add_argument('-x', default=None, help='Default x axis for scatter plot')
+    parser.add_argument('-y', default=None, help='Default y axis for scatter plot')
+    parser.add_argument('-c', default=None, help='Default color splitting for scatter plot')
     parser.add_argument('--DEBUG', default=False, help='')
+
     args = parser.parse_args()
     folder_path = args.folder_path
     port = args.port
     allow_public_access = args.allow_public_access
     allow_public_access = True if allow_public_access == "True" else False
+    x_default = args.x
+    y_default = args.y
+    c_default = args.c
     DEBUG = args.DEBUG
 
-    main(folder_path, port, allow_public_access, DEBUG)
+    main(folder_path, port, allow_public_access,
+         x_default=x_default, y_default=y_default, color_default=c_default, DEBUG=DEBUG)

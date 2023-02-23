@@ -8,7 +8,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 
-def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, pd.DataFrame], is_jupyter=False):
+def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, pd.DataFrame], is_jupyter=False,
+                                  x_default=None, y_default=None, color_default=None):
     """
     Create a dashboard from two dataframes. The first dataframe is used to create a line plot, and the second dataframe
     is used to create a scatter plot. The scatter plot has a clickData output, which is used to update the line plot.
@@ -48,19 +49,19 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
     dropdown_menu_x = dcc.Dropdown(
         id="dropdown_x",
         options=[{"label": i, "value": i} for i in column_names],
-        value=column_names[0],
+        value=column_names[0] if x_default is None else x_default,
         clearable=False
     )
     dropdown_menu_y = dcc.Dropdown(
         id="dropdown_y",
         options=[{"label": i, "value": i} for i in column_names],
-        value=column_names[1],
+        value=column_names[1] if y_default is None else y_default,
         clearable=False
     )
     dropdown_menu_color = dcc.Dropdown(
         id="dropdown_color",
         options=[{"label": i, "value": i} for i in column_names_with_none],
-        value=None,
+        value=color_default,
         clearable=False
     )
 
