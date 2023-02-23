@@ -264,6 +264,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         # Get 1d series from behavior
         y = self.project_data.worm_posture_class.calc_behavior_from_alias(y_train_name)
         y = y.iloc[:trace_len]
+        y = fill_nan_in_dataframe(y)
         y.reset_index(drop=True, inplace=True)
         return y, y_train_name
 
