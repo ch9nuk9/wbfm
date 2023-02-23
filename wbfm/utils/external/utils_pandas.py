@@ -509,3 +509,19 @@ def get_corner_from_corr_df(df0: pd.DataFrame, df_corr: pd.DataFrame):
     ind_nonneuron = np.arange(df0.shape[1], df_corr.shape[1])
     ind_neurons = np.arange(0, df0.shape[1])
     return df_corr.iloc[ind_neurons, ind_nonneuron]
+
+
+def flatten_multiindex_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Flattens the columns of a dataframe with a multiindex
+
+    Parameters
+    ----------
+    df
+
+    Returns
+    -------
+
+    """
+    df.columns = ['_'.join(col).strip() for col in df.columns.values]
+    return df
