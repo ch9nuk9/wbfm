@@ -39,7 +39,7 @@ class NeuronEncodingBase:
     dataframes_to_load: List[str] = field(default_factory=lambda: ['ratio'])  # 'red', 'green', 'ratio_filt'])
 
     is_valid: bool = True
-    df_kwargs: dict = field(default_factory=dict)
+    df_kwargs: dict = field(default_factory=lambda: dict(filter_mode='rolling_mean'))
 
     use_residual_traces: bool = False
     _retained_neuron_names: list = None
@@ -61,7 +61,7 @@ class NeuronEncodingBase:
         all_dfs = dict()
         for key in self.dataframes_to_load:
             # Assumes keys are a basic data mode, perhaps with a _filt suffix
-            new_opt = dict(filter_mode='rolling_mean')
+            new_opt = dict()
             channel_key = key
             if '_filt' in key:
                 channel_key = key.replace('_filt', '')

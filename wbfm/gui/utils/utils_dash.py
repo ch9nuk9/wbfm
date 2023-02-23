@@ -17,6 +17,15 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
     The index of the summary dataframe is the identifier of each point, and must correspond to a column in the original
     dataframe (raw_dfs). The summary dataframe must have at least two columns, which will be used to create the scatter plot.
 
+    In other words:
+        df_summary.columns = variables that can be used in the scatter plot
+        df_summary['index'] = identifier of each point in the scatter plot
+            (e.g. neuron name, or neuron name concatenated with dataset name)
+
+        raw_dfs[key].columns = df_summary['index']
+        raw_dfs[key].index = time-like variable (e.g. time, frame number, etc.)
+
+
     df_summary must have a column called 'index' which is the column name of each raw_dfs dataframe
 
     Parameters
