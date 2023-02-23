@@ -120,9 +120,9 @@ class WormFullVideoPosture:
     ##
 
     @lru_cache(maxsize=8)
-    def centerlineX(self, fluorescence_fps=False) -> pd.DataFrame:
+    def centerlineX(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_centerlineX
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
@@ -130,9 +130,9 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_x, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def centerlineY(self, fluorescence_fps=False) -> pd.DataFrame:
+    def centerlineY(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_centerlineY
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
@@ -140,9 +140,9 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def curvature(self, fluorescence_fps=False) -> pd.DataFrame:
+    def curvature(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_curvature
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
@@ -150,9 +150,9 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def hilbert_amplitude(self, fluorescence_fps=False) -> pd.DataFrame:
+    def hilbert_amplitude(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_amplitude
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
@@ -160,9 +160,9 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_hilbert_amplitude, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def hilbert_phase(self, fluorescence_fps=False) -> pd.DataFrame:
+    def hilbert_phase(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_phase
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
@@ -170,9 +170,9 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_hilbert_phase, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def hilbert_frequency(self, fluorescence_fps=False) -> pd.DataFrame:
+    def hilbert_frequency(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_frequency
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
@@ -180,9 +180,9 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_hilbert_frequency, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def hilbert_carrier(self, fluorescence_fps=False) -> pd.DataFrame:
+    def hilbert_carrier(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_carrier
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
