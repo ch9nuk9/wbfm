@@ -36,6 +36,8 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
 
         python interactive_two_dataframe_gui.py -p '/home/charles/Current_work/presentations/Feb_2023/gui_volcano_plot_rev_triggered/' --allow_public_access True -x 'effect size' -y '-log(p value)' -c 'genotype'
 
+        python interactive_two_dataframe_gui.py -p '/home/charles/Current_work/presentations/Feb_2023/gui_behavior_and_pc0' -x 'datatype' -y 'R2 scores' --allow_public_access True --port 8065
+
     Parameters
     ----------
     raw_dfs

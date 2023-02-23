@@ -267,16 +267,15 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
                               DEBUG=False, **plot_kwargs):
         """Plots model prediction over raw data"""
+        opt = dict(y_train=y_train, only_model_single_state=only_model_single_state, DEBUG=DEBUG)
         if use_multineuron:
             score_list, model, y_total, y_pred, y_train_name = \
-                self.calc_multi_neuron_encoding(df_name, y_train=y_train,
-                                                only_model_single_state=only_model_single_state, DEBUG=DEBUG)
+                self.calc_multi_neuron_encoding(df_name, **opt)
             y_name = f"multineuron_{y_train_name}"
             best_neuron = ""
         else:
             score_list, model, y_total, y_pred, y_train_name, best_neuron = \
-                self.calc_single_neuron_encoding(df_name, y_train=y_train,
-                                                 only_model_single_state=only_model_single_state, DEBUG=DEBUG)
+                self.calc_single_neuron_encoding(df_name, **opt)
             y_name = f"single_best_neuron_{y_train_name}"
         self._plot_predictions(df_name, y_pred, y_total, y_name=y_name, score_list=score_list, best_neuron=best_neuron,
                                **plot_kwargs)
@@ -340,6 +339,36 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                    'dataset_name': self.project_data.shortened_name}
         df = pd.DataFrame(df_dict, index=[0])
         return df
+
+    def calc_prediction_or_raw_df(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
+                                  prediction_not_raw=True) -> pd.DataFrame:
+        """
+        Similar to plot_model_prediction, but returns one dataframe (prediction or raw)
+
+        Parameters
+        ----------
+        df_name
+        y_train
+        use_multineuron
+        only_model_single_state
+
+        Returns
+        -------
+
+        """
+        opt = dict(y_train=y_train, only_model_single_state=only_model_single_state)
+        if use_multineuron:
+            score_list, model, y_total, y_pred, y_train_name = \
+                self.calc_multi_neuron_encoding(df_name, **opt)
+        else:
+            score_list, model, y_total, y_pred, y_train_name, best_neuron = \
+                self.calc_single_neuron_encoding(df_name, **opt)
+
+        if prediction_not_raw:
+            df_summary = pd.DataFrame({'prediction': y_pred, 'dataset_name': self.project_data.shortened_name}, index=[0])
+        else:
+            df_summary = pd.DataFrame({'raw': y_total, 'dataset_name': self.project_data.shortened_name}, index=[0])
+        return df_summary
 
     def calc_dataset_per_neuron_summary_df(self, df_name, x_name):
         """
@@ -921,6 +950,7 @@ class MultiProjectBehaviorPlotter:
     all_projects: Dict[str, ProjectData] = None
 
     class_constructor: callable = NeuronToMultivariateEncoding
+    constructor_kwargs: dict = field(default_factory=dict)
     use_threading: bool = True
 
     _all_behavior_plotters: List[NeuronEncodingBase] = None
@@ -930,7 +960,8 @@ class MultiProjectBehaviorPlotter:
             assert self.all_project_paths is not None, "Must pass either projects or paths"
             self.all_projects = load_all_projects_from_list(self.all_project_paths)
         # Initialize the behavior plotters
-        self._all_behavior_plotters = [self.class_constructor(p) for p in self.all_projects.values()]
+        self._all_behavior_plotters = [self.class_constructor(p, **self.constructor_kwargs) for
+                                       p in self.all_projects.values()]
 
     def __getattr__(self, item):
         # Transform all unknown function calls into a loop of calls to the subobjects
