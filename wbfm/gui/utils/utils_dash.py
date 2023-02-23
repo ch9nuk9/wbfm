@@ -31,6 +31,11 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
         df_summary must have a column called 'index' which is the column name of each raw_dfs dataframe
         i.e. df_summary['index'] = df_summary.index = raw_dfs[key].columns
 
+    Examples:
+        python interactive_two_dataframe_gui.py -p '/home/charles/Current_work/presentations/Feb_2023/gui_volcano_plot_kymograph/' -x 'body_segment_argmax' -y 'corr_max' -c 'genotype'
+
+        python interactive_two_dataframe_gui.py -p '/home/charles/Current_work/presentations/Feb_2023/gui_volcano_plot_rev_triggered/' --allow_public_access True -x 'effect size' -y '-log(p value)' -c 'genotype'
+
     Parameters
     ----------
     raw_dfs

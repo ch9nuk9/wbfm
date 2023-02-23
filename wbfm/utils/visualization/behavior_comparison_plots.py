@@ -56,7 +56,7 @@ class NeuronEncodingBase:
 
     @cached_property
     def all_dfs(self) -> Dict[str, pd.DataFrame]:
-        print("First time calculating traces, may take a while...")
+        # print("First time calculating traces, may take a while...")
 
         all_dfs = dict()
         for key in self.dataframes_to_load:
@@ -85,7 +85,7 @@ class NeuronEncodingBase:
 
         self._retained_neuron_names = common_column_names
 
-        print("Finished calculating traces!")
+        # print("Finished calculating traces!")
         return all_dfs
 
 
