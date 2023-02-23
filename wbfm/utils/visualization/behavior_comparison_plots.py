@@ -28,6 +28,7 @@ import statsmodels.api as sm
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 from wbfm.utils.traces.residuals import calculate_residual_subtract_pca
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 
 
@@ -73,7 +74,9 @@ class NeuronEncodingBase:
 
             opt = self.df_kwargs.copy()
             opt.update(new_opt)
-            all_dfs[key] = self.project_data.calc_default_traces(**opt)
+            df = self.project_data.calc_default_traces(**opt)
+            df = fill_nan_in_dataframe(df)
+            all_dfs[key] = df
 
         # Align columns to common subset
         # If I didn't have this block, then I could just use the project data cache directly
