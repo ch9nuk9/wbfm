@@ -322,7 +322,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             fname = f"sorted_correlation_{df_name}_{y_train_name}.png"
             self._savefig(fname, saving_folder)
 
-    def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
+    def calc_dataset_summary_df(self, df_name: str, **kwargs) -> pd.DataFrame:
         """
         Calculates a summary number for the full dataset:
             The linear model error for a) the best single neuron and b) the multivariate encoding
@@ -336,8 +336,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         """
 
-        multi_list = self.calc_multi_neuron_encoding(name, **kwargs)[0]
-        single_list = self.calc_single_neuron_encoding(name, **kwargs)[0]
+        multi_list = self.calc_multi_neuron_encoding(df_name, **kwargs)[0]
+        single_list = self.calc_single_neuron_encoding(df_name, **kwargs)[0]
 
         df_dict = {'best_single_neuron': np.mean(single_list), 'multi_neuron': np.mean(multi_list),
                    'dataset_name': self.project_data.shortened_name}
