@@ -54,8 +54,10 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
         app = dash.Dash(__name__)
 
     # Check for necessary columns in df_summary
-    assert 'index' in df_summary.columns, "df_summary must have a column called 'index', " \
-                                          "which is the column name of each raw_dfs dataframe"
+    if 'index' not in df_summary.columns:
+        df_summary['index'] = df_summary.index
+    elif not df_summary['index'].equals(df_summary.index):
+        df_summary.index = df_summary['index']
 
     # Get the column names of the summary dataframe
     column_names = df_summary.columns
