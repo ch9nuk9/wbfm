@@ -361,17 +361,20 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         """
         opt = dict(y_train=y_train, only_model_single_state=only_model_single_state)
-        if use_multineuron:
-            score_list, model, y_total, y_pred, y_train_name = \
-                self.calc_multi_neuron_encoding(df_name, **opt)
-        else:
-            score_list, model, y_total, y_pred, y_train_name, best_neuron = \
-                self.calc_single_neuron_encoding(df_name, **opt)
-
         if prediction_not_raw:
+            if use_multineuron:
+                score_list, model, y_total, y_pred, y_train_name = \
+                    self.calc_multi_neuron_encoding(df_name, **opt)
+            else:
+                score_list, model, y_total, y_pred, y_train_name, best_neuron = \
+                    self.calc_single_neuron_encoding(df_name, **opt)
             df_summary = pd.DataFrame({'prediction': y_pred, 'dataset_name': self.project_data.shortened_name}, index=[0])
+
         else:
-            df_summary = pd.DataFrame({'raw': y_total, 'dataset_name': self.project_data.shortened_name}, index=[0])
+            X = self.all_dfs[df_name]
+            X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
+            df_summary = pd.DataFrame({'raw': y, 'dataset_name': self.project_data.shortened_name}, index=[0])
+
         return df_summary
 
     def calc_dataset_per_neuron_summary_df(self, df_name, x_name):
