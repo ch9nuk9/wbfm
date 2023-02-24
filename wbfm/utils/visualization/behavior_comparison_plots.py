@@ -588,7 +588,15 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
 @dataclass
 class NeuronToMultivariateEncoding(NeuronEncodingBase):
-    """Designed for single-neuron correlations to all kymograph body segments"""
+    """
+    Designed for single-neuron correlations to all kymograph body segments
+
+    Can also use other kymograph-like dataframes, such as hilbert amplitude or instantaneous frequency
+    """
+
+    posture_attribute: str = "curvature"  # Must be a function of WormFullVideoPosture
+    posture_index_start: int = 3
+    posture_index_end: int = 60
 
     def __post_init__(self):
 
@@ -598,41 +606,44 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
             logging.warning("Kymograph not found, this class will not work")
             self.is_valid = False
 
+    def get_kymo_like_df(self):
+        opt = dict(fluorescence_fps=True)
+        kymo = getattr(self.project_data.worm_posture_class, self.posture_attribute)(**opt).reset_index(drop=True)
+        df_kymo = kymo.loc[:, self.posture_index_start:self.posture_index_end].copy()
+        return df_kymo
+
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
-        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
+        df_kymo = self.get_kymo_like_df()
 
         all_dfs = self.all_dfs
-        df_kymo = kymo.loc[:, 3:60].copy()
         all_dfs_corr = {key: correlate_return_cross_terms(df, df_kymo) for key, df in all_dfs.items()}
         return all_dfs_corr
 
     @cached_property
     def all_dfs_corr_fwd(self) -> Dict[str, pd.DataFrame]:
         assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
-
-        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
+        kymo = self.get_kymo_like_df()
 
         # New: only do certain indices
         ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) \
               == BehaviorCodes.FWD
         all_dfs = self.all_dfs
-        df_kymo = kymo.loc[ind, 3:60].copy()
+        df_kymo = kymo.loc[ind, :].copy()
         all_dfs_corr = {key: correlate_return_cross_terms(df.loc[ind, :], df_kymo) for key, df in all_dfs.items()}
         return all_dfs_corr
 
     @cached_property
     def all_dfs_corr_rev(self) -> Dict[str, pd.DataFrame]:
         assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
-
-        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
+        kymo = self.get_kymo_like_df()
 
         # New: only do certain indices
         ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) \
               == BehaviorCodes.REV
         all_dfs = self.all_dfs
 
-        df_kymo = kymo.loc[ind, 3:60].copy()
+        df_kymo = kymo.loc[ind, :].copy()
         all_dfs_corr = {key: correlate_return_cross_terms(df.loc[ind, :], df_kymo) for key, df in all_dfs.items()}
         return all_dfs_corr
 
