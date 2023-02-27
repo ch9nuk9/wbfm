@@ -288,17 +288,21 @@ class ProjectData:
         # Loosely check if there has been any manual annotation
         if train_cfg.config['df_3d_tracklets'] != "2-training_data/all_tracklets.pickle":
             self.force_tracklets_to_be_sparse = True
-        else:
-            self.logger.info("Found initial tracklets; not casting as sparse")
+        # else:
+        #     self.logger.info("Found initial tracklets; not casting as sparse")
 
         if self.force_tracklets_to_be_sparse:
+            # This check itself takes so long that it's not worth it
             # if not check_if_fully_sparse(df_all_tracklets):
-            if True:
-                self.logger.warning("Casting tracklets as sparse, may take a minute")
-                # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
-                df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
-            else:
-                self.logger.info("Found sparse matrix")
+            self.logger.warning("Casting tracklets as sparse, may take a minute")
+            # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
+            df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
+            # if True:
+            #     self.logger.warning("Casting tracklets as sparse, may take a minute")
+            #     # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
+            #     df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
+            # else:
+            #     self.logger.info("Found sparse matrix")
         self.logger.debug(f"Finished loading tracklets from {fname}")
 
         return df_all_tracklets

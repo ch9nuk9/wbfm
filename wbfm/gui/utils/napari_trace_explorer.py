@@ -1515,7 +1515,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs)
 
 
-def napari_trace_explorer_from_config(project_path: str, app=None, DEBUG=False, **kwargs):
+def napari_trace_explorer_from_config(project_path: str, app=None, force_tracklets_to_be_sparse=True,
+                                      DEBUG=False, **kwargs):
     # A parent QT application must be initialized first
     os.environ["NAPARI_ASYNC"] = "1"
     # os.environ["NAPARI_PERFMON"] = "1"
@@ -1527,7 +1528,8 @@ def napari_trace_explorer_from_config(project_path: str, app=None, DEBUG=False, 
         started_new_app = False
 
     # Build object that has all the data
-    initialization_kwargs = dict(use_custom_padded_dataframe=False)
+    initialization_kwargs = dict(use_custom_padded_dataframe=False,
+                                 force_tracklets_to_be_sparse=force_tracklets_to_be_sparse)
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=True,
                                                                    # to_load_interactivity=True,
