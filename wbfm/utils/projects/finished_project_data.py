@@ -1054,7 +1054,6 @@ class ProjectData:
             ['Red data',
             'Green data',
             'Raw segmentation',
-            'Colored segmentation',
             'Neuron IDs',
             'Intermediate global IDs']
 
