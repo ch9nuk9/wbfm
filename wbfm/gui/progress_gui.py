@@ -234,6 +234,13 @@ class UiMainWindow(object):
         self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
         self.viewer.show()
 
+    def napari_for_masks_training(self):
+        """Open napari window for segmentation and raw data"""
+        self.viewer = napari.Viewer(ndisplay=3)
+        which_layers = ['Red data', 'Green data', 'Raw segmentation']
+        self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
+        self.viewer.show()
+
     def open_traces_gui(self):
         self.viewer = napari.Viewer(ndisplay=3)
         which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
