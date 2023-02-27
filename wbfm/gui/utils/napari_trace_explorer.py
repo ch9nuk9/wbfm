@@ -36,6 +36,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     current_time_point_before_callback = 0
     dict_of_saved_times = None
 
+    # For optional napari layers
+    use_track_of_point: bool = False
+
     logger: logging.Logger = None
 
     _disable_callbacks = False
@@ -454,7 +457,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
         self.viewer.layers['final_track'].data = point_layer_data
-        self.viewer.layers['track_of_point'].data = track_layer_data
+        if self.use_track_of_point:
+            self.viewer.layers['track_of_point'].data = track_layer_data
 
         self.zoom_using_current_neuron_or_tracklet()
 
@@ -551,9 +555,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         point_layer_data, track_layer_data = self.get_track_data()
 
         points_opt = dict(face_color='blue', size=4)
+        # Note: the 'final_track' layer is used for visualization as well, e.g. zooming to a neuron
         self.viewer.add_points(point_layer_data, name="final_track", n_dimensional=True, symbol='cross', **points_opt,
                                visible=False)
-        self.viewer.add_tracks(track_layer_data, name="track_of_point", visible=False)
+        if self.use_track_of_point:
+            self.viewer.add_tracks(track_layer_data, name="track_of_point", visible=False)
         self.zoom_using_current_neuron_or_tracklet()
 
         layer_to_add_callback = self.seg_layer

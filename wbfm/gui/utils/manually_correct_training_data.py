@@ -63,7 +63,6 @@ class manual_annotation_widget(QtWidgets.QWidget):
         points_opt = dict(face_color='blue', size=4)
         self.viewer.add_points(point_layer_data, name="pts_with_future_and_past", n_dimensional=True, symbol='cross',
                                **points_opt)
-
         self.viewer.add_tracks(track_layer_data, name="track_of_point")
 
         zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
