@@ -43,7 +43,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     _disable_callbacks = False
 
-    def __init__(self, project_data: ProjectData, app: QApplication):
+    def __init__(self, project_data: ProjectData, app: QApplication, **kwargs):
         check_all_needed_data_for_step(project_data.project_config,
                                        step_index=5, raise_error=True, training_data_required=False)
         project_data.check_data_desyncing(raise_error=True)
@@ -87,6 +87,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dict_of_saved_times = dict()
 
         self.list_of_gt_correction_widgets = []
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     def setupUi(self, viewer: napari.Viewer):
 
@@ -1512,7 +1515,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs)
 
 
-def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None, DEBUG=False):
+def napari_trace_explorer_from_config(project_path: str, app=None, DEBUG=False, **kwargs):
     # A parent QT application must be initialized first
     os.environ["NAPARI_ASYNC"] = "1"
     # os.environ["NAPARI_PERFMON"] = "1"
@@ -1536,7 +1539,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
     # If I don't set this to false, need to debug custom dataframe here
     project_data.use_custom_padded_dataframe = False
     project_data.load_interactive_properties()
-    ui, viewer = napari_trace_explorer(project_data, app=app, to_print_fps=to_print_fps)
+    ui, viewer = napari_trace_explorer(project_data, app=app, **kwargs)
 
     # Note: don't use this in jupyter
     napari.run()
@@ -1549,7 +1552,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
 def napari_trace_explorer(project_data: ProjectData,
                           app: QApplication = None,
                           viewer: napari.Viewer = None,
-                          to_print_fps: bool = False):
+                          to_print_fps: bool = False, **kwargs):
     """Current function for building the explorer (1/11/2022)"""
     print("Starting GUI setup")
     # Make sure ctrl-c works
@@ -1557,7 +1560,7 @@ def napari_trace_explorer(project_data: ProjectData,
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     # Build Napari and add data layers
-    ui = NapariTraceExplorer(project_data, app)
+    ui = NapariTraceExplorer(project_data, app, **kwargs)
     if viewer is None:
         ui.logger.info("Creating a new Napari window")
         viewer = napari.Viewer(ndisplay=3)

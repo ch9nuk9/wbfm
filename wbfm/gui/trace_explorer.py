@@ -6,12 +6,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Build GUI with a project')
     parser.add_argument('--project_path', '-p', default=None,
                         help='path to config file')
+    parser.add_argument('--check_tracklets', default=True)
     parser.add_argument('--DEBUG', default=False,
                         help='')
     args = parser.parse_args()
     project_path = args.project_path
+    check_tracklets = args.check_tracklets
+    check_tracklets = (check_tracklets == "True")
     DEBUG = args.DEBUG
 
     print("Starting trace explorer GUI, may take up to a minute to load...")
 
-    napari_trace_explorer_from_config(project_path, DEBUG)
+    napari_trace_explorer_from_config(project_path, check_tracklets=check_tracklets, DEBUG=DEBUG)
