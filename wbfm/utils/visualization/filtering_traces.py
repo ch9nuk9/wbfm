@@ -218,3 +218,27 @@ def fill_nan_in_dataframe(df):
     df = df.copy().interpolate()
     df.fillna(df.mean(), inplace=True)
     return df
+
+
+def fast_slow_decomposition(y, fast_window=1, slow_window=9):
+    """
+    Decompose the trace into fast and slow components
+
+    Parameters
+    ----------
+    y
+    fast_window: std of gaussian filter. If 0, then no filtering on the fast component
+    slow_window
+
+    Returns
+    -------
+
+    """
+    assert fast_window > slow_window, "Fast window must be larger than slow window"
+    if fast_window > 0:
+        y_fast = filter_gaussian_moving_average(y, std=fast_window)
+    else:
+        y_fast = y
+    y_slow = filter_gaussian_moving_average(y, std=slow_window)
+    y_fast = y_fast - y_slow
+    return y_fast, y_slow
