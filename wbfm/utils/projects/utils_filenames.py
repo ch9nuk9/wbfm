@@ -85,7 +85,7 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
     return path
 
 
-def read_if_exists(filename, reader=pd.read_hdf, **kwargs):
+def read_if_exists(filename: str, reader=pd.read_hdf, **kwargs):
     if filename is None:
         return None
     elif os.path.exists(filename):

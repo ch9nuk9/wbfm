@@ -1109,7 +1109,51 @@ class ProjectData:
         track_cfg = self.project_config.get_tracking_config()
         fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.csv", prepend_subfolder=True)
         df_manual_tracking = read_if_exists(fname, reader=pd.read_csv)
+        if df_manual_tracking is None:
+            fname = Path(fname).with_name(self.shortened_name).with_suffix('.xlsx')
+            df_manual_tracking = read_if_exists(str(fname), reader=pd.read_excel)
         return df_manual_tracking
+
+    @cached_property
+    def dict_numbers_to_neuron_names(self) -> Dict[str, Tuple[str, int]]:
+        """
+        Uses df_manual_tracking to map neuron numbers to names and confidence. Example:
+            dict_numbers_to_neuron_names()['neuron_001'] -> ['AVAL', 2]
+
+        Assumes the following column names:
+            output keys = 'Neuron ID'
+            output values = ['ID1', 'Certainty']
+
+        Certainty goes from 0-2, with 2 being the most certain
+
+        Some files my have an 'ID2' column for less certain ID's; this is ignored
+
+        Returns
+        -------
+
+        """
+        # Read each column, and create a dictionary
+        df = self.df_manual_tracking
+        if df is None:
+            return {}
+        # Strip white space from column names
+        df.columns = df.columns.str.strip()
+
+        # Get the automatically assigned (meaningless) neuron names
+        neuron_names = df['Neuron ID'].values
+        neuron_names = [str(i) for i in neuron_names]
+
+        # Get the most confident ID. If not present (nan), will be an empty string
+        neuron_ids = df['ID1'].values
+        neuron_ids = ['' if isinstance(i, float) and np.isnan(i) else str(i) for i in neuron_ids]
+
+        # Get the certainty. If not present (nan), will be 0
+        neuron_certainty = df['Certainty'].values
+        neuron_certainty = [0 if np.isnan(i) else int(i) for i in neuron_certainty]
+
+        # Create a dictionary
+        neuron_dict = dict(zip(neuron_names, zip(neuron_ids, neuron_certainty)))
+        return neuron_dict
 
     def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto', DEBUG=False):
         """
@@ -1225,6 +1269,8 @@ class ProjectData:
     def neurons_with_ids(self) -> Optional[pd.DataFrame]:
         """
         Loads excel file with information about manually id'ed neurons
+
+        Note: in newer datasets, this information is stored in df_manual_tracking instead of a separate file
 
         Returns
         -------
