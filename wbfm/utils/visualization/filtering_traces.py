@@ -59,8 +59,8 @@ def filter_rolling_mean(y: pd.Series, window: int = 9) -> pd.Series:
     return y.rolling(window, min_periods=1, center=True).mean()
 
 
-def filter_gaussian_moving_average(y: pd.Series, std=1) -> pd.Series:
-    return y.rolling(center=True, window=100, win_type='gaussian', min_periods=1).mean(std=std)
+def filter_gaussian_moving_average(y: pd.Series, std=1, window=100) -> pd.Series:
+    return y.rolling(center=True, window=window, win_type='gaussian', min_periods=1).mean(std=std)
 
 
 def filter_exponential_moving_average(y: pd.Series, span=17) -> pd.Series:
