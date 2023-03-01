@@ -48,6 +48,8 @@ from wbfm.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
 from backports.cached_property import cached_property
 
+from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition
+
 
 @dataclass
 class ProjectData:
@@ -622,6 +624,8 @@ class ProjectData:
                             nan_tracking_failure_points: bool = False,
                             nan_using_ppca_manifold: bool = False,
                             remove_invalid_neurons: bool = True,
+                            return_fast_scale_separation: bool = False,
+                            return_slow_scale_separation: bool = False,
                             verbose=0,
                             **kwargs):
         """
@@ -753,6 +757,16 @@ class ProjectData:
             outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=0)
             outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
             df[outlier_remover.total_matrix_to_remove] = np.nan
+
+        # Optional: separate fast and slow components, and return only one
+        if return_fast_scale_separation and return_slow_scale_separation:
+            raise ValueError("Cannot return both fast and slow scale separation")
+        if return_fast_scale_separation or return_slow_scale_separation:
+            df_fast, df_slow = fast_slow_decomposition(df)
+            if return_fast_scale_separation:
+                df = df_fast
+            else:
+                df = df_slow
 
         return df
 
