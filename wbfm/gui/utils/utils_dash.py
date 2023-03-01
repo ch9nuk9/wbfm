@@ -174,22 +174,22 @@ def line_plot_from_dict_of_dataframes(dict_of_dfs: dict, y: str):
     fig.update_layout(xaxis_title="Time", yaxis_title="Amplitude", font=dict(size=18))
     return fig
 
-
-if __name__ == "__main__":
-    # Create a test dataframe
-    df = px.data.stocks()
-    raw_dfs = {'test': df}
-
-    # Create a dataframe with the average and std of each stock as columns
-    df_std = df.std()
-    df_avg = df.mean()
-    df_summary = pd.DataFrame({"std": df_std, "avg": df_avg})
-
-    # Create a new column with the name of the stock
-    df_summary["stock"] = df_summary.index
-
-    app = dashboard_from_two_dataframes(df_summary, raw_dfs)
-    app.run_server(debug=True)
+#
+# if __name__ == "__main__":
+#     # Create a test dataframe
+#     df = px.data.stocks()
+#     raw_dfs = {'test': df}
+#
+#     # Create a dataframe with the average and std of each stock as columns
+#     df_std = df.std()
+#     df_avg = df.mean()
+#     df_summary = pd.DataFrame({"std": df_std, "avg": df_avg})
+#
+#     # Create a new column with the name of the stock
+#     df_summary["stock"] = df_summary.index
+#
+#     app = dashboard_from_two_dataframes(df_summary, raw_dfs)
+#     app.run_server(debug=True)
 
 
 def save_folder_for_two_dataframe_dashboard(output_folder, df_summary: pd.DataFrame, raw_dfs: Dict[str, pd.DataFrame]):

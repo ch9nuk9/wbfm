@@ -220,7 +220,7 @@ def fill_nan_in_dataframe(df):
     return df
 
 
-def fast_slow_decomposition(y, fast_window=1, slow_window=9):
+def fast_slow_decomposition(y, fast_window=0, slow_window=9):
     """
     Decompose the trace into fast and slow components
 
