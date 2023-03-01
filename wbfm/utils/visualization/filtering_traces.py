@@ -234,7 +234,7 @@ def fast_slow_decomposition(y, fast_window=1, slow_window=9):
     -------
 
     """
-    assert fast_window > slow_window, "Fast window must be larger than slow window"
+    assert fast_window < slow_window, "Fast window must be smaller than slow window"
     if fast_window > 0:
         y_fast = filter_gaussian_moving_average(y, std=fast_window)
     else:
