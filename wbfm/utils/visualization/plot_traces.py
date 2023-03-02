@@ -899,7 +899,7 @@ def make_default_triggered_average_plots(project_cfg, to_save=True):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     vis_cfg = project_data.project_config.get_visualization_config()
     project_data.verbose = 0
-    all_triggers = dict(reversal=1, forward=0)
+    all_triggers = dict(reversal=BehaviorCodes.REV, forward=BehaviorCodes.FWD)
     # Build triggered average class
     trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
     df = project_data.calc_default_traces(**trace_opt)
