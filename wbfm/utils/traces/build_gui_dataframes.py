@@ -12,8 +12,8 @@ from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivari
 
 
 def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectData],
-                      all_projects_gfp: Dict[str, ProjectData], output_folder: str,
-                      trace_options=None):
+                                        all_projects_gfp: Dict[str, ProjectData], output_folder: str,
+                                        trace_options=None):
     """
     Builds all the dataframes needed for the GUI, including reverse and forward rectification.
 
