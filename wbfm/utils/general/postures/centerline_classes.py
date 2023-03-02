@@ -528,9 +528,13 @@ class WormFullVideoPosture:
         -------
 
         """
-        ind_class = TriggeredAverageIndices(self.beh_annotation(fluorescence_fps=True), state, min_duration,
-                                            trace_len=self.num_frames, ind_preceding=ind_preceding,
-                                            **kwargs)
+        opt = dict(behavioral_annotation=self.beh_annotation(fluorescence_fps=True),
+                   min_duration=min_duration,
+                   ind_preceding=ind_preceding,
+                   trace_len=self.num_frames,
+                   behavioral_state=state)
+        opt.update(kwargs)
+        ind_class = TriggeredAverageIndices(**opt)
         return ind_class
 
     def calc_triggered_average_indices_with_pirouette_split(self, duration_threshold=34, **kwargs):
