@@ -27,10 +27,10 @@ def calculate_residual_subtract_nmf(df: pd.DataFrame, n_components=2) -> pd.Data
 
     df_dat = df.to_numpy()
     all_mins = df_dat.min()
-    dat_normalized = df_dat + all_mins
+    dat_normalized = df_dat - all_mins
     dat_low_dimensional = model.fit_transform(dat_normalized)
     dat_reconstructed = model.inverse_transform(dat_low_dimensional)
-    dat_reconstructed -= all_mins
+    dat_reconstructed += all_mins
 
     dat_residual = df - dat_reconstructed
     df_residual = pd.DataFrame(data=dat_residual, columns=df.columns)

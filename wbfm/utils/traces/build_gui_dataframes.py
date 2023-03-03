@@ -36,7 +36,7 @@ def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectDat
                filter_mode='rolling_mean',
                min_nonnan=0.9,
                nan_tracking_failure_points=True,
-               nan_using_ppca_manifold=False,  # True, # This takes a long time!
+               nan_using_ppca_manifold=False,  # This takes a long time!
                channel_mode='dr_over_r_50')
     opt.update(trace_options)
 
