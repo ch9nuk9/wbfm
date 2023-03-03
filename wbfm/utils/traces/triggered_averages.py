@@ -45,12 +45,18 @@ class TriggeredAverageIndices:
     min_lines: int = 2
     include_censored_data: bool = True  # To include events whose termination is after the end of the data
     dict_of_events_to_keep: dict = None
+    mean_subtract: bool = False
+    z_score: bool = False
+    normalize_amplitude_at_onset: bool = False
 
     DEBUG: bool = False
 
     @property
     def binary_state(self):
-        binary_state = self.behavioral_annotation == self.behavioral_state
+        if self.behavioral_annotation_is_continuous:
+            binary_state = self.behavioral_annotation > self.behavioral_annotation_threshold
+        else:
+            binary_state = self.behavioral_annotation == self.behavioral_state
         if self.gap_size_to_remove is not None:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         return binary_state
@@ -87,11 +93,7 @@ class TriggeredAverageIndices:
             dict_of_events_to_keep = self.dict_of_events_to_keep
         else:
             self.dict_of_events_to_keep = dict_of_events_to_keep
-        if self.behavioral_annotation_is_continuous:
-            binary_state = self.behavioral_annotation > self.behavioral_annotation_threshold
-            binary_state = binary_state[:self.trace_len]
-        else:
-            binary_state = self.cleaned_binary_state.copy()
+        binary_state = self.cleaned_binary_state.copy()
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_state,
                                                                  already_boolean=True, skip_boolean_check=True)
 
@@ -119,7 +121,7 @@ class TriggeredAverageIndices:
             all_ind.append(ind)
         return all_ind
 
-    def calc_triggered_average_matrix(self, trace, mean_subtract=False, custom_ind: List[np.ndarray]=None,
+    def calc_triggered_average_matrix(self, trace, custom_ind: List[np.ndarray]=None,
                                       nan_times_with_too_few=False, max_len=None,
                                       **ind_kwargs):
         """
@@ -130,7 +132,6 @@ class TriggeredAverageIndices:
         Parameters
         ----------
         trace
-        mean_subtract
         custom_ind: instead of using self.triggered_average_indices. If not None, ind_kwargs are not used
         nan_times_with_too_few
         max_len: Cut off matrix at a time point. Usually if there aren't enough data points that far
@@ -158,9 +159,16 @@ class TriggeredAverageIndices:
                 ind = ind.copy()[:max_len]
             triggered_avg_matrix[i, np.arange(len(ind))] = trace[ind]
 
-        # Postprocessing
-        if mean_subtract:
+        # Postprocessing type 1: change amplitudes
+        if self.mean_subtract:
             triggered_avg_matrix -= np.nanmean(triggered_avg_matrix, axis=1, keepdims=True)
+        if self.z_score:
+            triggered_avg_matrix /= np.nanstd(triggered_avg_matrix, axis=1, keepdims=True)
+        if self.normalize_amplitude_at_onset:
+            # Normalize to the amplitude at the index of the event
+            triggered_avg_matrix = triggered_avg_matrix - triggered_avg_matrix[:, [self.ind_preceding]]
+
+        # Postprocessing type 2: remove points
         if self.to_nan_points_of_state_before_point:
             triggered_avg_matrix = self.nan_points_of_state_before_point(triggered_avg_matrix, all_ind)
         if nan_times_with_too_few:
@@ -189,8 +197,12 @@ class TriggeredAverageIndices:
         -------
 
         """
-        invalid_states = {self.behavioral_state, BehaviorCodes.UNKNOWN}
-        beh_annotations = self.behavioral_annotation.to_numpy()
+        if self.behavioral_annotation_is_continuous:
+            invalid_states = {True}
+            beh_annotations = self.cleaned_binary_state
+        else:
+            invalid_states = {self.behavioral_state, BehaviorCodes.UNKNOWN}
+            beh_annotations = self.behavioral_annotation.to_numpy()
         for i_trace in range(len(list_of_triggered_ind)):
             these_ind = list_of_triggered_ind[i_trace]
             for i_local, i_global in enumerate(these_ind):
