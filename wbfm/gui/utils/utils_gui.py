@@ -297,6 +297,7 @@ def build_gui_for_grid_plots(parent_folder, DEBUG=False):
             return
         # print("Updating png dropdown for: ", project_parent_name, project_name)
         keys = list(png_files[project_parent_name][project_name].keys())
+        png_dropdown.clear()
         png_dropdown.addItems(keys)
         # Set the default value as an item that contains the word 'beh'
         for i, key in enumerate(keys):
