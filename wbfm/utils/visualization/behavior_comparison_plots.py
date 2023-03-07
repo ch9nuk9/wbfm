@@ -595,8 +595,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
     """
 
     posture_attribute: str = "curvature"  # Must be a function of WormFullVideoPosture
-    posture_index_start: int = 3
-    posture_index_end: int = 60
+    posture_index_start: int = 2
+    posture_index_end: int = 30
 
     def __post_init__(self):
 
