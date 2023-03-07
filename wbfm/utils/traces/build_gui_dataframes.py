@@ -14,7 +14,7 @@ from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivari
 
 def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectData],
                                         all_projects_gfp: Dict[str, ProjectData],
-                                        output_folder: str,
+                                        output_folder: str = None,
                                         trace_options=None,
                                         posture_attribute='curvature'):
     """
@@ -104,11 +104,12 @@ def add_quantile_columns(df):
 
 
 def build_all_summary_dfs(all_projects, opt, posture_attribute: str = "curvature"):
+    dataframes_to_load = opt['channel_mode']
     def _get_df_tmp(p, rectification_variable):
         encoder = NeuronToMultivariateEncoding(p, df_kwargs=opt.copy(),
-                                               dataframes_to_load=['dr_over_r_50'],
+                                               dataframes_to_load=[dataframes_to_load],
                                                posture_attribute=posture_attribute)
-        df_tmp = encoder.calc_per_neuron_df('dr_over_r_50', rectification_variable)
+        df_tmp = encoder.calc_per_neuron_df(dataframes_to_load, rectification_variable)
         df_tmp['neuron_name'] = df_tmp.index
         df_tmp.index = df_tmp['dataset_name'].astype(str) + '_' + df_tmp['neuron_name']
         return df_tmp
