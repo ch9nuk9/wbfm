@@ -794,7 +794,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         # for fig in all_figs:
         #     fig.axes[0][0].set_ylabel("Differential correlation")
 
-    def plot_correlation_histograms(self, to_save=True):
+    def plot_correlation_histograms(self, to_save=False):
         plt.figure(dpi=100)
         all_max_corrs = [df_corr.abs().max(axis=1) for df_corr in self.all_dfs_corr.values()]
 

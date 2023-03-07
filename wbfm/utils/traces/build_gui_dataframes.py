@@ -1,4 +1,5 @@
 # Helper functions
+from functools import partial
 from typing import Dict
 
 import numpy as np
@@ -12,8 +13,10 @@ from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivari
 
 
 def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectData],
-                                        all_projects_gfp: Dict[str, ProjectData], output_folder: str,
-                                        trace_options=None):
+                                        all_projects_gfp: Dict[str, ProjectData],
+                                        output_folder: str,
+                                        trace_options=None,
+                                        posture_attribute='curvature'):
     """
     Builds all the dataframes needed for the GUI, including reverse and forward rectification.
 
@@ -23,7 +26,7 @@ def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectDat
     all_projects_gfp
     output_folder
     trace_options
-
+    posture_attribute
 
     Returns
     -------
@@ -41,12 +44,14 @@ def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectDat
     opt.update(trace_options)
 
     # Dataframes for the summary table
-    df_summary_gcamp, df_summary_gcamp_rev, df_summary_gcamp_fwd = build_all_summary_dfs(all_projects_gcamp, opt)
+    df_summary_gcamp, df_summary_gcamp_rev, df_summary_gcamp_fwd = build_all_summary_dfs(all_projects_gcamp, opt,
+                                                                                         posture_attribute)
     df_summary_gcamp['genotype'] = 'gcamp'
     df_summary_gcamp_rev['genotype'] = 'gcamp'
     df_summary_gcamp_fwd['genotype'] = 'gcamp'
 
-    df_summary_gfp, df_summary_gfp_rev, df_summary_gfp_fwd = build_all_summary_dfs(all_projects_gfp, opt)
+    df_summary_gfp, df_summary_gfp_rev, df_summary_gfp_fwd = build_all_summary_dfs(all_projects_gfp, opt,
+                                                                                   posture_attribute)
     df_summary_gfp['genotype'] = 'gfp'
     df_summary_gfp_rev['genotype'] = 'gfp'
     df_summary_gfp_fwd['genotype'] = 'gfp'
@@ -66,10 +71,18 @@ def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectDat
     df_seg_gfp = build_best_segment_dfs(all_projects_gfp, df_summary_gfp)
     df_all_segs = pd.concat([df_seg_gcamp, df_seg_gfp], axis=1)
 
-    # Additional columns
-    df_summary = add_quantile_columns(df_summary)
-    df_summary_rev = add_quantile_columns(df_summary_rev)
-    df_summary_fwd = add_quantile_columns(df_summary_fwd)
+    # Additional columns: quantiles
+    all_dfs = [df_summary, df_summary_rev, df_summary_fwd]
+    for df in all_dfs:
+        add_quantile_columns(df)
+
+    # Additional columns: manually id'ed neuron name
+    all_projects = {**all_projects_gcamp, **all_projects_gfp}
+    func = partial(get_manual_annotation_from_project, all_projects)
+    for df in all_dfs:
+        df_index = list(df.index)
+        df_new_col = build_new_column_from_function(df_index, func)
+        df['manual_id'] = df_new_col
 
     # Save
     raw_dfs = {'best segment': df_all_segs, 'trace': df_traces}
@@ -143,3 +156,35 @@ def build_best_segment_dfs(all_projects, df_summary, posture_attribute='curvatur
 
     df_seg = pd.DataFrame(df_dict)
     return df_seg
+
+
+def build_new_column_from_function(df_index, col_function: callable):
+    # Use the index name to build a new pd.Series
+    new_col = {}
+    for name in tqdm(df_index):
+        project_name, neuron_name = split_dataframe_name(name)
+
+        col_value = col_function(project_name, neuron_name)
+        # Add to dict with original index as key
+        new_col[name] = col_value
+
+    df_new_col = pd.Series(new_col)
+
+    return df_new_col
+
+
+def split_dataframe_name(dataframe_row_name):
+    neuron_name = '_'.join(dataframe_row_name.split('_')[-2:])
+    project_name = '_'.join(dataframe_row_name.split('_')[:-2])
+    return project_name, neuron_name
+
+
+def get_manual_annotation_from_project(all_projects, project_name, neuron_name):
+    # Get the id'ed name for this project and this neuron, even if empty
+    p = all_projects[project_name]
+    mapping = p.dict_numbers_to_neuron_names
+    if mapping.get(neuron_name, [0, 0])[1] == 2:
+        col_value = mapping[neuron_name][0]
+    else:
+        col_value = ''
+    return col_value
