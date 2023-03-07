@@ -676,22 +676,12 @@ class ProjectData:
         opt.update(kwargs)
 
         if neuron_names is None:
-            neuron_names = self.neuron_names
+            neuron_names = tuple(self.neuron_names)
         if remove_invalid_neurons:
             invalid_names = self.finished_neuron_names(finished_not_invalid=False)
-            neuron_names = [n for n in neuron_names if n not in invalid_names]
+            neuron_names = tuple([n for n in neuron_names if n not in invalid_names])
 
-        # Initialize the trace calculator class and get the initial dataframe
-        _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
-
-        trace_dict = dict()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            futures = {executor.submit(self._trace_plotter.calculate_traces, n): n for n in neuron_names}
-            for future in concurrent.futures.as_completed(futures):
-                name = futures[future]
-                trace_dict[name] = future.result()
-        df = pd.DataFrame(trace_dict)
-        df = df.reindex(sorted(df.columns), axis=1)
+        df = self.calc_raw_traces(neuron_names, opt)
 
         # Optional: check neurons to remove
         if min_nonnan is not None:
@@ -768,6 +758,33 @@ class ProjectData:
             else:
                 df = df_slow
 
+        return df
+
+    @lru_cache(maxsize=16)
+    def calc_raw_traces(self, neuron_names: tuple, opt: dict):
+        """
+        Calculates traces for a list of neurons in parallel
+        Similar to calc_default_traces, but does not do any post-processing
+
+        Parameters
+        ----------
+        neuron_names
+        opt
+
+        Returns
+        -------
+
+        """
+        # Initialize the trace calculator class and get the initial dataframe
+        _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
+        trace_dict = dict()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {executor.submit(self._trace_plotter.calculate_traces, n): n for n in neuron_names}
+            for future in concurrent.futures.as_completed(futures):
+                name = futures[future]
+                trace_dict[name] = future.result()
+        df = pd.DataFrame(trace_dict)
+        df = df.reindex(sorted(df.columns), axis=1)
         return df
 
     def plot_neuron_with_kymograph(self, neuron_name: str):
