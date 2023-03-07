@@ -681,7 +681,7 @@ class ProjectData:
             invalid_names = self.finished_neuron_names(finished_not_invalid=False)
             neuron_names = tuple([n for n in neuron_names if n not in invalid_names])
 
-        df = self.calc_raw_traces(neuron_names, opt)
+        df = self.calc_raw_traces(neuron_names, **opt)
 
         # Optional: check neurons to remove
         if min_nonnan is not None:
@@ -761,7 +761,7 @@ class ProjectData:
         return df
 
     @lru_cache(maxsize=16)
-    def calc_raw_traces(self, neuron_names: tuple, opt: dict):
+    def calc_raw_traces(self, neuron_names: tuple, **opt: dict):
         """
         Calculates traces for a list of neurons in parallel
         Similar to calc_default_traces, but does not do any post-processing
