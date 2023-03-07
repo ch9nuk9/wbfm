@@ -1,6 +1,7 @@
 import copy
 import glob
 import logging
+import math
 import os
 from pathlib import Path
 from typing import Union, Optional
@@ -163,6 +164,7 @@ class WormFullVideoPosture:
     def hilbert_phase(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_phase
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        df = (df % (2 * math.pi))
         return df
 
     @cached_property
