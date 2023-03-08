@@ -771,9 +771,9 @@ class WormFullVideoPosture:
                     continue
                 if file.name.endswith('skeleton_spline_K_signed_avg.csv'):
                     all_files['filename_curvature'] = str(file)
-                elif file.name.endswith('skeleton_spline_X_coords.csv'):
+                elif file.name.endswith('skeleton_spline_X_coords_avg.csv'):
                     all_files['filename_x'] = str(file)
-                elif file.name.endswith('skeleton_spline_Y_coords.csv'):
+                elif file.name.endswith('skeleton_spline_Y_coords_avg.csv'):
                     all_files['filename_y'] = str(file)
                 elif file.name.endswith('hilbert_inst_amplitude.csv'):
                     all_files['filename_hilbert_amplitude'] = str(file)
