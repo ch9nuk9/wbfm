@@ -16,7 +16,7 @@ def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectDat
                                         all_projects_gfp: Dict[str, ProjectData],
                                         output_folder: str = None,
                                         trace_options=None,
-                                        posture_attribute='curvature'):
+                                        posture_attribute='curvature', **kwargs):
     """
     Builds all the dataframes needed for the GUI, including reverse and forward rectification.
 
@@ -45,13 +45,13 @@ def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectDat
 
     # Dataframes for the summary table
     df_summary_gcamp, df_summary_gcamp_rev, df_summary_gcamp_fwd = build_all_summary_dfs(all_projects_gcamp, opt,
-                                                                                         posture_attribute)
+                                                                                         posture_attribute, **kwargs)
     df_summary_gcamp['genotype'] = 'gcamp'
     df_summary_gcamp_rev['genotype'] = 'gcamp'
     df_summary_gcamp_fwd['genotype'] = 'gcamp'
 
     df_summary_gfp, df_summary_gfp_rev, df_summary_gfp_fwd = build_all_summary_dfs(all_projects_gfp, opt,
-                                                                                   posture_attribute)
+                                                                                   posture_attribute, **kwargs)
     df_summary_gfp['genotype'] = 'gfp'
     df_summary_gfp_rev['genotype'] = 'gfp'
     df_summary_gfp_fwd['genotype'] = 'gfp'
@@ -103,12 +103,12 @@ def add_quantile_columns(df):
     return df
 
 
-def build_all_summary_dfs(all_projects, opt, posture_attribute: str = "curvature"):
+def build_all_summary_dfs(all_projects, opt, posture_attribute: str = "curvature", **kwargs):
     dataframes_to_load = opt['channel_mode']
     def _get_df_tmp(p, rectification_variable):
         encoder = NeuronToMultivariateEncoding(p, df_kwargs=opt.copy(),
                                                dataframes_to_load=[dataframes_to_load],
-                                               posture_attribute=posture_attribute)
+                                               posture_attribute=posture_attribute, **kwargs)
         df_tmp = encoder.calc_per_neuron_df(dataframes_to_load, rectification_variable)
         df_tmp['neuron_name'] = df_tmp.index
         df_tmp.index = df_tmp['dataset_name'].astype(str) + '_' + df_tmp['neuron_name']

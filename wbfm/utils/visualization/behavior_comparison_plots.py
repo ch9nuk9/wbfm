@@ -598,6 +598,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
     posture_index_start: int = 2
     posture_index_end: int = 30
 
+    allow_negative_correlations: bool = True
+
     def __post_init__(self):
 
         if self.project_data.worm_posture_class.has_full_kymograph and self.project_data.has_traces():
@@ -674,17 +676,21 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
 
         """
         if rectification_variable is None:
-            df_corr = self.all_dfs_corr[name]
+            df_corr = self.all_dfs_corr[name].copy()
         elif rectification_variable == 'rev':
-            df_corr = self.all_dfs_corr_rev[name]
+            df_corr = self.all_dfs_corr_rev[name].copy()
         elif rectification_variable == 'fwd':
-            df_corr = self.all_dfs_corr_fwd[name]
+            df_corr = self.all_dfs_corr_fwd[name].copy()
+        else:
+            raise ValueError(f"rectification_variable must be one of None, 'rev', 'fwd', not {rectification_variable}")
+        if self.allow_negative_correlations:
+            df_corr = df_corr.abs()
         df_traces = self.all_dfs[name]
 
-        body_segment_argmax = df_corr.columns[df_corr.abs().apply(pd.Series.argmax, axis=1)]
+        body_segment_argmax = df_corr.columns[df_corr.apply(pd.Series.argmax, axis=1)]
         body_segment_argmax = pd.Series(body_segment_argmax, index=df_corr.index)
 
-        corr_max = df_corr.abs().max(axis=1)
+        corr_max = df_corr.max(axis=1)
         median = df_traces.median(axis=0)
         var = df_traces.var(axis=0)
 
