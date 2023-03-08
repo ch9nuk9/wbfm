@@ -1,6 +1,7 @@
 import logging
 import os
 import threading
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,7 +28,7 @@ from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std, filter_exponential_moving_average, \
-    filter_tv_diff, filter_bilateral, filter_gaussian_moving_average, fast_slow_decomposition
+    filter_tv_diff, filter_bilateral, filter_gaussian_moving_average, fast_slow_decomposition, fill_nan_in_dataframe
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit, bleach_correct_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
@@ -93,7 +94,8 @@ class TracePlotter:
                        'cross_term_linear_model',
                        'green_rolling_ransac', 'ratio_rolling_ransac',
                        'top_pixels_10_percent',
-                       'linear_model_only_fast', 'linear_model_fast_and_slow']
+                       'linear_model_only_fast', 'linear_model_fast_and_slow',
+                       'tmac']
         assert (self.channel_mode in valid_modes), \
             f"Unknown channel mode {self.channel_mode}, must be one of {valid_modes}"
 
@@ -143,8 +145,8 @@ class TracePlotter:
             else:
                 raise NotImplementedError
 
-        elif self.channel_mode in ['ratio', 'ratio_df_over_f_20', 'dr_over_r_20', 'dr_over_r_50'] or \
-                'linear_model' in self.channel_mode or 'ransac' in self.channel_mode:
+        elif self.channel_mode in ['ratio', 'tmac'] or \
+                'linear_model' in self.channel_mode or 'ransac' in self.channel_mode or '_over_' in self.channel_mode:
             # Third: use both traces dataframes (red AND green)
             df_red, df_green = self.get_two_dataframes_for_traces()
 
@@ -176,7 +178,6 @@ class TracePlotter:
                     return y_result_including_na
 
             elif self.channel_mode == 'ratio_then_linear_model':
-
                 def calc_y(_neuron_name) -> pd.Series:
                     y_ratio = single_trace_preprocessed(_neuron_name, df_green) / \
                               single_trace_preprocessed(_neuron_name, df_red)
@@ -197,7 +198,6 @@ class TracePlotter:
                     return y_result_including_na
 
             elif self.channel_mode == 'cross_term_linear_model':
-
                 def calc_y(_neuron_name) -> pd.Series:
                     predictor_names = ['x', 'y', 'z', 'z_squared',
                                        't', 't_squared',
@@ -225,7 +225,6 @@ class TracePlotter:
                     return y_result_including_na
 
             elif self.channel_mode == 'linear_model_fast_and_slow':
-
                 def calc_y(_neuron_name) -> pd.Series:
                     # First get cleaned red and green traces
                     r = single_trace_preprocessed(_neuron_name, df_red)
@@ -275,6 +274,21 @@ class TracePlotter:
                     green_predicted = predict_using_rolling_ransac_filter_single_trace(_red[valid_ind],
                                                                                        _green[valid_ind])
                     return pd.Series(_green[valid_ind] - green_predicted, index=valid_ind)
+            elif self.channel_mode == 'tmac':
+                import tmac.models as tm
+                # This package requires all traces to be calculated at the same time
+                # Also, no nan values are allow
+                df_red = fill_nan_in_dataframe(df_red)
+                df_green = fill_nan_in_dataframe(df_green)
+                with warnings.catch_warnings():
+                    warnings.simplefilter(action='ignore', category=RuntimeWarning)
+                    trained_variables = tm.tmac_ac(df_red.values, df_green.values)
+                activity = trained_variables['a']
+                df_activity = pd.DataFrame(activity, index=df_red.index, columns=df_red.columns)
+
+                def calc_y(i) -> pd.Series:
+                    return df_activity[i]
+
             else:
                 raise NotImplementedError
 

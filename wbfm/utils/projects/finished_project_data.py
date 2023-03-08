@@ -686,10 +686,10 @@ class ProjectData:
         # Optional: check neurons to remove
         if min_nonnan is not None:
             names = self.well_tracked_neuron_names(min_nonnan, remove_invalid_neurons)
-            # df_drop = df.loc[names, :].copy()
-            df_drop = df[names].copy()
+            df_drop = df.loc[names, :].copy()
+            # df_drop = df[names].copy()
         else:
-            df_drop = df.copy()
+            df_drop = df
 
         if verbose >= 1:
             print(f"Dropped {df.shape[1] - df_drop.shape[1]} neurons with threshold {min_nonnan}/{df.shape[0]}")
