@@ -210,13 +210,19 @@ class TracePlotter:
 
             elif self.channel_mode == 'linear_model_only_fast':
                 def calc_y(_neuron_name) -> pd.Series:
-
-                    r_fast, r_slow = fast_slow_decomposition(df_red)
-                    g_fast, g_slow = fast_slow_decomposition(df_green)
-                    g_fast_corrected = correct_trace_using_linear_model(pd.DataFrame({'red': r_fast}),
+                    # First get cleaned red and green traces
+                    r = single_trace_preprocessed(_neuron_name, df_red)
+                    g = single_trace_preprocessed(_neuron_name, df_green)
+                    # Then decompose them into fast and slow components
+                    r_fast, r_slow = fast_slow_decomposition(r)
+                    g_fast, g_slow = fast_slow_decomposition(g)
+                    # Then correct the fast component
+                    g_fast_corrected = correct_trace_using_linear_model(pd.DataFrame({'red': r_fast.to_numpy()}),
                                                                         pd.Series(g_fast),
                                                                         predictor_names=['red'])
-                    return g_fast_corrected + g_slow
+                    y_result_including_na = g_fast_corrected + g_slow
+                    y_result_including_na /= np.nanmedian(y_result_including_na)
+                    return y_result_including_na
 
             elif self.channel_mode == 'dr_over_r_20':
                 def calc_y(i) -> pd.Series:
