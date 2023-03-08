@@ -84,7 +84,7 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
         # Additional columns: manually id'ed neuron name
         all_projects = {**all_projects_gcamp, **all_projects_gfp}
         func = partial(get_manual_annotation_from_project, all_projects)
-        df_index = list(df_summary.index)
+        df_index = list(df_summary['index'])
         df_new_col = build_new_column_from_function(df_index, func)
         df_summary['manual_id'] = df_new_col
 
@@ -126,7 +126,6 @@ def calc_all_triggered_average_dictionaries(all_projects, opt):
 
     kwargs = dict(significance_calculation_method='ttest')
     trigger_opt = dict(ind_preceding=30, state=BehaviorCodes.REV)
-    # trace_opt = dict(channel_mode='ratio_then_linear_model')
 
     for proj_name, proj in tqdm(all_projects.items()):
         # First, reversal triggered
@@ -259,6 +258,7 @@ def plot_triggered_average_boxplot(df_gcamp_gfp_rev, x_effect_line, output_folde
     fig = px.box(df_dataset_summary, color='genotype', y='number of interesting neurons',
                  title='Reversal-triggered neurons',
                  color_discrete_sequence=col_sequence)
+    fig.show()
 
     fname = os.path.join(output_foldername, f'statistics_boxplot_num_significant_{suffix}.png')
     fig.write_image(fname)

@@ -93,7 +93,7 @@ class TracePlotter:
                        'cross_term_linear_model',
                        'green_rolling_ransac', 'ratio_rolling_ransac',
                        'top_pixels_10_percent',
-                       'linear_model_only_fast']
+                       'linear_model_only_fast', 'linear_model_fast_and_slow']
         assert (self.channel_mode in valid_modes), \
             f"Unknown channel mode {self.channel_mode}, must be one of {valid_modes}"
 
@@ -221,6 +221,27 @@ class TracePlotter:
                                                                         pd.Series(g_fast),
                                                                         predictor_names=['red'])
                     y_result_including_na = g_fast_corrected + g_slow
+                    y_result_including_na /= np.nanmedian(y_result_including_na)
+                    return y_result_including_na
+
+            elif self.channel_mode == 'linear_model_fast_and_slow':
+
+                def calc_y(_neuron_name) -> pd.Series:
+                    # First get cleaned red and green traces
+                    r = single_trace_preprocessed(_neuron_name, df_red)
+                    g = single_trace_preprocessed(_neuron_name, df_green)
+                    # Then decompose them into fast and slow components
+                    r_fast, r_slow = fast_slow_decomposition(r)
+                    g_fast, g_slow = fast_slow_decomposition(g)
+                    # Then correct the fast component
+                    g_fast_corrected = correct_trace_using_linear_model(pd.DataFrame({'red': r_fast.to_numpy()}),
+                                                                        pd.Series(g_fast),
+                                                                        predictor_names=['red'])
+                    # Then correct the slow component
+                    g_slow_corrected = correct_trace_using_linear_model(pd.DataFrame({'red': r_slow.to_numpy()}),
+                                                                        pd.Series(g_slow),
+                                                                        predictor_names=['red'])
+                    y_result_including_na = g_fast_corrected + g_slow_corrected
                     y_result_including_na /= np.nanmedian(y_result_including_na)
                     return y_result_including_na
 
