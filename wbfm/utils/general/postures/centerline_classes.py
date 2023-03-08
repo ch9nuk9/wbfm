@@ -769,7 +769,7 @@ class WormFullVideoPosture:
                 if not file.is_file() or file.name.startswith('.'):
                     # Skip hidden files and directories
                     continue
-                if file.name.endswith('skeleton_spline_K_signed.csv'):
+                if file.name.endswith('skeleton_spline_K_signed_avg.csv'):
                     all_files['filename_curvature'] = str(file)
                 elif file.name.endswith('skeleton_spline_X_coords.csv'):
                     all_files['filename_x'] = str(file)

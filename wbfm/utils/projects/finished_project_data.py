@@ -686,7 +686,7 @@ class ProjectData:
         # Optional: check neurons to remove
         if min_nonnan is not None:
             names = self.well_tracked_neuron_names(min_nonnan, remove_invalid_neurons)
-            df_drop = df.loc[names, :].copy()
+            df_drop = df.loc[:, names].copy()
             # df_drop = df[names].copy()
         else:
             df_drop = df
