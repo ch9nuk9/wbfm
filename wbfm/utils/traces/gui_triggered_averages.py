@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+from functools import partial
 from typing import Dict
 
 import numpy as np
@@ -10,6 +11,8 @@ import plotly.express as px
 from wbfm.gui.utils.utils_dash import save_folder_for_two_dataframe_dashboard
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.traces.gui_kymograph_correlations import get_manual_annotation_from_project, \
+    build_new_column_from_function
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages
 
 
@@ -73,10 +76,17 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
         # Create additional complex columns
         df_gcamp_gfp['-log(p value)'] = -np.log(df_gcamp_gfp['p value'])
         hline_height = - np.log(0.05)
+
         # Save dataframes
-    
         df_summary, raw_dfs = reformat_dataframes(all_projects_gcamp, all_projects_gfp, df_gcamp_gfp,
                                                   output_dict_traces, output_dict_traces_gfp)
+
+        # Additional columns: manually id'ed neuron name
+        all_projects = {**all_projects_gcamp, **all_projects_gfp}
+        func = partial(get_manual_annotation_from_project, all_projects)
+        df_index = list(df_summary.index)
+        df_new_col = build_new_column_from_function(df_index, func)
+        df_summary['manual_id'] = df_new_col
 
         if output_folder is not None:
             this_output_folder = f"{output_folder}-{fname_suffix}"
