@@ -27,7 +27,7 @@ from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
     filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std, filter_exponential_moving_average, \
-    filter_tv_diff, filter_bilateral, filter_gaussian_moving_average
+    filter_tv_diff, filter_bilateral, filter_gaussian_moving_average, fast_slow_decomposition
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit, bleach_correct_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
@@ -92,7 +92,8 @@ class TracePlotter:
                        'linear_model_then_ratio', 'ratio_then_linear_model', 'high_order_linear_model',
                        'cross_term_linear_model',
                        'green_rolling_ransac', 'ratio_rolling_ransac',
-                       'top_pixels_10_percent']
+                       'top_pixels_10_percent',
+                       'linear_model_only_fast']
         assert (self.channel_mode in valid_modes), \
             f"Unknown channel mode {self.channel_mode}, must be one of {valid_modes}"
 
@@ -206,6 +207,16 @@ class TracePlotter:
                     opt = dict(predictor_names=predictor_names, neuron_name=_neuron_name, remove_intercept=False)
                     y_result_including_na = correct_trace_using_linear_model(df_red, df_green, **opt)
                     return y_result_including_na
+
+            elif self.channel_mode == 'linear_model_only_fast':
+                def calc_y(_neuron_name) -> pd.Series:
+
+                    r_fast, r_slow = fast_slow_decomposition(df_red)
+                    g_fast, g_slow = fast_slow_decomposition(df_green)
+                    g_fast_corrected = correct_trace_using_linear_model(pd.DataFrame({'red': r_fast}),
+                                                                        pd.Series(g_fast),
+                                                                        predictor_names=['red'])
+                    return g_fast_corrected + g_slow
 
             elif self.channel_mode == 'dr_over_r_20':
                 def calc_y(i) -> pd.Series:

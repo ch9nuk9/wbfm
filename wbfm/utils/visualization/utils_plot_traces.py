@@ -52,7 +52,8 @@ def set_big_font(size=22):
     matplotlib.rc('font', **font)
 
 
-def correct_trace_using_linear_model(df_red: pd.DataFrame, df_green: Union[pd.DataFrame, np.ndarray]=None,
+def correct_trace_using_linear_model(df_red: pd.DataFrame,
+                                     df_green: Union[pd.DataFrame, np.ndarray, pd.Series]=None,
                                      neuron_name: Optional[str]=None,
                                      predictor_names: Optional[list]=None,
                                      target_name='intensity_image',
