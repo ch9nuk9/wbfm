@@ -12,11 +12,11 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding
 
 
-def build_all_gui_dfs_for_volcano_plots(all_projects_gcamp: Dict[str, ProjectData],
-                                        all_projects_gfp: Dict[str, ProjectData],
-                                        output_folder: str = None,
-                                        trace_options=None,
-                                        posture_attribute='curvature', **kwargs):
+def build_all_gui_dfs_multineuron_correlations(all_projects_gcamp: Dict[str, ProjectData],
+                                               all_projects_gfp: Dict[str, ProjectData],
+                                               output_folder: str = None,
+                                               trace_options=None,
+                                               posture_attribute='curvature', **kwargs):
     """
     Builds all the dataframes needed for the GUI, including reverse and forward rectification.
 
@@ -105,6 +105,7 @@ def add_quantile_columns(df):
 
 def build_all_summary_dfs(all_projects, opt, posture_attribute: str = "curvature", **kwargs):
     dataframes_to_load = opt['channel_mode']
+
     def _get_df_tmp(p, rectification_variable):
         encoder = NeuronToMultivariateEncoding(p, df_kwargs=opt.copy(),
                                                dataframes_to_load=[dataframes_to_load],
