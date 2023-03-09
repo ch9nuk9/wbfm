@@ -98,7 +98,7 @@ class WormFullVideoPosture:
                                  reset_index=False) -> Union[pd.DataFrame, pd.Series]:
         if df is not None:
             try:
-                df = self.remove_idx_of_tracking_failures(df)
+                df = self.remove_idx_of_tracking_failures(df, fluorescence_fps=fluorescence_fps)
                 if fluorescence_fps:
                     if len(df.shape) == 2:
                         df = df.iloc[self.subsample_indices, :]
@@ -303,7 +303,7 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_worm_angular_velocity(self):
-        """Using angular velocity in 2d pca space. Note: interpolates by default"""
+        """Using angular velocity in 2d pca space"""
 
         xyz_pca = self.pca_projections
         window = 5
@@ -319,7 +319,7 @@ class WormFullVideoPosture:
 
         velocity = np.gradient(smoothed_angles)
         velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
-        velocity = pd.Series(velocity).interpolate()
+        # velocity = pd.Series(velocity).interpolate()
 
         return velocity
 
@@ -826,17 +826,26 @@ class WormFullVideoPosture:
                      len(self._raw_stage_position),
                      self.frames_per_volume)
 
-    def remove_idx_of_tracking_failures(self, vec: pd.Series) -> pd.Series:
+    def remove_idx_of_tracking_failures(self, vec: pd.Series, estimate_failures_from_kymograph=True,
+                                        fluorescence_fps=True) -> pd.Series:
         """
         Removes indices of known tracking failures, if any
 
         Assumes the high frame rate index
         """
-        if self.tracking_failure_idx is not None and len(self.tracking_failure_idx) > 0 and vec is not None:
+        tracking_failure_idx = self.tracking_failure_idx
+        if tracking_failure_idx is None and estimate_failures_from_kymograph:
+            tracking_failure_idx = self.estimate_tracking_failures_from_kymo(fluorescence_fps)
+        if tracking_failure_idx is not None and len(tracking_failure_idx) > 0 and vec is not None:
             vec = vec.copy()
-            logging.debug(f"Setting these indices as tracking failures: {self.tracking_failure_idx}")
-            vec.iloc[self.tracking_failure_idx] = np.nan
+            logging.debug(f"Setting these indices as tracking failures: {tracking_failure_idx}")
+            vec.iloc[tracking_failure_idx] = np.nan
         return vec
+
+    def estimate_tracking_failures_from_kymo(self, fluorescence_fps):
+        kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True)
+        tracking_failure_idx = np.where(kymo.isnull())[0]
+        return tracking_failure_idx
 
     # Raw videos
     def behavior_video_avi_fname(self):

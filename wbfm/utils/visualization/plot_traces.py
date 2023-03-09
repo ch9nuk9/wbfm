@@ -1138,4 +1138,6 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         fig.write_html(str(fname))
         fname = Path(fname).with_suffix('.png')
         fig.write_image(str(fname))
+        fname = Path(fname).with_suffix('.svg')
+        fig.write_image(str(fname))
 
