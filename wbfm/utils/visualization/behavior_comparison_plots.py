@@ -12,8 +12,8 @@ import sklearn.exceptions
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from sklearn.feature_selection import SequentialFeatureSelector
-from sklearn.linear_model import RidgeCV, LassoCV, Ridge
-from sklearn.metrics import median_absolute_error
+from sklearn.linear_model import RidgeCV, LassoCV, Ridge, ElasticNetCV
+from sklearn.metrics import median_absolute_error, r2_score
 from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_split, cross_val_score, GridSearchCV, \
     cross_val_predict, KFold
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
@@ -98,6 +98,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
     cv_factory: callable = KFold
     estimator: callable = Ridge
+
+    _best_single_neuron: str = None
 
     _last_model_calculated: callable = None
 
@@ -190,6 +192,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             y_pred = pd.Series(y_pred, index=y.index)
 
         self._last_model_calculated = model
+        self._best_single_neuron = best_neuron
         if DEBUG:
             plt.plot(X_best_single_neuron, label='X')
             plt.plot(y, label='y')
@@ -200,6 +203,13 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             print(f"Cross validation scores, calculated outside SequentialFeatureSelector: {nested_scores}, "
                   f"{nested_scores.mean():.2f} +- {nested_scores.std():.2f}")
         return nested_scores, model, y, y_pred, y_train_name, best_neuron
+
+    def best_single_neuron(self):
+        """Returns the name of the best single neuron, if it was calculated"""
+        if self._best_single_neuron is None:
+            logging.warning("Best single neuron was not calculated, using default settings")
+            self.calc_single_neuron_encoding(df_name='ratio')
+        return self._best_single_neuron
 
     def prepare_training_data(self, X, y_train_name, only_model_single_state=None) -> \
             Tuple[pd.DataFrame, pd.Series, pd.Series, str]:
@@ -285,6 +295,41 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                                **plot_kwargs)
 
         return model, best_neuron
+
+    def calculate_leifer_score(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
+                              DEBUG=False, **plot_kwargs):
+        """Note: fits model using the Leifer settings, which does not use full cross validation"""
+
+        X = self.all_dfs[df_name].copy()
+
+        trace_len = X.shape[0]
+        y, y_train_name = self.unpack_behavioral_time_series_from_name(y_train, trace_len)
+
+        # Do basic split: test is middle 40%, rest is train
+        len_third = int(trace_len / 3)
+        ind_test = list(range(trace_len))
+        ind_train = ind_test[:len_third]
+        ind_train.extend(ind_test[-len_third:])
+        [ind_test.remove(i) for i in ind_train]
+        len(ind_test), len(ind_train)
+
+        # Get data
+        X = X - X.mean()
+        X = X / X.std()
+        X_train = X.iloc[ind_train, :]
+        X_test = X.iloc[ind_test, :]
+        y_train = y.iloc[ind_train]
+        y_test = y.iloc[ind_test]
+
+        # Fit
+        model = self.estimator
+        alphas = np.logspace(-6, 6, 21)  # alpha values to be chosen from by cross-validation
+        l1_ratio = np.logspace(-7, 2, 13)
+        model = ElasticNetCV(alphas=alphas, l1_ratio=l1_ratio)
+        model.fit(X=X_train, y=y_train)
+        score = model.score(X_test, y_test)
+
+        return score
 
     def plot_sorted_correlations(self, df_name, y_train=None, to_save=False, saving_folder=None):
         """
