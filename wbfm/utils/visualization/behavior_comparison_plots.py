@@ -1,7 +1,6 @@
 import logging
 import os
 import warnings
-from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import reduce
 from typing import List, Dict, Tuple, Union
@@ -12,21 +11,21 @@ import sklearn.exceptions
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from sklearn.feature_selection import SequentialFeatureSelector
-from sklearn.linear_model import RidgeCV, LassoCV, Ridge, ElasticNetCV
-from sklearn.metrics import median_absolute_error, r2_score
-from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_split, cross_val_score, GridSearchCV, \
+from sklearn.linear_model import LassoCV, Ridge, ElasticNetCV
+from sklearn.metrics import median_absolute_error
+from sklearn.model_selection import cross_validate, RepeatedKFold, cross_val_score, GridSearchCV, \
     cross_val_predict, KFold
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
+from wbfm.utils.external.utils_sklearn import middle_40_cv_split
 from wbfm.utils.external.utils_statsmodels import ols_groupby
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
 from wbfm.utils.projects.finished_project_data import ProjectData, load_all_projects_from_list
 import statsmodels.api as sm
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
-from wbfm.utils.traces.residuals import calculate_residual_subtract_pca
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
@@ -296,7 +295,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         return model, best_neuron
 
-    def calculate_leifer_score(self, df_name, y_train=None):
+    def calculate_leifer_score(self, df_name, y_train=None, use_multineuron=True):
         """
         Fits model using the Leifer settings, which does not use full cross validation
 
@@ -321,15 +320,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         trace_len = X.shape[0]
         y, y_train_name = self.unpack_behavioral_time_series_from_name(y_train, trace_len)
 
-        # Do basic split: test is middle 40%, rest is train
-        len_third = int(trace_len / 3)
-        ind_test = list(range(trace_len))
-        ind_train = ind_test[:len_third]
-        ind_train.extend(ind_test[-len_third:])
-        [ind_test.remove(i) for i in ind_train]
-        len(ind_test), len(ind_train)
-
-        # Get data
+        # Get train-test split
+        ind_test, ind_train = middle_40_cv_split(trace_len)
         X = X - X.mean()
         X = X / X.std()
         X_train = X.iloc[ind_train, :]
@@ -337,8 +329,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y_train = y.iloc[ind_train]
         y_test = y.iloc[ind_test]
 
-        # Fit
-        model = self.estimator
+        # Fit; note that even though we have CV, the result is sensitive to the exact value space
         alphas = np.logspace(-6, 6, 21)  # alpha values to be chosen from by cross-validation
         l1_ratio = np.logspace(-7, 2, 13)
         model = ElasticNetCV(alphas=alphas, l1_ratio=l1_ratio)

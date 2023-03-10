@@ -91,3 +91,26 @@ class LastBlockForwardValidation(TimeSeriesSplit):
                 train,
                 test
             )
+
+
+def middle_40_cv_split(trace_len):
+    """
+    Do basic split: test is middle 40%, rest is train
+
+    Note that this is a function because there is only a single split
+
+    Parameters
+    ----------
+    trace_len
+
+    Returns
+    -------
+
+    """
+    len_third = int(trace_len / 3)
+    ind_test = list(range(trace_len))
+    ind_train = ind_test[:len_third]
+    ind_train.extend(ind_test[-len_third:])
+    [ind_test.remove(i) for i in ind_train]
+    len(ind_test), len(ind_train)
+    return ind_test, ind_train
