@@ -296,9 +296,25 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         return model, best_neuron
 
-    def calculate_leifer_score(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
-                              DEBUG=False, **plot_kwargs):
-        """Note: fits model using the Leifer settings, which does not use full cross validation"""
+    def calculate_leifer_score(self, df_name, y_train=None):
+        """
+        Fits model using the Leifer settings, which does not use full cross validation
+
+        Rather, it uses a single train/test split, and then calculates the score on the test set
+        The test set is the middle 40% of the data
+
+        Note that this produces significantly more optimistic scores than the "best practice" nested cross validation
+        method, used in the other methods in this class
+
+        Parameters
+        ----------
+        df_name
+        y_train
+
+        Returns
+        -------
+
+        """
 
         X = self.all_dfs[df_name].copy()
 
